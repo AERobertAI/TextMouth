@@ -13,7 +13,8 @@ A page begins at its first whole word.
 ## A page break inside a heading
 <!-- id: reader-page-break-inside-heading; keys: pagebreak, epub:type, page-list, Part 9Two, heading text; src: TextMouth/Models/PageReaderVersions.swift, TextMouth/Parsers/HTMLReadingText.swift -->
 
-In an EPUB or HTML book, the number of a page break inside a heading is no part of the heading, as it is no part of the text: a heading written "Part 9Two", with the page break's number between the words, is the heading "Part Two" in the text, in Show Headings, and for Next Heading, and page 9 begins where the heading does.
+In an EPUB or HTML book, the number of a page break inside a heading is no part of the heading, as it is no part of the text.
+A heading written "Part 9Two", with the page break's number between the words, is the heading "Part Two" in the text, in Show Headings, and for Next Heading, and page 9 begins where the heading does.
 
 ## Page as a navigation unit
 <!-- id: reader-page-as-navigation-unit; keys: SkipUnit, skip unit, navigation unit, cycle units, one page; src: TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Models/ReaderPageWording.swift -->
@@ -49,7 +50,8 @@ Return, or Jump, goes to the start of the page typed and says "Jumped to page 12
 Capitals and spaces around the page don't matter: "XII" is page xii.
 A label that more than one page has, such as "2" on the plates and in the text, goes to the first such page after the page being read, or to the first in the book when none comes after it, and the jump says which of them it reached, counting from the first in book order: "Jumped to page 2, the second page labelled 2.", or "Jumped to page 2, the first page labelled 2." after the wrap.
 The count is in words up to the tenth and in figures after, as in "the 11th page labelled 2".
-Return while the field still holds the label it started at closes the panel, leaving the place where it is and saying nothing, unless another page of the book carries that label too: then Return goes to that label's next page, and after the last page that carries it, to the first, so Return on the starting label steps through the pages of a repeated label.
+Return while the field still holds the label it started at closes the panel, leaving the place where it is and saying nothing, unless another page of the book carries that label too.
+Then Return goes to that label's next page, and after the last page that carries it, to the first, so Return on the starting label steps through the pages of a repeated label.
 
 ## Where Go to Page puts the cursor
 <!-- id: reader-where-go-page-puts-cursor; keys: jumpAnnouncement, page has no words, skipped section, cursor is on page; src: TextMouth/Models/ReaderPageWording.swift, TextMouth/ViewModels/ReaderViewModel+Pages.swift -->

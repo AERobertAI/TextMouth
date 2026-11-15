@@ -25,7 +25,8 @@ In a library in the cloud, a book whose files are only in the cloud downloads in
 
 An open book follows what the library does to it elsewhere: a new title or author, a move to another folder, or a renamed folder.
 Nothing reloads and speech carries on; an audiobook playing while its files move stops for a moment and plays on from the same place, and one playing from its working copy in a library in the cloud doesn't stop at all.
-Meanwhile the book counts as playing: a Pause or Play/Pause, the sleep timer running out, a recording or another book starting, the AirPods leaving, a stop, or Release Media Controls during the move leaves it paused or stopped when the move is over, and Play then plays it from its place in the moved files.
+Meanwhile the book counts as playing.
+A Pause or Play/Pause, the sleep timer running out, a recording or another book starting, the AirPods leaving, a stop, or Release Media Controls during the move leaves it paused or stopped when the move is over, and Play then plays it from its place in the moved files.
 Play pressed during the move waits in the same way: the book shows Playing, and the move's end plays it from its place in the moved files, unless a Pause or a stop comes first.
 A sleep timer set to start playback, or Auto-play on navigate, leaves it to play on as the move ends, and Where Am I? pressed during the move lets it play on once the announcement has ended.
 The data directory itself can't move while any book is open.
@@ -61,7 +62,8 @@ The Bookmarks menu holds Toggle Bookmark, Show Bookmarks, and Next Bookmark and 
 Next Bookmark and Previous Bookmark go in the order the bookmarks lie in the book, by chapter and then by place in the chapter, not in the order you made them, so with bookmark 1 in chapter 10 and bookmark 2 in chapter 3, Next Bookmark from chapter 1 lands on bookmark 2 first.
 Each still says its own number, as in "Bookmark 2", and a press with nothing beyond the cursor neither moves nor speaks.
 Add Bookmark and Toggle Bookmark say the number of the bookmark they made, as in "Bookmark 4 added", the number its row in Show Bookmarks has, and not how many bookmarks the book holds.
-When the book has left the library, as when it was removed while its reader stayed open, nothing is added or removed, and VoiceOver says, once focus has settled, "Could not add the bookmark: “Moby-Dick” is no longer in the library." or "Could not remove the bookmark: “Moby-Dick” is no longer in the library."
+When the book has left the library, as when it was removed while its reader stayed open, nothing is added or removed.
+And VoiceOver says, once focus has settled, "Could not add the bookmark: “Moby-Dick” is no longer in the library." or "Could not remove the bookmark: “Moby-Dick” is no longer in the library."
 
 ## The reader's panels
 <!-- id: reader-panels; keys: sheets, panels, headings list, bookmarks list, jump panels; src: TextMouth/Views/Reader/HeadingNavigatorView.swift, TextMouth/Views/Reader/BookmarkPanelView.swift, TextMouth/Views/Reader/ReaderJumpPanels.swift -->
@@ -69,24 +71,30 @@ When the book has left the library, as when it was removed while its reader stay
 ### Show Headings
 <!-- id: reader-show-headings; keys: heading list, Actions menu, Skip Section, Include Section, Show levels, level filter; src: TextMouth/Views/Reader/HeadingNavigatorView.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift -->
 
-The reader's panels: in Show Headings, each heading's row offers Go To and Skip Section, or Include Section, among its actions in VoiceOver's Actions menu (VO-Command-Space), as its context menu does, and its hint says "Goes to this heading and closes the list."; the level filter, Show levels, offers Level 1, Levels 1 to 2, and so on, and All levels.
+The reader's panels: in Show Headings, each heading's row offers Go To and Skip Section, or Include Section, among its actions in VoiceOver's Actions menu (VO-Command-Space), as its context menu does, and its hint says "Goes to this heading and closes the list."
+The level filter, Show levels, offers Level 1, Levels 1 to 2, and so on, and All levels.
 
 ### Show Bookmarks
 <!-- id: reader-show-bookmarks; keys: bookmark list, rotor, added date, Add Bookmark key, no bookmarks; src: TextMouth/Views/Reader/BookmarkPanelView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift -->
 
-In Show Bookmarks, a bookmark's row ends with the day it was added, as in "Bookmark 3, The Battle, Note: Check this, added <date>", which the Bookmarks rotor says too, and its hint says "Goes to this bookmark and closes the list."; with no bookmarks, the panel names the key that adds one, in words, as in "Command + B adds a bookmark at the current position.", or, while that command has no key, says "Add Bookmark adds one at the current position."
+In Show Bookmarks, a bookmark's row ends with the day it was added, as in "Bookmark 3, The Battle, Note: Check this, added <date>", which the Bookmarks rotor says too, and its hint says "Goes to this bookmark and closes the list."
+With no bookmarks, the panel names the key that adds one, in words, as in "Command + B adds a bookmark at the current position.", or, while that command has no key, says "Add Bookmark adds one at the current position."
 
 ### Go to Percent and Go to Time
 <!-- id: reader-go-percent-go-time; keys: jump to percent, jump to time, ReaderTimeWording, time left, clock, Time In, Duration; src: TextMouth/Models/ReaderTimeWording.swift, TextMouth/Views/Reader/ReaderJumpPanels.swift, TextMouth/Views/Reader/HeadingNavigatorView.swift -->
 
-The status row's percent and time left are buttons, each opening a panel below it with one labelled field, Return to jump, and Escape to close it: the percent opens Go to Percent, whose field, "Percent through the book", starts at the place's percent; the time left opens Go to Time, whose field takes a time typed or pasted as 1:02:03, 62:03, 3723, or 12:04.3, and starts at the place's time, in whole seconds.
+The status row's percent and time left are buttons, each opening a panel below it with one labelled field, Return to jump, and Escape to close it.
+The percent opens Go to Percent, whose field, "Percent through the book", starts at the place's percent.
+The time left opens Go to Time, whose field takes a time typed or pasted as 1:02:03, 62:03, 3723, or 12:04.3, and starts at the place's time, in whole seconds.
 For an audiobook the field is "Time in the recording": every time that names a place counts the recording's own time, whatever the speed, so a time from a chapter list, show notes, the audio editor, the Headings sheet, or Copy Reading Position lands where it says.
 For a text book it is "Time at 500 words a minute", at the book's own speed.
 A time less than a second before a heading lands on the heading.
 A time past the end is refused, as in "Time exceeds the recording's length.
 The recording lasts 9 hours, 41 minutes, 7 seconds.", shown under the field and spoken.
-Return, or Jump, while the field still holds the value it started at closes the panel as Escape does and leaves the place exactly where it is, saying nothing: the starting time drops the place's fraction of a second and the starting percent is rounded to a tenth, so jumping to either would move the place a little, and a finished book would no longer be finished.
-In Show Headings, Time In gives each heading's time on the same clock, for an audiobook the same at every speed, so it can be typed into Go to Time, and Duration gives each heading's length at the book's speed, to the next heading shown, the last to the very end of the book (a last chapter of exactly 25:03 shows 25:03).
+Return, or Jump, while the field still holds the value it started at closes the panel as Escape does and leaves the place exactly where it is, saying nothing.
+The starting time drops the place's fraction of a second and the starting percent is rounded to a tenth, so jumping to either would move the place a little, and a finished book would no longer be finished.
+In Show Headings, Time In gives each heading's time on the same clock, for an audiobook the same at every speed, so it can be typed into Go to Time.
+And Duration gives each heading's length at the book's speed, to the next heading shown, the last to the very end of the book (a last chapter of exactly 25:03 shows 25:03).
 The sheet follows a change of speed, or of the setting that names the speed, made while it is open.
 
 ### Copy Reading Position
@@ -98,7 +106,8 @@ Copy Reading Position adds the place's time, as in "at 2:13:05 of 9:41:07 in the
 <!-- id: reader-book-own-settings; keys: per-book voice, per-book speed, toolbar, Voice button, Audio Settings button, global settings; src: TextMouth/Views/Reader/ReaderView.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift -->
 
 A book's own settings open from the reader's toolbar.
-For a text book the button is Voice, which VoiceOver calls Change voice for this book, and its sheet, Voice & Speed for This Book, holds the book's voice, speed, and pitch and what happens when the book ends; there Save to Global Settings, which the playback bar offers too, makes the book's voice, speed, and pitch the defaults, and Reset to Global Settings removes all three from the book, saying "Using global voice, speed, and pitch settings".
+For a text book the button is Voice, which VoiceOver calls Change voice for this book, and its sheet, Voice & Speed for This Book, holds the book's voice, speed, and pitch and what happens when the book ends.
+There Save to Global Settings, which the playback bar offers too, makes the book's voice, speed, and pitch the defaults, and Reset to Global Settings removes all three from the book, saying "Using global voice, speed, and pitch settings".
 For an audiobook the button is Audio Settings, named the same on screen and by VoiceOver, and its sheet, Audio Settings for This Book, holds the book's speed, one slider VoiceOver reads as "Audio speed, 1.25 times speed", which moves by 0.05 times; what happens when the book ends; and Reset to Normal Speed while the book has a speed of its own.
 
 ## Search in Book
@@ -112,7 +121,8 @@ VoiceOver reads the row, and the Search Results rotor lists it, as "a drowned ha
 ## Search Library from a reader
 <!-- id: reader-search-library-from-reader; keys: Option-Command-F, Find submenu, LibrarySearchWording, match in a book; src: TextMouth/ViewModels/ReaderViewModel+LibrarySearch.swift, TextMouth/Models/LibrarySearchWording.swift, TextMouth/App/MenuCommands.swift -->
 
-Search Library, in the Edit menu's Find submenu (Option-Command-F), searches every book at once and opens a match in its reader, at those words, saying "Moved to the match, Chapter 3." once the window is in front; Go Back (below) returns to where the reader was before (see [Search Library](search-library.md)).
+Search Library, in the Edit menu's Find submenu (Option-Command-F), searches every book at once and opens a match in its reader, at those words, saying "Moved to the match, Chapter 3." once the window is in front.
+Go Back (below) returns to where the reader was before (see [Search Library](search-library.md)).
 
 ## Choosing a transcript result
 <!-- id: reader-choosing-transcript-result; keys: audio search result, sentence start, Moved to, Auto-play on navigate; src: TextMouth/Views/Reader/BookSearchView.swift, TextMouth/ViewModels/BookSearchModel.swift -->

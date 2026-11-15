@@ -6,29 +6,38 @@ Part of [TextMouth's documentation](../../README.md).
 ## Headphone and media keys
 <!-- id: reader-headphone-media-keys; keys: AirPods, play pause key, Play command, Now Playing, remote command, last book, MPRemoteCommandCenter; src: TextMouth/Services/NowPlayingService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/MediaGestureDetector.swift -->
 
-Headphone and media keys control the reader that is playing, or, when none is, whichever came last of the reader window you used and the book that paused, or reached its end, while playing; a Play command, which some headphones send apart from Play/Pause, goes to that last one even while another book plays.
+Headphone and media keys control the reader that is playing, or, when none is, whichever came last of the reader window you used and the book that paused, or reached its end, while playing.
+A Play command, which some headphones send apart from Play/Pause, goes to that last one even while another book plays.
 
 ### A book that pauses behind another window
 <!-- id: reader-book-that-pauses-behind-another; keys: paused in Now Playing, headphones disconnecting, voice not starting, waiting to play, auto-play; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/NowPlayingService.swift -->
 
-A book that pauses while another book's window is in front, from the AirPods, a media key, its sleep timer running out, the headphones disconnecting, a recording starting, or its voice not starting a passage (below), is shown paused in Now Playing, and the next Play resumes it rather than starting the book in front; moving to another book's window afterwards makes that window's book the one Play starts.
+A book that pauses while another book's window is in front, from the AirPods, a media key, its sleep timer running out, the headphones disconnecting, a recording starting, or its voice not starting a passage (below), is shown paused in Now Playing.
+And the next Play resumes it rather than starting the book in front.
+Moving to another book's window afterwards makes that window's book the one Play starts.
 A book waiting to play, for its chapter's speech or for a chapter's files to download, counts as playing: the AirPods leaving, a recording starting, or another book starting pauses it, so it never starts by itself once ready; Auto-play on navigate leaves such a book waiting.
 
 ### A book that rests finished at its end
 <!-- id: reader-book-that-rests-finished-at; keys: finished state, rests at end, Previous Track, Skip Backward, Next Track, replay the end; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Models/EndOfBookRule.swift -->
 
-A book that ends and stops there, rather than starting again or continuing to the next book, rests finished at its end while its window stays open: Now Playing shows it paused at its end, so the AirPods and the media keys still reach TextMouth, and Previous Track or Skip Backward, from them or from the reader's own Skip Backward, moves back by the skip unit from the end and plays from there, so you can hear its last words again, with the skip's sound and then Play's.
+A book that ends and stops there, rather than starting again or continuing to the next book, rests finished at its end while its window stays open.
+Now Playing shows it paused at its end, so the AirPods and the media keys still reach TextMouth.
+And Previous Track or Skip Backward, from them or from the reader's own Skip Backward, moves back by the skip unit from the end and plays from there, so you can hear its last words again, with the skip's sound and then Play's.
 It plays again only while no other book plays: with another book playing, Skip Backward in the finished book's window moves its cursor back without playing, leaves the other book playing, and the book is finished no longer.
 When a sleep timer set for the end of the heading or of the book stops, at its end, a book that would continue to the next book, the timer is spent and the book rests finished: Skip Backward plays its end again, at full volume, and when it ends this time, the next book starts.
 Skip Forward or Next Track by a number of seconds stays at the end and plays nothing, while a forward skip by sentence, paragraph, heading, or bookmark that finds a later place moves there without playing.
-That move, or any other jump, such as to a heading, ends the finished state, as Release Media Controls does: the book is then an ordinary stopped book, whose skips move the cursor without playing, and Play plays from the cursor, or, while the cursor is still at the end, does what Play does at a book's end (see When a book ends, below).
+That move, or any other jump, such as to a heading, ends the finished state, as Release Media Controls does.
+The book is then an ordinary stopped book, whose skips move the cursor without playing, and Play plays from the cursor, or, while the cursor is still at the end, does what Play does at a book's end (see When a book ends, below).
 Closing the window, or quitting TextMouth, keeps it: the book is saved at its end, and opens finished again.
 
 ### A book that continues to the next book
 <!-- id: reader-book-that-continues-next-book; keys: Starting, Still starting, rewind, next book announced, Play pressed; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Models/EndOfBookWording.swift -->
 
-A book that continues to the next book, in its folder or in the reading list, doesn't rest finished, though it too is saved at its end: as VoiceOver says "Starting: Dune", Now Playing shows it paused at its end until Dune plays, and a rewind pressed in that moment moves its cursor back without playing over the book announced.
-Play pressed in that moment, from the AirPods, a media key, or the keyboard, starts Dune at once instead of half a second later, and until Dune starts, Play never plays the finished book: once Dune has been asked for, Play or Play/Pause reaching the finished book says "Still starting: Dune"; once Dune plays, Play in the finished book's window plays it as usual.
+A book that continues to the next book, in its folder or in the reading list, doesn't rest finished, though it too is saved at its end.
+As VoiceOver says "Starting: Dune", Now Playing shows it paused at its end until Dune plays, and a rewind pressed in that moment moves its cursor back without playing over the book announced.
+Play pressed in that moment, from the AirPods, a media key, or the keyboard, starts Dune at once instead of half a second later, and until Dune starts, Play never plays the finished book.
+Once Dune has been asked for, Play or Play/Pause reaching the finished book says "Still starting: Dune".
+Once Dune plays, Play in the finished book's window plays it as usual.
 
 ### Release Media Controls
 <!-- id: reader-release-media-controls; keys: Media controls released, Media controls not released, give up media keys, Now Playing; src: TextMouth/Services/NowPlayingService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/App/MenuCommands.swift -->
@@ -40,9 +49,12 @@ Once another book plays, that book holds them, and the first book's window no lo
 ### Now Playing after a close, a pause, or a save
 <!-- id: reader-now-playing-after-close-pause; keys: pause sound, window close, metadata save, title in Now Playing, AirPods stay; src: TextMouth/Services/NowPlayingService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift -->
 
-Closing a book's window, or the book being stopped, as when a chapter can't be downloaded or its text is replaced, takes its book out of Now Playing whenever Now Playing shows it, even from behind another book's window; the book whose window you used last is shown instead if it was played and is paused, and otherwise the AirPods and the media keys go back to other apps.
-A Pause that pauses nothing, as one reaching a book already paused or finished, makes no pause sound, and one reaching a book that doesn't hold the media controls, such as one that never played, was stopped, or released them, tells the system nothing, so the AirPods stay with the app or the book they are with.
-Saving a book's metadata, in its window or the Library window, or any other change of its title or author, such as the metadata refresh after an update, shows its new title in Now Playing only while the book holds the media controls, a finished book included, so a save never takes the AirPods from the app or the book you were listening to.
+Closing a book's window, or the book being stopped, as when a chapter can't be downloaded or its text is replaced, takes its book out of Now Playing whenever Now Playing shows it, even from behind another book's window.
+The book whose window you used last is shown instead if it was played and is paused, and otherwise the AirPods and the media keys go back to other apps.
+A Pause that pauses nothing, as one reaching a book already paused or finished, makes no pause sound.
+And one reaching a book that doesn't hold the media controls, such as one that never played, was stopped, or released them, tells the system nothing, so the AirPods stay with the app or the book they are with.
+Saving a book's metadata, in its window or the Library window, or any other change of its title or author, such as the metadata refresh after an update, shows its new title in Now Playing only while the book holds the media controls, a finished book included.
+So a save never takes the AirPods from the app or the book you were listening to.
 
 ## The sleep timer
 <!-- id: reader-windows-sleep-timer; keys: sleep timer sheet, Stop At, presets, minutes, SleepTimerService, SleepTimerView; src: TextMouth/Services/SleepTimerService.swift, TextMouth/Views/Reader/SleepTimerView.swift, TextMouth/Models/DocumentContent.swift -->
@@ -69,7 +81,8 @@ End of book pauses playback when the book ends, before the book starts again or 
 ### Fade out
 <!-- id: reader-fade-out; keys: fade out time, volume fade, Playback settings, prepared audio, m4b, chapter marker; src: TextMouth/Services/SleepTimerService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SpeechService.swift -->
 
-An audiobook fades out toward a stop at a chapter's end over the sleep timer's Fade out time, in Playback settings, when one is set; speech is not faded toward such a stop, and an m4b's chapter marker inside one file stops the timer a moment past the marker, without a fade, the cursor put back at the marker.
+An audiobook fades out toward a stop at a chapter's end over the sleep timer's Fade out time, in Playback settings, when one is set.
+Speech is not faded toward such a stop, and an m4b's chapter marker inside one file stops the timer a moment past the marker, without a fade, the cursor put back at the marker.
 When a timer counting minutes runs out and a Fade out time is set, playback fades out over that time before it pauses: an audiobook in its own audio, speech playing from the audio TextMouth prepared in that audio, and speech read straight from the voice in ever quieter stretches, the voice starting again from the word it had reached.
 Speech read straight from the voice does not move to the prepared audio as the fade begins, a move that could repeat or skip a few words.
 

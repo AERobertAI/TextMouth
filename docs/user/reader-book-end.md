@@ -23,7 +23,8 @@ Four settings can decide, the first that applies winning:
 <!-- id: reader-skip-finished; keys: finished books, play the book below, play the book above, folder end, no more books; src: TextMouth/Models/EndOfBookRule.swift, TextMouth/Models/ListeningOptionsWording.swift, TextMouth/Models/EndOfBookWording.swift -->
 
 Skip finished, which a folder or a feed keeps for itself (Skip finished books in a folder, Skip finished episodes in a feed), applies whichever setting decides, and is checked unless it was cleared there; a book read from the reading list follows its list's own Skip finished books instead.
-Continue to Next Book, and a choice to play the book below or above, pass over the books that rest at their end, finished, and go on with the first beyond them that is not; with Skip finished cleared, they go on with the very next book, and a finished book they go on to plays from its beginning, after "Starting: <title>" as for any book.
+Continue to Next Book, and a choice to play the book below or above, pass over the books that rest at their end, finished, and go on with the first beyond them that is not.
+With Skip finished cleared, they go on with the very next book, and a finished book they go on to plays from its beginning, after "Starting: <title>" as for any book.
 When only finished books lie that way, the book says so, as in "Finished: Dune.
 Every book after it in the folder is finished.", or, going up, "Finished: Dune.
 Every book before it in the folder is finished."; and with none that way, "Finished: Dune.
@@ -88,7 +89,8 @@ It goes on at a book's end, with Next in Reading List and Previous in Reading Li
   A countdown that the old book's pause halted stays halted until the next book plays.
   As a last resort, when no window has opened the next book 20 minutes after the move, TextMouth stops the timer and says what it says when the next book could not be opened (below).
 - An episode that must be downloaded first is different.
-  While it downloads, after "Downloading the next episode: <title>" at a book's end, or Next in Folder's or Previous in Folder's "Downloading the next episode: <title>" or "Downloading the previous episode: <title>", the timer stays the old window's own, and it goes on with the move once the episode arrives.
+  While it downloads, after "Downloading the next episode: <title>" at a book's end, or Next in Folder's or Previous in Folder's "Downloading the next episode: <title>" or "Downloading the previous episode: <title>", the timer stays the old window's own.
+  And it goes on with the move once the episode arrives.
   So closing the old window during that download ends the wait, and the episode does not start; it also stops the timer, as closing the window a timer belongs to does.
 - A move that only opens its book, with "Opening: <title>", takes the timer with it too.
   So with A New Window, or a new window opened because this one was busy, playing the old window's book afterwards plays it without the timer: the timer is the next book's, and it can pause only that book.

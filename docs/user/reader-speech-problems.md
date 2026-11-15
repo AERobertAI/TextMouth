@@ -9,11 +9,14 @@ Part of [TextMouth's documentation](../../README.md).
 ### The markup guard
 <!-- id: reader-markup-guard; keys: angle quotation marks, opening tag, closing tag, less-than sign, greater-than sign, ampersand; src: TextMouth/Services/SpeechMarkupGuard.swift, TextMouth/Services/SpeechService.swift -->
 
-A book's text can hold what looks like markup, such as the <sm> and </sm> one novel marks its silent messages with, and the speech engine of macOS 26.3.1 takes such tags for speech markup: it skipped the rest of a passage after an opening tag, and refused a passage holding a closing tag alone, after which the book's speech stopped and couldn't be started again.
+A book's text can hold what looks like markup, such as the <sm> and </sm> one novel marks its silent messages with, and the speech engine of macOS 26.3.1 takes such tags for speech markup.
+It skipped the rest of a passage after an opening tag, and refused a passage holding a closing tag alone, after which the book's speech stopped and couldn't be started again.
 TextMouth hands the voice each tag with its two angle brackets changed to single angle quotation marks, which the engine doesn't take for markup, so the brackets are silent and what is between them, a tag's name included, is spoken.
 The engine takes for an opening tag any name of letters, figures, or symbols between angle brackets, with no space or slash inside it and spaces around it or not, such as <sm>, < sm >, <5>, <...>, <=>, or <*>; such a name followed by name=value attributes, as in <a href="x">; and empty brackets, <> or < >.
 Each of these made it skip the rest of a passage without a sound, and TextMouth silences the brackets of every one, and of every closing tag, such as </sm>.
-A less-than or greater-than sign that isn't part of a tag, as in "x < y and y > z", is still read aloud, except in audio TextMouth prepared again with every angle bracket silent (below), an ampersand is left for the voice, which reads it as "and", and the text on screen and on a braille display is unchanged.
+A less-than or greater-than sign that isn't part of a tag, as in "x < y and y > z", is still read aloud, except in audio TextMouth prepared again with every angle bracket silent (below).
+An ampersand is left for the voice, which reads it as "and".
+And the text on screen and on a braille display is unchanged.
 
 ### A null character
 <!-- id: reader-null-character; keys: U+0000, NUL, control character, Where Am I, Speak Info; src: TextMouth/Services/SpeechMarkupGuard.swift -->
@@ -27,14 +30,16 @@ Where Am I?, which can quote the book, and Speak Info, which speaks titles, are 
 
 Should the speech engine still refuse a passage of a text book, TextMouth starts the voice afresh at once, since the one that refused would never speak again.
 If TextMouth has finished preparing the chapter's audio in the background, as it does while it speaks any chapter of up to 100,000 characters, speech goes on from that audio at the refused passage, from the last word heard in it or from its start, so nothing heard is heard twice.
-If the speech engine refuses the chapter's text as TextMouth prepares its audio in the background, TextMouth prepares the audio once more with every angle bracket silent, so that a refusal while the voice reads has that audio to go on from; speech played from that audio says no less-than or greater-than sign.
+If the speech engine refuses the chapter's text as TextMouth prepares its audio in the background, TextMouth prepares the audio once more with every angle bracket silent, so that a refusal while the voice reads has that audio to go on from.
+Speech played from that audio says no less-than or greater-than sign.
 Without prepared audio to go on from, TextMouth tries the passage once more from there, with every angle bracket in the rest of the passage silent, so a less-than sign there isn't read; the passages after it are read as before.
 That one more try belongs to the place: once speech has gone on from it, a refusal met at that same place later, as after a jump back to it, is tried once more too.
 
 ### The Speech Stopped sheet
 <!-- id: reader-speech-stopped-sheet; keys: Speech Stopped, Details, report, Copy Details, Show Logs in Finder, refusal report, speech log; src: TextMouth/Views/Reader/SpeechRefusalReportSheet.swift, TextMouth/Models/SpeechRefusalReport.swift, TextMouth/ViewModels/ReaderViewModel+SpeechRefusal.swift -->
 
-Refused there again, with no prepared audio to go on from, speech stops with the cursor at that passage, and the book's window shows a sheet headed "Speech Stopped", with one sentence under the heading, which VoiceOver reads with it: "The Mac's speech engine refused to speak the text here, twice, so speech stopped.
+Refused there again, with no prepared audio to go on from, speech stops with the cursor at that passage.
+And the book's window shows a sheet headed "Speech Stopped", with one sentence under the heading, which VoiceOver reads with it: "The Mac's speech engine refused to speak the text here, twice, so speech stopped.
 Play tries again from the same place."
 Below them, a read-only text area labelled Details, which VoiceOver reads line by line and a braille display pans, holds a report for finding the cause: the book and its format; the place, as the brief Where Am I? says it, then the chapter, and the character where speech stopped, counted both in the book's text and in the spoken text, whose offsets the speech log gives; how many times that place was refused while the window has been open; the time, as the logs write it; up to 100 characters before where speech stopped and 400 from it, of the book's text and of the text exactly as it was handed to the speech engine, after the substitutions and the markup guard, with where the refused text begins and ends said in words on lines of their own; the markup guard in force; the voice, the speed, and the rate, pitch, and volume handed to the engine; macOS's version; TextMouth's build; and the last 40 lines the book's speech logged, including the routine lines that the speech log's file keeps only while tracing is on, which hold offsets and lengths, never the book's words.
 Copy Details copies the whole report as plain text and says "Details copied"; Show Logs in Finder opens the folder the logs are written to, and says why, aloud and under the buttons, when Finder can't; and Close, Return, or Escape closes the sheet.
@@ -59,7 +64,9 @@ Should it stop a Speak Info summary, the next press speaks, with a fresh start o
 ### A voice that does not start a passage
 <!-- id: reader-voice-that-does-not-start; keys: Speech paused, voice did not start, five and a half seconds, ten and a half seconds, watchdog, start watchdog; src: TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift -->
 
-Should the voice be handed a passage and not start it, TextMouth notices about five and a half seconds later, or about ten and a half while the voice has started nothing yet, as at the first Play in a book's window or after it was started afresh, since a voice still loading can take longer, counting only while speech should be heard; it then starts the voice afresh and goes on from the start of that passage, from the audio it prepared when it has it, and otherwise from the voice.
+Should the voice be handed a passage and not start it, TextMouth notices about five and a half seconds later.
+Or about ten and a half while the voice has started nothing yet, as at the first Play in a book's window or after it was started afresh, since a voice still loading can take longer, counting only while speech should be heard.
+It then starts the voice afresh and goes on from the start of that passage, from the audio it prepared when it has it, and otherwise from the voice.
 A jump, or such a recovery, that would go on from the prepared audio goes on from the voice when the Mac can't play that audio.
 If the voice still hasn't started the passage after two fresh starts, speech pauses there, with no pause sound, the AirPods' next press is Play, and VoiceOver says "Speech paused: the voice did not start.
 Press Play to try again."
