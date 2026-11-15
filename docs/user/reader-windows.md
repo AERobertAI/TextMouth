@@ -178,6 +178,7 @@ The Book menu holds:
 
 - Edit Text in Default Editor and Edit Text With…, available for a text book and a transcribed audiobook, a feed's episode included, but not a feed's article,
 - then Transcribe Audio…, available for an audiobook and named Retranscribe Audio… once it has a transcript,
+- Attach Transcript…, available for the audiobooks Transcribe Audio… is available for (see [Transcribing an audiobook](transcribing.md)),
 - Clean Up Transcript (Experimental)… and Delete Transcript…, for a transcribed one,
 - then Edit Audio…, for an audiobook other than a feed's episode (see [Editing audio](editing-audio.md)),
 - and last Move to Library…, for an episode or article downloaded in its feed (see [Podcasts and article feeds](feeds.md)).
