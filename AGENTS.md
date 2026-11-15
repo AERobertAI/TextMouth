@@ -1,6 +1,6 @@
 # Working on TextMouth with coding agents
 
-This file is for a coding-agent session that starts cold: an orchestrator that runs several task agents at once, and the task agents themselves. It says where the project's state lives, what the user has standing rules about, how a task agent must work, and how the orchestrator merges and records. README.md is the index of the documentation, whose pages are in docs/: docs/user explains the app to its user, docs/developer how to build and test it, and ARCHITECTURE.md, the index of docs/architecture, explains the code. None repeats what is here.
+This file is for a coding-agent session that starts cold: an orchestrator that runs several task agents at once, and the task agents themselves. It says where the project's state lives, what the user has standing rules about, how a task agent must work, and how the orchestrator merges and records. README.md is the index of the documentation, whose pages are in docs/: docs/user explains the app to its user, docs/developer how to build and test it, and ARCHITECTURE.md, the index of docs/architecture, explains the code. None repeats what is here. The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agents/orchestrator.md).
 
 ## Start here
 

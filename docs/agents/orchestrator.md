@@ -1,6 +1,8 @@
 # Orchestrating TextMouth's agents
 <!-- id: orchestrating-textmouth-agents; keys: no-ff, merge train, handoff, sub-orchestrator, set-version; src: Scripts/agents/merge-chain.sh, Scripts/agents/build-train.py, Scripts/agents/record-merge.py -->
 
+Part of [working on TextMouth with coding agents](../../AGENTS.md).
+
 ## How the orchestrator works
 <!-- id: how-orchestrator-works; keys: no-ff, merge train, heavy lock, set-version, extract-report, version bump, cisuite; src: Scripts/agents/merge-chain.sh, Scripts/agents/record-merge.py, Scripts/agents/build-train.py, Scripts/agents/hold-build-slots.sh, Scripts/agents/run_locked.py, Scripts/agents/run_suite.py, Scripts/agents/heavy_lock.py, Scripts/agents/usage-watch-unscoped.py, Scripts/agents/wait-for-result.py, Scripts/set-version.sh, Makefile -->
 
