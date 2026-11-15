@@ -87,7 +87,8 @@ It is then taken as the book's text, as Edit Text takes one but without an annou
 Otherwise it is kept in the book's package as content.md.edited- followed by the date and time, and the text is read from the book's own file again.
 Whatever else reads a book's text from its own file again, such as opening the book before TextMouth has found the edit, or Redo Text Extraction, first keeps text in content.md that TextMouth didn't write or take the same way, and leaves the book as it is when no copy can be kept.
 An edit TextMouth took stays the book's text after it quits, and TextMouth's automatic reads of the book's file again, such as one after a new version of TextMouth reads the book's format better, leave it as it is, logging TEXT_EDIT_KEPT in the debug log.
-Only Redo Text Extraction and a choice in a book's Text Encoding pop-up read the text from the book's own file again over such an edit, and each first keeps a copy of the text it replaces in the book's package as content.md.edited- followed by the date and time, which TextMouth leaves for you to delete.
+Only Redo Text Extraction and a choice in a book's Text Encoding pop-up read the text from the book's own file again over such an edit.
+Each first keeps a copy of the text it replaces in the book's package as content.md.edited- followed by the date and time, which TextMouth leaves for you to delete.
 Bookmarks keep their chapter and position, so an edit earlier in a chapter can shift the words they point at.
 
 ## Editing a transcribed audiobook's text
@@ -107,7 +108,11 @@ An audiobook without a transcript has no text to edit: transcribe it first.
 ## Backslashes in a transcript's text
 <!-- id: backslashes-transcript-text; keys: ; src: -->
 
-A transcript's text has a backslash only where TextMouth's reader needs one: before a quotation mark or an apostrophe, before a hyphen or a period that has another next to it, and before the characters Markdown itself reads, such as *, [, ], `, |, ~, <, an underscore outside a word, and the first character of a paragraph that would begin a heading, a list, a quote, or a numbered item.
+A transcript's text has a backslash only where TextMouth's reader needs one:
+
+- Before a quotation mark or an apostrophe.
+- Before a hyphen or a period that has another next to it.
+- Before the characters Markdown itself reads, such as *, [, ], `, |, ~, <, an underscore outside a word, and the first character of a paragraph that would begin a heading, a list, a quote, or a numbered item.
+
 A comma, colon, semicolon, question mark, exclamation mark, or single period stands as it was heard.
 Keep the backslashes where they are: without them the reader would turn a quotation mark into a curly one and three periods into an ellipsis.
-Each transcribed book's text is written again, once, the first time the book opens in the version that began writing it this way.

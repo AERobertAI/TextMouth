@@ -561,6 +561,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Export
 - Exported Markdown, for a book's text and for a transcript, has a backslash only where Markdown needs one, and no chapter-marker lines.
+- Each transcribed book's text was written again, once, the first time the book opened in this version, so that it too has a backslash only where Markdown needs one.
 
 ### Library
 - The duplicate question now says what Replace Existing throws away: the old copy's reading position, bookmarks, settings, and any edit of its text or transcript.
