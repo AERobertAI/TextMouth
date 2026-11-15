@@ -55,6 +55,67 @@ Each run deletes its sandbox as it finishes, and, as it starts, deletes in the b
   Read the system log for `terminate:`, and run the class alone before calling it a fault; a run cut short by an ordinary quit the host received while frontmost is settled the same way.
 - A test takes an outside constant, such as a quit-reason keyword, from the SDK and not from the code it tests: a test and its code that pin the same wrong value both pass.
 
+## The performance baselines
+
+PerformanceBaselineTests keep what the performance work of October 3, 2026 made faster from slipping back. They measure a library and books generated to the size of the developer's, never your own library, and run in every run of the suite, in about half a minute. They measure:
+
+- launch with a 643-book library: reading library.json, the startup repair, and finding the text caches that need rebuilding;
+- the first sort of the library by File Size, and one derivation of the All Items list for each of the six sorts;
+- one live reading position update, and the bytes one 30-second reading checkpoint writes for a book whose record is as large as the developer's largest;
+- opening a 1 MB EPUB for the first time until the speech of its first chapter is prepared, and opening it again from the text TextMouth kept, and opening a 3-file audiobook until it has loaded;
+- preparing the speech of a 1,000,000-character chapter with the developer's 16 substitution rules, which TextMouthProductionTests/performance-substitutions.json keeps a copy of;
+- the most memory a 40,000-character chapter's rendered speech takes while it is built, and what it keeps;
+- extracting the 1 MB EPUB's text;
+- the processor time of one cloud refresh of a library outside the cloud;
+- the main-thread time one reader publish costs the open Headings sheet.
+
+How they judge:
+
+- Each number is the median of five runs, after one more that warms caches and is not counted. TextMouthProductionTests/performance-baselines.json holds each one's baseline, with the Mac model, build configuration, and date they were recorded on.
+- A number more than twice its baseline is measured five times more, and the test fails only when the lower median is still more than twice its baseline. A number at 1.5 times its baseline or more prints a line beginning PERFORMANCE WARNING:, and one at half its baseline or less a line beginning PERFORMANCE NOTE:, since new baselines would tighten the check. Every number is printed on a line beginning PERFORMANCE:.
+- The tests skip, printing PERFORMANCE SKIPPED: and why, while the Mac is busy (its one-minute load average above its number of cores), so other work cannot fail them, and on any Mac model or build configuration other than the baselines', where the numbers say nothing. With TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1 a busy Mac measures anyway: `make test PERFORMANCE_STRICT=1` sets it, and `make check` uses it. A baselines file that is missing or can't be read fails the tests rather than skipping them.
+
+Recording new baselines:
+
+- After a deliberate change to what they measure, run `make perf-baselines` on an otherwise idle Mac, adding `TEST_DERIVED_DATA=<folder>` to build in a folder of your own. It runs the tests alone with TEST_RUNNER_TEXTMOUTH_PERFORMANCE_RECORD=1: each test waits, for up to five minutes, until the Mac is quiet, and once every number is measured the file is rewritten with this Mac's model and today's date.
+- It prints each old and new number, keeps xcodebuild's output in build/perf-baselines.log, and ends with PASSED or FAILED. Nothing changes unless the whole run succeeds. Review the file's diff and commit it with the change it records.
+- The baselines recorded on October 3, 2026, on the development Mac (a Mac15,12: Apple M3, 8 cores, 8 GB), in a Debug build, each the median of five runs:
+  - Launch with 643 books: 134.252 milliseconds.
+  - First sort by File Size: 26.243 milliseconds.
+  - One list derivation, in milliseconds: Title 4.221, Author 4.453, Date Added 1.090, Last Opened 2.893, File Size 2.811, Manual Order 4.230.
+  - One live reading position update: 145.621 microseconds.
+  - One 30-second checkpoint: 851 bytes.
+  - Opening the 1 MB EPUB to its first chapter's speech, the first time: 207.571 milliseconds; again, from its kept text: 11.799 milliseconds.
+  - Opening the 3-file audiobook: 4.539 milliseconds.
+  - Speech for the 1,000,000-character chapter with the 16 rules: 235.522 milliseconds.
+  - Rendered speech of a 40,000-character chapter: 43.358 megabytes at its peak, 43.354 megabytes kept.
+  - Extracting the 1 MB EPUB: 1,193.865 milliseconds.
+  - One cloud refresh of a local library: 0.178 milliseconds of processor time.
+  - One reader publish to the Headings sheet: 1.652 milliseconds of main-thread time.
+
+## Testing on real cloud drives
+
+CloudDriveIntegrationTests runs the cloud services against real sync services. It is opt-in: its tests skip unless the TEXTMOUTH_CLOUD_TEST_ROOTS environment variable lists folders for them.
+
+- Make a folder named TextMouth Cloud Tests in each drive to test, and list the folders' full paths, separated by colons. xcodebuild hands a variable to the test host when you set it with the prefix TEST_RUNNER_, as in:
+  - `TEST_RUNNER_TEXTMOUTH_CLOUD_TEST_ROOTS="$HOME/Library/CloudStorage/Dropbox/TextMouth Cloud Tests" xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO -only-testing:TextMouthProductionTests/CloudDriveIntegrationTests`
+- When any entry isn't the full path of an existing folder with that name inside a cloud drive, or is listed twice, the tests fail and use no folder at all. CloudDriveTestSupportTests checks these rules in every ordinary run.
+- Each test works only inside a new folder of its own, writes small files of random bytes there (the small-library test uses the repository's TestData books), and deletes the folder when it ends, even after a failure. Nothing else on the drive is read or changed, and the app's library stays in the test sandbox. With TEST_RUNNER_TEXTMOUTH_CLOUD_TEST_KEEP_SMALL_LIBRARY=1, the small library stays on the drive, for the checks made by hand. A run moves about 36 MB up and 10 MB down for each drive.
+- `testTheLibraryFetchBringsAnEvictedFileBackWhole` and `testTheLibraryFetchListsAnEvictedFolder` check the library's fetch from the cloud: a 12 MiB file is removed from the Mac, fetched, and read back with downloads refused, so a partial read can't pass, and a folder is removed and listed. LibraryCloudFetchTests and LibraryLaunchFilesTests cover the rest with a scripted cloud in every ordinary run.
+- On October 3, 2026, every test passed against Dropbox, which showed that:
+  - Download and removal requests work: a test book's files uploaded within 5 seconds, their downloads were removed at once, and they downloaded again within a second through TextMouth's book service.
+  - A file whose download was removed reports its real size, and a clone made before the removal stays readable.
+  - A package renamed into the drive, as an import puts a new book in place, syncs as one book, and a hidden folder syncs within 4 seconds.
+  - Remove Download refuses a book whose new file hasn't finished uploading.
+  - Progress is reported only at 0 and 100 percent for small files, and a file's modification time moves by up to 118 nanoseconds when it downloads again, which is why TextMouth compares the times of a text cache's files to the microsecond.
+- Later that day, after TextMouth learned to treat a book's package that iCloud Drive syncs whole as one item, every test passed against iCloud Drive and Google Drive too. Dropbox, whose files each carry their own flags, was not run again. The runs showed that:
+  - iCloud Drive syncs a book's package as one item: the package carries the sync flags and the files inside it none, and a request to download or remove one of those files is refused as if the file didn't exist. Removing the package's download leaves the whole package in the cloud at once, nothing inside it can be looked up until it downloads again, and TextMouth's book service brought it back within a second. Google Drive syncs each file, as Dropbox does, though its package folders carry sync flags too.
+  - iCloud Drive uploaded a test book within 10 seconds, and Google Drive within half a minute, since Google Drive waits 15 to 30 seconds before it starts uploading.
+  - iCloud Drive publishes the progress of a package as a whole and none for the files inside it, and Google Drive each file's; on a quick download both reported only 0 and 100 percent.
+  - Google Drive reports an evicted file's real size. iCloud Drive gives a file it downloads again a modification time in whole seconds, so a text book whose package came back has its files read once for their digests when it next opens, before its text cache is trusted; Google Drive moves the time by up to 107 nanoseconds, as Dropbox does.
+  - On both, a clone made before a removal stays readable, a package renamed into the drive syncs as one book, a hidden folder syncs within half a minute, and Remove Download refuses a book whose new file hasn't finished uploading.
+- research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md, in the same folder as this file, gives the commands for every drive and the matrix of checks to make by hand, with VoiceOver steps, for what these tests can't reach: TextMouth's own screens and commands on a real drive, and a drive that is paused, signed out, or offline.
+
 ## Reusable test tools
 
 The scripts in `Scripts/test/` run part of the hosted suite, check what a branch adds to it, read its logs, and try the importers and the voices on documents and voices the suite doesn't hold. They need only the Mac's own tools and Python 3, print their usage with `-h`, and never launch the app outside the test host that `xcodebuild` starts. Among its checks, `make check-selftest` runs every Python tool's selftest, and the storage drill script's, in about 30 seconds, without building. The times below leave out the build, which takes about 5 minutes when nothing is built yet, and longer while agents hold all three build slots.
@@ -456,64 +517,3 @@ The old rule, "never press Play and never type in the simulator", was the orches
   - For `TextMouthiOSTests` and `TextMouthiOSUITests`, that is a simulator build (`build-for-testing`).
 - This happened. On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
 - After changing a test file, run `make typecheck-tests` before requesting a train for it. Do not take a clean `make typecheck-mac` or `make typecheck-ios` as a sign that its tests compile.
-
-## The performance baselines
-
-PerformanceBaselineTests keep what the performance work of October 3, 2026 made faster from slipping back. They measure a library and books generated to the size of the developer's, never your own library, and run in every run of the suite, in about half a minute. They measure:
-
-- launch with a 643-book library: reading library.json, the startup repair, and finding the text caches that need rebuilding;
-- the first sort of the library by File Size, and one derivation of the All Items list for each of the six sorts;
-- one live reading position update, and the bytes one 30-second reading checkpoint writes for a book whose record is as large as the developer's largest;
-- opening a 1 MB EPUB for the first time until the speech of its first chapter is prepared, and opening it again from the text TextMouth kept, and opening a 3-file audiobook until it has loaded;
-- preparing the speech of a 1,000,000-character chapter with the developer's 16 substitution rules, which TextMouthProductionTests/performance-substitutions.json keeps a copy of;
-- the most memory a 40,000-character chapter's rendered speech takes while it is built, and what it keeps;
-- extracting the 1 MB EPUB's text;
-- the processor time of one cloud refresh of a library outside the cloud;
-- the main-thread time one reader publish costs the open Headings sheet.
-
-How they judge:
-
-- Each number is the median of five runs, after one more that warms caches and is not counted. TextMouthProductionTests/performance-baselines.json holds each one's baseline, with the Mac model, build configuration, and date they were recorded on.
-- A number more than twice its baseline is measured five times more, and the test fails only when the lower median is still more than twice its baseline. A number at 1.5 times its baseline or more prints a line beginning PERFORMANCE WARNING:, and one at half its baseline or less a line beginning PERFORMANCE NOTE:, since new baselines would tighten the check. Every number is printed on a line beginning PERFORMANCE:.
-- The tests skip, printing PERFORMANCE SKIPPED: and why, while the Mac is busy (its one-minute load average above its number of cores), so other work cannot fail them, and on any Mac model or build configuration other than the baselines', where the numbers say nothing. With TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1 a busy Mac measures anyway: `make test PERFORMANCE_STRICT=1` sets it, and `make check` uses it. A baselines file that is missing or can't be read fails the tests rather than skipping them.
-
-Recording new baselines:
-
-- After a deliberate change to what they measure, run `make perf-baselines` on an otherwise idle Mac, adding `TEST_DERIVED_DATA=<folder>` to build in a folder of your own. It runs the tests alone with TEST_RUNNER_TEXTMOUTH_PERFORMANCE_RECORD=1: each test waits, for up to five minutes, until the Mac is quiet, and once every number is measured the file is rewritten with this Mac's model and today's date.
-- It prints each old and new number, keeps xcodebuild's output in build/perf-baselines.log, and ends with PASSED or FAILED. Nothing changes unless the whole run succeeds. Review the file's diff and commit it with the change it records.
-- The baselines recorded on October 3, 2026, on the development Mac (a Mac15,12: Apple M3, 8 cores, 8 GB), in a Debug build, each the median of five runs:
-  - Launch with 643 books: 134.252 milliseconds.
-  - First sort by File Size: 26.243 milliseconds.
-  - One list derivation, in milliseconds: Title 4.221, Author 4.453, Date Added 1.090, Last Opened 2.893, File Size 2.811, Manual Order 4.230.
-  - One live reading position update: 145.621 microseconds.
-  - One 30-second checkpoint: 851 bytes.
-  - Opening the 1 MB EPUB to its first chapter's speech, the first time: 207.571 milliseconds; again, from its kept text: 11.799 milliseconds.
-  - Opening the 3-file audiobook: 4.539 milliseconds.
-  - Speech for the 1,000,000-character chapter with the 16 rules: 235.522 milliseconds.
-  - Rendered speech of a 40,000-character chapter: 43.358 megabytes at its peak, 43.354 megabytes kept.
-  - Extracting the 1 MB EPUB: 1,193.865 milliseconds.
-  - One cloud refresh of a local library: 0.178 milliseconds of processor time.
-  - One reader publish to the Headings sheet: 1.652 milliseconds of main-thread time.
-
-## Testing on real cloud drives
-
-CloudDriveIntegrationTests runs the cloud services against real sync services. It is opt-in: its tests skip unless the TEXTMOUTH_CLOUD_TEST_ROOTS environment variable lists folders for them.
-
-- Make a folder named TextMouth Cloud Tests in each drive to test, and list the folders' full paths, separated by colons. xcodebuild hands a variable to the test host when you set it with the prefix TEST_RUNNER_, as in:
-  - `TEST_RUNNER_TEXTMOUTH_CLOUD_TEST_ROOTS="$HOME/Library/CloudStorage/Dropbox/TextMouth Cloud Tests" xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO -only-testing:TextMouthProductionTests/CloudDriveIntegrationTests`
-- When any entry isn't the full path of an existing folder with that name inside a cloud drive, or is listed twice, the tests fail and use no folder at all. CloudDriveTestSupportTests checks these rules in every ordinary run.
-- Each test works only inside a new folder of its own, writes small files of random bytes there (the small-library test uses the repository's TestData books), and deletes the folder when it ends, even after a failure. Nothing else on the drive is read or changed, and the app's library stays in the test sandbox. With TEST_RUNNER_TEXTMOUTH_CLOUD_TEST_KEEP_SMALL_LIBRARY=1, the small library stays on the drive, for the checks made by hand. A run moves about 36 MB up and 10 MB down for each drive.
-- `testTheLibraryFetchBringsAnEvictedFileBackWhole` and `testTheLibraryFetchListsAnEvictedFolder` check the library's fetch from the cloud: a 12 MiB file is removed from the Mac, fetched, and read back with downloads refused, so a partial read can't pass, and a folder is removed and listed. LibraryCloudFetchTests and LibraryLaunchFilesTests cover the rest with a scripted cloud in every ordinary run.
-- On October 3, 2026, every test passed against Dropbox, which showed that:
-  - Download and removal requests work: a test book's files uploaded within 5 seconds, their downloads were removed at once, and they downloaded again within a second through TextMouth's book service.
-  - A file whose download was removed reports its real size, and a clone made before the removal stays readable.
-  - A package renamed into the drive, as an import puts a new book in place, syncs as one book, and a hidden folder syncs within 4 seconds.
-  - Remove Download refuses a book whose new file hasn't finished uploading.
-  - Progress is reported only at 0 and 100 percent for small files, and a file's modification time moves by up to 118 nanoseconds when it downloads again, which is why TextMouth compares the times of a text cache's files to the microsecond.
-- Later that day, after TextMouth learned to treat a book's package that iCloud Drive syncs whole as one item, every test passed against iCloud Drive and Google Drive too. Dropbox, whose files each carry their own flags, was not run again. The runs showed that:
-  - iCloud Drive syncs a book's package as one item: the package carries the sync flags and the files inside it none, and a request to download or remove one of those files is refused as if the file didn't exist. Removing the package's download leaves the whole package in the cloud at once, nothing inside it can be looked up until it downloads again, and TextMouth's book service brought it back within a second. Google Drive syncs each file, as Dropbox does, though its package folders carry sync flags too.
-  - iCloud Drive uploaded a test book within 10 seconds, and Google Drive within half a minute, since Google Drive waits 15 to 30 seconds before it starts uploading.
-  - iCloud Drive publishes the progress of a package as a whole and none for the files inside it, and Google Drive each file's; on a quick download both reported only 0 and 100 percent.
-  - Google Drive reports an evicted file's real size. iCloud Drive gives a file it downloads again a modification time in whole seconds, so a text book whose package came back has its files read once for their digests when it next opens, before its text cache is trusted; Google Drive moves the time by up to 107 nanoseconds, as Dropbox does.
-  - On both, a clone made before a removal stays readable, a package renamed into the drive syncs as one book, a hidden folder syncs within half a minute, and Remove Download refuses a book whose new file hasn't finished uploading.
-- research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md, in the same folder as this file, gives the commands for every drive and the matrix of checks to make by hand, with VoiceOver steps, for what these tests can't reach: TextMouth's own screens and commands on a real drive, and a drive that is paused, signed out, or offline.
