@@ -657,3 +657,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
   The user, finding that the builds were hard on this Mac's CPU, asked to move the compiling and testing to GitHub Actions.
   `Scripts/agents/run_suite.py --remote` has run the full suite on GitHub's macOS runners since November 9, 2026.
 - **The iPhone tests off this Mac:** Since November 11, 2026 no iPhone test of either bundle needs a simulator on this Mac.
+
+## From Third-party code
+
+- **The mobi.js that was read:** Four of the Kindle reader's files follow mobi.js closely, as read on November 4, 2026 (mobi.js last changed in commit 9a676796, April 3, 2026).
