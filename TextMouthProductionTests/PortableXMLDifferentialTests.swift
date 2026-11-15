@@ -445,7 +445,10 @@ final class PortableXMLDifferentialTests: XCTestCase {
                 if let range = Range(match.range(at: 1), in: text) { found.insert(String(text[range])) }
             }
         }
-        XCTAssertGreaterThanOrEqual(found.count, 15, "the XPath expressions found in the four reader files")
+        // The package document, NCX and page list are read from one walk (`XMLElementIndex`, H7),
+        // so only the feed readers' and the metadata writer's queries remain: a floor that shows the
+        // search itself still finds them.
+        XCTAssertGreaterThanOrEqual(found.count, 4, "the XPath expressions found in the four reader files")
         XCTAssertTrue(found.isSubset(of: Self.comparedPaths), "not compared: \(found.subtracting(Self.comparedPaths).sorted())")
         // And the portable tree understands every one.
         for path in found {
