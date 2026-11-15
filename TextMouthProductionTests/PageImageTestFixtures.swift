@@ -71,10 +71,12 @@ enum PageImageFixtures {
         try encoded([image], as: type, properties: properties)
     }
 
-    /// A PNG whose header says it is `width` by `height` pixels of gray but
-    /// whose picture data ends at once: what a small hostile file that
-    /// claims a vast picture looks like before anything is decoded.
-    static func pngClaiming(width: UInt32, height: UInt32) -> Data {
+    /// A complete, valid PNG of `width` by `height` black pixels of one bit
+    /// each, which compresses to a few kilobytes: what a small hostile file
+    /// that claims a vast picture looks like. It is whole, since ImageIO
+    /// reads no size from a PNG whose picture data ends early (measured), and
+    /// it must never be decoded: 120 megapixels would take hundreds of MB.
+    static func pngClaiming(width: Int, height: Int) throws -> Data {
         /// The four bytes of `value`, most significant first.
         func bigEndian(_ value: UInt32) -> [UInt8] {
             [UInt8(value >> 24 & 0xFF), UInt8(value >> 16 & 0xFF), UInt8(value >> 8 & 0xFF), UInt8(value & 0xFF)]
@@ -84,13 +86,18 @@ enum PageImageFixtures {
             let typed = Array(type.utf8) + body
             return bigEndian(UInt32(body.count)) + typed + bigEndian(crc32(typed))
         }
-        // Bit depth 8, gray, deflate, no filter method, not interlaced.
-        let form: [UInt8] = [8, 0, 0, 0, 0]
-        let header = bigEndian(width) + bigEndian(height) + form
-        // A complete zlib stream of nothing: far too little for the rows.
-        let emptyStream: [UInt8] = [0x78, 0x9C, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01]
+        // Each row: its filter byte (none) and its pixels, all zeros.
+        let rows = Data(count: height * (1 + (width + 7) / 8))
+        // Foundation's zlib is raw DEFLATE: the stream gets zlib's header and
+        // its Adler-32, which for zeros is a count of them over a sum of one.
+        let deflated = try (rows as NSData).compressed(using: .zlib) as Data
+        let adler = UInt32(rows.count % 65_521) << 16 | 1
+        let stream: [UInt8] = [0x78, 0x9C] + [UInt8](deflated) + bigEndian(adler)
+        // Bit depth 1, gray, deflate, no filter method, not interlaced.
+        let form: [UInt8] = [1, 0, 0, 0, 0]
+        let header = bigEndian(UInt32(width)) + bigEndian(UInt32(height)) + form
         let signature: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
-        let chunks = chunk("IHDR", header) + chunk("IDAT", emptyStream) + chunk("IEND", [])
+        let chunks = chunk("IHDR", header) + chunk("IDAT", stream) + chunk("IEND", [])
         return Data(signature + chunks)
     }
 

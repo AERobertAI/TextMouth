@@ -55,14 +55,15 @@ final class PageImageDecoderTests: XCTestCase {
     // MARK: - A Declared Size
 
     /// A small file that claims a vast picture is refused by its header,
-    /// before anything is decoded.
+    /// before anything is decoded: a PNG of 12,000 by 10,000 pixels, 120
+    /// megapixels, in a few kilobytes.
     func testAPictureClaimingMoreThanTheLimitIsRefusedBeforeDecoding() throws {
-        let vast = PageImageFixtures.pngClaiming(width: 20_000, height: 20_000)
-        XCTAssertLessThan(vast.count, 100, "the fixture is a small file")
+        let vast = try PageImageFixtures.pngClaiming(width: 12_000, height: 10_000)
+        XCTAssertLessThan(vast.count, 100_000, "the fixture is a small file")
         let source = try PageImageSource(data: vast)
 
         XCTAssertThrowsError(try source.decodedPage(at: XCTUnwrap(source.pageIndexes.first))) { error in
-            XCTAssertEqual(error as? PageImageError, .tooLarge(width: 20_000, height: 20_000))
+            XCTAssertEqual(error as? PageImageError, .tooLarge(width: 12_000, height: 10_000))
         }
     }
 
