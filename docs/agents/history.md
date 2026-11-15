@@ -645,3 +645,13 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Imports: audio
 
 - Package track scans: the formats a package's scans leave out (the page's coreAudioExtensions) are the formats added on October 18, 2026.
+
+## From Imports: braille tables and the translator
+
+- The helper's protocol 2 (header line, emphasis codes) came on October 21, 2026.
+- The reading passes (read_braille through the pass of the code the table writes its emphasis in) came on October 24, 2026.
+- Review E1 of October 21, 2026 found that read_ueb's liblouis read the cells just before a terminator as if they could not end a word.
+- The EBAE fix pass (`fix_ebae_cells`) came on November 13, 2026, after the user's Life of Pi BRF showed what contracted EBAE's table misreads.
+- The measurement in the comment above the guess's constants was made on November 14, 2026.
+- BrailleEbaeFixesTests was new with the EBAE fix pass.
+- BrailleEmphasisReadingTests changed its seeded BANA test to treat µ and m alike and to leave out the sentences liblouis alone misreads with "±", and its symbol sentences no longer glue µ to a letter.
