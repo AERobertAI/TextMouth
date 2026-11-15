@@ -737,3 +737,9 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Shared helpers: readers and markup guards
 
 - MarkupGuard's four limits were set on November 7, 2026.
+
+## From The parts of the app
+
+- The audio editor's level measurement moved to a Thread of its own after a few cancelled measurements blocked on October 6 and starved the cooperative pool.
+- The Release app measured 11 MB on October 3, 2026, once `make build` stopped compiling with code coverage and the symbols were stripped into a dSYM that `make install` keeps for the last five installs.
+- It measured 15.4 MB on October 4, with that day's features and LAME's encoder.
