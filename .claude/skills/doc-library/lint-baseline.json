@@ -29,7 +29,7 @@
     "docs/architecture/state/imports-rtf-and-word.md": {"date": 1, "line-length": 37, "sentences-per-line": 27},
     "docs/architecture/state/imports-text-encoding-choice.md": {"date": 1, "line-length": 12, "sentences-per-line": 7},
     "docs/architecture/state/imports-text-encodings.md": {"date": 1, "line-length": 45, "sentences-per-line": 33},
-    "docs/architecture/state/imports-textutil.md": {"date": 3, "line-length": 21, "sentences-per-line": 13},
+    "docs/architecture/state/imports-textutil.md": {"date": 3, "line-length": 19},
     "docs/architecture/state/imports.md": {"date": 4, "line-length": 38, "sentences-per-line": 13, "user-quote": 1},
     "docs/architecture/state/library-index.md": {"date": 10, "line-length": 83, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 33, "user-quote": 1},
     "docs/architecture/state/logs.md": {"date": 2, "line-length": 17, "marker-missing": 1, "sentences-per-line": 6},
