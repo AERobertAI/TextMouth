@@ -1,33 +1,33 @@
 # Launch
-<!-- id: launch; keys: ; src: -->
+<!-- id: launch; keys: startup, app start, applicationDidFinishLaunching, terminate, Command-Q; src:  -->
 
 Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 
 ## Cloud services at app start
-<!-- id: cloud-services-at-app-start; keys: ; src: TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
+<!-- id: cloud-services-at-app-start; keys: iCloud, startup order, app init; src: TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
 TextMouthApp's initializer installs the real cloud services (CloudServices.installSystemServices) before anything else runs: SwiftUI creates LibraryViewModel before applicationWillFinishLaunching, and the library's launch check uses them.
 
 ## The router before any window
-<!-- id: router-before-any-window; keys: ; src: TextMouth/Platform/macOS/App/AppDelegate.swift -->
+<!-- id: router-before-any-window; keys: Finder open, open file, first window, LibraryWindowRouter; src: TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/LibraryWindowRouter.swift -->
 
 AppDelegate.applicationWillFinishLaunching starts the router before any window exists, so a book Finder hands over waits for the first Library window instead of opening a second.
 
 ## The data directory's first location
-<!-- id: data-directory-first-location; keys: ; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/TextMouthPaths.swift -->
+<!-- id: data-directory-first-location; keys: data folder, library location, bookmark, renamed folder, remount; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/TextMouthPaths.swift -->
 
 The data directory's first location is decided when anything first asks for it (StorageBoundary.shared): TextMouthPaths.root(for:) names the folder the preferences hold, or the default location.
 When a custom location is missing but its bookmark leads to a folder holding this library under another path, as after a rename or a remount under another name, that folder is the data directory, and the preferences name it from then on.
 
 ## The library view model's initializer
-<!-- id: library-view-model-initializer; keys: ; src: TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/DataDirectoryMigrator.swift -->
+<!-- id: library-view-model-initializer; keys: Library Not Available, Try Again, sandbox migration, session lease, startup; src: TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift -->
 
 LibraryViewModel's initializer copies a sandboxed release's data on first launch (through DataDirectoryMigrator, keeping the original), starts listening for the data directory's loss, and checks the data directory (checkDataDirectory), reading metadata only.
 Nothing is created or loaded until the check finds the library: then startLibrary creates the data directory's folders, records the library's identity, removes leftover archive extraction folders, loads the library index (loadLibraryIndex), sweeps away the originals of recordings and edited audiobooks whose time is up (sweepAudioOriginalsInBackground), clears what the audio editor left in this Mac's caches when TextMouth last ended with editors open (removeStaleAudioEditCachesInBackground), starts the background work below, and begins the session lease.
 Otherwise every Library window shows Library Not Available, and the Try Again that first finds the library runs startLibrary.
 
 ## Loading the library and feeds
-<!-- id: loading-library-feeds; keys: ; src: -->
+<!-- id: loading-library-feeds; keys: index repair, orphan, adopt packages, dataless, recovery, library.json; src: TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
 Loading reads library.json and every feed's own index, the feeds' rows onto the library's feed shelf (feed items, below), and repairs the index against the disk (migrateOldBooksIfNeeded): every feed item's row waits on the shelf meanwhile, books removed with Remove from Library Only stay out, the books the checkpoint journal names take the newer reading positions their records hold (adoptNewerRecordedPositions), equivalent folder rows merge, stale file paths are fixed, legacy books move into packages, packages that two books shared are separated, misplaced packages move into their folders, packages missing from the index are adopted (one whose record names the ID of a book the library lists is left as it is, unadopted and unwritten, as the old copy Replace Existing sent to the Trash is once Finder puts it back, with one ORPHAN_ID_LISTED line: ST04, in [Imports](state/imports.md)), the feed items whose files are here join the books (joinFeedItems), and the result is saved.
 Every check and read of the repair leaves dataless files in the cloud, and nothing is moved, rewritten, adopted, separated, relocated, or taken out on the strength of a check that met a dataless folder or a read that was refused; one MAINTENANCE_SKIPPED_IN_CLOUD line counts the books left as they were.
@@ -35,7 +35,7 @@ The look for a removal marker, which is almost always absent, stops at the first
 An unreadable index skips all of this and enters recovery instead (below).
 
 ## Background book maintenance
-<!-- id: background-book-maintenance; keys: ; src: TextMouth/Services/BookManifestEditing.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/ReadingStatsService.swift -->
+<!-- id: background-book-maintenance; keys: Books Finished, metadata refresh, text anchors, statistics, hand-edited title, caches; src: TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+TextAnchors.swift, TextMouth/ViewModels/LibraryViewModel+ManifestEdits.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Services/ReadingStatsService.swift -->
 
 LibraryViewModel then brings every book up to date in the background (updateContentCachesAndStatistics): after the metadata refresh, the words of places saved before anchors (captureMissingTextAnchors, T06's branch B), then every book's text cache, and after that its statistics, leaving books whose files are in the cloud as they are.
 The batch finds the books whose caches need work off the main thread (booksNeedingCacheUpdate, on a utility queue), and starts on the main actor once it has them.
@@ -47,18 +47,18 @@ Each look then writes what its manifest is owed (BookManifestEditSessions.settle
 Before the metadata refresh, it takes the edits of audiobooks' manifests made while TextMouth was closed or on another Mac (takeOutsideManifestEdits, FR18), one book at a time on a utility queue, leaving books whose files are in the cloud as they are.
 
 ## Search Library preparation
-<!-- id: search-library-preparation; keys: ; src: TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift -->
+<!-- id: search-library-preparation; keys: search index, Low Power Mode, background priority, text search; src: TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift -->
 
 When every pass that rebuilds books' texts has ended, LibraryViewModel.startupMaintenanceDidEnd() starts Search Library's background preparation (LibrarySearchPreparation.shared.libraryIsReady(books:moves:); see [Text caches](state/text-caches.md)): a pass that makes the search text of each book that has none or whose text changed, two books at a time at background priority, held back while the data directory moves, and not run in Low Power Mode or in a process hosting tests.
 
 ## Starting the feed engine
-<!-- id: starting-feed-engine; keys: ; src: TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Models/FeedSettings.swift -->
+<!-- id: starting-feed-engine; keys: podcast, RSS, feed refresh, downloads, Trash, Removal Behavior; src: TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/ViewModels/LibraryViewModel+FeedItemMove.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Models/Feed.swift -->
 
 startLibrary also starts the feed engine in the background (startFeeds, FeedCenter.start(library:)): it moves the feed settings that the List and download choice retired to the choice, once, before anything reads it (FeedSettings.moveToItemPolicyIfNeeded(in:)), reads every feed's record off the main thread, moving a feed's retired kept-entries number to a choice of its own (moveKeptEntriesOverrides()), reads this Mac's fetch details, and sweeps away what interrupted downloads left; then, outside a process hosting tests, it sends the hidden .removing- folders a Delete Download cut short left in the feeds' own folders to the Trash, or deletes them, as Removal Behavior says (sweepRemovalHolders(), through FeedItemPackage.removalHolders(in:); it runs only while feedLibraryIsComplete, so never while the library index is recovered; FeedItemPackage.removalHolder(for:beside:) names holders .removing-<book ID>-<UUID>, and sweepHolder(_:puttingBackInto:remove:) puts back what a still-downloaded row's package lacks (packageWaitingForItsFiles) and sends the rest through FeedEnvironment.removeItem folder by folder (HolderSweep); FEED_HELD_ASIDE_SWEPT, or FEED_HELD_ASIDE_LEFT for one left for the next launch), asks again for the downloads under way or waiting when TextMouth last quit (resumeDownloadsSavedAtQuit), deletes the played downloads that are due, runs the newest-N rule's first pass over every feed (the List and download choice, under Feeds, below), watches feedItems and feedNewestCount for the rule (itemPolicyChanged(for:)), refreshes every feed when feedRefreshAtLaunch is on, and refreshes them again every feedRefreshIntervalHours, never holding the library back.
 Once the records have loaded, the library moves the downloads made before FR11 into their feeds' own folders, returns to the library, as books, the downloads of each feed whose folder is here while its record is gone, and marks downloaded again the items an older TextMouth marked otherwise whose files are on this Mac (moveFeedDownloadsOnceRecordsLoad(); feed items, below).
 
 ## Settings, config.json, and shortcuts
-<!-- id: settings-config-json-shortcuts; keys: ; src: TextMouth/Services/ConfigService.swift, TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
+<!-- id: settings-config-json-shortcuts; keys: preferences, keyboard shortcuts, config file, old form; src: TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/KeyboardShortcutManager.swift -->
 
 SettingsViewModel's initializer applies config.json, reconciles it with the preferences, and starts ConfigService watching the file.
 Before it applies the file (applyFileAtLaunch), the first launch whose preferences hold no record of the shortcuts the user edited makes one from the shortcuts saved before (KeyboardShortcutManager.moveSavedShortcutsIfNeeded; keyboard shortcuts, below).
@@ -66,20 +66,20 @@ A config.json with no "default…" entry and no object is in the old form, and i
 While the data directory is unavailable, ConfigService reads, writes, and watches nothing, and it reconciles the file once the library is back.
 
 ## Memory guard and converter sweep
-<!-- id: memory-guard-converter-sweep; keys: ; src: TextMouth/Services/PlaybackMemoryGuard.swift, TextMouth/Platform/iOS/Services/OrphanedConversionSweep+iOS.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep.swift, TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Models/BrailleTableCatalog.swift -->
+<!-- id: memory-guard-converter-sweep; keys: afconvert, textutil, afinfo, braille tables, leftover processes, staging folders; src: TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/PlaybackMemoryGuard.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Models/BrailleTableCatalog.swift -->
 
 applicationDidFinishLaunching tells of a quit to protect the Mac (PlaybackMemoryGuard.tellOfAQuitToProtectTheMac), begins the memory guard's readings (PlaybackMemoryGuard.shared.beginWatching()), and sweeps in the background the converters an earlier TextMouth left running (OrphanedConversionSweep.sweepInBackground(), REV17a, for afconvert, and sweepTextutilInBackground(), FMT13, for textutil and its working folders, and sweepAfinfoInBackground(), FMT09, for afinfo and its captured-output files; see [Imports](state/imports.md)) and the hidden staging folders that moves of the data directory left (MigrationStagingLeftovers.sweepInBackground(); see [The data directory](state/data-directory.md)), and reads this Mac's braille tables in the background (BrailleTableCatalog.loadInBackground(); see Braille files, in [Imports](state/imports.md)). applicationShouldTerminate lets the guard's quit through with no questions (B07), and applicationWillTerminate ends every converting child (WatchedProcess.terminateAll()).
 The rest of a quit is in the next bullet.
 
 ## Quitting the app
-<!-- id: quitting-app; keys: ; src: TextMouth/App/QuitRequest.swift, TextMouth/App/QuitReason.swift, TextMouth/App/QuitFinisher.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/App/QuitHold.swift -->
+<!-- id: quitting-app; keys: terminate, Command-Q, applicationShouldTerminate, log out, shut down; src: TextMouth/Platform/macOS/App/AppDelegate.swift -->
 
 A quit (AppDelegate.applicationShouldTerminate; 0.4.4).
 It answers in this order, and the saved and unsaved questions it asks are in [Saving failures](state/saving-failures.md).
 
 
 ### The order the quit answers in
-<!-- id: order-quit-answers; keys: ; src: TextMouth/App/QuitFinisher.swift, TextMouth/App/UnsavedChangesTermination.swift, TextMouth/Services/PlaybackMemoryGuard.swift, TextMouth/App/QuitReason.swift, TextMouth/App/QuitRequest.swift -->
+<!-- id: order-quit-answers; keys: Quit Anyway, unsaved changes, Record window, audio editor, terminateLater; src: TextMouth/App/QuitFinisher.swift, TextMouth/App/UnsavedChangesTermination.swift, TextMouth/Services/PlaybackMemoryGuard.swift, TextMouth/App/QuitReason.swift, TextMouth/App/QuitRequest.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 
 The memory guard's quit goes through at once, with no questions (PlaybackMemoryGuard.shared.isQuittingToProtectTheMac, B07).
 
@@ -95,7 +95,7 @@ If the request that follows a wait is cancelled here, the Quit Anyway kept for i
 Then the unsaved-changes guard flushes what is pending and, with nothing unsaved or Quit Anyway chosen, lets step 4 answer (UnsavedChangesTerminationGuard.reply(whenQuitting:)).
 
 ### Step 4, the work a quit must not cut off
-<!-- id: step-4-work-quit-must; keys: ; src: TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/Services/SpeechExport/SpeechExportsUnderWay.swift -->
+<!-- id: step-4-work-quit-must; keys: feed downloads, text re-reads, speech exports, wait limits; src: TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/Services/SpeechExport/SpeechExportsUnderWay.swift -->
 
 Step 4 is the work a quit must not cut off, which is one list of QuitHold.Work (AppDelegate.heldWork), each with a kind, a longest wait, and a phrase for what it is doing:
 - "feed downloads" keep their place, for 3 seconds at most (FeedQuitHold.longestWait), saying "keeping the place of your feed downloads for next time".
@@ -104,7 +104,7 @@ Step 4 is the work a quit must not cut off, which is one list of QuitHold.Work (
 - The phrase is read when the quit is asked, not when the work is made, so a count is right.
 
 ### Holding a quit for unfinished work
-<!-- id: holding-quit-unfinished-work; keys: ; src: TextMouth/App/QuitFinisher.swift, TextMouth/App/QuitHold.swift, TextMouth/App/QuitRequest.swift, TextMouth/Platform/macOS/Views/QuitNotice.swift -->
+<!-- id: holding-quit-unfinished-work; keys: Quitting TextMouth panel, VoiceOver announcement, 18 seconds, terminateCancel; src: TextMouth/App/QuitFinisher.swift, TextMouth/App/QuitHold.swift, TextMouth/App/QuitRequest.swift, TextMouth/Platform/macOS/Views/QuitNotice.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 
 A quit the person asks for while any of that work runs is cancelled, not left pending (QuitFinisher.finish(_:) returns true, and the delegate answers .terminateCancel).
 TextMouth then says what it is finishing and that it will quit, ends each piece of work in turn, each for at most its longest wait (QuitHold.end(_:)), and asks to quit again (QuitRequest.ask()).
@@ -120,7 +120,7 @@ The panel comes down before the quit is asked again.
 With no such work running, step 4 answers .terminateNow and the quit goes ahead.
 
 ### Telling the system's quit from the person's
-<!-- id: telling-system-quit-from-person; keys: ; src: TextMouth/App/QuitReason.swift, TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
+<!-- id: telling-system-quit-from-person; keys: log out, restart, shut down, Apple event, Dock Quit, willPowerOff; src: TextMouth/App/QuitReason.swift, TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 
 The system ending the session (log out, restart, or shut down) is never cancelled, since a cancel would stop it.
 It is answered .terminateLater with the same words, and the reply is given when each piece of work has ended or had its longest wait (QuitHold.hold(_:reply:)).
@@ -139,7 +139,7 @@ Command-Q, the Quit menu item, and a call to terminate carry no Apple event.
 The Dock's Quit carries one without a session-ending reason, so it is the person's quit.
 
 ### Asking to quit again
-<!-- id: asking-quit-again; keys: ; src: TextMouth/App/QuitRequest.swift, TextMouthProductionTests/QuitWhileHeldTests.swift -->
+<!-- id: asking-quit-again; keys: terminate(, source scan, quit-ok, run loop timer, Retry; src: TextMouth/App/QuitRequest.swift, TextMouthProductionTests/QuitWhileHeldTests.swift, Scripts/test/quit-while-held.py -->
 
 Every ask to quit again goes through QuitRequest.ask() (App/QuitRequest.swift): Quit Anyway, Retry, the editors' and the Record window's answers, the end of a library move, Quit in the data-directory screens, the session lease, a relaunch, and the finisher's own.
 It schedules terminate(_:) on the main run loop as a timer in the common modes, and under hosted tests it only counts the request (QuitRequest.heldBackUnderTest) and quits nothing.
@@ -152,7 +152,7 @@ The scan runs in QuitWhileHeldTests.testNoSourceAsksAppKitToQuitExceptTheHelperA
 Only TextMouth/ is scanned, and it does not find forceTerminate(), a Selector("terminate:") built from a string, abort(), or kill(.
 
 ### Two AppKit facts behind the design
-<!-- id: two-appkit-facts-behind-design; keys: ; src: TextMouth/App/QuitRequest.swift -->
+<!-- id: two-appkit-facts-behind-design; keys: main queue, probe, second terminate, pending reply; src: TextMouth/App/QuitRequest.swift, Scripts/test/quit-while-held.py -->
 
 Two AppKit facts, shown by probes in real AppKit (Scripts/test/quit-while-held.py), are why it is built this way:
 - A quit asked again from a main-queue block or a main-actor Task while a reply is pending never ends: AppKit waits for the reply inside the main queue's drain, which runs no main-queue work, so the hold's own Task never starts.
@@ -161,7 +161,7 @@ Two AppKit facts, shown by probes in real AppKit (Scripts/test/quit-while-held.p
   A cancelled quit does ask the delegate again, which is why the person's quit is cancelled while the work is finished.
 
 ## Ogg conversion at launch
-<!-- id: ogg-conversion-at-launch; keys: ; src: TextMouth/ViewModels/OggConversionProgress.swift -->
+<!-- id: ogg-conversion-at-launch; keys: Ogg, Vorbis, audio conversion, once per library; src: TextMouth/ViewModels/LibraryViewModel+OggConversion.swift, TextMouth/ViewModels/OggConversionProgress.swift -->
 
 convertOggBooksOnce runs beside the launch passes, once per library (preference library.oggAudioConvertedVersion.<identity>), a book at a time through OggConversionProgress.enqueue, each committed on the manifest sessions' queue (B06).
 
