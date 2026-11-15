@@ -1,10 +1,10 @@
 # Reading a book: the path from library row to spoken audio
-<!-- id: reading-book-path-from-library; keys: ; src: -->
+<!-- id: reading-a-book; keys: open a book, reader load, playback path, Play, speech pipeline; src:  -->
 
 Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 
 ## Opening a book from the library
-<!-- id: opening-book-from-library; keys: ; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/Services/LibraryWindowRouter.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/ViewModels/LibraryViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift -->
+<!-- id: opening-book-from-library; keys: Open Selected Book, openWindow, reader window, next book switch, Finder open; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/ContentView.swift, TextMouth/Services/LibraryWindowRouter.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/ViewModels/ReaderViewModel+NextBookWindow.swift, TextMouth/ViewModels/ReaderViewModel+ReadingList.swift -->
 
 A book opens from its row in the Library window: VoiceOver's default action on the row, the row's Open command, or the Open Selected Book shortcut calls LibraryView.openBook(_:), which, at the Reading List, first asks the book's reader to read it from the list (reading from the reading list, above), and then ContentView's onOpenBook, which asks SwiftUI for the reader window whose value is the book's ID.
 A book already open comes forward instead of opening twice.
@@ -14,7 +14,7 @@ The scene builds a BookReaderWindowView, which looks the book up in LibraryViewM
 When the view appears it marks the book opened, and its window accessor gives the reader its window and registers the window with the router.
 
 ## Loading the book
-<!-- id: loading-book; keys: ; src: TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/ReadingTextCache.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/AsyncBridge.swift -->
+<!-- id: loading-book; keys: load, content.md, text cache, dataless, cloud download, transcript text, EPUB metadata; src: TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/ReadingTextCache.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/TranscriptTextLoader.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Models/EPUBMetadataSave.swift, TextMouth/Models/Book.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/ReaderViewModel+SleepTimerHandOver.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift -->
 
 The new reader loads at once, on a background queue.
 It first asks the book storage where the library lives.
@@ -31,7 +31,7 @@ If the library moves the book's package while it loads, the load waits for the m
 After claiming a waiting autoplay request, the reader prepares the opened chapter's speech off the main thread (prepareOpenedChapterSpeech).
 
 ## Play: preparing and starting speech
-<!-- id: play-preparing-starting-speech; keys: ; src: TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/RepeatedSymbolRule.swift, TextMouth/Services/OffsetMap.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/ReadingStatsService.swift -->
+<!-- id: play-preparing-starting-speech; keys: Play button, speech preparation, offset map, text substitution, pauses, listening session; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/RepeatedSymbolRule.swift, TextMouth/Services/OffsetMap.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/SleepTimerService.swift -->
 
 Play starts nothing while the book is loading or while Where Am I? is speaking.
 For a text book, the reader first prepares what it will say, or takes what it prepared before from the same inputs (prepared speech, above).
@@ -43,7 +43,7 @@ Otherwise the reader claims the media controls through its NowPlayingSession, pl
 Code that asks where Play will start must not prepare speech to find out: Play's own waiting path exists so that a long chapter is never prepared on the main actor.
 
 ## Speaking a chapter
-<!-- id: speaking-chapter; keys: ; src: TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/ViewModels/LiveReadingPositions.swift -->
+<!-- id: speaking-chapter; keys: AVSpeechSynthesizer, pre-render, look-ahead, cursor, checkpoint, word highlight; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/ViewModels/LiveReadingPositions.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
 Speaking begins a new play of the chapter (ChapterPlay), which gives the speech service a finish callback made for that play, and hands the spoken text and the starting offset to SpeechService.speak, which starts the synthesizer speaking directly at once, from a short first chunk, and renders the same text into an AudioEngineService in the background, through SpeechRenderCoordinator, for the next natural break.
 The reader then pre-renders the next speakable chapter, recording what that render was asked for as its signature and carrying that chapter's speech to its start; a chapter too long to render ahead is not rendered, and only its speech is prepared, off the main actor.
@@ -51,7 +51,7 @@ As each word is spoken, onWordSpoken moves the cursor back through the offset ma
 The reader refreshes its view at most every 0.12 seconds, gives the library's rows and summary bar its cursor about once a second, through LiveReadingPositions, and saves a durable checkpoint every 30 seconds, into the book's record at once and into library.json within five minutes.
 
 ## The end of a chapter and of the book
-<!-- id: end-chapter-book; keys: ; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Models/EndOfBookRule.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Models/EndOfBookWording.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
+<!-- id: end-chapter-book; keys: next chapter, end of book, Continue to Next Book, loop, finished book, AirPods skip back; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+GoingOn.swift, TextMouth/ViewModels/ReaderViewModel+ReadingList.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/Models/EndOfBookRule.swift, TextMouth/Models/EndOfBookWording.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Models/Book.swift, TextMouth/Services/AudioPlaybackService.swift -->
 
 When a chapter's speech finishes, the callback made for its play ignores the end of a play the reader has already left, a later play having begun.
 Otherwise it saves the position and starts the next speakable chapter after the one that played, as a new play, unless the reader's own sleep timer stops playback at this chapter's end, where the next chapter begins the next heading, or the book ends (expireAtChapterEnd(endingTheHeading:endingTheBook:by:)): then the reader stops there instead, its cursor waiting at the next chapter's start.
@@ -63,7 +63,7 @@ A book that neither loops back to its beginning nor hands over to the next book 
 An audiobook's finished play reports no position (AudioPositionObserverPolicy's hasFinished, from AudioPlaybackService.finishedPlayGeneration), so the player's last tick never moves the cursor off the end.
 
 ## Playing an audiobook chapter
-<!-- id: playing-audiobook-chapter; keys: ; src: TextMouth/Services/AudioPlaybackService.swift -->
+<!-- id: playing-audiobook-chapter; keys: audio file, AVPlayer, segmented chapter, clips, working copy, Retry alert; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/AudioPlaybackService.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Services/ReaderWorkingCopy.swift -->
 
 An audiobook takes the other branch at Play: playAudioChapter begins a new play and loads the chapter's file into AudioPlaybackService, from the book's working copy when the reader has one, playing it from the cursor's time, counted from the chapter's start within the file when the chapter is a time range, at the book's speed.
 A segmented chapter plays its clips as one chain instead, from the clip that holds the cursor's time.
@@ -72,19 +72,19 @@ The service reports the end of each play once, and the reader moves on from the 
 A file that cannot be played stops playback where it was, and the reader shows an alert with Retry.
 
 ## Pausing and closing the reader
-<!-- id: pausing-closing-reader; keys: ; src: TextMouth/Services/LibraryPersistenceService.swift -->
+<!-- id: pausing-closing-reader; keys: pause, close window, release, save position, working copy deleted; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryWindowRouter.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/ReaderWorkingCopy.swift -->
 
 Pausing first ends a Where Am I? announcement, leaving its book paused, then records when playback stopped, pauses the sleep timer's countdown if this reader owns the timer, ends the listening session (crediting its last slice), and saves the position.
 Closing the window unregisters it from the router and closes the reader, which stops waiting for any download, stops playback, saves the position, releases its Now Playing session, stops the sleep timer if this reader owns it and has not held it for the next book, stops a timer held for its own book that it never took when no other reader of the book is left, deletes its working copy off the main thread, stops watching the library's updates to its book, and lets go of everything that grows with the book (a closed reader, above).
 The book's library row and its bookInfo.json then hold the last checkpoint, and LibraryPersistenceService writes both within half a second, library.json too, since unregistering the book brought its write forward from the checkpoint's deadline, or at the latest when the app quits.
 
 ## Pauses between an audiobook's chapters
-<!-- id: pauses-between-audiobook-chapters; keys: ; src: -->
+<!-- id: pauses-between-audiobook-chapters; keys: gap between tracks, silence, gapless, work item, manifest pauses; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Models/ChapterPauses.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
 
 When a multi-file audiobook's chapter ends and a pause follows it (chapterPauses), audioDidFinish, after the sleep timer's check, moves the cursor to the next chapter's start, lets go of the player at its volume, and starts the chapter from a cancellable work item once the pause has passed (startCursorChapter(afterPause:)). isPlaybackUnderWay counts the wait. stopAudioWaitingToPlay, stop() and so closing, a package move, and playAudioChapter() cancel it; a jump moves only the cursor. fileAfterCurrentChapter names no file after a chapter a pause follows; without a pause, playback rolls on gaplessly as before.
 
 ## Manifest edits made outside the app
-<!-- id: manifest-edits-made-outside-app; keys: ; src: TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Platform/iOS/Services/BookManifestEditor+iOS.swift, TextMouth/Platform/macOS/Services/BookManifestEditor.swift -->
+<!-- id: manifest-edits-outside-app; keys: manifest.json, Edit Manifest, tracks, external editor; src: TextMouth/ViewModels/ReaderViewModel+ManifestEdit.swift, TextMouth/Platform/macOS/Services/BookManifestEditor.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
 
 A reader of an audiobook of tracks looks at its manifest before it reads the book (readContent, LoadedContent.manifestLook) and whenever TextMouth becomes active (lookForOutsideManifestEdit, with its chapterPauses).
 What it finds goes to BookManifestEditor.handle(_:for:in:), which commits it through the library as a session's edit is committed (FR18).
