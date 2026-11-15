@@ -175,7 +175,7 @@ class CodeSpanFastPathTests(DocLibCase):
 # The first version of the Swift scan: one pattern for each declaring keyword, tried at every position.
 _OLD_PATTERNS = tuple(
     (keyword, re.compile(keyword.encode("ascii") + rb"\s+(?=([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*))"))
-    for keyword in ("class", "struct", "enum", "protocol", "actor", "typealias", "func", "extension")
+    for keyword in ("class", "struct", "enum", "protocol", "actor", "typealias", "func", "extension", "case")
 )
 
 
@@ -187,6 +187,10 @@ def old_scan_keywords(data: bytes) -> list:
             start = match.start()
             if start == 0 or data[start - 1] not in swiftindex._WORD_BYTES:
                 found.append((start, keyword, match.group(1)))
+                if keyword == "case":
+                    # A case list's later names (more_case_names has its own tests).
+                    end = match.start(1) + len(match.group(1))
+                    found.extend((offset, keyword, name) for offset, name in swiftindex.more_case_names(data, end))
     found.sort()
     return found
 
@@ -205,7 +209,7 @@ class SwiftScanTests(DocLibCase):
             self.assertEqual(swiftindex.scan_keywords(data), old_scan_keywords(data), repr(text))
 
     def test_random_texts(self) -> None:
-        pieces = ["class", "struct", "enum", "protocol", "actor", "typealias", "func", "extension", " ", "\n", "\t",
+        pieces = ["class", "struct", "enum", "protocol", "actor", "typealias", "func", "extension", "case", ", ", " ", "\n", "\t",
                   "A", "foo", "_", ".", "1", "{", "(", "é", "x", "Foo.Bar", "sub", "class "]
         rng = random.Random(5)
         for _ in range(4000):

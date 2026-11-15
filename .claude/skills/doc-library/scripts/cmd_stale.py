@@ -147,7 +147,7 @@ def first_unknown_part(parts: List[str], called: bool, index: SwiftIndex, allow:
     """
     for position, part in enumerate(parts):
         if called and position == len(parts) - 1:
-            if not (index.is_func(part) or index.is_type(part) or allow.allows_name(part)):
+            if not (index.is_callable(part) or index.is_type(part) or allow.allows_name(part)):
                 return part + "()"
         elif swiftindex.is_capitalised_word(part):
             if not (index.is_type(part) or allow.allows_name(part)):

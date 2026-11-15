@@ -179,6 +179,28 @@ class SwiftIndexTests(DocLibCase):
         self.assertTrue(index.is_func("a"))
         self.assertTrue(index.is_func("open"))
 
+    def test_enum_cases_are_declarations_that_a_call_may_name(self) -> None:
+        # MarkupRefusal's nestedTooDeeply(limit:) is named in shared-helpers.md as a call.
+        source = (
+            "enum MarkupRefusal: Error {\n"
+            "    case nestedTooDeeply(limit: Int)\n"
+            "    case tooMuchMarkup, tooManyAttributes(limit: Int), tooMuchWork\n"
+            "    case raw = \"r\", cooked = \"c\"\n"
+            "}\n"
+            "func f(x: Int) { switch x { case .a, .b: break; case let y: print(y) } }\n"
+        )
+        self.write_tree({"E.swift": source})
+        index = SwiftIndex.load(RepoFiles.load(self.root))
+        for name in ("nestedTooDeeply", "tooMuchMarkup", "tooManyAttributes", "tooMuchWork", "raw", "cooked"):
+            with self.subTest(name=name):
+                self.assertTrue(index.is_callable(name))
+                self.assertFalse(index.is_func(name))
+        self.assertEqual([(d.kind, d.line) for d in index.declarations("tooManyAttributes")], [("case", 3)])
+        # A switch's patterns and case let declare nothing.
+        for name in ("a", "b", "let", "y"):
+            with self.subTest(name=name):
+                self.assertEqual(index.declarations(name), [])
+
 
 class NameHelperTests(DocLibCase):
     """The small pure helpers."""

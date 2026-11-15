@@ -2,7 +2,7 @@
 
 ``SwiftIndex.load`` scans every Swift file once, finding each declaring keyword with
 ``bytes.find``, and remembers each ``class``, ``struct``, ``enum``, ``protocol``, ``actor``, ``typealias``,
-``func`` and ``extension`` it finds, by name. It only answers whether a name exists
+``func``, ``extension``, and enum ``case`` it finds, by name. It only answers whether a name exists
 and where: it matches inside comments and strings too, which is accepted.
 
 ``mentions`` lists the code names a section's prose names, backticked or (for the
@@ -27,6 +27,8 @@ TYPE_KINDS = frozenset({"class", "struct", "enum", "protocol", "actor", "typeali
 # The kind of an ``extension`` declaration, and of a function.
 KIND_EXTENSION = "extension"
 KIND_FUNC = "func"
+# The kind of an enum case: ``case nestedTooDeeply(limit: Int)`` is called like a function.
+KIND_CASE = "case"
 
 # Where vendored code lives; its Swift (there is none today) is not TextMouth's own.
 VENDOR_FOLDER = "Vendor/"
@@ -40,7 +42,7 @@ _AFTER_KEYWORD = re.compile(rb"\s+(?=([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*))")
 # and the white space and name after it, are checked by hand and by ``_AFTER_KEYWORD``.
 _KEYWORDS = tuple(
     (keyword, keyword.encode("ascii"))
-    for keyword in ("class", "struct", "enum", "protocol", "actor", "typealias", "func", "extension")
+    for keyword in ("class", "struct", "enum", "protocol", "actor", "typealias", "func", "extension", "case")
 )
 # The bytes that are word characters (letters, digits, underscore, and every non-ASCII byte).
 _WORD_BYTES = frozenset(range(48, 58)) | frozenset(range(65, 91)) | frozenset(range(97, 123)) \
@@ -82,7 +84,7 @@ class Declaration:
     """One declaration: its name, kind, file, line, and the declaration's line as written."""
 
     name: str
-    kind: str          # one of TYPE_KINDS, "func", or "extension"
+    kind: str          # one of TYPE_KINDS, "func", "extension", or "case"
     path: str
     line: int
     text: str          # the declaration's line, stripped
@@ -182,8 +184,33 @@ def scan_keywords(data: bytes) -> List[Tuple[int, str, bytes]]:
                 match = _AFTER_KEYWORD.match(data, position + len(literal))
                 if match:
                     found.append((position, keyword, match.group(1)))
+                    if keyword == KIND_CASE:
+                        # ``case a, b(x: Int), c`` declares three cases; each later one is
+                        # placed at its own offset.
+                        found.extend((offset, keyword, name)
+                                     for offset, name in more_case_names(data, match.start(1) + len(match.group(1))))
             position = data.find(literal, position + 1)
     found.sort()
+    return found
+
+
+# What may follow an enum case's name before the next one in a list: its associated
+# values (one level of parentheses) or a raw value, then a comma and the next name.
+_NEXT_CASE = re.compile(rb"(?:\([^()\n]*\))?(?:[ \t]*=[ \t]*[^,\n]+?)?[ \t]*,[ \t]*([A-Za-z_]\w*)")
+
+
+def more_case_names(data: bytes, position: int) -> List[Tuple[int, bytes]]:
+    """The names after the first in ``case a, b(x: Int), c = 3``, with their offsets.
+
+    ``position`` is just past the first name. The list ends at the line's end or at
+    anything that is not a comma and a name, so a pattern of a ``switch`` (``case .a,
+    .b:``) adds nothing.
+    """
+    found: List[Tuple[int, bytes]] = []
+    match = _NEXT_CASE.match(data, position)
+    while match:
+        found.append((match.start(1), match.group(1)))
+        match = _NEXT_CASE.match(data, match.end())
     return found
 
 
@@ -246,6 +273,10 @@ class SwiftIndex:
         """True when a function is declared with this name."""
         return any(d.kind == KIND_FUNC for d in self._by_name.get(name, ()))
 
+    def is_callable(self, name: str) -> bool:
+        """True when a call of ``name`` can be written: a function, or an enum case (``nestedTooDeeply(limit:)``)."""
+        return any(d.kind in (KIND_FUNC, KIND_CASE) for d in self._by_name.get(name, ()))
+
     def type_files(self, name: str) -> List[str]:
         """The files with a type declaration of ``name`` (extensions left out), in order, once each."""
         return [d.path for d in self._first_per_file(name, lambda d: d.kind in TYPE_KINDS)]
@@ -268,7 +299,7 @@ class SwiftIndex:
         Each group keeps file and line order. The name's keys (``name_keys``) are tried
         in turn and the first with a declaration decides.
         """
-        rank = {KIND_EXTENSION: 1, KIND_FUNC: 2}
+        rank = {KIND_EXTENSION: 1, KIND_FUNC: 2, KIND_CASE: 2}
         for key in name_keys(written):
             found = self.declarations(key)
             if found:
@@ -285,7 +316,7 @@ class SwiftIndex:
         """
         call = is_call(written)
         for key in name_keys(written):
-            found = self._first_per_file(key, (lambda d: d.kind == KIND_FUNC) if call
+            found = self._first_per_file(key, (lambda d: d.kind in (KIND_FUNC, KIND_CASE)) if call
                                          else (lambda d: d.kind in TYPE_KINDS))
             if found:
                 return found

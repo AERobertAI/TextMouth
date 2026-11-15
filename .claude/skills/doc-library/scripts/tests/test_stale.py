@@ -176,6 +176,12 @@ class NameTests(StaleTestCase):
         self.write_page("```\n`Gone` Models/Gone.swift\n```")
         self.assertEqual(self.details(), [])
 
+    def test_a_call_naming_an_enum_case_is_known(self) -> None:
+        # shared-helpers.md names MarkupRefusal's cases as calls: `nestedTooDeeply(limit:)`.
+        self.write_tree({"TextMouth/Parsers/Refusal.swift": "enum MarkupRefusal {\n    case nestedTooDeeply(limit: Int)\n}\n"})
+        self.write_page("`nestedTooDeeply(limit:)` and `MarkupRefusal.nestedTooDeeply` and `goneCase()`.")
+        self.assertEqual(self.details(), ["unknown name: goneCase()"])
+
 
 class OutputTests(StaleTestCase):
     """The summary line, the exit status, JSON, the cap, scopes, and the allowlist's parts."""
