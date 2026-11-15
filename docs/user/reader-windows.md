@@ -74,7 +74,7 @@ The reader's panels: in Show Headings, each heading's row offers Go To and Skip 
 ### Show Bookmarks
 <!-- id: reader-show-bookmarks; keys: bookmark list, rotor, added date, Add Bookmark key, no bookmarks; src: TextMouth/Views/Reader/BookmarkPanelView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift -->
 
-In Show Bookmarks, a bookmark's row ends with the day it was added, as in "Bookmark 3, The Battle, Note: Check this, added October 9, 2026", which the Bookmarks rotor says too, and its hint says "Goes to this bookmark and closes the list."; with no bookmarks, the panel names the key that adds one, in words, as in "Command + B adds a bookmark at the current position.", or, while that command has no key, says "Add Bookmark adds one at the current position."
+In Show Bookmarks, a bookmark's row ends with the day it was added, as in "Bookmark 3, The Battle, Note: Check this, added <date>", which the Bookmarks rotor says too, and its hint says "Goes to this bookmark and closes the list."; with no bookmarks, the panel names the key that adds one, in words, as in "Command + B adds a bookmark at the current position.", or, while that command has no key, says "Add Bookmark adds one at the current position."
 
 ### Go to Percent and Go to Time
 <!-- id: reader-go-percent-go-time; keys: jump to percent, jump to time, ReaderTimeWording, time left, clock, Time In, Duration; src: TextMouth/Models/ReaderTimeWording.swift, TextMouth/Views/Reader/ReaderJumpPanels.swift, TextMouth/Views/Reader/HeadingNavigatorView.swift -->

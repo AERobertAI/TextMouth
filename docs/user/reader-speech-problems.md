@@ -99,9 +99,9 @@ The limit is 6 GB on every Mac, however much memory the Mac has.
 
 The next launch tells you of such a quit in an alert titled "TextMouth Quit to Protect Your Mac", with an OK button.
 The alert gives the date and time in your region's format and how large the memory had grown.
-If a book was playing, or had been stopped for the growth, it names the book: "TextMouth quit on October 14, 2026 at 5:03 PM to protect your Mac: its memory grew to 6.1 GB while Ferry Timetables played, because of a fault in macOS's audio.
+If a book was playing, or had been stopped for the growth, it names the book: "TextMouth quit on <date and time> to protect your Mac: its memory grew to 6.1 GB while Ferry Timetables played, because of a fault in macOS's audio.
 Your place was saved."
-If nothing was playing, it says so: "TextMouth quit on October 14, 2026 at 5:03 PM to protect your Mac: its memory grew to 6.1 GB while nothing was playing.
+If nothing was playing, it says so: "TextMouth quit on <date and time> to protect your Mac: its memory grew to 6.1 GB while nothing was playing.
 Your place was saved."
 
 ## Sound effects
