@@ -1,10 +1,10 @@
 # Tests of the markup guard, Kindle, and MOBI readers
-<!-- id: format-reader-tests; keys: ; src: -->
+<!-- id: format-reader-tests; keys: Kindle, KF8, KFX, MOBI, AZW3, SwiftSoup, format samples; src: TestData/format-samples/, TestData/format-samples/samples.tsv, Scripts/test/areas.conf -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## The markup guard tests
-<!-- id: markup-guard-tests; keys: ; src: TextMouth/Parsers/MarkupGuard.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/MarkupFuzzGenerator.swift, TextMouthProductionTests/ImportFuzzMutator.swift, TextMouth/Parsers/HTMLParser.swift -->
+<!-- id: markup-guard-tests; keys: SwiftSoup, nesting depth, stack overflow, onLargeStack, MarkupGuard.Limits, fuzz, trap, big stack; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/HTMLParser.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/MarkupFuzzGenerator.swift, TextMouthProductionTests/EPUBHeadingRecoveryTests.swift, TextMouthProductionTests/EPUBPageListTests.swift, TextMouthProductionTests/DAISYMalformedXMLTests.swift, Scripts/test/markup-stack-proof.py, Scripts/test/markup-stack-proof/measure/main.swift, Scripts/test/markup-stack-proof/proof/main.swift -->
 
 `MarkupGuardTests` (TextMouthProductionTests/MarkupGuardTests.swift, with `MarkupFuzzGenerator`) tests the guard that every SwiftSoup parse goes through (see Shared helpers, in [Architecture](../../ARCHITECTURE.md)).
 Its documents are made so that a failure is a failed assertion and not a trapped test host, which a trap would end:
@@ -40,7 +40,7 @@ Its documents are made so that a failure is a failed assertion and not a trapped
   `MarkupGuardTests` is in no area of Scripts/test/areas.conf yet, so run it by name.
 
 ## KFX tests
-<!-- id: kfx-tests; keys: ; src: TextMouthProductionTests/KFXRecognitionTests.swift, TextMouthProductionTests/KFXContainerTests.swift, TextMouthProductionTests/KFXIonTests.swift, TextMouthProductionTests/KFXWalkTests.swift, TextMouthProductionTests/KFXNavigationTests.swift -->
+<!-- id: kfx-tests; keys: Kindle Previewer, Amazon Ion, KFX, kfx-features, alice.kfx, Kindle, KFXFixture, KFXTestBook; src: TextMouthProductionTests/KFXRecognitionTests.swift, TextMouthProductionTests/KFXContainerTests.swift, TextMouthProductionTests/KFXIonTests.swift, TextMouthProductionTests/KFXWalkTests.swift, TextMouthProductionTests/KFXNavigationTests.swift, TextMouthProductionTests/KFXSetTests.swift, TextMouthProductionTests/KFXInlineBookTests.swift, TextMouthProductionTests/KFXFixRoundTests.swift, TextMouthProductionTests/KFXHostileFileTests.swift, TextMouthProductionTests/KFXEPUBComparisonTests.swift, TextMouthProductionTests/KFXPrivateBooksTests.swift, TextMouthProductionTests/KFXFixture.swift, TextMouthProductionTests/KFXTestBook.swift, Scripts/make-kfx-sample.py, TestData/format-samples/kfx/, TestData/format-samples/samples.tsv -->
 
 The KFX tests are `KFXRecognitionTests`, `KFXContainerTests`, `KFXIonTests`, `KFXWalkTests`, `KFXNavigationTests`, `KFXSetTests`, `KFXInlineBookTests`, `KFXFixRoundTests`, and `KFXHostileFileTests`, on books that `KFXFixture` and `KFXTestBook` build in code, and `KFXEPUBComparisonTests`, which reads `kfx/kfx-features.kfx` and `kfx/alice.kfx` and requires the words and headings of the EPUB each was made from (and, for the feature book, its chapters and its 5 pages), with two named differences: the title of a chapter with no words, which the EPUB takes from the document's title and the KFX book does not have, and, in the inline book, the EPUB sets math apart as a block where the KFX book reads the author's name for it.
 The samples in `TestData/format-samples/kfx` are made with `Scripts/make-kfx-sample.py`, which writes a small EPUB with everything the walk meets and converts it with Amazon's Kindle Previewer and a packaging tool, both run as black boxes by a wrapper script in the main checkout's gitignored build folder.
@@ -48,7 +48,7 @@ The reader was written from the format notes and the public Ion specification, n
 `KFXPrivateBooksTests` reads books that the developer places by hand in a gitignored folder of the main checkout, never committed, and reports only counts (books, words, headings, pages) and, for each refusal, its sentence; it skips when the folder is absent or empty, as it does in a worktree.
 
 ## Kindle samples without goldens
-<!-- id: kindle-samples-without-goldens; keys: ; src: TextMouthProductionTests/MOBIReaderTests.swift, TextMouthProductionTests/KF8RealBookTests.swift -->
+<!-- id: kindle-samples-without-goldens; keys: MOBI 6, Gutenberg, calibre, ebook-convert, encrypted, ferry-notes-ncx, Kindle samples; src: TextMouthProductionTests/MOBIReaderTests.swift, TextMouthProductionTests/KF8RealBookTests.swift, Scripts/make-mobi-ncx-sample.py, TestData/format-samples/mobi/, TestData/format-samples/samples.tsv -->
 
 The Kindle samples in `TestData/format-samples/mobi` have no goldens.
 MOBIReaderTests reads two of them: Project Gutenberg's MOBI 6 book, and `ferry-notes-ncx.mobi`, a small book with a table of contents that `Scripts/make-mobi-ncx-sample.py` makes with calibre's `ebook-convert` (calibre writes a new identifier into every conversion, so the script's output never matches the sample byte for byte).
@@ -56,19 +56,19 @@ It checks that a copy of the MOBI 6 book marked as encrypted, which is not reall
 Gutenberg's KF8 book is no longer refused: `KF8RealBookTests`, below, reads it.
 
 ## KF8 tests
-<!-- id: kf8-tests; keys: ; src: TextMouthProductionTests/KF8ReviewFixTests.swift, TextMouthProductionTests/KF8RealBookTests.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/KF8LayoutTests.swift -->
+<!-- id: kf8-tests; keys: KF8, AZW3, Kindle, FMT48, KF8Fixture, hybrid; src: TextMouthProductionTests/KF8LayoutTests.swift, TextMouthProductionTests/KF8BookTests.swift, TextMouthProductionTests/KF8HostileFileTests.swift, TextMouthProductionTests/KF8ReviewFixTests.swift, TextMouthProductionTests/KF8RealBookTests.swift, TextMouthProductionTests/KF8Fixture.swift -->
 
 The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, `KF8BookTests`, `KF8HostileFileTests`, `KF8ReviewFixTests`, and `KF8RealBookTests`, on books that `KF8Fixture` builds in code and on the samples below.
 
 ### What the KF8 classes pin
-<!-- id: what-kf8-classes-pin; keys: ; src: TextMouthProductionTests/KF8LayoutTests.swift, TextMouthProductionTests/KF8BookTests.swift, TextMouthProductionTests/KF8ReviewFixTests.swift -->
+<!-- id: what-kf8-classes-pin; keys: KF8 layout, KF8 sections, generated contents page, fragments, label cap, hybrid fallback; src: TextMouthProductionTests/KF8LayoutTests.swift, TextMouthProductionTests/KF8BookTests.swift, TextMouthProductionTests/KF8ReviewFixTests.swift -->
 
 - `KF8LayoutTests` pin the tables, the end-to-end layout check, and the join.
   `KF8BookTests` pin the sections, titles, headings, pages, and metadata.
 - `KF8ReviewFixTests` pin what the review asked for: the generated contents page and the real last page it must not take, fragments that go backward or leave a gap, the 1 KB label cap, the fallback from a hybrid's KF8 half to its MOBI 6 half in every way short of protection and a cancel, SVG words, navigation lists, the continuation rule, and a damaged contents or guide.
 
 ### The chapter rules
-<!-- id: chapter-rules; keys: ; src: TextMouthProductionTests/KF8ReviewFixTests.swift, TextMouthProductionTests/KF8RealBookTests.swift, TextMouthProductionTests/KF8Fixture.swift -->
+<!-- id: chapter-rules; keys: openingContainer, calibre pieces, header rule, footer exemption, Modest Proposal, Pride and Prejudice, licence; src: TextMouthProductionTests/KF8ReviewFixTests.swift, TextMouthProductionTests/KF8RealBookTests.swift, TextMouthProductionTests/KF8Fixture.swift, TextMouth/Parsers/KF8Book.swift, TestData/format-samples/mobi/pg1080-modest-proposal-kf8.mobi, TestData/format-samples/azw3/pg1080-modest-proposal.epub -->
 
 - The chapter rules of 0.4.3 (see the continuation rule in [Imports](../architecture/state/imports.md)) are pinned in three places:
   - `KF8RealBookTests.testAModestProposalReadsAsItsEPUBsThreeChaptersWithTheLicensesOpeningInTheLicense` reads the real pair: 3 chapters of 169, 3,386, and 2,906 words, with the titles, word counts, words, and headings of the EPUB.
@@ -81,7 +81,7 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
     The `<a>` skip in `openingContainer` has no test.
 
 ### Soft hyphens and the portable XML differences
-<!-- id: soft-hyphens-portable-xml-differences; keys: ; src: TextMouthProductionTests/SoftHyphenEffectTests.swift, TextMouthProductionTests/KF8ReviewFixTests.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouthProductionTests/MOBIBookStructureTests.swift, TextMouthProductionTests/MOBIReaderTests.swift -->
+<!-- id: soft-hyphens-portable-xml-differences; keys: soft hyphen, SHY, removingSoftHyphens, toc.xhtml, toc.ncx, page reader version, knownDifferences; src: TextMouthProductionTests/SoftHyphenEffectTests.swift, TextMouthProductionTests/KF8ReviewFixTests.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouthProductionTests/MOBIBookStructureTests.swift, TextMouthProductionTests/MOBIReaderTests.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift -->
 
 - The soft hyphens (0.4.3) are pinned by `SoftHyphenEffectTests` (the measured effects on search and braille, see Shared helpers in [Architecture](../../ARCHITECTURE.md)), by `KF8ReviewFixTests.testEverySpellingOfASoftHyphenIsLeftOut` (every spelling `ParserUtilities.removingSoftHyphens` catches, and the ones it leaves alone: `&SHY;`, `&Shy;`, `&shy1`, `&shyx`, other numbers, and a huge one), and by `MOBIBookStructureTests` for a MOBI 6 book's words, labels, Windows-1252 text, and plain PalmDOC text.
   `MOBIReaderTests`, `PagesUpgradeTests`, and `OnDiskContractTests` expect the `.mobi` page reader line "1.1.0".
@@ -90,7 +90,7 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
   The evidence is the root element's text, so the two entries also pass any other tidy difference in those two files.
 
 ### Hostile files and real books
-<!-- id: hostile-files-real-books; keys: ; src: TextMouthProductionTests/KF8HostileFileTests.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouthProductionTests/KF8RealBookTests.swift -->
+<!-- id: hostile-files-real-books; keys: damaged book, typed refusal, MarkupRefusal, prepareBook, Standard Ebooks, quay-almanac, Gutenberg, azw3; src: TextMouthProductionTests/KF8HostileFileTests.swift, TextMouthProductionTests/KF8RealBookTests.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MarkupGuard.swift, Scripts/make-kf8-samples.py, TestData/format-samples/azw3/, TestData/format-samples/mobi/ -->
 
 - `KF8HostileFileTests` damage a book so that a table, a count, a place, or a length lies, and require a typed refusal (or a read) in well under a second, with no trap.
   They now import through `MOBIParser.prepareBook`, so a section's markup meets the markup guard and the nesting and declaration inputs end in `MarkupRefusal.nestedTooDeeply` or a normal read.
@@ -99,7 +99,7 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
   The samples are Standard Ebooks' The Time Machine (`se-the-time-machine.azw3`), `quay-almanac` (an EPUB, an .azw3 and a calibre hybrid, made by `Scripts/make-kf8-samples.py`), Gutenberg's Yellow Wallpaper in KF8, Gutenberg's A Modest Proposal in KF8 with its EPUB (0.4.3), Gutenberg's Ghosts as kindlegen made it (a hybrid), and the edge books.
 
 ### Edge samples and changed tests
-<!-- id: edge-samples-changed-tests; keys: ; src: TextMouthProductionTests/MOBIReaderTests.swift, TextMouthProductionTests/MOBIBookStructureTests.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift -->
+<!-- id: edge-samples-changed-tests; keys: edge samples, kindlegen, calibre, toc-last, page-list, svg-words, samples.tsv, hybrid; src: TextMouthProductionTests/MOBIReaderTests.swift, TextMouthProductionTests/MOBIBookStructureTests.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, Scripts/make-kf8-edge-samples.py, Scripts/make-kf8-edge-samples-2.py, TestData/format-samples/azw3/edge/, TestData/format-samples/mobi/edge/ -->
 
 - The edge samples are in `TestData/format-samples/azw3/edge` (an EPUB and its .azw3 each, made with calibre) and `mobi/edge` (a calibre hybrid and a kindlegen hybrid each): `toc-last`, `toc-mixed`, `toc-epilogue`, `toc-single`, `page-list`, `svg-words`, `nav-in-spine`, and `page-break-style`.
   `Scripts/make-kf8-edge-samples.py` and `Scripts/make-kf8-edge-samples-2.py` write their EPUBs, every word of whose prose is a unique token, and convert them with calibre's `ebook-convert` and Amazon's kindlegen (Kindle Previewer 4's copy), both run as black boxes.
@@ -108,7 +108,7 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
 - The hosted tests (the upgrade of a stored hybrid without a kept copy, the 70 MB picture-file test, the sparse 600 MB file refusal, the Info.plist and project checks) need the train.
 
 ### The KF8 fuzz kit
-<!-- id: kf8-fuzz-kit; keys: ; src: TextMouth/Parsers/MarkupGuard.swift, Scripts/test/kf8-fuzz/build-reader.py, Scripts/test/kf8-fuzz/fuzz.py, Scripts/test/kf8-fuzz/Main.swift, Scripts/test/kf8-fuzz/Stubs.swift -->
+<!-- id: kf8-fuzz-kit; keys: fuzz, swiftc, KF8_FUZZ_BUILD, reader program, damaged copy, seed, trap; src: Scripts/test/kf8-fuzz/build-reader.py, Scripts/test/kf8-fuzz/fuzz.py, Scripts/test/kf8-fuzz/Main.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MarkupGuard.swift, Scripts/agents/run_locked.py -->
 
 - `Scripts/test/kf8-fuzz` (`build-reader.py`, `fuzz.py`, `Main.swift`, `Stubs.swift`) is a fuzz kit that damages books at random with a seed and reads each in a child process.
   It is not part of the suite.
@@ -129,12 +129,12 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
     No trap, no slow or large round, and no SwiftSoup, `MarkupGuard`, or converter failure.
 
 ### The train that ran the KF8 classes
-<!-- id: train-that-ran-kf8-classes; keys: ; src: TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/DocumentTypeDeclarationTests.swift, TextMouthProductionTests/IOSInfoPlistTests.swift -->
+<!-- id: train-that-ran-kf8-classes; keys: train, KF8, MOBI, KFX, skipped tests; src: TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/DocumentTypeDeclarationTests.swift, TextMouthProductionTests/IOSInfoPlistTests.swift, TextMouthProductionTests/OwnReaderCancellationTests.swift, TextMouthProductionTests/EPUBExportRealBooksTests.swift -->
 
 - The branch's train (0.4.2) ran 19 classes (the KF8, MOBI, and KFX classes, `MarkupGuardTests`, `PagesUpgradeTests`, `OnDiskContractTests`, `DocumentTypeDeclarationTests`, `IOSInfoPlistTests`, `OwnReaderCancellationTests`, and `EPUBExportRealBooksTests`) with `--areas import,feeds` and passed 2,894 tests with 7 skipped.
 
 ## Text without a byte-order mark
-<!-- id: text-without-byte-order-mark; keys: ; src: TextMouthProductionTests/TextFileDecoderTests.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift -->
+<!-- id: text-without-byte-order-mark; keys: BOM, UTF-16, UTF-32, unmarkedUnicode, NUL, encoding guess, ISO-2022-JP, text encoding; src: TextMouthProductionTests/TextFileDecoderTests.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift -->
 
 `TextFileDecoderTests` pin how text without a byte-order mark is read (0.4.3; see `unmarkedUnicode(in:)` under Imports in [Architecture](../../ARCHITECTURE.md)).
 
@@ -148,7 +148,7 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
 - The reader versions are plain text "1.0.1" and HTML "1.0.4", with EPUB still "1.0.3" (`PagesUpgradeTests`, `OnDiskContractTests`).
 
 ## MOBI tests on real books
-<!-- id: mobi-tests-real-books; keys: ; src: TextMouthProductionTests/MOBIRealBookTests.swift -->
+<!-- id: mobi-tests-real-books; keys: libmobi, HUFF/CDIC, Mobipocket, PalmDOC, mobi.js, SHA-256, Gutenberg, Afrikaans; src: TextMouthProductionTests/MOBIRealBookTests.swift, TestData/format-samples/mobi/, TestData/format-samples/samples.tsv -->
 
 MOBIRealBookTests reads five real books from other makers, each pinned by the SHA-256 of its decoded text, which a decoder written apart from TextMouth's (a Python port of mobi.js) computed, and by its names and some of its words.
 Three are libmobi's test samples, under libmobi's LGPL-3.0, whose text and the GPL-3.0 it builds on are beside them as `libmobi-COPYING.LESSER` and `libmobi-COPYING`: a kindlegen book compressed with HUFF/CDIC, whose digest is also that of the same book stored uncompressed, so it proves the HUFF reading; a Windows-1252 book with a short header; and an early Mobipocket book whose PalmDOC text is HTML.
@@ -157,6 +157,6 @@ Of more than 40 real books checked when these were chosen, none decoded to less 
 `samples.tsv` gives each one's source.
 
 ## MOBI tests built in code
-<!-- id: mobi-tests-built-code; keys: ; src: TextMouthProductionTests/MOBIFixture.swift -->
+<!-- id: mobi-tests-built-code; keys: MOBIFixture, PalmDOC, HUFF/CDIC, NCX, damaged copies, fixture; src: TextMouthProductionTests/MOBIFixture.swift, TextMouthProductionTests/MOBIHostileFileTests.swift -->
 
 Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDOC or HUFF/CDIC compression, an NCX index, and damaged copies of each.
