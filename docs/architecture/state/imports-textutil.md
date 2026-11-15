@@ -1,6 +1,8 @@
 # Imports: documents textutil reads
 <!-- id: imports-documents-textutil-reads; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## Documents textutil reads, web archives, SSML, DTBooks
 <!-- id: documents-textutil-reads-web-archives; keys: ; src: TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Parsers/TextutilHTMLStructure.swift, TextMouth/Parsers/TextutilFieldCodes.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/SSMLReader.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+DTBookHeadParser.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/Book.swift, TextMouth/Models/TextCacheFingerprint.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/ImportFailure.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Resources/Info.plist, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Platform/iOS/Services/WatchedProcess+iOS.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Platform/iOS/IOSUnavailable.swift, TextMouth/Parsers/DOCXParser.swift -->
 

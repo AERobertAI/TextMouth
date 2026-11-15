@@ -1,6 +1,8 @@
 # Imports: audio
 <!-- id: imports-audio; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## A manifest's title and author
 <!-- id: manifest-title-author; keys: ; src: TextMouth/Parsers/AudioBookParser.swift, TextMouth/Parsers/AudioManifest.swift -->
 

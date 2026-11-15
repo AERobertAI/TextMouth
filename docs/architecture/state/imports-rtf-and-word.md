@@ -1,6 +1,8 @@
 # Imports: rich text and Word documents
 <!-- id: imports-rich-text-word-documents; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## Own readers of rich text and Word documents
 <!-- id: own-readers-rich-text-word; keys: ; src: TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/RTFTokenizer.swift, TextMouth/Parsers/RTFInterpreter.swift, TextMouth/Parsers/RTFGroupState.swift, TextMouth/Parsers/RTFEncodings.swift, TextMouth/Parsers/RTFStyleSheet.swift, TextMouth/Parsers/RTFListTable.swift, TextMouth/Parsers/RTFBlockBuilder.swift, TextMouth/Parsers/RTFDocumentModel.swift, TextMouth/Parsers/RTFSizeHeadings.swift, TextMouth/Parsers/RTFHTMLWriter.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/CompoundFile.swift, TextMouth/Parsers/WordDocumentStructure.swift, TextMouth/Parsers/WordDocumentPieces.swift, TextMouth/Parsers/WordDocumentStyles.swift, TextMouth/Parsers/WordDocumentProperties.swift, TextMouth/Parsers/WordDocumentSections.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/WordDocumentHTMLWriter.swift, TextMouth/Parsers/WordDocumentHeadingGuess.swift, TextMouth/Parsers/WordDocumentSummary.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift, TextMouth/Parsers/TextutilHTMLStructure.swift, TextMouth/Parsers/WordDocumentFonts.swift -->
 

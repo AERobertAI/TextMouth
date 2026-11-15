@@ -1,6 +1,8 @@
 # Imports: choosing the encoding
 <!-- id: imports-choosing-encoding; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## Choosing the encoding
 <!-- id: choosing-encoding; keys: ; src: TextMouth/Models/TextEncodingChoice.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouthProductionTests/TextEncodingChoiceDecoderTests.swift -->
 

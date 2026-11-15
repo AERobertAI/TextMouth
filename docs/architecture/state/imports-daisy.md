@@ -1,6 +1,8 @@
 # Imports: DAISY 3 books
 <!-- id: imports-daisy-3-books; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## DAISY 3 books of several DTBook files
 <!-- id: daisy-3-books-several-dtbook; keys: ; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift, TextMouth/Parsers/DAISYParser+SMILParser.swift, TextMouth/Parsers/DAISYParser+OPFParser.swift, TextMouth/Models/PageReaderVersions.swift -->
 

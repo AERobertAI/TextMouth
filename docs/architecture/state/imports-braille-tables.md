@@ -1,6 +1,8 @@
 # Imports: braille tables and the translator
 <!-- id: imports-braille-tables-translator; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## The table catalog
 <!-- id: table-catalog; keys: ; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 

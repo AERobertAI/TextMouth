@@ -1,6 +1,8 @@
 # Imports: DOCX, OpenDocument, and Word 2003 XML
 <!-- id: imports-docx-opendocument-word-2003; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## The DOCX reader's reading policy
 <!-- id: docx-reader-reading-policy; keys: ; src: TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/DOCXParser+Converter.swift, TextMouth/Parsers/DOCXParser+Styles.swift, TextMouth/Parsers/DOCXParser+Numbering.swift, TextMouth/Parsers/MarkdownEmphasis.swift, TextMouth/Parsers/WordSymbolFontEncodings.swift, TextMouth/Parsers/DOCXParser+SAXParser.swift, TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/WordDocumentFonts.swift, Scripts/test/kf8-fuzz/Stubs.swift -->
 

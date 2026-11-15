@@ -1,6 +1,8 @@
 # Imports: Kindle books
 <!-- id: imports-kindle-books; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## Kindle KFX books
 <!-- id: kindle-kfx-books; keys: ; src: TextMouth/Parsers/KFXParser.swift, TextMouth/Parsers/KFXSignature.swift, TextMouth/Parsers/KFXPackage.swift, TextMouth/Parsers/KFXSidecar.swift, TextMouth/Parsers/KFXContainer.swift, TextMouth/Parsers/KFXView.swift, TextMouth/Parsers/KFXIon.swift, TextMouth/Parsers/KFXSymbol.swift, TextMouth/Parsers/KFXSymbols.swift, TextMouth/Parsers/KFXFragments.swift, TextMouth/Parsers/KFXMetadata.swift, TextMouth/Parsers/KFXNavigation.swift, TextMouth/Parsers/KFXTargets.swift, TextMouth/Parsers/KFXBook.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/KFXInlineText.swift, TextMouth/Parsers/KFXStyles.swift, TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Models/Book.swift, TextMouth/Models/Library.swift, TextMouth/Models/PageReaderVersions.swift -->
 

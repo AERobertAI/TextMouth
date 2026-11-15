@@ -1,6 +1,8 @@
 # Imports: text in other encodings
 <!-- id: imports-text-other-encodings; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## Text files in other encodings
 <!-- id: text-files-other-encodings; keys: ; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextPlausibility.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/LenientFields.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibraryInfoRow.swift, TextMouth/Views/Library/LibrarySheetViews.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouthProductionTests/TextEncodingImportTests.swift, TextMouthProductionTests/TextFileDecoderTests.swift, TextMouthProductionTests/TextPlausibilityTests.swift, TextMouthProductionTests/TextEncodingBookInfoTests.swift -->
 

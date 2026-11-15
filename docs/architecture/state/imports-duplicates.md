@@ -1,6 +1,8 @@
 # Imports: duplicates
 <!-- id: imports-duplicates; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## Unanswered duplicates
 <!-- id: unanswered-duplicates; keys: ; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Models/ImportDecision.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouthProductionTests/ImportDecisionFlowTests.swift -->
 
