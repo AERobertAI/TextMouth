@@ -26,7 +26,7 @@ description: Find, show, and check the sections of TextMouth's docs and memory f
 - `doclib suggest-src TARGET`: the paths a section's marker `src` should hold.
 - `doclib lint [--report] [--rule R,..] [--skip R,..] [--page PAGE] [--against REF]`: the docs, AGENTS.md, and CLAUDE.md against docs/agents/writing-docs.md; it fails only when a page has more violations than `lint-baseline.json` records.
 - `doclib lint --update-baseline`: lowers the baseline after a fix, and never raises it.
-- `doclib split-check OLD NEW... [--files-to-src] [--update-baseline]`: whether the NEW pages hold OLD's words in order (OLD may be `REF:PATH`, or several joined by commas); the last option hands the OLD pages' counts to the new ones.
+- `doclib split-check OLD NEW... [--files-to-src] [--loose] [--update-baseline]`: whether the NEW pages hold OLD's words in order (OLD may be `REF:PATH`, or several joined by commas); `--loose` compares words without their case and end punctuation, outside code; the last option hands the OLD pages' counts to the new ones.
 - `doclib reflow PAGE [--check]` (writes): one sentence per line, word for word.
 - `doclib mark PAGE [--dry-run]` (writes): a marker under each heading without one, with a suggested id and src, and empty keys to fill in.
 
