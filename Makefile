@@ -331,7 +331,7 @@ lint-ogg:
 ## records for it, and the baseline's totals may not rise above those at the
 ## merge-base of LINT_BASE and HEAD. Prints what got worse. No building.
 lint-docs:
-	@python3 -I .claude/skills/doc-library/scripts/doclib.py lint --against $(LINT_BASE)
+	@python3 -I -B .claude/skills/doc-library/scripts/doclib.py lint --against $(LINT_BASE)
 
 ## Compile and link the app's sources for iOS with SwiftPM, which needs only
 ## the iOS SDK Xcode includes, not the iOS platform xcodebuild asks for

@@ -98,7 +98,8 @@ lint_docs() {
     echo DOCS_LINT_SKIPPED >> "$log"
     return 0
   fi
-  lint_output=$(python3 -I "$DOCLIB" lint --against HEAD 2>&1)
+  # -B: no bytecode next to the skill, where a forced git add would pick it up.
+  lint_output=$(python3 -I -B "$DOCLIB" lint --against HEAD 2>&1)
   status=$?
   echo "$lint_output" >> "$log"
   if [ "$status" = 0 ]; then
