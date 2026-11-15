@@ -188,6 +188,27 @@ final class ConflictCopyTests: XCTestCase {
         XCTAssertEqual(reports.withLock { $0 }.first?.map(\.subject), [.libraryIndex])
     }
 
+    /// A report is remembered only after it was shown: while the library is
+    /// unavailable nothing is shown and nothing is remembered, so the next look
+    /// reports the copy.
+    @MainActor
+    func testAReportIsRememberedOnlyAfterItIsShown() async throws {
+        let memory = ConflictCopyMemory(file: try makeSandboxDirectory("AfterShown").appendingPathComponent("Reported.json"))
+        let finding = ConflictCopyFinding(subject: .libraryIndex, place: .file(path: "/x/library 2.json"), sentence: "A copy.", key: "k")
+        let keysWhenShown = OSAllocatedUnfairLock<[String]?>(initialState: nil)
+
+        await LibraryViewModel.reportAndRemember([finding], libraryIsAvailable: false, memory: memory, present: { _ in
+            XCTFail("nothing is shown while the library is unavailable")
+        })
+        XCTAssertEqual(memory.reportedKeys(), [], "not shown, so not remembered")
+
+        await LibraryViewModel.reportAndRemember([finding], libraryIsAvailable: true, memory: memory, present: { _ in
+            keysWhenShown.withLock { $0 = memory.reportedKeys() }
+        })
+        XCTAssertEqual(keysWhenShown.withLock { $0 }, [], "not yet remembered as it is shown")
+        XCTAssertEqual(memory.reportedKeys(), ["k"], "remembered once shown")
+    }
+
     // MARK: - The Alert's Words
 
     /// The alert names its title, and lists at most five copies, saying how

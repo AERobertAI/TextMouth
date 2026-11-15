@@ -48,19 +48,34 @@ extension LibraryViewModel {
         let memory = memory ?? .thisMac
         let root = TextMouthPaths.root
         Task { [weak self] in
-            // Remembered before it is shown, so a report is never repeated
-            // when it was shown and the app quit meanwhile.
-            let fresh = await OffMainWork.run { () -> [ConflictCopyFinding] in
-                let fresh = memory.unreported(finder.findAll(in: root))
-                memory.remember(fresh)
-                return fresh
-            }
-            guard let self, !fresh.isEmpty, self.dataDirectoryUnavailability == nil else { return }
-            for finding in fresh {
-                DiagnosticLog.event(.storage, "CONFLICT_COPY_FOUND: \(finding.logDescription)")
-            }
-            (present ?? Self.presentConflictCopyReport)(fresh)
+            let fresh = await OffMainWork.run { memory.unreported(finder.findAll(in: root)) }
+            guard let self else { return }
+            await Self.reportAndRemember(
+                fresh,
+                libraryIsAvailable: self.dataDirectoryUnavailability == nil,
+                memory: memory,
+                present: present ?? Self.presentConflictCopyReport
+            )
         }
+    }
+
+    /// Shows `fresh` and only then remembers it as reported, so a report that
+    /// never reached the listener (the library became unavailable first, or
+    /// the app quit before it showed) is made again at the next look: the
+    /// copy may hold the only record of a change.
+    @MainActor
+    static func reportAndRemember(
+        _ fresh: [ConflictCopyFinding],
+        libraryIsAvailable: Bool,
+        memory: ConflictCopyMemory,
+        present: @MainActor ([ConflictCopyFinding]) -> Void
+    ) async {
+        guard !fresh.isEmpty, libraryIsAvailable else { return }
+        for finding in fresh {
+            DiagnosticLog.event(.storage, "CONFLICT_COPY_FOUND: \(finding.logDescription)")
+        }
+        present(fresh)
+        await OffMainWork.run { memory.remember(fresh) }
     }
 
     /// Shows the report as an alert on the key window, which VoiceOver reads
