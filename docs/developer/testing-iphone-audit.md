@@ -148,7 +148,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: searchuitests; keys: find in book, search sheet, software keyboard, PhoneBookSearchVocabulary; src: TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Phone/PhoneBookSearch.swift -->
 
 - They drive the Search in Book sheet (0.4.4) in the simulator.
-  The searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see [In the simulator, sound tests run on GitHub only](testing-iphone.md)).
+  The searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see [In the simulator, sound tests run on GitHub only](testing-iphone.md#in-the-simulator-sound-tests-run-on-github-only)).
   The word searched for is "Cheshire" in Alice's Adventures in Wonderland, which the book holds in several chapters, far below the 500-result limit.
   A result's jump is silent, since Auto-play after navigation is off in the launch's sandbox.
 - The sheet's search waits a second for typing to pause, so each test first waits for the status line to end in " matches", " match", or "No matches", for up to the usual patience.
