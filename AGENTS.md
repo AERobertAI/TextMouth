@@ -67,7 +67,7 @@ The agent:
 - Write merge messages and helper scripts to files: `git merge -F -` does not read standard input, and two heredocs on one command line swallow the second.
 - Prefix every scratch file with your slug, or keep a subfolder named for it: all agents of a session share its scratchpad folder, and the orchestrator's files start with `orchestrator-`.
 - Run a changed copy of `bbs.py` only with `TEXTMOUTH_BBS_DIR` set to a scratch folder, never against the live board.
-- Give every `rm` literal paths, never a shell variable: a tool call that waits on a permission prompt stops its agent until the user answers.
+- Give every `rm` a literal or relative path, never a variable, substitution, glob, or built path, and put the rule in every agent's prompt: a tool call that waits on a permission prompt stops its agent until the user answers.
 - Before a revert, grep for each symbol the commit added: a revert also removes helpers that other code uses.
 - Host a SwiftUI view whose width follows its offer and adds to it (a macOS form in the columns style did) inside a fixed frame, or measure it with `NSHostingController.sizeThatFits(in:)` and no window, or the test host ends in a crash dialog.
   Rebase an old branch before any hosted test run on this Mac, or the test host can take the user's AirPods.
