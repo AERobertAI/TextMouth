@@ -227,7 +227,7 @@ final class CueSheetImportTests: XCTestCase {
         let imported = try FileImportService.importAudioFolderWithReport(from: folder, toFolder: folderPath)
 
         XCTAssertEqual(try chapterTitles(of: imported.book), ["The Whole Album"])
-        XCTAssertNil(try AudioManifest.read(inAudioFolder: URL(fileURLWithPath: imported.book.filePath))?.manifest.segments)
+        XCTAssertNil(AudioManifest.read(inAudioFolder: URL(fileURLWithPath: imported.book.filePath))?.manifest.segments)
         XCTAssertFalse(try audioFolderNames(of: imported.book).contains("album.cue"))
     }
 
