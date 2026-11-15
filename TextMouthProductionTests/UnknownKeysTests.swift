@@ -294,6 +294,8 @@ final class UnknownKeysTests: XCTestCase {
     /// unknown keys: each is changed in place.
     func testAFolderAndTheReadingListChangedInPlaceKeepTheirUnknownKeys() {
         var library = Self.library(of: [Self.plainBook()])
+        XCTAssertEqual(library.folders.count, 2)
+        guard library.folders.count == 2 else { return }
         library.folders[0].unknownKeys = UnknownKeys(["colour": .string("amber")])
         library.readingList.unknownKeys = UnknownKeys(["shuffles": .bool(true)])
 
@@ -623,6 +625,8 @@ final class UnknownKeysTests: XCTestCase {
         later.unknownKeys = UnknownKeys(["page": .integer(41)])
         var record = row.makeBookInfo()
         record.state.readingPosition = later
+        XCTAssertEqual(record.bookmarks.count, 1)
+        guard record.bookmarks.count == 1 else { return }
         record.bookmarks[0].unknownKeys = UnknownKeys(["colour": .string("amber")])
 
         XCTAssertTrue(row.takeStandingReadingState(of: record))
@@ -663,6 +667,8 @@ final class UnknownKeysTests: XCTestCase {
     /// a place given its words); a place made anew has none.
     func testAPlaceChangedInPlaceKeepsItsKeysAndANewPlaceHasNone() throws {
         var book = Self.plainBook()
+        XCTAssertEqual(book.bookmarks.count, 1)
+        guard book.bookmarks.count == 1 else { return }
         book.bookmarks[0].unknownKeys = UnknownKeys(["colour": .string("amber")])
         book.readingPosition?.unknownKeys = UnknownKeys(["page": .integer(41)])
 
@@ -840,7 +846,7 @@ final class UnknownKeysTests: XCTestCase {
                 try work()
                 times.append(Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
             }
-            return times.sorted()[4]
+            return times.sorted().dropFirst(times.count / 2).first ?? 0
         }
 
         var rows = 0
