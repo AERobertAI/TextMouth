@@ -1,6 +1,8 @@
 # Package records: places, transcripts, origin, manifests
 <!-- id: package-records-places-and-files; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## Saved places' text anchors
 <!-- id: saved-places-text-anchors; keys: ; src: TextMouth/Models/TextAnchor.swift, TextMouth/Models/TextAnchorCapture.swift, TextMouth/Models/FineWords.swift, TextMouth/Models/TextAnchorFinder.swift, TextMouth/Models/PatienceDiff.swift, TextMouth/Models/PlaceRelocator.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Services/PlaceSnapshots.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift, TextMouth/ViewModels/ReaderViewModel+SavedPlaces.swift, TextMouth/ViewModels/LibraryViewModel+TextAnchors.swift, TextMouth/ViewModels/LibraryViewModel+PlaceSnapshots.swift, TextMouth/ViewModels/ReaderViewModel+EditedText.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/ViewModels/ReaderViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
