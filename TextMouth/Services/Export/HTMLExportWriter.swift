@@ -6,8 +6,8 @@ import Foundation
 /// title, a contents list linking each heading, and its text block by block.
 ///
 /// It reads the `ExportDocument` and never parses Markdown. It writes its
-/// own markup, because swift-markdown's `HTMLFormatter` puts text in
-/// unescaped and drops heading ids. Everything it puts in the page passes
+/// own markup, because the formatter swift-markdown offered put text in
+/// unescaped and dropped heading ids. Everything it puts in the page passes
 /// through `XMLEscaping`, so the page parses whatever the book's text holds.
 ///
 /// The page is a few lines of frame, then the title heading, the contents

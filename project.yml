@@ -10,17 +10,14 @@ options:
 # an exactVersion requirement, so regenerating the project can never float to
 # an untested release, and the committed Package.resolved under
 # TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/ pins exact
-# revisions plus the transitive swift-cmark package. `make check` fails when
-# resolution would change that file. To upgrade a package, change its version
-# here, run `make update-packages`, review the Package.resolved diff, run
-# `make check`, and commit both files together.
+# revisions. `make check` fails when resolution would change that file. To
+# upgrade a package, change its version here, run `make update-packages`,
+# review the Package.resolved diff, run `make check`, and commit both files
+# together.
 packages:
   ZIPFoundation:
     url: https://github.com/weichsel/ZIPFoundation.git
     exactVersion: "0.9.20"
-  swift-markdown:
-    url: https://github.com/swiftlang/swift-markdown.git
-    exactVersion: "0.9.0"
   # cmark-gfm, the Markdown parser: the app reads its tree itself (MarkdownTree).
   swift-cmark:
     url: https://github.com/swiftlang/swift-cmark.git
@@ -273,8 +270,6 @@ targets:
       - package: ZIPFoundation
       # The HTML and XML parser, vendored (Vendor/SwiftSoup).
       - target: SwiftSoup
-      - package: swift-markdown
-        product: Markdown
       # The Markdown parser and its GitHub extensions (MarkdownTree).
       - package: swift-cmark
         product: cmark-gfm
@@ -453,8 +448,6 @@ targets:
     dependencies:
       - package: ZIPFoundation
       - target: SwiftSoup_iOS
-      - package: swift-markdown
-        product: Markdown
       # The Markdown parser and its GitHub extensions (MarkdownTree).
       - package: swift-cmark
         product: cmark-gfm

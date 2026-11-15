@@ -5,7 +5,7 @@
 
 It compiles the Kindle reader, the shared HTML converter, the Markdown chapter parser, and the EPUB reader's
 chapter type with `swiftc` (optimized, Swift 5 mode), linked against the packages an earlier Release build left in
-`build/DerivedData/Build/Products/Release` (or under `$KF8_FUZZ_BUILD`; SwiftSoup, swift-markdown, ZIPFoundation), with `Stubs.swift` for the app
+`build/DerivedData/Build/Products/Release` (or under `$KF8_FUZZ_BUILD`; SwiftSoup, swift-cmark, ZIPFoundation), with `Stubs.swift` for the app
 types around them. It is heavy: run it under the heavy-work lock, as every build of this Mac is:
 
     python3 -I Scripts/agents/run_locked.py kf8-reader python3 -I Scripts/test/kf8-fuzz/build-reader.py ...
@@ -26,7 +26,7 @@ PRODUCTS = BUILD + "/DerivedData/Build/Products/Release"
 CHECKOUTS = BUILD + "/DerivedData/SourcePackages/checkouts"
 
 PARSERS = """MOBIBook MOBIError MOBIHeaders MOBIHuffman MOBIIndex MOBIMarkup MOBIPalmDatabase MOBIParser MOBIText KF8Book KF8Layout
-KFXSignature MarkupGuard MarkupScanner MarkupNesting HTMLToMarkdownConverter HTMLReadingText MarkdownParser MarkdownEmphasis MarkdownHeadingAnnotation MarkdownLiteral
+KFXSignature MarkupGuard MarkupScanner MarkupNesting HTMLToMarkdownConverter HTMLReadingText MarkdownParser MarkdownTree MarkdownEmphasis MarkdownHeadingAnnotation MarkdownLiteral
 MarkdownMarker MarkdownMarkerWriter MarkdownPageMarker PublicationSemantics ParserUtilities DocumentByteLimit ArchiveEntryReader
 XMLInputGuard EPUBParser EPUBParser+Navigation ExtractionReport PackageSAXParser PDFExtractionDiagnostics""".split()
 MODELS = ["BookPages", "EPUBMetadata"]
@@ -46,10 +46,9 @@ def main():
     files += [ROOT + "/TextMouth/Services/OffsetMap.swift", chapters, HERE + "/Main.swift", HERE + "/Stubs.swift"]
     # SwiftSoup is a vendored static library (libSwiftSoup.a); the other packages leave objects.
     objects = [f"{PRODUCTS}/libSwiftSoup.a"]
-    objects += [f"{PRODUCTS}/{name}.o" for name in ("Markdown", "cmark-gfm", "cmark-gfm-extensions", "CAtomic", "ZIPFoundation")]
+    objects += [f"{PRODUCTS}/{name}.o" for name in ("cmark-gfm", "cmark-gfm-extensions", "ZIPFoundation")]
     command = [
         "swiftc", "-swift-version", "5", "-I", PRODUCTS,
-        "-I", CHECKOUTS + "/swift-markdown/Sources/CAtomic/include",
         "-I", CHECKOUTS + "/swift-cmark/src/include",
         "-I", CHECKOUTS + "/swift-cmark/extensions/include",
         "-I", CHECKOUTS + "/ZIPFoundation/Sources/CZLib",

@@ -1,23 +1,22 @@
-import Markdown
 import XCTest
 @testable import TextMouth
 
 /// `MarkdownEmphasis` (October 21, 2026): a line of text whose characters
 /// carry emphasis, written as Markdown that TextMouth's own reader reads
 /// back as exactly those characters, with that emphasis. Every check here
-/// reads the Markdown with swift-markdown, the parser the reader uses, so a
-/// delimiter it would not pair, which a listener would hear as an asterisk,
+/// reads the Markdown with cmark as the reader parses it (`MarkdownTree`), so
+/// a delimiter it would not pair, which a listener would hear as an asterisk,
 /// fails a test. Hermetic: no helper, no library, no file.
 final class MarkdownEmphasisTests: XCTestCase {
     typealias Style = MarkdownEmphasis.Style
 
     // MARK: - Helpers
 
-    /// What swift-markdown reads from `markdown`: the text, and the style of
+    /// What the parser reads from `markdown`: the text, and the style of
     /// each of its scalars from the emphasis and strong emphasis around it.
     private func read(_ markdown: String) -> (text: String, styles: [Style]) {
         var reader = StyleReader()
-        reader.visit(Document(parsing: markdown))
+        MarkdownTree.read(markdown) { reader.visit($0) }
         return (reader.text, reader.styles)
     }
 
@@ -141,7 +140,7 @@ final class MarkdownEmphasisTests: XCTestCase {
         assertReadsBack("abcde", three)
     }
 
-    // MARK: - Every Mix, Read by swift-markdown
+    // MARK: - Every Mix, Read by the Parser
 
     /// Every one of the 4^n mixes of the four styles over short texts of
     /// letters, spaces, digits, and punctuation reads back exactly.
@@ -211,43 +210,37 @@ final class MarkdownEmphasisTests: XCTestCase {
 /// emphasis and strong emphasis around it. Anything that is not text, such
 /// as raw HTML or code, is kept as its raw characters, so it fails the
 /// comparison with the input instead of slipping through.
-private struct StyleReader: MarkupWalker {
+private struct StyleReader {
     var text = ""
     var styles: [MarkdownEmphasis.Style] = []
     private var current: MarkdownEmphasis.Style = []
 
-    mutating func visitEmphasis(_ emphasis: Emphasis) {
+    /// Reads `node` and everything under it.
+    mutating func visit(_ node: MarkdownNode) {
+        switch node.kind {
+        case .emphasis:
+            visitChildren(of: node, adding: .emphasis)
+        case .strong:
+            visitChildren(of: node, adding: .strong)
+        case .text, .inlineHTML:
+            keep(node.literal)
+        case .inlineCode:
+            keep("`" + node.literal + "`")
+        case .softBreak, .lineBreak:
+            keep("\n")
+        default:
+            visitChildren(of: node, adding: [])
+        }
+    }
+
+    /// Reads `node`'s children with `style` added to the style around them.
+    private mutating func visitChildren(of node: MarkdownNode, adding style: MarkdownEmphasis.Style) {
         let outer = current
-        current.insert(.emphasis)
-        descendInto(emphasis)
+        current.formUnion(style)
+        for child in node.children {
+            visit(child)
+        }
         current = outer
-    }
-
-    mutating func visitStrong(_ strong: Strong) {
-        let outer = current
-        current.insert(.strong)
-        descendInto(strong)
-        current = outer
-    }
-
-    mutating func visitText(_ text: Markdown.Text) {
-        keep(text.string)
-    }
-
-    mutating func visitInlineHTML(_ html: InlineHTML) {
-        keep(html.rawHTML)
-    }
-
-    mutating func visitInlineCode(_ code: InlineCode) {
-        keep("`" + code.code + "`")
-    }
-
-    mutating func visitSoftBreak(_ softBreak: SoftBreak) {
-        keep("\n")
-    }
-
-    mutating func visitLineBreak(_ lineBreak: LineBreak) {
-        keep("\n")
     }
 
     /// Adds `string`'s scalars, each in the current style.
