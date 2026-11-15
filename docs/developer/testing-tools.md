@@ -11,7 +11,7 @@ The times below leave out the build, which takes about 5 minutes when nothing is
 ## Load-sensitive tests made to wait
 <!-- id: load-sensitive-tests-made-wait; keys: flaky, flakiness, timing, deadline, busy Mac, expectation, slow Mac; src: TextMouthProductionTests/BookSearchModelTests.swift, TextMouthProductionTests/FeedDownloadTests.swift, TextMouthProductionTests/StorageGenerationMoveTests.swift, TextMouthProductionTests/DataDirectoryMoveTests.swift, TextMouthProductionTests/ViewsAndWindowsReaderSheetTests.swift, TextMouthProductionTests/IntegrationSleepTimerTests.swift, TextMouthProductionTests/ContinueToNextBookTests.swift, TextMouthProductionTests/BookmarkKeyboardAccessTests.swift, TextMouthProductionTests/ReadingCheckpointTests.swift, TextMouthProductionTests/ShortcutConfigFileTests.swift, TextMouthProductionTests/PlaybackSettingsAuditTests.swift, TextMouthProductionTests/FeedUICommandsTests.swift -->
 
-These tests are not load-sensitive, each made to wait for the thing it checks rather than for a moment, and shown to fail when its app code is broken and to pass 5 to 20 times of 5 to 20 under a busy Mac:
+The tests in the first five bullets are not load-sensitive, each made to wait for the thing it checks rather than for a moment, and shown to fail when its app code is broken and to pass 5 to 20 times of 5 to 20 under a busy Mac:
 
 - BookSearchModelTests.testCancelledSearchPublishesNothing and its sibling, whose fake now waits for the cancellation itself.
 - FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped, whose stub drops the connection only once the app has written the first half.
@@ -89,7 +89,7 @@ Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `mak
 - Options: `--classes A,B` adds classes; `--env NAME=VALUE` passes `TEST_RUNNER_NAME=VALUE` to the test host; `--dry-run` prints the command without running it; `--summarize LOG` prints the summary of an existing log; `--changed` picks the classes whose file mentions a type declared in a file changed since the merge-base with `--base REF` (default `main`), and runs them, with `--explain` naming the matching types, `--limit N` keeping the first N classes, and `--list` printing the picks without running them (it is a heuristic, so run the area or `all` before a merge); `--repeat N` builds once, runs the classes N times, and ends with a report of the tests that changed outcome, for a suspected flaky test; `--clean` unregisters the build folder's app and deletes the folder; and `--selftest` checks the script against canned logs.
   `-h` lists the rest.
 - A small area takes a few seconds of tests.
-  The whole suite, `all`, takes about 16 minutes of test time.
+  The whole suite, `all`, took about 16 minutes of test time when it was last measured.
 
 ## Check the lines a branch adds
 <!-- id: check-lines-branch-adds; keys: lint-tests, lint-a11y, lint-ogg, LINT_BASE, linter, static check, Vorbis, Apple reader; src: Scripts/test/trap-lint.py, Scripts/test/test-diff.py, Scripts/test/a11y-lint.py, Scripts/test/ogg-lint.py, Scripts/test/difflint.py, Makefile, TextMouth/Services/ImportAudioConverter.swift -->
