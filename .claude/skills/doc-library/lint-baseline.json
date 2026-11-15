@@ -20,7 +20,7 @@
     "docs/architecture/state/feeds.md": {"date": 3, "line-length": 96, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 33},
     "docs/architecture/state/hosted-test-sandbox.md": {"date": 1, "line-length": 30, "marker-missing": 1, "section-length": 1, "sentences-per-line": 23, "user-quote": 1},
     "docs/architecture/state/imports-audio.md": {"date": 1, "line-length": 27},
-    "docs/architecture/state/imports-braille-tables.md": {"date": 5, "line-length": 42, "sentences-per-line": 25},
+    "docs/architecture/state/imports-braille-tables.md": {"date": 5, "line-length": 35},
     "docs/architecture/state/imports-braille.md": {"date": 4, "line-length": 29},
     "docs/architecture/state/imports-daisy.md": {"date": 1, "line-length": 3},
     "docs/architecture/state/imports-duplicates.md": {"date": 2, "line-length": 18},
