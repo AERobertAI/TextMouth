@@ -23,52 +23,114 @@ When a custom location is missing but its bookmark leads to a folder holding thi
 <!-- id: library-view-model-initializer; keys: Library Not Available, Try Again, sandbox migration, session lease, startup; src: TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift -->
 
 LibraryViewModel's initializer copies a sandboxed release's data on first launch (through DataDirectoryMigrator, keeping the original), starts listening for the data directory's loss, and checks the data directory (checkDataDirectory), reading metadata only.
-Nothing is created or loaded until the check finds the library: then startLibrary creates the data directory's folders, records the library's identity, removes leftover archive extraction folders, loads the library index (loadLibraryIndex), sweeps away the originals of recordings and edited audiobooks whose time is up (sweepAudioOriginalsInBackground), clears what the audio editor left in this Mac's caches when TextMouth last ended with editors open (removeStaleAudioEditCachesInBackground), starts the background work below, and begins the session lease.
+Nothing is created or loaded until the check finds the library: then startLibrary:
+- creates the data directory's folders;
+- records the library's identity;
+- removes leftover archive extraction folders;
+- loads the library index (loadLibraryIndex);
+- sweeps away the originals of recordings and edited audiobooks whose time is up (sweepAudioOriginalsInBackground);
+- clears what the audio editor left in this Mac's caches when TextMouth last ended with editors open (removeStaleAudioEditCachesInBackground);
+- starts the background work below;
+- and begins the session lease.
+
 Otherwise every Library window shows Library Not Available, and the Try Again that first finds the library runs startLibrary.
 
 ## Loading the library and feeds
 <!-- id: loading-library-feeds; keys: index repair, orphan, adopt packages, dataless, recovery, library.json; src: TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
-Loading reads library.json and every feed's own index, the feeds' rows onto the library's feed shelf (feed items, below), and repairs the index against the disk (migrateOldBooksIfNeeded): every feed item's row waits on the shelf meanwhile, books removed with Remove from Library Only stay out, the books the checkpoint journal names take the newer reading positions their records hold (adoptNewerRecordedPositions), equivalent folder rows merge, stale file paths are fixed, legacy books move into packages, packages that two books shared are separated, misplaced packages move into their folders, packages missing from the index are adopted (one whose record names the ID of a book the library lists is left as it is, unadopted and unwritten, as the old copy Replace Existing sent to the Trash is once Finder puts it back, with one ORPHAN_ID_LISTED line: ST04, in [Imports](state/imports-duplicates.md)), the feed items whose files are here join the books (joinFeedItems), and the result is saved.
-Every check and read of the repair leaves dataless files in the cloud, and nothing is moved, rewritten, adopted, separated, relocated, or taken out on the strength of a check that met a dataless folder or a read that was refused; one MAINTENANCE_SKIPPED_IN_CLOUD line counts the books left as they were.
+Loading reads library.json and every feed's own index, the feeds' rows onto the library's feed shelf (see [The reading list and feed items](state/library-index-reading-feeds.md)), and repairs the index against the disk (migrateOldBooksIfNeeded):
+- every feed item's row waits on the shelf meanwhile;
+- books removed with Remove from Library Only stay out;
+- the books the checkpoint journal names take the newer reading positions their records hold (adoptNewerRecordedPositions);
+- equivalent folder rows merge;
+- stale file paths are fixed;
+- legacy books move into packages;
+- packages that two books shared are separated;
+- misplaced packages move into their folders;
+- packages missing from the index are adopted;
+  - one whose record names the ID of a book the library lists is left as it is, unadopted and unwritten, as the old copy Replace Existing sent to the Trash is once Finder puts it back, with one ORPHAN_ID_LISTED line (ST04, in [Imports: duplicates](state/imports-duplicates.md));
+- the feed items whose files are here join the books (joinFeedItems);
+- and the result is saved.
+
+Every check and read of the repair leaves dataless files in the cloud, and nothing is moved, rewritten, adopted, separated, relocated, or taken out on the strength of a check that met a dataless folder or a read that was refused.
+One MAINTENANCE_SKIPPED_IN_CLOUD line counts the books left as they were.
 The look for a removal marker, which is almost always absent, stops at the first folder above it that is there and not dataless, the package itself, rather than asking every folder up to the data directory.
-An unreadable index skips all of this and enters recovery instead (below).
+An unreadable index skips all of this and enters recovery instead (see [Index-write suspension](state/library-index.md)).
 
 ## Background book maintenance
 <!-- id: background-book-maintenance; keys: Books Finished, metadata refresh, text anchors, statistics, hand-edited title, caches; src: TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+TextAnchors.swift, TextMouth/ViewModels/LibraryViewModel+ManifestEdits.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Services/ReadingStatsService.swift -->
 
-LibraryViewModel then brings every book up to date in the background (updateContentCachesAndStatistics): after the metadata refresh, the words of places saved before anchors (captureMissingTextAnchors, T06's branch B), then every book's text cache, and after that its statistics, leaving books whose files are in the cloud as they are.
+LibraryViewModel then brings every book up to date in the background (updateContentCachesAndStatistics).
+It does so after the metadata refresh: the words of places saved before anchors (captureMissingTextAnchors, T06's branch B), then every book's text cache, and after that its statistics.
+It leaves books whose files are in the cloud as they are.
 The batch finds the books whose caches need work off the main thread (booksNeedingCacheUpdate, on a utility queue), and starts on the main actor once it has them.
-Once that maintenance has ended, and only when the statistics were read from their file (ReadingStatsService.statsReadFromFile; over stand-ins for a missing, unreadable, cloud-only, or unavailable file nothing is moved, recorded, or logged, and a later launch makes the move), the library puts each book Books Finished counts whose row reads 100 percent (99.5 or more, rowsHundredPercent) exactly at its end, once on each Mac (moveFinishedBooksToTheirEndsOnce, P07; the preference library.finishedBooksAtEndVersion, kept on this Mac alone): it reads each book's content index off the main thread, with dataless files left in the cloud, and saves the end through persistReadingPosition(bookID:position:markingOpened: false), as a reader saves a place but keeping the book's lastOpened in its row and record (Library.updateReadingPosition(bookID:position:markingOpened:), whose default dates a reader's save as an opening).
+Once that maintenance has ended, and only when the statistics were read from their file (ReadingStatsService.statsReadFromFile), the library puts each book Books Finished counts whose row reads 100 percent (99.5 or more, rowsHundredPercent) exactly at its end.
+It does so once on each Mac (moveFinishedBooksToTheirEndsOnce, P07; the preference library.finishedBooksAtEndVersion, kept on this Mac alone).
+Over stand-ins for a missing, unreadable, cloud-only, or unavailable file nothing is moved, recorded, or logged, and a later launch makes the move.
+The move reads each book's content index off the main thread, with dataless files left in the cloud, and saves the end through persistReadingPosition(bookID:position:markingOpened: false), as a reader saves a place but keeping the book's lastOpened in its row and record.
+Library.updateReadingPosition(bookID:position:markingOpened:)'s default dates a reader's save as an opening.
 A book whose record or index is only in the cloud, or that a reader has open or opens meanwhile, keeps its place, and the move is recorded as made only once none waits, so a later launch makes it then; a book whose index disagrees with its row's measure is left.
 One FINISHED_BOOKS_AT_END line counts what it did.
-First, once for each library on this Mac, keepHandEditedTitlesInManifestsOnce writes each book of tracks' hand-edited title and author into its manifest where the manifest gives another, on the manifest sessions' queue, before any look; until it is recorded (library.manifestHandEditsKeptVersion, keyed by the library's identity), each look keeps its book's hand edits first.
+First, once for each library on this Mac, keepHandEditedTitlesInManifestsOnce writes each book of tracks' hand-edited title and author into its manifest where the manifest gives another, on the manifest sessions' queue, before any look.
+Until it is recorded (library.manifestHandEditsKeptVersion, keyed by the library's identity), each look keeps its book's hand edits first.
 Each look then writes what its manifest is owed (BookManifestEditSessions.settleOwedFields(of:adding:isDataless:), ManifestOwedFields; package records) before it compares, so a title or author the manifest could not take stands over its stale value.
 Before the metadata refresh, it takes the edits of audiobooks' manifests made while TextMouth was closed or on another Mac (takeOutsideManifestEdits, FR18), one book at a time on a utility queue, leaving books whose files are in the cloud as they are.
 
 ## Search Library preparation
 <!-- id: search-library-preparation; keys: search index, Low Power Mode, background priority, text search; src: TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift -->
 
-When every pass that rebuilds books' texts has ended, LibraryViewModel.startupMaintenanceDidEnd() starts Search Library's background preparation (LibrarySearchPreparation.shared.libraryIsReady(books:moves:); see [Text caches](state/text-caches-rereads-edits.md)): a pass that makes the search text of each book that has none or whose text changed, two books at a time at background priority, held back while the data directory moves, and not run in Low Power Mode or in a process hosting tests.
+When every pass that rebuilds books' texts has ended, LibraryViewModel.startupMaintenanceDidEnd() starts Search Library's background preparation (LibrarySearchPreparation.shared.libraryIsReady(books:moves:); see [Search Library's search texts](state/text-caches-rereads-edits.md)).
+It is a pass that makes the search text of each book that has none or whose text changed, two books at a time at background priority, held back while the data directory moves, and not run in Low Power Mode or in a process hosting tests.
 
 ## Starting the feed engine
 <!-- id: starting-feed-engine; keys: podcast, RSS, feed refresh, downloads, Trash, Removal Behavior; src: TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/ViewModels/LibraryViewModel+FeedItemMove.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Models/Feed.swift -->
 
-startLibrary also starts the feed engine in the background (startFeeds, FeedCenter.start(library:)): it moves the feed settings that the List and download choice retired to the choice, once, before anything reads it (FeedSettings.moveToItemPolicyIfNeeded(in:)), reads every feed's record off the main thread, moving a feed's retired kept-entries number to a choice of its own (moveKeptEntriesOverrides()), reads this Mac's fetch details, and sweeps away what interrupted downloads left; then, outside a process hosting tests, it sends the hidden .removing- folders a Delete Download cut short left in the feeds' own folders to the Trash, or deletes them, as Removal Behavior says (sweepRemovalHolders(), through FeedItemPackage.removalHolders(in:); it runs only while feedLibraryIsComplete, so never while the library index is recovered; FeedItemPackage.removalHolder(for:beside:) names holders .removing-<book ID>-<UUID>, and sweepHolder(_:puttingBackInto:remove:) puts back what a still-downloaded row's package lacks (packageWaitingForItsFiles) and sends the rest through FeedEnvironment.removeItem folder by folder (HolderSweep); FEED_HELD_ASIDE_SWEPT, or FEED_HELD_ASIDE_LEFT for one left for the next launch), asks again for the downloads under way or waiting when TextMouth last quit (resumeDownloadsSavedAtQuit), deletes the played downloads that are due, runs the newest-N rule's first pass over every feed (the List and download choice, under Feeds, below), watches feedItems and feedNewestCount for the rule (itemPolicyChanged(for:)), refreshes every feed when feedRefreshAtLaunch is on, and refreshes them again every feedRefreshIntervalHours, never holding the library back.
-Once the records have loaded, the library moves the downloads made before FR11 into their feeds' own folders, returns to the library, as books, the downloads of each feed whose folder is here while its record is gone, and marks downloaded again the items an older TextMouth marked otherwise whose files are on this Mac (moveFeedDownloadsOnceRecordsLoad(); feed items, below).
+startLibrary also starts the feed engine in the background (startFeeds, FeedCenter.start(library:)):
+- it moves the feed settings that the List and download choice retired to the choice, once, before anything reads it (FeedSettings.moveToItemPolicyIfNeeded(in:));
+- reads every feed's record off the main thread, moving a feed's retired kept-entries number to a choice of its own (moveKeptEntriesOverrides());
+- reads this Mac's fetch details;
+- and sweeps away what interrupted downloads left.
+
+Then, outside a process hosting tests, it:
+- sends the hidden .removing- folders a Delete Download cut short left in the feeds' own folders to the Trash, or deletes them, as Removal Behavior says (sweepRemovalHolders(), through FeedItemPackage.removalHolders(in:));
+  - it runs only while feedLibraryIsComplete, so never while the library index is recovered;
+  - FeedItemPackage.removalHolder(for:beside:) names holders .removing-<book ID>-<UUID>;
+  - and sweepHolder(_:puttingBackInto:remove:) puts back what a still-downloaded row's package lacks (packageWaitingForItsFiles) and sends the rest through FeedEnvironment.removeItem folder by folder (HolderSweep);
+  - it logs FEED_HELD_ASIDE_SWEPT, or FEED_HELD_ASIDE_LEFT for one left for the next launch;
+- asks again for the downloads under way or waiting when TextMouth last quit (resumeDownloadsSavedAtQuit);
+- deletes the played downloads that are due;
+- runs the newest-N rule's first pass over every feed (see [List and download choice, newest-N rule](state/feeds-interface.md));
+- watches feedItems and feedNewestCount for the rule (itemPolicyChanged(for:));
+- refreshes every feed when feedRefreshAtLaunch is on;
+- and refreshes them again every feedRefreshIntervalHours, never holding the library back.
+
+Once the records have loaded, the library:
+- moves the downloads made before FR11 into their feeds' own folders;
+- returns to the library, as books, the downloads of each feed whose folder is here while its record is gone;
+- and marks downloaded again the items an older TextMouth marked otherwise whose files are on this Mac (moveFeedDownloadsOnceRecordsLoad(); see [The reading list and feed items](state/library-index-reading-feeds.md)).
 
 ## Settings, config.json, and shortcuts
 <!-- id: settings-config-json-shortcuts; keys: preferences, keyboard shortcuts, config file, old form; src: TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/KeyboardShortcutManager.swift -->
 
 SettingsViewModel's initializer applies config.json, reconciles it with the preferences, and starts ConfigService watching the file.
-Before it applies the file (applyFileAtLaunch), the first launch whose preferences hold no record of the shortcuts the user edited makes one from the shortcuts saved before (KeyboardShortcutManager.moveSavedShortcutsIfNeeded; keyboard shortcuts, below).
+Before it applies the file (applyFileAtLaunch), the first launch whose preferences hold no record of the shortcuts the user edited makes one from the shortcuts saved before (KeyboardShortcutManager.moveSavedShortcutsIfNeeded; see [Keyboard shortcuts](state/preferences-shortcuts.md)).
 A config.json with no "default…" entry and no object is in the old form, and is read after the move as the move reads it: a list equal to its action's default edits nothing (KeyboardShortcutManager.adopt(_:in:)); a hand-written file of only lists is read the same way.
 While the data directory is unavailable, ConfigService reads, writes, and watches nothing, and it reconciles the file once the library is back.
 
 ## Memory guard and converter sweep
 <!-- id: memory-guard-converter-sweep; keys: afconvert, textutil, afinfo, braille tables, leftover processes, staging folders; src: TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/PlaybackMemoryGuard.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Models/BrailleTableCatalog.swift -->
 
-applicationDidFinishLaunching tells of a quit to protect the Mac (PlaybackMemoryGuard.tellOfAQuitToProtectTheMac), begins the memory guard's readings (PlaybackMemoryGuard.shared.beginWatching()), and sweeps in the background the converters an earlier TextMouth left running (OrphanedConversionSweep.sweepInBackground(), REV17a, for afconvert, and sweepTextutilInBackground(), FMT13, for textutil and its working folders, and sweepAfinfoInBackground(), FMT09, for afinfo and its captured-output files; see [Imports](state/imports-audio.md)) and the hidden staging folders that moves of the data directory left (MigrationStagingLeftovers.sweepInBackground(); see [The data directory](state/data-directory.md)), and reads this Mac's braille tables in the background (BrailleTableCatalog.loadInBackground(); see Braille files, in [Imports](state/imports-braille-tables.md)). applicationShouldTerminate lets the guard's quit through with no questions (B07), and applicationWillTerminate ends every converting child (WatchedProcess.terminateAll()).
+applicationDidFinishLaunching:
+- tells of a quit to protect the Mac (PlaybackMemoryGuard.tellOfAQuitToProtectTheMac);
+- begins the memory guard's readings (PlaybackMemoryGuard.shared.beginWatching());
+- sweeps in the background the converters an earlier TextMouth left running (see [Imports: audio](state/imports-audio.md)):
+  - OrphanedConversionSweep.sweepInBackground(), REV17a, for afconvert;
+  - sweepTextutilInBackground(), FMT13, for textutil and its working folders;
+  - and sweepAfinfoInBackground(), FMT09, for afinfo and its captured-output files;
+- sweeps in the background the hidden staging folders that moves of the data directory left (MigrationStagingLeftovers.sweepInBackground(); see [The data directory](state/data-directory.md));
+- and reads this Mac's braille tables in the background (BrailleTableCatalog.loadInBackground(); see Braille files, in [Imports: braille tables and the translator](state/imports-braille-tables.md)).
+
+The AppDelegate's applicationShouldTerminate lets the guard's quit through with no questions (B07), and applicationWillTerminate ends every converting child (WatchedProcess.terminateAll()).
 The rest of a quit is in the next bullet.
 
 ## Quitting the app
@@ -148,7 +210,7 @@ The memory guard keeps its direct call, since the delegate answers it at once.
 A source scan keeps it so.
 Any line that calls terminate(, names terminate in a #selector, or calls exit( or _exit( fails the scan unless that same line contains quit-ok: and a reason after it, in a comment, as the helper's own call does.
 The mark exempts that line only, never a whole file, and a mark anywhere on the line counts.
-The scan runs in QuitWhileHeldTests.testNoSourceAsksAppKitToQuitExceptTheHelperAndTheMemoryGuard and in Scripts/test/quit-while-held.py (see [Testing TextMouth](../developer/testing-tools.md)).
+The scan runs in QuitWhileHeldTests.testNoSourceAsksAppKitToQuitExceptTheHelperAndTheMemoryGuard and in Scripts/test/quit-while-held.py (see [Reusable test tools](../developer/testing-tools.md)).
 Only TextMouth/ is scanned, and it does not find forceTerminate(), a Selector("terminate:") built from a string, abort(), or kill(.
 
 ### Two AppKit facts behind the design

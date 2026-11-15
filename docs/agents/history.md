@@ -960,6 +960,13 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - The page's account of the iPhone app described the code main held since November 8, 2026.
 - A third launch variable, `TEXTMOUTH_SEARCH_IN_BOOK`, filled the Search in Book field at launch so that a UI test did not type.
 - It was removed on November 10, 2026: the interface tests type on GitHub's runners now.
+- It used to be read at the first activation.
+- A Play from the lock screen that wakes a killed app opens a book first and writes its own mark, and the first activation then read that mark as a crash.
+- The verdict branch of `takeReopeningAtLaunch(fileOpened:)` used to clear the keys too.
+- A Play from the lock screen that opened a book before the first activation had written keys of its own, and the verdict wiped them.
+- Now the verdict only says "TextMouth closed while opening <title>, so it wasn't reopened." and forgets the guard.
+- The import copier and Book content each used to set `UIApplication.isIdleTimerDisabled` and clear it.
+- Whichever let go first let the screen lock for the other.
 
 ## From The iPhone interface: announcements, text, sheets, and search
 
@@ -981,6 +988,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - The audio editor's level measurement moved to a Thread of its own after a few cancelled measurements blocked on October 6 and starved the cooperative pool.
 - The Release app measured 11 MB on October 3, 2026, once `make build` stopped compiling with code coverage and the symbols were stripped into a dSYM that `make install` keeps for the last five installs.
 - It measured 15.4 MB on October 4, with that day's features and LAME's encoder.
+- In the columns style, the Shortcuts tab was 4,113 points tall in the 540-point window, and 223 points wider than any width it was given (TODO A10).
 
 ## From Orchestrating TextMouth's agents
 
@@ -1077,3 +1085,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **The feed world's finish, relaunch, and holdImports:** FeedTestWorld.finish(_:) stops a test's feed engine, stops its downloads as quitting does, waits for its sweeps and passes, and then waits for every write it asked for;
   - relaunch(_:configuring:) lets a test hook the next engine, and holdImports(_:), through a WorkGate, holds the import queue, as the two formerly racing feed tests do to prove the old reading fails, its records (FeedStore.flush()), its fetch details, and the statistics saves;
   - each world's teardown runs it while the world's folders are still there, so no record write fails in, and is announced into, a later test.
+
+## From Shared helpers: values, ordering, and wording
+
+- **TimeEntry's move:** It moved from the audio editor, where it was AudioEditorTimeEntry, with P08.

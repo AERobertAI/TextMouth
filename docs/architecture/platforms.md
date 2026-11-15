@@ -13,6 +13,7 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
 <!-- id: one-source-folder-two-apps; keys: targets, XcodeGen, excludes, Swift 6, strict concurrency, shared code; src: project.yml, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
 
 - Both apps compile the TextMouth source folder. project.yml defines `TextMouth`, the Mac app, and `TextMouthiOS`, the iOS app (how they build is in [Building TextMouth](../developer/building.md)).
+  It also defines the static library targets SwiftSoup and SwiftSoup_iOS, one for each app, which compile the vendored HTML and XML parser in `Vendor/SwiftSoup` (see [Third-party code](../developer/third-party-code.md)).
   The iOS app has the module name TextMouth too, so shared code and shared tests read the same on both.
 - Each app leaves out the other's platform folder:
   - the Mac app leaves out `TextMouth/Platform/iOS/`;
@@ -30,18 +31,31 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
   It holds:
   - `App`: TextMouthApp, AppDelegate, and FrontWindowKind (split out of MenuCommands, which stays in `App`);
   - `Services`: WatchedProcess, OrphanedConversionSweep (and its Textutil extension), PackageFileEditing, BookTextEditor, BookManifestEditor, MenuVisibilityManager, and `Export/WordDocExportWriter`;
-  - `Views`: the window controllers of the Record window and the audio editor, the audio editor's Edit menu and launcher, VoiceOverFocus, ReadOnlyTextArea, SilentKeyEquivalent, SwitchedWindowFocus, LogsInFinder, and `Reader/WindowAccessor`.
+  - `Views`:
+    - the window controllers of the Record window and the audio editor, and the audio editor's Edit menu and launcher;
+    - the Search Library window (`LibrarySearch/LibrarySearchWindowController` and `LibrarySearchWindowView`);
+    - and QuitNotice, VoiceOverFocus, ReadOnlyTextArea, SilentKeyEquivalent, SwitchedWindowFocus, LogsInFinder, and `Reader/WindowAccessor`.
 - `TextMouth/Platform/iOS/` holds what only the iOS app compiles: the iPhone app's own code (its app and scene delegates, views, and services), IOSUnavailable, and a stand-in for each Mac-only type that shared code still names, in folders that mirror the Mac's.
   The iPhone's plain types, the ones that import no UIKit, are in the shared folder `TextMouth/Phone/` instead, so the Mac's tests reach them.
   A stand-in's file name ends `+iOS` and starts with the comment `// Phase 0 stand-in:`, which says what the Mac version does and what iOS does instead.
+
+### The iOS Info.plist
+<!-- id: ios-info-plist; keys: Info.plist, UIBackgroundModes, scene manifest, LSItemContentTypes, check-ios-plist, sync-info-plist; src: project.yml, Makefile, Scripts/ios/sync-info-plist.py, TextMouth/Platform/iOS/Info.plist, TextMouth/Resources/Info.plist, TextMouthProductionTests/IOSInfoPlistTests.swift -->
+
 - The iOS app has one Info.plist, an Info.plist of its own, `TextMouth/Platform/iOS/Info.plist`, which project.yml names in `INFOPLIST_FILE` and Xcode merges into the plist it generates (`GENERATE_INFOPLIST_FILE`).
   Until 0.4.1 the iOS configurations used the Mac's plist, by accident: XcodeGen sets `INFOPLIST_FILE` to the first `Info.plist` among a target's sources, even one the target excludes.
   `Scripts/ios/sync-info-plist.py` writes the iOS file from the Mac's, `TextMouth/Resources/Info.plist`, so the two cannot drift apart by hand, and `make check-ios-plist` (`--check`) exits 1 when the iOS file is stale:
-  - It leaves out the document types iOS cannot import, with the declaration of any type nothing else names: "Ogg Audio" and "Audio Converted at Import" (the import converts that audio with `afconvert`, which iOS cannot start), "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is the system's type for `.caf` files too, which are converted the same way, so `.alac` is not offered on iOS either), and the BRF, BRL, and PEF braille files (reading them takes the braille helper).
+  - It leaves out the document types iOS cannot import, with the declaration of any type nothing else names:
+    - "Ogg Audio" and "Audio Converted at Import" (the import converts that audio with `afconvert`, which iOS cannot start);
+    - "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is the system's type for `.caf` files too, which are converted the same way, so `.alac` is not offered on iOS either);
+    - and the BRF, BRL, and PEF braille files (reading them takes the braille helper).
   - It leaves out the keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which are macOS's, and, until 0.4.2, added `.azw3` to the Kindle MOBI type and its declaration.
     From 0.4.2 the Mac's own list names `.azw3` (FMT48), so that addition is gone: `ADDED_EXTENSION` was removed from Scripts/ios/sync-info-plist.py in 0.4.3, and the iOS plist's Kindle type is the Mac's, unchanged.
     `make check-ios-plist` still exits 0, with the file as it was.
-  - It adds the two keys that only iOS has (`IOS_ONLY_KEYS` in the script): `UIBackgroundModes` with the one mode `audio`, without which every book stops as the screen locks, and `UIApplicationSceneManifest` with `UIApplicationSupportsMultipleScenes` false, so the app has one scene at a time, an iPad included, since one reading session cannot serve two windows.
+  - It adds the two keys that only iOS has (`IOS_ONLY_KEYS` in the script):
+    - `UIBackgroundModes` with the one mode `audio`, without which every book stops as the screen locks;
+    - and `UIApplicationSceneManifest` with `UIApplicationSupportsMultipleScenes` false, so the app has one scene at a time, an iPad included, since one reading session cannot serve two windows.
+
     The scene's delegate is named in code, by `TextMouthAppDelegate`, so the manifest names no configuration.
     The script stops, rather than hide a mistake, if the Mac's plist ever holds one of those two keys.
   - project.yml leaves out `INFOPLIST_KEY_UIApplicationSceneManifest_Generation`, because Xcode's generated manifest would allow several scenes.
@@ -50,9 +64,14 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
   - iOS goes by the types a document type names (`LSItemContentTypes`) and the extensions their declarations tag, not by `CFBundleTypeExtensions`, which is why a type is left out by name.
     Everything else is the Mac's, including the Kindle MOBI and KFX types and the App Transport Security setting feeds need.
   - `IOSInfoPlistTests` reads both plists and the project's per-configuration setting.
-    It checks that the iOS list is the Mac's less the named exceptions, and compares the Kindle MOBI type with the Mac's whole, like every other type, with its explicit extension list, that the background modes are `audio` alone, that the app allows one scene, that file sharing is off, that no plist key is also a build setting, and that each configuration of the project uses its own app's plist.
+    It checks that the iOS list is the Mac's less the named exceptions, and compares the Kindle MOBI type with the Mac's whole, like every other type, with its explicit extension list.
+    It also checks that the background modes are `audio` alone, that the app allows one scene, that file sharing is off, that no plist key is also a build setting, and that each configuration of the project uses its own app's plist.
   - Nothing has run on a device: whether `Info.plist` is the place iOS reads `.azw3` from is unchecked.
     The simulator build merges the file into Xcode's generated plist and installs, and `make check-ios-plist` passes at 1fefa2cf.
+
+### The files directly in Platform
+<!-- id: platform-shared-files; keys: PlatformTypes, PlatformWindow, PlatformFont, PlatformView, PlatformApplication, PlatformControlStyles; src: TextMouth/Platform/PlatformTypes.swift, TextMouth/Platform/PlatformApplication.swift, TextMouth/Platform/PlatformControlStyles.swift -->
+
 - The files directly in `TextMouth/Platform/` are shared by both apps:
   - `PlatformTypes` declares three aliases: `PlatformWindow` (NSWindow on the Mac, UIWindow on iOS), `PlatformFont` (NSFont, UIFont), and `PlatformView` (NSView, UIView);
   - `PlatformApplication` answers the application-wide questions shared code asks: `keyWindow`, `mainWindow`, `isActive`, `didBecomeActiveNotification`, and `didResignActiveNotification`.
@@ -78,7 +97,10 @@ Every change phase 0 made to a file the Mac compiles is one of these five, and n
   `.toggleStyle(.checkbox)` is `.checkboxToggleStyle()`, and `.pickerStyle(.radioGroup)` is `.radioGroupPickerStyle()`.
   On the Mac each applies exactly the old style.
 - **A split, unchanged.**
-  When a file holds shared code and code only the Mac can compile, a whole declaration moves, unchanged, into a file of its own: FrontWindowKind out of MenuCommands and WindowAccessor out of BookReaderWindowView, both into `Platform/macOS/`, and AudioEditorLauncher's `describe(_:)`, which the shared audio editor models call on either app, into a shared extension, `Views/AudioEditor/AudioEditorLauncher+Describe.swift`.
+  When a file holds shared code and code only the Mac can compile, a whole declaration moves, unchanged, into a file of its own:
+  - FrontWindowKind out of MenuCommands and WindowAccessor out of BookReaderWindowView, both into `Platform/macOS/`;
+  - and AudioEditorLauncher's `describe(_:)`, which the shared audio editor models call on either app, into a shared extension, `Views/AudioEditor/AudioEditorLauncher+Describe.swift`.
+
 
 `make mac-projection` checks this (see [Building TextMouth](../developer/building.md)).
 It reads each changed file as the Mac compiles it, resolving `#if os(macOS)` the Mac's way and reading each alias and helper as the Mac expression it stands for, and prints what is left.
@@ -106,13 +128,26 @@ Each of the four closures is a one-line default or argument made into a closure 
     Every other document format reads on iOS through TextMouth's own readers, which are shared code with no AppKit and no process: rich text and RTFD, Word 6 to Word 2003, Word, OpenDocument text, Word 2003 XML, MOBI, and KFX (see [Imports](state/imports.md)).
     OpenDocument text and Word 2003 XML read the same on the Mac since 0.4.0, and Word 6 and Word 95 documents since 0.4.1.
   - Editing in another app: PackageFileEditing's workspace opener throws, and BookTextEditor and BookManifestEditor start no session (`canEditText` is false).
-  - Windows and keys: WindowAccessor reports no window; SilentKeyEquivalent takes no key; SwitchedWindowFocus does nothing; FrontWindowKind is always nil; LogsInFinder says showing the logs in Finder is not available on iPhone yet; `FunctionKeyConstants+iOS` gives the 72 function-key constants NSEvent.h defines, with its values, so config.json's key names (pageDown, f5, and the rest) read the same.
-  - VoiceOver: VoiceOverFocus and StandardVoiceOverFocus are hidden views; VoiceOverAnnouncer posts `AccessibilityNotification.Announcement`, mapping the shared high and medium priorities to iOS's default and low to iOS's low (see "The announcement priorities on iOS", below); `NSAccessibilityPriorityLevel` exists on iOS as an enum.
+  - Windows and keys:
+    - WindowAccessor reports no window;
+    - SilentKeyEquivalent takes no key;
+    - SwitchedWindowFocus does nothing;
+    - FrontWindowKind is always nil;
+    - LogsInFinder says showing the logs in Finder is not available on iPhone yet;
+    - `FunctionKeyConstants+iOS` gives the 72 function-key constants NSEvent.h defines, with its values, so config.json's key names (pageDown, f5, and the rest) read the same.
+  - VoiceOver:
+    - VoiceOverFocus and StandardVoiceOverFocus are hidden views;
+    - VoiceOverAnnouncer posts `AccessibilityNotification.Announcement`, mapping the shared high and medium priorities to iOS's default and low to iOS's low (see [The announcement priorities on iOS](platforms-phone-interface.md));
+    - `NSAccessibilityPriorityLevel` exists on iOS as an enum.
   - Text: ReadOnlyTextArea is a read-only, selectable `UITextView` with the Mac's label.
   - Recording and editing audio: the Record window and audio editor controllers and the audio editor launcher do nothing; the capture backend's `start` throws `IOSUnavailable` for "Recording"; FFmpeg's `run` throws that ffmpeg is missing.
   - Now Playing: audio-device queries answer "no device", and the device listeners are never installed.
   - Smaller ones: PDF text reading's bold and italic traits (`UIFontDescriptorSymbolicTraits+iOS`), and `isMainWindow` on UIWindow.
-- Some Mac-only work has no stand-in file, only an `#else` branch where it is called: the quit hold and the memory guard's alert and quit do nothing on iOS; opening TextMouth again throws `IOSUnavailable`; Word 97-2003 export (`WordDocExportWriter`) is left out of the list of export writers; and the file and folder panels (DAISY folder import, OPML import, the data directory's folder chooser, Export's destination, and the text input's open-in-editor action) are empty branches.
+- Some Mac-only work has no stand-in file, only an `#else` branch where it is called:
+  - the quit hold and the memory guard's alert and quit do nothing on iOS;
+  - opening TextMouth again throws `IOSUnavailable`;
+  - Word 97-2003 export (`WordDocExportWriter`) is left out of the list of export writers;
+  - and the file and folder panels (DAISY folder import, OPML import, the data directory's folder chooser, Export's destination, and the text input's open-in-editor action) are empty branches.
 
 ## The portable XML tree
 <!-- id: portable-xml-tree; keys: XMLDocument, XPath, XMLParser, SwiftSoup, Tidy, differential test, stack size; src: TextMouth/Parsers/PortableXML.swift, TextMouth/Parsers/PortableXMLPath.swift, TextMouth/Parsers/PortableXMLBuilder.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/EPUBParser.swift, TextMouth/Platform/iOS/Parsers/XMLTree+iOS.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/PortableXMLCorpus.swift -->
@@ -125,8 +160,10 @@ So phase 0 added a portable tree that has the part of the interface those reader
 - `Parsers/PortableXMLPath.swift` is the XPath subset the readers use: an optional `//`, steps that are `*` with any number of `[local-name()='x']`, `[@a]`, and `[@a='v']` predicates.
   Anything else throws `PortableXMLError.unsupportedXPath`.
 - `Parsers/PortableXMLBuilder.swift` builds the tree with no recursion.
-  A strict reader runs on Foundation's `XMLParser`; a lenient reader, used only when Tidy is asked for and the strict reading fails, runs on SwiftSoup's XML parser, which it reaches only through `MarkupGuard.parseXML(_:baseURI:deepestNesting:)` with `deepestNesting` set to `PortableXMLDocument.maximumDepth`, 512.
-  The guard counts the depth from the bytes before SwiftSoup builds anything and measures the parsed tree again afterwards, so markup nested deeper never becomes a tree of SwiftSoup's own, whose recursion would overflow the stack of an import (see [Shared helpers](shared-helpers-parsers.md)).
+  A strict reader runs on Foundation's `XMLParser`.
+  A lenient reader, used only when Tidy is asked for and the strict reading fails, runs on SwiftSoup's XML parser, which it reaches only through `MarkupGuard.parseXML(_:baseURI:deepestNesting:)` with `deepestNesting` set to `PortableXMLDocument.maximumDepth`, 512.
+  The guard counts the depth from the bytes before SwiftSoup builds anything and measures the parsed tree again afterwards, so markup nested deeper never becomes a tree of SwiftSoup's own, whose recursion would overflow the stack of an import.
+  See [Shared helpers: readers and markup guards](shared-helpers-parsers.md).
   Either layer's refusal is `PortableXMLError.tooDeep`, and a document with too many tags or attributes throws `MarkupRefusal`.
   A tree deeper than 512 levels is refused, a document that declares its own entities is refused, and releasing a tree is iterative, so a hostile feed cannot overflow the stack or hang the app.
 - The markup guard asks for a thread with a 490 MiB stack (`MarkupGuard.onLargeStack`, see Shared helpers in [Architecture](../../ARCHITECTURE.md)).
@@ -140,9 +177,9 @@ So phase 0 added a portable tree that has the part of the interface those reader
 - `Platform/iOS/Parsers/XMLTree+iOS.swift` is the iOS-only file that makes `XMLDocument`, `XMLElement`, and `XMLNode` the portable classes.
   The Mac compiles the portable tree too, but only `PortableXMLDifferentialTests` uses it: no Mac code reads through it, so the Mac's own EPUB and feed reading is unchanged.
 - `PortableXMLDifferentialTests` is what makes the tree trustworthy.
-  It reads 104 documents with Foundation's `XMLDocument` and with the portable tree, strictly and tidied: the 16 XML documents of the five test EPUBs, 27 feed, OPML, and OPF fixtures, and 61 small documents in `PortableXMLCorpus`.
+  It reads with Foundation's `XMLDocument` and with the portable tree, strictly and tidied, every XML document of every `.epub` under TestData (17 are tracked), the feed, OPML, and OPF fixtures there, and the small documents in `PortableXMLCorpus`.
   It compares every node's kind, level, name, local name, prefix, namespace, and string value, every attribute, and the answers to the XPath expressions the four reader files use (a scan test confirms every XPath string in them is one the comparison makes).
-  The trees agree except where `knownDifferences` lists a difference, 14 in all, each with its reason and an evidence fragment the reported difference must contain; a listed difference that goes away fails the test.
+  The trees agree except where `knownDifferences` lists a difference, 16 in all, each with its reason and an evidence fragment the reported difference must contain; a listed difference that goes away fails the test.
   Some differences are accepted and hidden on purpose: attribute order within an element, `*` selecting a processing instruction in Foundation, the DTD node and XML declaration not being nodes, and the depth bound.
 - `EPUBParser.updateOPFMetadata`, which writes a book's details into its EPUB, is wrapped in `#if os(macOS)`: its output must match what Foundation's pretty printer writes, and the portable tree does not write.
   On iOS it throws `IOSUnavailable` for "Saving a book's details into its EPUB file".
@@ -152,8 +189,9 @@ So phase 0 added a portable tree that has the part of the interface those reader
 
 The iPhone interface is built from research/IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list.
 This section says how the code is put together.
-It describes the code main holds: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below).
-The Search in Book of branch `ios/search-1109` (below) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
+It describes the code main holds: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108`.
+The fixes are the sheet buttons ([PhoneSheetButton: where a sheet's buttons go](platforms-phone-interface.md)) and the full-contrast text ([PhoneTextStyle: the phone's text at full contrast](platforms-phone-interface.md)).
+The Search in Book of branch `ios/search-1109` (see [Search in Book](platforms-phone-interface.md)) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
 
 ### The frame
 <!-- id: iphone-frame; keys: UIApplicationDelegate, scene delegate, magic tap, @main, life cycle, two readers; src: TextMouth/Platform/iOS/App/TextMouthAppDelegate.swift, TextMouth/Platform/iOS/App/TextMouthSceneDelegate.swift, TextMouth/Platform/iOS/App/MagicTapWindow.swift, TextMouth/Phone/PhoneAppModel.swift, TextMouth/Phone/PhoneSession.swift, TextMouth/Phone/PhoneLifeCycle.swift, TextMouth/Phone/ReaderPhoneHooks.swift -->
@@ -241,8 +279,7 @@ The Search in Book of branch `ios/search-1109` (below) is merged into main with 
 - The session reads and clears it in its initializer, which runs at launch, before any reader exists.
   - It keeps what it read in `openingBookAtLastEnd`.
   - `takeReopeningAtLaunch(fileOpened:)` acts on it at the first activation.
-- It used to be read at the first activation.
-  A Play from the lock screen that wakes a killed app opens a book first and writes its own mark, and the first activation then read that mark as a crash.
+- It is not read at the first activation: a Play from the lock screen that wakes a killed app opens a book first and writes its own mark, which the first activation would take for a crash.
 - The reopen keys are cleared with the guard (0.4.3), in the same step, as the session is made.
   - The three keys are `reopenBookKey`, `reopenShowsReaderKey`, and `reopenFromReadingListKey`.
     `PhoneSession.init` removes them when it finds a guard, with `forgetReopening(in:)`, the one place that lists them.
@@ -251,11 +288,12 @@ The Search in Book of branch `ios/search-1109` (below) is merged into main with 
     Now it reopens nothing.
   - Without a guard, `init` leaves the keys for the first activation, which reopens the book as before.
 - The verdict branch of `takeReopeningAtLaunch(fileOpened:)` keeps the keys of a book opened since.
-  - It used to clear the keys too.
-    A Play from the lock screen that opened a book before the first activation had written keys of its own, and the verdict wiped them.
-  - Now the verdict only says "TextMouth closed while opening <title>, so it wasn't reopened." and forgets the guard.
+  - It does not clear the keys either: a Play from the lock screen that opens a book before the first activation writes keys of its own.
+  - The verdict only says "TextMouth closed while opening <title>, so it wasn't reopened." and forgets the guard.
     The keys of the book opened since stand.
-  - The tests: `testTheReopenKeysGoWithTheCrashGuardWhenTheSessionIsMade`, `testTheVerdictLeavesTheKeysOfABookOpenedSince`, and `testTheReopenKeysStandWhenNoCrashGuardIsFound` in `PhoneSessionTests`, and `PhoneLifeCycleReopeningTests`, whose crash test writes the keys beside the guard, before the session, and asserts the keys are gone after `reopenAtLaunch`.
+  - The tests:
+    - `testTheReopenKeysGoWithTheCrashGuardWhenTheSessionIsMade`, `testTheVerdictLeavesTheKeysOfABookOpenedSince`, and `testTheReopenKeysStandWhenNoCrashGuardIsFound` in `PhoneSessionTests`;
+    - and `PhoneLifeCycleReopeningTests`, whose crash test writes the keys beside the guard, before the session, and asserts the keys are gone after `reopenAtLaunch`.
   - Still open, and older than this change: `registerOpenBook` saves the book being opened as the last opened.
     If that save lands before a crash while opening a book, a lock-screen Play can open it, and the first activation then says it closed while opening that book while it plays.
 - When the guard finds a crash, the book is not reopened, and the listener hears "TextMouth closed while opening <title>, so it wasn't reopened."
@@ -273,8 +311,7 @@ The Search in Book of branch `ios/search-1109` (below) is merged into main with 
 - The keeper tells its `apply` closure whether the screen should stay awake, once per change.
   The screen should stay awake while any hold is in force.
 - `UIApplication.isIdleTimerDisabled` is one app-wide flag.
-  - The import copier and Book content each used to set it and clear it.
-  - Whichever let go first let the screen lock for the other.
+  - Two owners that each set it and then cleared it would let whichever let go first lock the screen for the other.
 - `PhoneScreenSleep`, in `Platform/iOS/Services`, holds the one keeper, whose `apply` sets the flag.
   Nothing else sets the flag.
 - The keeper imports no UIKit, so the Mac's tests decide every case.
