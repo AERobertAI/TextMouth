@@ -51,7 +51,7 @@ The agent:
    It ends with `done: <branch>` and `bbs release <slug> --all`; posts are short, and the board's topic limit is 200 characters.
 3. Tests through the build train and never builds on its own: it commits, runs `make typecheck-tests REF=<commit>`, and queues `python3 -I Scripts/agents/build-train.py request --agent <slug> --branch <branch> --classes <A,B> --areas <x,y>`, naming everything its change could break.
    It waits with one background `python3 -I Scripts/agents/wait-for-result.py --agent <slug>`.
-   [Making each train count](docs/agents/working-with-agents.md) in `working-with-agents.md` has the rest; Tests on GitHub Actions in [Testing TextMouth](docs/developer/testing.md) says how to read a result.
+   [Making each train count](docs/agents/working-with-agents.md) in `working-with-agents.md` has the rest; Tests on GitHub Actions in [Testing TextMouth](docs/developer/testing-github.md) says how to read a result.
    A new test file needs `make generate` and the committed `project.pbxproj`, which the train regenerates and so never notices missing.
 4. Commits one logical change at a time, each message ending with the attribution the session's own instructions give, and leaves files outside its task alone except for a hook its brief names.
    It edits no `*.md` file, with two exceptions: it fixes the citations of any page its change leaves stale, when the change renames or removes a path or type that page cites (`doclib stale` lists them), and it adds one line to the doc-library `SKILL.md` for a new subcommand.
