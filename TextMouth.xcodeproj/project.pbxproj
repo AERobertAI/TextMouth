@@ -587,6 +587,7 @@
 		345F313F7035A90045C58B0B /* MOBIReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99BFBF42718DE2BD1DFCB95E /* MOBIReaderTests.swift */; };
 		3461E78A122207D82446CF41 /* TitleTypingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 007E2A7CC75DF7AF3DCF1AB5 /* TitleTypingTests.swift */; };
 		34865782942FEAA3DFB765AA /* PlainTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA860A1FCCD80831478C7AF /* PlainTextParser.swift */; };
+		348BE6D691BB78D777556271 /* MarkdownWalkCorpusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA7B63D43EB96B008B4B46C8 /* MarkdownWalkCorpusTests.swift */; };
 		34B1C427842260E05CAA4805 /* PDFTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D161A613B5D570B1FACBD40 /* PDFTextParser.swift */; };
 		34B97F21397F38B076027B00 /* LibraryViewModel+FeedDownloadProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2ACD3D9755DE42BFECF9DC80 /* LibraryViewModel+FeedDownloadProgress.swift */; };
 		34C6E9744A8B2EA82DCB8437 /* ViewBodyCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E914A0A7A4E824914D756517 /* ViewBodyCounter.swift */; };
@@ -2288,6 +2289,7 @@
 		CEC224A583530455EC64C498 /* ShortcutManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC7B62C2565B66A16CDFA23 /* ShortcutManagerTests.swift */; };
 		CEDD314678BDCC247B08C65A /* FeedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94559A41D8F0BE56561F9BA7 /* FeedSettingsView.swift */; };
 		CEFCF55961641C49FF106639 /* PhoneLifeCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 518F697E3EC5484302F328C1 /* PhoneLifeCycle.swift */; };
+		CF647DDD4130F86D325E74BB /* MarkdownWalkCorpusKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 666D739D2B93560643AC3FF7 /* MarkdownWalkCorpusKit.swift */; };
 		CFB4872EB5000AE5EEBD4E1C /* EndOfBookRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A300714C882EA312CD93BC3B /* EndOfBookRule.swift */; };
 		CFB4EDCD0726A8CED4B0AF9B /* LogsSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB782467B0C65A1556A61344 /* LogsSettingsSection.swift */; };
 		CFCFA3DAA442EEFB9BFD18F5 /* AudioEditorTimeMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78A361C04E8213EBFEF10EFB /* AudioEditorTimeMap.swift */; };
@@ -3883,6 +3885,7 @@
 		65D91F0E2F2130FC4870C893 /* OriginalFileDeletionWording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OriginalFileDeletionWording.swift; sourceTree = "<group>"; };
 		65EF5141563C1892DEF85A21 /* FeedLibraryWording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedLibraryWording.swift; sourceTree = "<group>"; };
 		6660DF3A7BF10E3B6384EB9A /* TextCacheFingerprintTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextCacheFingerprintTests.swift; sourceTree = "<group>"; };
+		666D739D2B93560643AC3FF7 /* MarkdownWalkCorpusKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownWalkCorpusKit.swift; sourceTree = "<group>"; };
 		666F1AA74F077B459B9195BA /* TextSubstitutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSubstitutionTests.swift; sourceTree = "<group>"; };
 		6678B964EFA928F71B31384D /* FeedSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedSearchTests.swift; sourceTree = "<group>"; };
 		66B5A22FE29C279ACD6A92D9 /* HTMLReadingText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLReadingText.swift; sourceTree = "<group>"; };
@@ -4948,6 +4951,7 @@
 		FA03056FAF234BDAE1CA0DC4 /* FeedIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedIndex.swift; sourceTree = "<group>"; };
 		FA5F2E646198C8BB45FDE47C /* AudioEditorLauncher+Describe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioEditorLauncher+Describe.swift"; sourceTree = "<group>"; };
 		FA6E0687D4A442DC825D8475 /* PackageSAXParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackageSAXParser.swift; sourceTree = "<group>"; };
+		FA7B63D43EB96B008B4B46C8 /* MarkdownWalkCorpusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownWalkCorpusTests.swift; sourceTree = "<group>"; };
 		FA7D1ED7AC08662201D4A41B /* DOCXParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DOCXParserTests.swift; sourceTree = "<group>"; };
 		FAC8743B4259438DF7B07831 /* AudioEditorModel+Saving.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioEditorModel+Saving.swift"; sourceTree = "<group>"; };
 		FAEFCB2FC7BA468AAAE64C6F /* BookmarkPlacementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkPlacementTests.swift; sourceTree = "<group>"; };
@@ -6661,6 +6665,8 @@
 				838003FFA2F984C25B18F442 /* MarkdownNestingTests.swift */,
 				8724572AB77FA1D592E609BE /* MarkdownPageMarkerTests.swift */,
 				96C3CE7A47FA15F716CC1AAB /* MarkdownTableReadingTests.swift */,
+				666D739D2B93560643AC3FF7 /* MarkdownWalkCorpusKit.swift */,
+				FA7B63D43EB96B008B4B46C8 /* MarkdownWalkCorpusTests.swift */,
 				DE828500AAF872513D7C6FEC /* MarkupFuzzGenerator.swift */,
 				4C81DBA5A2C5D8C11040CFA6 /* MarkupGuardTests.swift */,
 				29579D025E7BA9A74D8CD948 /* MediaCommandPlaybackTests.swift */,
@@ -8483,6 +8489,8 @@
 				499879005B40C5314C5533F1 /* MarkdownNestingTests.swift in Sources */,
 				572C6E07A41407F4465CBAE7 /* MarkdownPageMarkerTests.swift in Sources */,
 				641C7DA4F39D0DF30DDBAC26 /* MarkdownTableReadingTests.swift in Sources */,
+				CF647DDD4130F86D325E74BB /* MarkdownWalkCorpusKit.swift in Sources */,
+				348BE6D691BB78D777556271 /* MarkdownWalkCorpusTests.swift in Sources */,
 				0B6C4884C3B4ACE3399FE660 /* MarkupFuzzGenerator.swift in Sources */,
 				E8E63643AE28C7309FD68AA5 /* MarkupGuardTests.swift in Sources */,
 				76D8B43107D2BAC38FAF1CFE /* MediaCommandPlaybackTests.swift in Sources */,
