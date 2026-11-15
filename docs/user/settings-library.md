@@ -92,7 +92,8 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
     Typing H finds it among the H's."
     Every Library list sorts by the title from where it files, its leading article left out, and shows each row's title with the article after it, as an encyclopedia's index does.
     A row's VoiceOver label, the Books rotor, and a search read the shown title (see [The Library window](library-window.md)).
-  - Under the second and third choices the sentence goes on with a note about languages: "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.
+  - Under the second and third choices the sentence goes on with a note about languages.
+    It reads "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.
     Any other book passes over The, A, and An.
     Folder names stay as you typed them."
     So a book whose language is one of those ten, named by a code such as "fr", "fr-CA", "pt_BR", or "fre", or by a name such as "French" or "Deutsch", passes over that language's articles and English's The, but not A or An, which are not articles in those languages.
