@@ -16,7 +16,7 @@ So each item shows the key in force at its right, where AppKit draws a key equiv
   An item without a key equivalent matches no press, so each time the shortcut manager passes a press on to AppKit it lifts that key from the items of TextMouth's five menus that show it, and puts it back on the main queue's next turn (probe D).
   A key equivalent's key, Add Feed…'s among them, is never lifted, and acts as today.
 - **Never acting, in context menus:** nothing is needed, since a closed context menu never acts on its keys (probe C2).
-- **Following an edit:** SwiftUI keeps the keys it shows through a rebuild and updates an edited one at once (probe B4), and every `Commands` already observes the shortcut manager, so a key edited in Settings shows at once, as Open Book…'s does today.
+- **Following an edit:** SwiftUI keeps the keys it shows through a rebuild and updates an edited one at once (probe B4), and the `Commands` that show keys observe the shortcut manager (three more will, section 8), so a key edited in Settings shows at once, as Open Book…'s does today.
 - **What no menu shows:** a double press, a command's second key, Fn and Globe, and a few keys AppKit has no symbol for (section 5).
 - **Nothing else changes** while the menus are closed (question 4 is the open one): a press the manager takes never reaches a menu, as today, and a press it passes on finds no shown key to match, as today, so it reaches the field, the sheet's buttons, or the list.
 
@@ -87,7 +87,13 @@ Each of the brief's statements was checked against main at 922fbf12f.
 
 ### The lifted key (probe D)
 
-- Probe D, which lifts a shown key from SwiftUI's items for one press, waits for the heavy-work lock; its results follow in a later commit.
+- On SwiftUI's items, a key lifted for one press matched nothing: Move Book Up's Shift-Command-Up Arrow, W alone, and Command-1 in the Go to View submenu (D2).
+  Each was back a run-loop turn later, its accessibility attributes with it, and acted again when pressed without a lift.
+- Add Feed…'s key, spared as a key equivalent's, acted as before (D3).
+- With the menu under a hidden item, Move Book Up still acted until its key was lifted, and then did not (D4).
+- An edit made while a key was lifted won: the rebuild gave the item its new key, the put-back left it, and only the new key acted (D5); a rebuild that kept the key left it shown (D6).
+- Hiding the item for its press, instead of lifting its key, did not stop it acting (D7).
+- Neither a subtitle nor a tool tip appears among an item's accessibility attributes (D8), so neither could carry a key for VoiceOver.
 
 ## 5. Keys a menu cannot show
 
@@ -97,9 +103,10 @@ Each of the brief's statements was checked against main at 922fbf12f.
 - **A second key** (Play / Pause's K, Skip Forward's L, Skip Backward's J): an item has one key equivalent, so it shows the first key in force that a menu can draw, in the Shortcuts tab's order.
 - **Fn and Globe:** AppKit refuses them for an app's own items: "NSEventModifierFlagFunction specified to -setKeyEquivalentModifierMask: … is only supported for system-provided menu items; will not be used" (its log in A9).
   No binding holds them anyway: `KeyBinding.from(event:)` reads Command, Option, Shift, and Control only, and names a function key by itself (F5).
-- **Keys a menu can show**, those for which accessibility reports a glyph or a printable character (A9): letters, digits, and punctuation; Space, Tab, Return, the keypad's Enter, Escape, Delete, and Forward Delete.
-  So can the four arrows, Home, End, Page Up, Page Down, Help, Mode Switch, and F1 to F20.
-- **Keys a menu cannot show:** Clear, Insert, Print Screen, Pause, Menu, and F24 and F35 report no glyph and no key code, only AppKit's private-use character (A9).
+- **Keys a menu can show**, those for which accessibility reports a glyph or a printable character (A9, D9): letters, digits, and punctuation; Space, Tab, Return, the keypad's Enter, Escape, Delete, and Forward Delete.
+  So can the four arrows, Home, End, Page Up, Page Down, Help, Mode Switch, Clear Display, and F1 to F20.
+- **Keys a menu cannot show:** Clear, Insert, Print Screen, Pause, Menu, and F21 and above (F21 to F24 and F35 were tried) report no glyph, only AppKit's private-use character (A9, D9).
+  So do Begin, Scroll Lock, System Request, Break, Reset, Stop, User, System, Print, Insert Line, Delete Line, Insert Character, Delete Character, Previous, Next, Select, Execute, Undo, Redo, and Find (D9).
   An item whose command has only such keys shows none.
 - **Delete and Forward Delete** take characters of their own: Backspace (U+0008) for Delete and DEL (U+007F) for Forward Delete, "not the same characters you get from an NSEvent key-down event when pressing those keys" (`NSMenuItem.keyEquivalent`).
   U+F728 gives Forward Delete's glyph too (A9), and SwiftUI's `.delete` and `.deleteForward` give U+0008 and U+F728 (B1).
@@ -198,7 +205,7 @@ Keys are the defaults (`ShortcutAction.defaultBindings`); the user may change an
 - So AppKit finds no shown key to match, by whatever path it looks, and the press reaches the field, the sheet's buttons, or the list, as today; a press the manager takes never reaches a menu, as today; and a key equivalent's key acts, as today.
 - Its cost: one walk of the five menus' items (under a hundred) for each press passed on, the typing in a field included, and two changes of an item when a typed key is one a menu shows, as W typed in Search in Book's field.
 - Why not the alternatives:
-  - a delegate answering no does not stop AppKit (A2, B8);
+  - a delegate answering no does not stop AppKit (A2, B8), nor does hiding the item (D7);
   - keys put on only while a menu is open would have to be set by hand, which SwiftUI undoes (B5), and in `menuNeedsUpdate`, which AppKit also calls before it matches keys (`menuHasKeyEquivalent`'s documentation);
   - menus TextMouth builds itself in AppKit, in place of the five `CommandMenu`s, would work but rewrite most of `MenuCommands.swift`: the fallback if the lift fails on the real menu bar (commit 3).
 
@@ -257,7 +264,7 @@ After the merge, the documentation pass describes the shown keys and the lift in
 - The real menu bar: the probes made SwiftUI menu content into an `NSMenu` with `NSHostingMenu`, not through `Commands` in a running app, which here would have taken focus.
   SwiftUI's documentation says a shortcut's target is looked for "in the key window first, then the main window, and then the command groups" (`keyboardShortcut(_:modifiers:)`).
   Only the real app can show whether that ever bypasses the item's key equivalent; commit 3 pins it in a hosted test.
-- Whether the real menu bar matches a hidden menu's items (A5); the lift covers them either way.
+- Whether the real menu bar matches a hidden menu's items, as menus asked directly did (A5, D4); the lift covers them either way.
 - What an open menu does with a key it shows (question 4).
 - App Shortcuts set in System Settings (A11): the lift spares any item that has one, unseen.
 - Keyboard layouts other than US English: with the remapping off, a menu shows the key the binding names, which the manager matches by the character typed, as today.
@@ -272,7 +279,7 @@ After the merge, the documentation pass describes the shown keys and the lift in
    With VoiceOver, VO-Shift-M opens the menu of the row under the VoiceOver cursor, which need not be the selected row.
    Recommended, and built: show the key anyway, since it names the same command, and pressing it after selecting the row does what the item does.
 3. **Two keys, a double press, a key no menu can draw.**
-   A menu item shows one single press, and a help tag would likely go unheard: an item's tool tip is not among its accessibility attributes (section 4, probe B).
+   A menu item shows one single press, and a help tag or a subtitle would likely go unheard: neither is among an item's accessibility attributes (section 4, probes B and D).
    Recommended, and built: show the first key a menu can draw, and none for a double press, as FR12 decided; the Shortcuts tab keeps naming every key.
 4. **A shown key pressed while its menu is open.**
    TextMouth's shortcuts never see a key while a menu is open (menu tracking takes it), so what AppKit does then is AppKit's, and it may choose the item.
