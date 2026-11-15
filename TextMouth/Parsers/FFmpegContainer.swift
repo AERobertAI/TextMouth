@@ -96,6 +96,29 @@ enum FFmpegContainer: String, CaseIterable, Equatable, Sendable {
         return ascii(in: bytes, at: segmentCountOffset + 1 + segments, is: "Speex   ")
     }
 
+    // MARK: - The Formats TextMouth Reads Itself
+
+    /// The signatures of the lossless formats TextMouth reads with readers
+    /// of its own (TTA, WavPack, and Monkey's Audio), which go by a file's
+    /// content: ffmpeg never takes a file that holds one, whatever its name.
+    static let ownReaderSignatures = ["TTA1", "wvpk", "MAC "]
+
+    /// Whether the file at `url` holds TTA, WavPack, or Monkey's Audio: one
+    /// of `ownReaderSignatures` at its start, or after the ID3v2 tag it
+    /// starts with (a header of ten bytes and a size in four bytes of seven
+    /// bits each, and ten bytes more when its flags say it has a footer).
+    /// False when it cannot be read. Reads ten bytes, then four.
+    static func holdsOwnReaderFormat(fileAt url: URL) -> Bool {
+        guard let head = AudioContentSniffer.firstBytes(of: url, upTo: 10) else { return false }
+        var offset = 0
+        if head.count == 10, ascii(in: head, at: 0, is: "ID3"), head[6..<10].allSatisfy({ $0 & 0x80 == 0 }) {
+            let size = head[6..<10].reduce(0) { $0 << 7 | Int($1) }
+            offset = 10 + size + (head[5] & 0x10 != 0 ? 10 : 0)
+        }
+        guard let signature = AudioContentSniffer.firstBytes(of: url, upTo: 4, from: offset) else { return false }
+        return ownReaderSignatures.contains { Array($0.utf8) == signature }
+    }
+
     /// Whether `bytes` hold the ASCII `word` at `offset`, all inside them.
     private static func ascii(in bytes: [UInt8], at offset: Int, is word: String) -> Bool {
         let expected = Array(word.utf8)

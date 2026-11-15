@@ -145,6 +145,29 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertTrue(FFmpegAudioConverter.extensions.isDisjoint(with: ["tta", "wv", "ape"]))
     }
 
+    /// A file that holds TTA, WavPack, or Monkey's Audio is never ffmpeg's,
+    /// whatever its name, after an ID3v2 tag too: TextMouth's own readers
+    /// take such a file by its content. A WMA file is still ffmpeg's.
+    func testTheFormatsTextMouthReadsItselfAreNeverFFmpegs() throws {
+        for (sample, name) in [("tta/tones.tta", "Disguised.wma"), ("wv/tones.wv", "Disguised.mka")] {
+            let copy = try copyOfFormatSample(sample, named: name)
+            XCTAssertTrue(FFmpegContainer.holdsOwnReaderFormat(fileAt: copy), name)
+            XCTAssertFalse(FFmpegAudioConverter.converts(copy), name)
+        }
+        let folder = try makeSandboxDirectory("FFmpegOwnReaders")
+        let ape = folder.appendingPathComponent("Disc.webm")
+        try Data(Array("MAC ".utf8) + [0x96, 0x0F, 0, 0]).write(to: ape)
+        XCTAssertFalse(FFmpegAudioConverter.converts(ape))
+        // An ID3v2 tag of 20 bytes (version 4, no flags) before the signature.
+        let tagged = folder.appendingPathComponent("Tagged.wma")
+        try Data(Array("ID3".utf8) + [4, 0, 0, 0, 0, 0, 20] + [UInt8](repeating: 0, count: 20) + Array("TTA1".utf8) + [1, 0])
+            .write(to: tagged)
+        XCTAssertTrue(FFmpegContainer.holdsOwnReaderFormat(fileAt: tagged))
+        XCTAssertFalse(FFmpegAudioConverter.converts(tagged))
+        XCTAssertTrue(FFmpegAudioConverter.converts(try copyOfFormatSample("wma/tones.wma")))
+        XCTAssertFalse(FFmpegContainer.holdsOwnReaderFormat(fileAt: folder.appendingPathComponent("missing.wma")))
+    }
+
     // MARK: - Copy Protection
 
     /// The Header object's identifier is the first 16 bytes of every ASF

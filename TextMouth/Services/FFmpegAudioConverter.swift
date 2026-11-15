@@ -37,11 +37,14 @@ enum FFmpegAudioConverter {
     /// Whether the import converts the file at `url` with ffmpeg: its
     /// extension is one of `extensions`, or its bytes are of a container
     /// only ffmpeg reads (`FFmpegContainer`), Speex in Ogg among them,
-    /// whatever its name. Ogg of any other codec is afconvert's. This is
-    /// asked only of files the import has already chosen to convert
-    /// (`ImportAudioConverter.convert`), and costs one read of
-    /// `FFmpegContainer.windowLength` bytes.
+    /// whatever its name. Ogg of any other codec is afconvert's, and a file
+    /// that holds TTA, WavPack, or Monkey's Audio is TextMouth's own readers'
+    /// whatever its name (`FFmpegContainer.holdsOwnReaderFormat(fileAt:)`).
+    /// This is asked of files the import converts (`ImportAudioConverter.convert`,
+    /// the iPhone's refusal, the tags read before a conversion), and costs a
+    /// few small reads.
     static func converts(_ url: URL) -> Bool {
+        if FFmpegContainer.holdsOwnReaderFormat(fileAt: url) { return false }
         if extensions.contains(url.pathExtension.lowercased()) { return true }
         guard let container = FFmpegContainer.of(fileAt: url) else { return false }
         return container != .ogg
