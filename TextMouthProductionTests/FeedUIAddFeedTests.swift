@@ -845,20 +845,20 @@ final class FeedTestWorldTeardownTests: XCTestCase {
     /// writes before the world's folders go. An engine made by hand, whose
     /// teardown only stopped it, left a Delete Download's record write to
     /// fail once the sandbox was gone, and its failure was announced into
-    /// `LibraryFeedMoveToFolderTests` on GitHub's runner. The test files are
-    /// read, as the policy tests read the app's, so such an engine fails here
-    /// every time rather than in another test now and then.
+    /// `LibraryFeedMoveToFolderTests` on GitHub's runner. The files of all
+    /// three test folders are read whole, as the policy tests read the
+    /// app's, so such an engine fails here every time, however it is
+    /// spelled (`engineMakings(in:)`), rather than in another test now and
+    /// then.
     func testEveryOtherEngineComesFromTheWorld() throws {
-        let testsFolder = AppSourceFile.folder.deletingLastPathComponent()
-            .appendingPathComponent("TextMouthProductionTests", isDirectory: true)
-        // Spelled in two parts, so this line is not one of the makings found.
-        let making = "FeedCenter" + "(environment:"
+        let repository = AppSourceFile.folder.deletingLastPathComponent()
+        // The Mac's tests, and the iPhone's two bundles of a few files each.
+        let folders = [("TextMouthProductionTests", 51), ("TextMouthiOSTests", 1), ("TextMouthiOSUITests", 1)]
         var madeByHand: [String] = []
-        for source in try AppSourceFile.all(in: testsFolder)
-        where source.name != "FeedTestSupport.swift" && source.text.contains(making) {
-            for (index, line) in source.text.components(separatedBy: .newlines).enumerated()
-            where line.contains(making) && !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
-                madeByHand.append("\(source.path):\(index + 1)")
+        for (folder, fewest) in folders {
+            let sources = try AppSourceFile.all(in: repository.appendingPathComponent(folder, isDirectory: true), atLeast: fewest)
+            for source in sources where source.name != "FeedTestSupport.swift" {
+                madeByHand += try Self.engineMakings(in: source.text).map { "\(folder)/\(source.path):\($0)" }
             }
         }
         XCTAssertEqual(
@@ -866,5 +866,45 @@ final class FeedTestWorldTeardownTests: XCTestCase {
             [],
             "make each engine with FeedTestWorld.engine(_:on:), whose teardown lands its writes before the world's folders go"
         )
+    }
+
+    /// The guard finds a FeedCenter made on an environment however Swift
+    /// spells it: with `.init`, with spaces, or with the argument on a line
+    /// of its own, each counted on the line the making begins; and not one
+    /// in a comment, another type's name ending in FeedCenter, or the
+    /// shared engine. The sample is written with a stand-in for the type's
+    /// name, so this file holds no making for the guard to find.
+    func testTheGuardFindsEveryWayOfMakingAnEngine() throws {
+        let sample = """
+        let a = ENGINE(environment: world.environment)
+        let b = ENGINE.init(environment: changed)
+        let c = ENGINE (environment : changed)
+        let d = ENGINE(
+            environment: changed
+        )
+        // ENGINE(environment: in a comment)
+        /// A doc comment naming ENGINE(environment:).
+        let e = MirrorENGINE(environment: changed)
+        let f = ENGINE.shared
+        let g = make() // ENGINE(environment: after code)
+        """.replacingOccurrences(of: "ENGINE", with: "Feed" + "Center")
+
+        XCTAssertEqual(try Self.engineMakings(in: sample), [1, 2, 3, 4])
+    }
+
+    /// The lines, counted from 1, on which `text` makes a FeedCenter on an
+    /// environment: `FeedCenter(environment:` or `FeedCenter.init(environment:`,
+    /// with any spaces or line breaks between the parts, each counted on the
+    /// line where it begins. One after `//` on its line is in a comment and
+    /// is passed over.
+    private static func engineMakings(in text: String) throws -> [Int] {
+        guard text.contains("FeedCenter") else { return [] }
+        let making = try NSRegularExpression(pattern: #"\bFeedCenter\s*(?:\.init)?\s*\(\s*environment\s*:"#)
+        let whole = text as NSString
+        return making.matches(in: text, range: NSRange(location: 0, length: whole.length)).compactMap { match in
+            let linesBefore = whole.substring(to: match.range.location).components(separatedBy: "\n")
+            guard let lineSoFar = linesBefore.last, !lineSoFar.contains("//") else { return nil }
+            return linesBefore.count
+        }
     }
 }
