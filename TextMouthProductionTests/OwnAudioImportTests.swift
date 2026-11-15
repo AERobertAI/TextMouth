@@ -16,7 +16,7 @@ final class OwnAudioImportTests: XCTestCase {
 
     /// The folders of `TestData/format-samples` that hold the own readers'
     /// samples, each with its `pcm.tsv`.
-    private static let sampleFolders = ["tta", "wv"]
+    private static let sampleFolders = ["tta", "wv", "ape"]
 
     override func setUpWithError() throws {
         folder = try AudioTestFixtures.makeTemporaryDirectory()
@@ -124,7 +124,7 @@ final class OwnAudioImportTests: XCTestCase {
     /// Apple's readers, and are no tracks of a package.
     func testTheExtensionsAreImportOnlyAudio() {
         XCTAssertEqual(ImportAudioConverter.ownReaderExtensions, OwnAudioFormat.allFileExtensions)
-        XCTAssertTrue(ImportAudioConverter.ownReaderExtensions.isSuperset(of: ["tta", "wv"]))
+        XCTAssertEqual(ImportAudioConverter.ownReaderExtensions, ["tta", "wv", "ape"])
         for ext in ImportAudioConverter.ownReaderExtensions {
             let url = URL(fileURLWithPath: "/a/Track.\(ext.uppercased())")
             XCTAssertTrue(ImportAudioConverter.isConvertedAtImport(url), ext)
@@ -148,11 +148,13 @@ final class OwnAudioImportTests: XCTestCase {
     func testEachFormatHasAName() {
         XCTAssertEqual(OwnAudioFormat.trueAudio.displayName, "True Audio")
         XCTAssertEqual(OwnAudioFormat.wavPack.displayName, "WavPack")
+        XCTAssertEqual(OwnAudioFormat.monkeysAudio.displayName, "Monkey's Audio")
         XCTAssertEqual(OwnAudioFormat.wavPack.companionExtension, "wvc")
         XCTAssertNil(OwnAudioFormat.trueAudio.companionExtension)
         for format in OwnAudioFormat.allCases {
             XCTAssertFalse(format.fileExtensions.isEmpty)
-            XCTAssertEqual(format.signature.utf8.count, 4)
+            XCTAssertFalse(format.signatures.isEmpty)
+            XCTAssertTrue(format.signatures.allSatisfy { $0.utf8.count == 4 })
             XCTAssertEqual(format.formatID.count, 4)
             XCTAssertEqual(PhoneImportRefusal.audioKindName(content: .ownReader(format), fileExtension: "mp3"), format.displayName)
             for ext in format.fileExtensions {
@@ -178,6 +180,11 @@ final class OwnAudioImportTests: XCTestCase {
         let wavPack = try copySample("wv/stereo16.wv", as: "music.flac")
         XCTAssertEqual(AudioContentSniffer.kind(of: wavPack), .ownReader(.wavPack))
         XCTAssertEqual(OwnAudioConverter.format(of: wavPack), .wavPack)
+        for path in ["ape/stereo16-normal.ape", "ape/float32-fast.ape"] {
+            let monkeys = try copySample(path, as: "music.wav")
+            XCTAssertEqual(AudioContentSniffer.kind(of: monkeys), .ownReader(.monkeysAudio), path)
+            XCTAssertEqual(OwnAudioConverter.format(of: monkeys), .monkeysAudio, path)
+        }
 
         // A tag longer than the sniffer's first window, as cover art makes it.
         let audio = try ownAudioSampleBytes("tta/mono16.tta")
@@ -200,7 +207,7 @@ final class OwnAudioImportTests: XCTestCase {
 
     /// The notices of the decoders the readers follow ship inside the app:
     /// the TTA Hardware Players Library's README, which holds its BSD
-    /// licence, and WavPack's COPYING.
+    /// licence, WavPack's COPYING, and the Monkey's Audio SDK's License.txt.
     func testTheReadersNoticesShipWithTheApp() throws {
         let trueAudio = try licenceText("TrueAudio", "README")
         XCTAssertTrue(trueAudio.contains("(c) 2004 Alexander Djourik"), String(trueAudio.prefix(120)))
@@ -209,6 +216,9 @@ final class OwnAudioImportTests: XCTestCase {
         let wavPack = try licenceText("WavPack", "COPYING")
         XCTAssertTrue(wavPack.contains("David Bryant"), String(wavPack.prefix(120)))
         XCTAssertTrue(wavPack.contains("Redistributions in binary form must reproduce the above copyright"))
+        let monkeysAudio = try licenceText("MonkeysAudio", "License.txt")
+        XCTAssertTrue(monkeysAudio.contains("Matthew T. Ashland"), String(monkeysAudio.prefix(120)))
+        XCTAssertTrue(monkeysAudio.contains("Redistributions in binary form must reproduce the above copyright"))
     }
 
     // MARK: - What the Converter Knows of a Source
@@ -369,7 +379,7 @@ final class OwnAudioImportTests: XCTestCase {
     /// The file's tags reach the .m4a, where the import reads its title and
     /// author from: a True Audio file's and a WavPack file's.
     func testTheTagsReachTheConvertedFile() async throws {
-        for path in ["tta/tagged16.tta", "wv/tagged16.wv"] {
+        for path in ["tta/tagged16.tta", "wv/tagged16.wv", "ape/tagged16.ape"] {
             let source = try copySample(path)
             let conversion = try await ImportAudioConverter.convert(source)
             let metadata = await AudioPlaybackService.extractFullMetadata(from: conversion.converted)
@@ -387,12 +397,31 @@ final class OwnAudioImportTests: XCTestCase {
     }
 
     /// Six channels that name no layout are refused as every such source
-    /// is, and nothing is left beside the source.
+    /// is, and nothing is left beside the source: neither True Audio nor
+    /// Monkey's Audio says which channel is which.
     func testChannelsWithoutALayoutAreRefused() async throws {
-        let source = try copySample("tta/six16.tta")
-        let failure = await conversionFailure(of: source)
-        XCTAssertEqual(failure, .unlabelledChannels(fileName: "six16.tta", channels: 6))
-        XCTAssertEqual(OggTestFixtures.names(in: source.deletingLastPathComponent()), ["six16.tta"])
+        for (path, name) in [("tta/six16.tta", "six16.tta"), ("ape/six16-normal.ape", "six16-normal.ape")] {
+            let source = try copySample(path)
+            let failure = await conversionFailure(of: source)
+            XCTAssertEqual(failure, .unlabelledChannels(fileName: name, channels: 6), path)
+            XCTAssertEqual(OggTestFixtures.names(in: source.deletingLastPathComponent()), [name], path)
+        }
+    }
+
+    /// A Monkey's Audio file older than version 3.99 fails the conversion
+    /// in words that say why.
+    func testAnOldMonkeysAudioFileIsRefusedWithItsReason() async throws {
+        // Bytes 4 and 5 are the version times 1,000: 3,970 here.
+        var bytes = try ownAudioSampleBytes("ape/mono16-fast.ape")
+        bytes.replaceSubrange(4..<6, with: [0x82, 0x0F])
+        let old = try writeFile(bytes, named: "Old.ape")
+        let failure = await conversionFailure(of: old)
+        XCTAssertEqual(failure, .notRead(fileName: "Old.ape", problem: .unsupported(reason: OwnAudioWording.monkeysAudioOld)))
+        XCTAssertEqual(
+            failure?.errorDescription,
+            "TextMouth can't read the audio file Old.ape because it was made by a Monkey's Audio older than "
+                + "version 3.99, from before 2004."
+        )
     }
 
     /// A file its reader refuses fails the conversion with the reader's

@@ -107,15 +107,21 @@ def write_wav(path, rate, channels, bits, data, is_float, mask):
 class Shape:
     """One recording: its name and what its audio is."""
 
-    def __init__(self, name, rate, channels, bits, seconds, seed, is_float=False, mask=None, noise=None):
+    def __init__(self, name, rate, channels, bits, seconds, seed, is_float=False, mask=None, noise=None,
+                 silent_frames=0, same_channels=False):
         self.name, self.rate, self.channels, self.bits = name, rate, channels, bits
         self.seconds, self.seed, self.is_float, self.mask = seconds, seed, is_float, mask
+        # How many frames at the start are digital silence, and whether every channel repeats the first.
+        self.silent_frames, self.same_channels = silent_frames, same_channels
         # Noise of about eight steps of the sample's own depth keeps every file small.
         self.noise = noise if noise is not None else 8 / (1 << (min(bits, 24) - 1))
 
     def make(self, work):
         """Write the source WAV into `work`; returns (path, frames, SHA-256 of its sample bytes)."""
         frames = recording(self.rate, self.channels, self.seconds, self.seed, self.noise)
+        if self.same_channels:
+            frames = [[frame[0]] * self.channels for frame in frames]
+        frames = [[0.0] * self.channels] * self.silent_frames + frames
         data = pcm_bytes(frames, self.bits, self.is_float)
         path = os.path.join(work, self.name + ".wav")
         write_wav(path, self.rate, self.channels, self.bits, data, self.is_float, self.mask)
@@ -331,7 +337,66 @@ def make_wv(arguments):
         "tones.wv\t22050\t1\t16\t0\t1\t66150\t" + arguments.tones_tta_digest] if arguments.tones_tta_digest else [])
 
 
-FORMATS = {"tta": make_tta, "wv": make_wv}
+def make_ape(arguments):
+    """Monkey's Audio: its own encoder (SDK 13.47, built from the BSD source) at every level; ffmpeg has none."""
+    if not arguments.mac:
+        sys.exit("ape needs --mac, the encoder built from the Monkey's Audio SDK")
+    maker = Maker("ape", arguments.out, arguments.work)
+    own = "made on this Mac: Scripts/make-own-audio-samples.py ape (mac 13.47, built from the SDK's BSD source, {})"
+    # A full frame of the levels below Insane: 73,728 * 4 audio frames.
+    full = 294_912
+    # name, shape, the level, what a test checks
+    files = [
+        ("mono16-fast", Shape("ape-mono16", 22050, 1, 16, 0.4, 71), "-c1000", "mono, Fast: no adaptive filter"),
+        ("stereo16-normal", Shape("ape-stereo16n", 44100, 2, 16, 0.25, 72), "-c2000", "stereo, Normal: one filter of 16"),
+        ("stereo16-high", Shape("ape-stereo16h", 44100, 2, 16, 0.25, 73), "-c3000", "stereo, High: one filter of 64"),
+        ("stereo16-extrahigh", Shape("ape-stereo16x", 44100, 2, 16, 0.15, 74), "-c4000",
+         "stereo, Extra High: filters of 32 and 256"),
+        ("stereo16-insane", Shape("ape-stereo16i", 44100, 2, 16, 0.1, 75), "-c5000",
+         "stereo, Insane: filters of 16, 256, and 1,280"),
+        ("mono8-normal", Shape("ape-mono8", 8000, 1, 8, 0.5, 76), "-c2000", "8 bits"),
+        ("stereo8-high", Shape("ape-stereo8", 11025, 2, 8, 0.3, 77), "-c3000", "8-bit stereo: the pair wraps at 8 bits"),
+        ("stereo24-normal", Shape("ape-stereo24", 48000, 2, 24, 0.2, 78), "-c2000", "24 bits"),
+        ("mono24-extrahigh", Shape("ape-mono24", 32000, 1, 24, 0.2, 79), "-c4000", "24-bit mono, Extra High"),
+        ("stereo32-normal", Shape("ape-stereo32", 44100, 2, 32, 0.1, 80), "-c2000",
+         "32-bit whole numbers: the 64-bit predictor and the 32-bit filter"),
+        ("mono32-insane", Shape("ape-mono32", 32000, 1, 32, 0.1, 81), "-c5000", "32-bit mono, Insane"),
+        ("float32-fast", Shape("ape-float32", 44100, 2, 32, 0.1, 82, is_float=True), "-c1000",
+         "32-bit floats (signature MACF): the float transform undone"),
+        ("floatmono-high", Shape("ape-floatmono", 16000, 1, 32, 0.2, 83, is_float=True), "-c3000", "32-bit floats, mono"),
+        ("three16-normal", Shape("ape-three16", 44100, 3, 16, 0.1, 84, mask=0x7), "-c2000",
+         "three channels: none stored as a pair"),
+        ("four24-fast", Shape("ape-four24", 44100, 4, 24, 0.1, 85, mask=0x33), "-c1000", "four channels: two pairs"),
+        ("six16-normal", Shape("ape-six16", 48000, 6, 16, 0.1, 86, mask=0x3F), "-c2000",
+         "5.1: the fronts and the surrounds as pairs (no layout in the file: refused at import)"),
+        ("eight16-high", Shape("ape-eight16", 44100, 8, 16, 0.05, 87, mask=0x63F), "-c3000", "7.1: three pairs"),
+        ("short16-normal", Shape("ape-short16", 44100, 2, 16, 0.002, 88), "-c2000", "88 frames"),
+        ("pseudostereo16-normal", Shape("ape-pseudo16", 22050, 2, 16, 0.3, 89, same_channels=True), "-c2000",
+         "both channels alike: the frame is coded as one channel"),
+        ("silentstereo16-fast", Shape("ape-silent16", 22050, 2, 16, 0.0, 90, silent_frames=4000), "-c1000",
+         "digital silence in stereo: a frame with no residuals"),
+        ("twoframes16mono-normal", Shape("ape-twoframes16mono", 8000, 1, 16, 0.4, 91, silent_frames=full), "-c2000",
+         "two mono frames: a full one of silence (coded as silent), then tones in a second frame"),
+        ("twoframes16-fast", Shape("ape-twoframes16", 8000, 2, 16, 0.2, 92, silent_frames=full), "-c1000",
+         "two stereo frames: a full silent one, then tones"),
+    ]
+    for name, shape, level, exercises in files:
+        source, frames, digest = shape.make(arguments.work)
+        encoded = os.path.join(maker.folder, name + ".ape")
+        run([arguments.mac, source, encoded, level])
+        maker.add(name + ".ape", shape, frames, digest, own.format(level), "Monkey's Audio: " + exercises)
+
+    # The same kind of recording with the tags the encoder writes itself.
+    shape = Shape("ape-tagged16", 11025, 1, 16, 0.3, 93)
+    source, frames, digest = shape.make(arguments.work)
+    fields = "|".join(f"{key}={value}" for key, value in APE_ITEMS.items() if key != "Cuesheet")
+    run([arguments.mac, source, os.path.join(maker.folder, "tagged16.ape"), "-c2000", "-t", fields])
+    maker.add("tagged16.ape", shape, frames, digest, own.format('-c2000 -t "Title=...|Artist=...|Album=...|Year=...|Genre=..."'),
+              "Monkey's Audio: an APEv2 tag written by the encoder")
+    maker.finish()
+
+
+FORMATS = {"tta": make_tta, "wv": make_wv, "ape": make_ape}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])

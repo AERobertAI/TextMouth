@@ -342,6 +342,7 @@
 			<array>
 				<string>tta</string>
 				<string>wv</string>
+				<string>ape</string>
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>

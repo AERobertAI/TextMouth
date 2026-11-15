@@ -187,6 +187,12 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/WavPack
+      # Monkey's Audio: the SDK 13.47's License.txt.
+      - path: Vendor/package-licenses/MonkeysAudio/License.txt
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/MonkeysAudio
       - path: Vendor/foliate-js/LICENSE
         buildPhase:
           copyFiles:

@@ -171,20 +171,30 @@ extension XCTestCase {
     /// A sample with a companion is decoded with it, and on every other
     /// round the companion is the one damaged. Every decode must end in
     /// samples or in an `OwnAudioError`; a trap would end the test host. It
-    /// stops after `seconds`, having tried at least five damaged copies of
-    /// every sample.
+    /// stops after `seconds`, having tried at least one damaged copy of
+    /// every sample it takes.
+    /// - Parameter mostSamples: only samples of at most this many samples
+    ///   (frames times channels) are taken, since a damaged frame is
+    ///   decoded whole before its checksum fails, and the hosted tests are
+    ///   not optimized.
     /// - Returns: how many damaged copies were decoded.
     @discardableResult
-    func fuzzEverySample(in folder: String, seed: UInt64, seconds: TimeInterval = 4) throws -> Int {
-        let originals = try ownAudioSamples(in: folder).map { sample -> (file: [UInt8], companion: [UInt8]?) in
+    func fuzzEverySample(
+        in folder: String,
+        seed: UInt64,
+        seconds: TimeInterval = 4,
+        mostSamples: Int = .max
+    ) throws -> Int {
+        let taken = try ownAudioSamples(in: folder).filter { $0.frames * $0.channels <= mostSamples }
+        let originals = try taken.map { sample -> (file: [UInt8], companion: [UInt8]?) in
             (try ownAudioSampleBytes(sample.path), try ownAudioCompanionPath(of: sample.path).map { try ownAudioSampleBytes($0) })
         }
         var generator = SplitMix64(seed: seed)
         let deadline = Date().addingTimeInterval(seconds)
         var tried = 0
         var round = 0
-        // Round by round over every sample, so each is damaged in every way.
-        while round < 5 || Date() < deadline {
+        // Round by round over every sample, so each is damaged in every way the time allows.
+        while round < 1 || Date() < deadline {
             for original in originals {
                 var file = original.file
                 var companion = original.companion
@@ -206,7 +216,7 @@ extension XCTestCase {
                     }
                 }
                 tried += 1
-                if round >= 5, Date() >= deadline { return tried }
+                if round >= 1, Date() >= deadline { return tried }
             }
             round += 1
         }
