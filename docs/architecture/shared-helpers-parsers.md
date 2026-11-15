@@ -9,7 +9,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 ImportCancellation.throwIfCancelled() (Services/ArchiveExtraction.swift): the one question a reader that starts no helper process asks to hear Cancel in the import overlay.
 It throws ImportCancelled, as a cancelled textutil conversion ends, and does nothing outside an import (a reader window, startup maintenance, Redo Text Extraction).
 Call it in a loop of a reader that can run long.
-The rich text, DOCX, MOBI, KFX, OpenDocument, and Word 2003 XML readers ask it; Word 97-2003 does not.
+The rich text, DOCX, MOBI, KFX, OpenDocument, Word 2003 XML, and Word 97-2003 readers ask it.
 
 ## Office XML readers and XMLInputGuard
 <!-- id: office-xml-readers-xmlinputguard; keys: XXE, billion laughs, DTD refusal, entity expansion; src: TextMouth/Parsers/XMLInputGuard.swift, TextMouth/Parsers/OfficeXMLReader.swift, TextMouth/Parsers/PackageSAXParser.swift, TextMouth/Parsers/OfficeBlockWriter.swift, TextMouth/Parsers/OfficeStyleChain.swift, TextMouth/Services/FileImportService.swift -->
@@ -21,9 +21,10 @@ The sentences are refusalSentence(for:file:in:original:) for an internal subset 
 Both readers write through the rich text reader's RTFBlockBuilder, RTFHTMLWriter, and RTFSizeHeadings, which they reuse unchanged: a change to those reaches the OpenDocument and Word 2003 XML readers too (see [Imports](state/imports-office-xml.md)).
 
 ## MarkupGuard, MarkupScanner, and tree models
-<!-- id: markupguard-markupscanner-tree-models; keys: HTML parser, tokeniser, untrusted markup, crash, tree builder, depth model; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkupScanner.swift, TextMouth/Parsers/MarkupNesting.swift -->
+<!-- id: markupguard-markupscanner-tree-models; keys: HTML parser, tokeniser, untrusted markup, crash, tree builder, depth model; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkupScanner.swift, TextMouth/Parsers/MarkupNesting.swift, Vendor/SwiftSoup/README.md -->
 
 MarkupGuard (Parsers/MarkupGuard.swift), MarkupScanner (Parsers/MarkupScanner.swift), and XMLOpenElements and HTMLTreeModel (Parsers/MarkupNesting.swift): the one way markup reaches SwiftSoup, since 0.4.1.
+SwiftSoup is the copy vendored in `Vendor/SwiftSoup` (see [Third-party code](../developer/third-party-code.md)), which builds the same trees as the package did.
 A book's markup is untrusted, and three things in it took the whole app down, or the Mac's memory with it:
 
 - SwiftSoup's XML parser traps on a declaration it takes apart and finds no element in, such as `<?a>` or a torn `<?xml version="1.0"`.

@@ -152,7 +152,7 @@ OffMainWork (Services/StorageDestinationAssessment.swift): runs blocking work, s
 ## Archive extraction, budget, and reader
 <!-- id: archive-extraction-budget-reader; keys: zip bomb, entry limit, size budget, central directory, unzip; src: TextMouth/Parsers/ArchiveEntryReader.swift, TextMouth/Services/ArchiveBudget.swift, TextMouth/Services/ArchiveExtraction.swift -->
 
-ArchiveExtraction, ArchiveBudget, ArchiveEntryReader, and IndexedArchive (Services/ArchiveExtraction.swift, Services/ArchiveBudget.swift, Parsers/ArchiveEntryReader.swift): bounded, cancellable ZIP extraction, the one way to read an archive entry, and the one way to find many entries.
+ArchiveExtractor, ArchiveBudget, ArchiveEntryReader, and IndexedArchive (Services/ArchiveExtraction.swift, Services/ArchiveBudget.swift, Parsers/ArchiveEntryReader.swift): bounded, cancellable ZIP extraction, the one way to read an archive entry, and the one way to find many entries.
 
 ## ImportScratchSpace
 <!-- id: importscratchspace; keys: temporary folder, staging, import temp, caches; src: TextMouth/Services/ImportScratchSpace.swift -->
