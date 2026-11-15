@@ -47,7 +47,7 @@ The look-ahead and its render signature.
 
 A pause between chapters (FR15): the silence a book keeps after a chapter before the next starts, while it plays on.
 
-- Owner: ReaderViewModel.chapterPauses (Models/ChapterPauses.swift), set as the book loads and never saved, supplied for now by ChapterPauses.betweenTracks through AudioTrackPlan, from a multi-file audiobook's manifest, and equal to another when it gives the same pause after every chapter, whatever list made it ([shared helpers](../shared-helpers.md)); and chapterStartAfterPause, the cancellable start of the next chapter.
+- Owner: ReaderViewModel.chapterPauses (Models/ChapterPauses.swift), set as the book loads and never saved, supplied for now by ChapterPauses.betweenTracks through AudioTrackPlan, from a multi-file audiobook's manifest, and equal to another when it gives the same pause after every chapter, whatever list made it ([shared helpers](../shared-helpers-values.md)); and chapterStartAfterPause, the cancellable start of the next chapter.
   A later setting of pauses between headings (FR16) makes or combines a ChapterPauses at the same place.
 - Who may write it: +Playback's audioDidFinish begins the wait; stopWaitingOutChapterPause(because:) ends it, called from stopAudioWaitingToPlay, stop(), playAudioChapter(), and +LibraryUpdates' pauseAudioForPackageMove.
 - How others observe it: through isPlaybackUnderWay and isWaitingOutChapterPause.
