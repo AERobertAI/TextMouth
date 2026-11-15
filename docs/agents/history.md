@@ -641,3 +641,16 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **CLAUDE.md's Start here:** it listed the project's documents (writing-docs.md, README.md, ARCHITECTURE.md, the TODO, AGENT-NOTES, `research/`), the message board with its build wrapper `build-slot-with-bbs.sh`, `merge-chain.sh` and `extract-report.py`.
   It also gave the `*.md` gitignore rule and the `humanQuestions/` rule.
   AGENTS.md's Start here holds them now, and the orchestrator's tools are in orchestrator.md.
+
+## From Testing TextMouth
+
+- **The skip of the 33 hosted VoiceOver tests:** how it came about, and the follow-up the tests team left (see Tests that skip in an ordinary run in testing.md).
+  Each of the 33 skips at once with one message, "SwiftUI exposes the accessibility elements of its own texts and buttons only to an accessibility client, never to a test reading them in-process".
+  Where it once looked for the elements and then skipped, and the log has SWIFTUI_ELEMENTS_UNEXPOSED lines.
+  The 29 classes went from 164 to 68 seconds.
+  Running them would take a test host signed with a developer identity and granted Accessibility once in System Settings, or a trusted helper that reads the window as a client (a follow-up of the tests team of October 30, 2026).
+- **The first runs against real cloud drives:** which drive ran when, and why Dropbox was not run again; what the runs showed is in Testing on real cloud drives in testing.md.
+  On October 3, 2026, every test passed against Dropbox, which showed that:
+  Later that day, after TextMouth learned to treat a book's package that iCloud Drive syncs whole as one item, every test passed against iCloud Drive and Google Drive too.
+  Dropbox, whose files each carry their own flags, was not run again.
+  The runs showed that:
