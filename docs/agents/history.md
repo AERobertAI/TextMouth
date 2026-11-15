@@ -700,3 +700,10 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - V03, which keeps a row this TextMouth cannot read as it was read, dates from October 23, 2026.
 - ImportedBook.originalKeptNotice was named rtfdOriginalKeptNotice until October 31, 2026.
 - docx (with .dotx, .docm, and .dotm) joined formatsRefusedWhenBlank on November 13, 2026.
+
+## From Imports
+
+- The announcement rule for a ZIP batch that found no new book (the library's alert instead) dates from October 13, 2026.
+- Packages and originals (isBookPackage, the package handling of importFiles and importZip) dates from October 31, 2026.
+- Limits of what a file claims (EPUBParser.readingXML, withNCX) dates from October 31, 2026.
+- The Word documents joined formatsRefusedWhenBlank on November 13, 2026.
