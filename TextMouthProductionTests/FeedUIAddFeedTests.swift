@@ -813,7 +813,8 @@ final class FeedTestWorldTeardownTests: XCTestCase {
         // Spelled in two parts, so this line is not one of the makings found.
         let making = "FeedCenter" + "(environment:"
         var madeByHand: [String] = []
-        for source in try AppSourceFile.all(in: testsFolder) where source.name != "FeedTestSupport.swift" {
+        for source in try AppSourceFile.all(in: testsFolder)
+        where source.name != "FeedTestSupport.swift" && source.text.contains(making) {
             for (index, line) in source.text.components(separatedBy: .newlines).enumerated()
             where line.contains(making) && !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
                 madeByHand.append("\(source.path):\(index + 1)")
