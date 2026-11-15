@@ -33,7 +33,8 @@ final class OnDiskContractTests: XCTestCase {
     }
 
     /// What a changed `BookFormat` forces.
-    private static let formatForces = "a TextMouth built before it refuses the whole library"
+    private static let formatForces =
+        "a TextMouth built before it opens the library without those books (from 0.2.1, V03), or refuses it (before 0.2.1)"
 
     /// What a changed row or record key forces.
     private static let keyForces =
@@ -50,16 +51,19 @@ final class OnDiskContractTests: XCTestCase {
     /// each package's record, in this order.
     ///
     /// "mobi" (FMT42, November 4, 2026) was added deliberately at the end: a
-    /// TextMouth built before it refuses a library that holds a Kindle book,
-    /// as 0.2.0's eight formats did, so the orchestrator raises the version's
-    /// MINOR and the changelog cautions the user. "kfx" (FMT52, November 6,
-    /// 2026) was added deliberately after it, for the same reason.
+    /// TextMouth from 0.2.1 built before it opens a library that holds a
+    /// Kindle book without that book (V03, `NewerLibraryRowsTests`), and one
+    /// before 0.2.1 refuses the library, as before 0.2.0's eight formats, so
+    /// the orchestrator raises the version's MINOR and the changelog cautions
+    /// the user. "kfx" (FMT52, November 6, 2026) was added deliberately after
+    /// it, for the same reason, and so were "picture" and "comic" (FMT34,
+    /// November 15, 2026), which 0.2.1 to 0.4.11 open without.
     func testEveryBookFormatIsSavedUnderItsOwnName() {
         XCTAssertEqual(
             BookFormat.allCases.map(\.rawValue),
             [
                 "epub", "txt", "markdown", "html", "webarchive", "ssml", "docx", "rtf", "rtfd", "doc", "odt",
-                "wordml", "braille", "daisy", "pdf", "audio", "mobi", "kfx",
+                "wordml", "braille", "daisy", "pdf", "audio", "mobi", "kfx", "picture", "comic",
             ],
             Self.because("a BookFormat's raw value, or the cases", Self.formatForces)
         )
@@ -589,7 +593,11 @@ final class OnDiskContractTests: XCTestCase {
     /// Each page reader's version: the formats with pages, and that no
     /// other format has one.
     func testThePageReaderVersions() {
-        let withPages = ["epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille", "txt", "kfx", "mobi"]
+        // Pictures of pages and comic book archives (FMT34) have their pages from their first reading.
+        let withPages = [
+            "epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille", "txt", "kfx", "mobi",
+            "picture", "comic",
+        ]
         let forces = "every book of that format is read again at the next launch (V05, V07)"
         var versions: [String: String] = [:]
         var withoutPages: Set<String> = []

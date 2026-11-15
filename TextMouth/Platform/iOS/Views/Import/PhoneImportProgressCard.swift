@@ -55,8 +55,8 @@ struct PhoneImportProgressCard: View {
             Button(AddToLibraryWording.cancel) {
                 copier.cancelImports()
             }
-            .accessibilityLabel(ProgressOverlay.cancelButtonLabel)
-            .accessibilityHint(ProgressOverlay.cancelButtonHint)
+            .accessibilityLabel(ImportProgressWording.cancelButtonLabel)
+            .accessibilityHint(ImportProgressWording.cancelButtonHint)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         // A container, not one combined element: combining would fold the

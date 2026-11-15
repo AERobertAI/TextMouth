@@ -40,6 +40,13 @@ final class DocumentTypeDeclarationTests: XCTestCase {
         Declaration(name: "Kindle Book (MOBI)", extensions: ["mobi", "prc", "azw", "azw3"], contentTypes: ["com.textmouth.mobi"]),
         // Kindle KFX books (FMT52); a .kpf is listed so it can be refused with its own sentence.
         Declaration(name: "Kindle Book (KFX)", extensions: ["kfx", "kfx-zip", "azw8", "kpf"], contentTypes: ["com.textmouth.kfx"]),
+        // Pictures of pages read by text recognition, and comic book archives (FMT34): a Viewer at rank
+        // Alternate puts TextMouth in Open With without ever making it the default app for a picture.
+        Declaration(
+            name: "Picture (PNG, JPEG, HEIC, or TIFF)", extensions: ["png", "jpg", "jpeg", "heic", "heif", "tif", "tiff"],
+            contentTypes: ["public.png", "public.jpeg", "public.heic", "public.heif", "public.tiff"]
+        ),
+        Declaration(name: "Comic Book Archive (CBZ)", extensions: ["cbz"], contentTypes: ["com.textmouth.cbz"]),
         // Video files whose audio is the book (an audio-only .mp4, .m4v, or .mov is read as an audiobook). A Viewer at
         // rank Alternate puts TextMouth in Open With without ever making it the default app for a video.
         Declaration(name: "MP4 / QuickTime Video", extensions: ["mp4", "m4v", "mov"],

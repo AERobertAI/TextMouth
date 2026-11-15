@@ -28,6 +28,13 @@ enum ImportStep: Equatable, Sendable {
     case checkingPackage
     /// Reading the book's text into its content.md cache, as the reader will.
     case readingText
+    /// Reading the text of a book read page by page, `done` of `total` pages
+    /// so far: pictures of pages and comic book archives (FMT34), whose
+    /// pages text recognition reads one at a time, up to seconds each. It is
+    /// a part of reading the text, named the same, which the overlay counts
+    /// as it counts the tracks it converts; a failure meanwhile is reading
+    /// the text's (`readingText`).
+    case readingPages(done: Int, of: Int)
     /// Reading the book's audio chapters, as the reader will.
     case readingAudio
     /// Writing the book's bookInfo.json and reading it back.
@@ -50,7 +57,7 @@ enum ImportStep: Equatable, Sendable {
         case .convertingAudio: return "Converting its DAISY audio"
         case .convertingImportedAudio: return "Converting its audio"
         case .checkingPackage: return "Checking the package"
-        case .readingText: return "Reading its text"
+        case .readingText, .readingPages: return "Reading its text"
         case .readingAudio: return "Reading its audio"
         case .savingRecord: return "Saving its bookInfo.json file"
         case .publishing: return "Adding it to the library folder"

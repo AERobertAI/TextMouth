@@ -385,6 +385,48 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Picture (PNG, JPEG, HEIC, or TIFF)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>png</string>
+				<string>jpg</string>
+				<string>jpeg</string>
+				<string>heic</string>
+				<string>heif</string>
+				<string>tif</string>
+				<string>tiff</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.png</string>
+				<string>public.jpeg</string>
+				<string>public.heic</string>
+				<string>public.heif</string>
+				<string>public.tiff</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Comic Book Archive (CBZ)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>cbz</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.cbz</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>Rich Text Document (RTF)</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -767,6 +809,27 @@
 					<string>kfx-zip</string>
 					<string>azw8</string>
 					<string>kpf</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.cbz</string>
+			<key>UTTypeDescription</key>
+			<string>Comic Book Archive (CBZ)</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>cbz</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.comicbook+zip</string>
 				</array>
 			</dict>
 		</dict>

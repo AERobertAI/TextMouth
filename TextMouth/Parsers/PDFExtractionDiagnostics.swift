@@ -47,20 +47,32 @@ struct PDFPageDiagnosis: Equatable, Sendable {
 /// How every page of a PDF was read, with sentences that say so aloud.
 /// An `ExtractionReport` carries it for a PDF so the Library can show
 /// where a book's text came from, and so an import can warn when text that
-/// appears only in images could not be read.
+/// appears only in images could not be read. A book of pictures of pages
+/// (FMT34) reports its pages the same way, in sentences of its own.
 struct PDFExtractionDiagnostics: Equatable, Sendable {
+    /// What the pages are, which the sentences name them by.
+    enum Medium: Equatable, Sendable {
+        /// A PDF's pages, whose text may be embedded as well as pictured.
+        case pdf
+        /// Pictures of pages, whose every word is in the picture (FMT34).
+        case pictures
+    }
+
     /// Every page, in order.
     var pages: [PDFPageDiagnosis]
     /// Why OCR could not run at all during this extraction, when a page
     /// needed it and the app could not perform it. Nil when OCR was
     /// available, or when no page needed it.
     var ocrUnavailableReason: String?
+    /// What the pages are: a PDF's unless said otherwise.
+    var medium: Medium
 
-    /// Diagnostics for `pages`, with OCR unavailable for
+    /// Diagnostics for `pages` of `medium`, with OCR unavailable for
     /// `ocrUnavailableReason` when one is given.
-    init(pages: [PDFPageDiagnosis] = [], ocrUnavailableReason: String? = nil) {
+    init(pages: [PDFPageDiagnosis] = [], ocrUnavailableReason: String? = nil, medium: Medium = .pdf) {
         self.pages = pages
         self.ocrUnavailableReason = ocrUnavailableReason
+        self.medium = medium
     }
 
     // MARK: Page Lists
@@ -93,10 +105,16 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
     /// pages OCR could not run on, then those pages and why, for example:
     /// "OCR could not run on 2 of 12 pages, so text that appears only in
     /// their images is missing: pages 3 and 7 (text recognition is not
-    /// available)." Nil when the PDF was read in full.
+    /// available)." Nil when the PDF was read in full. A book of pictures,
+    /// whose every word is pictured, says it without the clause about text
+    /// in images: "Text recognition could not read 1 of 3 pages: page 2
+    /// (its picture could not be decoded)." (`PageImageWording.pagesNotRead`).
     var problem: String? {
         let failed = pagesWhereOCRCouldNotRun
         guard !failed.isEmpty else { return nil }
+        if medium == .pictures {
+            return PageImageWording.pagesNotRead(failed.count, of: pages.count, pages: failureGroups)
+        }
         let pronoun = failed.count == 1 ? "its" : "their"
         return "\(failureCount(failed.count)), so text that appears only in \(pronoun) images is missing: "
             + "\(failureGroups)."
