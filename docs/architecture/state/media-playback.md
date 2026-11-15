@@ -142,7 +142,7 @@ AudioPlaybackService.fileProblem(at:) refuses, as a last guard, every format the
 
 AudioPlaybackService.metadataAsset(for:) is the one place the metadata readers (extractChapters(from:), extractFullMetadata(from:), and getDuration(of:)) open an AVURLAsset to probe a file.
 It returns nil for a file of a format the import converts, by extension in any case (ImportAudioConverter.isConvertedAtImport, CAF included, since an import runs these readers on a source before converting it), so such audio never reaches AVFoundation's probing in the app's process, where AsyncBridge.waitForResult has only the time limit its caller gives it (audioTagsTimeLimit, audioAnalysisTimeLimit; shared helpers); each reader then answers without AVFoundation.
-For an Ogg file, extractFullMetadata fills the title, artist, album, genre, year, and length from OggHeaderReader (see [imports](imports.md)), getDuration gives its length, and extractChapters gives none. extractChapters reads an M4A, M4B, MP4, M4V, or MOV file's Nero chapter list by hand when AVFoundation finds none (NeroChapterReader).
+For an Ogg file, extractFullMetadata fills the title, artist, album, genre, year, and length from OggHeaderReader (see [imports](imports-audio.md)), getDuration gives its length, and extractChapters gives none. extractChapters reads an M4A, M4B, MP4, M4V, or MOV file's Nero chapter list by hand when AVFoundation finds none (NeroChapterReader).
 Both paths of extractFullMetadata write the length with one helper, durationString(_:): h:mm:ss from an hour on, else m:ss.
 
 ## Rendered speech feeder exceptions

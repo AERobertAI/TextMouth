@@ -59,7 +59,7 @@ MarkdownEmphasis.markdown(_:styles:literal:) takes the writer for each stretch b
 <!-- id: soft-hyphens-left-out-book; keys: shy entity, line break, braille dots 3-6, speech hyphen, discretionary hyphen; src: TextMouth/Parsers/ParserUtilities.swift, TextMouthProductionTests/SoftHyphenEffectTests.swift -->
 
 ParserUtilities.removingSoftHyphens(_:) (Parsers/ParserUtilities.swift): the one place a soft hyphen (U+00AD) is left out of a book's words.
-The Kindle readers call it, for a KF8 book's markup and its contents' labels, and for a MOBI 6 book's markup, labels, and plain text (see [Imports](state/imports.md)).
+The Kindle readers call it, for a KF8 book's markup and its contents' labels, and for a MOBI 6 book's markup, labels, and plain text (see [Imports](state/imports-kindle.md)).
 The EPUB reader does not call it.
 A publisher puts soft hyphens inside words to say where a line may break.
 
