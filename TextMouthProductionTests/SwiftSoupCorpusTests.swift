@@ -24,8 +24,10 @@ import ZIPFoundation
 ///   covering the whole tree, `text()`, `outerHtml()`, and `title()`, against
 ///   `TestData/soup-corpus/manifest.tsv`, recorded from the released SwiftSoup
 ///   package. A document the manifest does not name is not compared (a
-///   checkout can hold more of TestData than another); one it names and the
-///   checkout lacks is not compared either, but too few found fails the test.
+///   checkout can hold more of TestData than another), but too few found fails
+///   the test. It holds records for damaged copies of documents up to
+///   `largestRecordedDamagedDocument` bytes; a run compares those up to
+///   `largestDamagedDocument`.
 ///
 /// A difference names the documents and the parse that differ. If a change to
 /// SwiftSoup is meant (an upgrade), record the manifest again with
@@ -38,10 +40,18 @@ final class SwiftSoupCorpusTests: XCTestCase {
     /// How many damaged copies each document of the corpus gets.
     static let damagedCopiesPerDocument = 3
 
-    /// The largest document that is damaged, in bytes: damaging a large
-    /// document adds to the time and little to what is covered, since the
-    /// damage does not depend on the size.
-    static let largestDamagedDocument = 60_000
+    /// The largest document that is damaged in a run that compares, in bytes.
+    /// Three damages to a small document reach its tree builder's recovery
+    /// paths as often as three to a large one, and cost a fraction of the
+    /// time: with 10,000, the class runs in about 40 seconds on GitHub's
+    /// runner (69 seconds at 60,000, November 14, 2026).
+    static let largestDamagedDocument = 10_000
+
+    /// The largest document damaged when the manifest is recorded: it holds a
+    /// record for every damaged copy up to this size, so the limit above can
+    /// be raised without recording again, and a comparison uses the records
+    /// it needs. (A damaged copy is the same whichever limit is in force.)
+    static let largestRecordedDamagedDocument = 60_000
 
     /// The largest ZIP entry, or file, taken into the corpus, in bytes.
     static let largestDocument = 8 * 1024 * 1024
@@ -49,9 +59,13 @@ final class SwiftSoupCorpusTests: XCTestCase {
     /// The extensions of the markup documents, in lower case.
     static let markupExtensions: Set<String> = ["html", "htm", "xhtml", "xml", "ncx", "opf", "smil"]
 
-    /// Fewer than this share of the manifest's documents found in TestData
-    /// fails the test, so a test that compares nothing cannot pass.
+    /// Fewer than this share of the inputs found in the manifest fails the
+    /// test, so a test that compares nothing cannot pass.
     static let leastShareFound = 0.9
+
+    /// The fewest inputs a comparison may cover: a TestData with most of its
+    /// markup gone cannot pass for a proof.
+    static let fewestInputsCompared = 1_200
 
     // MARK: - The Corpus
 
@@ -134,9 +148,9 @@ final class SwiftSoupCorpusTests: XCTestCase {
     /// The documents to parse: each of the corpus as it is, then each of at
     /// most `largestDamagedDocument` bytes damaged `damagedCopiesPerDocument`
     /// times, each with the name `<document>#damaged<N>`.
-    static func inputs(from documents: [CorpusDocument]) -> [CorpusDocument] {
+    static func inputs(from documents: [CorpusDocument], damagingUpTo limit: Int = largestDamagedDocument) -> [CorpusDocument] {
         var inputs = documents
-        for document in documents where document.bytes.count <= largestDamagedDocument {
+        for document in documents where document.bytes.count <= limit {
             var damage = SoupDamage(key: document.key)
             for copy in 1...damagedCopiesPerDocument {
                 inputs.append(CorpusDocument(
@@ -200,11 +214,14 @@ final class SwiftSoupCorpusTests: XCTestCase {
     /// trees, text, and markup the manifest recorded from the released SwiftSoup.
     func testEveryParseMatchesTheRecordFromTheReleasedSwiftSoup() throws {
         let documents = Self.gatherDocuments()
-        let inputs = Self.inputs(from: documents)
+        let recording = ProcessInfo.processInfo.environment["TEXTMOUTH_RECORD_SOUP_MANIFEST"] == "1"
+        let inputs = Self.inputs(
+            from: documents, damagingUpTo: recording ? Self.largestRecordedDamagedDocument : Self.largestDamagedDocument
+        )
         let lines = Self.lines(for: inputs)
 
         // Recording: write the manifest, and say so rather than pass.
-        if ProcessInfo.processInfo.environment["TEXTMOUTH_RECORD_SOUP_MANIFEST"] == "1" {
+        if recording {
             try FileManager.default.createDirectory(
                 at: Self.manifestURL.deletingLastPathComponent(), withIntermediateDirectories: true
             )
@@ -231,9 +248,10 @@ final class SwiftSoupCorpusTests: XCTestCase {
                 + differences.prefix(40).joined(separator: "\n")
         )
         XCTAssertGreaterThanOrEqual(
-            Double(compared), Double(manifest.count) * Self.leastShareFound,
-            "Only \(compared) of the manifest's \(manifest.count) inputs were found in TestData, so the test proves little"
+            Double(compared), Double(lines.count) * Self.leastShareFound,
+            "Only \(compared) of the \(lines.count) inputs are in the manifest, so the test proves little"
         )
+        XCTAssertGreaterThan(compared, Self.fewestInputsCompared, "Too few inputs were compared")
     }
 
     /// The corpus has the documents the proof is worth something for: EPUB

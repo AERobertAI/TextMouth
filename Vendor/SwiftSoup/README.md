@@ -35,7 +35,7 @@ every file is equal.
 The package was compiled file by file at `-Osize` (smallest) to avoid the
 forced inlining, which made parsing slower. A whole-module build of this copy at
 `-Osize` is smaller and faster than the package was (the November 14, 2026
-research, `HTML-PARSER-AND-IMPORT-RESEARCH-2026-11-14.md`, section 1.4). The
+research, `research/HTML-PARSER-AND-IMPORT-RESEARCH-2026-11-14.md`, section 1.4). The
 trees are the same: `SwiftSoupCorpusTests` (hosted, with every train) and
 `Scripts/test/swiftsoup-corpus/run.py` (a Release build over the full corpus)
 compare every document of `TestData`, and damaged copies of each, parsed three
