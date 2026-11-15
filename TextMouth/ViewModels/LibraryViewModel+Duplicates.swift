@@ -727,7 +727,13 @@ extension LibraryViewModel {
     private func commitReplacement(of existing: Book, by preparation: DuplicateReplacement.Preparation) throws {
         let book = preparation.book
         LibraryPersistenceService.writePendingBookInfoNow(bookID: existing.id)
-        try book.saveBookInfoThrowing()
+        // Move to Library's note, if the old copy's record holds one, goes
+        // into the new copy's record: the book stays the library's own, so a
+        // stale feed record cannot take it back into its feed at a launch
+        // (risk 4). Read now, while the old package is still in place, and
+        // without downloading it.
+        let movedToLibrary = existing.ownStoredRecord()?.metadata.movedToLibrary
+        try book.saveBookInfoThrowing(inPackageAt: book.tmbDirectory, notingMoveToLibraryAt: movedToLibrary)
         try DuplicateQuestionMarker.remove(from: preparation.movedTo)
         var replaced = library
         if let index = replaced.books.firstIndex(where: { $0.id == existing.id }) {
