@@ -22,7 +22,6 @@
     "docs/architecture/state/hosted-test-sandbox.md": {"line-length": 21, "user-quote": 1},
     "docs/architecture/state/imports-braille-tables.md": {"line-length": 34},
     "docs/architecture/state/imports-braille.md": {"line-length": 29},
-    "docs/architecture/state/imports-kindle.md": {"line-length": 8},
     "docs/architecture/state/imports-rtf-and-word.md": {"line-length": 29},
     "docs/architecture/state/imports-text-encoding-choice.md": {"line-length": 10},
     "docs/architecture/state/imports-text-encodings.md": {"line-length": 35},

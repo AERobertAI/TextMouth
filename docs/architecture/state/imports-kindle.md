@@ -18,7 +18,8 @@ Kindle KFX books (FMT52): DRM-free KFX books, read by TextMouth's own reader, th
   - DRMION is a copy-protected container (refused, never opened: MOBIError.copyProtected), and
   - PK is a ZIP that KFXPackage looks at by member names and first bytes only (a .kfx-zip set, or a .kpf with a .kdf database, which is KFXError.kindleCreatePackage).
 
-  KFXSidecar looks beside the book for a Book.sdr folder and a Book.voucher (a voucher or a protected member anywhere is copyProtected), following no symbolic link, visiting at most 200 names, going no deeper than 3 levels, and reading at most 16 containers, and a sidecar's fragments never override the main file's.
+  KFXSidecar looks beside the book for a Book.sdr folder and a Book.voucher (a voucher or a protected member anywhere is copyProtected), following no symbolic link, visiting at most 200 names, going no deeper than 3 levels, and reading at most 16 containers.
+  A sidecar's fragments never override the main file's.
   FileImportService refuses a protected book at import before its size is asked.
   A nonzero compression or DRM field in a container is refused (the format notes find both 0 in every readable file); a nonzero compression is MOBI's "compressed in a way TextMouth can't read yet".
 ### Reading a KFX book
@@ -28,7 +29,10 @@ Kindle KFX books (FMT52): DRM-free KFX books, read by TextMouth's own reader, th
   KFXIon reads binary Ion from the public specification, with an explicit stack and a budget of values, never recursion.
   KFXSymbols knows the shared table by number and the container's local symbols, which start after the import's max_id (860 when max_id is 859).
   KFXFragments indexes the fragments of all a book's containers by type and name.
-  KFXMetadata reads the title, author (a book made by Kindle Previewer spells every name "Last, First", which is flipped back for that tool alone), and language, and the capability marks that say a book has no flowing text (fixed layout, textbook, publisher panels, facing page, double-page spread, text popups, dictionary, a magazine's content type, a comic's panel mode, a notebook), which throw KFXError.noFlowingText, as does a book whose every section is fixed layout or only pictures; KFXError.partOfABook is a container with no sections, storylines, or document data.
+  KFXMetadata reads the title, author (a book made by Kindle Previewer spells every name "Last, First", which is flipped back for that tool alone), and language.
+  It also reads the capability marks that say a book has no flowing text (fixed layout, textbook, publisher panels, facing page, double-page spread, text popups, dictionary, a magazine's content type, a comic's panel mode, a notebook).
+  They throw KFXError.noFlowingText, as does a book whose every section is fixed layout or only pictures.
+  KFXError.partOfABook is a container with no sections, storylines, or document data.
 - KFXNavigation reads the table of contents, the print page list (a list named APPROXIMATE_PAGE_LIST is a machine's and is passed over), and the heading levels the headings container gives (levels 1 to 6), at most 200,000 units.
   KFXTargets turns each into an anchor at a node and an offset in code points.
   KFXWalk walks each section of the reading order with its own stack and one counter of work against one limit, and writes HTML:
@@ -91,7 +95,10 @@ Reading: BookParser and MarkdownCacheService.extractFromKindle call MOBIParser, 
    - with no index, one for each page break.
    No section begins before Scan.bodyStart, the first body tag, else the end of the head, else the text's start, so the head (an OEB metadata block, a guide) is never read: SwiftSoup would move a head element it doesn't know into the body.
    A deeper entry is a heading annotation (level depth + 1, at most 6) at its anchor.
-   MOBIMarkup checks no nesting of its own: a section's markup reaches SwiftSoup only through MarkupGuard, in HTMLToMarkdownConverter.convert, which refuses markup nested more than 128 levels deep, with too many tags, too many attributes on one tag, or too much work, by throwing MarkupRefusal before SwiftSoup builds anything (see Shared helpers and, for the sentences, [Import progress and errors](../../user/import-progress-and-errors.md)).
+   MOBIMarkup checks no nesting of its own.
+   A section's markup reaches SwiftSoup only through MarkupGuard, in HTMLToMarkdownConverter.convert.
+   The guard refuses markup nested more than 128 levels deep, with too many tags, too many attributes on one tag, or too much work, by throwing MarkupRefusal before SwiftSoup builds anything.
+   See [Shared helpers: readers and markup guards](../shared-helpers-parsers.md) and, for the sentences, [Import progress and errors](../../user/import-progress-and-errors.md).
    A section that opens as XML goes to SwiftSoup's XML parser, and a broken declaration in it is rewritten as an empty comment.
    SwiftSoup is the vendored copy in Vendor/SwiftSoup, not a Swift package, and builds the same trees as the package did (SwiftSoupCorpusTests).
 6. Each section's HTML goes to HTMLToMarkdownConverter with its heading targets, and MarkdownDocParser makes it a chapter.
@@ -121,7 +128,8 @@ It is read by TextMouth's own code, written from the format's published descript
    The join of a document is a piece table, and a join that would take more than KF8Layout.maximumJoiningSteps (2,000,000) is refused.
    The markup is the first flow.
    A flow table that is missing or odd leaves the whole text.
-4. The text: MOBIText.bytes(of:headers:through:) reads the text through the flow table's end (KF8Layout.flowTableEnd) when that is past the length the header declares, as kindlegen's KF8 headers declare only the markup and leave their SVG flows after it. flowTableEnd is 0 above DocumentByteLimit.current, and DocumentByteLimit.check runs on the larger length, so the 64 MB cap holds.
+4. The text: MOBIText.bytes(of:headers:through:) reads the text through the flow table's end (KF8Layout.flowTableEnd) when that is past the length the header declares, as kindlegen's KF8 headers declare only the markup and leave their SVG flows after it.
+   KF8Layout.flowTableEnd is 0 above DocumentByteLimit.current, and DocumentByteLimit.check runs on the larger length, so the 64 MB cap holds.
 5. The file: MOBIParser.mappedContents memory-maps the file, held to MOBIParser.maximumFileBytes (512 MB), so a kindlegen hybrid with its pictures twice (111 MB for 1 MB of words) costs no allocation of that size.
    DocumentByteLimit is held to the text, not the file.
 
@@ -132,7 +140,8 @@ It is read by TextMouth's own code, written from the format's published descript
    A contents entry (NCX) that names the very start of a document's first fragment titles the document; one that names a place inside it is a heading there (level depth + 1, at most 6) at an anchor (MOBIMarkup.anchors, one for all the places inside one tag).
    A contents or guide that does not read names nothing, and the book is read without it.
    An index may claim at most 2,000,000 numbers, an index row's label is cut at 1,024 bytes (MOBIIndex.maximumLabelBytes).
-7. The continuation rule: a document that no contents entry names, that opens with no heading before any word (documentOpening, within 4,096 bytes), and that follows a document with words (hasChapterBefore), joins the chapter before it (Section.continuesPrevious) only when the title in its head equals the previous document's, or equals the heading the next document opens with (openingHeading, within 8,192 bytes).
+7. The continuation rule: a document that no contents entry names, that opens with no heading before any word (documentOpening, within 4,096 bytes), and that follows a document with words (hasChapterBefore), may join the chapter before it (Section.continuesPrevious).
+   It joins only when the title in its head equals the previous document's, or equals the heading the next document opens with (openingHeading, within 8,192 bytes).
    Both are exact comparisons after readableLabel: references read, soft hyphens left out, white space collapsed, case kept; openingHeadingBounds is the one scan both use, and passes over a comment or any other tag before the heading.
    A document that joins makes no heading of its title; any other is a chapter of its own, titled by displayTitle.
    A cut that fell inside a paragraph joins the two halves into one (joinsParagraph).
@@ -143,11 +152,14 @@ It is read by TextMouth's own code, written from the format's published descript
    - The exception is narrow on purpose.
      A piece that opens in another section element still goes on, since a document of two sections that is cut inside the second reopens that section in the new piece, and its second half must not become a chapter.
      A piece after a footer goes on too, so Gutenberg's back page stays with the licence.
-   - The licence-opening rule: a piece with no heading whose title is the heading the next piece opens with, and that is inside the same element as the next piece (a section element with an id, as Gutenberg's footer#pg-footer is, which calibre opens again in the next piece), is not the end of the chapter before.
+   - The licence-opening rule: a piece with no heading whose title is the heading the next piece opens with, and that is inside the same element as the next piece, is not the end of the chapter before.
      It is the opening of the next piece's section, so the next piece goes on with it (previousOpensThisSection).
      Where the two pieces are not in one element, the piece goes on with the chapter before, as before.
      A section element is found by Container.names and its id, and openingContainer passes over anchors and comments to find it.
-   - Measured on the real books: Pride and Prejudice's last chapter went from 1,461 to 1,248 words and its licence from 2,694 to 2,907; Moby Dick's Epilogue from 482 to 267 and its licence from 2,693 to 2,908; The Yellow Wallpaper's last chapter from 6,295 to 6,082 and its licence from 2,693 to 2,906.
+     Such an element has an id, as Gutenberg's footer#pg-footer does, which calibre opens again in the next piece.
+   - Measured on the real books: Pride and Prejudice's last chapter went from 1,461 to 1,248 words and its licence from 2,694 to 2,907.
+     Moby Dick's Epilogue went from 482 to 267 and its licence from 2,693 to 2,908.
+     The Yellow Wallpaper's last chapter went from 6,295 to 6,082 and its licence from 2,693 to 2,906.
      Every book's words are the same, and the edge samples and The Time Machine read as before.
    - Not settled: a wrapper such as main with an id around several chapters would move the end of one chapter into the next, no sample has one, and boilerplate written as a section with the id pg-footer, not a footer, would make the back page a chapter of one word.
 
@@ -179,5 +191,4 @@ Names: MOBIBook.Metadata takes the title from EXTH 503, else the MOBI header's f
 FileImportService adopts the title and author through MOBIParser.readMetadata, which never fails an import, so a book that is then refused is refused by its own reading.
 
 - Limits, besides DocumentByteLimit for the file and the declared text: 10,000 EXTH records, 100,000 index entries, 32 string records, 64 tags, HUFF tables of at most 256 records and 2^20 entries with an entry coded at most 8 levels deep, and 500,000 filepos targets, past which no anchor is put.
-- Files: Parsers/MOBIError.swift, Parsers/MOBIPalmDatabase.swift, Parsers/MOBIHeaders.swift, Parsers/MOBIText.swift, Parsers/MOBIHuffman.swift, Parsers/MOBIIndex.swift, Parsers/MOBIMarkup.swift, Parsers/MOBIBook.swift, Parsers/KF8Layout.swift, Parsers/KF8Book.swift, Parsers/MOBIParser.swift, Parsers/BookParser.swift, Services/MarkdownCacheService.swift, Services/FileImportService.swift, Models/Book.swift, Resources/Info.plist.
-  MOBIText, MOBIIndex, MOBIHuffman, and KF8Layout follow foliate-js's mobi.js (MIT) closely; its licence ships in the app (see [Third-party code](../../developer/third-party-code.md)).
+- MOBIText, MOBIIndex, MOBIHuffman, and KF8Layout follow foliate-js's mobi.js (MIT) closely; its licence ships in the app (see [Third-party code](../../developer/third-party-code.md)).
