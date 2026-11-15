@@ -650,7 +650,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 
 ## From Building the iOS app
 
-- **The first run in the simulator:** The iOS app first ran in the iOS simulator on November 8, 2026.
+- **The iOS app's first run:** It first ran in the iOS simulator on November 8, 2026.
 - **The freeze under several builds:** On October 31, 2026 the Mac, which has 8 GB of memory, froze under several builds at once.
 - **The train that went on beside a lock:** Until November 8, 2026 a train that had waited 20 minutes went on beside the job holding the lock; that day the user, finding that the builds took a lot of CPU, asked for them "one after the other".
 - **Builds on GitHub Actions** (since November 9, 2026).
