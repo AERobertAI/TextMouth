@@ -168,11 +168,27 @@ final class PLSAndXSPFPlaylistTests: XCTestCase {
         let lexicon = try write("<?xml version=\"1.0\"?><lexicon version=\"1.0\"/>", to: "lexicon.pls")
         XCTAssertThrowsError(try M3UPlaylist.read(at: lexicon)) {
             XCTAssertEqual($0 as? M3UPlaylistError, .pronunciationLexicon(fileName: "lexicon.pls"))
-            XCTAssertEqual(
-                $0.localizedDescription,
-                "“lexicon.pls” is a pronunciation lexicon, not a playlist. To use it, choose Import Rules on the Text tab in Settings."
-            )
+            XCTAssertEqual($0.localizedDescription, PlaylistImportWording.pronunciationLexicon(fileName: "lexicon.pls"))
         }
+    }
+
+    /// The lexicon refusal advises on the Mac, naming the button as the
+    /// settings tab does, and stops after "not a playlist." where there is no
+    /// such tab (the iPhone).
+    func testTheLexiconRefusalAdvisesOnlyWhereTheTabIs() {
+        XCTAssertEqual(
+            PlaylistImportWording.pronunciationLexicon(fileName: "a.pls", advising: true),
+            "“a.pls” is a pronunciation lexicon, not a playlist. To use it, choose Import Rules… on the Text tab in Settings."
+        )
+        XCTAssertEqual(
+            PlaylistImportWording.pronunciationLexicon(fileName: "a.pls", advising: false),
+            "“a.pls” is a pronunciation lexicon, not a playlist."
+        )
+        XCTAssertTrue(PlaylistImportWording.pronunciationLexicon(fileName: "a.pls", advising: true)
+            .contains(PronunciationLexiconWording.importButton))
+        #if os(macOS)
+        XCTAssertTrue(PlaylistImportWording.hasLexiconImport)
+        #endif
     }
 
     /// The words of the two new refusals.

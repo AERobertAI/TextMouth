@@ -42,11 +42,25 @@ enum PlaylistImportWording {
         "The playlist “\(fileName)” is not a complete, valid playlist file."
     }
 
-    /// The refusal of a .pls file that is a pronunciation lexicon, with the
-    /// way to use it (FMT08).
-    static func pronunciationLexicon(fileName: String) -> String {
-        "“\(fileName)” is a pronunciation lexicon, not a playlist. "
-            + "To use it, choose Import Rules on the Text tab in Settings."
+    /// Whether this build has the Text settings tab where a lexicon is
+    /// imported: the Mac does, the iPhone does not.
+    static let hasLexiconImport: Bool = {
+        #if os(macOS)
+        return true
+        #else
+        return false
+        #endif
+    }()
+
+    /// The refusal of a .pls file that is a pronunciation lexicon. With
+    /// `advising` (the Mac) it gives the way to use it, naming the button as
+    /// the Text settings tab does (`PronunciationLexiconWording.importButton`)
+    /// (FMT08); without it (the iPhone, which has no such tab) it ends at
+    /// "not a playlist."
+    static func pronunciationLexicon(fileName: String, advising: Bool = hasLexiconImport) -> String {
+        let refusal = "“\(fileName)” is a pronunciation lexicon, not a playlist."
+        guard advising else { return refusal }
+        return refusal + " To use it, choose \(PronunciationLexiconWording.importButton) on the Text tab in Settings."
     }
 
     /// The refusal of a playlist that lists only web addresses.
