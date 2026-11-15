@@ -1,5 +1,5 @@
 # Speed and memory
-<!-- id: speed-memory; keys: ; src: -->
+<!-- id: speed-memory; keys: performance, large library, responsiveness, what changed; src: TextMouthProductionTests/PerformanceBaselineTests.swift, TextMouthProductionTests/performance-baselines.json -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -7,7 +7,7 @@ TextMouth was measured against a library the size of its developer's, and change
 What changed in use:
 
 ## Starting to listen
-<!-- id: starting-listen; keys: ; src: -->
+<!-- id: speed-starting-listen; keys: first Play, voice loading, speech preparation, look-ahead, voice list, Voice tab, speech engine; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/VoiceCatalog.swift, TextMouth/Services/ReadingTextCache.swift -->
 
 Starting to listen:
 
@@ -27,7 +27,7 @@ Starting to listen:
   The Voice tab and a reader's voice sheet show that list rather than asking the system each time.
 
 ## Long chapters
-<!-- id: long-chapters; keys: ; src: -->
+<!-- id: speed-long-chapters; keys: substitution rules, prepared speech, pause level, repeated symbols, render ahead; src: TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/RepeatedSymbolRule.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift -->
 
 Long chapters:
 
@@ -37,7 +37,7 @@ Long chapters:
 - A coming chapter too long to render ahead has its speech prepared in the background meanwhile.
 
 ## Audiobooks
-<!-- id: audiobooks; keys: ; src: -->
+<!-- id: speed-audiobooks; keys: gapless, chapter files, End of heading, sleep timer, iCloud download; src: TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SleepTimerService.swift -->
 
 Audiobooks:
 
@@ -48,7 +48,7 @@ Audiobooks:
   - before a chapter whose file is only in the cloud, which downloads first.
 
 ## Memory
-<!-- id: memory; keys: ; src: -->
+<!-- id: speed-memory-use; keys: RAM, closed window, DAISY import, audio rendering, seek; src: TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/PlaybackMemoryGuard.swift, TextMouth/Parsers/DAISYParser+Audio.swift -->
 
 Memory:
 
@@ -59,7 +59,7 @@ Memory:
 - Importing a DAISY audiobook copies its audio out of the ZIP a piece at a time, instead of reading each audio file into memory whole.
 
 ## The library list
-<!-- id: library-list; keys: ; src: -->
+<!-- id: speed-library-list; keys: redraw, Moving books, folder move, announcement, StorageHoldReason, sheets; src: TextMouth/ViewModels/LibraryViewModel+MoveToLibrary.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+FeedItemMove.swift -->
 
 The library list:
 
@@ -75,7 +75,7 @@ The library list:
   Try again when that finishes."
 
 ## Searching the library's text
-<!-- id: searching-library-text; keys: ; src: -->
+<!-- id: speed-searching-text; keys: search texts, Preparing books, processor time, Low Power Mode, free space, background priority; src: TextMouth/Services/TextSearch/LibrarySearchPreparer.swift, TextMouth/Services/TextSearch/LibrarySearchEngine.swift, TextMouth/Models/LibrarySearchWording.swift, TextMouth/Services/TextCacheUpdateQueue.swift -->
 
 Searching the library's text:
 
@@ -88,7 +88,7 @@ Searching the library's text:
 - A search made before the background work has reached a book makes that book's text itself and says "Preparing 120 of 737 books…"; the first search of all took about 8 seconds on that library.
 
 ## Saving your place
-<!-- id: saving-your-place; keys: ; src: -->
+<!-- id: speed-saving-place; keys: reading position, checkpoint, library.json, feed index, config.json, slider, crash; src: TextMouth/ViewModels/LiveReadingPositions.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/ConfigService.swift -->
 
 Saving your place:
 
@@ -101,7 +101,7 @@ Saving your place:
 - A change in Settings is saved to config.json a moment after the last one, so dragging a slider writes the file once.
 
 ## Quitting while work is under way
-<!-- id: quitting-while-work-under-way; keys: ; src: -->
+<!-- id: speed-quitting; keys: Command-Q, Quit, Quitting TextMouth window, 18 seconds, feed downloads, text re-read, speech export, log out; src: TextMouth/App/QuitFinisher.swift, TextMouth/App/QuitHold.swift, TextMouth/App/QuitRequest.swift, TextMouth/App/QuitReason.swift, TextMouth/Platform/macOS/Views/QuitNotice.swift -->
 
 Quitting while work is under way (0.4.4):
 
@@ -128,7 +128,7 @@ Quitting while work is under way (0.4.4):
 - Work that cannot end gives up after its limit, so the waits add up to about 18 seconds at most (3, 10, and 5).
 
 ## Opening and importing books
-<!-- id: opening-importing-books; keys: ; src: -->
+<!-- id: speed-opening-importing; keys: EPUB metadata, import speed, text cache, launch checks, package check; src: TextMouth/Models/EPUBMetadata.swift, TextMouth/Models/EPUBMetadataSave.swift, TextMouth/Parsers/EPUBParser.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/ReadingTextCache.swift -->
 
 Opening and importing books:
 
@@ -142,7 +142,7 @@ Opening and importing books:
 - Launch checks each book's package with fewer file-system calls, and works out in the background which text caches need rebuilding.
 
 ## Cloud libraries, Storage settings, and focus
-<!-- id: cloud-libraries-storage-settings-focus; keys: ; src: TextMouthProductionTests/PerformanceBaselineTests.swift -->
+<!-- id: speed-cloud-settings-focus; keys: iCloud, Dropbox, slow drive, unplugged drive, VoiceOver focus; src: TextMouth/Platform/macOS/Views/VoiceOverFocus.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
 Elsewhere:
 
