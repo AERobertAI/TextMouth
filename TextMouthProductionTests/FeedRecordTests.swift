@@ -537,7 +537,7 @@ final class FeedRecordTests: XCTestCase {
 
         hold.release()
         let ran = recordingAnnouncements { failed.center.runRetriesKeptForStorageWork() }
-        await failed.center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: failed.center)
         await failed.store.flush()
 
         XCTAssertEqual(ran.announcements.map(\.message), ["Feed subscriptions saved."], "the kept retry's save was not heard once")
