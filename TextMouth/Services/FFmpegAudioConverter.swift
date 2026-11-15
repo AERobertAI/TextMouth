@@ -419,11 +419,34 @@ enum FFmpegAudioConverter {
         min(Double(max(bytes, 0)) * 8 / Double(lowestAssumedBitRate), FFprobeReport.maximumDuration)
     }
 
+    /// The lowest bit rate a stated length is believed at, in bits a second:
+    /// 1 kbit/s, the floor afinfo's reading gives a codec it has no table
+    /// for (`AudioFileInfo.lowestPlausibleBitRate`). No real file of these
+    /// formats is smaller for its length.
+    static let lowestPlausibleBitRate: Double = 1_000
+
+    /// `stated`, the length a source of `bytes` bytes named `name` says it
+    /// lasts, when its size can hold it: at most its bits at
+    /// `lowestPlausibleBitRate`, as `AudioFileInfo.isPlausible(inFileOfBytes:)`
+    /// believes afinfo's. A header can say anything, and the time limit and
+    /// the output cap follow the length, so one the file cannot hold is taken
+    /// as unknown (nil), logged as `AUDIO_INFO_IMPLAUSIBLE`, and the converted
+    /// file is measured instead.
+    static func believedDuration(_ stated: TimeInterval?, ofFileNamed name: String, bytes: Int64) -> TimeInterval? {
+        guard let stated else { return nil }
+        guard stated <= Double(max(bytes, 0)) * 8 / lowestPlausibleBitRate else {
+            DiagnosticLog.event(.storage, AudioFileInfo.implausibleLogLine(file: name, duration: stated, bytes: bytes))
+            return nil
+        }
+        return stated
+    }
+
     /// Converts `source`, a file the import converts with ffmpeg
     /// (`converts(_:)`), to an .m4a file beside it, as `plan(for:...)`
     /// decides, under the hidden temporary name every conversion has
     /// (`ImportAudioConverter.temporaryURL(beside:)`), and checks it: it must
-    /// play and, when the source says its length, last as long to within
+    /// play and, when the source says a length its size can hold
+    /// (`believedDuration(_:ofFileNamed:bytes:)`), last as long to within
     /// `ImportAudioConverter.allowedLengthError(for:)`. With `naming`, it then
     /// gets its final name (`ImportAudioConverter.givingFinalName(_:)`). The
     /// source is never changed, and nothing is left behind by a failure.
@@ -459,7 +482,10 @@ enum FFmpegAudioConverter {
         let encoder = try await tool.hasAppleAACEncoder(programs) ? "aac_at" : "aac"
         let plan = try plan(for: report, container: container, fileName: name, aacEncoder: encoder)
         let bytesBefore = ImportAudioConverter.fileSize(of: source)
-        let duration = plan.duration ?? assumedDuration(ofBytes: bytesBefore)
+        // A length the file's size cannot hold is no length (as afinfo's is
+        // not): the limits and the check then go by what is measured.
+        let stated = believedDuration(plan.duration, ofFileNamed: name, bytes: bytesBefore)
+        let duration = stated ?? assumedDuration(ofBytes: bytesBefore)
         var limits = tool.limits(duration)
         limits.maximumOutputBytes = limits.maximumOutputBytes
             ?? ImportAudioConverter.outputCap(of: .encode, duration: duration, target: plan.target)
@@ -470,7 +496,7 @@ enum FFmpegAudioConverter {
                 tool.command(source, staged, plan, programs), named: name, limits: limits,
                 residentMemory: tool.residentMemory, watching: staged
             )
-            lasts = try await check(staged, against: plan.duration, from: name)
+            lasts = try await check(staged, against: stated, from: name)
         } catch {
             try? FileManager.default.removeItem(at: staged)
             throw error

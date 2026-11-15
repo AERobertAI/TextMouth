@@ -395,6 +395,18 @@ final class FFmpegImportPlanTests: XCTestCase {
         XCTAssertEqual(FFmpegAudioConverter.assumedDuration(ofBytes: .max), FFprobeReport.maximumDuration)
     }
 
+    /// A stated length is believed only when the file's size can hold it at
+    /// 1 kbit/s, as afinfo's is; one past that is no length, so a header
+    /// that lies cannot lift the time limit or the output cap.
+    func testALengthTheFileCannotHoldIsNoLength() {
+        XCTAssertNil(FFmpegAudioConverter.believedDuration(nil, ofFileNamed: "a.wma", bytes: 20_000))
+        XCTAssertEqual(FFmpegAudioConverter.believedDuration(4, ofFileNamed: "a.wma", bytes: 20_000), 4)
+        XCTAssertEqual(FFmpegAudioConverter.believedDuration(160, ofFileNamed: "a.wma", bytes: 20_000), 160)
+        XCTAssertNil(FFmpegAudioConverter.believedDuration(160.5, ofFileNamed: "a.wma", bytes: 20_000))
+        XCTAssertNil(FFmpegAudioConverter.believedDuration(100_000, ofFileNamed: "a.wma", bytes: 20_000))
+        XCTAssertNil(FFmpegAudioConverter.believedDuration(1, ofFileNamed: "a.wma", bytes: -1))
+    }
+
     // MARK: - Finding ffprobe
 
     /// ffprobe is looked for beside the ffmpeg found first, then in the

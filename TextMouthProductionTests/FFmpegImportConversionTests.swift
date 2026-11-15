@@ -238,6 +238,20 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(conversion.duration, 4.04, accuracy: 0.1)
     }
 
+    /// A header that claims more than its file can hold (a day in 20 KB) is
+    /// no length: the conversion goes by what is measured, and the debug log
+    /// says why, as it says of afinfo's.
+    func testALengthTheFileCannotHoldIsMeasuredInstead() async throws {
+        let lying = standInWMAReport.replacingOccurrences(of: "3.999000", with: "86400.000000")
+        let wma = try source(named: "Lying.wma")
+
+        let conversion = try await FFmpegAudioConverter.convert(wma, using: try ffmpegStandIn(report: lying))
+
+        XCTAssertEqual(conversion.duration, 4.04, accuracy: 0.1)
+        let logged = debugLogLines(containing: "AUDIO_INFO_IMPLAUSIBLE: Lying.wma: claims 86400 seconds in ")
+        XCTAssertEqual(logged.count, 1, "\(logged)")
+    }
+
     /// The import's converter hands a file only ffmpeg reads to the tool it
     /// carries, and Ogg holding Speex too, whatever its name; Ogg of another
     /// codec never reaches it.
