@@ -260,7 +260,9 @@ final class PageImageImportTests: XCTestCase {
         XCTAssertEqual(found.nonBookFiles.countsByExtension, ["jpg": 1, "png": 1])
     }
 
-    /// An archive of tracks with its cover picture is still one audiobook.
+    /// An archive of tracks with its cover picture is still one audiobook,
+    /// and so is one with a comic book archive beside its tracks, as before
+    /// TextMouth read comics; any other book beside them makes a batch.
     func testAnAudiobookArchiveWithItsCoverIsStillAnAudiobook() throws {
         let tracks = try makeTemporaryZip(prefix: "pageimage-album", orderedEntries: [
             TestZIPEntry("01 Arrival.mp3", Data(repeating: 0, count: 16)),
@@ -269,13 +271,23 @@ final class PageImageImportTests: XCTestCase {
             TestZIPEntry("folder.png", try PageImageFixtures.plainPage()),
         ])
         addTeardownBlock { try? FileManager.default.removeItem(at: tracks) }
-        let withBook = try makeTemporaryZip(prefix: "pageimage-mixed", orderedEntries: [
+        let withComic = try makeTemporaryZip(prefix: "pageimage-mixed", orderedEntries: [
             TestZIPEntry("01 Arrival.mp3", Data(repeating: 0, count: 16)),
             TestZIPEntry("notices.cbz", Data(repeating: 0, count: 16)),
         ])
-        addTeardownBlock { try? FileManager.default.removeItem(at: withBook) }
+        addTeardownBlock { try? FileManager.default.removeItem(at: withComic) }
+        let withEPUB = try makeTemporaryZip(prefix: "pageimage-epub", orderedEntries: [
+            TestZIPEntry("01 Arrival.mp3", Data(repeating: 0, count: 16)),
+            TestZIPEntry("guide.epub", Data(repeating: 0, count: 16)),
+        ])
+        addTeardownBlock { try? FileManager.default.removeItem(at: withEPUB) }
 
         XCTAssertTrue(LibraryViewModel.isAudioZip(url: tracks))
-        XCTAssertFalse(LibraryViewModel.isAudioZip(url: withBook), "a comic book archive beside tracks is a book")
+        // As before TextMouth read comics, the comic is passed over and the tracks are one audiobook.
+        XCTAssertTrue(LibraryViewModel.isAudioZip(url: withComic), "a comic book archive beside tracks leaves them one audiobook")
+        XCTAssertFalse(LibraryViewModel.isAudioZip(url: withEPUB), "any other book beside tracks still makes a batch")
+        XCTAssertFalse(BookFormat.comic.isBookBesideTracks)
+        XCTAssertFalse(BookFormat.picture.isBookBesideTracks)
+        XCTAssertTrue(BookFormat.epub.isBookBesideTracks)
     }
 }

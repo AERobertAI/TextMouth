@@ -164,12 +164,12 @@ enum BookFormat: String, Codable, CaseIterable {
     }
 
     /// Whether a file of this format found among other files, in a ZIP
-    /// archive of books, beside an audiobook's tracks, or in a DAISY book's
-    /// archive, is a book of its own. A picture is not: there it is a cover,
-    /// an album's artwork, or a page of the book beside it, so only a picture
-    /// chosen on its own is read as a book of its text (FMT34), and an
-    /// archive's pictures stay among its files passed over. Every other
-    /// format is, a comic book archive among them.
+    /// archive of books or in a DAISY book's archive, is a book of its own
+    /// (beside an audiobook's tracks the rule is `isBookBesideTracks`). A
+    /// picture is not: there it is a cover, artwork, or a page of the book
+    /// beside it, so only a picture chosen on its own is read as a book of
+    /// its text (FMT34), and an archive's pictures stay among its files
+    /// passed over. Every other format is, a comic book archive among them.
     var isBookAmongOtherFiles: Bool { self != .picture }
 
     /// The format of the file at `url` when, found among other files, it is
@@ -178,6 +178,15 @@ enum BookFormat: String, Codable, CaseIterable {
     static func detectBookAmongOtherFiles(from url: URL) -> BookFormat? {
         detect(from: url).flatMap { $0.isBookAmongOtherFiles ? $0 : nil }
     }
+
+    /// Whether a file of this format beside an archive's audio tracks makes
+    /// the archive a batch of books rather than one audiobook
+    /// (`LibraryViewModel.isAudioZip(url:)`). A picture does not, as among
+    /// any other files, and neither does a comic book archive: such an
+    /// archive imported as one audiobook, its comic passed over, before
+    /// TextMouth read comic book archives (FMT34), and so it still does.
+    /// Every other format TextMouth reads does.
+    var isBookBesideTracks: Bool { isBookAmongOtherFiles && self != .comic }
 
     /// The extensions, in lowercase, that a package's track scan takes as
     /// tracks: the audio list without the formats added on October 18, 2026
