@@ -1,10 +1,10 @@
 # Windows
-<!-- id: windows; keys: ; src: -->
+<!-- id: windows-state; keys: scene, WindowGroup, NSWindow, Library window, reader window, router; src: TextMouth/Services/LibraryWindowRouter.swift, TextMouth/Views/ContentView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## App-wide actions
-<!-- id: app-wide-actions; keys: ; src: TextMouth/Services/LibraryWindowRouter.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/App/MenuCommands.swift, TextMouth/Views/ContentView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/ViewModels/DataDirectoryMoveProgress.swift -->
+<!-- id: app-wide-actions; keys: dispatch, front window, Finder double-click, window list, File menu, new window, Dock icon; src: TextMouth/Services/LibraryWindowRouter.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/App/MenuCommands.swift, TextMouth/Views/ContentView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/ViewModels/DataDirectoryMoveProgress.swift -->
 
 App-wide actions.
 
@@ -18,7 +18,7 @@ App-wide actions.
 - Files: Services/LibraryWindowRouter.swift, Platform/macOS/App/AppDelegate.swift, App/MenuCommands.swift, Views/ContentView.swift, Views/Reader/BookReaderWindowView.swift.
 
 ## A reader window's book changes in place
-<!-- id: reader-window-book-changes-place; keys: ; src: TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/Services/SleepTimerRegistry.swift, TextMouth/Models/NextBookWindow.swift, TextMouth/ViewModels/ReaderViewModel+NextBookWindow.swift, TextMouth/Services/WindowSwitchRequests.swift, TextMouth/Platform/macOS/Views/SwitchedWindowFocus.swift, TextMouth/Platform/macOS/Views/VoiceOverFocus.swift, TextMouth/Services/LibraryWindowRouter.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/ReaderViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Models/ListeningOptions.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
+<!-- id: reader-window-book-switch; keys: switch window, in-place book change, one window per book, window reuse, next book in window, open books registry, sleep timer hand over; src: TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/Services/SleepTimerRegistry.swift, TextMouth/Models/NextBookWindow.swift, TextMouth/ViewModels/ReaderViewModel+NextBookWindow.swift, TextMouth/Services/WindowSwitchRequests.swift, TextMouth/Platform/macOS/Views/SwitchedWindowFocus.swift, TextMouth/Platform/macOS/Views/VoiceOverFocus.swift, TextMouth/Services/LibraryWindowRouter.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Models/ListeningOptions.swift, TextMouth/Models/SettingsPolicy.swift, TextMouth/ViewModels/ReaderViewModel+SleepTimerHandOver.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
 
 A reader window's book changing in place (0.2.5): listening goes on to the next book in the window you are in, and the registry of open readers.
 
@@ -41,7 +41,7 @@ A reader window's book changing in place (0.2.5): listening goes on to the next 
 - Files: Platform/macOS/App/TextMouthApp.swift, Views/Reader/BookReaderWindowView.swift, Services/SleepTimerRegistry.swift, Models/NextBookWindow.swift, ViewModels/ReaderViewModel+NextBookWindow.swift, Services/WindowSwitchRequests.swift, Platform/macOS/Views/SwitchedWindowFocus.swift, Platform/macOS/Views/VoiceOverFocus.swift, Services/LibraryWindowRouter.swift, ViewModels/LibraryViewModel+BookOperations.swift, ViewModels/ReaderViewModel.swift.
 
 ## Each Library window's place
-<!-- id: each-library-window-place; keys: ; src: TextMouth/Views/ContentView.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/FolderNavigationHistory.swift, TextMouth/Models/LibraryViewDefinitionStore.swift, TextMouth/Models/KeyboardShortcut.swift -->
+<!-- id: library-window-place; keys: view picker, number keys, view switch, navigation stack, deleted folder, window state, per-window; src: TextMouth/Views/ContentView.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/FolderNavigationHistory.swift, TextMouth/Models/LibraryViewDefinitionStore.swift, TextMouth/Models/LibraryViewDefinitionList.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/App/MenuCommands.swift -->
 
 Each Library window's place.
 
@@ -61,7 +61,7 @@ Each Library window's place.
 - Files: Views/ContentView.swift, Views/Library/LibraryView.swift, ViewModels/LibraryViewModel.swift, ViewModels/LibraryViewModel+Views.swift, Models/LibraryViewPickerWording.swift, Models/LibraryViewDefinition.swift, Models/LibrarySortState.swift, Models/FolderNavigationHistory.swift.
 
 ## The list a Library window shows
-<!-- id: list-library-window-shows; keys: ; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Models/LibraryAudioCommand.swift, TextMouth/Models/EndOfBookWording.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibraryInfoRow.swift -->
+<!-- id: library-window-list; keys: table, book row, reorder, performance, row identity, sort order; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Models/LibraryAudioCommand.swift, TextMouth/Models/EndOfBookWording.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibraryInfoRow.swift -->
 
 The list a Library window shows.
 
@@ -76,7 +76,7 @@ The list a Library window shows.
 - Files: Views/Library/LibraryView.swift, Views/Library/LibrarySubviews.swift.
 
 ## Letter navigation in the Library list
-<!-- id: letter-navigation-library-list; keys: ; src: TextMouth/Views/Library/LibraryTitleTyping.swift, TextMouth/Models/TitleTyping.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Models/LeadingArticles.swift, TextMouth/Views/Feeds/FeedLibraryPresentation.swift, TextMouthProductionTests/LibraryTypeSelectProbeTests.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/LeadingArticleWording.swift, TextMouthProductionTests/TitleTypingTests.swift -->
+<!-- id: library-letter-navigation; keys: type to find, typed letters, skip The, find by title, row jump, table keyboard; src: TextMouth/Views/Library/LibraryTitleTyping.swift, TextMouth/Models/TitleTyping.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Models/LeadingArticles.swift, TextMouth/Views/Feeds/FeedLibraryPresentation.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/Models/LeadingArticleWording.swift, TextMouthProductionTests/TitleTypingTests.swift, TextMouthProductionTests/LibraryTitleTypingTests.swift, TextMouthProductionTests/LibraryTypeSelectBehaviorTests.swift, TextMouthProductionTests/LibraryTypeSelectProbeTests.swift -->
 
 Letter navigation in the Library list (the Leading articles setting, November 13, 2026): typing a title's first letters past its leading article.
 
@@ -99,7 +99,7 @@ Letter navigation in the Library list (the Leading articles setting, November 13
 - Tests: TitleTypingTests (folding, the forms a title is reached by, the search's clock, which row, the Space), LibraryTitleTypingTests (hosted: the letters typed into a real window's list in each choice, the Space claim, the scroll into view, the search field left alone), and LibraryTypeSelectBehaviorTests and LibraryTypeSelectProbeTests (what AppKit's type select does; developer testing, in [Testing](../../developer/testing.md)).
 
 ## A closed window
-<!-- id: closed-window; keys: ; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/Platform/macOS/Views/VoiceOverFocus.swift -->
+<!-- id: closed-window-cost; keys: close window, hidden window, memory use, window release, reopen, Dock click; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/Platform/macOS/Views/VoiceOverFocus.swift -->
 
 A closed window.
 
@@ -110,7 +110,7 @@ A closed window.
 - Files: Views/Library/LibraryView.swift, Views/Reader/BookReaderWindowView.swift, Platform/macOS/Views/VoiceOverFocus.swift.
 
 ## Menus
-<!-- id: menus; keys: ; src: TextMouth/Platform/macOS/Services/MenuVisibilityManager.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/App/MenuCommands.swift, TextMouth/Views/Transcription/TranscriptCleanupCommands.swift, TextMouth/Views/AudioEditor/AudioEditorCommands.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorEditMenu.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorWindowController.swift, TextMouth/Views/Export/BookExportPresentation.swift, TextMouth/Views/Feeds/LibraryFeedsWindowSupport.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Models/BookExportWording.swift -->
+<!-- id: window-menus; keys: menu bar, dimmed command, hidden menu, Playback menu, Record window menus, VoiceOver menu bar, command enabled; src: TextMouth/Platform/macOS/Services/MenuVisibilityManager.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/App/MenuCommands.swift, TextMouth/Views/Transcription/TranscriptCleanupCommands.swift, TextMouth/Views/AudioEditor/AudioEditorCommands.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorEditMenu.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorWindowController.swift, TextMouth/Views/Export/BookExportPresentation.swift, TextMouth/Views/Feeds/LibraryFeedsWindowSupport.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Models/BookExportWording.swift -->
 
 Menus.
 
@@ -130,7 +130,7 @@ Menus.
 - Files: Platform/macOS/Services/MenuVisibilityManager.swift, Platform/macOS/Views/Recording/RecordingWindowController.swift, App/MenuCommands.swift, Views/Transcription/TranscriptCleanupCommands.swift, Views/AudioEditor/AudioEditorCommands.swift, Platform/macOS/Views/AudioEditor/AudioEditorEditMenu.swift, Platform/macOS/Views/AudioEditor/AudioEditorWindowController.swift, Views/Export/BookExportPresentation.swift, Views/Feeds/LibraryFeedsWindowSupport.swift.
 
 ## Key presses
-<!-- id: key-presses; keys: ; src: TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Services/ShortcutPressDispatcher.swift, TextMouth/Models/TextEditingKeys.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouthProductionTests/TextFieldEditingKeysTests.swift, TextMouthProductionTests/ShortcutPressDispatcherTests.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Models/ShortcutEdits.swift, TextMouth/Platform/macOS/Services/MenuVisibilityManager.swift, TextMouth/Views/Library/LibraryTitleTyping.swift -->
+<!-- id: key-press-actions; keys: hotkey, keystroke, press twice, local monitor, edit field, Option key, Shift key; src: TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Services/ShortcutPressDispatcher.swift, TextMouth/Models/TextEditingKeys.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouthProductionTests/TextFieldEditingKeysTests.swift, TextMouthProductionTests/ShortcutPressDispatcherTests.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Models/ShortcutEdits.swift, TextMouth/Platform/macOS/Services/MenuVisibilityManager.swift, TextMouth/Views/Library/LibraryTitleTyping.swift -->
 
 Key presses: which action a key press is, single or double, and the keys a text field keeps (B03).
 
