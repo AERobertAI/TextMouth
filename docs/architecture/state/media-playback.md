@@ -16,7 +16,8 @@ Speech, for text books.
   - and, for a text of at most SpeechRenderCoordinator.maximumTextLength UTF-16 units, renders the same text in the background into an AudioEngineService (AVAudioEngine with a time-pitch unit, for instant seeking and speed changes).
   The rendered audio takes over only at a natural break: a seek, a pause and resume, either watchdog's recovery, the recovery from a refused text, or the next chapter through the look-ahead; a sleep timer's fade fades the speech being heard where it is.
   Speech never hands over from direct mode to rendered audio while it runs uninterrupted, because the synthesizer's word callbacks run ahead of the sound by an amount that cannot be known.
-  - Direct speech starts with a chunk of at most SpeechService.directModeFirstChunkSize (1,000) UTF-16 units, since the synthesizer reads a whole utterance before its first word, and hands the synthesizer each later chunk of at most directModeChunkSize (5,000) as the one before it starts (queueNextDirectChunk()), so speech goes on after the synthesizer's own pause without waiting for the main thread.
+  - Direct speech starts with a chunk of at most SpeechService.directModeFirstChunkSize (1,000) UTF-16 units, since the synthesizer reads a whole utterance before its first word.
+    It hands the synthesizer each later chunk of at most directModeChunkSize (5,000) as the one before it starts (queueNextDirectChunk()), so speech goes on after the synthesizer's own pause without waiting for the main thread.
     A queued chunk becomes the one speaking when the one before it ends or when it starts, whichever the main queue hears first.
   - The engine is made the first time speech needs one, for its first render or the first chapter it plays from audio rendered ahead (SpeechService.audioEngine; hasAudioEngine asks without making one), so an audiobook's reader never makes one.
   - releaseSpeech() stops and lets go of the text and the rendered audio without making an engine, for a reader that closes, and restoreEngineVolume() restores only an engine that exists.
@@ -24,15 +25,30 @@ Speech, for text books.
     The speech service's own engine builds its graph at once, as SpeechService.audioEngine makes it, through prepareGraph(), while direct speech is already speaking, so the first seek, resume, or chapter handoff onto the engine does not wait for the build (PERF08: 142 ms, 2.5 s cold).
     The look-ahead's engine never calls it: a look-ahead that only renders builds no graph, since a render needs only the synthesizer.
     - speak() on text whose rendered audio the engine already holds, with the same signature (the text's hash and UTF-16 length, and the voice; renderedAudioMatches(text:)), as when Play follows Stop, keeps that audio and renders nothing again (RENDER_KEPT in textmouth_transition.log).
-    - Direct speech starts as before, and speech still never switches from direct mode to the engine while it runs uninterrupted.
+    - Direct speech starts as before.
   - Rendered audio is a RenderedSpeechAudio: the synthesizer's pieces converted to 16-bit samples as they arrive, in blocks of 128 KB, then the silence padding every render ends with.
     It is immutable, so the look-ahead's engine hands it to the speech service's.
     A play converts back only what it schedules: RenderedSpeechFeeder schedules a few slices on the player node at once, and fills and schedules the next each time the node reports one consumed, on a serial queue of its own, so a busy main thread never leaves the node without audio.
     A seek schedules from the slice that holds the cursor, copying nothing else.
   - The voice is loaded ahead of the first Play: SpeechRenderCoordinator.warmUp(_:) renders one word with it and drops the audio (VoiceWarmUp), once per voice in a session, on the render queue like any render, giving up its turn after 30 seconds.
     A text book's reader asks when it opens and when its voice changes (ReaderViewModel.warmUpVoice()).
-  - Every utterance made from a book's text is handed to the synthesizer guarded, through SpeechMarkupGuard.neutralized(_:) (Services/SpeechMarkupGuard.swift): the two brackets of each tag-shaped run (tagPattern: a closing tag, even with spaces or no name; a declaration, comment, or processing instruction; an opening tag whose name, any run of characters other than brackets, spaces, and slashes, with spaces around it or not, is followed by nothing but name=value attributes; or an empty tag, <> or < >) become U+2039 and U+203A, one UTF-16 unit for one, so the guarded text keeps the original's length, and every word range the synthesizer reports, every chunk boundary, and every offset of the rendered audio's frame map still counts in the original.
-    Direct chunks and the sleep timer's fade segments (makeDirectUtterance(speaking:at:), which also replaces every bracket of the part of an utterance that lies in strictlyGuardedRange, through SpeechMarkupGuard.neutralized(_:strictlyWithin:)), the engine's render (AudioEngineService.render, whose SpeechRenderRequest keeps its text unguarded), Where Am I?, and Speak Info (LibraryInfoSpeaker), which speaks titles, go through it; the warm-up's one word and the voice previews are constants.
+
+#### The markup guard
+<!-- id: speech-markup-guard; keys: SpeechMarkupGuard; src: TextMouth/Services/SpeechMarkupGuard.swift -->
+
+  - Every utterance made from a book's text is handed to the synthesizer guarded, through SpeechMarkupGuard.neutralized(_:) (Services/SpeechMarkupGuard.swift).
+    It turns the two brackets of each tag-shaped run into U+2039 and U+203A, one UTF-16 unit for one, so the guarded text keeps the original's length, and every word range the synthesizer reports, every chunk boundary, and every offset of the rendered audio's frame map still counts in the original.
+    A tag-shaped run (tagPattern) is:
+    - a closing tag, even with spaces or no name;
+    - a declaration, comment, or processing instruction;
+    - an opening tag whose name, any run of characters other than brackets, spaces, and slashes, with spaces around it or not, is followed by nothing but name=value attributes;
+    - or an empty tag, <> or < >.
+    These go through it:
+    - direct chunks and the sleep timer's fade segments (makeDirectUtterance(speaking:at:), which also replaces every bracket of the part of an utterance that lies in strictlyGuardedRange, through SpeechMarkupGuard.neutralized(_:strictlyWithin:)),
+    - the engine's render (AudioEngineService.render, whose SpeechRenderRequest keeps its text unguarded),
+    - Where Am I?,
+    - and Speak Info (LibraryInfoSpeaker), which speaks titles.
+    The warm-up's one word and the voice previews are constants.
     The speech engine of macOS 26.3.1 scans a plain AVSpeechUtterance for tags:
     - it refuses an utterance holding a closing tag with no opening tag, as a chunk that begins after a book's opening tag can, and the synthesizer that refused never speaks again;
     - it swallows everything after an opening tag with no closing one;
@@ -46,42 +62,77 @@ Speech, for text books.
     - neutralized(_:) also turns each NUL (U+0000) into a space, one unit for one, after guarding brackets (#1542): a NUL ends the text for the engine, which drops the rest of the utterance without a cancel, so neither a recovery nor the report of a refusal hears it.
     Every other control character passes: the offline probe Scripts/agents/probes/speech-control-character-probe.swift found the 64 others, C0, DEL, and C1, spoken in full in Samantha, and nothing lost at all in Alex.
 - Who may write it: the reader, through speak, pause, resume, seek, and stop, and releaseSpeech() as it closes.
-  A resume starts from the word last reported; with none reported yet in direct mode, as when a Pause comes within about 0.3 seconds of Play and the engine's own offset is 0 or stale, it starts from the offset the direct utterance began at, snapped to its word (SpeechService.resumeOffset(reportedWord:usingDirectMode:directModeBaseOffset:engineOffset:), ST03), so a quick Play and Pause keeps the place instead of restarting the chapter.
+  A resume starts from the word last reported.
+  With none reported yet in direct mode, it starts from the offset the direct utterance began at, snapped to its word (SpeechService.resumeOffset(reportedWord:usingDirectMode:directModeBaseOffset:engineOffset:), ST03).
+  This happens when a Pause comes within about 0.3 seconds of Play and the engine's own offset is 0 or stale, so a quick Play and Pause keeps the place instead of restarting the chapter.
 
 ### How speech is observed
 <!-- id: how-speech-observed; keys: word highlight, cursor, stall, refusal, recovery, sleep fade; src: TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Models/SpeechRefusalReport.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/Services/SpeechMarkupGuard.swift -->
 
-- How others observe it: the reader sets onWordSpoken, which moves its cursor through the offset map (the position timer, every 0.1 s on the main run loop with SpeechService.positionTimerTolerance, 20 ms, publishes the engine's offset in its own turn through publishRenderedPosition(_:generation:): it sets currentWordRange and calls onWordSpoken with the word at the offset, which wordStarting(at:in:) reads on the main thread, only when the offset differs from the last one published, lastPublishedPositionOffset, which each startPositionTracking clears so the new timer's first position is always published, and drops the position when positionGeneration moved, as a seek or a stop does; there is no positionQueue and no hop to a background queue and back, and warmPositionLookup(in:) makes the text's UTF-16 lookup table off the main thread when tracking starts; currentWordRange is a plain property that publishes nothing, since only onWordSpoken carries each word), and, for each play, onUtteranceFinished (the playback generation, above), and mirrors whether speech is playing or paused and its speed.
+- How others observe it: the reader sets onWordSpoken, which moves its cursor through the offset map, and, for each play, onUtteranceFinished ([The playback generation](reader-playback.md)), and mirrors whether speech is playing or paused and its speed.
+  The position timer, every 0.1 s on the main run loop with SpeechService.positionTimerTolerance, 20 ms, publishes the engine's offset in its own turn through publishRenderedPosition(_:generation:).
+  It sets currentWordRange and calls onWordSpoken with the word at the offset, which wordStarting(at:in:) reads on the main thread, only when the offset differs from the last one published (lastPublishedPositionOffset).
+  Each startPositionTracking clears it, so the new timer's first position is always published.
+  It drops the position when positionGeneration moved, as a seek or a stop does.
+  There is no positionQueue and no hop to a background queue and back, and warmPositionLookup(in:) makes the text's UTF-16 lookup table off the main thread when tracking starts.
+  currentWordRange is a plain property that publishes nothing, since only onWordSpoken carries each word.
   Every utterance a synthesizer callback reports (a word, a start, a pause, a continue, a finish, or a cancel) is held until the callback is handled on the main queue (ReportedUtterance), so a new utterance made at a reused address can never take that callback for its own.
   There the service reads the synthesizer's state from its own synthesizer, never the callback's.
-  Switches between the modes are logged in textmouth_transition.log, and switchToRenderedAudio(at:) is the one way direct speech hands over to rendered audio, always where nothing is heard: at a seek, a resume, either watchdog's recovery, and a refusal's recovery.
+  Switches between the modes are logged in textmouth_transition.log, and switchToRenderedAudio(at:) is the one way direct speech hands over to rendered audio, always where nothing is heard, at the natural breaks the Owner item lists.
   A sleep fade never switches (setSleepTimerFadeVolume(_:duration:)): direct speech fades through prepareDirectSleepFade(fromUTF16Offset:duration:startingVolume:), which starts the voice again from the last word reported in ever quieter segments, and rendered audio through the engine's volume.
   A seek and the watchdogs go through switchToRenderedAudioOrSpeakDirectly(at:failureTag:), which speaks directly when the engine does not start (SEEK_ENGINE_FAILED, DIRECT_WATCHDOG_ENGINE_FAILED, DIRECT_START_WATCHDOG_ENGINE_FAILED).
   AudioEngineService starts its engine through startEngineIfStopped(for:), which tests make fail (_refusesToStartForTesting).
-  Two watchdogs tick on a SpeechWatchdogTimer every directWatchdogInterval (0.5 s): RunLoopWatchdogTimer, on the main run loop, in the app; _watchdogTimerForTesting gives tests timers they tick; and StoppedWatchdogTimer, which never ticks, serves a test under the utterance recorder that gives none.
+
+#### The watchdogs
+<!-- id: speech-watchdogs; keys: start watchdog; src: TextMouth/Services/SpeechService.swift -->
+
+  Two watchdogs tick on a SpeechWatchdogTimer every directWatchdogInterval (0.5 s).
   The start watchdog watches the live utterance from speakDirect(_:fromCharOffset:), or from a queued chunk's promotion at the previous finish, until its start or a word of it hands over to the playback watchdog.
-  Once the live utterance has gone unstarted while shouldAwaitDirectStart holds for directStartWatchdogRequiredTicks ticks in a row, the timeout's worth and one more (directStartWatchdogTimeout, 5 s, so about 5.5 s), or for directStartWatchdogColdRequiredTicks (directStartWatchdogColdTimeout, 10 s, so about 10.5 s) when, as the watchdog began, the synthesizer had started no utterance since it was made (directSynthHasStarted, false for the service's first synthesizer and cleared by replaceDirectSynthesizer(after:)), a tick when it does not hold restarting the count, it calls recoverFromUnstartedDirectUtterance() (DIRECT_START_WATCHDOG_RECOVERY, "recovery n of 2 there"): a fresh synthesizer, then rendered audio or direct speech from the utterance's start.
+  The start watchdog counts ticks in a row on which the live utterance has gone unstarted while shouldAwaitDirectStart holds, and a tick when it does not hold restarts the count.
+  At directStartWatchdogRequiredTicks ticks, the timeout's worth and one more (directStartWatchdogTimeout, 5 s, so about 5.5 s), it calls recoverFromUnstartedDirectUtterance() (DIRECT_START_WATCHDOG_RECOVERY, "recovery n of 2 there").
+  It waits for directStartWatchdogColdRequiredTicks (directStartWatchdogColdTimeout, 10 s, so about 10.5 s) instead when, as the watchdog began, the synthesizer had started no utterance since it was made.
+  Whether it had is directSynthHasStarted, false for the service's first synthesizer and cleared by replaceDirectSynthesizer(after:).
+  The recovery is a fresh synthesizer, then rendered audio or direct speech from the utterance's start.
   It recovers at most directStartWatchdogRecoveriesPerPlace (2) times at one place, the utterance's start offset (startStallRecoveries, forgotten when an utterance starts or a word of it is heard, at stop(), and as speech pauses after the stalls; a stall at another place counts from one again).
   The next stall there calls pauseAfterStalls(at:because:) with .neverStarted (DIRECT_START_STALLED): a fresh synthesizer, speech paused with the place in pendingDirectSeekOffset and the cursor there, then onSpeechStalled.
   The reader's showPlaybackPausedAfterStartStalls() settles the pause through settleStopMadeBySpeech(), which showPlaybackStoppedAfterRefusal(_:) shares, logs PLAYBACK_PAUSED_AFTER_START_STALLS, and announces SpeechService.voiceDidNotStartAnnouncement; with no reader, speech announces it.
-  The playback watchdog's idle recovery (recoverFromIdleDirectSynthesizer(watchedUtteranceID:), DIRECT_WATCHDOG_RECOVERY) is capped at directIdleWatchdogRecoveriesPerPlace (2) per place, the last word reported, else the chunk's base (idleRecoveries, a WatchdogRecoveries as startStallRecoveries is), whichever of its branches makes the recovery.
+  The playback watchdog's idle recovery (recoverFromIdleDirectSynthesizer(watchedUtteranceID:), DIRECT_WATCHDOG_RECOVERY) is capped at directIdleWatchdogRecoveriesPerPlace (2) per place, whichever of its branches makes the recovery.
+  A place is the last word reported, else the chunk's base (idleRecoveries, a WatchdogRecoveries as startStallRecoveries is).
   The count is forgotten by a word reported past the place (forgetIdleRecoveries(passedBy:), DIRECT_IDLE_PLACE_PASSED; a word at the place itself is not past it), by stop(), and as speech pauses after the stalls.
   Never by an utterance's start, which shows that the synthesizer can start, not that it speaks.
   The third idle at the place calls pauseAfterStalls(at:because:) with .wentIdle (DIRECT_IDLE_STALLED), which pauses speech as a start stall does, with the same reader settlement and announcement, and forgets both watchdogs' records.
-  A cancel the service did not ask for (DIRECT_CANCEL_UNEXPECTED), of the live direct utterance, playing or paused, or of a sleep fade's segment the fade still holds (every stop of the service's lets go of both before it stops the synthesizer), comes from the engine's refusal of a text, which it raises before the first word, so the playback watchdog, which the utterance's start would arm, never looks, and the start watchdog would act only once its timeout passed.
+
+#### A refused text
+<!-- id: speech-refused-text; keys: refusal; src: TextMouth/Services/SpeechService.swift -->
+
+  A cancel the service did not ask for (DIRECT_CANCEL_UNEXPECTED), of the live direct utterance, playing or paused, or of a sleep fade's segment the fade still holds, comes from the engine's refusal of a text, which it raises before the first word.
+  Every stop of the service's lets go of both before it stops the synthesizer.
+  So the playback watchdog, which the utterance's start would arm, never looks, and the start watchdog would act only once its timeout passed.
   It replaces directSynth first, whatever follows (replaceDirectSynthesizer(after:), DIRECT_SYNTH_REPLACED), since a synthesizer that refused never speaks again.
   For the live chunk, recoverFromCancelledDirectUtterance(_:) then plays the engine's audio of this speech, when renderedAudioMatchesSpeech, from the last word reported within the chunk or from its start (switchToRenderedAudio(at:), DIRECT_RETRY_ENGINE).
-  Otherwise, or when the engine does not start (DIRECT_RETRY_ENGINE_FAILED), it speaks again from there with the rest of the chunk strictly guarded (takeRetry(from:to:), which sets strictlyGuardedRange, kept until stop(), and lastDirectRetryOffset, forgotten once a word past it is reported, forgetRetryPlace(passedBy:), with the trace line DIRECT_RETRY_PLACE_PASSED; DIRECT_RETRY), once for each place until speech passes it.
+  Otherwise, or when the engine does not start (DIRECT_RETRY_ENGINE_FAILED), it speaks again from there with the rest of the chunk strictly guarded (takeRetry(from:to:), DIRECT_RETRY), once for each place until speech passes it.
+  The retry sets strictlyGuardedRange, kept until stop(), and lastDirectRetryOffset, forgotten once a word past it is reported (forgetRetryPlace(passedBy:), with the trace line DIRECT_RETRY_PLACE_PASSED).
   Paused, the retry waits for Play, through pendingDirectSeekOffset, and counts as the place's one retry (retryCancelledDirectUtteranceAtResume(_:), DIRECT_RETRY_AT_RESUME).
   A refused fade segment plans the fade anew from its place, starting no louder than the segment was, since the quieter segments queued behind it are dropped (recoverFromRefusedFadeSegment(_:at:), SLEEP_FADE_DIRECT_SEGMENT_REFUSED).
   A cancel at the offset of the last retry, before a word past it was reported, with no rendered audio to play, ends speech there (endDirectSpeechRefused(at:refusing:spanning:), DIRECT_RETRY_FAILED, naming the refused chunk's range, or a refused fade segment's own):
   - stopped, not paused,
   - the text kept and the cursor reported at that offset,
   - where Play starts again and the engine usually refuses the same text again, until the listener moves past it.
-  The three recoveries (recoverFromCancelledDirectUtterance(_:), retryCancelledDirectUtteranceAtResume(_:), and recoverFromRefusedFadeSegment(_:at:)) hand it the utterance refused, and onSpeechRefused hands the reader what was refused, a SpeechRefusal (the report of a speech refusal, under the reader, above), which the reader answers with showPlaybackStoppedAfterRefusal(_:) (ViewModels/ReaderViewModel+Playback.swift, PLAYBACK_STOPPED_AFTER_REFUSAL in the debug log), a pause in all but the speech, which has stopped already: its flags show nothing playing, its listening session ends, Now Playing is told it is paused, so the next press of the AirPods or a media key is Play and reaches this reader, its sleep timer's countdown halts until Play, and the stop is recorded and the position saved, the chapter left as it is.
+  The three recoveries (recoverFromCancelledDirectUtterance(_:), retryCancelledDirectUtteranceAtResume(_:), and recoverFromRefusedFadeSegment(_:at:)) hand it the utterance refused.
+  Then onSpeechRefused hands the reader what was refused, a SpeechRefusal ([Speech refusal report](reader-playback.md)).
+  The reader answers with showPlaybackStoppedAfterRefusal(_:) (ViewModels/ReaderViewModel+Playback.swift, PLAYBACK_STOPPED_AFTER_REFUSAL in the debug log), a pause in all but the speech, which has stopped already:
+  - its flags show nothing playing,
+  - its listening session ends,
+  - Now Playing is told it is paused, so the next press of the AirPods or a media key is Play and reaches this reader,
+  - its sleep timer's countdown halts until Play,
+  - and the stop is recorded and the position saved, the chapter left as it is.
   It then shows the report, which tells the listener.
   A service no reader listens to announces SpeechService.engineRefusedAnnouncement, "Speech stopped: the Mac's speech engine refused this text.", itself.
-  AudioEngineService.render makes its synthesizer's delegate a RenderCancellationObserver, which wakes the render queue's wait when the synthesizer cancels, since a refused write delivers no audio at all and the wait used to run its whole two minutes: a cancel the engine did not ask for (RENDER_REFUSED) is followed by one more write with every bracket silent (RenderGuard.everyBracket, through SpeechMarkupGuard.neutralizedStrictly(_:)) on a fresh synthesizer, under the same render (write(_:voice:for:asRetry:)), whose audio is installed with the request's signature (RENDER_RETRY_RENDERED), so a look-ahead render gets it too; refused again (a second RENDER_REFUSED), nothing is installed, and speech, which began directly, goes on directly. render(_:completion:) runs its job on the engine's renderQueue (the global queue unless a test passes its own), and a job whose engine is gone reports false on the main queue, so SpeechRenderCoordinator's queue, which waits for each report, is never held.
+  AudioEngineService.render makes its synthesizer's delegate a RenderCancellationObserver, which wakes the render queue's wait when the synthesizer cancels, since a refused write delivers no audio at all and the wait used to run its whole two minutes.
+  A cancel the engine did not ask for (RENDER_REFUSED) is followed by one more write with every bracket silent (RenderGuard.everyBracket, through SpeechMarkupGuard.neutralizedStrictly(_:)) on a fresh synthesizer, under the same render (write(_:voice:for:asRetry:)).
+  Its audio is installed with the request's signature (RENDER_RETRY_RENDERED), so a look-ahead render gets it too.
+  Refused again (a second RENDER_REFUSED), nothing is installed, and speech, which began directly, goes on directly.
+  AudioEngineService's render(_:completion:) runs its job on the engine's renderQueue (the global queue unless a test passes its own), and a job whose engine is gone reports false on the main queue, so SpeechRenderCoordinator's queue, which waits for each report, is never held.
 
 ## Installed voices
 <!-- id: installed-voices; keys: voice list, voice picker, language, enumerate voices; src: TextMouth/Services/VoiceCatalog.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Settings/SettingsView.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift -->
@@ -104,20 +155,32 @@ The installed voices.
 Audiobook playback, and its failures.
 
 - Owner: each reader's AudioPlaybackService, which plays files with an AVQueuePlayer at a speed held to the steps AudioSpeed.normalized(_:) allows.
-  A chapter is a whole file, a time range within one, or, in a segmented book such as a DAISY audiobook, a section (AudioSegment) holding a list of clips, each a time range of a file. playClips(_:fromChapterTime:) plays a section's clips one after another as one chain (AudioClipChain), timed from the chapter's start whichever clip and file are playing.
-  DAISYAudioConverter (Parsers/DAISYParser+Audio.swift) gathers every clip a heading plays, up to the next heading and across files, when the book is imported, and the content index records and validates every clip. setFileAfterCurrent(_:) names the file that plays after the loaded one, so that at the loaded file's end the player rolls straight on into it rather than starting a new player.
+  A chapter is a whole file, a time range within one, or, in a segmented book such as a DAISY audiobook, a section (AudioSegment) holding a list of clips, each a time range of a file.
+  The service's playClips(_:fromChapterTime:) plays a section's clips one after another as one chain (AudioClipChain), timed from the chapter's start whichever clip and file are playing.
+  DAISYAudioConverter (Parsers/DAISYParser+Audio.swift) gathers every clip a heading plays, up to the next heading and across files, when the book is imported, and the content index records and validates every clip.
+  The service's setFileAfterCurrent(_:) names the file that plays after the loaded one, so that at the loaded file's end the player rolls straight on into it rather than starting a new player.
   The name is forgotten on any load, clip end, stop, or failure, and never queued during a clip chain.
   The reader names the next chapter's file as each chapter's audio starts, and again as this reader's sleep timer is set or cancelled (nameFileAfterCurrentChapter()), in a multi-file audiobook only, whose chapters are whole files, and only while its own chapter's file plays.
-  It names none where playback may have to stop or wait at the chapter's end (fileAfterCurrentChapter): at the last chapter, while this reader's sleep timer stops playback at the chapter's end, as one set for the end of the heading does in an audiobook, whose every chapter begins with its heading (SleepTimerService.stopsPlaybackAtChapterEnd(endingTheHeading:endingTheBook:ownedBy:)), or when the next chapter's file is only in the cloud (chapterHasFileOnlyInCloud(_:)).
+  It names none where playback may have to stop or wait at the chapter's end (fileAfterCurrentChapter):
+  - at the last chapter,
+  - while this reader's sleep timer stops playback at the chapter's end, as one set for the end of the heading does in an audiobook, whose every chapter begins with its heading (SleepTimerService.stopsPlaybackAtChapterEnd(endingTheHeading:endingTheBook:ownedBy:)),
+  - or when the next chapter's file is only in the cloud (chapterHasFileOnlyInCloud(_:)).
   The reader takes the next chapter in the same turn of the main queue in which the service reports the end and adopts the queued file, and the service ignores that file's clock until then, so the cursor never runs back to the start of the chapter that ended.
   A file named while it was on this Mac that has gone back to the cloud by its turn is stopped as its chapter begins, and the chapter downloads first, as any chapter only in the cloud does.
-  Every file opens as an AVURLAsset with precise duration and timing (AudioPlaybackService.playerAssetOptions(for:), AVURLAssetPreferPreciseDurationAndTimingKey, ST06): without it, a variable-bit-rate MP3 made without a Xing header has a duration estimated from its size and its first frames, and seeks land seconds from where they were asked, and seekPlayer clamps to the shorter duration, which moved a saved place back.
+  Every file opens as an AVURLAsset with precise duration and timing (AudioPlaybackService.playerAssetOptions(for:), AVURLAssetPreferPreciseDurationAndTimingKey, ST06): without it,
+  - a variable-bit-rate MP3 made without a Xing header has a duration estimated from its size and its first frames,
+  - and seeks land seconds from where they were asked,
+  - and seekPlayer clamps to the shorter duration, which moved a saved place back.
   Measured on a 3-hour pink-noise MP3 of that kind, the estimate was 78 seconds short and loaded in 1 to 18 ms, while precise timing loaded in a median 0.13 seconds; with a Xing header the two agree.
   The url stays a parameter so that a size limit could return, decided in that one place.
 - Who may write it: the reader (playAudioChapter, setAudioSpeed, retryAudioPlayback).
 - How others observe it: what plays ends once.
   Every load, play from a time, seek, stop, and finish begins a new play (AudioPlaybackGeneration), and AudioEndNoticePolicy judges each of AVFoundation's end-of-file notices by the generation and the playhead read when it was posted.
-  The notice ends the play under way; or it is held while playback is paused, and finishes the play when it resumes; or it is ignored, when it was posted during an earlier play; or, as the late end of an earlier playthrough of the same file, it is ignored while the play under way starts again on a fresh player. onPlaybackFinished is called once for each play that runs to its end, never while paused.
+  - The notice ends the play under way;
+  - or it is held while playback is paused, and finishes the play when it resumes;
+  - or it is ignored, when it was posted during an earlier play;
+  - or, as the late end of an earlier playthrough of the same file, it is ignored while the play under way starts again on a fresh player.
+  onPlaybackFinished is called once for each play that runs to its end, never while paused.
   A file that cannot be played is reported through one channel, AudioPlaybackService.failure (an AudioPlaybackFailure naming the file) and onPlaybackFailed, and never also as finished.
   Playback stops where it was, and the reader publishes audioPlaybackFailure, which shows an alert with Retry.
 
@@ -131,27 +194,71 @@ Now Playing and media keys.
   Each reader talks to it through its own NowPlayingSession, whose owner is the reader's readerID, as the sleep timer's is.
   It takes part in the system's media session (MediaPlayer's command targets, the system's Now Playing center, and CoreAudio's device listeners) only outside a process hosting tests (installsSystemIntegrations(in:); the system's media session, below).
   A reader made with a coordinator of its own (ReaderViewModel's nowPlaying parameter) talks to that one instead, as the tests' readers do.
+
+### Who may write Now Playing
+<!-- id: now-playing-writers; keys: NowPlayingSession; src: TextMouth/Services/NowPlayingService.swift -->
+
 - Who may write it: readers, through their sessions.
-  Only the reader whose item the system's Now Playing center shows (shownOwnerID) takes that item down, as it stops, releases media controls, or closes (clearNowPlaying(ownerID:) and unregister(ownerID:)), so a window that never played can't tell the system that TextMouth stopped while another book waits paused; pausing never takes it down, so macOS keeps sending the headphones' commands to TextMouth. clearNowPlaying(ownerID:) and unregister(ownerID:) take the reader's item down whenever the system shows it, whether or not that reader is the active owner, then show the active reader's own item, if it has one, in its place, and forget the reader's kept item.
+  Only the reader whose item the system's Now Playing center shows (shownOwnerID) takes that item down, as it stops, releases media controls, or closes, so a window that never played can't tell the system that TextMouth stopped while another book waits paused.
+  Pausing never takes it down, so macOS keeps sending the headphones' commands to TextMouth.
+  Both clearNowPlaying(ownerID:) and unregister(ownerID:) take the reader's item down whenever the system shows it, whether or not that reader is the active owner, then show the active reader's own item, if it has one, in its place, and forget the reader's kept item.
   A closing reader that held the focus leaves it to the remaining reader focused or registered most recently.
-  As a recording starts or resumes, the Record window asks pauseEveryPlayingReader(), which pauses each reader that is playing, a book a Where Am I? announcement holds paused included, through its own Pause, after invalidating a queued Play, and returns how many it paused, for the window's announcement.
+  As a recording starts or resumes, the Record window asks pauseEveryPlayingReader(), which pauses each reader that is playing, a book a Where Am I? announcement holds paused included, through its own Pause, after invalidating a queued Play.
+  It returns how many it paused, for the window's announcement.
   Nothing resumes them.
-  A reader whose book ends listening at its end (handleEndOfBook, through finishListening) keeps its session, its item shown paused at the end, never stopped, which is what keeps macOS sending the AirPods' and the media keys' commands to TextMouth; which reader takes each command is activeOwnerID's choice, the playing reader, else focusedOwnerID, except Play, which goes to focusedOwnerID first. focusedOwnerID is whichever came last of the reader whose window became key (focus(ownerID:)), the reader about to play or resume (prepareForPlayback(ownerID:), which play() and every resume reach through NowPlayingSession.activateRemoteCommandsIfNeeded()), and the playing reader that stops playing, wherever its window is (playingOwnerPaused(_:), from updateNowPlayingInfo(ownerID:title:author:isPlaying:) with isPlaying false, which every pause that pauses something reports, as do the book's end (finishListening(announcing:)), the hand-over (handOverToNextBook(to:titled:askingWith:)), Where Am I? pausing the book, and speech's own stops (settleStopMadeBySpeech()), and from the coordinator's own Pause and Play/Pause and pauseEveryPlayingReader()), so a book that pauses or ends behind another book's window is shown paused and the next Play reaches it. prepareForPlayback(ownerID:) gives the reader about to play the focus before it pauses the playing reader, which is no longer the playing one as it pauses, so that reader's report of its pause takes nothing back.
+  A reader whose book ends listening at its end (handleEndOfBook, through finishListening) keeps its session, its item shown paused at the end, never stopped, which is what keeps macOS sending the AirPods' and the media keys' commands to TextMouth.
+  Which reader takes each command is activeOwnerID's choice, the playing reader, else focusedOwnerID, except Play, which goes to focusedOwnerID first.
+  focusedOwnerID is whichever came last of:
+  - the reader whose window became key (focus(ownerID:)),
+  - the reader about to play or resume (prepareForPlayback(ownerID:), which play() and every resume reach through NowPlayingSession.activateRemoteCommandsIfNeeded()),
+  - and the playing reader that stops playing, wherever its window is (playingOwnerPaused(_:)).
+  The report to playingOwnerPaused(_:) comes from:
+  - updateNowPlayingInfo(ownerID:title:author:isPlaying:) with isPlaying false,
+  - which every pause that pauses something reports, as do the book's end (finishListening(announcing:)), the hand-over (handOverToNextBook(to:titled:askingWith:)), Where Am I? pausing the book, and speech's own stops (settleStopMadeBySpeech()),
+  - and the coordinator's own Pause and Play/Pause and pauseEveryPlayingReader().
+  So a book that pauses or ends behind another book's window is shown paused and the next Play reaches it.
+  A call of prepareForPlayback(ownerID:) gives the reader about to play the focus before it pauses the playing reader, which is no longer the playing one as it pauses, so that reader's report of its pause takes nothing back.
   It then pauses every other reader whose isCurrentlyPlaying() holds, such as a book a Where Am I? announcement holds paused, or one waiting to play for its chapter's speech or files ("exclusive pause other=").
-  ReaderViewModel.hasFinishedBook marks a book resting at its end, in memory, and showLoadedContent sets it as a book saved exactly at its end opens (cursorRestsAtEnd, P07), so a finished book stays finished after a relaunch; showLoadedContent first brings the saved place into the loaded text (openingPlace(of:savedGlobalOffset:in:), by TextPlace.opening, T06's question 7): an offset past its chapter's end opens at that end, the book's end in the last chapter, so a book whose last chapter shortened opens finished, as its row, by Book.restsAtEnd, says.
-  A chapter past the last opens at the end only when its saved global offset reaches the total: handleEndOfBook sets it whatever the end-of-book behavior, and its loop branch clears it again, as does handOverToNextBook(to:titled:askingWith:), the one hand-over of Continue to Next Book and of the reading list's continuation, which also shows the book paused in Now Playing as it announces the next book, so that book's start (prepareForPlayback(ownerID:)) finds nothing playing to pause.
-  The hand-over keeps a NextBookHandOver in ReaderViewModel.nextBookHandOver: the next book's ID and title (nextBookTitle), asked for exactly once, half a second later (continueToNextBookDelay) or at once by a Play, and under way until that book's ReaderAutoplayRequests request is no longer waiting, claimed, dropped, or too old. play() asks playGoesToTheHandOver() first, so a Play of the finished book during the hand-over asks for the next book, or, once it has been asked for, says EndOfBookWording.stillStarting(_:), "Still starting: Dune", and never plays the finished book.
-  A book set to continue that has no next book, or whose sleep timer keeps the next one from starting, rests finished. play() as it plays, navigateTo(chapterIndex:characterOffset:), stop(), which Release Media Controls and closing the window call, and a backward skip made while another reader is the active owner clear it too.
+  ReaderViewModel.hasFinishedBook marks a book resting at its end, in memory, and showLoadedContent sets it as a book saved exactly at its end opens (cursorRestsAtEnd, P07), so a finished book stays finished after a relaunch.
+  The method showLoadedContent first brings the saved place into the loaded text (openingPlace(of:savedGlobalOffset:in:), by TextPlace.opening, T06's question 7).
+  An offset past its chapter's end opens at that end, the book's end in the last chapter, so a book whose last chapter shortened opens finished, as its row, by Book.restsAtEnd, says.
+  A chapter past the last opens at the end only when its saved global offset reaches the total.
+  The method handleEndOfBook sets it whatever the end-of-book behavior, and its loop branch clears it again, as does handOverToNextBook(to:titled:askingWith:), the one hand-over of Continue to Next Book and of the reading list's continuation.
+  The hand-over also shows the book paused in Now Playing as it announces the next book, so that book's start (prepareForPlayback(ownerID:)) finds nothing playing to pause.
+  The hand-over keeps a NextBookHandOver in ReaderViewModel.nextBookHandOver:
+  - the next book's ID and title (nextBookTitle),
+  - asked for exactly once, half a second later (continueToNextBookDelay) or at once by a Play,
+  - and under way until that book's ReaderAutoplayRequests request is no longer waiting, claimed, dropped, or too old.
+  ReaderViewModel's play() asks playGoesToTheHandOver() first, so a Play of the finished book during the hand-over asks for the next book, or, once it has been asked for, says EndOfBookWording.stillStarting(_:), "Still starting: Dune", and never plays the finished book.
+  A book set to continue that has no next book, or whose sleep timer keeps the next one from starting, rests finished.
+  These clear it too: play() as it plays, navigateTo(chapterIndex:characterOffset:), stop(), which Release Media Controls and closing the window call, and a backward skip made while another reader is the active owner.
   A Play on a book whose cursor rests at its end plays nothing from there, and does what the end did instead (playFromTheEnd(), P07).
+
+### How Now Playing is observed
+<!-- id: now-playing-observers; keys: remote command; src: TextMouth/Services/NowPlayingService.swift -->
+
 - How others observe it: remote commands go to the active owner, the reader that is playing, or else the focused reader (focusedOwnerID, above), but Play to the focused reader first.
-  MediaPlayer doesn't say which thread it calls a command's handler on, so the handlers are made outside the main actor (remoteCommandHandler(for:of:)), where Swift 6's check that main-actor code runs on the main thread can't stop the app: receiveRemoteCommand(_:by:) accepts a command at once on the main thread, and from any other thread queues it to the main queue, in the order it came, and tells MediaPlayer it succeeded.
+  MediaPlayer doesn't say which thread it calls a command's handler on, so the handlers are made outside the main actor (remoteCommandHandler(for:of:)), where Swift 6's check that main-actor code runs on the main thread can't stop the app.
+  Its receiveRemoteCommand(_:by:) accepts a command at once on the main thread, and from any other thread queues it to the main queue, in the order it came, and tells MediaPlayer it succeeded.
   Everything the system's Now Playing center is told goes through one writer (writeSystemNowPlaying), which a test can replace to see it.
-  The skip and track commands go to the active owner (dispatchSkipCommandToActiveOwner), whose session's handlers call the reader's skipBackward() and skipForward(), as its keyboard shortcuts and playback bar do, and performSkip(unit:forward:) plays a finished book again from where a backward skip lands, as a skip during playback plays on, with Play's own start sound after the skip's, but only while its reader is the active owner (NowPlayingSession.isActiveOwner): while another reader is, as the one playing is, a backward skip moves the finished book's cursor only, as any stopped reader's skip does, and the book rests finished no longer.
-  A forward skip by time at the end, or any skip that could not move, leaves the book finished and silent, while a forward skip that moves, by sentence, paragraph, heading, or bookmark, goes through navigateTo and leaves an ordinary stopped reader. canSeekLoadedSpeech seeks only speech that is speaking or paused, so a skip of a stopped reader moves its cursor without starting speech outside Play.
-  Release Media Controls is offered while canReleaseMediaControls is true: NowPlayingSession.holdsMediaControls, which is NowPlayingService.holdsMediaControls(ownerID:), whether the reader is the active owner and the system shows its item, playing or paused, exactly what clearNowPlaying(ownerID:) would take down, unless the reader has released the controls and not played since (mediaControlsReleased).
-  So it is offered for a book playing or paused, a finished book, and a book stopped where the speech engine refused its text (showPlaybackStoppedAfterRefusal(_:)) or where its sleep timer stopped it, and not for a book whose item another reader's playing book has replaced, even after that book pauses; releaseMediaControls() changes nothing where it isn't offered and says MediaControlsWording.notHeld, "Media controls not released: this book does not hold them.", which begins as its other sentence, MediaControlsWording.released, does (both in NowPlayingService.swift).
-  The reader's two metadata saves, and a library change to its book's metadata (showEditedMetadata()), publish Now Playing through showSavedMetadataInNowPlaying(), only while holdsMediaControls, so a save in a stopped book's window never takes the AirPods (#1498); and pause(playingPauseSound:) first ends a Where Am I? announcement (stopWhereAmISynthesizer(), endWhereAmIWithoutResuming()), makes the pause sound only when isPlaybackUnderWay was true before it paused, and tells Now Playing only then or while holdsMediaControls.
-  The reader's window publishes it as a focused value, which PlaybackCommands reads to show the menu item, and asks again as it becomes key: BookReaderWindowView calls windowBecameKey(), which focuses the reader's session and republishes the reader, since nothing the reader publishes follows another reader's taking the controls while its window is in the background.
+  The skip and track commands go to the active owner (dispatchSkipCommandToActiveOwner), whose session's handlers call the reader's skipBackward() and skipForward(), as its keyboard shortcuts and playback bar do.
+  The reader's performSkip(unit:forward:) plays a finished book again from where a backward skip lands, as a skip during playback plays on, with Play's own start sound after the skip's, but only while its reader is the active owner (NowPlayingSession.isActiveOwner).
+  While another reader is, as the one playing is, a backward skip moves the finished book's cursor only, as any stopped reader's skip does, and the book rests finished no longer.
+  A forward skip by time at the end, or any skip that could not move, leaves the book finished and silent, while a forward skip that moves, by sentence, paragraph, heading, or bookmark, goes through navigateTo and leaves an ordinary stopped reader.
+  The reader's canSeekLoadedSpeech seeks only speech that is speaking or paused, so a skip of a stopped reader moves its cursor without starting speech outside Play.
+  Release Media Controls is offered while canReleaseMediaControls is true.
+  It is NowPlayingSession.holdsMediaControls, which is NowPlayingService.holdsMediaControls(ownerID:).
+  That is whether the reader is the active owner and the system shows its item, playing or paused, exactly what clearNowPlaying(ownerID:) would take down, unless the reader has released the controls and not played since (mediaControlsReleased).
+  So it is offered for:
+  - a book playing or paused,
+  - a finished book,
+  - and a book stopped where the speech engine refused its text (showPlaybackStoppedAfterRefusal(_:)) or where its sleep timer stopped it,
+  - and not for a book whose item another reader's playing book has replaced, even after that book pauses.
+  Where it isn't offered, releaseMediaControls() changes nothing and says MediaControlsWording.notHeld, "Media controls not released: this book does not hold them.", which begins as its other sentence, MediaControlsWording.released, does (both in NowPlayingService.swift).
+  The reader's two metadata saves, and a library change to its book's metadata (showEditedMetadata()), publish Now Playing through showSavedMetadataInNowPlaying(), only while holdsMediaControls, so a save in a stopped book's window never takes the AirPods (#1498).
+  The reader's pause(playingPauseSound:) first ends a Where Am I? announcement (stopWhereAmISynthesizer(), endWhereAmIWithoutResuming()), makes the pause sound only when isPlaybackUnderWay was true before it paused, and tells Now Playing only then or while holdsMediaControls.
+  The reader's window publishes it as a focused value, which PlaybackCommands reads to show the menu item, and asks again as it becomes key.
+  BookReaderWindowView calls windowBecameKey(), which focuses the reader's session and republishes the reader, since nothing the reader publishes follows another reader's taking the controls while its window is in the background.
 
 ## Audio playback watchdog
 <!-- id: audio-playback-watchdog; keys: stall, frozen audio, stopped responding, progress check; src: TextMouth/Services/AudioPlaybackService.swift -->
@@ -173,9 +280,11 @@ AudioPlaybackService.fileProblem(at:) refuses, as a last guard, every format the
 <!-- id: metadata-probing-audio-files; keys: chapters, duration, probe, AVURLAsset, tags; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/OggHeaderReader.swift, TextMouth/Parsers/NeroChapterReader.swift -->
 
 AudioPlaybackService.metadataAsset(for:) is the one place the metadata readers (extractChapters(from:), extractFullMetadata(from:), and getDuration(of:)) open an AVURLAsset to probe a file.
-It returns nil for a file of a format the import converts, by extension in any case (ImportAudioConverter.isConvertedAtImport, CAF included, since an import runs these readers on a source before converting it), so such audio never reaches AVFoundation's probing in the app's process, where AsyncBridge.waitForResult has only the time limit its caller gives it (audioTagsTimeLimit, audioAnalysisTimeLimit; shared helpers).
+It returns nil for a file of a format the import converts, by extension in any case (ImportAudioConverter.isConvertedAtImport, CAF included, since an import runs these readers on a source before converting it).
+So such audio never reaches AVFoundation's probing in the app's process, where AsyncBridge.waitForResult has only the time limit its caller gives it (audioTagsTimeLimit, audioAnalysisTimeLimit; [Shared helpers](../shared-helpers.md)).
 Each reader then answers without AVFoundation.
-For an Ogg file, extractFullMetadata fills the title, artist, album, genre, year, and length from OggHeaderReader (see [imports](imports-audio.md)), getDuration gives its length, and extractChapters gives none. extractChapters reads an M4A, M4B, MP4, M4V, or MOV file's Nero chapter list by hand when AVFoundation finds none (NeroChapterReader).
+For an Ogg file, extractFullMetadata fills the title, artist, album, genre, year, and length from OggHeaderReader (see [Imports: audio](imports-audio.md)), getDuration gives its length, and extractChapters gives none.
+Also, extractChapters reads an M4A, M4B, MP4, M4V, or MOV file's Nero chapter list by hand when AVFoundation finds none (NeroChapterReader).
 Both paths of extractFullMetadata write the length with one helper, durationString(_:): h:mm:ss from an hour on, else m:ss.
 
 ## Rendered speech feeder exceptions
@@ -185,5 +294,6 @@ RenderedSpeechFeeder starts its player node through ObjCException (B08).
 When AVFAudio raises as the audio output stops cycling, the play ends, the node is stopped, and one SPEECH_PLAYER_EXCEPTION: <name>: <reason> line is logged.
 The engine then shows stopped, resume() returns false, and speech goes on directly, as it does when the engine cannot start.
 A pre-rendered chapter does the same and logs PRE_RENDERED_START_FAILED.
-The feeder's stop, reset, and pause of the node (PlayerNodeCommand, through callNode(_:)) run inside the same exception catcher, so a node that raises as it stops, resets, or pauses logs one SPEECH_PLAYER_EXCEPTION line and changes nothing else; stopNode() and resetNode() end the play being fed first, whatever the node does.
+The feeder's stop, reset, and pause of the node (PlayerNodeCommand, through callNode(_:)) run inside the same exception catcher, so a node that raises as it stops, resets, or pauses logs one SPEECH_PLAYER_EXCEPTION line and changes nothing else.
+Both stopNode() and resetNode() end the play being fed first, whatever the node does.
 A failed start of the audio engine (startEngineIfStopped(for:), for a play or a resume) logs AUDIO_ENGINE_START_FAILED with the system error's words, where it once only printed.
