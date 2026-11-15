@@ -665,3 +665,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **A refusal that names the work under way:** A refusal for a book in booksBeingReadAgain, or, with no ID, for any, has, since November 13, 2026, named the work under way.
 - **One wait for every entry point of a re-read:** Four entry points ask it, so each waits in the same words and none leaves a content.md from one run beside the record of another (review of October 24, finding 3).
 - **A transcript stays when its download goes:** A transcribed episode's transcript is the listener's own work and stays in the episode's package when its download goes (October 23, 2026).
+## From Package records
+
+- **The record's encoding and source on every save:** Any other save, a reading checkpoint among them, writes the stored record's encoding and source back as they are, and never the old encoding beside the new text (review of October 24, finding 5).
+- **When hand edits began to be recorded:** Since October 7, 2026, FileImportService.importFileWithReport begins such a record on every book it makes (hand edits, below); nil means nothing was recorded: every row saved before October 7, 2026, and every book since that the file import did not make.
