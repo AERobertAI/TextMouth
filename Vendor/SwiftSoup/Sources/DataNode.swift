@@ -52,7 +52,7 @@ public final class DataNode: Node {
      Get the data contents of this node. Will be unescaped and with original new lines, space etc.
      - returns: data
      */
-    func getWholeData() -> String {
+    public func getWholeData() -> String {
         return String(decoding: getWholeDataUTF8(), as: UTF8.self)
     }
     
