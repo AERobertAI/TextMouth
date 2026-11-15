@@ -146,7 +146,7 @@ final class PLSAndXSPFPlaylistTests: XCTestCase {
                 XCTAssertEqual($0 as? M3UPlaylistError, .declaresEntities(fileName: "p.xspf"))
                 XCTAssertEqual(
                     $0.localizedDescription,
-                    "The playlist “p.xspf” declares XML entities, which TextMouth does not read."
+                    "The playlist “p.xspf” uses XML entities of its own, which TextMouth does not read."
                 )
             }
         }

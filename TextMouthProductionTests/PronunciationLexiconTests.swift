@@ -385,7 +385,7 @@ final class PronunciationLexiconTests: XCTestCase {
     func testTheEntityRefusalWords() {
         XCTAssertEqual(
             PronunciationLexiconWording.importFailure(fileName: "a.pls", .declaresEntities),
-            "“a.pls” declares XML entities, which TextMouth does not read in a lexicon."
+            "“a.pls” uses XML entities of its own, which TextMouth does not read in a lexicon."
         )
     }
 

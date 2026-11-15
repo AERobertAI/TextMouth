@@ -44,7 +44,7 @@ enum PlaylistImportWording {
 
     /// The refusal of an XSPF playlist that declares XML entities.
     static func declaresEntities(fileName: String) -> String {
-        "The playlist “\(fileName)” declares XML entities, which TextMouth does not read."
+        "The playlist “\(fileName)” uses XML entities of its own, which TextMouth does not read."
     }
 
     /// Whether this build has the Text settings tab where a lexicon is
