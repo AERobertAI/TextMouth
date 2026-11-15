@@ -347,3 +347,4 @@ The iPhone interface is built from research/IOS-INTERFACE-SPEC-2026-11-07.md, in
 - The iOS app has a bundle identifier of its own, `com.textmouth.TextMouth.iOS`, so the question phase 0 left open is settled.
 - Everything that sounds or needs VoiceOver can be checked only on a phone, with the spec's hand-check list.
 - A change to shared code has a second check. Compile it for iOS with `make typecheck-ios`, and show it leaves the Mac as it was with `make mac-projection`, besides the hosted test suite, which tests the Mac only. The type-checks do not compile tests (see [Testing TextMouth](../developer/testing.md)).
+  Count the AppKit uses left by compiling, not by searching for `import AppKit`: SwiftUI brings AppKit's names in, and a file that imports it without using it shows no census error, so check strict mode or list the bare imports before calling the census done.

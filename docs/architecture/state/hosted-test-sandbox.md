@@ -35,6 +35,12 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 - A hosted view whose width outgrows the width it is offered.
   - Owner: the test. A hosting view sets its window's smallest and largest sizes from its content's, so content whose width follows the width it is given and adds to it, as a macOS form in the columns style did, makes the window chase it until AppKit raises "more Update Constraints in Window passes than there are views in the window", which ends the test host with a crash dialog the user sees (twice on October 10, 2026, in exploratory runs no committed test makes). Host such a view inside a frame of a fixed size, as SettingsTabFitTests hosts each Settings tab at the window's size, or measure it with NSHostingController.sizeThatFits(in:) and no window. The hosting helpers, withHostedView (TextMouthProductionTests/AccessibilityTestSupport.swift) and hostOffscreen (TextMouthProductionTests/ViewsAndWindowsTestSupport.swift), say so in their documentation.
   - Files: TextMouthProductionTests/SettingsTabFitTests.swift.
+- A delayed closure that outlives its test's teardown.
+  - Owner: the test.
+    A move asks for its book half a second after saying so, and holds its reader, with the test's settings, until then; a settings save waits a quarter of a second.
+    A test that ended sooner left a save that ran after its sandbox was removed, and its failure sentence landed in the next test, which records every announcement.
+    A fixture that removes a folder at teardown writes any waiting save first, in a teardown block added after the folder's (teardown blocks run last-added first).
+  - Files: TextMouthProductionTests/EpisodeDownloadContinuationTests.swift.
 - VoiceOver announcements.
   - Owner: VoiceOverAnnouncer, through which the reader, the speech service (a text the speech engine refused, when no reader listens), the library and its import questions, the sleep timer, settings, transcription, the audio editor, and the feed reader announce. Its poster asks VoiceOver to speak in the app and records the announcement instead under hosted tests; a test may install a poster of its own and must restore the previous one. ContentView's folder announcement still posts directly.
   - Files: Services/VoiceOverAnnouncer.swift.
