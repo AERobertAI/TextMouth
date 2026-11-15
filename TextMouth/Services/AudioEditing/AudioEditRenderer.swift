@@ -748,35 +748,58 @@ enum AudioEditRenderer {
         guard reader.status == .completed else { throw failure(reader.error) }
     }
 
-    /// `buffer`, decoded audio, cut to at most `frames` frames: all of it
-    /// when that many fit; nil when none may be handed over. A cut buffer
-    /// loses the trim its end had, which the cut has made, so a writer that
-    /// applies trims never cuts it again.
+    /// The frames of `buffer`, decoded audio, from frame `offset` on, at
+    /// most `count` of them: `buffer` itself when that is all of it; nil
+    /// when none are left to keep. A cut buffer loses the trims its ends
+    /// had, which the cut has made, so a writer that applies trims never
+    /// cuts it again.
     /// - Throws: `AudioEditError.renderFailed` when the frames can't be
     ///   copied.
-    private static func trimmed(_ buffer: CMSampleBuffer, toAtMost frames: Int) throws -> CMSampleBuffer? {
-        guard frames > 0 else { return nil }
-        guard CMSampleBufferGetNumSamples(buffer) > frames else { return buffer }
-        var kept: CMSampleBuffer?
+    private static func slice(of buffer: CMSampleBuffer, from offset: Int, atMost count: Int) throws -> CMSampleBuffer? {
+        let frames = CMSampleBufferGetNumSamples(buffer)
+        let kept = min(frames - offset, count)
+        guard kept > 0 else { return nil }
+        guard kept < frames else { return buffer }
+        var cut: CMSampleBuffer?
         let status = CMSampleBufferCopySampleBufferForRange(
             allocator: kCFAllocatorDefault,
             sampleBuffer: buffer,
-            sampleRange: CFRange(location: 0, length: frames),
-            sampleBufferOut: &kept
+            sampleRange: CFRange(location: offset, length: kept),
+            sampleBufferOut: &cut
         )
-        guard status == noErr, let kept else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
-        CMRemoveAttachment(kept, key: kCMSampleBufferAttachmentKey_TrimDurationAtEnd)
-        return kept
+        guard status == noErr, let cut else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        CMRemoveAttachment(cut, key: kCMSampleBufferAttachmentKey_TrimDurationAtStart)
+        CMRemoveAttachment(cut, key: kCMSampleBufferAttachmentKey_TrimDurationAtEnd)
+        return cut
     }
+
+    /// How long before a piece its read starts, in seconds: sound decoded
+    /// and dropped, so the decoder has settled by the piece's first frame.
+    /// An MP3 frame decodes right only after the frames before it: read
+    /// from its own start, a piece in the middle of an MP3 began with 20 to
+    /// 85 ms of zeros or wrong sound at 22.05 and 44.1 kHz (the review of
+    /// November 15, 2026). Read from half a second before, every cut of
+    /// MP3s from 8 kHz at 8 kbit/s to 48 kHz at 320 kbit/s decoded as its
+    /// file does whole.
+    static let readRunUp: TimeInterval = 0.5
+
+    /// How long past a piece its read runs, in seconds: sound decoded and
+    /// cut off, so the piece's last frames are whole. A decoder hands over a
+    /// frame's sound only once it has read on, and a resampler likewise:
+    /// read to its own end, a piece ending in the middle of an MP3 could
+    /// end in some 196 frames of zeros (22.05 kHz at 32 kbit/s), and one of
+    /// a file at another rate than the render's came up 8 to 31 frames
+    /// short.
+    static let readRunPast: TimeInterval = 0.25
 
     /// Reads `timeline`'s sound, whose stretches come from `sources`, stretch
     /// by stretch: each piece of each stretch (`AudioEditStretchSound`) from
-    /// its own file, by an asset reader of its own over just that piece
-    /// (`AVAssetReader.timeRange`), decoded to `settings.readerSettings`,
-    /// cut to the piece's length, and handed to `consume` buffer by buffer,
-    /// timed at its place in the edits; telling `progress` how far it is.
-    /// Every source is opened, and every stretch checked against it, before
-    /// any sound is read.
+    /// its own file, by an asset reader of its own over that piece and a
+    /// little either side of it (`readRunUp`, `readRunPast`), decoded to
+    /// `settings.readerSettings`, cut to the piece's own frames, and handed
+    /// to `consume` buffer by buffer, timed at its place in the edits;
+    /// telling `progress` how far it is. Every source is opened, and every
+    /// stretch checked against it, before any sound is read.
     ///
     /// Every render that decodes reads so, not through the timeline's
     /// composition (`AudioEditComposition`): AVFoundation decodes an MP3
@@ -786,9 +809,10 @@ enum AudioEditRenderer {
     /// shifted the sound after the cut 337 frames early, most of them ending
     /// that much short of the edits, which the save then refused
     /// (`AudioEditBookRender`; the full suites of November 13 to 15, 2026).
-    /// Read piece by piece, the same MP3 decoded exactly as it does whole in
-    /// each of 1,800 reads, with LAME's gapless record alone or with
-    /// iTunes's, quiet or loaded, and an AAC book in each of 900.
+    /// Read piece by piece, each from its run-up to its run-past, every cut
+    /// of MP3s at seven encodings, AAC, AIFF, FLAC, and Apple Lossless
+    /// decoded as its file does whole; read over just its range, as at
+    /// first, a piece of an MP3 at 22.05 or 44.1 kHz began wrong.
     /// - Throws: the sources' errors (`AudioEditStretchSound.pieces(of:)`),
     ///   `CancellationError`, what `consume` throws, or
     ///   `AudioEditError.renderFailed` when a reader fails or the pieces
@@ -834,11 +858,13 @@ enum AudioEditRenderer {
         }
     }
 
-    /// Reads `piece` with an asset reader of its own over just its range,
-    /// decoded to `settings.readerSettings`, and hands `consume` at most
-    /// `frames` frames of it, buffer by buffer, each timed as following the
-    /// `start` frames handed over before it, telling `progress` how far the
-    /// render's `total` frames it has come. Returns how many it handed over.
+    /// Reads `piece` with an asset reader of its own, decoded to
+    /// `settings.readerSettings`, from `readRunUp` before it to
+    /// `readRunPast` past it, as far as its file goes either way, and hands
+    /// `consume` the piece's own frames, at most `frames` of them, buffer by
+    /// buffer, each timed as following the `start` frames handed over
+    /// before it, telling `progress` how far the render's `total` frames it
+    /// has come. Returns how many it handed over.
     /// - Throws: `CancellationError`, what `consume` throws, or
     ///   `AudioEditError.renderFailed` when AVFoundation refuses or fails the
     ///   read; the reader is cancelled then.
@@ -851,26 +877,44 @@ enum AudioEditRenderer {
         progress: (@Sendable (Double) -> Void)?,
         consume: (CMSampleBuffer) async throws -> Void
     ) async throws -> Int {
+        let scale = CMTimeScale(settings.sampleRate.rounded())
+        // The run-up in whole frames at the render's rate, so that the
+        // piece's first frame is the first one kept: half a second, or as
+        // much as the file has before the piece.
+        let runUp = min(
+            Int64((readRunUp * settings.sampleRate).rounded()),
+            CMTimeConvertScale(piece.range.start, timescale: scale, method: .roundTowardNegativeInfinity).value
+        )
+        let readStart = CMTimeSubtract(piece.range.start, CMTime(value: runUp, timescale: scale))
+        let runPastEnd = CMTimeAdd(piece.range.end, CMTime(seconds: readRunPast, preferredTimescale: scale))
+        // A piece ends at most a frame past its file's end
+        // (`AudioEditStretchSound.pieces(of:)`), so the read ends after it
+        // starts; the bound only keeps the range well formed.
+        let readEnd = CMTimeMaximum(CMTimeMinimum(runPastEnd, piece.sourceEnd), piece.range.start)
         let reader: AVAssetReader
         do {
             reader = try AVAssetReader(asset: piece.asset)
         } catch {
             throw failure(error)
         }
-        reader.timeRange = piece.range
+        reader.timeRange = CMTimeRange(start: readStart, end: readEnd)
         let output = AVAssetReaderAudioMixOutput(audioTracks: [piece.track], audioSettings: settings.readerSettings)
         output.alwaysCopiesSampleData = false
         guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
         reader.add(output)
         guard reader.startReading() else { throw failure(reader.error) }
+        // The run-up's frames dropped so far, and the piece's handed over.
+        var dropped = 0
         var handed = 0
         do {
             while let buffer = output.copyNextSampleBuffer() {
                 try Task.checkCancellation()
-                // Decoded past the piece, as a compressed file is to the end
-                // of its last packet, the rest is read and left out, so the
-                // reader ends as completed.
-                guard let sample = try trimmed(buffer, toAtMost: frames - handed) else { continue }
+                // The run-up is dropped and the run-past cut off; the
+                // run-past is still read to its end, so the reader ends as
+                // completed.
+                let drop = min(Int(runUp) - dropped, CMSampleBufferGetNumSamples(buffer))
+                dropped += drop
+                guard let sample = try slice(of: buffer, from: drop, atMost: frames - handed) else { continue }
                 try await consume(try timed(sample, at: start + handed, rate: settings.sampleRate))
                 handed += CMSampleBufferGetNumSamples(sample)
                 progress?(total > 0 ? min(1, Double(start + handed) / Double(total)) : 1)

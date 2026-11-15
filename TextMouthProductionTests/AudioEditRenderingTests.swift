@@ -7,10 +7,12 @@ import XCTest
 /// came from (the research prototype's method, `AudioTestFixtures.writeIdentityRamp`):
 /// a cut, a move, inserted silence, and a punch-in land on exactly the
 /// samples expected, in the preview's composition and in CAF and WAVE files;
-/// chapter markers written into M4A and M4B files read back through the
-/// app's own parser, an m4b's own chapters following a cut, a ten-minute
-/// file's included; a chapter-only edit keeps an m4b's AAC samples as they
-/// were; and cuts of linear PCM are copied as stored. No sound is played.
+/// every cut of MP3 and AAC books renders to the samples the book decodes
+/// to on its own; chapter markers written into M4A and M4B files read back
+/// through the app's own parser, an m4b's own chapters following a cut, a
+/// ten-minute file's included; a chapter-only edit keeps an m4b's AAC
+/// samples as they were; and cuts of linear PCM are copied as stored. No
+/// sound is played.
 final class AudioEditRenderingTests: XCTestCase {
 
     /// Frames a second of the audio.
@@ -102,23 +104,46 @@ final class AudioEditRenderingTests: XCTestCase {
 
     // MARK: - Compressed Books
 
-    /// An MP3 book's cut renders to the sample: what a render decodes is what
-    /// the MP3 decodes to on its own, at the same frames, nothing silenced at
-    /// the cut and nothing shifted after it. Read through the edits'
-    /// composition, as renders were until November 15, 2026, every read
-    /// silenced 796 frames around this very cut, and some shifted the sound
-    /// after it 337 frames early (`AudioEditRenderer.readStretches`).
-    func testAnMP3BooksCutRendersToTheSamplesTheBookDecodesTo() async throws {
-        try await assertCutRendersExactly(bookNamed: "Canal Survey.mp3") {
-            try AudioTestFixtures.writeToneMP3(to: $0, sampleRate: Self.rate)
+    /// The cuts the compressed books' tests make of a 3-second book: its
+    /// second second, cuts a little either side of that, and cuts near its
+    /// start and its end.
+    private static let cuts: [AudioTimeRange] = [
+        AudioTimeRange(start: 1, end: 2),
+        AudioTimeRange(start: 1.1, end: 2.1),
+        AudioTimeRange(start: 0.6, end: 1.9),
+        AudioTimeRange(start: 0.25, end: 2.75),
+        AudioTimeRange(start: 2.3, end: 2.9),
+        AudioTimeRange(start: 0.05, end: 1.37),
+    ]
+
+    /// Every cut of an MP3 book renders to the sample at the rates books are
+    /// made at: what a render decodes is what the MP3 decodes to on its own,
+    /// at the same frames, nothing silenced at a cut and nothing shifted
+    /// after it. Read through the edits' composition, as renders were until
+    /// November 15, 2026, every read silenced 796 frames around the cut of
+    /// the second second at 8 kHz, and some shifted the sound after it 337
+    /// frames early (`AudioEditRenderer.readStretches`); read piece by piece
+    /// over just each piece, each piece after a cut began wrong at 22.05 and
+    /// 44.1 kHz, and most at 8 kHz (`AudioEditRenderer.readRunUp`).
+    func testEveryCutOfAnMP3BookRendersToTheSamplesTheBookDecodesTo() async throws {
+        var problems: [String] = []
+        for (rate, kilobits) in [(8_000.0, 32), (22_050.0, 32), (44_100.0, 64)] {
+            let book = try makeFolder().appendingPathComponent("Canal Survey.mp3")
+            try AudioTestFixtures.writeToneMP3(to: book, frames: Int(3 * rate), sampleRate: rate, kilobitsPerSecond: kilobits)
+            problems += try await cutRenderProblems(of: book).map { "\(Int(rate)) Hz at \(kilobits) kbit/s: \($0)" }
         }
+        XCTAssertTrue(problems.isEmpty, problems.joined(separator: "\n"))
     }
 
-    /// An AAC book's cut renders to the sample too.
-    func testAnAACBooksCutRendersToTheSamplesTheBookDecodesTo() async throws {
-        try await assertCutRendersExactly(bookNamed: "Canal Survey.m4a") {
-            try AudioTestFixtures.writeToneAAC(to: $0, sampleRate: Self.rate)
+    /// Every cut of an AAC book renders to the sample too.
+    func testEveryCutOfAnAACBookRendersToTheSamplesTheBookDecodesTo() async throws {
+        var problems: [String] = []
+        for rate in [8_000.0, 44_100.0] {
+            let book = try makeFolder().appendingPathComponent("Canal Survey.m4a")
+            try AudioTestFixtures.writeToneAAC(to: book, frames: Int(3 * rate), sampleRate: rate)
+            problems += try await cutRenderProblems(of: book).map { "\(Int(rate)) Hz: \($0)" }
         }
+        XCTAssertTrue(problems.isEmpty, problems.joined(separator: "\n"))
     }
 
     // MARK: - Chapters
@@ -334,49 +359,54 @@ final class AudioEditRenderingTests: XCTestCase {
         return (AudioEditComposition.Sources(base: loaded, package: folder, scratch: folder), folder)
     }
 
-    /// Checks that the second second cut from a 3-second book named `name`,
-    /// which `write` writes, renders into a CAF file of floats holding
-    /// exactly the samples the book decodes to on its own at frames 0 to
-    /// 8,000 and 16,000 to 24,000, naming the first that differ.
-    private func assertCutRendersExactly(
-        bookNamed name: String,
-        file: StaticString = #filePath,
-        line: UInt = #line,
-        write: (URL) throws -> Void
-    ) async throws {
-        let folder = try makeFolder()
-        let book = folder.appendingPathComponent(name)
-        try write(book)
-        let base = try await AudioEditBase.load(book, name: name)
-        XCTAssertEqual(base.frames, 24_000, "the book does not measure 3 seconds", file: file, line: line)
-        var timeline = base.timeline
-        try timeline.applyRearranging(.cut(AudioTimeRange(start: 1, end: 2)))
-        let output = folder.appendingPathComponent("cut.caf")
-
-        let outcome = try await AudioEditRenderer.render(
-            timeline,
-            sources: AudioEditComposition.Sources(base: base, package: folder, scratch: folder),
-            to: output,
-            format: .pcmCAF,
-            metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
-        )
-
-        XCTAssertFalse(outcome.copiedSamples, "compressed samples were not decoded", file: file, line: line)
+    /// What is wrong with each of `cuts` of the 3-second `book` rendered into
+    /// a CAF file of floats, decoded: for each cut whose render isn't
+    /// exactly the samples the book decodes to on its own either side of
+    /// it, what differs, naming the first samples that do. Empty when every
+    /// cut renders exactly.
+    private func cutRenderProblems(of book: URL) async throws -> [String] {
+        let folder = book.deletingLastPathComponent()
+        let base = try await AudioEditBase.load(book, name: book.lastPathComponent)
         let decoded = try AudioTestFixtures.floatSamples(of: book)
-        let expected = Array(decoded.prefix(8_000)) + Array(decoded.dropFirst(16_000))
-        let rendered = try AudioTestFixtures.floatSamples(of: output)
-        XCTAssertEqual(rendered.count, expected.count, "the cut lasts \(rendered.count) frames, not \(expected.count)", file: file, line: line)
-        // Within 1e-4 of full scale, the harness's measure: a silenced or
-        // shifted sample of this tone misses by thousands of times that.
-        let wrong = zip(rendered, expected).enumerated().filter { abs($0.element.0 - $0.element.1) > 1e-4 }
-        XCTAssertEqual(
-            wrong.count,
-            0,
-            "\(wrong.count) samples differ from the book's own, the first at frame \(wrong.first?.offset ?? -1): "
-                + "\(wrong.prefix(3).map { "\($0.element.0) for \($0.element.1)" })",
-            file: file,
-            line: line
-        )
+        guard base.frames == Int64(decoded.count) else {
+            return ["the book measures \(base.frames) frames but decodes to \(decoded.count)"]
+        }
+        var problems: [String] = []
+        for (index, cut) in Self.cuts.enumerated() {
+            var timeline = base.timeline
+            try timeline.applyRearranging(.cut(cut))
+            let output = folder.appendingPathComponent("cut \(index).caf")
+
+            let outcome = try await AudioEditRenderer.render(
+                timeline,
+                sources: AudioEditComposition.Sources(base: base, package: folder, scratch: folder),
+                to: output,
+                format: .pcmCAF,
+                settings: AudioRenderSettings.floatCAF(for: base),
+                metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
+            )
+
+            let label = "cut \(cut.start) to \(cut.end) s"
+            let (start, end) = (Int(timeline.frame(at: cut.start)), Int(timeline.frame(at: cut.end)))
+            let expected = Array(decoded[..<start] + decoded[end...])
+            let rendered = try AudioTestFixtures.floatSamples(of: output)
+            // Within 1e-4 of full scale, the harness's measure: a silenced or
+            // shifted sample of this tone misses by thousands of times that.
+            let wrong = zip(rendered, expected).enumerated().filter { abs($0.element.0 - $0.element.1) > 1e-4 }
+            if outcome.copiedSamples {
+                problems.append("\(label): the samples were copied, not decoded")
+            }
+            if rendered.count != expected.count {
+                problems.append("\(label): lasts \(rendered.count) frames, not \(expected.count)")
+            }
+            if let first = wrong.first {
+                problems.append(
+                    "\(label): \(wrong.count) samples differ from the book's own, the first at frame \(first.offset) "
+                        + "(\(start) is the cut): \(wrong.prefix(3).map { "\($0.element.0) for \($0.element.1)" })"
+                )
+            }
+        }
+        return problems
     }
 
     /// Checks that `samples` are exactly `expectedPieces`, naming the first

@@ -167,12 +167,14 @@ struct AudioEditComposition {
 struct AudioEditStretchSound {
     /// One piece of a stretch: `range` of `track`, the first audio track of
     /// the file `asset` opened, in that file's own time, lasting `length`
-    /// frames at the timeline's rate.
+    /// frames at the timeline's rate; `sourceEnd` is where that track's
+    /// sound ends, as far as a read of the piece may run past it.
     struct Piece {
         let asset: AVURLAsset
         let track: AVAssetTrack
         let range: CMTimeRange
         let length: Int64
+        let sourceEnd: CMTime
     }
 
     /// The timeline's rate, the timescale of every time given here.
@@ -218,7 +220,7 @@ struct AudioEditStretchSound {
             guard CMTimeCompare(range.end, CMTimeAdd(source.end, time(1))) <= 0 else {
                 throw AudioEditError.invalidEdit("A stretch of the edits runs past the end of “\(name)”.")
             }
-            return [Piece(asset: source.asset, track: source.track, range: range, length: segment.length)]
+            return [Piece(asset: source.asset, track: source.track, range: range, length: segment.length, sourceEnd: source.end)]
         }
         let silence = try AudioEditScratch.silentFile(sampleRate: sampleRate, channels: sources.base.channelCount, in: sources.scratch)
         let source = try await open(silence, name: silence.lastPathComponent)
@@ -227,7 +229,13 @@ struct AudioEditStretchSound {
         var remaining = segment.length
         while remaining > 0 {
             let length = min(most, remaining)
-            pieces.append(Piece(asset: source.asset, track: source.track, range: CMTimeRange(start: .zero, duration: time(length)), length: length))
+            pieces.append(Piece(
+                asset: source.asset,
+                track: source.track,
+                range: CMTimeRange(start: .zero, duration: time(length)),
+                length: length,
+                sourceEnd: source.end
+            ))
             remaining -= length
         }
         return pieces
