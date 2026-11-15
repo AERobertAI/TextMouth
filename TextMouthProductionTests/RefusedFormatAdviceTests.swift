@@ -100,6 +100,15 @@ final class RefusedFormatAdviceTests: XCTestCase {
         )
     }
 
+    /// The RAR comic advice sends the reader to CBZ, so TextMouth must read
+    /// a .cbz. This passes once the CBZ reader (formats/page-images, FMT34)
+    /// is on main; the advice is merged after it on purpose.
+    func testTheCBZTheRARAdviceNamesIsAFormatTextMouthReads() {
+        XCTAssertTrue(RefusedFormatAdvice.rarComic.contains("CBZ"))
+        XCTAssertNotNil(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/a-comic.cbz")))
+        XCTAssertNotNil(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/A-COMIC.CBZ")))
+    }
+
     /// The real Pages and WordPerfect samples are no book TextMouth reads,
     /// and their extensions have advice.
     func testTheRealSamplesAreRefusedWithAdvice() throws {
