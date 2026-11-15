@@ -355,6 +355,15 @@ final class OwnAudioImportTests: XCTestCase {
                 let expected = try samplesToBeWritten(of: sample.path)
                 XCTAssertEqual(written.count, expected.count, sample.path)
                 XCTAssertTrue(written == expected, "\(sample.path): the .m4a's samples differ from the source's")
+                // Whole numbers of one or two channels are written as they
+                // are, so the .m4a is compared with the source recording's
+                // own digest too, which no reader of TextMouth's had a hand
+                // in: a reader and the converter cannot be wrong together
+                // (as they were of 20 bits in 24, each sample 16 times too large).
+                if let digest = sample.digest, !sample.isFloat, sample.channels <= 2 {
+                    let narrowed = written.map { $0 >> Int32(32 - sample.bits) }
+                    XCTAssertEqual(sha256(of: waveBytes(of: narrowed, bits: sample.bits)), digest, sample.path)
+                }
                 // The source is left as it was.
                 XCTAssertEqual([UInt8](try Data(contentsOf: source)), try ownAudioSampleBytes(sample.path), sample.path)
             }

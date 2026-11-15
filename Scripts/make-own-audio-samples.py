@@ -65,19 +65,20 @@ def recording(rate, channels, seconds, seed, noise_level):
     return frames
 
 
-def pcm_bytes(frames, bits, is_float):
-    """The sample bytes a WAV file stores: 8-bit unsigned, wider ones little-endian signed, or 32-bit floats."""
+def pcm_bytes(frames, bits, is_float, container=None):
+    """The sample bytes a WAV file stores: 8-bit unsigned, wider ones little-endian signed, or 32-bit floats.
+    A sample of `bits` bits sits at the top of its bytes: the fewest that hold it, or `container` bits."""
     out = bytearray()
     if is_float:
         for frame in frames:
             for value in frame:
                 out += struct.pack("<f", value)
         return bytes(out)
-    width = (bits + 7) // 8
+    width = (container or bits + 7) // 8
     top = (1 << (bits - 1)) - 1
     for frame in frames:
         for value in frame:
-            number = int(round(value * top))
+            number = int(round(value * top)) << (width * 8 - bits)
             if width == 1:
                 out.append((number + 128) & 0xFF)
             else:
@@ -108,12 +109,13 @@ def special_floats(frames):
     return bytes(out)
 
 
-def write_wav(path, rate, channels, bits, data, is_float, mask):
-    """A WAV file of `data`: plain PCM, or WAVE_FORMAT_EXTENSIBLE when a mask or many channels need it."""
-    width = (bits + 7) // 8
+def write_wav(path, rate, channels, bits, data, is_float, mask, container=None):
+    """A WAV file of `data`: plain PCM, or WAVE_FORMAT_EXTENSIBLE when a mask, many channels, or samples of
+    fewer bits than their bytes (`bits` valid in `container`) need it."""
+    width = (container or bits + 7) // 8
     block = width * channels
     tag = 3 if is_float else 1
-    if mask is not None or channels > 2:
+    if mask is not None or channels > 2 or width * 8 != bits:
         # The sub-format GUID of PCM or IEEE float, after its two-byte tag.
         sub = struct.pack("<H", tag) + bytes.fromhex("000000001000800000aa00389b71")
         fmt = struct.pack("<HHIIHHHHI", 0xFFFE, channels, rate, rate * block, block, width * 8, 22, bits,
@@ -131,7 +133,7 @@ class Shape:
     """One recording: its name and what its audio is."""
 
     def __init__(self, name, rate, channels, bits, seconds, seed, is_float=False, mask=None, noise=None,
-                 silent_frames=0, same_channels=False, float_kind=None):
+                 silent_frames=0, same_channels=False, float_kind=None, container=None):
         self.name, self.rate, self.channels, self.bits = name, rate, channels, bits
         self.seconds, self.seed, self.is_float, self.mask = seconds, seed, is_float, mask
         # How many frames at the start are digital silence, and whether every channel repeats the first.
@@ -140,6 +142,8 @@ class Shape:
         # "specials" (runs of zeros and negative zeros, with infinities and values that are not numbers).
         # For 32-bit whole numbers: "as32" (each made from a single-precision float).
         self.float_kind = float_kind
+        # The bits a sample's bytes hold in the WAV file, when more than the fewest `bits` need (24 in 32).
+        self.container = container
         # Noise of about eight steps of the sample's own depth keeps every file small.
         self.noise = noise if noise is not None else 8 / (1 << (min(bits, 24) - 1))
 
@@ -159,7 +163,9 @@ class Shape:
             data = b"".join(struct.pack("<i", max(-(1 << 31), min((1 << 31) - 1, int(
                 struct.unpack("<f", struct.pack("<f", value))[0] * 2147483648.0)))) for frame in frames for value in frame)
         path = os.path.join(work, self.name + ".wav")
-        write_wav(path, self.rate, self.channels, self.bits, data, self.is_float, self.mask)
+        # The digest is of each sample in the fewest bytes that hold it, which a wider file's are not.
+        stored = pcm_bytes(frames, self.bits, self.is_float, self.container) if self.container else data
+        write_wav(path, self.rate, self.channels, self.bits, stored, self.is_float, self.mask, self.container)
         return path, len(frames), hashlib.sha256(data).hexdigest()
 
 
@@ -321,6 +327,14 @@ def make_wv(arguments):
         ("int32fromfloat-optimized", Shape("wv-int32fromfloat", 22050, 2, 32, 0.15, 69, float_kind="as32"),
          ["--optimize-int32", "-f"],
          "32-bit numbers made from floats, with --optimize-int32: the newer extra bitstream and its width limit"),
+        ("shift12", Shape("wv-shift12", 22050, 1, 12, 0.2, 70), [],
+         "12 bits in 16-bit samples: a header shift of 4"),
+        ("shift20", Shape("wv-shift20", 44100, 2, 20, 0.1, 71), ["-h"],
+         "20 bits in 24-bit samples: a header shift of 4"),
+        ("shift24in32", Shape("wv-shift24in32", 48000, 2, 24, 0.1, 72, container=32), [],
+         "24 bits in 32-bit samples: a header shift of 8"),
+        ("hybridshift20", Shape("wv-hybridshift20", 44100, 1, 20, 0.1, 73), ["-b4", "-c"],
+         "hybrid, 20 bits in 24-bit samples"),
         ("six16", Shape("wv-six16", 48000, 6, 16, 0.1, 49, mask=0x3F), [],
          "5.1 in four blocks a stretch, with its channel mask (mixed to stereo at import)"),
         ("short16", Shape("wv-short16", 44100, 2, 16, 0.002, 50), [], "88 frames in one small block"),

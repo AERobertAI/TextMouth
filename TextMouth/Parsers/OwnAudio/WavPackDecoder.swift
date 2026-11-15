@@ -42,6 +42,9 @@ struct WavPackDecoder: OwnAudioDecoder {
     /// The index the file's first frame has in its blocks' headers, which
     /// is not 0 for a piece cut from a longer file.
     private let initialIndex: Int64
+    /// How many empty low bits the file left out of every sample (the
+    /// header's shift): 0 for floats and for samples that fill their bytes.
+    private let headerShift: Int32
     /// The frames handed over so far.
     private var delivered = 0
 
@@ -81,8 +84,12 @@ struct WavPackDecoder: OwnAudioDecoder {
         }
         let isFloat = flags & WavPackFlags.floatData != 0
         let storedBits = Int((flags & WavPackFlags.bytesStoredMask) + 1) * 8
-        let bits = isFloat ? 32 : storedBits - Int((flags & WavPackFlags.shiftMask) >> WavPackFlags.shiftLSB)
+        // Samples of fewer bits than their bytes hold (12 in 16, 20 in 24, 24
+        // in 32) are stored without their empty low bits: the header's shift.
+        let shift = isFloat ? 0 : Int((flags & WavPackFlags.shiftMask) >> WavPackFlags.shiftLSB)
+        let bits = isFloat ? 32 : storedBits - shift
         guard (1...32).contains(bits) else { throw OwnAudioError.damaged }
+        headerShift = Int32(shift)
 
         // The header knows the length unless the file was written to a pipe
         // or cut from a longer one; then the last block's end gives it.
@@ -230,6 +237,13 @@ struct WavPackDecoder: OwnAudioDecoder {
             current = next
         }
         guard filled == channels else { throw OwnAudioError.damaged }
+        // A block's samples come back as wide as their bytes, as libwavpack
+        // gives them: the shift is taken out again, which loses nothing (the
+        // bits it drops are the zeros the unpacking put in), so every sample
+        // is `stream.bitsPerSample` wide, as the other readers' are.
+        if headerShift != 0 {
+            for index in output.indices { output[index] >>= headerShift }
+        }
 
         // No more is handed over than the header promised.
         let kept = min(frames, stream.frames - delivered)

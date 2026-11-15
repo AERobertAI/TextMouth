@@ -119,16 +119,19 @@ extension XCTestCase {
 
     /// `samples` as the bytes a WAV file stores them in: 8-bit samples
     /// unsigned, wider ones (and floats' bit patterns) little-endian, each
-    /// in the bytes its `bits` need. This is what `pcm.tsv`'s digests are of.
+    /// in the bytes its `bits` need, at the top of them when it does not
+    /// fill them (12 bits in two bytes, 20 in three), as a WAV file holds
+    /// such samples. This is what `pcm.tsv`'s digests are of.
     func waveBytes(of samples: [Int32], bits: Int) -> [UInt8] {
         let width = (bits + 7) / 8
+        let lift = Int32(width * 8 - bits)
         var bytes: [UInt8] = []
         bytes.reserveCapacity(samples.count * width)
         for sample in samples {
             if width == 1 {
                 bytes.append(UInt8(truncatingIfNeeded: sample &+ 128))
             } else {
-                for byte in 0..<width { bytes.append(UInt8(truncatingIfNeeded: sample >> Int32(8 * byte))) }
+                for byte in 0..<width { bytes.append(UInt8(truncatingIfNeeded: (sample << lift) >> Int32(8 * byte))) }
             }
         }
         return bytes
