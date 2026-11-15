@@ -61,8 +61,10 @@ Tests that act as a person does find what tests of the parts miss.
   The Mac's schemes do not run them.
   GitHub runs both in one `xcodebuild` run (see [Tests on GitHub Actions](testing-github.md)), so this Mac needs no simulator to run them.
 - `TextMouthiOSTests` is a unit-test bundle hosted in the iPhone app.
-  It has 19 tests, which make no sound (they play, speak, and record nothing; `test_run_ios_ui_tests.py` fails if a file of the folder names an audio framework, a player, or a recorder), so they need no sound variable.
-  The check reads names, so it does not see a call whose name starts with another word, such as `startSpeaking(` or `startPlayback(`.
+  It has 19 tests of its own, and also compiles 175 of the Mac's test files, listed by path under its `sources` in `project.yml`, so that one file serves both bundles: about 1,960 tests in all.
+  Neither the Mac's nor the iPhone's tests play, speak, or record anything (`test_run_ios_ui_tests.py` reads every file the target compiles, its own folder and the shared files, and fails if one names an audio framework, a player, or a recorder), so they need no sound variable.
+  The check reads names (`SOUND_PATTERN` in `Scripts/agents/ios_ui_tests.py`), so it does not see a call whose name starts with another word, such as `startSpeaking(` or `startPlayback(`.
+  A bare `record(` (the feed store's and the log's), `continuation.resume(`, and `resumeIndexWrites(` are not sound.
   What it does catch is the model types a unit test would reach one through (`ReaderViewModel`, `PhoneAppModel`), so add a pattern for those words if a unit test ever takes a bare model.
   - `PhoneControlButtonTests` (12 tests) tests the reader's UIKit control: its words, its traits, that it is one element, its actions, and its smallest height of 44 points.
   - `IOSRuntimeTests` (4 tests) tests the iOS runtime: that a hosting process runs in a sandbox, that a UI test's launch request does too, that without the request the home is the app's container, and that the library lives in Application Support.
@@ -133,8 +135,31 @@ The rule:
 
   It would have found the unterminated string of run 42947183810 in seconds.
   `make typecheck-ios` does not cover these files, nor `TextMouthiOSTests`: it builds the app's sources alone.
-- So, apart from `make typecheck-tests` and that command, a compile error in a test file is found only by a build that builds the tests.
+- `make typecheck-ios-tests` compiles `TextMouthiOSTests` for iOS, with the Mac test files it shares (see Mac tests the iPhone shares, below).
+- So, apart from those two targets and that command, a compile error in a test file is found only by a build that builds the tests.
   - For `TextMouthProductionTests`, `make typecheck-tests` finds it before a train does, and the build train finds it otherwise.
-  - For `TextMouthiOSTests` and `TextMouthiOSUITests`, that is a simulator build (`build-for-testing`).
+  - For `TextMouthiOSTests`, `make typecheck-ios-tests` does; for `TextMouthiOSUITests`, that is a simulator build (`build-for-testing`).
 - After changing a test file, run `make typecheck-tests` before requesting a train for it.
   Do not take a clean `make typecheck-mac` or `make typecheck-ios` as a sign that its tests compile.
+
+## Mac tests the iPhone shares
+<!-- id: mac-tests-iphone-shares; keys: shared test files, fence, os(macOS), census, RunLoopWaiting, typecheck-ios-tests, typecheck-tests-census, unit bundle; src: project.yml, Makefile, Scripts/ios/typecheck.py, Scripts/agents/ios_ui_tests.py, Scripts/agents/tests/test_run_ios_ui_tests.py, TextMouthProductionTests/RunLoopWaiting.swift, TextMouthProductionTests/AudioTestFixtures.swift, TextMouthProductionTests/BrailleFileCodeTests.swift, TextMouthProductionTests/SoftHyphenEffectTests.swift, TextMouthProductionTests/LeadingArticlesSortTests.swift, TextMouthProductionTests/TextEncodingCatalogTests.swift, TextMouthProductionTests/EPUBStructureFailureTests.swift, TextMouthProductionTests/FolderDuplicateRepairTests.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift -->
+
+A Mac test file the iPhone can run is listed by path in the `sources` of `TextMouthiOSTests` in `project.yml`, so one file serves both bundles and the Mac suite compiles and runs the same classes.
+Its helpers are listed beside it (`DOCXTestPackages`, `CollectionTestSupport`, `ImportDecisionTestSupport`, `LibraryIndexTestSupport`, `ImportRefusalTestSupport`, `DamagedFileTestSupport`, and `RunLoopWaiting.swift`).
+`RunLoopWaiting.swift` holds `spinMainRunLoop(for:)` and `eventually(within:_:)`, split out of `AudioTestFixtures`, whose other waits name an `AVPlayerItem` and so cannot be shared.
+A test that makes sound is never shared: the check in `test_run_ios_ui_tests.py` fails on one, and has a break test with a shared file that plays.
+
+- **A fence** is `#if os(macOS)` around a test the iPhone really differs on, so the Mac still runs it.
+  Twelve tests are fenced, in `BrailleFileCodeTests`, `SoftHyphenEffectTests`, `LeadingArticlesSortTests`, `TextEncodingCatalogTests`, `EPUBStructureFailureTests`, `FolderDuplicateRepairTests`, and `PhoneLaunchRequestTests`.
+  Each difference and its reason is under Where the iPhone differs in [The two apps and the platform folders](../architecture/platforms.md).
+  `BundledLicenseTests` and `UncheckedConcurrencyPolicyTests` (it scans the repository) are left Mac-only.
+- **The type-checks:** `make typecheck-ios-tests` compiles the unit bundle and its shared files for iOS, and takes the lock itself.
+  Run it with `make typecheck-tests` before a train request that changes a shared test file.
+  `make typecheck-tests-census` is the slow count of which Mac tests compile for the iPhone, written to `census.md` under `build/typecheck/results/`.
+  At its last run, of 816 test classes (12,484 tests), 190 (2,501 tests) compiled and named no sound, 552 (8,799 tests) could with work, and 74 (1,184 tests) had 5 or more errors of their own.
+  The main reasons are a file that does not compile (mostly Mac view and window helpers), AppKit, sound, and a Mac-only type (`NSWindow`, `Process`).
+- **On GitHub,** a request naming the phone area runs both iPhone bundles.
+  A class only the iPhone has can be named alone; a shared class stays in the request's `classes` for the Mac and is added to the iPhone's, so it runs on both.
+- **The planner** counts a unit test as 0.05 seconds (`SECONDS_PER_TEST` in `Scripts/agents/ios_ui_tests.py`) and an interface test as 25, from a run in which about 1,979 unit tests took 71 seconds, so a shared class is dealt out by its size and not as one second.
+

@@ -87,6 +87,7 @@ So an agent:
 **Reviews before it asks.**
 It reads its whole diff against its base (`git diff main...HEAD`) as an outside reviewer would, for a bug in plain sight, a missed edge case, a test that would still pass with the change undone, a comment that no longer says what the code does, or a repeated block, and fixes what it finds.
 It then commits and runs `make typecheck-tests` (the app and the Mac's hosted tests; `REF=<commit>` names another commit), and `make typecheck-ios` when the change reaches code the iPhone app shares, once for the whole batch rather than after each edit, so no train is spent on a compile error.
+A change to a test file the iPhone's unit bundle shares also needs `make typecheck-ios-tests` (see [Testing the iPhone app](../developer/testing-iphone.md)).
 It makes this its last step before the train request: a test file that does not compile costs the whole train, and the type-checks without `--tests` compile no test file.
 
 ### Ask once, for everything

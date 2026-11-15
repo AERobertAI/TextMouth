@@ -55,7 +55,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
 <!-- id: run-iphone-tests; keys: ios-ui-summary, ios_ui_tests, counts_by_bundle, PARALLEL_WORKERS, result bundle, keyboard preferences, NOT ASKED; src: Scripts/agents/run-ios-ui-tests.py, Scripts/agents/ios_ui_tests.py, TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, project.yml -->
 
    - **The iPhone tests.**
-     Then `Scripts/agents/run-ios-ui-tests.py` runs `TextMouthiOSTests` (the 19 unit tests) and `TextMouthiOSUITests` (the interface tests) with one `xcodebuild test-without-building`, in an iPhone 17 simulator on the iOS 26.0.1 runtime that the job downloaded.
+     Then `Scripts/agents/run-ios-ui-tests.py` runs `TextMouthiOSTests` (the unit tests, 19 of its own and the Mac's shared ones) and `TextMouthiOSUITests` (the interface tests) with one `xcodebuild test-without-building`, in an iPhone 17 simulator on the iOS 26.0.1 runtime that the job downloaded.
      The platform download leaves an iPhone 17 ready, and the script makes one if it is missing.
      It does so when the request asks for them (`ios_ui_tests.py` decides):
      - every full suite,

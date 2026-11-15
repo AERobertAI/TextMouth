@@ -90,7 +90,7 @@ Run these from the repository root:
 <!-- id: type-checks-other-targets; keys: typecheck-ios, typecheck-mac, typecheck-tests, mac-projection, check-ios-plist, make xcode, make clean; src: Makefile, Scripts/ios/typecheck.py, Scripts/ios/mac-projection.py, Scripts/ios/sync-info-plist.py -->
 
 - `make typecheck-ios` compiles and links the app's committed sources for iOS, as the iOS app compiles them, with SwiftPM and the iOS SDK Xcode includes, and `make typecheck-ios CENSUS=1` counts every AppKit use left in them.
-  `make typecheck-mac` does the same for the Mac, and `make typecheck-tests` adds the Mac's hosted tests.
+  `make typecheck-mac` does the same for the Mac, `make typecheck-tests` adds the Mac's hosted tests, and `make typecheck-ios-tests` compiles the iPhone's unit tests for iOS (`make typecheck-tests-census` counts which Mac tests compile there).
   `make mac-projection BASE=main` shows what a branch changes in the code the Mac compiles, and with `DIFF=1` prints every line it changes.
   Each is described under [The iOS app](building-ios.md).
 - `make check-ios-plist` fails when the iOS app's `TextMouth/Platform/iOS/Info.plist` is not what `Scripts/ios/sync-info-plist.py` writes from the Mac's `TextMouth/Resources/Info.plist`.

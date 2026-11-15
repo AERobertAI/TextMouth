@@ -188,6 +188,22 @@ So phase 0 added a portable tree that has the part of the interface those reader
 - `EPUBParser.updateOPFMetadata`, which writes a book's details into its EPUB, is wrapped in `#if os(macOS)`: its output must match what Foundation's pretty printer writes, and the portable tree does not write.
   On iOS it throws `IOSUnavailable` for "Saving a book's details into its EPUB file".
 
+## Where the iPhone differs
+<!-- id: where-iphone-differs; keys: fenced tests, shared tests, simulator, Core Foundation, XMLParser, liblouis tables, LAME licence; src: project.yml, TextMouthProductionTests/TextEncodingCatalogTests.swift, TextMouthProductionTests/EPUBStructureFailureTests.swift, TextMouthProductionTests/BundledLicenseTests.swift, TextMouthProductionTests/ImportRefusalTestSupport.swift -->
+
+The Mac's tests that the iPhone's unit bundle shares (see [Testing the iPhone app](../developer/testing-iphone.md)) found these.
+Each is fenced with `#if os(macOS)` unless it says otherwise.
+
+- The iPhone app has no liblouis tables or `.dis` files, which the Mac reads (`BrailleFileCodeTests` 3 tests, `SoftHyphenEffectTests` 1).
+- iPhone lists keep titles as written whatever the leading-articles setting (`LeadingArticlesSortTests` 3), as `LibraryViewModel.leadingArticles` says.
+- Core Foundation on iOS names GBK "cp936" and has 36 distinct encodings, not 37, so the IANA round trip fails (`TextEncodingCatalogTests` 2).
+- `XMLParser`'s error code for a package document that is not XML is 111 on iOS and 4 on the Mac (`EPUBStructureFailureTests` 1).
+- In the simulator a case-variant package fails with "file already exists" (`FolderDuplicateRepairTests` 1), cause unknown.
+- The iPhone's runtime detection reads a launch request, by design (`PhoneLaunchRequestTests` 1).
+- An import's refusal alert is titled "Nothing Imported" on iOS and has no title on the Mac, by design; `ImportRefusalTestSupport` expects each, for the 10 EPUB and DOCX refusal tests.
+- Not a fence: the iPhone app bundles no Licenses folder, so LAME's licence (its code is linked in), liblouis's, and foliate-js's are not shipped there (`BundledLicenseTests` stays Mac-only).
+  Whether they should be is open.
+
 ## The iPhone app
 <!-- id: iphone-app; keys: interface spec, hand-check list, phone code; src: TextMouth/Phone/PhoneSession.swift -->
 

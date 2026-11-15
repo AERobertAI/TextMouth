@@ -45,6 +45,9 @@ Each reads the commit as it was when it started (`Scripts/ios/typecheck.py` take
   `REF=<commit>` checks that commit (default HEAD) from any worktree, so an agent can check its branch before asking for a train.
   It has its own work folder (`build/typecheck/macos-tests/`), takes the heavy-work lock itself, and takes about four minutes when most test files compile again, six from a cold start, and seconds when nothing changed, after the wait for the lock.
   Never wrap it in `run_locked.py`.
+- **`make typecheck-ios-tests`** is the same for the iPhone's unit bundle: it compiles `TextMouthiOSTests` and the Mac test files it shares for iOS, and takes the lock itself.
+  **`make typecheck-tests-census`** counts which of the Mac's tests compile for the iPhone (slow; it writes `census.md`).
+  Both are described in [Testing the iPhone app](testing-iphone.md).
 - **`make mac-projection BASE=main`** compares, for each Swift file the Mac compiles that HEAD changes since BASE (`HEAD=` names another ref), what the Mac compiles of the old text and of the new.
   A file moved into `Platform/macOS`, Mac code wrapped in `#if os(macOS)`, and a platform alias or helper that is exactly the old type or expression on the Mac all count as unchanged.
   It prints the number of files changed, the number unchanged for the Mac, and the number with a real change, and with `DIFF=1` the lines that remain in each of those.
@@ -91,7 +94,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
   The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing or running a test.
   It writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
   A request that says `"ios": false` leaves it out.
-  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`, 19, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
+  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`: about 1,960 tests, 19 its own and the rest the Mac's, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
   It does so when the request asks for them (every full suite, the phone area, or a class of either bundle).
   The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: no iPhone test of either bundle needs a simulator on this Mac.
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.
