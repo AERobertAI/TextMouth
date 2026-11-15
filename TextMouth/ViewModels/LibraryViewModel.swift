@@ -344,6 +344,12 @@ final class LibraryViewModel: ObservableObject {
     /// `openLibraryWithoutTheAwaitedFile()`), for the rest of this session;
     /// nil until then. The check of any other folder still waits.
     var libraryIndexWaitWaivedFor: String?
+    /// The data directory, by its standardized path, that the listener chose
+    /// to open without its identity file, which did not arrive beside its
+    /// index in a cloud location, on a Mac that knows no identity for it
+    /// (`LibraryFileAwaited.identityNotKnown`), for the rest of this
+    /// session; nil until then.
+    var libraryIdentityWaitWaivedFor: String?
     /// Writes the identity file the listener chose to restore, with the
     /// identity this Mac expects, into the data directory at the first
     /// argument, and returns the identity it holds then
@@ -636,6 +642,7 @@ extension LibraryViewModel {
         var check = DataDirectoryCheck.of(root: root, preferences: preferences)
         // The listener's choice to open this folder without its index (risk 5).
         check.opensWithoutItsIndex = libraryIndexWaitWaivedFor == root.standardizedFileURL.path
+        check.opensWithoutItsIdentity = libraryIdentityWaitWaivedFor == root.standardizedFileURL.path
         let (outcome, pending) = check.runNamingPending(itemStatus: itemStatus)
         pendingLibraryFiles = pending
         switch outcome {

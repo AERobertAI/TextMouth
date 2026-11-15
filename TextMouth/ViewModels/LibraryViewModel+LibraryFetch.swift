@@ -282,7 +282,9 @@ extension LibraryViewModel {
         let named = files ?? names(of: pendingLibraryFiles, in: root)
         DiagnosticLog.event(.storage, "LIBRARY_FETCH: gave up on \(DataDirectoryUnavailability.listed(named)); \(ending)")
         endLibraryFetch(token)
-        if files == nil, let awaited = DataDirectoryCheck.awaitedFile(among: pendingLibraryFiles, in: root) {
+        let expectingIdentity = DataDirectoryPreferences.expectedIdentity.read(from: dataDirectoryEnvironment.preferences) != nil
+        if files == nil,
+           let awaited = DataDirectoryCheck.awaitedFile(among: pendingLibraryFiles, in: root, expectingIdentity: expectingIdentity) {
             noteDataDirectoryUnavailable(.libraryFileNotArrived(provider, folder: folder, file: awaited))
             return
         }
@@ -317,6 +319,15 @@ extension LibraryViewModel {
                 .storage,
                 "LIBRARY_INDEX: the listener chose to open the library in \(name) without its index, which did not "
                     + "arrive; the startup repair makes a new one from the books here"
+            )
+        case .identityNotKnown:
+            // This Mac knows no identity to restore: the library is given a
+            // new one as it starts, now that the listener has said so.
+            libraryIdentityWaitWaivedFor = root.standardizedFileURL.path
+            DiagnosticLog.event(
+                .storage,
+                "LIBRARY_IDENTITY: the listener chose to open the library in \(name) without its identity file, "
+                    + "which did not arrive; it is given a new identity as it opens"
             )
         case .identity:
             guard let expected = DataDirectoryPreferences.expectedIdentity.read(from: dataDirectoryEnvironment.preferences) else { return }

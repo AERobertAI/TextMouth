@@ -790,26 +790,36 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertEqual(chosen.run(itemStatus: provider), .available(identity, relocatedTo: nil))
     }
 
-    /// library.json without the identity marker this Mac expects, in a cloud
-    /// location, is waited for and never given a new identity. A Mac that
-    /// expects none, as for a library from before identities, and a folder
-    /// elsewhere open it as before.
-    func testAnIndexWithoutItsExpectedIdentityInTheCloudIsWaitedFor() throws {
+    /// library.json without its identity marker, in a cloud location, is
+    /// waited for and never given a new identity, whether or not this Mac
+    /// knows the library's identity: a Mac given the folder knows none while
+    /// the file is still coming. A folder elsewhere opens it as before, and
+    /// so does the library once the listener chose to open it without the
+    /// file.
+    func testAnIndexWithoutItsIdentityInTheCloudIsWaitedFor() throws {
         let root = try makeSandboxDirectory("IndexWithoutIdentity")
         try Data("{\"books\":[]}".utf8).write(to: root.appendingPathComponent("library.json"))
         let provider = FakeCloudItemStatusProvider()
         provider.setLocation(.cloud(.iCloudDrive), of: root)
-        let check = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: UUID(), bookmark: nil)
+        for expected in [UUID(), nil] {
+            let check = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: expected, bookmark: nil)
 
-        let (outcome, pending) = check.runNamingPending(itemStatus: provider)
+            let (outcome, pending) = check.runNamingPending(itemStatus: provider)
 
-        XCTAssertEqual(outcome, .unavailable(.notDownloaded(.iCloudDrive, folder: root.path)))
-        XCTAssertEqual(pending.map(\.lastPathComponent), ["library-identity.json"])
+            XCTAssertEqual(outcome, .unavailable(.notDownloaded(.iCloudDrive, folder: root.path)), "expecting \(String(describing: expected))")
+            XCTAssertEqual(pending.map(\.lastPathComponent), ["library-identity.json"])
+            XCTAssertNil(try LibraryIdentity.read(in: root), "the library was given an identity")
+            XCTAssertEqual(check.run(itemStatus: FakeCloudItemStatusProvider()), .available(nil, relocatedTo: nil), "a folder elsewhere waited")
+        }
+        // The file awaited is the one to restore where this Mac knows the
+        // identity, and the one to give anew where it knows none.
+        let pending = [LibraryIdentity.markerURL(in: root)]
         XCTAssertEqual(DataDirectoryCheck.awaitedFile(among: pending, in: root), .identity)
-        XCTAssertNil(try LibraryIdentity.read(in: root), "the library was given an identity")
-        let expectingNone = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: nil, bookmark: nil)
-        XCTAssertEqual(expectingNone.run(itemStatus: provider), .available(nil, relocatedTo: nil))
-        XCTAssertEqual(check.run(itemStatus: FakeCloudItemStatusProvider()), .available(nil, relocatedTo: nil))
+        XCTAssertEqual(DataDirectoryCheck.awaitedFile(among: pending, in: root, expectingIdentity: false), .identityNotKnown)
+        // The listener's choice to open without the identity file lets it open.
+        var chosen = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: nil, bookmark: nil)
+        chosen.opensWithoutItsIdentity = true
+        XCTAssertEqual(chosen.run(itemStatus: provider), .available(nil, relocatedTo: nil))
     }
 
     /// Only a file missing beside the other is the one awaited: not an index

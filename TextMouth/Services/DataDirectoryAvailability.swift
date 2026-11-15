@@ -474,14 +474,25 @@ enum DataDirectoryRequest {
 enum LibraryFileAwaited: String, CaseIterable, Equatable, Sendable {
     /// library.json, the library index.
     case index
-    /// library-identity.json, the identity marker.
+    /// library-identity.json, the identity marker, on a Mac that knows the
+    /// identity the library has: the choice is to restore it.
     case identity
+    /// library-identity.json, on a Mac that knows no identity for the
+    /// library, as one that has only just been given the folder to use
+    /// (Use This Library): there is none to restore, so the choice is to
+    /// give the library a new one.
+    case identityNotKnown
+
+    /// The two files themselves, once each: what a data directory is
+    /// checked for (`identityNotKnown` is `identity` on a Mac that knows
+    /// no identity).
+    static let files: [LibraryFileAwaited] = [.index, .identity]
 
     /// The file's name in the data directory.
     var fileName: String {
         switch self {
         case .index: return "library.json"
-        case .identity: return LibraryIdentity.fileName
+        case .identity, .identityNotKnown: return LibraryIdentity.fileName
         }
     }
 
@@ -531,6 +542,12 @@ struct DataDirectoryCheck {
     /// check then lets it open, as it did before the wait, and the startup
     /// repair makes the index anew from the books here.
     var opensWithoutItsIndex = false
+    /// Whether the listener chose to open this library, on a Mac that knows
+    /// no identity for it, without its identity file, which did not arrive
+    /// beside its index in a cloud location
+    /// (`LibraryFileAwaited.identityNotKnown`): the check then lets it open,
+    /// and the library is given a new identity as it starts.
+    var opensWithoutItsIdentity = false
 
     /// What the check found.
     enum Outcome: Equatable {
@@ -668,8 +685,11 @@ struct DataDirectoryCheck {
         guard indexIsHere else {
             return .unavailable(.libraryMissing(folder: folder.path))
         }
-        // The index without the identity marker this Mac expects (risk 5).
-        if inCloudLocation, expectedIdentity != nil {
+        // The index without its identity marker (risk 5): waited for whether
+        // or not this Mac knows the identity, since a Mac given the folder
+        // knows none while the file is still coming, and would otherwise
+        // give the library a second identity.
+        if inCloudLocation, !opensWithoutItsIdentity {
             return notDownloaded([marker], in: folder, itemStatus: itemStatus, pending: &pending)
         }
         return .available(nil, relocatedTo: nil)
@@ -682,15 +702,17 @@ struct DataDirectoryCheck {
     /// fetch asks it as it gives up, for the screen's choice
     /// (`DataDirectoryUnavailability.libraryFileNotArrived`). Reads
     /// metadata only, with dataless files left in the cloud.
-    static func awaitedFile(among pending: [URL], in folder: URL) -> LibraryFileAwaited? {
+    static func awaitedFile(among pending: [URL], in folder: URL, expectingIdentity: Bool = true) -> LibraryFileAwaited? {
         guard pending.count == 1, let file = pending.first?.standardizedFileURL else { return nil }
-        return DatalessFiles.withoutDownloading {
-            LibraryFileAwaited.allCases.first { awaited in
+        let awaited = DatalessFiles.withoutDownloading {
+            LibraryFileAwaited.files.first { awaited in
                 file.path == awaited.url(in: folder).standardizedFileURL.path
                     && !FileManager.default.fileExists(atPath: file.path)
                     && FileManager.default.fileExists(atPath: awaited.counterpart.url(in: folder).path)
             }
         }
+        // The identity file on a Mac that knows no identity has none to restore.
+        return awaited == .identity && !expectingIdentity ? .identityNotKnown : awaited
     }
 
     /// The library this Mac expects, found through the bookmark in a folder

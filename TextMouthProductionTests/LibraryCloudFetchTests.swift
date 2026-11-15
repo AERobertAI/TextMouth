@@ -107,6 +107,55 @@ final class LibraryCloudFetchTests: XCTestCase {
         XCTAssertEqual(try LibraryIdentity.read(in: root)?.id, expected, "the library was given another identity")
     }
 
+    /// A Mac that expects no identity, as one only just given the folder
+    /// (Use This Library) does, waits for the identity file as the other does,
+    /// and when it never comes puts the choice to the listener: no identity
+    /// is made on its own. Giving a new one writes it and opens the library.
+    func testAnIdentityThatNeverComesOnAMacExpectingNoneIsTheListenersChoice() throws {
+        let world = try CloudWorld(test: self, label: "IdentityNeverUnknown")
+        let root = world.fixture.root
+        world.fixture.preferences.removeObject(forKey: DataDirectoryPreferences.expectedIdentity.key)
+        try FileManager.default.removeItem(at: LibraryIdentity.markerURL(in: root))
+
+        let model = world.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.dataDirectoryUnavailability?.awaitedFile == .identityNotKnown }, "the wait never ended in the choice")
+        XCTAssertEqual(model.dataDirectoryUnavailability, .libraryFileNotArrived(.googleDrive, folder: root.path, file: .identityNotKnown))
+        XCTAssertFalse(model.hasStartedLibrary)
+        XCTAssertNil(try LibraryIdentity.read(in: root), "the library was given an identity before the listener chose")
+
+        model.openLibraryWithoutTheAwaitedFile()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
+        XCTAssertNotNil(try LibraryIdentity.read(in: root), "the library was not given an identity as it opened")
+        XCTAssertNil(model.dataDirectoryUnavailability)
+    }
+
+    /// The words of the choice on a Mac that knows no identity: its reason
+    /// says there is none to restore, and its button and question offer a
+    /// new one.
+    func testTheWordsOfTheChoiceWhereNoIdentityIsKnown() {
+        let file = LibraryFileAwaited.identityNotKnown
+        XCTAssertEqual(
+            LibraryFileWaitWording.explanation(of: file, in: .googleDrive),
+            "The library's index is on this Mac, but its identity file, library-identity.json, hasn't arrived from "
+                + "Google Drive. TextMouth waited for it. This Mac doesn't know the library's identity, so it can't "
+                + "restore it. Check that Google Drive is running and that this Mac is online, then choose Try Again. "
+                + "If it is gone, choose Give It a New Identity."
+        )
+        XCTAssertEqual(LibraryFileWaitWording.openTitle(for: file), "Give It a New Identity…")
+        XCTAssertEqual(LibraryFileWaitWording.openHint(for: file), "Asks first, then gives the library a new identity and opens it.")
+        XCTAssertEqual(LibraryFileWaitWording.confirmationTitle(for: file), "Give the library a new identity?")
+        XCTAssertEqual(LibraryFileWaitWording.confirmTitle(for: file), "Give a New Identity")
+        XCTAssertEqual(
+            LibraryFileWaitWording.confirmationMessage(for: file, in: .iCloudDrive),
+            "TextMouth writes library-identity.json with a new identity for the library, and opens it. If the "
+                + "library's own library-identity.json arrives from iCloud Drive later, iCloud Drive may keep two copies "
+                + "of it, and this Mac and the other would disagree about which library this is."
+        )
+        XCTAssertEqual(LibraryFileWaitWording.naming(file), "its identity file, library-identity.json")
+    }
+
     /// The words of the choice: the reason names the file that did not come,
     /// what to check, and the button, whose title says it asks first; the
     /// question says what opening does.

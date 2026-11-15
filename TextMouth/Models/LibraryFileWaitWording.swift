@@ -15,7 +15,7 @@ enum LibraryFileWaitWording {
     static func naming(_ file: LibraryFileAwaited) -> String {
         switch file {
         case .index: return "its index, \(file.fileName)"
-        case .identity: return "its identity file, \(file.fileName)"
+        case .identity, .identityNotKnown: return "its identity file, \(file.fileName)"
         }
     }
 
@@ -27,9 +27,12 @@ enum LibraryFileWaitWording {
         let here: String
         switch file {
         case .index: here = "The library's identity file is on this Mac"
-        case .identity: here = "The library's index is on this Mac"
+        case .identity, .identityNotKnown: here = "The library's index is on this Mac"
         }
+        // A Mac that knows no identity has none to restore, which it says.
+        let unknown = file == .identityNotKnown ? "This Mac doesn't know the library's identity, so it can't restore it. " : ""
         return "\(here), but \(naming(file)), hasn't arrived from \(service). TextMouth waited for it. "
+            + unknown
             + DataDirectoryUnavailability.whatToCheck(provider)
             + " If it is gone, choose \(openName(for: file))."
     }
@@ -41,6 +44,7 @@ enum LibraryFileWaitWording {
         switch file {
         case .index: return "Open Without the Index…"
         case .identity: return "Restore Its Identity…"
+        case .identityNotKnown: return "Give It a New Identity…"
         }
     }
 
@@ -56,6 +60,8 @@ enum LibraryFileWaitWording {
             return "Asks first, then makes a new library index from the books in this folder and opens the library."
         case .identity:
             return "Asks first, then writes the identity this Mac knows for the library and opens it."
+        case .identityNotKnown:
+            return "Asks first, then gives the library a new identity and opens it."
         }
     }
 
@@ -64,6 +70,7 @@ enum LibraryFileWaitWording {
         switch file {
         case .index: return "Open the library without its index?"
         case .identity: return "Restore the library's identity?"
+        case .identityNotKnown: return "Give the library a new identity?"
         }
     }
 
@@ -79,6 +86,10 @@ enum LibraryFileWaitWording {
         case .identity:
             return "TextMouth writes \(file.fileName) with the identity this Mac knows for the library, and opens "
                 + "it. If the file arrives from \(service) later, it names the same library."
+        case .identityNotKnown:
+            return "TextMouth writes \(file.fileName) with a new identity for the library, and opens it. If the "
+                + "library's own \(file.fileName) arrives from \(service) later, \(service) may keep two copies of it, "
+                + "and this Mac and the other would disagree about which library this is."
         }
     }
 
@@ -87,6 +98,7 @@ enum LibraryFileWaitWording {
         switch file {
         case .index: return "Make a New Index"
         case .identity: return "Restore and Open"
+        case .identityNotKnown: return "Give a New Identity"
         }
     }
 
