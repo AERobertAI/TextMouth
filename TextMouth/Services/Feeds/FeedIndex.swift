@@ -375,9 +375,15 @@ enum FeedIndexFiles {
     /// that feed's folder in the data directory at `root`: a feed item of
     /// that feed, whatever feed its row named (the folder decides), with no
     /// library folder, and its file at its place in the package.
+    ///
+    /// A row that already names this feed keeps its link as it is, with the
+    /// keys a later TextMouth keeps in it (V04); a link made anew here, for
+    /// a row that named another feed or none, has none.
     static func placed(_ row: Book, in root: URL, of feedID: UUID) -> Book {
         var placed = row
-        placed.feedLink = FeedBookLink(feedID: feedID, itemID: row.feedLink?.itemID ?? "")
+        if row.feedLink?.feedID != feedID {
+            placed.feedLink = FeedBookLink(feedID: feedID, itemID: row.feedLink?.itemID ?? "")
+        }
         placed.folderPath = ""
         placed.filePath = path(row.filePath, inPackageNamed: row.tmbDirectoryName, at: placed.packageDirectory(inDataDirectory: root))
         return placed

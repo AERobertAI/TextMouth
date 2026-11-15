@@ -704,6 +704,28 @@ final class UnknownKeysTests: XCTestCase {
         XCTAssertEqual(written["enclosure"] as? Int, 2)
     }
 
+    /// A feed's index places each of its rows at every save and every
+    /// load. A row that already names the feed keeps its link as it is,
+    /// unknown keys included; a row that named another feed gets a link
+    /// made anew, which has none.
+    func testPlacingAFeedsRowKeepsItsLinksUnknownKeys() {
+        let feedID = UUID()
+        var link = FeedBookLink(feedID: feedID, itemID: "item-1")
+        link.unknownKeys = UnknownKeys(["enclosure": .integer(2)])
+        var row = Self.plainBook()
+        row.feedLink = link
+        let root = URL(fileURLWithPath: "/data", isDirectory: true)
+
+        let placed = FeedIndexFiles.placed(row, in: root, of: feedID)
+        XCTAssertEqual(placed.feedLink, link)
+        XCTAssertEqual(placed.feedLink?.unknownKeys, link.unknownKeys)
+
+        let otherFeed = UUID()
+        let moved = FeedIndexFiles.placed(row, in: root, of: otherFeed)
+        XCTAssertEqual(moved.feedLink, FeedBookLink(feedID: otherFeed, itemID: "item-1"))
+        XCTAssertEqual(moved.feedLink?.unknownKeys, UnknownKeys())
+    }
+
     /// A book's unknown keys are in its box: a copy shares them, and
     /// writing a copy's leaves the original's as they were.
     func testACopysUnknownKeysAreItsOwn() {
