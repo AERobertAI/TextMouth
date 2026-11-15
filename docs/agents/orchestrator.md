@@ -69,6 +69,7 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 <!-- id: lessons-trains-and-builds; keys: train base, zsh status, build-train, shared base; src: Scripts/agents/build-train.py -->
 
 - When branches conflict, make one shared base early (`build-train.py loop --base <branch>`) and have each agent request its real branch: a private train copy of a branch tangles with other agents' commits.
+- An agent that writes that it is waiting on a train, and has no background `wait-for-result.py` running, has ended its turn and is never woken: message it to start one (`AGENTS.md`, How a task agent works), or read `build/orchestrator/train/results/<agent>.md` yourself when it appears.
 - Never assign `status` in a zsh script that waits on a suite: it is read-only there, so the script dies after the suite and reports a failure; use another name.
 
 ### Reviews and merges
