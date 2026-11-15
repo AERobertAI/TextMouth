@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import bisect
 import re
+from functools import lru_cache
 from typing import List, Tuple
 
 # Words (compared case-insensitively, without their final period) after which a
@@ -41,8 +42,16 @@ _INITIALS = re.compile(r"[A-Z](?:\.[A-Z])*")
 Span = Tuple[int, int]
 
 
+# How many blocks' spans stay cached: the citation finder and the name finder scan each
+# block of a section twice, and the cache lets the second scan cost nothing.
+_CODE_SPAN_CACHE = 4096
+
+
+@lru_cache(maxsize=_CODE_SPAN_CACHE)
 def code_spans(text: str) -> List[Tuple[int, int, str]]:
     """The inline code spans of ``text`` as ``(start, end, content)``.
+
+    The result is cached for equal texts, so a caller must not change the list.
 
     A span is a run of N backticks up to the next run of exactly N backticks (the
     CommonMark rule); it may cross a line break. A run with no matching closer is

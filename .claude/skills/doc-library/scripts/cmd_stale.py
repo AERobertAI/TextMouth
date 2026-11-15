@@ -138,25 +138,13 @@ def names_repo_file(word: str, repo: RepoFiles) -> bool:
     return word in repo.tops or any(repo.by_name(f"{word}.{ext}") for ext in sorted(SOURCE_EXTENSIONS))
 
 
-def unknown_part(written: str, repo: RepoFiles, index: SwiftIndex, allow: Allowlist) -> Optional[str]:
-    """The part of a backticked name that nothing declares, or None when every part is known.
+def first_unknown_part(parts: List[str], called: bool, index: SwiftIndex, allow: Allowlist) -> Optional[str]:
+    """The first of a name's ``parts`` that nothing declares and the allowlist does not name, or None.
 
-    The name loses a leading ``.`` and a call's arguments. A dotted name is skipped
-    when it ends in a file extension (``Info.plist``), and a single name that is a
-    file or folder of the repository is a path, not a code name (``names_repo_file``). Each
-    part that starts with a capital and holds a lowercase letter must be a type; a
-    call's name must be a function or a type (an initializer). Both can be
-    allowlisted. Other lowercase parts are not checked.
+    Each part that starts with a capital and holds a lowercase letter must be a type; the
+    last part of a call must be a function or a type (an initializer). Other lowercase
+    parts are not checked.
     """
-    if swiftindex.is_file_name(written):
-        return None
-    called = swiftindex.is_call(written)
-    parts = written.split("(", 1)[0].lstrip(".").split(".")
-    if len(parts) == 1 and names_repo_file(parts[0], repo):
-        return None
-    # A whole name the allowlist knows (a bundle identifier, ``com.*``) needs no part checked.
-    if allow.allows_name(written.split("(", 1)[0].lstrip(".")):
-        return None
     for position, part in enumerate(parts):
         if called and position == len(parts) - 1:
             if not (index.is_func(part) or index.is_type(part) or allow.allows_name(part)):
@@ -165,6 +153,27 @@ def unknown_part(written: str, repo: RepoFiles, index: SwiftIndex, allow: Allowl
             if not (index.is_type(part) or allow.allows_name(part)):
                 return part
     return None
+
+
+def unknown_part(written: str, repo: RepoFiles, index: SwiftIndex, allow: Allowlist) -> Optional[str]:
+    """The part of a backticked name that nothing declares, or None when every part is known.
+
+    The name loses a leading ``.`` and a call's arguments; each part is checked by
+    ``first_unknown_part``. A name that has an unknown part is still let off when it is
+    a file name (``Info.plist``), a single name that is a file or folder of the
+    repository (``names_repo_file``), or a whole name the allowlist knows (a bundle
+    identifier, ``com.*``). The cheap check comes first: most names are known.
+    """
+    bare = written.split("(", 1)[0].lstrip(".")
+    parts = bare.split(".")
+    unknown = first_unknown_part(parts, swiftindex.is_call(written), index, allow)
+    if unknown is None:
+        return None
+    if swiftindex.is_file_name(written) or allow.allows_name(bare):
+        return None
+    if len(parts) == 1 and names_repo_file(bare, repo):
+        return None
+    return unknown
 
 
 def section_items(page: Page, section: Section, repo: RepoFiles, index: SwiftIndex,
