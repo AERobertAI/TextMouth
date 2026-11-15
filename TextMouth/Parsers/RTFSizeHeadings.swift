@@ -112,28 +112,15 @@ enum RTFSizeHeadings {
     /// How many Characters of `text` are not white space, as
     /// `text.reduce(0) { $0 + ($1.isWhitespace ? 0 : 1) }` counts them, which
     /// looked up the Unicode properties of every character of the book (49%
-    /// of an RTF import before the November 14, 2026 speed-up, H1).
-    ///
-    /// Text of ASCII alone, nearly every run, is counted over its bytes: each
-    /// ASCII byte is a Character by itself, apart from a carriage return and
-    /// line feed together, which are one Character and white space like each
-    /// of their halves; and an ASCII Character is white space exactly when
-    /// it is the space or one of tab, line feed, vertical tab, form feed, and
-    /// carriage return, the ASCII scalars with the Unicode White_Space
-    /// property (`Chapter.wordCount` relies on the same). Text with any other
-    /// byte is counted Character by Character, as before.
+    /// of an RTF import before the November 14, 2026 speed-up, H1). The
+    /// Characters are stepped by `String.forEachCharacter(_:)`, which reads
+    /// only a Character beyond ASCII whole.
     static func nonWhitespaceCharacterCount(of text: String) -> Int {
-        let asciiCount: Int? = text.utf8.withContiguousStorageIfAvailable { bytes in
-            var count = 0
-            for byte in bytes {
-                // A byte beyond ASCII: this run is counted the long way.
-                if byte >= 0x80 { return -1 }
-                if byte != 0x20 && !(0x09...0x0D).contains(byte) { count += 1 }
-            }
-            return count
+        var count = 0
+        text.forEachCharacter { isWhitespace in
+            if !isWhitespace { count += 1 }
         }
-        if let asciiCount, asciiCount >= 0 { return asciiCount }
-        return text.reduce(0) { $0 + ($1.isWhitespace ? 0 : 1) }
+        return count
     }
 
     /// The bytes of a paragraph's beginning that can settle it is too long to

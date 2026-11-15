@@ -220,60 +220,21 @@ struct Chapter {
 
     /// The number of runs of Characters in `text` that are not whitespace,
     /// counted without building a substring per word or reading every
-    /// Character whole (PERF21: 64 ms per MB of reading text before).
-    ///
-    /// An ASCII byte followed by another ASCII byte, or by the end, is a
-    /// whole Character: no ASCII scalar extends or prepends a grapheme
-    /// cluster, and the one pair that forms one, CR LF, is whitespace like
-    /// each of its halves. Such a byte is judged on its own: it is
-    /// whitespace when it is a space or one of tab, line feed, vertical
-    /// tab, form feed, and carriage return, the ASCII scalars with the
-    /// Unicode White_Space property. Every other Character is read whole
-    /// from its first byte, and is whitespace when its first scalar is, as
-    /// `Character.isWhitespace` decides. Each step starts on a Character
-    /// boundary, so the count is the one the split makes.
-    ///
-    /// The steps are taken over the string's bytes in a buffer, by their
-    /// offsets, when it is stored as contiguous UTF-8 (several times faster
-    /// than stepping the UTF-8 view's indices byte by byte, the November 14,
-    /// 2026 import speed-up, H12); any other string is made contiguous first.
-    /// The offsets are the same ones the indices held, so the count is the same.
+    /// Character whole (PERF21: 64 ms per MB of reading text before): the
+    /// Characters are stepped by `String.forEachCharacter(_:)`, which says
+    /// which are white space, so the count is the one the split makes.
     static func wordCount(of text: String) -> Int {
-        var storage = text
-        storage.makeContiguousUTF8()
-        // A second name for the same storage, read inside the closure that
-        // holds `storage` (a string may not be read while it is lent out).
-        let reader = storage
-        return storage.withUTF8 { bytes in
-            let utf8 = reader.utf8
-            var count = 0
-            var inWord = false
-            var offset = 0
-            while offset < bytes.count {
-                let byte = bytes[offset]
-                let isWhitespace: Bool
-                if byte < 0x80, offset + 1 == bytes.count || bytes[offset + 1] < 0x80 {
-                    isWhitespace = byte == 0x20 || (0x09...0x0D).contains(byte)
-                    // CR LF is one Character: step past both halves, so the
-                    // next step starts on a boundary.
-                    let pairsWithLineFeed = byte == 0x0D && offset + 1 < bytes.count && bytes[offset + 1] == 0x0A
-                    offset += pairsWithLineFeed ? 2 : 1
-                } else {
-                    // A Character beyond ASCII, or an ASCII byte a mark follows,
-                    // is read whole from its first byte.
-                    let index = utf8.index(utf8.startIndex, offsetBy: offset)
-                    isWhitespace = reader[index].isWhitespace
-                    offset = utf8.distance(from: utf8.startIndex, to: reader.index(after: index))
-                }
-                if isWhitespace {
-                    inWord = false
-                } else if !inWord {
-                    inWord = true
-                    count += 1
-                }
+        var count = 0
+        var inWord = false
+        text.forEachCharacter { isWhitespace in
+            if isWhitespace {
+                inWord = false
+            } else if !inWord {
+                inWord = true
+                count += 1
             }
-            return count
         }
+        return count
     }
 
     init(
@@ -577,5 +538,53 @@ enum TimeFormatting {
     private static func wholeSeconds(_ seconds: TimeInterval) -> Int? {
         guard seconds.isFinite else { return nil }
         return Int(exactly: max(seconds, 0).rounded(.towardZero))
+    }
+}
+
+// MARK: - Stepping a String's Characters Quickly
+
+extension String {
+    /// Calls `body` once for each Character of the string, in order, with
+    /// whether the Character is white space (`Character.isWhitespace`).
+    ///
+    /// It steps over the UTF-8 bytes in a buffer, by their offsets, rather
+    /// than reading every Character whole (PERF21: 64 ms per MB of reading
+    /// text before; several times faster again over the buffer, the November
+    /// 14, 2026 import speed-up, H12). An ASCII byte followed by another
+    /// ASCII byte, or by the end, is a whole Character: no ASCII scalar
+    /// extends or prepends a grapheme cluster, and the one pair that forms
+    /// one, CR LF, is white space like each of its halves. Such a byte is
+    /// judged on its own: it is white space when it is a space or one of tab,
+    /// line feed, vertical tab, form feed, and carriage return, the ASCII
+    /// scalars with the Unicode White_Space property. Every other Character
+    /// is read whole from its first byte, and is white space when its first
+    /// scalar is, as `Character.isWhitespace` decides. Each step starts on a
+    /// Character boundary, so `body` is called once for each Character.
+    @inline(__always)
+    func forEachCharacter(_ body: (_ isWhitespace: Bool) -> Void) {
+        var storage = self
+        storage.makeContiguousUTF8()
+        // A second name for the same storage, read inside the closure that
+        // holds `storage` (a string may not be read while it is lent out).
+        let reader = storage
+        storage.withUTF8 { bytes in
+            let utf8 = reader.utf8
+            var offset = 0
+            while offset < bytes.count {
+                let byte = bytes[offset]
+                if byte < 0x80, offset + 1 == bytes.count || bytes[offset + 1] < 0x80 {
+                    body(byte == 0x20 || (0x09...0x0D).contains(byte))
+                    // CR LF is one Character: step past both halves, so the
+                    // next step starts on a boundary.
+                    let pairsWithLineFeed = byte == 0x0D && offset + 1 < bytes.count && bytes[offset + 1] == 0x0A
+                    offset += pairsWithLineFeed ? 2 : 1
+                } else {
+                    // A Character beyond ASCII, or an ASCII byte a mark follows.
+                    let index = utf8.index(utf8.startIndex, offsetBy: offset)
+                    body(reader[index].isWhitespace)
+                    offset = utf8.distance(from: utf8.startIndex, to: reader.index(after: index))
+                }
+            }
+        }
     }
 }
