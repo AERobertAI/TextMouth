@@ -22,6 +22,9 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 - [Recording from a microphone](docs/user/recording.md): the New Recording window.
 - [Editing audio](docs/user/editing-audio.md): the audio editor.
 - [Podcasts and article feeds](docs/user/feeds.md): subscribing, downloading, and reading feeds.
+  - [Downloading feed episodes and articles](docs/user/feed-downloads.md): listing, downloads, cancelling, quitting.
+  - [Feed, episode, and article commands](docs/user/feed-commands.md): Check Feed, Feed Info, deleting episodes.
+  - [Listening on, feed settings, and transcripts](docs/user/feed-listening-and-settings.md): next episode, Feeds tab, podcast transcripts.
 - [Speed and memory](docs/user/speed-and-memory.md): how TextMouth stays quick with a large library.
 - [Where TextMouth keeps your library](docs/user/where-your-library-lives.md): the data directory, its files, and logs.
 - [Keeping your library in the cloud](docs/user/cloud-library.md): iCloud Drive, Dropbox, Google Drive.
