@@ -185,7 +185,12 @@ def wait_for_boot(udid, seconds, log):
 def ready_simulator(log):
     """Finds or makes an iPhone 17 on the best iOS runtime, boots it, and sets the keyboard's settings. Returns
     (its UDID, a sentence naming it). Every `simctl` call is written to `log`. A step that cannot finish raises
-    SimulatorFailure, naming it."""
+    SimulatorFailure, naming it. The seconds each phase took are printed, so that a run's log says where a slow set-up went."""
+    began = time.monotonic()
+
+    def lap(label):
+        print(f"simulator set-up: {label} at {time.monotonic() - began:.0f} s", flush=True)
+
     listing = simctl("list")
     log.write(f"$ xcrun simctl list\n{listing.stdout}\n")
     runtime = choose_runtime(simctl_json("runtimes").get("runtimes", []))
@@ -198,8 +203,10 @@ def ready_simulator(log):
         log.write(f"$ xcrun simctl create -> {made.returncode}: {made.stdout}{made.stderr}\n")
         if made.returncode != 0 or not udid:
             raise SimulatorFailure(f"could not make an {DEVICE_NAME} on {runtime['identifier']}: {made.stderr.strip()[:300]}")
+    lap("the device is chosen")
     try:
         wait_for_boot(udid, FIRST_BOOT_SECONDS, log)
+        lap("the first boot finished")
     except BootTimedOut as stuck:
         # The device is stuck (it prints "Waiting on BackBoard" and goes no further): shut it down and boot a new one.
         log.write(f"The boot of {udid} did not finish: {stuck}\n")
@@ -218,6 +225,7 @@ def ready_simulator(log):
         written = simctl("spawn", udid, "defaults", "write", KEYBOARD_DOMAIN, key, "-bool", "true" if value else "false",
                          tolerate_timeout=True)
         log.write(f"$ defaults write {KEYBOARD_DOMAIN} {key} {value} -> {written.returncode} {written.stderr.strip()}\n")
+    lap("the keyboard settings are written")
     sentence = f"{DEVICE_NAME}, iOS {runtime.get('version', '?')} ({udid})"
     if not str(runtime.get("version", "")).startswith(RUNTIME_VERSION):
         sentence += f" (the wanted iOS {RUNTIME_VERSION} runtime was not there)"
@@ -446,7 +454,12 @@ def main(argv):
     parser.add_argument("--derived-data", default="build/remote-DerivedData-ios")
     parser.add_argument("--request", default=".github/test-request.json")
     parser.add_argument("--limit-minutes", type=float, default=DEFAULT_LIMIT_MINUTES)
+    parser.add_argument("--shard", type=int, default=1, help="this job's number among the iPhone jobs, from 1")
+    parser.add_argument("--of", type=int, default=1, help="how many jobs the iPhone tests are split into")
     args = parser.parse_args(argv)
+    if not 1 <= args.shard <= max(1, args.of):
+        print(f"run-ios-ui-tests.py: shard {args.shard} is not among {args.of}", file=sys.stderr)
+        return 2
     # The sound rule's guard: run on this Mac, the tests would boot a simulator and press Play aloud. So anywhere but a
     # GitHub runner, stop before any request is read, any file written, or any simulator started.
     if not on_github_runner(os.environ):
@@ -474,9 +487,15 @@ def main(argv):
                                     "the phone area, or a unit or interface test class does)"), 0)
     if not build_passed(out):
         return finish(not_run_lines("NOT RUN", "the iPhone build did not pass, so there is no test bundle to run"), 0)
-    # All classes of both bundles are one run of the two whole bundles; a subset names each class.
+    # With several iPhone jobs each takes its slice of the classes (the same slices in every job: ios_ui_tests.slice_for).
+    sharded = args.of > 1
     every = ios_ui_tests.all_classes(ROOT)
-    named = [] if classes == every else classes
+    if sharded:
+        classes = ios_ui_tests.slice_for(classes, args.shard, args.of, ROOT)
+        if not classes:
+            return finish(not_run_lines("NOT ASKED", f"shard {args.shard} of {args.of} was dealt no iPhone test class"), 0)
+    # All classes of both bundles are one run of the two whole bundles; a subset (and any slice) names each class.
+    named = [] if classes == every and not sharded else classes
     # The bundles the asked classes are in, and how many tests each must give back.
     expected_by_bundle = ios_ui_tests.counts_by_bundle(classes, ROOT)
     asked = tuple(bundle for bundle in BUNDLES if bundle in expected_by_bundle)
@@ -511,8 +530,12 @@ def main(argv):
     parsed = parse_results(log_text)
     # Each bundle's own count is checked (the total would say the same thing twice).
     passed, reasons = judge(status, timed_out, log_text, parsed, expected_by_bundle=expected_by_bundle)
-    return finish(summary_lines("PASSED" if passed else "FAILED", parsed, seconds, setup_seconds, simulator, named,
-                                reasons, asked), 0 if passed else 1)
+    lines = summary_lines("PASSED" if passed else "FAILED", parsed, seconds, setup_seconds, simulator, named,
+                          reasons, asked)
+    if sharded:
+        # Where the job sits among the iPhone jobs, which the join (merge_ios_shards.py) reads.
+        lines.insert(1, f"Shard: {args.shard} of {args.of}")
+    return finish(lines, 0 if passed else 1)
 
 
 if __name__ == "__main__":

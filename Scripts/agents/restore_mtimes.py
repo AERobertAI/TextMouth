@@ -2,15 +2,23 @@
 """restore_mtimes.py: makes a fresh checkout look, to the build system, like the one the cached build products came from.
 
 A GitHub runner checks the repository out afresh on every run, so every file has the time of the
-checkout, and Xcode's build system, which compares file times, would compile everything again
-even with last run's build products restored from the cache. This script gives the files that did
-not change since those products were built one fixed old time (FIXED_TIME), and leaves every file
-that did change at the checkout's own newer time, so the build recompiles exactly those.
+checkout, and Xcode's build system, which compares each input's time with the one it recorded, would
+compile everything again even with last run's build products restored from the cache. This script gives
+every tracked file a time that depends only on the file's content: FIXED_TIME plus a few seconds taken
+from its git blob hash (content_time). The same text therefore has the same time in every run, whichever
+run built the products, and a file whose text changed gets a different time, so the build compiles
+exactly the files whose text differs from what the products were built from, and nothing else.
 
-"Changed" is read from a manifest of the files' git blob hashes, saved beside the build products
-and restored with them. Without a manifest (the first run, or an evicted cache) every file gets the
-fixed time, so the build that follows is a complete one that the next run can rely on. The script
-then writes the manifest of this checkout. Only tracked files are touched, and only their times.
+(Until November 14, 2026 every file unchanged since the cached run's manifest got one fixed time and a
+changed file kept its checkout time. The products of a run then recorded its changed files at that run's
+checkout time, which no later run could give them again, so the next run compiled them again, with
+everything that depends on them: 154 Swift files for a tree with nothing new, and the whole module, 1,562
+files, after a day's changes.)
+
+The manifest of blob hashes, saved beside the build products and restored with them, is now only for the
+log: it says which files differ from the products' tree, so that a run's page names what the build had to
+look at. Without one the files get their times all the same. The script then writes the manifest of this
+checkout. Only tracked files are touched, and only their times.
 
 Usage: python3 -I -B Scripts/agents/restore_mtimes.py MANIFEST
 Run it from the repository root, after the checkout and the cache restore, before the build.
@@ -24,8 +32,17 @@ from pathlib import Path
 # Importing this module must leave no __pycache__ folder in the repository.
 sys.dont_write_bytecode = True
 
-# 2026-01-01 00:00:00 UTC, older than any checkout's own time.
+# 2026-01-01 00:00:00 UTC, older than any checkout's own time; every file's time is this plus up to TIME_SPREAD seconds.
 FIXED_TIME = 1767225600
+# The seconds a file's time may be later than FIXED_TIME: 100 days, so that every time is still in the past of any checkout
+# (April 11, 2026 at the latest), and two texts of one file share a time only about once in 8.6 million.
+TIME_SPREAD = 100 * 86400
+
+
+def content_time(blob):
+    """The modification time (whole seconds) that a file whose git blob hash is `blob` is given: FIXED_TIME plus the
+    hash's first 8 hex digits modulo TIME_SPREAD. The same blob always gives the same time."""
+    return FIXED_TIME + int(blob[:8], 16) % TIME_SPREAD
 
 
 def tracked_hashes(root):
@@ -51,25 +68,38 @@ def read_manifest(path):
 
 
 def restore(root, manifest_path):
-    """Sets the fixed time on every tracked file that the manifest says is unchanged (every
-    one, with no manifest), saves the manifest of this checkout, and returns (files given the
-    fixed time, files left at their checkout time)."""
+    """Gives every tracked file its content_time, saves the manifest of this checkout, and returns (files whose text
+    is what the manifest says, files that differ from it or are new). With no manifest every file counts as the first.
+    A file that can't be touched keeps its checkout time (and counts as differing): it is simply built again."""
     root = Path(root)
     current = tracked_hashes(root)
     old = read_manifest(manifest_path)
     kept = changed = 0
     for path, blob in current.items():
-        if old is not None and old.get(path) != blob:
-            changed += 1
-            continue
         try:
-            os.utime(root / path, (FIXED_TIME, FIXED_TIME), follow_symlinks=False)
-            kept += 1
+            stamp = content_time(blob)
+            os.utime(root / path, (stamp, stamp), follow_symlinks=False)
+            same = old is None or old.get(path) == blob
         except OSError:
-            changed += 1  # A file that can't be touched is simply built again.
+            same = False
+        if same:
+            kept += 1
+        else:
+            changed += 1
     Path(manifest_path).parent.mkdir(parents=True, exist_ok=True)
     Path(manifest_path).write_text(json.dumps(current), encoding="utf-8")
     return kept, changed
+
+
+# How many changed files main() names, so that a run's log shows what the build had to look at.
+NAMED = 40
+
+
+def changed_names(current, old):
+    """The paths whose blob differs from the manifest `old` (or are new), sorted; empty with no manifest."""
+    if old is None:
+        return []
+    return sorted(path for path, blob in current.items() if old.get(path) != blob)
 
 
 def main(argv):
@@ -78,10 +108,14 @@ def main(argv):
         print("usage: restore_mtimes.py MANIFEST", file=sys.stderr)
         return 2
     manifest = Path(argv[0])
-    had = read_manifest(manifest) is not None
+    old = read_manifest(manifest)
+    had = old is not None
+    names = changed_names(tracked_hashes(Path.cwd()), old)
     kept, changed = restore(Path.cwd(), manifest)
     print(f"restore_mtimes: {'manifest found' if had else 'no manifest, so a complete build'}; "
-          f"{kept} files unchanged (given the fixed time), {changed} changed or new (left as checked out)")
+          f"{kept} files as the products were built, {changed} changed or new (every file is given its content's time)")
+    for name in names[:NAMED]:
+        print(f"restore_mtimes:   changed {name}")
     return 0
 
 

@@ -50,6 +50,10 @@ sys.dont_write_bytecode = True
 AGENTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(AGENTS))
 import github_run  # noqa: E402  (the path above must be set first)
+import runner_audio_probe  # noqa: E402
+import runner_ax_probe  # noqa: E402
+import runner_diagnose  # noqa: E402
+import runner_settings  # noqa: E402
 import ios_ui_tests  # noqa: E402
 import shard  # noqa: E402
 import test_command  # noqa: E402
@@ -118,9 +122,26 @@ def runner_environment(request):
     return environment
 
 
+# The most test-host clones a request may ask for (the runner has 3 cores and 7 GB).
+MAX_PARALLEL_WORKERS = 3
+
+
+def parallel_arguments(request):
+    """The xcodebuild arguments that run the tests in the request's "parallel_workers" clones of the test host (2 to
+    MAX_PARALLEL_WORKERS), or none for any other value. They come after the command's own `-parallel-testing-enabled NO`,
+    so they win. A request sent by hand asks for them to see whether the runner's cores make the tests faster; no train or
+    suite sets it."""
+    workers = request.get("parallel_workers")
+    if isinstance(workers, bool) or not isinstance(workers, int) or not 2 <= workers <= MAX_PARALLEL_WORKERS:
+        return []
+    return ["-parallel-testing-enabled", "YES", "-parallel-testing-worker-count", str(workers),
+            "-maximum-parallel-testing-workers", str(workers)]
+
+
 def runner_arguments(request, skips):
-    """Every extra xcodebuild argument the runner adds: the time limit, and the tests left out."""
-    return time_limit_arguments(request) + skip_arguments(selected_skips(request, skips))
+    """Every extra xcodebuild argument the runner adds: the time limit, the clones of the test host a hand-sent request
+    asks for, and the tests left out."""
+    return time_limit_arguments(request) + parallel_arguments(request) + skip_arguments(selected_skips(request, skips))
 
 
 def read_request(path):
@@ -206,6 +227,20 @@ def run_tests(train, request, out, limit_minutes):
                                             extra=runner_arguments(request, read_skips())
                                             + ["-resultBundlePath", str(out / "result.xcresult")])
         sink = subprocess.PIPE
+    if request.get("diagnose"):
+        # A request sent by hand asks for the build to be timed apart first (runner_diagnose.py); the tests then find it built.
+        sys.path.insert(0, str(ROOT / "Scripts" / "test"))
+        import testkit
+        runner_diagnose.diagnose(ROOT, derived, testkit.build_command(
+            ROOT, [], str(derived), jobs=RUNNER_JOBS, use_slot=False, action="build-for-testing"), out)
+    # The system settings the tests assume (Keyboard navigation on), written on a GitHub runner only.
+    runner_settings.apply(os.environ)
+    if request.get("ax_probe"):
+        # A request sent by hand asks whether a process here can be an accessibility client (runner_ax_probe.py).
+        runner_ax_probe.probe(out / "ax-probe")
+    if request.get("audio_probe"):
+        # A request sent by hand asks whether audio decodes here and what makes it (runner_audio_probe.py).
+        runner_audio_probe.probe(out / "audio-probe")
     print("command:", " ".join(command), flush=True)
     process = subprocess.Popen(command, cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT, env=runner_environment(request))
     finished = threading.Event()

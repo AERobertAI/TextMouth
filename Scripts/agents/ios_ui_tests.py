@@ -27,6 +27,8 @@ from pathlib import Path
 
 # Importing this module must leave no __pycache__ folder in the repository.
 sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import shard  # noqa: E402
 
 # The repository's root, and the folders holding the two bundles' tests (each folder is named for its bundle).
 ROOT = Path(__file__).resolve().parents[2]
@@ -189,3 +191,54 @@ def executed_with_counts(lines):
     kinds = tuple(kind[0].upper() + kind[1:] for kind in BUNDLE_KIND.values())
     counts = [line.strip()[0].lower() + line.strip()[1:] for line in lines if line.startswith(kinds)]
     return "; ".join([executed, *counts])
+
+
+# ---------------------------------------------------------------------------
+# Sharding: the iPhone job as several jobs (the workflow's `ios` matrix)
+# ---------------------------------------------------------------------------
+
+# The seconds each class took in a run on the runner, {class: seconds}, beside this script (class_times.py writes it from the
+# `ios-ui.log` of a full suite).
+TIMES_FILE = Path(__file__).resolve().parent / "ios-class-times.json"
+# What a class that the times file does not know is counted as, for each test it holds: an interface test launches the app
+# (10 to 15 seconds on the runner's three cores) and waits for screens, 25 to 35 seconds each in the runs of November 10 to 13;
+# a unit test takes about a second. So a class a later change adds is dealt out by its size and not as one second.
+SECONDS_PER_TEST = {UI_BUNDLE: 25.0, UNIT_BUNDLE: 1.0}
+# One iPhone job's share of tests, in seconds, past which another job is worth its own set-up (the platform's download, the
+# build, the simulator's boot: about 10 to 13 minutes on the runner).
+TARGET_SHARD_SECONDS = 480
+# The most iPhone jobs: a free account runs 5 macOS jobs at once, and the Mac tests' shards share them.
+MAX_SHARDS = 3
+
+
+def load_times(path=TIMES_FILE):
+    """{class: seconds} from the times file; empty when it is missing or unreadable (see shard.load_times)."""
+    return shard.load_times(path)
+
+
+def estimated_seconds(classes, root=ROOT, times=None):
+    """{class: seconds} for `classes`: the time the file holds, else the number of tests the class holds times the
+    SECONDS_PER_TEST of its bundle (a class in neither bundle counts as shard.DEFAULT_SECONDS)."""
+    times = load_times() if times is None else times
+    held = {UNIT_BUNDLE: unit_counts(root), UI_BUNDLE: test_counts(root)}
+    seconds = {}
+    for name in classes:
+        if name in times:
+            seconds[name] = times[name]
+            continue
+        counts = [(bundle, counted[name]) for bundle, counted in held.items() if name in counted]
+        seconds[name] = counts[0][1] * SECONDS_PER_TEST[counts[0][0]] if counts else shard.DEFAULT_SECONDS
+    return seconds
+
+
+def shard_count(classes, root=ROOT, times=None, target=TARGET_SHARD_SECONDS, most=MAX_SHARDS):
+    """How many iPhone jobs `classes` need: one for each `target` seconds of tests, at least 1, at most `most`."""
+    return shard.shard_count(list(classes), estimated_seconds(classes, root, times), target, most)
+
+
+def slice_for(classes, number, count, root=ROOT, times=None):
+    """The classes of shard `number` of `count` (1-based): the classes dealt out by their estimated seconds (shard.split),
+    so every job computes the same slices from the same request. With a count of 1, all of them."""
+    if count <= 1:
+        return list(classes)
+    return shard.split(list(classes), estimated_seconds(classes, root, times), count)[number - 1]

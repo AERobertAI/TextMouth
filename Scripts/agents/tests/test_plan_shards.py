@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 
 from remote_case import RemoteTestCase  # noqa: F401  (puts the scripts' folder on the path)
+import ios_ui_tests  # noqa: E402
 import plan_shards  # noqa: E402
 import shard  # noqa: E402
 
@@ -68,7 +69,7 @@ class PlanShardsTests(unittest.TestCase):
         request = {"areas": ["all"], "classes": ["A\nB", "Café"], "shards": 2, "full": True}
         lines = self.plan(request)[1]
         self.assertEqual(len([l for l in lines if l.startswith("request=")]), 1)
-        self.assertEqual(len(lines), 5, "one output line each: no raw newline may split the request")
+        self.assertEqual(len(lines), 7, "one output line each: no raw newline may split the request")
         self.assertEqual(json.loads(self.output(request)["request"]), request)
 
     def test_the_iphone_build_is_on_unless_the_request_turns_it_off(self):
@@ -81,6 +82,40 @@ class PlanShardsTests(unittest.TestCase):
         self.assertEqual(self.output({})["cold"], "false")
         self.assertEqual(self.output({"cold": True})["cold"], "true")
         self.assertEqual(self.output({"cold": "yes"})["cold"], "false", "only a real true makes it cold")
+
+    def test_a_full_suite_asks_for_several_iphone_jobs_and_a_request_without_iphone_tests_for_one(self):
+        full = self.output({"areas": ["all"], "full": True, "shards": 4})
+        self.assertGreater(int(full["ios_shards"]), 1, "the interface tests are the longest path of a full suite")
+        self.assertEqual(json.loads(full["ios_matrix"]), {"shard": list(range(1, int(full["ios_shards"]) + 1))})
+        self.assertEqual(self.output({"classes": ["ChatterTests"]})["ios_shards"], "1")
+        self.assertEqual(self.output({"full": True, "ios": False})["ios_shards"], "1")
+
+    def test_a_request_may_say_how_many_iphone_jobs_within_the_most(self):
+        self.assertEqual(self.output({"ios_shards": 2})["ios_shards"], "2")
+        self.assertEqual(self.output({"ios_shards": 99})["ios_shards"], str(ios_ui_tests.MAX_SHARDS))
+        self.assertEqual(self.output({"ios_shards": 0})["ios_shards"], "1")
+        for odd in (True, "2", None, 1.5):
+            with self.subTest(odd=odd):
+                self.assertEqual(self.output({"full": True, "ios_shards": odd})["ios_shards"],
+                                 self.output({"full": True})["ios_shards"], "an odd value is the planned count")
+
+    def test_the_mac_shards_and_the_iphone_jobs_never_exceed_the_five_macos_jobs_a_free_account_runs_at_once(self):
+        # A job past the limit waits for a free one and ends last, so the Mac shards take what the iPhone jobs leave.
+        for request in ({"areas": ["all"], "full": True, "shards": 4}, {"full": True, "shards": 4, "ios_shards": 3},
+                        {"shards": 4}, {"shards": 4, "ios": False}, {"full": True, "shards": 99, "ios_shards": 99}):
+            with self.subTest(request=request):
+                out = self.output(request)
+                ios_jobs = int(out["ios_shards"]) if out["ios"] == "true" else 0
+                self.assertLessEqual(int(out["shards"]) + ios_jobs, plan_shards.MACOS_JOBS_AT_ONCE)
+                self.assertGreaterEqual(int(out["shards"]), 1)
+
+    def test_a_full_suite_with_three_iphone_jobs_leaves_two_mac_shards(self):
+        out = self.output({"full": True, "shards": 4, "ios_shards": 3})
+        self.assertEqual((out["shards"], out["ios_shards"]), ("2", "3"))
+
+    def test_a_train_without_iphone_tests_keeps_all_the_mac_shards_beside_its_one_iphone_build(self):
+        out = self.output({"classes": ["ChatterTests"], "shards": 4})
+        self.assertEqual((out["shards"], out["ios_shards"]), ("4", "1"))
 
     def test_the_most_shards_is_what_the_workflow_runs_at_once(self):
         # A free account runs a few macOS jobs at once; more shards would only queue.

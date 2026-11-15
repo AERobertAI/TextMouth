@@ -138,6 +138,22 @@ class DryRunTests(unittest.TestCase):
         self.assertIn("xcodebuild test", dry.stdout)
         self.assertIn("-only-testing:TextMouthProductionTests/CountWordingTests", dry.stdout)
 
+    def test_an_extra_parallel_option_replaces_the_default_in_both_commands_since_xcodebuild_refuses_a_repeat(self):
+        extra = ["-parallel-testing-enabled", "YES", "-parallel-testing-worker-count", "2"]
+        full = test_command.full_suite_command("/tmp/d", extra=extra)
+        self.assertEqual(full.count("-parallel-testing-enabled"), 1)
+        self.assertEqual(full[full.index("-parallel-testing-enabled") + 1], "YES")
+        plain = test_command.full_suite_command("/tmp/d")
+        self.assertEqual(plain[plain.index("-parallel-testing-enabled") + 1], "NO", "the default stays when none is asked for")
+        root = Path(test_command.AGENTS).parents[1]
+        if not (root / "Scripts" / "test" / "run-area.py").exists():
+            self.skipTest("this checkout has no run-area.py")
+        command = test_command.area_command(["stats"], [], "/tmp/none", "/tmp/none.log", extra=extra)
+        dry = subprocess.run([*command, "--dry-run"], cwd=root, capture_output=True, text=True)
+        self.assertEqual(dry.returncode, 0, dry.stderr)
+        self.assertEqual(dry.stdout.count("-parallel-testing-enabled"), 1, dry.stdout)
+        self.assertIn("-parallel-testing-enabled YES", dry.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
