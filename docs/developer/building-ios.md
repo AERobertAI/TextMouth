@@ -88,7 +88,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
   Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`, 19, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime, when the request asks for them (every full suite, the phone area, or a class of either bundle).
   The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: since November 11, 2026 no iPhone test of either bundle needs a simulator on this Mac.
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.
-  A failed or missing iPhone test fails the iPhone job and never the Mac tests' verdict (see Tests on GitHub Actions in [Testing TextMouth](testing.md)).
+  A failed or missing iPhone test fails the iPhone job and never the Mac tests' verdict (see Tests on GitHub Actions in [Testing TextMouth](testing-github.md)).
 - **What the Mac does.**
   `build-train.py run --remote` (and `loop --remote`) merges the requests here, pushes the merged tree plus the request to `TestBuild` with `--force`, waits for that commit's run, and reads the result; `run_suite.py --remote COMMIT NAME LOG` does it for the full suite.
   `Scripts/agents/github_run.py` is the Mac's side: it makes the commit with git's plumbing in a temporary index (no checkout is touched), refuses a tree holding a path under `build/`, `humanQuestions/`, or `humanReports/`, waits (up to 125 minutes, asking GitHub every 30 seconds) while a run is queued or going on `TestBuild`, because a newer push cancels the run before it, and fails with a sentence naming that run, having pushed nothing, if it is still there then (the train puts its requests back, like any failed push), pushes only `<commit>:refs/heads/TestBuild`, finds the run by its SHA, and downloads the artifact `test-build-results`.
@@ -117,7 +117,7 @@ This is how the iPhone team builds and runs the app there.
 - **The scheme.**
   - `TextMouthiOS` is committed at `TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme`.
     XcodeGen writes it from the `scheme:` block of the `TextMouthiOS` target in project.yml.
-  - It runs both iOS test bundles, `TextMouthiOSTests` and `TextMouthiOSUITests` (see [Testing TextMouth](testing.md)), and gathers no code coverage.
+  - It runs both iOS test bundles, `TextMouthiOSTests` and `TextMouthiOSUITests` (see [Testing TextMouth](testing-iphone.md)), and gathers no code coverage.
   - The scheme Xcode made by itself held only the UI tests, which is why this one is committed.
 - **One build folder.**
   - Every simulator build puts its products in `build/DerivedData-ios.noindex`, with `-derivedDataPath build/DerivedData-ios.noindex`.
@@ -171,7 +171,7 @@ This is how the iPhone team builds and runs the app there.
   - **Give each pass a new result-bundle name** (`pass4.xcresult`, then `pass5.xcresult`).
     The round's report says `xcodebuild` wants a new name for each pass, and nobody deletes anything during a run, so an old bundle stays where it is.
     The exact message of a repeated name was not recorded.
-  - The bundle holds each test's results, the screenshots, and the notes the audits keep (see [Testing TextMouth](testing.md)).
+  - The bundle holds each test's results, the screenshots, and the notes the audits keep (see [Testing TextMouth](testing-iphone-audit.md)).
 
 ### Installing, launching, and the launch variables
 <!-- id: installing-launching-launch-variables; keys: simctl install, simctl launch, SIMCTL_CHILD_, TEXTMOUTH_UI_TEST, TEXTMOUTH_OPEN_AT_LAUNCH, screenshot; src: TextMouth/Phone/PhoneLaunchRequest.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift, project.yml -->
@@ -200,5 +200,5 @@ This is how the iPhone team builds and runs the app there.
 
 - **Do not press Play or type by hand, and run no sound test here.**
   The simulator plays through the Mac's speakers, which the user could hear at any hour, and the keyboard's clicks are sounds too.
-  The interface tests that press Play or type run on GitHub's runners, where nobody listens, and so do the unit tests, which make no sound and so never skip; on this Mac the interface tests that make sound skip unless `TEXTMOUTH_UI_SOUND` is 1, and only `Scripts/agents/run-ios-ui-tests.py` sets it, which refuses to run anywhere but on a GitHub runner (see [Testing TextMouth](testing.md)).
+  The interface tests that press Play or type run on GitHub's runners, where nobody listens, and so do the unit tests, which make no sound and so never skip; on this Mac the interface tests that make sound skip unless `TEXTMOUTH_UI_SOUND` is 1, and only `Scripts/agents/run-ios-ui-tests.py` sets it, which refuses to run anywhere but on a GitHub runner (see [Testing TextMouth](testing-iphone.md)).
   Nothing records audio anywhere.
