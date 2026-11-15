@@ -111,8 +111,10 @@ struct FFprobeReport: Equatable, Sendable {
             codecName: object["codec_name"] as? String ?? "",
             sampleRate: number(object["sample_rate"]).flatMap { $0 > 0 && $0 <= maximumSampleRate ? $0 : nil },
             channels: number(object["channels"]).flatMap { $0 >= 1 && $0 <= Double(maximumChannels) ? Int($0) : nil },
-            bitRate: plausibleBitRate(number(object["bit_rate"]) ?? taggedBitRate),
-            duration: plausibleDuration(number(object["duration"]) ?? taggedDuration),
+            // ffprobe's own figure when it is believed, else the tag's: it
+            // writes 0 for a length or rate it could not work out.
+            bitRate: plausibleBitRate(number(object["bit_rate"])) ?? plausibleBitRate(taggedBitRate),
+            duration: plausibleDuration(number(object["duration"])) ?? plausibleDuration(taggedDuration),
             bitsPerSample: counted ?? bits(ofSampleFormat: object["sample_fmt"] as? String),
             isDefault: number(disposition["default"]) == 1,
             isAttachedPicture: number(disposition["attached_pic"]) == 1,

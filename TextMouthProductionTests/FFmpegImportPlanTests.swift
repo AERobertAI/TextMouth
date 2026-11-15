@@ -129,6 +129,10 @@ final class FFmpegImportPlanTests: XCTestCase {
         let tagged = try report(stream: #""codec_name": "vorbis", "sample_rate": "44100", "channels": 2, "tags": {"BPS-eng": "96000", "DURATION-eng": "00:01:00.000"}"#)
         XCTAssertEqual(tagged.streams.first?.bitRate, 96_000)
         XCTAssertEqual(tagged.streams.first?.duration, 60)
+        // ffprobe's 0, a figure it could not work out, gives way to the tags.
+        let zeroes = try report(stream: #""codec_name": "vorbis", "sample_rate": "44100", "channels": 2, "bit_rate": "0", "duration": "0.000000", "tags": {"BPS": "64000", "DURATION": "00:00:30.000"}"#)
+        XCTAssertEqual(zeroes.streams.first?.bitRate, 64_000)
+        XCTAssertEqual(zeroes.streams.first?.duration, 30)
     }
 
     // MARK: - The Sound Taken
