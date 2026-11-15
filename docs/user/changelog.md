@@ -615,6 +615,14 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A library can live in iCloud Drive, Dropbox, or Google Drive, and each book can be downloaded when you need it, removed from this Mac to free space, or kept on it.
 - Add to Library, a plus button in the Library window's toolbar, opens a sheet with every way to add to the library, and on October 17, 2026 it took the place of the toolbar's Import, New from Text, and Add Feed buttons (see [Adding books](adding-books.md)).
 - Import DAISY Folder… was renamed Import Folder… on October 14, 2026, since it imports a folder of audio tracks as one audiobook too, and a key you gave it keeps working.
+- Unopened took the place of No Folder on October 7, 2026, and the books in no folder are at the top of the library in Folders.
+- Recently Opened was called Recent until October 10, 2026, and keeps the sort you chose for it then.
+- An EPUB's author is read from a creator element, a dcterms:creator meta element, or a contributor marked as the author, since October 7, 2026.
+- A creator marked as the author is preferred to one listed before it, such as an illustrator, and a creator that says only Unknown is read as naming no one.
+- On October 7, 2026, 150 of a library's 729 EPUBs named their author in a meta element alone, and every one was listed under Unknown.
+- The Add to Library button took the place of the Import, New from Text, and Add Feed buttons on October 17, 2026.
+- Speak Info and Speak Full Info had I and I twice until October 17, 2026, and now follow the defaults Shift-Command-I and Shift-Command-I pressed twice quickly, unless you changed their keys.
+- The three-second rule of earlier versions, under which a quick third press of Shift-Command-I reached the full summary, is gone.
 
 ## 0.1.1
 - The first beta version of TextMouth. Its changes are not listed here.

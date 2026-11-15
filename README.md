@@ -21,6 +21,8 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
   - [Import progress and errors](docs/user/import-progress-and-errors.md): the import overlay, and every refusal's sentence.
   - [Duplicate books and Replace Existing](docs/user/duplicate-books.md): the duplicate question, and Replace Existing.
 - [The Library window](docs/user/library-window.md): views, folders, sorting, searching, and commands on books.
+  - [Book Information](docs/user/book-information.md): edited details, Text Encoding, and braille pop-ups.
+  - [Letter keys and Speak Info](docs/user/library-typing-and-speak-info.md): typing a title, leading articles, summaries.
 - [Search Library](docs/user/search-library.md): finding text in every book at once.
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
 - [Exporting books](docs/user/exporting-books.md): what Export copies, and the Convert to menu.

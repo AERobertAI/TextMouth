@@ -22,7 +22,7 @@ TextMouth tells which from the package's own sync flags and acts on what the dri
 On iCloud Drive it reads a book's state, and whether its changes have uploaded, from the package, and Download Now, opening a book, and Remove Download ask for the whole package, which comes to this Mac, or leaves it, all at once; on the other drives it does each of these file by file.
 
 ## The Library window
-<!-- id: library-window; keys: Library window, cloud notes, downloads, refresh; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
+<!-- id: cloud-library-window; keys: Library window, cloud notes, downloads, refresh; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
 In the Library window:
 
@@ -35,7 +35,7 @@ A book kept on this Mac (below) shows and speaks "Kept on this Mac" after its st
 A library on this Mac or on another drive looks and reads as before.
 
 ### The summary line
-<!-- id: summary-line; keys: books in the cloud, kept on this Mac, status line; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
+<!-- id: cloud-summary-line; keys: books in the cloud, kept on this Mac, status line; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
 The summary line adds how many of the books shown are in the cloud, as in "3 books in the cloud": those not wholly on this Mac; and how many are kept on this Mac, as in "2 books kept on this Mac".
 
