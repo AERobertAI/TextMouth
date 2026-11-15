@@ -1640,9 +1640,12 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// Everything is read through AVFoundation's asynchronous loading API
     /// (TODO Q06): a marker whose title cannot be read is named "Chapter",
     /// and a file whose markers cannot be loaded has none.
-    /// When AVFoundation finds no chapters in an MPEG-4 file (M4A, M4B, MP4,
-    /// M4V, MOV), the file's Nero `chpl` atom is read by hand instead
-    /// (`NeroChapterReader`), since some audiobook tools write only that.
+    /// When AVFoundation finds no chapters, the list the file's kind keeps
+    /// is read by hand instead (`FileChapterReaders`): an MPEG-4 file's (M4A,
+    /// M4B, MP4, M4V, MOV) Nero `chpl` atom (`NeroChapterReader`), since some
+    /// audiobook tools write only that, and a FLAC file's cue sheet
+    /// (`FLACCueSheetReader`, FMT24), since a CD rip's track list can be
+    /// kept there alone.
     static func extractChapters(from url: URL) async -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
         // An Ogg file never reaches AVFoundation's probing (see `metadataAsset`).
         guard let asset = metadataAsset(for: url) else { return [] }
@@ -1662,10 +1665,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 let dur = CMTimeGetSeconds(group.timeRange.duration)
                 chapters.append((title: title, startTime: start.isFinite ? start : 0, duration: dur.isFinite ? dur : 0))
             }
-            // No chapter track: try the Nero chapter list of an MPEG-4 file.
-            if chapters.isEmpty, NeroChapterReader.mayHoldChapterList(url) {
+            // No chapters AVFoundation reads: try the list the file's kind
+            // keeps, read by hand.
+            if chapters.isEmpty, let listed = FileChapterReaders.chapters(of: url) {
                 let length = CMTimeGetSeconds((try? await asset.load(.duration)) ?? .zero)
-                return NeroChapterReader.bookChapters(from: NeroChapterReader.read(at: url), fileDuration: length)
+                return NeroChapterReader.bookChapters(from: listed, fileDuration: length)
             }
             return chapters
         } catch {
