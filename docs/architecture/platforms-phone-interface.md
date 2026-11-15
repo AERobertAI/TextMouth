@@ -205,7 +205,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   (`PhoneBookSearchVocabulary`).
   It opens `PhoneReaderSheet.search`.
 - `PhoneReaderModel.openSearch()` decides whether it opens, and returns true only when the book has text to search (`ReaderViewModel.canSearchText`).
-  - While the book loads, it says "Loading <title>" with medium priority and opens nothing.
+  - While the book loads, it says "Loading TITLE" with medium priority and opens nothing.
   - For an audiobook with no transcript text, it says why, in the Mac's words (`ReaderViewModel.announceNoTextToSearch`), and opens nothing.
   - For a text book that failed to load, it says nothing: that screen shows the failure in place of the controls.
 - The grid has six rows (`PhoneReaderControl.gridRows`), each a slice of `grid`, so VoiceOver's order is the same however the rows break:
@@ -252,13 +252,13 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   A transcript's result moves the audio to the start of the sentence holding the match, and any other book's moves the place to the match.
   - The Return place is kept, the sheet closes, and the session counts the book as opened (`PhoneReaderModel.noteJumped`).
   - What the jump says is collected and said after the sheet has closed (`PhoneSheetFarewell`).
-    A transcript jump says "Moved to <the time>, <the heading>."
+    A transcript jump says "Moved to TIME, HEADING."
     (`BookSearchWording.movedTo(time:location:)`), and a text book's jump says nothing beyond what the reader says, as on the Mac.
     It plays on from the result if Auto-play after navigation is on.
   - Back to Book, and the sheet disappearing any other way, stop a search still running (`cancelSearch()`), so nothing is said for a sheet that is gone.
 - `offersTranscription` is a parameter of `BookSearchWording.noTextToSearch` and `ReaderViewModel.announceNoTextToSearch`, true by default.
   The phone cannot transcribe, so `openSearch()` passes false.
-  - An audiobook with no transcript hears "<title> has no transcript to search." and not the Mac's "Transcribe it first, with Transcribe Audio."
+  - An audiobook with no transcript hears "TITLE has no transcript to search." and not the Mac's "Transcribe it first, with Transcribe Audio."
   - A stale transcript hears its reason without "Transcribe it again, then search the new transcript."
   - Two tests in `PhoneReaderModelTests` pin it: a packaged audiobook that `isTranscribable` must not mention "ranscribe" on the phone, and the Mac's words must still name the command.
   - The phone's words for a held edit still mention "your editor" and "content.md".

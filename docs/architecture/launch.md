@@ -94,7 +94,7 @@ startLibrary also starts the feed engine in the background (startFeeds, FeedCent
 Then, outside a process hosting tests, it:
 - sends the hidden .removing- folders a Delete Download cut short left in the feeds' own folders to the Trash, or deletes them, as Removal Behavior says (sweepRemovalHolders(), through FeedItemPackage.removalHolders(in:));
   - it runs only while feedLibraryIsComplete, so never while the library index is recovered;
-  - FeedItemPackage.removalHolder(for:beside:) names holders .removing-<book ID>-<UUID>;
+  - FeedItemPackage.removalHolder(for:beside:) names holders `.removing-<book ID>-<UUID>`;
   - and sweepHolder(_:puttingBackInto:remove:) puts back what a still-downloaded row's package lacks (packageWaitingForItsFiles) and sends the rest through FeedEnvironment.removeItem folder by folder (HolderSweep);
   - it logs FEED_HELD_ASIDE_SWEPT, or FEED_HELD_ASIDE_LEFT for one left for the next launch;
 - asks again for the downloads under way or waiting when TextMouth last quit (resumeDownloadsSavedAtQuit);
@@ -225,5 +225,5 @@ Two AppKit facts, shown by probes in real AppKit (Scripts/test/quit-while-held.p
 ## Ogg conversion at launch
 <!-- id: ogg-conversion-at-launch; keys: Ogg, Vorbis, audio conversion, once per library; src: TextMouth/ViewModels/LibraryViewModel+OggConversion.swift, TextMouth/ViewModels/OggConversionProgress.swift -->
 
-convertOggBooksOnce runs beside the launch passes, once per library (preference library.oggAudioConvertedVersion.<identity>), a book at a time through OggConversionProgress.enqueue, each committed on the manifest sessions' queue (B06).
+convertOggBooksOnce runs beside the launch passes, once per library (preference `library.oggAudioConvertedVersion.<identity>`), a book at a time through OggConversionProgress.enqueue, each committed on the manifest sessions' queue (B06).
 

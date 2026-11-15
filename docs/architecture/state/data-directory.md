@@ -155,7 +155,7 @@ Its identity: which library a data directory holds.
 
 The session lease: this Mac's note, in a library another Mac can open, that it has the library open.
 
-- Owner: LibrarySessionLease.shared, which keeps this Mac's file, Sessions/<Mac ID>.json (the computer's name, when TextMouth was last active, and the app's version), in a data directory in a cloud location or on another volume, asking the cloud services' provider where the directory is.
+- Owner: LibrarySessionLease.shared, which keeps this Mac's file, `Sessions/<Mac ID>.json` (the computer's name, when TextMouth was last active, and the app's version), in a data directory in a cloud location or on another volume, asking the cloud services' provider where the directory is.
   One on the startup disk gets none.
   Its disk work, writing and refreshing the file, reading the other Macs' files, and removing stale ones, runs on its own serial queue (diskQueue) with dataless files left in the cloud, so a Sessions folder that hasn't synced never stalls the main thread.
   Its refresh() is awaited, and ending the lease at quit waits at most two seconds (removalWait) for the file's removal.
@@ -163,7 +163,7 @@ The session lease: this Mac's note, in a library another Mac can open, that it h
   A refresh removes leases untouched for 30 days, and the file a move left in the old data directory.
 - How others observe it: each Mac's refresh reads the other files with dataless files left in the cloud, judging one only in the cloud by its modification date.
   Another Mac's lease refreshed in the last three minutes brings one warning a session (TextMouth Is Open on Another Mac, with Continue and Quit TextMouth); nothing is locked.
-  A file whose name begins with this Mac's ID, as a sync service's conflict copy of this Mac's own lease does ("<Mac ID> 2.json"), never counts as another Mac, and ages out as any lease does.
+  A file whose name begins with this Mac's ID, as a sync service's conflict copy of this Mac's own lease does (`<Mac ID> 2.json`), never counts as another Mac, and ages out as any lease does.
 
 ## Files several Macs write
 <!-- id: files-several-macs-write; keys: multi-Mac, conflict copy, stand-in, dataless, unsaved notice, crash safety; src: TextMouth/Services/SavedFile.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift, TextMouth/Services/LibraryIndexQuarantine.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouthProductionTests/MultiMacCrashSafetyTests.swift -->

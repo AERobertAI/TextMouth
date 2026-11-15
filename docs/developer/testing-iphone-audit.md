@@ -65,7 +65,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: audits-that-report-without-failing; keys: soft audit, report only, XCTAttachment, warning; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LibraryUITests.swift, TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
 
 - `audit(_:screen:types:informing:accepting:)` takes `informing`, a kind of finding that is kept with the results and does not fail the test.
-  The note is an attachment named "<screen>: findings reported, not failed".
+  The note is an attachment named "SCREEN: findings reported, not failed".
 - It is for a kind that another test checks, or whose cause is not known.
   Five audits use it, all for Dynamic Type at the normal text size:
   - the Library with a book (`testTheLibraryWithABookPassesTheAudit`), for its summary row;

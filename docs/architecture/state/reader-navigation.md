@@ -86,8 +86,8 @@ The function goOnPastThisBook takes a BookSuccession: .book, which it hands over
 The timer ends listening here when it is fading out, or is set for the end of a heading or of the book, which this end reaches.
 Then the reader says "Next book not started because of the sleep timer", and starts no download either.
 A timer counting minutes goes on with the next book ([Timers and statistics](timers-and-statistics.md)).
-For an .episodeToDownload it says, from EndOfBookWording.downloadingNextNote ("article" for an article), "Finished: <title>.
-Downloading the next episode: <next title>."
+For an .episodeToDownload it says, from EndOfBookWording.downloadingNextNote ("article" for an article), "Finished: TITLE.
+Downloading the next episode: NEXT TITLE."
 It then calls waitForNextEpisode(_:of:startingWith:) (ReaderViewModel+EpisodeDownload).
 That notes a NextEpisodeWait: the item, its feed, and the closure that starts the book.
 The wait also holds controlsOwner, the reader that held the media controls as the wait began (NowPlayingSession.activeOwnerID).
@@ -97,7 +97,7 @@ So the newest-N rule never removes it, one already waiting or running is not sta
 Then it looks at the item's state: downloading or waiting, it waits.
 Already downloaded, it goes on at once.
 Anything else, the engine refused, and the reader says EndOfBookWording.nextEpisodeNotDownloaded(reason:isArticle:) with EndOfBookWording.downloadNotStartedReason.
-The item's downloadFinished event hands listening over as for any next book ("Starting: <next title>", goOnWithNextEpisode(as:during:)).
+The item's downloadFinished event hands listening over as for any next book ("Starting: NEXT TITLE", goOnWithNextEpisode(as:during:)).
 It does not when the listener has moved on (listenerHasMovedOn(_:)): the reader no longer rests finished, has closed, or plays, or another reader took the media controls since the wait began, by playing or by its window becoming the focused one.
 The controls returning to this reader, or staying with the reader that held them, is no move.
 Nor does it when this reader's sleep timer ran out since the wait began, whether it was set before or during the wait, or is fading out (SleepTimerService.endedListening(ownedBy:sinceExpiry:), against expiryMark).
@@ -133,7 +133,7 @@ Reading from the reading list (FR09): whether a reader reads its book from the r
   A book read from the list makes one for the book it continues to (continueThroughReadingList(to:)) or opens with Next or Previous in Reading List (openFromReadingList(_:)).
   The book's reader claims a request once: as it is created (observeReadingList()), so a long load or a cloud download can't outlive it, or, for a window already open, as the request is made (requestsMade).
   It then keeps the book's place current from LibraryViewModel.$library (followReadingList(in:)) until the book leaves the list or the library, and from then on reads as any reader does, even if the book is put back.
-- How others observe it: BookReaderWindowView.windowTitle(for:readFromReadingList:) titles the window "Reading List: <title> by <author>" in place of "Book: …".
+- How others observe it: BookReaderWindowView.windowTitle(for:readFromReadingList:) titles the window "Reading List: TITLE by AUTHOR" in place of "Book: …".
   ReaderLocationHeader shows the place under the title (ReadingListReaderWording.place, "Reading list, book 3 of 12"), and the full Where Am I? says it after the times (fullWhereAmISummary).
   At its end, handleEndOfBook() hands a book read from the list to finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:replayingAFinishedEnd:), in place of the book's own end-of-book behavior.
   The book rests at its end and is counted finished, once (finishAtTheEnd(replayingAFinishedEnd:), P07).
@@ -176,7 +176,7 @@ Moving to another book on a command, and Next in Folder and Previous in Folder (
   Ends any episode wait (nextEpisodeWait = nil).
   Pauses without the pause sound.
   And ends the fade of a timer the move carries, its own or one held for this book, stopping it after the pause since a pause leaves a held fade alone, saying so afterwards when it did (announceTimerFadeEndedIfNeeded(by:), SleepTimerHandOverWording.fadeEndedByTheMove).
-  Then announceMove(to:titled:start:through:) says "Starting: <title>" or "Opening: <title>", and notes the move (noteMoveAnnounced(to:), in [Timers and statistics](timers-and-statistics.md)).
+  Then announceMove(to:titled:start:through:) says "Starting: TITLE" or "Opening: TITLE", and notes the move (noteMoveAnnounced(to:), in [Timers and statistics](timers-and-statistics.md)).
   After continueToNextBookDelay, 0.5 s, it asks for the book (askForBook(_:plays:through:)).
   The reading list's route goes through continueThroughReadingList(to:) or openFromReadingList(_:), the folder's through continueToNextBook(_:under:) or openInFolder(_:), each ending in showNextBook (in [Windows](windows.md)), which makes the askedMove.
   A book that cannot be opened ends the move's timer through releaseSleepTimerHeld(forBook:afterTheReason:) (ReaderViewModel+SleepTimerHandOver), which asks the registry to stop the timer held for it in whichever window holds it.
@@ -238,6 +238,6 @@ Search in Book on a transcribed audiobook, and Go Back (FR05): what the search r
   - BookSearchWording (Views/Reader/BookSearchView.swift) now holds the sentences of the Mac's search that the phone shares, with their values unchanged: the search field's label and hints, the regular-expression switch's label and hint, the results label, and Back to Book's hint.
   - noTextToSearch(bookTitle:canTranscribe:hasTranscript:withheld:offersTranscription:) and announceNoTextToSearch(hasTranscript:offersTranscription:) take offersTranscription, true by default.
     The Mac passes nothing and says what it said.
-    With false, no sentence names Transcribe Audio or tells the listener to transcribe again: "<title> has no transcript to search." and the stale transcript's reason alone.
+    With false, no sentence names Transcribe Audio or tells the listener to transcribe again: "TITLE has no transcript to search." and the stale transcript's reason alone.
   - BookSearchModel takes a debounceInterval, init(corpus:debounceInterval:announce:).
     Its default, BookSearchModel.debounceInterval, is the Mac's 250 milliseconds, and the Mac's one call (BookSearchView) passes none.

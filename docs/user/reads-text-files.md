@@ -158,7 +158,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: ssml-files; keys: .ssml, speak, sub alias, break, voice, lexicon, markup; src: TextMouth/Parsers/SSMLReader.swift -->
 
 - TextMouth reads SSML files (.ssml) as text: the markup is removed, and the paragraphs and sentences are kept.
-- A sub element's alias is read in place of its written text: <sub alias="World Wide Web Consortium">W3C</sub> reads "World Wide Web Consortium".
+- A sub element's alias is read in place of its written text: `<sub alias="World Wide Web Consortium">W3C</sub>` reads "World Wide Web Consortium".
 - The text of desc, meta, metadata, and lexicon elements is left out.
 - An audio element's sound file is never read or fetched, and only the text inside the element is read.
 - A break, a change of voice, or a sentence's start keeps the words on either side of it apart.

@@ -67,7 +67,7 @@ The sleep timer.
   - and the media gesture, which belongs to no window, names the reader that owns Now Playing, the playing one or, while none plays, the focused one (NowPlayingService.restartGestureOwnerKey in the notification's userInfo, from the coordinator's activeOwnerID as the gesture ends).
 
   Only that reader acts (acceptsSleepTimerRestart(_:), which writes RESTART_ROUTE_RECEIVED, ACCEPTED, or REJECTED to the timer's log, a gesture with no owner going to the focused reader, or to one with no window).
-  The reader then resets its running timer, "Timer reset.", or starts its own with the duration last started, "Timer restarted: <duration>."
+  The reader then resets its running timer, "Timer reset.", or starts its own with the duration last started, "Timer restarted: DURATION."
   (restartOrStartLastSleepTimer()).
   Show Sleep Timer takes the same route to the key window's reader (ReaderPanelCommands.shouldAcceptPanelCommand).
 

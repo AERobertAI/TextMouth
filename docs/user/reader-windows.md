@@ -95,7 +95,7 @@ The level filter, Show levels, offers Level 1, Levels 1 to 2, and so on, and All
 ### Show Bookmarks
 <!-- id: reader-show-bookmarks; keys: bookmark list, rotor, added date, Add Bookmark key, no bookmarks; src: TextMouth/Views/Reader/BookmarkPanelView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift -->
 
-In Show Bookmarks, a bookmark's row ends with the day it was added, as in "Bookmark 3, The Battle, Note: Check this, added <date>", which the Bookmarks rotor says too, and its hint says "Goes to this bookmark and closes the list."
+In Show Bookmarks, a bookmark's row ends with the day it was added, as in "Bookmark 3, The Battle, Note: Check this, added DATE", which the Bookmarks rotor says too, and its hint says "Goes to this bookmark and closes the list."
 With no bookmarks, the panel names the key that adds one, in words, as in "Command + B adds a bookmark at the current position.", or, while that command has no key, says "Add Bookmark adds one at the current position."
 
 ### Go to Percent and Go to Time

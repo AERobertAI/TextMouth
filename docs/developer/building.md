@@ -47,7 +47,7 @@ Run these from the repository root:
   The build products in build/DerivedData stay as Xcode made them.
 - `make debug` builds the Debug configuration instead.
 - `make run` and `make open` build the app and open it.
-- `make install` builds the app, copies it to /Applications, registers it so it appears in Open With menus, and keeps the build's dSYM in build/installed-dSYMs as TextMouth-<build number>-<UUID>.app.dSYM, keeping those of the last five installs only.
+- `make install` builds the app, copies it to /Applications, registers it so it appears in Open With menus, and keeps the build's dSYM in build/installed-dSYMs as `TextMouth-<build number>-<UUID>.app.dSYM`, keeping those of the last five installs only.
   `make uninstall` removes the app and leaves the dSYMs; `make clean` removes them with the rest of build/.
 - A crash report from the installed app gives TextMouth's own frames as offsets, such as TextMouth + 0x372e00, because the Release app's symbols are stripped.
   The build number (CFBundleVersion) and TextMouth's UUID in the report name the dSYM `make install` kept for that build in build/installed-dSYMs, which turns the offsets back into functions, files, and lines.

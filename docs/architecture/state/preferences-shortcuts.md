@@ -13,7 +13,7 @@ Keyboard shortcuts (FR12): the record of the shortcuts the user edited, every ac
 
 - Owner: KeyboardShortcutManager (Services/KeyboardShortcutManager.swift), the one the app makes and every window shares.
   Its edits, a ShortcutEdits (Models/ShortcutEdits.swift), hold each action the user edited, with its keys, and nothing else: an action is edited exactly while the record holds it, even with its default keys, and an edited action without a key holds an empty list.
-  The preferences store keeps the record under keyboardShortcutEdits (editsPreference) as JSON keyed by the actions' names, the form the whole map had, an action working in a scope the user chose holding an object, {"keys": [...], "worksIn": "<the ShortcutScope's raw value>"}.
+  The preferences store keeps the record under keyboardShortcutEdits (editsPreference) as JSON keyed by the actions' names, the form the whole map had, an action working in a scope the user chose holding an object, {"keys": [...], "worksIn": "`<the ShortcutScope's raw value>`"}.
   It is written with sorted keys so one record is always the same bytes (storedData), and read entry by entry (ShortcutEdits.reading(_:)).
   So an entry naming no action this build knows, or whose keys can't be read, is left out with a STORED_VALUE_REPAIRED line while the rest load.
   An entry naming a scope this build doesn't know, or one its action can't be given, keeps its keys at its default scope with such a line.

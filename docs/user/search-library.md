@@ -93,7 +93,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Once the reader's window is in front, a moment after the move, VoiceOver says "Moved to the match, Chapter 3." or "Moved to the match.".
   It says "The text changed since the search; moved to the nearest match." when it had to look again, and "That match is no longer in the book's text.
   Search again to find it." when nothing is left to find.
-  A book removed from the library since the search says "<title> is no longer in the library."
+  A book removed from the library since the search says "TITLE is no longer in the library."
 - Go Back (Command-[) in that reader returns to where it was before the move: for a book that was not open, the place it opened at, its saved reading position.
 - Nothing is spoken if the reader has closed, has taken a later match, or Go Back has already undone the move.
 

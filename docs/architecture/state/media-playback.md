@@ -291,7 +291,7 @@ Both paths of extractFullMetadata write the length with one helper, durationStri
 <!-- id: rendered-speech-feeder-exceptions; keys: crash, exception, NSException, speech player, output stops; src: TextMouth/Services/AudioEngineService.swift, TextMouth/Services/ObjCException.swift -->
 
 RenderedSpeechFeeder starts its player node through ObjCException (B08).
-When AVFAudio raises as the audio output stops cycling, the play ends, the node is stopped, and one SPEECH_PLAYER_EXCEPTION: <name>: <reason> line is logged.
+When AVFAudio raises as the audio output stops cycling, the play ends, the node is stopped, and one `SPEECH_PLAYER_EXCEPTION: <name>: <reason>` line is logged.
 The engine then shows stopped, resume() returns false, and speech goes on directly, as it does when the engine cannot start.
 A pre-rendered chapter does the same and logs PRE_RENDERED_START_FAILED.
 The feeder's stop, reset, and pause of the node (PlayerNodeCommand, through callNode(_:)) run inside the same exception catcher, so a node that raises as it stops, resets, or pauses logs one SPEECH_PLAYER_EXCEPTION line and changes nothing else.

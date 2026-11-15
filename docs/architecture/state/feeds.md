@@ -18,9 +18,9 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
   An item In Library is always listed, never new, not counted as a download, and counted among the newest N items.
   The size, Feed.entryTotal, a FeedEntryTotal, counts the entries the feed lists, each once, the ones the listener deleted among them, and says whether the feed lists more than the parser reads (listsMore, past FeedParser.maximumItems, 2,000).
   It is optional, so an older record loads without it.
-  It is one file in the data directory's Feeds folder, Feeds/<feed ID>.json (FeedPaths), pretty-printed with sorted keys and ISO 8601 dates.
+  It is one file in the data directory's Feeds folder, `Feeds/<feed ID>.json` (FeedPaths), pretty-printed with sorted keys and ISO 8601 dates.
   The file's name decides the feed's ID, so a sync service's conflict copy is never read.
-  Beside it, Feeds/<feed ID>/ holds:
+  Beside it, `Feeds/<feed ID>/` holds:
   - the feed's downloaded items' packages and its own index of them, which the library model owns ([Feed items](library-index-reading-feeds.md)),
   - and, hidden, a kept package set aside while a download replaces it (.replaced- and the package's name)
   - and, in a library in the cloud, the notes of launches that found the record missing (.record-absent- followed by a Mac's ID and a launch's, FeedRecordAbsence).
@@ -50,7 +50,7 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
     - every row of the feed (LibraryViewModel.everyRow(ofFeed:), ViewModels/LibraryViewModel+DeleteFeed.swift) leaving the library and its reading list and the indexes written before any file goes (FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)),
     - so a failed write deletes nothing (FeedDeleteError.indexNotWritten, FEED_DELETE_PUT_OFF) and a package that can't go keeps the feed with what stayed (filesStayed, FEED_DELETE_STOPPED);
   - forgets the feed's index for good (forgetFeedIndex(of:)), so no save makes its folder anew,
-  - and removes Feeds/<feed ID>/ (FEED_DELETE_FOLDER_LEFT when it can't, for the next launch, which finds the folder without its record and, since it holds no package, deletes it, returning nothing);
+  - and removes `Feeds/<feed ID>/` (FEED_DELETE_FOLDER_LEFT when it can't, for the next launch, which finds the folder without its record and, since it holds no package, deletes it, returning nothing);
   - removes the record and this Mac's fetch details last (FeedStore.remove(_:), FeedFetchStates.remove(_:)), since a launch that found the folder with its record gone would return the downloads as books;
   - and removes the feed's library folder only when nothing else is in it, no book of the library's own, folder, or other feed's items (removeFolderOfDeletedFeed(_:), FEED_DELETE_FOLDER_KEPT when it can't).
   It returns a FeedDeleteOutcome, the downloads and kept packages deleted and the folder's fate (FeedFolderFate), and writes FEED_DELETED.
@@ -69,7 +69,7 @@ This Mac's fetch details.
 - Owner: FeedFetchStates, on the main actor: for each feed,
   - the ETag and Last-Modified date a refresh sends back, the SHA-256 digest of the body last read, the number of entries kept when it was merged,
   - the last check and the last success, the last failure's sentence, and whether the server said the feed is gone.
-  One file per feed in this Mac's Caches folder (MachineLocalPaths.feedCaches, Fetch State/<feed ID>.json), written on a serial queue of its own and never synced, since a refresh changes them every time.
+  One file per feed in this Mac's Caches folder (MachineLocalPaths.feedCaches, Fetch `State/<feed ID>.json`), written on a serial queue of its own and never synced, since a refresh changes them every time.
   A file that can't be read counts as missing, and macOS emptying Caches only means each feed is read whole once.
   It also notes the updatedDate of the record after the merge of the last body read (recordUpdatedDateOfLastBody, decoded leniently, so an older file still reads).
   And FeedRefresher.fetchAndRead counts the last body, by its digest or a 304, as merged only while the loaded record has that date, to the whole second (lastBodyIsMerged(into:)).
@@ -150,7 +150,7 @@ Downloads.
 - How others observe it: an episode's file comes through a URLSessionDownloadTask, whose bytes go to the downloads' progress alone (the feed downloads' progress, below), never to its item's state or its record.
   A download that stops partway keeps its resume data in this Mac's Caches folder (Resume Data, a week).
   And the finished file waits in Feed Downloads until FeedEpisodeImporter imports it, as storage work, through the import pipeline (ImportStaging and FileImportService.publishReadableBook),
-  - publishing the package in the feed's own folder, Feeds/<feed ID>/ (destinationPackageURL),
+  - publishing the package in the feed's own folder, `Feeds/<feed ID>/` (destinationPackageURL),
   - and adding the book's row, with its feed link and no library folder, to the library on the main actor before that work ends (addFeedBook(_:); [Feed items](library-index-reading-feeds.md)).
   A download needs the feed's library folder all the same, which lists it: a feed whose folder is gone downloads nothing.
   An episode, audio or video, becomes an audiobook, a video one playing its sound, and an article an HTML book written from its text, or from its web page's article when its own text runs under 200 words and it links a page.

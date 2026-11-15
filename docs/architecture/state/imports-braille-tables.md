@@ -37,7 +37,7 @@ It
 - refuses a table the catalog lacks (requireOfferedTable, Failure.unknownTable) before anything starts,
 - checks one of this Mac's tables before its first use in the session unless the call is the check's own (MacBrailleTableCheck.requireUsable, checksMacTable),
 - cuts each text into pieces of at most 4,000 scalars at word breaks,
-- writes them as protocol 2 says (below) into a hidden .<UUID>.braille-in.txt (in a working folder from TextutilDocumentReader.withWorkingFolder(for:): the staged package, else a TextMouth-textutil-<UUID> folder), and
+- writes them as protocol 2 says (below) into a hidden `.<UUID>.braille-in.txt` (in a working folder from TextutilDocumentReader.withWorkingFolder(for:): the staged package, else a `TextMouth-textutil-<UUID>` folder), and
 - runs the helper, with the folder of the table's own source (Tool.helper.command), under WatchedProcess (limits(for:bytes:), raised for a Mac table by MacBrailleTableCheck.limits(for:raising:direction:bytes:):
   - braille to print 10 seconds plus a quarter of a second for each MB,
   - print to braille 10 seconds plus 6 for each MB,

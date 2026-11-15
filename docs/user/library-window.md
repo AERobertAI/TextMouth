@@ -110,7 +110,7 @@ Go to a folder in Folders, or to the Reading List, then try again."
 With no book selected they say "No book is selected.
 Select the book to move, then try again.", and with several "Several books are selected, and a move shifts one book at a time.
 Select just one book, then try again."
-A feed's episode or article in a folder can't be moved, and they say "<title> is an item of a feed, and a feed's items can't be moved."; at the Reading List it moves like any book.
+A feed's episode or article in a folder can't be moved, and they say "TITLE is an item of a feed, and a feed's items can't be moved."; at the Reading List it moves like any book.
 
 ## Move Up and Move Down on a row
 <!-- id: move-up-move-down-row; keys: row actions, Actions menu, accessibility action, LibraryManualMove; src: TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift -->

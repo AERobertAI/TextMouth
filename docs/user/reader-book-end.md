@@ -26,7 +26,7 @@ Four settings can decide, the first that applies winning:
 
 Skip finished, which a folder or a feed keeps for itself (Skip finished books in a folder, Skip finished episodes in a feed), applies whichever setting decides, and is checked unless it was cleared there; a book read from the reading list follows its list's own Skip finished books instead.
 Continue to Next Book, and a choice to play the book below or above, pass over the books that rest at their end, finished, and go on with the first beyond them that is not.
-With Skip finished cleared, they go on with the very next book, and a finished book they go on to plays from its beginning, after "Starting: <title>" as for any book.
+With Skip finished cleared, they go on with the very next book, and a finished book they go on to plays from its beginning, after "Starting: TITLE" as for any book.
 When only finished books lie that way, the book says so, as in "Finished: Dune.
 Every book after it in the folder is finished.", or, going up, "Finished: Dune.
 Every book before it in the folder is finished."; and with none that way, "Finished: Dune.
@@ -77,7 +77,7 @@ For a feed or a plain folder, it is that feed's or folder's own choice in Feed I
 - A book already open in another window comes forward with that window, and, with This Window, this window closes, so no two windows show one book.
   With A New Window, this window stays open.
 - With This Window, a new window opens all the same when switching this window could lose something:
-  - this window has closed, as when you press Command-W just after VoiceOver says "Starting: <title>", or is no longer on screen (a window that is minimized, or hidden along with TextMouth by Command-H, still counts as on screen);
+  - this window has closed, as when you press Command-W just after VoiceOver says "Starting: TITLE", or is no longer on screen (a window that is minimized, or hidden along with TextMouth by Command-H, still counts as on screen);
   - a sheet or an alert is open over it (Edit Book Information, Search in Book, the headings, the bookmarks, the sleep timer, the voice, Export, or an error);
   - a text field of the window is being typed in (Go to Percent, Go to Time, or Go to Page);
   - this book's text is being edited in another app with Edit Text;
@@ -96,10 +96,10 @@ It goes on at a book's end, with Next in Reading List and Previous in Reading Li
   A countdown that the old book's pause halted stays halted until the next book plays.
   As a last resort, when no window has opened the next book 20 minutes after the move, TextMouth stops the timer and says what it says when the next book could not be opened (below).
 - An episode that must be downloaded first is different.
-  While it downloads, after "Downloading the next episode: <title>" at a book's end, or Next in Folder's or Previous in Folder's "Downloading the next episode: <title>" or "Downloading the previous episode: <title>", the timer stays the old window's own.
+  While it downloads, after "Downloading the next episode: TITLE" at a book's end, or Next in Folder's or Previous in Folder's "Downloading the next episode: TITLE" or "Downloading the previous episode: TITLE", the timer stays the old window's own.
   And it goes on with the move once the episode arrives.
   So closing the old window during that download ends the wait, and the episode does not start; it also stops the timer, as closing the window a timer belongs to does.
-- A move that only opens its book, with "Opening: <title>", takes the timer with it too.
+- A move that only opens its book, with "Opening: TITLE", takes the timer with it too.
   So with A New Window, or a new window opened because this one was busy, playing the old window's book afterwards plays it without the timer: the timer is the next book's, and it can pause only that book.
   Until the new window's book has loaded the timer is still the old window's, and its sheet shows and cancels it; once the book has loaded the timer is the new window's, and the old window shows none.
 - A timer you set in the new window while its book loads replaces the one on its way from the old window, and Cancel Timer there ends it: the timer you choose in the window you are in is the one that counts.
@@ -117,8 +117,8 @@ It goes on at a book's end, with Next in Reading List and Previous in Reading Li
   A timer waiting for the end of a heading or of a book keeps waiting.
   The book you left does not resume, the next book plays as its move said, and VoiceOver says "Timer reset."
 - Next or Previous pressed while the timer fades out ends the fade and the timer, as Pause does, and the book moved to starts.
-  VoiceOver says "Sleep timer cancelled, because you moved to another book while it faded out." after "Starting: <title>", or after "Opening: <title>", or after "Downloading …" for an episode that Next in Folder or Previous in Folder downloads first.
-- A second move made before the first move's book has started replaces the first: a second Next or Previous, a command pressed just after a book's end has said "Starting: <title>", and, with A New Window, a press in the old window while the first book still loads.
+  VoiceOver says "Sleep timer cancelled, because you moved to another book while it faded out." after "Starting: TITLE", or after "Opening: TITLE", or after "Downloading …" for an episode that Next in Folder or Previous in Folder downloads first.
+- A second move made before the first move's book has started replaces the first: a second Next or Previous, a command pressed just after a book's end has said "Starting: TITLE", and, with A New Window, a press in the old window while the first book still loads.
   The first book does not start; with A New Window its window stays open, showing it.
   The timer goes on to the book you end up at, and that book plays when the first move was to play its book.
   A fade under way ends as the item above says.
@@ -180,15 +180,15 @@ They have no keys until you give them some in the Shortcuts tab of Settings, und
 - Which item: Next goes the way the end of the book would go on, so up in a feed or a folder whose When a book ends plays the one above, and down in every other case, when the end would stop included; Previous goes the other way.
   The item is the one the end of a book would go on to that way: the next book in the folder's order as its list shows it, or, for a feed, the next item of its list, newest first, with an item you moved into the library passed over.
   Finished items are passed over, unless Skip finished is cleared in the feed's or folder's settings, as at a book's end (above).
-- A book that was playing pauses where it is, and the item plays, after VoiceOver says "Starting: <title>".
-  From a book that wasn't playing, the item only opens, as in "Opening: <title>".
+- A book that was playing pauses where it is, and the item plays, after VoiceOver says "Starting: TITLE".
+  From a book that wasn't playing, the item only opens, as in "Opening: TITLE".
   Where it opens, in this window or a new one, follows the feed's or folder's own Open the next book in, or the global one (see Where the next book opens, above), and a sleep timer running in the window goes with the move (see The sleep timer when listening goes on, above).
   A second press within half a second of the first goes to the same item, since the window has not switched yet; a press after that goes one further.
 - With no item that way, the book is left as it is, playing or not, and VoiceOver says why, as a book's end says it, with a full stop: "No more books in folder.", "Every book after it in the folder is finished.", or, when the way is up, "Every book before it in the folder is finished."
 - An episode or article of a feed that is not on this Mac is downloaded first, as at a book's end (above), and goes on when it arrives.
-  VoiceOver says "Downloading the next episode: <title>" for Next in Folder, or "Downloading the previous episode: <title>" for Previous in Folder ("article" for an article), whichever way the feed plays, and then "Starting: <title>" or "Opening: <title>" when the file arrives.
-  - If the download fails, VoiceOver says "The next episode could not be downloaded. <reason>" for Next in Folder, or "The previous episode could not be downloaded. <reason>" for Previous in Folder, with the download's own sentence as the reason, and "article" for an article.
-    When the book was playing, ", so playback stopped" comes before the reason, as in "The next episode could not be downloaded, so playback stopped. <reason>".
+  VoiceOver says "Downloading the next episode: TITLE" for Next in Folder, or "Downloading the previous episode: TITLE" for Previous in Folder ("article" for an article), whichever way the feed plays, and then "Starting: TITLE" or "Opening: TITLE" when the file arrives.
+  - If the download fails, VoiceOver says "The next episode could not be downloaded." for Next in Folder, or "The previous episode could not be downloaded." for Previous in Folder, each followed by the download's own sentence giving the reason, and "article" for an article.
+    When the book was playing, ", so playback stopped" comes before the full stop, as in "The next episode could not be downloaded, so playback stopped." followed by the reason.
   - If you cancel the download, VoiceOver says "Download of the next episode cancelled." for Next in Folder, or "Download of the previous episode cancelled." for Previous in Folder.
     When the book was playing, ", so playback stopped" comes before the full stop, as in "Download of the next episode cancelled, so playback stopped."
   - A later move ends the wait for the episode: it goes on downloading, but does not start when it arrives.

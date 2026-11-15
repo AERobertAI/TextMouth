@@ -69,9 +69,9 @@ Owner: the library model, with each feed's index on disk.
 A feed item's row is a Book whose feedLink (Models/FeedBookLink.swift: the feed's ID and the item's) names the feed and item it came from.
 The link travels with the row's file location (Book.FileLocation, so a reader following a moved row finds the package).
 It also travels with the package record (BookMetadata.feedLink, which makeBookInfo() and Book(record:filePath:folderPath:tmbDirectoryName:) carry both ways, a save writing the row's link or else keeping the record's).
-And it makes tmbDirectory place the package in the feed's own folder, Feeds/<feed ID>/, beside the feed's record (Book.packageDirectory(inDataDirectory:)).
+And it makes tmbDirectory place the package in the feed's own folder, `Feeds/<feed ID>/`, beside the feed's record (Book.packageDirectory(inDataDirectory:)).
 Services/Feeds/FeedPaths+Items.swift holds itemsFolder(of:in:), indexFile(of:in:), packageDirectory(named:of:in:), and feedID(ofItemsFolderNamed:), which takes a folder named by a feed's ID alone, so FeedStore never takes the folder for a record.
-Each feed's index is Feeds/<feed ID>/library.json (FeedIndex, Services/Feeds/FeedIndex.swift: its layout version, 1, the feed's ID, and a row for each package, as library.json would hold the row, its link included).
+Each feed's index is `Feeds/<feed ID>/library.json` (FeedIndex, Services/Feeds/FeedIndex.swift: its layout version, 1, the feed's ID, and a row for each package, as library.json would hold the row, its link included).
 FeedIndexFiles.encoded(_:) writes it as compact JSON with sorted keys and its rows by date added, so one index is always the same bytes.
 Reading one checks its layout version first (FeedIndex.init(from:), a missing one read as 1), and one of a later version throws FeedIndexNewerLayout.
 While TextMouth runs, a feed item's row is in one of two places in the Library:

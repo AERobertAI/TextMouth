@@ -81,13 +81,13 @@ The preferences store.
 - TranscriptionPreferences.offerAfterImport: whether an import offers to transcribe each audiobook it adds, under offerTranscriptionAfterImport, off until chosen, which the same group changes through SettingsViewModel.offerTranscriptionAfterImport; config.json mirrors it.
 - LibraryViewDefinitionStore (Models/LibraryViewDefinitionStore.swift, on the main actor, an ObservableObject; LibraryViewDefinitionStore.shared is the one on the app's preferences).
   It holds the Library window's views, in order, under libraryViews (LibraryViewDefinitionList.fileKey), as one JSON array of the entries config.json holds, written as data with sorted keys, so that an older TextMouth that drops the key from config.json loses nothing here.
-  LibraryViewDefinitionStore.preference, a StoredPreference<LibraryViewDefinitionList>, reads it as the shipped list while none is saved or what is saved is not a JSON array, and reading it logs nothing.
+  LibraryViewDefinitionStore.preference, a `StoredPreference<LibraryViewDefinitionList>`, reads it as the shipped list while none is saved or what is saved is not a JSON array, and reading it logs nothing.
   The file config.json mirrors it as libraryViews (ConfigService.AppConfig.libraryViews, an optional array of JSONValue, listed in ConfigService.AppConfig.Portability.mirrored and among SettingsViewModel's service preference keys).
   SettingsViewModel writes it after each change and applies it at launch and on an outside edit, the list reading each entry on its own and logging its repairs as config.json's.
   An empty list or none leaves the views alone.
   The Library tab of Settings (LibraryViewsSettingsView) and the Library windows (ContentView and LibraryView, which observe the store) read it; the views' sorts are not in it (see [The library index](library-index.md)).
 - LeadingArticles (Models/LeadingArticles.swift): what a title's leading article does in the Library's lists, under leadingArticles, "partOfTitle", "ignoredWhenTyping", or "ignoredWhenTypingAndSorting" ([The library index](library-index.md) for what each does).
-  LeadingArticles.preference is a StoredPreference<LeadingArticles> written as the case's raw value and read through SettingsPolicy.leadingArticles, an EnumSettingRule whose default is .partOfTitle.
+  LeadingArticles.preference is a `StoredPreference<LeadingArticles>` written as the case's raw value and read through SettingsPolicy.leadingArticles, an EnumSettingRule whose default is .partOfTitle.
   So a missing or unsupported value reads as the default and nothing changes until the listener chooses.
   The Library tab's Titles section (LeadingArticlesSettingsSection, whose words are LeadingArticleWording's, in Views/Settings/LibraryViewsSettingsView.swift's tab) changes it through SettingsViewModel.leadingArticles, which writes only a change.
   The Library windows read it from the store each time they draw or sort (LibraryViewModel.leadingArticles, from TextMouthRuntime.current.preferences, always .partOfTitle on the iPhone), so a change reaches every open window at once.

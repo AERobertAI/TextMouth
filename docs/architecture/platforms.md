@@ -289,14 +289,14 @@ The Search in Book of branch `ios/search-1109` (see [Search in Book](platforms-p
   - Without a guard, `init` leaves the keys for the first activation, which reopens the book as before.
 - The verdict branch of `takeReopeningAtLaunch(fileOpened:)` keeps the keys of a book opened since.
   - It does not clear the keys either: a Play from the lock screen that opens a book before the first activation writes keys of its own.
-  - The verdict only says "TextMouth closed while opening <title>, so it wasn't reopened." and forgets the guard.
+  - The verdict only says "TextMouth closed while opening TITLE, so it wasn't reopened." and forgets the guard.
     The keys of the book opened since stand.
   - The tests:
     - `testTheReopenKeysGoWithTheCrashGuardWhenTheSessionIsMade`, `testTheVerdictLeavesTheKeysOfABookOpenedSince`, and `testTheReopenKeysStandWhenNoCrashGuardIsFound` in `PhoneSessionTests`;
     - and `PhoneLifeCycleReopeningTests`, whose crash test writes the keys beside the guard, before the session, and asserts the keys are gone after `reopenAtLaunch`.
   - Still open, and older than this change: `registerOpenBook` saves the book being opened as the last opened.
     If that save lands before a crash while opening a book, a lock-screen Play can open it, and the first activation then says it closed while opening that book while it plays.
-- When the guard finds a crash, the book is not reopened, and the listener hears "TextMouth closed while opening <title>, so it wasn't reopened."
+- When the guard finds a crash, the book is not reopened, and the listener hears "TextMouth closed while opening TITLE, so it wasn't reopened."
   (`PhoneAppWording.closedWhileOpening`).
 - A file opened at launch wins over reopening.
   A book that crashes on loading therefore cannot do so at every launch.

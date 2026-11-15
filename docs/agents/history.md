@@ -1054,7 +1054,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - A Play from the lock screen that wakes a killed app opens a book first and writes its own mark, and the first activation then read that mark as a crash.
 - The verdict branch of `takeReopeningAtLaunch(fileOpened:)` used to clear the keys too.
 - A Play from the lock screen that opened a book before the first activation had written keys of its own, and the verdict wiped them.
-- Now the verdict only says "TextMouth closed while opening <title>, so it wasn't reopened." and forgets the guard.
+- Now the verdict only says "TextMouth closed while opening TITLE, so it wasn't reopened." and forgets the guard.
 - The import copier and Book content each used to set `UIApplication.isIdleTimerDisabled` and clear it.
 - Whichever let go first let the screen lock for the other.
 

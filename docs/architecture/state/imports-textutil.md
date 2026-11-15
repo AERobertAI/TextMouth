@@ -68,8 +68,8 @@ Until then ImportedFileMetadata.read(readingTextutilNames: false) lists the book
 ### Where textutil writes
 <!-- id: where-textutil-writes; keys: temporary output, hidden html file, working folder, staged package, failed import leftovers; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Services/ImportStaging.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
 
-Where textutil writes: withWorkingFolder(for:) puts the hidden .<UUID>.textutil.html (TextutilConverter.temporarySuffix) in the staged package when the book's file is in one (ImportStaging.isStagedPackageName), so the output goes with the package should the import fail or be cancelled.
-Otherwise it puts it in a new TextMouth-textutil-<UUID> folder in TextutilDocumentReader.temporaryRoot (the temporary directory), removed afterwards.
+Where textutil writes: withWorkingFolder(for:) puts the hidden `.<UUID>.textutil.html` (TextutilConverter.temporarySuffix) in the staged package when the book's file is in one (ImportStaging.isStagedPackageName), so the output goes with the package should the import fail or be cancelled.
+Otherwise it puts it in a new `TextMouth-textutil-<UUID>` folder in TextutilDocumentReader.temporaryRoot (the temporary directory), removed afterwards.
 No library package and no folder of an imported file ever receives one.
 
 ### Cancel
@@ -154,8 +154,8 @@ OrphanedConversionSweep+Textutil, run by applicationDidFinishLaunching through s
 
 - is run by the current user,
 - is an orphan (parent pid 1), and
-- has a -output argument, read before the --, naming a hidden .<name>.textutil.html (shouldKillTextutil).
+- has a -output argument, read before the --, naming a hidden `.<name>.textutil.html` (shouldKillTextutil).
 
-It also removes each real TextMouth-textutil-<UUID> folder in the temporary directory that is over an hour old (sweepTextutilFolders).
+It also removes each real `TextMouth-textutil-<UUID>` folder in the temporary directory that is over an hour old (sweepTextutilFolders).
 It logs one TEXTUTIL_LEFTOVERS_SWEPT line, in the storage category, when it did either.
 WatchedProcess's reaper and terminateAll() end a running textutil with TextMouth, as they end afconvert.

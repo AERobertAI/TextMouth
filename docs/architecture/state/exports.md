@@ -13,7 +13,7 @@ An export (FR05): what the Export dialog offers, what is checked, where it goes,
 - Who may write it: the dialog's controls, and BookExportService, which never downloads (MaintenanceFileAccess).
   BookExportService.offer(for:access:) lists, off the main thread, what a book's package holds, from what the file system says.
   For a folder of tracks it also reads the saved content index (audioFileOrder(listed:index:): the files in the order the chapters and their clips play them, then any others in Finder's order), and for a DAISY book kept as loose files its inventory (DAISYPackageInventory).
-  It lists, too, the originals the audio editor keeps in the package's audioEdits/originals folder (AudioEditPackage.folder, originalsFolderName) as BookExportKind.originalAudio: one file as "<title> - Original Audio" with its own extension.
+  It lists, too, the originals the audio editor keeps in the package's audioEdits/originals folder (AudioEditPackage.folder, originalsFolderName) as BookExportKind.originalAudio: one file as "TITLE - Original Audio" with its own extension.
   Or it lists a book's tracks' originals in a folder of that name, each under its path in the book's audio folder.
   Both are copied as they are.
   Export never makes one, and a recording's take stays its Original recording (originalRecording).
@@ -27,7 +27,7 @@ An export (FR05): what the Export dialog offers, what is checked, where it goes,
   BookExportService.markdownFile(of:from:as:) lists each as a .converted source by BookExportConversion.markdown, with content.md's size as the offer's.
   Only transcript.json is copied byte for byte.
   Every file, whether copied, plain text, or converted (text export, below), is made at a scratch URL in a new scratch folder (writeThroughScratchFile).
-  The folder is the system's item-replacement folder on the volume of the nearest existing folder that holds the target (makeScratchFolder(near:)), or, when the system makes none, a new "TextMouth Export <UUID>" folder in the temporary directory.
+  The folder is the system's item-replacement folder on the volume of the nearest existing folder that holds the target (makeScratchFolder(near:)), or, when the system makes none, a new "TextMouth Export `<UUID>`" folder in the temporary directory.
   When the file is whole and Stop has not been pressed, moveExclusively moves it to its target, and the target's folder is made only then.
   The move is an exclusive rename (renamex_np with RENAME_EXCL, which the file system makes atomic).
   FileManager.moveItem is not used, since it checks and then renames, so a file made between the two would be replaced.
@@ -193,7 +193,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   BookExportConversion.markdown, the Markdown writer with no options, is what the offer's Markdown files are converted by.
   BookExportService.files(of:for:conversions:) converts a copied or an already converted file, so that choosing another writer replaces the Markdown the offer lists.
   BookExportService.writeConverted reads content.md as the reader does (MarkdownCacheService.cacheText), walks it, and has the writer write it to a scratch file, which is moved into place as above.
-  A writer that cannot write a book throws a TextExportError, whose sentence the export names after the file, as in "Couldn't export <file name>: <sentence>" (BookExportWording.failureSentence), and the other books still export.
+  A writer that cannot write a book throws a TextExportError, whose sentence the export names after the file, as in "Couldn't export FILE NAME: SENTENCE" (BookExportWording.failureSentence), and the other books still export.
   WordDocExportWriter.failureSentence is the Word writer's, for a book Apple's reader or writer refuses.
 - How others observe it: the checkbox's words follow the picker (BookExportWording.name(of:convertedTo:), hint(for:convertedTo:), and choiceLabel(kind:bookCount:availableItemCount:fileCount:byteCount:inCloudCount:convertedTo:)).
   BookExportWording.choiceLabel gives no size while a writer is chosen, since a converted file's size is known only once it is written.

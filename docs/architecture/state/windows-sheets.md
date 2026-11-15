@@ -95,7 +95,7 @@ Book Information's Braille Code pop-up (FMT21): what the Book Info sheet of a br
 - Owner: LibraryBookInfoSheet keeps a BrailleCodeChoiceModel (ViewModels/BrailleCodeChoiceModel.swift, on the main actor) in @StateObject beside the other two models, drawn for a book with Book.offersBrailleTableChoice (a braille book that is not a feed's item, a PEF included).
   A feed's item keeps the plain row (bookInfoBrailleCodeRow).
   It publishes storedTable (the book's Book.brailleTable, nil for the default), offered (BrailleTableCatalog.offeredTables), names, and isLoaded.
-  It also holds a RereadChoiceFlow<BrailleTable>, whose pending, isWorking, failureMessage, and failureStamp it passes on and whose changes it forwards, so the views observing it redraw.
+  It also holds a `RereadChoiceFlow<BrailleTable>`, whose pending, isWorking, failureMessage, and failureStamp it passes on and whose changes it forwards, so the views observing it redraw.
 - Who may write it: the model alone.
   Its load(), in the sheet's .task, lists the offered tables and the words each is named by (BrailleTableCatalog.description(ofTableID:), the words the book's row and Speak Info use) off the main actor, since reading this Mac's tables' headers is slow.
   Until then the pop-up is dimmed (isEnabled) and shows the book's own table.
@@ -145,7 +145,7 @@ The Search Library window (libsearch): the one window that searches the text of 
   - a progress bar and Stop (Command-Period) while a search runs,
   - and the results, a List labelled "Results" with the Books and Matches rotors (LibrarySearchRotors),
     - each book's heading a header
-    - and each row one element whose label is the context, then where, then "in <title>" (LibrarySearchWording.matchLabel(context:location:bookTitle:)), its default action opening the match.
+    - and each row one element whose label is the context, then where, then "in TITLE" (LibrarySearchWording.matchLabel(context:location:bookTitle:)), its default action opening the match.
 
   The status line is plain text read in place and announced once, as a search ends (announce, through VoiceOverAnnouncer from the window); its sentences are LibrarySearchWording's.
   The menu bar and the shortcut manager treat the window as neither a Library nor a reader window (MenuVisibilityManager, KeyboardShortcutManager.isLibrarySearchWindow), so no Library or reader menu shows while it is in front, and Return and Space act in its list.

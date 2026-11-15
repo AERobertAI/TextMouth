@@ -11,16 +11,16 @@ The reader window itself, its menus, and search are in [Reader windows](reader-w
 ### The markup guard
 <!-- id: reader-markup-guard; keys: angle quotation marks, opening tag, closing tag, less-than sign, greater-than sign, ampersand; src: TextMouth/Services/SpeechMarkupGuard.swift, TextMouth/Services/SpeechService.swift -->
 
-A book's text can hold what looks like markup, such as the <sm> and </sm> one novel marks its silent messages with, and the speech engine of macOS 26.3.1 takes such tags for speech markup.
+A book's text can hold what looks like markup, such as the `<sm>` and `</sm>` one novel marks its silent messages with, and the speech engine of macOS 26.3.1 takes such tags for speech markup.
 It skipped the rest of a passage after an opening tag, and refused a passage holding a closing tag alone, after which the book's speech stopped and couldn't be started again.
 TextMouth hands the voice each tag with its two angle brackets changed to single angle quotation marks, which the engine doesn't take for markup, so the brackets are silent and what is between them, a tag's name included, is spoken.
 The engine takes for an opening tag:
 
-- any name of letters, figures, or symbols between angle brackets, with no space or slash inside it and spaces around it or not, such as <sm>, < sm >, <5>, <...>, <=>, or <*>;
+- any name of letters, figures, or symbols between angle brackets, with no space or slash inside it and spaces around it or not, such as `<sm>`, `< sm >`, `<5>`, `<...>`, `<=>`, or `<*>`;
 - such a name followed by name=value attributes, as in <a href="x">;
 - and empty brackets, <> or < >.
 
-Each of these made it skip the rest of a passage without a sound, and TextMouth silences the brackets of every one, and of every closing tag, such as </sm>.
+Each of these made it skip the rest of a passage without a sound, and TextMouth silences the brackets of every one, and of every closing tag, such as `</sm>`.
 A less-than or greater-than sign that isn't part of a tag, as in "x < y and y > z", is still read aloud, except in audio TextMouth prepared again with every angle bracket silent (below).
 An ampersand is left for the voice, which reads it as "and".
 And the text on screen and on a braille display is unchanged.
@@ -125,9 +125,9 @@ The limit is 6 GB on every Mac, however much memory the Mac has.
 
 The next launch tells you of such a quit in an alert titled "TextMouth Quit to Protect Your Mac", with an OK button.
 The alert gives the date and time in your region's format and how large the memory had grown.
-If a book was playing, or had been stopped for the growth, it names the book: "TextMouth quit on <date and time> to protect your Mac: its memory grew to 6.1 GB while Ferry Timetables played, because of a fault in macOS's audio.
+If a book was playing, or had been stopped for the growth, it names the book: "TextMouth quit on DATE AND TIME to protect your Mac: its memory grew to 6.1 GB while Ferry Timetables played, because of a fault in macOS's audio.
 Your place was saved."
-If nothing was playing, it says so: "TextMouth quit on <date and time> to protect your Mac: its memory grew to 6.1 GB while nothing was playing.
+If nothing was playing, it says so: "TextMouth quit on DATE AND TIME to protect your Mac: its memory grew to 6.1 GB while nothing was playing.
 Your place was saved."
 
 ## Sound effects

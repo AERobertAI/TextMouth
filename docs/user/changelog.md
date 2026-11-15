@@ -158,7 +158,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
   Now the quit ends.
 - A second Command-Q, or the Dock's Quit, while TextMouth finishes that work no longer cuts it off. It used to quit at once, with a download's place not kept and a re-read or an export cut short.
 - TextMouth now says what it is doing when you quit during that work, in a small window titled "Quitting TextMouth" and through VoiceOver:
-  - "TextMouth is finishing up before it quits: <what>. It will quit as soon as that is done."
+  - "TextMouth is finishing up before it quits: WHAT. It will quit as soon as that is done."
   - What it says for downloads is "keeping the place of your feed downloads for next time". For a re-read it is "reading a book's text again in another encoding", and for an export "stopping a speech export with the chapters it finished kept".
     When several run, the sentence counts them, as in "reading the text of 3 books again in another encoding".
   - Pressing Command-Q again says the same words again.
@@ -289,7 +289,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
   In a folder in Folders that is not sorted by Manual Order: "Books can be moved only in a folder sorted by Manual Order, and this folder is not. Choose Manual Order in the Sort menu, then try again."
   In any other view, which mixes the books of many folders and has no order you arrange: "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again." With no book selected: "No book is selected. Select the book to move, then try again."
   With several: "Several books are selected, and a move shifts one book at a time. Select just one book, then try again." A book already at the top or the bottom says "Dune can't move up." (see [The Library window](library-window.md)).
-- A feed's episode or article in a folder in manual order can't be moved, and Move Book Up and Move Book Down say so: "<title> is an item of a feed, and a feed's items can't be moved." In the Reading List an episode or article moves like any book.
+- A feed's episode or article in a folder in manual order can't be moved, and Move Book Up and Move Book Down say so: "TITLE is an item of a feed, and a feed's items can't be moved." In the Reading List an episode or article moves like any book.
 - Move Book Up and Move Book Down are dimmed in a window that is not a Library window, where nothing would answer them.
 - When a bookmark can't be added or removed because the book has left the library, the reader says so: "Could not add the bookmark: “Moby-Dick” is no longer in the library." or "Could not remove the bookmark: “Moby-Dick” is no longer in the library."
   It waits until focus has settled, so the sentence is not cut off. Before, Add Bookmark said "Bookmark 0 added" and Toggle Bookmark said a bookmark was removed.
@@ -511,9 +511,9 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### Next and Previous in a folder
 - The Navigate menu has Next in Folder and Previous in Folder, in a reader window, with no keys until you give them some in the Shortcuts tab.
   They go to the next or the previous item of the book's folder or feed: Next goes the way the end of the book would go on, up in a feed or folder that plays the one above and down in every other case, and Previous goes the other way.
-  A book that was playing plays the item, after "Starting: <title>", and any other only opens it, after "Opening: <title>".
-- An episode that is not on this Mac is downloaded first, with "Downloading the next episode: <title>" or "Downloading the previous episode: <title>", and goes on when it arrives. With no item that way, they say why, as in "No more books in folder."
-  A failed or cancelled download says so, as in "The previous episode could not be downloaded. <reason>" and "Download of the previous episode cancelled."
+  A book that was playing plays the item, after "Starting: TITLE", and any other only opens it, after "Opening: TITLE".
+- An episode that is not on this Mac is downloaded first, with "Downloading the next episode: TITLE" or "Downloading the previous episode: TITLE", and goes on when it arrives. With no item that way, they say why, as in "No more books in folder."
+  A failed or cancelled download says so, as in "The previous episode could not be downloaded. REASON" and "Download of the previous episode cancelled."
 
 ### The sleep timer
 - A running sleep timer now goes on with listening to the next book, in this window or a new one, and stops that book when it runs out, where before it kept the next book from starting, as in "Opening: Dune. Not started because of the sleep timer."

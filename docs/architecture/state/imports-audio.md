@@ -47,7 +47,7 @@ The deadline holds the check's job weakly, so a check that answers frees the fil
 <!-- id: audio-more-than-two-channels; keys: surround, 5.1, downmix, stereo, channel layout, centre channel, afconvert --mix, disk space; src: TextMouth/Services/ImportAudioConverter.swift -->
 
 Audio of more than two channels (maximumChannels is 2) takes two steps (write(_:to:info:target:using:)):
-- downmixArguments writes a hidden stereo CAF (".<UUID>.audio-downmix.caf", linear PCM, 16 bits for AAC and the lossless depth, 24 for 20, with -c 2 --mix, because without --mix afconvert drops channels by position and a PCM source's centre came out silent), and
+- downmixArguments writes a hidden stereo CAF ("`.<UUID>.audio-downmix.caf`", linear PCM, 16 bits for AAC and the lossless depth, 24 for 20, with -c 2 --mix, because without --mix afconvert drops channels by position and a PCM source's centre came out silent), and
 - afconvertArguments encodes that file, which is removed as soon as the second step ends.
 
 Before the first step the volume's free space must hold the PCM file and a 512 MB reserve (downmixBytesNeeded(duration:target:), Failure.notEnoughSpace), and a source of more than two channels that names no layout is refused (Failure.unlabelledChannels).
@@ -69,7 +69,7 @@ AudioFileInfo.read(_:using:) gets 30 seconds plus one for each 20 MB, 512 MiB, a
 It believes a length only up to a year and only as far as the file's bits at the codec's lowest bit rate allow (isPlausible(inFileOfBytes:), logged as AUDIO_INFO_IMPLAUSIBLE), so a lying header cannot lift the time limit or the cap.
 A file it cannot read is Failure.unreadable.
 AUDIO_CONVERSION_KILLED (in place of OGG_CONVERSION_KILLED) and AUDIO_INFO_KILLED are storage events.
-The converted file is written under ".<UUID>.audio-conversion.m4a", checked by AudioMediaProbe (it plays, and lasts as long as its source to within allowedLengthError(for:), a second and half a percent), and only then named.
+The converted file is written under "`.<UUID>.audio-conversion.m4a`", checked by AudioMediaProbe (it plays, and lasts as long as its source to within allowedLengthError(for:), a second and half a percent), and only then named.
 
 ## Kept originals
 <!-- id: kept-originals; keys: Keep Original, keep original audio, setting, hidden folder, Export original file, converted audio, feed episode; src: TextMouth/Services/ConfigService.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Services/BookExportService.swift, TextMouth/Models/ConvertedOriginalWording.swift -->
@@ -163,7 +163,7 @@ A child the kernel ends at that limit (SIGXCPU) is reported as KillReason.usedTo
 The same shell also sets the kernel's file-size limit (ulimit -f, whole kilobytes: fileSizeLimitForShell(_:)) from Limits.maximumOutputBytes, and the watchdog kills a child whose watched file passes that cap (KillReason.wroteTooMuch, "its output passed N MB").
 A child the kernel ends at the limit (SIGXFSZ) is reported the same way, since a check once a second let a fast writer put hundreds of megabytes on the disk between two looks.
 The call runCapturingOutput(_:arguments:limits:maximumOutputBytes:...) keeps what a child prints (afinfo's).
-Its standard output goes to a new hidden .<UUID>.watched-output file in the temporary directory.
+Its standard output goes to a new hidden `.<UUID>.watched-output` file in the temporary directory.
 That file is the watched file, capped at maximumOutputBytes (1 MiB unless asked otherwise) and removed however the run ends, by an exit, a kill, a failure to start, or a cancellation.
 Here output is not progress, so the stall clock runs from the child's start, and a child that prints without end still ends at its time limit while one that prints only when it ends (afinfo) is not killed for being silent.
 A reason's words (KillReason.words) count its seconds with CountWording.seconds, so a limit of one second reads "1 second".
@@ -192,7 +192,7 @@ The second sweep, sweepAfinfoInBackground() (FMT09, also called at launch, never
 
 - is run by the current user,
 - is an orphan, and
-- has as its standard output, descriptor 1 (ProcessSnapshot.standardOutputPath, read with proc_pidfdinfo and PROC_PIDFDVNODEPATHINFO), a hidden .<UUID>.watched-output file (WatchedProcess.outputFileSuffix; shouldKillAfinfo).
+- has as its standard output, descriptor 1 (ProcessSnapshot.standardOutputPath, read with proc_pidfdinfo and PROC_PIDFDVNODEPATHINFO), a hidden `.<UUID>.watched-output` file (WatchedProcess.outputFileSuffix; shouldKillAfinfo).
 
 It also removes from the temporary directory each such regular file more than an hour old (sweepCapturedOutputFiles(in:)).
 One AFINFO_LEFTOVERS_SWEPT line, in the storage category, counts what it did.
@@ -200,9 +200,9 @@ One AFINFO_LEFTOVERS_SWEPT line, in the storage category, counts what it did.
 ## Temporary names of conversions
 <!-- id: temporary-names-conversions; keys: temporary file, .audio-conversion.m4a, long file name, exFAT, 255 units, Ogg book conversion, name collision, rename; src: TextMouth/Services/ImportAudioConverter.swift, TextMouth/ViewModels/LibraryViewModel+OggConversion.swift, TextMouth/Services/BookContentAnalysisService.swift -->
 
-A conversion is written under the hidden name ImportAudioConverter.temporaryURL(beside:) makes, ".<UUID>.audio-conversion.m4a", built from the UUID alone (58 characters), so a track whose name is as long as the file system allows can be converted.
+A conversion is written under the hidden name ImportAudioConverter.temporaryURL(beside:) makes, "`.<UUID>.audio-conversion.m4a`", built from the UUID alone (58 characters), so a track whose name is as long as the file system allows can be converted.
 Still, removeLeftovers(in:) finds it, and a downmix's CAF and an earlier version's .ogg-conversion.m4a, by isTemporaryName(_:).
-Then givingFinalName takes the track's stem with .m4a, else "<stem> 2.m4a" and on, each by one RENAME_EXCL rename (renameWithoutReplacing).
+Then givingFinalName takes the track's stem with .m4a, else "STEM 2.m4a" and on, each by one RENAME_EXCL rename (renameWithoutReplacing).
 Also candidateName(stem:number:) drops whole characters from the end of the stem until the name is at most 255 UTF-16 units (maximumNameLength), each candidate fitted on its own.
 A file system that refuses RENAME_EXCL (exFAT answers ENOTSUP) is served by reserving the name with an exclusive create and renaming over the empty reservation.
 The library's one-time conversion of its Ogg books (convertOggBooksOnce), convertOggBookAudio(ofBook:), reads a folder book's saved index (BookContentAnalysisService.load) before it converts anything, so a book whose index the commit would refuse waits with no minutes spent and no hidden file made.

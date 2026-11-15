@@ -6,7 +6,7 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 ## Kept reading text
 <!-- id: kept-reading-text; keys: parse cache, large book, opening speed, machine-local, Caches folder, reading text file, performance; src: TextMouth/Services/ReadingTextCache.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/BookTextEditing.swift -->
 
-Kept reading text (ReadingTextCache, PERF22): this Mac's copy of a large text book's reading text (each chapter's title, text, and headings as parsed), at MachineLocalPaths.readingTextCache/<book ID>.readingtext, for a content.md of at least 1 MiB.
+Kept reading text (ReadingTextCache, PERF22): this Mac's copy of a large text book's reading text (each chapter's title, text, and headings as parsed), at `MachineLocalPaths.readingTextCache/<book ID>.readingtext`, for a content.md of at least 1 MiB.
 The file is a prefix ("TMRT", the layout version, the header length), a JSON header (the producer, the ReadingTextKey, the chapter entries, each with its title, UTF-8 length, headings, and pages), then the UTF-8 chapter texts.
 The layout is ReadingTextCache.formatVersion, 2 since each chapter's pages (PG01); a file of layout 1 is never read, and is removed as unusable.
 - Who may write it: BookContentAnalysisService.loadExistingCache, only when given the cache (only ReaderViewModel.readContent passes it), after parsing a content.md its record vouches for, in the background (storeInBackground: a partial file renamed into place).
@@ -21,7 +21,7 @@ The layout is ReadingTextCache.formatVersion, 2 since each chapter's pages (PG01
 <!-- id: search-library-search-texts; keys: full-text search, find in library, search index, warm-up, searchable text, disk cache; src: TextMouth/Services/TextSearch/LibrarySearchText.swift, TextMouth/Services/TextSearch/LibrarySearchEngine.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/App/BuildIdentity.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibrarySearchModel.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Services/ArchiveBudget.swift, TextMouth/Models/LibrarySearchWording.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouthProductionTests/LibrarySearchTextStoreTests.swift, TextMouthProductionTests/LibrarySearchPreparerTests.swift, TextMouthProductionTests/LibrarySearchEngineTests.swift -->
 
 Search Library's search texts (libsearch): this Mac's copy of each book's reading text, laid out to be searched; the design, with its measurements, is research/LIBRARY-SEARCH-RESEARCH-2026-11-13.md (in the repository's root).
-- Owner: LibrarySearchTextStore (Services/TextSearch/LibrarySearchText.swift), a struct over MachineLocalPaths.librarySearchText, ~/Library/Caches/com.textmouth.TextMouth/Search Text, one file named <book ID>.searchtext for each book with a content.md.
+- Owner: LibrarySearchTextStore (Services/TextSearch/LibrarySearchText.swift), a struct over MachineLocalPaths.librarySearchText, ~/Library/Caches/com.textmouth.TextMouth/Search Text, one file named `<book ID>.searchtext` for each book with a content.md.
   A file is the prefix "TMLS", the layout (LibrarySearchTextStore.formatVersion, 1), and the header's length, a JSON header (the producer, the LibrarySearchTextKey, each chapter's title, UTF-8 and UTF-16 lengths, and headings), then the chapters' UTF-8 texts one after another.
   It is not in the data directory, so a cloud library never uploads it, a move never copies it, and the File Size sort never counts it.
   Under hosted tests the folder is in the test sandbox.
@@ -103,7 +103,7 @@ Reading a book again in another encoding (encodingchoice): the one-book form of 
      The batch's updateProgress calls the same method without atOnce.
   8. The announcement (TextEncodingWording.readAgainAnnouncement(bookTitle:reading:keptCopy:stoppedEditing:)) is spoken once for the whole, and returned as the outcome, which the pop-up's sheet shows only when it is a failure.
      One TEXT_ENCODING_CHANGED line goes to the storage log (textEncodingLogLine(title:record:keptCopy:)).
-     It holds the title, then "read again as <identifier>, chosen", "read again automatically, as <identifier>, guessed", or "read again automatically, with no encoding to record", and "; its earlier text was kept as <copy name>" when a copy was kept.
+     It holds the title, then "read again as IDENTIFIER, chosen", "read again automatically, as IDENTIFIER, guessed", or "read again automatically, with no encoding to record", and "; its earlier text was kept as COPY NAME" when a copy was kept.
      It holds no text of the book.
 
 ### Braille file characters and tables
@@ -118,20 +118,20 @@ Reading a book again in another encoding (encodingchoice): the one-book form of 
   LibraryPersistenceService.saveContentAnalysis(…brailleTable:) commits the table and its version with the analysis and the moved places, as a decision that replaces the record's (BrailleTableDecision).
   ContentAnalysisSummary carries the table and its version to the row, committed and recovered, and Book.LibraryFields carries them to an open reader, so it follows a re-read.
   Book.bookInfo(replacing:) keeps the stored record's table version only when the row names the same table, so a book read again from one of this Mac's tables to a bundled one keeps none of the Mac table's.
-  The announcement says "“Ledger” is now read as <the table's words>."
+  The announcement says "“Ledger” is now read as THE TABLE'S WORDS."
   (BrailleTableCatalog.description(ofTableID:)), and one BRAILLE_TABLE_CHANGED line goes to the storage log (brailleTableLogLine(title:table:keptCopy:)), after BRAILLE_FILE_CODE_CHANGED for the file characters, in that order for the two in one (rereadLogLines(title:choice:update:keptCopy:)).
   Both name the title and the stored value, and no text of the book.
 
 ### Refusals while a re-read runs
 <!-- id: refusals-while-re-read-runs; keys: busy, concurrent, error message, blocked; src: TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Services/DuplicateReplacement.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
-- How others observe it: readingAgainRefusal(of:) says "TextMouth is reading “<title>” again in another encoding.
+- How others observe it: readingAgainRefusal(of:) says "TextMouth is reading “TITLE” again in another encoding.
   Try again when that finishes."
   (TextEncodingWording.readingAgainRefusal(bookTitle:)) for a book in booksBeingReadAgain, or, with no ID, for any, and names the work under way.
   TextRereads.begin(_:for:) records a TextRereadWork for each book (.encoding, .brailleFileCode, .brailleCode, or .replacement, TextRereads.works, forgotten once the book leaves bookIDs).
-  Its refusal(bookTitle:) is the encoding's sentence, "TextMouth is reading “<title>” again with other braille file characters.
-  Try again when that finishes.", "TextMouth is reading “<title>” again with another braille code.
-  Try again when that finishes.", or, for Replace Existing, "TextMouth is replacing “<title>” with the new copy.
+  Its refusal(bookTitle:) is the encoding's sentence, "TextMouth is reading “TITLE” again with other braille file characters.
+  Try again when that finishes.", "TextMouth is reading “TITLE” again with another braille code.
+  Try again when that finishes.", or, for Replace Existing, "TextMouth is replacing “TITLE” with the new copy.
   Try again when that finishes."; a book marked by setting bookIDs directly, with no work, is worded by its format as before.
   The quit panel's sentence still says "again in another encoding" for every kind of re-read and for a replacement.
   Four entry points ask it, so each waits in the same words and none leaves a content.md from one run beside the record of another:
