@@ -232,32 +232,48 @@ struct Chapter {
     /// from its first byte, and is whitespace when its first scalar is, as
     /// `Character.isWhitespace` decides. Each step starts on a Character
     /// boundary, so the count is the one the split makes.
+    ///
+    /// The steps are taken over the string's bytes in a buffer, by their
+    /// offsets, when it is stored as contiguous UTF-8 (several times faster
+    /// than stepping the UTF-8 view's indices byte by byte, the November 14,
+    /// 2026 import speed-up, H12); any other string is made contiguous first.
+    /// The offsets are the same ones the indices held, so the count is the same.
     static func wordCount(of text: String) -> Int {
-        let bytes = text.utf8
-        var count = 0
-        var inWord = false
-        var index = bytes.startIndex
-        while index < bytes.endIndex {
-            let byte = bytes[index]
-            let next = bytes.index(after: index)
-            let isWhitespace: Bool
-            if byte < 0x80, next == bytes.endIndex || bytes[next] < 0x80 {
-                isWhitespace = byte == 0x20 || (0x09...0x0D).contains(byte)
-                // CR LF is one Character: step past both halves, so the
-                // next step starts on a boundary.
-                index = byte == 0x0D && next < bytes.endIndex && bytes[next] == 0x0A ? bytes.index(after: next) : next
-            } else {
-                isWhitespace = text[index].isWhitespace
-                index = text.index(after: index)
+        var storage = text
+        storage.makeContiguousUTF8()
+        // A second name for the same storage, read inside the closure that
+        // holds `storage` (a string may not be read while it is lent out).
+        let reader = storage
+        return storage.withUTF8 { bytes in
+            let utf8 = reader.utf8
+            var count = 0
+            var inWord = false
+            var offset = 0
+            while offset < bytes.count {
+                let byte = bytes[offset]
+                let isWhitespace: Bool
+                if byte < 0x80, offset + 1 == bytes.count || bytes[offset + 1] < 0x80 {
+                    isWhitespace = byte == 0x20 || (0x09...0x0D).contains(byte)
+                    // CR LF is one Character: step past both halves, so the
+                    // next step starts on a boundary.
+                    let pairsWithLineFeed = byte == 0x0D && offset + 1 < bytes.count && bytes[offset + 1] == 0x0A
+                    offset += pairsWithLineFeed ? 2 : 1
+                } else {
+                    // A Character beyond ASCII, or an ASCII byte a mark follows,
+                    // is read whole from its first byte.
+                    let index = utf8.index(utf8.startIndex, offsetBy: offset)
+                    isWhitespace = reader[index].isWhitespace
+                    offset = utf8.distance(from: utf8.startIndex, to: reader.index(after: index))
+                }
+                if isWhitespace {
+                    inWord = false
+                } else if !inWord {
+                    inWord = true
+                    count += 1
+                }
             }
-            if isWhitespace {
-                inWord = false
-            } else if !inWord {
-                inWord = true
-                count += 1
-            }
+            return count
         }
-        return count
     }
 
     init(
