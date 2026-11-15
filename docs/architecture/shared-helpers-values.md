@@ -1,6 +1,8 @@
 # Shared helpers: values, ordering, and wording
 <!-- id: shared-helpers-values; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../ARCHITECTURE.md).
+
 ## AudioSegment and AudioClipChain
 <!-- id: audiosegment-audioclipchain; keys: ; src: TextMouth/Models/AudioSegment.swift, TextMouth/Services/AudioPlaybackService.swift -->
 

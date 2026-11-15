@@ -1,6 +1,8 @@
 # Shared helpers: readers and markup guards
 <!-- id: shared-helpers-parsers; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../ARCHITECTURE.md).
+
 ## ImportCancellation.throwIfCancelled
 <!-- id: importcancellation-throwifcancelled; keys: ; src: Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/ArchiveExtraction.swift -->
 
