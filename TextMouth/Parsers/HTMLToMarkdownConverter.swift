@@ -510,7 +510,7 @@ enum HTMLToMarkdownConverter {
     /// document that never spells "pagebreak" skips it). Its text is still read
     /// when it is anything but the page's own label (`readsOwnText`).
     private static func isPageBreakElement(_ element: Element, context: Context) -> Bool {
-        context.includesPages && context.readingFlow.mayHoldPageBreaks && PublicationSemantics.isPageBreak(element)
+        context.includesPages && context.readingFlow.mayHoldPageBreaks && context.readingFlow.isPageBreak(element)
     }
 
     /// Whether the text of the page-break element `element` is real words, to
