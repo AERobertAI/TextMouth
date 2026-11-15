@@ -11,6 +11,13 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Adding a book is faster: about a quarter faster for RTF, Word, EPUB, and Markdown books, and about 40% for plain text, and a book of thousands of chapters takes far less memory while it is read in.
 - The licence of SwiftSoup is now in the app with the others.
 
+### Cloud library
+- A book opened on a Mac that is behind keeps the later place, with its bookmarks and settings, when another Mac saved a later place in the cloud.
+- Closing a second window of a book you haven't moved in no longer puts an older place back.
+- When a library's index or identity file hasn't arrived from the sync service, TextMouth waits for it, then shows Library Not Available with your choices: Open Without the Index…, Restore Its Identity…, or Give It a New Identity…. Each asks first, and nothing is opened as a new library on its own.
+- Statistics and settings files that haven't arrived are no longer written over by this Mac's.
+- A book you moved to the library with Move to Library… stays there when another Mac's out-of-date feed still lists it.
+
 ### Not changed
 - How any book reads: the new copy reads every test document exactly as the old library did.
 

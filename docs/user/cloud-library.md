@@ -263,6 +263,15 @@ It is only a warning: nothing is locked.
 A sync service's conflict copy of this Mac's own file never counts as another Mac.
 The file is written and read away from the main thread, so a Sessions folder that hasn't synced yet never stalls TextMouth; at quit, removing the file is given up to two seconds.
 
+### A Mac that is behind
+<!-- id: mac-that-is-behind; keys: reading position, later place, two Macs, bookmarks, close window; src: TextMouth/Models/Book+ReadingState.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+
+When you open a book on a Mac that the cloud has not caught up with, and the book's own record already holds a later place saved on another Mac, TextMouth opens it at the later place.
+The bookmarks, the headings you skip, and the book's own voice and speed settings come with that place, as the other Mac left them, and are not mixed with this Mac's.
+Going back to reread is a later place too.
+A bookmark or setting changed on the Mac whose place is the earlier, without moving in the book, gives way to the other Mac's.
+Opening, closing, or quitting without moving never makes an older place the later one: closing a second window of a book you have not moved in puts nothing back.
+
 ### Settings travel with the library
 <!-- id: settings-travel-library; keys: dataDirectoryPath, config.json, ignored path; src: TextMouth/Services/ConfigService.swift -->
 
@@ -301,6 +310,29 @@ Where there is no substitutions.json at all, as on a Mac's first launch before t
 When a library in the cloud opens, TextMouth gets its other few small files in the background if they're only in the cloud: config.json, reading_stats.json, substitutions.json, and the feeds' records.
 Never a book or an episode, and the library doesn't wait for them.
 Until config.json arrives, the settings already on this Mac stand, nothing is saved over it, and a setting you change meanwhile keeps your new value when it arrives.
+
+### A library file that hasn't arrived
+<!-- id: library-file-not-arrived; keys: library.json, library-identity.json, Library Not Available, Open Without the Index, Restore Its Identity, Give It a New Identity; src: TextMouth/Models/LibraryFileWaitWording.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift -->
+
+A sync service can bring a library's small files down one at a time.
+When the folder holds the library's index, library.json, but not its identity file, library-identity.json, or the reverse, TextMouth waits for the missing one, about a minute, and never opens the library as a new one on its own.
+If it doesn't come, the Library Not Available screen says which file is here and which hasn't arrived from your sync service, and that TextMouth waited for it.
+For a missing identity file on a library in Google Drive it begins:
+  "The library's index is on this Mac, but its identity file, library-identity.json, hasn't arrived from Google Drive.
+  TextMouth waited for it."
+It then says what to check and names the way out; the service named is your sync service.
+The choice is yours, and each button asks first in an alert, with Cancel leaving everything as it is:
+- Open Without the Index…, when library.json is missing, makes a new index from the books in the folder, with the button Make a New Index.
+  The reading list, the folders' sorts and listening options, and any book whose files aren't there yet won't be in it.
+  If library.json arrives later, the sync service may keep two copies of it.
+- Restore Its Identity…, when this Mac knows the library's identity, writes library-identity.json with it, and the library opens as the same library, with the button Restore and Open.
+- Give It a New Identity…, when this Mac knows none, gives the library a new identity, with the button Give a New Identity.
+  If the library's own file arrives later, the sync service may keep two copies, and this Mac and the other would disagree about which library it is.
+
+Choose Try Again instead if the sync service may still be working.
+A library from before identities in a cloud folder waits about a minute once.
+A new library saves its empty index with its identity at its first launch, so that its next launch doesn't wait.
+A statistics or settings file that hasn't arrived is never written over: this session's listening and the settings on this Mac are kept until it comes.
 
 ### A file that can't be read
 <!-- id: file-that-cant-be-read; keys: unreadable copy, truncated write, .unreadable-; src: TextMouth/Services/SavedFile.swift, TextMouth/Services/LibraryIndexQuarantine.swift -->
