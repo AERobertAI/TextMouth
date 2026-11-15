@@ -216,8 +216,15 @@ struct WavPackDecoder: OwnAudioDecoder {
             var decoder = try WavPackBlockDecoder(
                 block: current.block, header: current.header, verifiesChecksums: verifiesChecksums)
             if correction != nil {
-                let matching = try correctionBlock(matching: current.header)
-                try decoder.addCorrection(block: matching.block, header: matching.header, verifiesChecksums: verifiesChecksums)
+                // Whatever is wrong in finding or reading the correction
+                // file's block is that file's fault, and is said so.
+                do {
+                    let matching = try correctionBlock(matching: current.header)
+                    try decoder.addCorrection(
+                        block: matching.block, header: matching.header, verifiesChecksums: verifiesChecksums)
+                } catch is OwnAudioError {
+                    throw OwnAudioError.companionDamaged
+                }
             }
             let samples = try decoder.unpack(verifiesChecksums: verifiesChecksums)
             let blockChannels = current.header.channels

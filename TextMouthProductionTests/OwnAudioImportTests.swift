@@ -499,7 +499,8 @@ final class OwnAudioImportTests: XCTestCase {
     }
 
     /// A hybrid file whose correction file is damaged fails the conversion
-    /// rather than passing lossy audio off as lossless.
+    /// rather than passing lossy audio off as lossless, and the sentence
+    /// names the correction file, which is the one to replace.
     func testADamagedCorrectionFileFailsTheConversion() async throws {
         let source = try copySample("wv/hybrid16.wv")
         let companion = try XCTUnwrap(OwnAudioConverter.companion(of: source))
@@ -507,7 +508,11 @@ final class OwnAudioImportTests: XCTestCase {
         bytes[bytes.count / 2] ^= 0x20
         try Data(bytes).write(to: companion)
         let failure = await conversionFailure(of: source)
-        XCTAssertEqual(failure, .notRead(fileName: "hybrid16.wv", problem: .damaged))
+        XCTAssertEqual(failure, .notRead(fileName: "hybrid16.wv", problem: .companionDamaged))
+        XCTAssertEqual(
+            failure?.errorDescription,
+            "The correction file hybrid16.wvc is damaged or belongs to another recording, "
+                + "so hybrid16.wv could not be converted.")
         XCTAssertEqual(OggTestFixtures.names(in: source.deletingLastPathComponent()), ["hybrid16.wv", "hybrid16.wvc"])
     }
 

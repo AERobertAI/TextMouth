@@ -106,11 +106,17 @@ final class OwnAudioWavPackTests: XCTestCase {
         let file = try ownAudioSampleBytes("wv/hybrid16.wv")
         let right = try ownAudioSampleBytes("wv/hybrid16.wvc")
         XCTAssertNil(failure(decoding: file, correction: right))
-        XCTAssertNotNil(failure(decoding: file, correction: try ownAudioSampleBytes("wv/hybridcross16.wvc")))
-        XCTAssertNotNil(failure(decoding: file, correction: Array(right.prefix(right.count / 2))))
+        // Each is the correction file's fault, and is said to be.
+        XCTAssertEqual(
+            failure(decoding: file, correction: try ownAudioSampleBytes("wv/hybridcross16.wvc")), .companionDamaged)
+        XCTAssertEqual(failure(decoding: file, correction: Array(right.prefix(right.count / 2))), .companionDamaged)
         var damaged = right
         damaged[damaged.count / 2] ^= 0x04
-        XCTAssertEqual(failure(decoding: file, correction: damaged), .damaged)
+        XCTAssertEqual(failure(decoding: file, correction: damaged), .companionDamaged)
+        // Damage to the file itself stays the file's.
+        var damagedFile = file
+        damagedFile[damagedFile.count / 2] ^= 0x04
+        XCTAssertEqual(failure(decoding: damagedFile, correction: right), .damaged)
     }
 
     /// A changed byte anywhere in a block fails the block's checksum, and

@@ -24,6 +24,9 @@ enum OwnAudioError: Error, Equatable, Sendable {
     case truncated
     /// A checksum failed or a field holds a value no encoder writes.
     case damaged
+    /// The file beside this one that completes it (a hybrid WavPack file's
+    /// correction file) is damaged, cut short, or another recording's.
+    case companionDamaged
 }
 
 /// The words a listener hears about a file one of the readers refuses. Each
@@ -48,7 +51,18 @@ enum OwnAudioWording {
             return "The audio file \(fileName) ends before its audio does, so it could not be converted."
         case .damaged:
             return "The audio file \(fileName) is damaged, so it could not be converted."
+        case .companionDamaged:
+            return "The correction file \(companionName(of: fileName)) is damaged or belongs to another recording, "
+                + "so \(fileName) could not be converted."
         }
+    }
+
+    /// The name of the correction file of the hybrid WavPack file named
+    /// `fileName`: the same name ending in .wvc.
+    static func companionName(of fileName: String) -> String {
+        let stem = (fileName as NSString).deletingPathExtension
+        guard let ending = OwnAudioFormat.wavPack.companionExtension else { return fileName }
+        return (stem as NSString).appendingPathExtension(ending) ?? fileName
     }
 }
 
