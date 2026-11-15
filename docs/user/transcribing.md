@@ -140,7 +140,10 @@ Matching ignores case and the kind of apostrophe, the replacement takes the case
 
 Your copy can't be used when TextMouth can't read it in that format,
 - or when its version is below 1, its date isn't a day written as `2026-10-04`,
-- or one of its rules has an empty pattern or replacement, a pattern without a letter or figure, or a replacement holding its own pattern, which every cleanup would change again:
+- or one of its rules has an empty pattern or replacement, a pattern without a letter or figure, or a replacement holding its own pattern, which every cleanup would change again.
+
+In each case:
+
 - the sheet says why, naming the field, as in "rules[2].replacement is empty",
 - a copy of it is kept beside it, its name followed by .unreadable- and the date and time,
 - and TextMouth's own rules stand in until you correct it.

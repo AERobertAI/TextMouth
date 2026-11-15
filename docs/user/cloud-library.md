@@ -232,8 +232,9 @@ Background maintenance never downloads a book.
 The startup repair, the metadata refresh, the text cache and statistics passes, and Redo Text Extraction
 - leave a book whose files are in the cloud as it is,
 - decide nothing from what only the cloud knows,
-- and catch the book up once its files are on this Mac;
-- opening a book also rebuilds its text cache when that is out of date.
+- and catch the book up once its files are on this Mac.
+
+Opening a book also rebuilds its text cache when that is out of date.
 
 Each pass that skipped books writes one MAINTENANCE_SKIPPED_IN_CLOUD line in the debug log, saying how many, and Redo Text Extraction says so in Storage settings too, as in "Done.
 
