@@ -1,6 +1,8 @@
 # Document goldens
 <!-- id: document-goldens; keys: ; src: TextMouthProductionTests/DocumentGoldenTests.swift -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 Document goldens: `DocumentGoldenTests` compares every document in TestData with `TestData/golden/<file name>.golden`, and names every difference in words. A golden records the file's format, title, author, chapter and word counts, the length and checksum of its reading text, the first and last 300 characters of that text, its headings with their levels, and, for a book with audio, its tracks. The test takes about 1 second.
 
 ## Recording new goldens

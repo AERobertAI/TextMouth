@@ -1,6 +1,7 @@
 # Tests of the markup guard, Kindle, and MOBI readers
-
 <!-- id: format-reader-tests; keys: ; src: -->
+
+Part of [TextMouth's documentation](../../README.md).
 
 ## The markup guard tests
 <!-- id: markup-guard-tests; keys: ; src: TextMouth/Parsers/MarkupGuard.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/MarkupFuzzGenerator.swift, TextMouthProductionTests/ImportFuzzMutator.swift, TextMouth/Parsers/HTMLParser.swift -->

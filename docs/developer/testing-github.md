@@ -1,6 +1,8 @@
 # Tests on GitHub Actions
 <!-- id: tests-github-actions; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 Since November 9, 2026 the build train and the orchestrator's full suite can build and test on GitHub's macOS runners instead of this Mac, so the user's Mac is free for its own work. The repository is public (`github.com/AERobertAI/TextMouth`), the runners are free, and nothing runs there except for a push to the branch `TestBuild`. Building.md (Builds on GitHub Actions) has the design; this section is for reading a run and knowing what a run cannot tell you.
 
 ## What runs where

@@ -1,6 +1,8 @@
 # Testing the iPhone app
 <!-- id: testing-iphone-app; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 The iPhone app is tested in two places: on the Mac's test host, for everything that does not need iOS, and in the iOS simulator, for what only iOS compiles. See [The two apps and the platform folders](../architecture/platforms.md) for how the code is divided, and [Building TextMouth](building.md) for how the simulator is built.
 
 Tests that act as a person does find what tests of the parts miss: the first iPhone test to set End of heading at a book's opening found a bug that the Mac's unit tests never met.

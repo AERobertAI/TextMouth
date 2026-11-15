@@ -1,6 +1,8 @@
 # Reusable test tools
 <!-- id: reusable-test-tools; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 The scripts in `Scripts/test/` run part of the hosted suite, check what a branch adds to it, read its logs, and try the importers and the voices on documents and voices the suite doesn't hold. They need only the Mac's own tools and Python 3, print their usage with `-h`, and never launch the app outside the test host that `xcodebuild` starts. Among its checks, `make check-selftest` runs every Python tool's selftest, and the storage drill script's, in about 30 seconds, without building. The times below leave out the build, which takes about 5 minutes when nothing is built yet, and longer while agents hold all three build slots.
 
 ## Load-sensitive tests made to wait
