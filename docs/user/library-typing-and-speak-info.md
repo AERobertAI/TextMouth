@@ -11,8 +11,8 @@ That is the list's own letter navigation, and no shortcut takes such a key there
 Shortcuts that are a letter alone, W, J, K, L, F, and B by default, work in reader windows only.
 Space is not a letter, so Play / Pause keeps it, except while you type a title that goes on with a space, in the two choices of the Leading articles setting that pass over articles when typing (next).
 A letter with Shift, Option, Command, or Control still runs its shortcut in a Library window, as a Shift-R you gave Release Media Controls does.
-Shift-J and Shift-L no longer fall back to the actions of J and L there, so the list takes them (see the Shortcuts tab, in [Settings](settings.md)).
-Speak Info and Speak Full Info had I and I twice until October 17, 2026; unless you changed their keys, they follow the new defaults, described next.
+Shift-J and Shift-L do not fall back to the actions of J and L there, so the list takes them (see the Shortcuts tab, in [Settings](settings.md)).
+Speak Info and Speak Full Info do not use I and I twice; unless you changed their keys, they follow the defaults described under Speak Info, below.
 
 ## Leading articles
 <!-- id: leading-articles; keys: The Hobbit, articles, Titles section, leadingArticles, partOfTitle, config.json; src: TextMouth/Models/LeadingArticleWording.swift, TextMouth/Models/LeadingArticles.swift, TextMouth/Models/TitleTyping.swift, TextMouth/Views/Library/LibraryTitleTyping.swift, TextMouth/ViewModels/LibraryListCache.swift -->
@@ -82,7 +82,7 @@ With nothing selected it says "Nothing is selected."
 
 Speak Full Info, Shift-Command-I pressed twice quickly or Library menu, Speak Full Info, speaks the selected row's full summary: the first Shift-Command-I starts the brief summary at once, and a second within the double-press time (see the Shortcuts tab, below) switches to the full one.
 A press of Shift-Command-I while a summary speaks stops it, as Speak Full Info does while the full one speaks, and Shift-Command-I on another row while a summary speaks speaks that row's summary instead, or, with nothing selected, says "Nothing is selected."
-However soon it follows the last summary, Shift-Command-I speaks the brief one: the three-second rule of earlier versions, under which a quick third press reached the full summary, is gone.
+However soon it follows the last summary, Shift-Command-I speaks the brief one: a quick third press does not reach the full summary.
 
 ### Where Am I? in a reader
 <!-- id: where-am-i-reader; keys: W twice, Playback menu, reader toolbar, Actions menu; src: TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/Models/SummaryPress.swift -->

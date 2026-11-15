@@ -601,6 +601,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A creator marked as the author is preferred to one listed before it, such as an illustrator, and a creator that says only Unknown is read as naming no one.
 - On October 7, 2026, 150 of a library's 729 EPUBs named their author in a meta element alone, and every one was listed under Unknown.
 - The Add to Library button took the place of the Import, New from Text, and Add Feed buttons on October 17, 2026.
+- Speak Info and Speak Full Info had I and I twice until October 17, 2026, and now follow the defaults Shift-Command-I and Shift-Command-I pressed twice quickly, unless you changed their keys.
+- The three-second rule of earlier versions, under which a quick third press of Shift-Command-I reached the full summary, is gone.
 
 ## 0.1.1
 - The first beta version of TextMouth. Its changes are not listed here.
