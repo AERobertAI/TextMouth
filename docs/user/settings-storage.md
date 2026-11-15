@@ -1,5 +1,5 @@
 # Settings: the Storage tab
-<!-- id: settings-storage-tab; keys: Storage settings, data directory, library folder, disk space, maintenance; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Models/SettingsPolicy.swift -->
+<!-- id: settings-storage-tab; keys: Storage settings, data directory, library folder, disk space, maintenance; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
