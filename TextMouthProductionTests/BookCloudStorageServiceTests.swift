@@ -1092,7 +1092,7 @@ final class BookCloudStorageServiceTests: XCTestCase {
     func testRemovalOnlyAsksTheFilesItWouldRemoveAboutTheirCurrentCopy() throws {
         let book = try makePackage(["bookInfo.json", "content.md"])
         syncFileByFile(book, files: managed(.downloaded))
-        items.setStatus(managed(.downloaded, uploaded: false, uploadReported: false, current: false), of: book["content.md"])
+        items.setStatus(managed(.downloaded, uploaded: false, current: false), of: book["content.md"])
         XCTAssertThrowsError(try makeStorage().removeDownload(of: book.package)) { error in
             XCTAssertEqual(error as? BookCloudError, .notUploaded)
         }

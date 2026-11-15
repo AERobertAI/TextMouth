@@ -397,7 +397,8 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
         XCTAssertEqual(
             fileStatus,
             FlaggedItemStatus(
-                status: CloudItemStatus(state: .downloaded, isUploaded: true, byteCount: 1_024, hasUnresolvedConflicts: false, downloadError: nil),
+                // A file in a package carries no flags: no upload state, and no word that its copy is current.
+                status: CloudItemStatus(state: .downloaded, isUploaded: false, byteCount: 1_024, hasUnresolvedConflicts: false, downloadError: nil, isUploadReported: false, isCurrent: false),
                 carriesSyncFlags: false
             )
         )
