@@ -141,5 +141,124 @@ class ReflowTextTests(unittest.TestCase):
         self.assertEqual(reflow_text("-   Wide marker one. Two.\n"), "-   Wide marker one.\n    Two.\n")
 
 
+
+PAGE = "docs/user/page.md"
+# A page with every kind of block that must not change, around two prose blocks that do.
+MIXED = (
+    "---\ntitle: A page. Really.\n---\n# Page\n\n<!-- id: page-top; keys: one -->\n"
+    "One is here. Two is here.\n\n```text\nCode. Two.\n```\n\n| A. B. |\n|---|\n\n> Quote. Two.\n\n"
+    "- Item one. Item two.\n\n<!-- note. two. -->\n\nHard break here.  \nSecond line. Third.\n"
+)
+MIXED_AFTER = MIXED.replace("One is here. Two is here.", "One is here.\nTwo is here.").replace(
+    "- Item one. Item two.", "- Item one.\n  Item two.")
+
+
+class ReflowCommandTests(DocLibCase):
+    """reflow: the page it writes, its output lines, --check, and every refusal."""
+
+    def page_bytes(self, path: str = PAGE) -> bytes:
+        """The page's bytes on disk."""
+        return (self.root / path).read_bytes()
+
+    def reflow(self, *args: str):
+        """Run ``reflow`` on the page with ``args``; return (status, standard output, standard error)."""
+        return self.run_cli("reflow", PAGE, *args)
+
+    def test_blocks_are_rewritten_and_the_rest_is_byte_identical(self) -> None:
+        self.write_tree({PAGE: MIXED})
+        status, out, err = self.reflow()
+        self.assertEqual((status, err), (0, ""))
+        self.assertEqual(self.page_bytes(), MIXED_AFTER.encode("utf-8"))
+        self.assertEqual(out, f"reflow: {PAGE}: {len(MIXED.splitlines())} lines became {len(MIXED_AFTER.splitlines())}\n")
+
+    def test_a_page_already_one_sentence_per_line_is_left_alone(self) -> None:
+        self.write_tree({PAGE: MIXED_AFTER})
+        before = (self.root / PAGE).stat().st_mtime_ns
+        status, out, _ = self.reflow()
+        self.assertEqual((status, out), (0, f"reflow: {PAGE}: already one sentence per line\n"))
+        self.assertEqual(self.page_bytes(), MIXED_AFTER.encode("utf-8"))
+        self.assertEqual((self.root / PAGE).stat().st_mtime_ns, before)
+
+    def test_running_it_twice_changes_nothing_the_second_time(self) -> None:
+        self.write_tree({PAGE: MIXED})
+        self.reflow()
+        once = self.page_bytes()
+        status, out, _ = self.reflow()
+        self.assertEqual((status, out), (0, f"reflow: {PAGE}: already one sentence per line\n"))
+        self.assertEqual(self.page_bytes(), once)
+
+    def test_a_page_without_a_last_line_end_stays_without_one(self) -> None:
+        self.write_tree({PAGE: "# T\n\nOne is here. Two is here."})
+        self.assertEqual(self.reflow()[0], 0)
+        self.assertEqual(self.page_bytes(), b"# T\n\nOne is here.\nTwo is here.")
+
+    def test_check_writes_nothing_and_exits_1_when_the_page_would_change(self) -> None:
+        self.write_tree({PAGE: MIXED})
+        status, out, _ = self.reflow("--check")
+        self.assertEqual(status, 1)
+        self.assertEqual(out, f"reflow: {PAGE}: {len(MIXED.splitlines())} lines became {len(MIXED_AFTER.splitlines())}\n")
+        self.assertEqual(self.page_bytes(), MIXED.encode("utf-8"))
+
+    def test_check_exits_0_when_nothing_would_change(self) -> None:
+        self.write_tree({PAGE: MIXED_AFTER})
+        status, out, _ = self.reflow("--check")
+        self.assertEqual((status, out), (0, f"reflow: {PAGE}: already one sentence per line\n"))
+
+    def test_a_page_with_carriage_returns_is_refused(self) -> None:
+        (self.root / "docs/user").mkdir(parents=True)
+        (self.root / PAGE).write_bytes(b"# T\r\n\r\nOne is here. Two is here.\r\n")
+        status, out, err = self.reflow()
+        self.assertEqual((status, out), (2, ""))
+        self.assertIn("carriage returns", err)
+        self.assertEqual(self.page_bytes(), b"# T\r\n\r\nOne is here. Two is here.\r\n")
+
+    def test_a_page_that_is_not_utf8_or_not_there_is_refused(self) -> None:
+        (self.root / "docs/user").mkdir(parents=True)
+        (self.root / PAGE).write_bytes(b"# T\n\nOne \xff here. Two.\n")
+        self.assertEqual(self.reflow()[0], 2)
+        self.assertEqual(self.run_cli("reflow", "docs/user/none.md")[0], 2)
+        self.assertEqual(self.run_cli("reflow", "../outside.md")[0], 2)
+
+    def test_the_block_check_stops_a_reflow_that_turns_a_sentence_into_an_item(self) -> None:
+        text = "# T\n\nAlpha is first. 2) Beta follows.\n"
+        self.write_tree({PAGE: text})
+        # Without starts_a_block's refusal, the second sentence would start an ordered list item.
+        with mock.patch.object(cmd_reflow, "starts_a_block", return_value=False):
+            status, out, _ = self.reflow()
+        self.assertEqual(status, 1)
+        self.assertIn("blocks or headings differ", out)
+        self.assertEqual(self.page_bytes(), text.encode("utf-8"))
+
+    def test_the_character_check_stops_a_reflow_that_changes_a_character(self) -> None:
+        text = "# T\n\nOne is here. Two is here.\n"
+        self.write_tree({PAGE: text})
+        with mock.patch.object(cmd_reflow, "reflow_text", return_value="# T\n\nOne is here.\nTwo is hxre.\n"):
+            status, out, _ = self.reflow()
+        self.assertEqual(status, 1)
+        self.assertIn("non-space characters differ", out)
+        self.assertEqual(self.page_bytes(), text.encode("utf-8"))
+
+    def test_the_words_check_of_pagewrite_still_applies(self) -> None:
+        text = "# T\n\nOne is here. Two is here.\n"
+        self.write_tree({PAGE: text})
+        with mock.patch.object(cmd_reflow, "problems_with", return_value=[]), \
+                mock.patch.object(cmd_reflow, "reflow_text", return_value="# T\n\nOne is here.\nTwo was here.\n"):
+            status, out, _ = self.reflow()
+        self.assertEqual(status, 1)
+        self.assertIn("the words differ", out)
+        self.assertEqual(self.page_bytes(), text.encode("utf-8"))
+
+    def test_non_ascii_text_survives_the_file_round_trip(self) -> None:
+        self.write_tree({PAGE: "# T\n\nCaf\u00e9 is open. The cell \u2801 is dot one.\n"})
+        self.assertEqual(self.reflow()[0], 0)
+        self.assertEqual(self.page_bytes().decode("utf-8"), "# T\n\nCaf\u00e9 is open.\nThe cell \u2801 is dot one.\n")
+
+    def test_the_page_keeps_its_permissions(self) -> None:
+        self.write_tree({PAGE: "# T\n\nOne is here. Two is here.\n"})
+        (self.root / PAGE).chmod(0o640)
+        self.reflow()
+        self.assertEqual((self.root / PAGE).stat().st_mode & 0o777, 0o640)
+
+
 if __name__ == "__main__":
     unittest.main()

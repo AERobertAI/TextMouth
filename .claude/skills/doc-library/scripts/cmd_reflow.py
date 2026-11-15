@@ -174,5 +174,65 @@ def reflow_text(text: str) -> str:
     return bom + "\n".join(out) + ending
 
 
+
+def block_shape(text: str) -> List[Tuple[str, int, str]]:
+    """The page's blocks as ``(kind, heading level, heading title)``, in order.
+
+    Two texts with the same shape have the same blocks, kind for kind, and the same
+    headings; a split that made a sentence into a list item or a heading changes it.
+    """
+    return [(block.kind, block.level, block.title) for block in docmodel.parse("page.md", text).blocks]
+
+
+def problems_with(old: str, new: str) -> List[str]:
+    """What is wrong with ``new`` as a reflow of ``old``, as short sentences; [] when nothing is.
+
+    Two checks, stricter than the words' check ``pagewrite.rewrite`` makes: every
+    non-space character is the same and in the same order, and the blocks and
+    headings are the same.
+    """
+    problems = []
+    if "".join(old.split()) != "".join(new.split()):
+        problems.append("the non-space characters differ")
+    if block_shape(old) != block_shape(new):
+        problems.append("the blocks or headings differ")
+    return problems
+
+
+def run(args: Any) -> int:
+    """Reflow the page ``args.page``; with ``--check``, only say whether it would change."""
+    old = pagewrite.read_page_text(args.root, args.page)
+    new = reflow_text(old)
+    if new == old:
+        print(f"reflow: {args.page}: already one sentence per line")
+        return output.EXIT_OK
+    problems = problems_with(old, new)
+    if problems:
+        print(f"reflow: {args.page}: refused, nothing written: " + "; ".join(problems))
+        return output.EXIT_NONE
+    summary = (f"reflow: {args.page}: {len(docmodel.parse(args.page, old).lines)} lines became "
+               f"{len(docmodel.parse(args.page, new).lines)}")
+    if args.check:
+        print(summary)
+        return output.EXIT_NONE
+    problems = pagewrite.rewrite(args.root, args.page, old, new)
+    if problems:
+        print(f"reflow: {args.page}: refused, nothing written: the words differ")
+        for line in problems:
+            print(line)
+        return output.EXIT_NONE
+    print(summary)
+    return output.EXIT_OK
+
+
 def register(subparsers: Any, common: Any) -> None:
-    """Add the ``reflow`` subcommand (the command itself comes in the next commit)."""
+    """Add the ``reflow`` subcommand."""
+    parser = subparsers.add_parser(
+        "reflow", parents=[common],
+        help="put each sentence of a page on a line of its own, changing no word",
+        description="Rewrite PAGE with one sentence on each line of its paragraphs and list items. "
+                    "No word, heading, or other block changes; the page is written only when every check passes.")
+    parser.add_argument("page", help="the page to reflow, a path inside the repository")
+    parser.add_argument("--check", action="store_true",
+                        help="write nothing; exit 1 when the page would change, 0 when it would not")
+    parser.set_defaults(func=run, default_max=0)
