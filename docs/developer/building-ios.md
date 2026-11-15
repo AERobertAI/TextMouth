@@ -13,7 +13,7 @@ project.yml defines two apps over one source folder.
 - It compiles the TextMouth source folder less `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`, so it compiles the files both apps share and `TextMouth/Platform/iOS/`.
 - It is the product TextMouth, with the module name TextMouth, for iOS 26.0, and has a bundle identifier of its own, `com.textmouth.TextMouth.iOS`.
   It takes the same two Swift packages (ZIPFoundation and swift-markdown's Markdown), the vendored SwiftSoup through its own library target, SwiftSoup_iOS, and its own builds of the two C libraries it links, `LAME_iOS` and `ObjCExceptionCatcher_iOS`.
-  project.yml defines each library, SwiftSoup included, once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
+  The file project.yml defines each library, SwiftSoup included, once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
 - It has no helper program, since iOS lets an app start none, and no braille helper or liblouis.
 - It is the iPhone app: the Library, the reader, Settings, and importing, built from research/IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)).
   Nothing has run on a phone.
@@ -38,7 +38,8 @@ Each reads the commit as it was when it started (`Scripts/ios/typecheck.py` take
   The run without it is the strict one.
 - **`make typecheck-mac`** does the same for the Mac: the sources the Mac app compiles, built and linked in about two minutes, without xcodebuild or the hosted tests.
   It ends BUILD SUCCEEDED when the Mac app's code compiles and links.
-- **`make typecheck-tests`** is `make typecheck-mac` with the Mac's hosted test target in the package: the folder `TextMouthProductionTests` and the files `project.yml` lists for that target from `TextMouthTests/Sources/Tests`, copied into one target of the probe package and built with `swift build --target TextMouthProductionTests`.
+- **`make typecheck-tests`** is `make typecheck-mac` with the Mac's hosted test target in the package.
+  It copies the folder `TextMouthProductionTests` and the files `project.yml` lists for that target from `TextMouthTests/Sources/Tests` into one target of the probe package and builds it with `swift build --target TextMouthProductionTests`.
   It compiles the app and the tests, links no test bundle, and runs no test (SwiftPM link step for a test bundle fails with this Xcode toolchain, with unexpected input file plugins/testing, after every file has compiled, and that is not a test file error).
   An error in a listed file is reported under the file's repository path.
   `REF=<commit>` checks that commit (default HEAD) from any worktree, so an agent can check its branch before asking for a train.
@@ -87,13 +88,14 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
   The app is not signed (`CODE_SIGNING_ALLOWED=NO`), as in every test run, since a runner has no signing identity.
   The job has a token that may only read, no secrets, GitHub's own actions pinned to full commit hashes, a limit of 100 minutes for each job (the runner script stops the tests at 80, so their results are still written), and one run at a time: a newer push cancels the older run.
   The shared workflow has four jobs: a Linux job that plans the shards, one macOS job per shard, a macOS job that builds the iPhone app and runs its interface tests, and a Linux job that joins the results.
-  The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing and without running a test.
+  The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing or running a test.
   It writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
   A request that says `"ios": false` leaves it out.
-  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`, 19, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime, when the request asks for them (every full suite, the phone area, or a class of either bundle).
+  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`, 19, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
+  It does so when the request asks for them (every full suite, the phone area, or a class of either bundle).
   The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: no iPhone test of either bundle needs a simulator on this Mac.
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.
-  A failed or missing iPhone test fails the iPhone job and never the Mac tests' verdict (see Tests on GitHub Actions in [Tests on GitHub Actions](testing-github.md)).
+  A failed or missing iPhone test fails the iPhone job and never the Mac tests' verdict (see [Tests on GitHub Actions](testing-github.md)).
 ### The Mac's push, the caches, and what to keep
 <!-- id: github-mac-push-caches-keep; keys: github_run.py, TestBuild push, refspec, actions/cache, restore_mtimes.py, shards; src: Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/restore_mtimes.py, Scripts/agents/shard.py, Scripts/agents/plan_shards.py, Scripts/agents/merge_shards.py, .github/workflows/tests.yml, .github/workflows/test-build.yml -->
 
