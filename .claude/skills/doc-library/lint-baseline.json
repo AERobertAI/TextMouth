@@ -25,7 +25,7 @@
     "docs/architecture/state/imports-duplicates.md": {"line-length": 17},
     "docs/architecture/state/imports-kindle.md": {"line-length": 15},
     "docs/architecture/state/imports-office-xml.md": {"line-length": 11},
-    "docs/architecture/state/imports-rtf-and-word.md": {"line-length": 26},
+    "docs/architecture/state/imports-rtf-and-word.md": {"line-length": 9},
     "docs/architecture/state/imports-textutil.md": {"line-length": 17},
     "docs/architecture/state/imports.md": {"line-length": 34},
     "docs/architecture/state/library-index-reading-feeds.md": {"line-length": 35},
