@@ -80,7 +80,7 @@ The agent:
 
 - Main is version 0.4.11 (tag `v0.4.11`), and the user still runs 0.4.2.
 - 0.4.11 holds:
-  - SwiftSoup vendored and trimmed (audit C14, `Vendor/SwiftSoup`): the Release app is 17.9 MB;
+  - SwiftSoup vendored and trimmed (audit C14, `Vendor/SwiftSoup`): the Release app is 18.2 MB;
   - the safe import speed-ups;
   - the cloud library's Phase 0: the guards (`Book.readingState(standingAgainst:)`, `movedToLibrary`, the two-file waits) and Compare Libraries;
   - the Mac's tests shared with the iPhone unit bundle (1,960 tests);
