@@ -290,7 +290,6 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - `PhoneSessionTests` pin four cases: the book behind, the book on screen, the only book, and a book not open.
   - The on-screen case also checks which reader Now Playing follows, but with only two readers it passes with or without the hand-over, so it does not prove it.
     A third reader would.
-- Files: Phone/PhoneBookSearch.swift, Phone/PhoneFocusRequests.swift, Phone/PhoneReaderState.swift, Phone/PhoneReaderModel.swift, Phone/PhoneLaunchRequest.swift, Phone/PhoneSession.swift, Platform/iOS/Views/Reader/PhoneSearchSheet.swift, Platform/iOS/Views/PhoneFocusRegistry.swift, ViewModels/BookSearchModel.swift, ViewModels/ReaderViewModel+Bookmarks.swift, Views/Reader/BookSearchView.swift.
 - The tests are in [Testing TextMouth](../developer/testing.md).
 
 ## What is left
