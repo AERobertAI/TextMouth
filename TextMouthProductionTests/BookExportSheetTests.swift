@@ -243,7 +243,7 @@ final class BookExportSheetTests: XCTestCase {
         XCTAssertEqual(
             BookExportKind.allCases.map(BookExportWording.name(of:)),
             [
-                "Audio", "Headings", "Original file", "Text as Markdown", "Text as plain text", "Text as spoken audio",
+                "Audio", "Headings", "Bookmarks", "Original file", "Text as Markdown", "Text as plain text", "Text as spoken audio",
                 "Original recording", "Original audio (before edits)", "Transcript",
             ]
         )

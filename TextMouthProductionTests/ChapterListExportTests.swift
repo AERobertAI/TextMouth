@@ -88,7 +88,7 @@ final class ChapterListExportTests: XCTestCase {
         let item = try XCTUnwrap(offer.item(.headings))
         XCTAssertEqual(item.suggestedName, "Tide Clock Recordings.cue")
         let outcome = BookExportService.export(
-            [offer], kinds: [.audio, .headings], conversions: [.headings: .chapterList(.cueSheet)], to: destination
+            [offer], kinds: [.audio, .headings], conversions: [.headings: .chapterList(.cueSheet, of: .headings)], to: destination
         )
 
         XCTAssertEqual(outcome.failures, [])
@@ -120,7 +120,7 @@ final class ChapterListExportTests: XCTestCase {
 
         let outcome = BookExportService.export(
             [BookExportService.offer(for: book)], kinds: [.headings],
-            conversions: [.headings: .chapterList(.cueSheet)], to: destination
+            conversions: [.headings: .chapterList(.cueSheet, of: .headings)], to: destination
         )
 
         XCTAssertEqual(outcome.failures, [])
@@ -146,7 +146,7 @@ final class ChapterListExportTests: XCTestCase {
 
             let outcome = BookExportService.export(
                 [BookExportService.offer(for: book)], kinds: [.headings],
-                conversions: [.headings: .chapterList(.cueSheet)], to: destination
+                conversions: [.headings: .chapterList(.cueSheet, of: .headings)], to: destination
             )
 
             XCTAssertEqual(outcome.failures, [], sample)
@@ -178,24 +178,129 @@ final class ChapterListExportTests: XCTestCase {
     /// A book whose package keeps no content index has no headings to write,
     /// and its export says so with the file's name.
     func testABookWithoutAnIndexSaysSo() throws {
-        XCTAssertThrowsError(
-            try BookExportService.chapterListEntries(
-                ofAudioAt: try makeSandboxDirectory("Headings No Index").appendingPathComponent("audio"),
-                stem: "Nothing",
-                access: .live
+        for source in [ChapterListSource.headings, .bookmarks] {
+            XCTAssertThrowsError(
+                try BookExportService.chapterListEntries(
+                    of: source,
+                    ofAudioAt: try makeSandboxDirectory("Headings No Index").appendingPathComponent("audio"),
+                    stem: "Nothing",
+                    access: .live
+                )
             )
-        )
+        }
         XCTAssertEqual(
             ChapterListExportError.noHeadings.errorDescription,
             "TextMouth has not read this book's headings yet. Open the book once, then export them again."
         )
     }
 
+    // MARK: - Audacity Labels (FMT06)
+
+    /// A book of one file exports its headings as Audacity labels at the
+    /// starts its file's own chapter list gives, each a point named by its
+    /// chapter's title, in Audacity's text.
+    func testABookOfOneFileExportsItsHeadingsAsLabels() async throws {
+        let world = try makeIntegrationWorld("Labels One File")
+        let copy = try makeSandboxDirectory("Labels One File Source").appendingPathComponent("three-tones.m4b")
+        try FileManager.default.copyItem(at: CueSheetTests.sample("m4b-chapters/three-tones.m4b"), to: copy)
+        let book = try world.importBook(from: copy)
+        let expected = await AudioPlaybackService.extractChapters(from: book.bookFileURL)
+        let destination = try makeSandboxDirectory("Labels One File Destination")
+
+        let outcome = BookExportService.export(
+            [BookExportService.offer(for: book)], kinds: [.headings],
+            conversions: [.headings: .chapterList(.audacityLabels, of: .headings)], to: destination
+        )
+
+        XCTAssertEqual(outcome.failures, [])
+        let name = BookExportService.fileNameStem(for: book.title) + ".txt"
+        let text = try String(contentsOf: destination.appendingPathComponent(name), encoding: .utf8)
+        XCTAssertEqual(text, AudacityLabels.text(of: expected.map {
+            AudacityLabels.Label(start: $0.startTime, end: $0.startTime, text: $0.title)
+        }))
+        XCTAssertEqual(AudacityLabels.parse(text).map(\.text), expected.map(\.title))
+    }
+
+    /// A book of several files cannot export labels, which mark one file:
+    /// the export says so with the file's name, and writes nothing.
+    func testABookOfSeveralFilesExportsNoLabels() throws {
+        let world = try makeIntegrationWorld("Labels Several Files")
+        let book = try world.makeSilentAudioBook(title: "Tide Clock Recordings", trackDurations: [1, 1, 1])
+        let destination = try makeSandboxDirectory("Labels Several Files Destination")
+
+        let outcome = BookExportService.export(
+            [BookExportService.offer(for: book)], kinds: [.headings],
+            conversions: [.headings: .chapterList(.audacityLabels, of: .headings)], to: destination
+        )
+
+        XCTAssertEqual(outcome.failures, [BookExportFailure(
+            name: "Tide Clock Recordings.txt",
+            reason: "Audacity labels mark one audio file, and this book's audio is in 3 files."
+        )])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), [])
+    }
+
+    /// A book with bookmarks offers them, and exports them as Audacity labels
+    /// at the places the reader plays them, in their numbers' order, a
+    /// bookmark without a name named by its number.
+    func testBookmarksExportAsLabelsWhereTheReaderPlaysThem() throws {
+        let world = try makeIntegrationWorld("Labels Bookmarks")
+        let book = try world.makeSegmentedAudioBook(
+            title: "Harbour Sections",
+            files: ["harbour.wav": 6],
+            sections: [
+                AudioSegment(title: "First", file: "harbour.wav", startTime: 0, endTime: 2),
+                AudioSegment(title: "Second", file: "harbour.wav", startTime: 2, endTime: 0),
+            ]
+        )
+        var record = try BookInfo.load(from: book.tmbDirectory)
+        record.bookmarks = [
+            Bookmark(number: 2, chapterIndex: 1, characterOffset: 15, label: ""),
+            Bookmark(number: 1, chapterIndex: 0, characterOffset: 5, label: "Pilot boat"),
+        ]
+        try record.save(to: book.tmbDirectory)
+        let destination = try makeSandboxDirectory("Labels Bookmarks Destination")
+
+        let offer = BookExportService.offer(for: book)
+        XCTAssertEqual(offer.item(.bookmarks)?.suggestedName, "Harbour Sections - Bookmarks.txt")
+        let outcome = BookExportService.export(
+            [offer], kinds: [.bookmarks], conversions: [.bookmarks: .chapterList(.audacityLabels, of: .bookmarks)], to: destination
+        )
+
+        XCTAssertEqual(outcome.failures, [])
+        let text = try String(contentsOf: destination.appendingPathComponent("Harbour Sections - Bookmarks.txt"), encoding: .utf8)
+        // Ten placeholder characters are a second: 5 is half a second into
+        // the first section, 15 a second and a half into the second, at 2.
+        XCTAssertEqual(text, "0.500000\t0.500000\tPilot boat\n3.500000\t3.500000\tBookmark 2\n")
+        XCTAssertEqual(BookExportWording.untitledBookmark(number: 2), "Bookmark 2")
+    }
+
+    /// A bookmark of a book of one file lies where the index's chapter
+    /// lengths before it add up to, as the reader seeks; one of a chapter
+    /// the index does not hold has no place.
+    func testABookmarksPlaceInABookOfOneFile() throws {
+        let index = BookContentIndex.build(
+            from: DocumentContent(title: "One", author: "", chapters: [
+                Chapter(title: "A", text: String(repeating: " ", count: 25), headings: []),
+                Chapter(title: "B", text: String(repeating: " ", count: 40), headings: []),
+            ]),
+            format: .audio,
+            audioFilePaths: nil,
+            audioSegments: nil,
+            audioBaseURL: nil
+        )
+        let place = BookExportService.bookmarkPlace(Bookmark(number: 1, chapterIndex: 1, characterOffset: 12), in: index)
+        XCTAssertNil(place?.file)
+        XCTAssertEqual(place?.start ?? -1, 3.7, accuracy: 1e-9, "25 characters before it, and 12 into it, at ten a second")
+        XCTAssertNil(BookExportService.bookmarkPlace(Bookmark(number: 2, chapterIndex: 5, characterOffset: 0), in: index))
+    }
+
     // MARK: - The Dialog
 
     /// The Headings checkbox's picker lists the chapter list formats, a CUE
     /// sheet first and chosen; checked, the headings are written as one; its
-    /// label and hint name the format, and its picker has its own name.
+    /// label and hint name the format, and its picker has its own name. With
+    /// labels chosen, its label and hint say so.
     func testTheDialogWritesTheHeadingsInTheFormatChosen() async throws {
         let world = try makeIntegrationWorld("Headings Dialog")
         let book = try world.makeSilentAudioBook(title: "Tide Clock Recordings", trackDurations: [1, 1])
@@ -206,21 +311,56 @@ final class ChapterListExportTests: XCTestCase {
         XCTAssertEqual(model.choices.map(\.kind), [.audio, .headings])
         XCTAssertEqual(model.conversionChoices(for: .headings), [
             BookExportConversionChoice(
-                id: "headings-cue",
+                id: "chapter-list-cue",
                 name: "CUE sheet",
                 hint: "Each heading's title and where it begins, as a CUE sheet that names the audio as Audio exports it."
             ),
+            BookExportConversionChoice(
+                id: "chapter-list-labels",
+                name: "Audacity labels",
+                hint: "Each heading's title and where it begins, as Audacity labels, for a book whose audio is one file."
+            ),
         ])
-        XCTAssertEqual(model.conversionID(for: .headings), "headings-cue")
+        XCTAssertEqual(model.conversionID(for: .headings), "chapter-list-cue")
         XCTAssertNil(model.conversions[.headings], "unchecked, the headings are not written")
         model.setChecked(true, for: .headings)
-        XCTAssertEqual(model.conversions[.headings], .chapterList(.cueSheet))
+        XCTAssertEqual(model.conversions[.headings], .chapterList(.cueSheet, of: .headings))
         let headings = try XCTUnwrap(model.choices.first { $0.kind == .headings })
         XCTAssertEqual(model.label(for: headings), "Headings as CUE sheet")
-        XCTAssertEqual(model.hint(for: .headings), BookExportWording.chapterListChoiceHint(for: .cueSheet))
+        XCTAssertEqual(model.hint(for: .headings), BookExportWording.chapterListChoiceHint(for: .cueSheet, source: .headings))
+        model.setConversionID("chapter-list-labels", for: .headings)
+        XCTAssertEqual(model.conversions[.headings], .chapterList(.audacityLabels, of: .headings))
+        XCTAssertEqual(model.label(for: headings), "Headings as Audacity labels")
         XCTAssertEqual(BookExportWording.convertToLabel(for: .headings), "Convert headings to")
-        XCTAssertEqual(BookExportConversion.chapterList(.cueSheet).fileExtension, "cue")
-        XCTAssertEqual(BookExportKind.allCases.filter { BookExportConversion.chapterList(.cueSheet).applies(to: $0) }, [.headings])
+        XCTAssertEqual(BookExportConversion.chapterList(.cueSheet, of: .headings).fileExtension, "cue")
+        XCTAssertEqual(BookExportConversion.chapterList(.audacityLabels, of: .headings).fileExtension, "txt")
+        XCTAssertEqual(BookExportKind.allCases.filter { BookExportConversion.chapterList(.cueSheet, of: .headings).applies(to: $0) }, [.headings])
+        XCTAssertEqual(BookExportKind.allCases.filter { BookExportConversion.chapterList(.audacityLabels, of: .bookmarks).applies(to: $0) }, [.bookmarks])
+    }
+
+    /// A book with bookmarks lists a Bookmarks checkbox, whose picker lists
+    /// Audacity labels alone, named as its own.
+    func testTheDialogListsBookmarksForABookWithThem() async throws {
+        let world = try makeIntegrationWorld("Bookmarks Dialog")
+        let book = try world.makeSilentAudioFileBook(title: "Weir", duration: 2)
+        var record = try BookInfo.load(from: book.tmbDirectory)
+        record.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: 3, label: "Sluice")]
+        try record.save(to: book.tmbDirectory)
+        let model = BookExportModel(books: [book], destination: try makeSandboxDirectory("Bookmarks Dialog Folder"))
+
+        await model.load()
+
+        XCTAssertEqual(model.choices.map(\.kind), [.audio, .bookmarks])
+        XCTAssertEqual(model.conversionChoices(for: .bookmarks).map(\.name), ["Audacity labels"])
+        model.setChecked(true, for: .bookmarks)
+        XCTAssertEqual(model.conversions[.bookmarks], .chapterList(.audacityLabels, of: .bookmarks))
+        let bookmarks = try XCTUnwrap(model.choices.first { $0.kind == .bookmarks })
+        XCTAssertEqual(model.label(for: bookmarks), "Bookmarks as Audacity labels")
+        XCTAssertEqual(
+            model.hint(for: .bookmarks),
+            "Each bookmark's name and place, as Audacity labels, for a book whose audio is one file."
+        )
+        XCTAssertEqual(BookExportWording.convertToLabel(for: .bookmarks), "Convert bookmarks to")
     }
 
     // MARK: - Helpers

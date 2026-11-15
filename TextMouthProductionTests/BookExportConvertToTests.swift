@@ -148,8 +148,9 @@ final class BookExportConvertToTests: XCTestCase {
             Array(choices.dropFirst()),
             TextExportWriters.all.map { BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint) }
         )
-        // The headings' picker lists the chapter list formats (FMT24).
-        for kind in BookExportKind.allCases where kind != .markdown && kind != .transcript && kind != .headings {
+        // The headings' and bookmarks' pickers list the chapter list formats
+        // (FMT24, FMT06).
+        for kind in BookExportKind.allCases where kind != .markdown && kind != .transcript && !kind.writesChapterList {
             XCTAssertEqual(model.conversionChoices(for: kind), [], "\(kind) has no picker")
         }
     }

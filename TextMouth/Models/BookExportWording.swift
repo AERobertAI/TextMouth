@@ -12,6 +12,7 @@ enum BookExportWording {
         switch kind {
         case .audio: return "Audio"
         case .headings: return "Headings"
+        case .bookmarks: return "Bookmarks"
         case .originalRecording: return "Original recording"
         case .originalAudio: return "Original audio (before edits)"
         case .transcript: return "Transcript"
@@ -28,7 +29,9 @@ enum BookExportWording {
         case .audio:
             return "The book's audio: its file, or its tracks in a folder named after the book, each named for its chapter."
         case .headings:
-            return chapterListChoiceHint(for: .standard)
+            return chapterListChoiceHint(for: .standard, source: .headings)
+        case .bookmarks:
+            return chapterListChoiceHint(for: .audacityLabels, source: .bookmarks)
         case .originalFile:
             return "The book's own file, as it was imported; for an audiobook, its audio files as they were before "
                 + "TextMouth converted them."
@@ -62,6 +65,7 @@ enum BookExportWording {
         switch kind {
         case .transcript: return "Convert transcript to"
         case .headings: return "Convert headings to"
+        case .bookmarks: return "Convert bookmarks to"
         default: return convertToLabel
         }
     }
@@ -94,20 +98,36 @@ enum BookExportWording {
         return "The book's text as \(conversionName), \(madeFromTheMarkdown)"
     }
 
-    // MARK: A Book's Headings (FMT24)
+    // MARK: A Book's Headings and Bookmarks (FMT24, FMT06)
 
-    /// What the Convert headings to picker's hint says while `format` is
-    /// chosen, and what the Headings checkbox exports in it.
-    static func chapterListChoiceHint(for format: ChapterListFormat) -> String {
-        switch format {
-        case .cueSheet:
+    /// What the picker's hint says while `format` is chosen for a list of
+    /// `source`, and what its checkbox exports in it.
+    static func chapterListChoiceHint(for format: ChapterListFormat, source: ChapterListSource) -> String {
+        switch (format, source) {
+        case (.cueSheet, _):
             return "Each heading's title and where it begins, as a CUE sheet that names the audio as Audio exports it."
+        case (.audacityLabels, .headings):
+            return "Each heading's title and where it begins, as Audacity labels, for a book whose audio is one file."
+        case (.audacityLabels, .bookmarks):
+            return "Each bookmark's name and place, as Audacity labels, for a book whose audio is one file."
         }
+    }
+
+    /// The name a bookmark without one of its own takes in exported labels:
+    /// "Bookmark 3", as the reader announces it.
+    static func untitledBookmark(number: Int) -> String {
+        "Bookmark \(number)"
     }
 
     /// Why a book's headings were not written: it keeps no record of them
     /// yet, after the file's name in the export's failure sentence.
     static let noHeadingsReason = "TextMouth has not read this book's headings yet. Open the book once, then export them again."
+
+    /// Why labels were not written for a book whose audio is in
+    /// `fileCount` files: labels mark one file.
+    static func labelsNeedOneFileReason(fileCount: Int) -> String {
+        "Audacity labels mark one audio file, and this book's audio is in \(fileCount) files."
+    }
 
     /// Where a text writer's file comes from, which every hint of one ends
     /// with: a text book's, and a transcript's text (`transcriptTextHint(as:)`).

@@ -20,9 +20,14 @@ enum BookExportKind: String, CaseIterable, Sendable {
     case audio
     /// An audiobook's headings: each chapter's title and where it begins,
     /// written as a chapter list another program reads, a CUE sheet
-    /// (FMT24), which names the audio as `audio` exports it. It is never
-    /// copied: only a `.chapterList` conversion makes its file.
+    /// (FMT24), which names the audio as `audio` exports it, or Audacity
+    /// labels (FMT06). It is never copied: only a `.chapterList` conversion
+    /// makes its file.
     case headings
+    /// An audiobook's bookmarks, each its name and place, written as
+    /// Audacity labels (FMT06) for an audio editor; made as the headings
+    /// are, by a `.chapterList` conversion.
+    case bookmarks
     /// A text book's own file as it was imported: its EPUB, Word document,
     /// PDF, HTML, Markdown, or text file, a DAISY book's ZIP, or every file
     /// of a DAISY book kept as loose files.
@@ -248,10 +253,20 @@ extension BookExportKind {
     }
 
     /// Whether the kind's file is a chapter list its picker names the format
-    /// of (FMT24): an audiobook's headings, which have no form of their own
-    /// to copy.
+    /// of (FMT24, FMT06): an audiobook's headings or bookmarks, which have
+    /// no form of their own to copy.
     var writesChapterList: Bool {
-        self == .headings
+        chapterListSource != nil
+    }
+
+    /// What the kind's chapter list is made of; nil for a kind that writes
+    /// none.
+    var chapterListSource: ChapterListSource? {
+        switch self {
+        case .headings: return .headings
+        case .bookmarks: return .bookmarks
+        default: return nil
+        }
     }
 }
 
@@ -284,10 +299,10 @@ enum BookExportConversion: Sendable, Equatable {
     /// (`Transcript.bookTimelineCues`).
     case timedText(TranscriptExportFormat)
 
-    /// An audiobook's headings, written as a chapter list in the format
-    /// (FMT24): made from its audio and its saved content index
-    /// (`BookExportService.chapterListEntries(ofAudioAt:stem:access:)`).
-    case chapterList(ChapterListFormat)
+    /// An audiobook's headings (FMT24) or bookmarks (FMT06), as the source
+    /// says, written as a chapter list in the format: made from its audio
+    /// and its saved record (`BookExportService.chapterListEntries(of:ofAudioAt:stem:access:)`).
+    case chapterList(ChapterListFormat, of: ChapterListSource)
 
     /// The Markdown an export writes of a text book (and of an audiobook's
     /// transcript): written afresh from the walk of its content.md with only
@@ -306,7 +321,7 @@ enum BookExportConversion: Sendable, Equatable {
             return request.format.fileExtension
         case .timedText(let format):
             return format.fileExtension
-        case .chapterList(let format):
+        case .chapterList(let format, _):
             return format.fileExtension
         }
     }
@@ -315,8 +330,9 @@ enum BookExportConversion: Sendable, Equatable {
     /// conversion makes those of a kind whose `convertsText` is true, and a
     /// transcript's text, its Markdown (TODO 3984); a speech conversion those
     /// of "Text as spoken audio" alone; captions a transcript's alone
-    /// (FMT23); a chapter list an audiobook's headings alone (FMT24). Each
-    /// is ignored for any other kind.
+    /// (FMT23); a chapter list of headings an audiobook's headings alone
+    /// (FMT24), and one of bookmarks its bookmarks alone (FMT06). Each is
+    /// ignored for any other kind.
     func applies(to kind: BookExportKind) -> Bool {
         switch self {
         case .text:
@@ -326,8 +342,8 @@ enum BookExportConversion: Sendable, Equatable {
         case .timedText:
             // Captions are made of a transcript alone.
             return kind == .transcript
-        case .chapterList:
-            return kind.writesChapterList
+        case .chapterList(_, let source):
+            return kind.chapterListSource == source
         }
     }
 
@@ -342,7 +358,7 @@ enum BookExportConversion: Sendable, Equatable {
             return request.format.title
         case .timedText(let format):
             return format.name
-        case .chapterList(let format):
+        case .chapterList(let format, _):
             return format.name
         }
     }
@@ -397,21 +413,8 @@ enum BookExportService {
         var items: [BookExportItem] = []
         if let own = ownFileItem(of: book, stem: stem, access: access) {
             items.append(own)
-            // An audiobook's headings, as a chapter list naming that audio
-            // (FMT24), for a book of more than one chapter: a list of one
-            // chapter at the start says nothing. Its size is not known
-            // until it is written.
-            if book.format.isAudio, (savedContentIndex(of: book, access: access)?.chapters.count ?? 0) > 1 {
-                let headings = BookExportFile(
-                    source: .converted(
-                        from: book.bookFileURL,
-                        book: ExportBookDetails(book),
-                        by: .chapterList(.standard)
-                    ),
-                    path: "\(stem).\(ChapterListFormat.standard.fileExtension)",
-                    byteCount: 0
-                )
-                items.append(standaloneItem(.headings, files: [headings], access: access))
+            if book.format.isAudio {
+                items += chapterListItems(of: book, stem: stem, access: access)
             }
         }
         let take = package.appendingPathComponent(BookOrigin.originalTakeFileName)
@@ -638,67 +641,184 @@ enum BookExportService {
         return ordered + rest.map { (path: $0, title: nil) }
     }
 
-    // MARK: Headings (FMT24)
+    // MARK: Headings and Bookmarks (FMT24, FMT06)
 
-    /// The chapters of the audiobook whose audio is at `audio`, its one file
-    /// or its folder of tracks inside its package, as a chapter list names
-    /// them: each chapter's title, the file it begins in, as Export names
-    /// that file (`stem` is the book's folder of tracks there), and where it
-    /// begins in it. Read with dataless files left in the cloud.
+    /// The chapter lists the audiobook `book` offers, each one file made by
+    /// a chapter list conversion from its audio and its saved record, its
+    /// size not known until it is written: its headings (FMT24) for a book of
+    /// more than one chapter, since a list of one chapter at the start says
+    /// nothing, and its bookmarks (FMT06) for a book with any. Each is named
+    /// for its default format, the picker's first.
+    private static func chapterListItems(of book: Book, stem: String, access: MaintenanceFileAccess) -> [BookExportItem] {
+        let package = book.tmbDirectory
+        guard let record = try? access.read(package, { try BookInfo.load(from: package) }) else { return [] }
+        var items: [BookExportItem] = []
+        if (record.contentIndex?.chapters.count ?? 0) > 1 {
+            items.append(chapterListItem(.headings, of: book, stem: stem, access: access))
+        }
+        if !record.bookmarks.isEmpty {
+            items.append(chapterListItem(.bookmarks, of: book, stem: stem, access: access))
+        }
+        return items
+    }
+
+    /// The item of `kind`, an audiobook's headings or bookmarks, of `book`:
+    /// one file, "<title>.cue" for the headings, "<title> - Bookmarks.txt"
+    /// for the bookmarks, by its source's first format.
+    private static func chapterListItem(
+        _ kind: BookExportKind,
+        of book: Book,
+        stem: String,
+        access: MaintenanceFileAccess
+    ) -> BookExportItem {
+        let source = kind.chapterListSource ?? .headings
+        let format = ChapterListFormat.formats(for: source).first ?? .standard
+        let name = source == .headings ? stem : "\(stem) - Bookmarks"
+        let file = BookExportFile(
+            source: .converted(from: book.bookFileURL, book: ExportBookDetails(book), by: .chapterList(format, of: source)),
+            path: "\(name).\(format.fileExtension)",
+            byteCount: 0
+        )
+        return standaloneItem(kind, files: [file], access: access)
+    }
+
+    /// The entries of a chapter list of `source` for the audiobook whose
+    /// audio is at `audio`, its one file or its folder of tracks inside its
+    /// package: each heading's or bookmark's title, the file it lies in, as
+    /// Export names that file (`stem` is the book's folder of tracks there),
+    /// and its time in that file. Read from the book's saved record, in the
+    /// package (the folder `audio` lies in), with dataless files left in the
+    /// cloud. A heading or bookmark whose file is gone is left out.
     ///
-    /// The titles and files are the book's saved content index's, from the
-    /// package (the folder `audio` lies in). A chapter of a book of sections
-    /// begins where its first clip does; one of a book of tracks at its
-    /// file's start. A book of one file keeps its chapters' starts only as
-    /// lengths rounded down to a tenth of a second, which add up to a start
-    /// up to a tenth of a second early per chapter before it, so its starts
-    /// are read again from the file's own chapter list, as its parse read
-    /// them (`AudioPlaybackService.extractChapters`); when the file lists
-    /// other chapters than the index (a podcast's chapters kept beside it,
-    /// FMT25), the index's lengths are added up instead. A chapter whose file
-    /// is gone is left out.
+    /// Headings: each chapter's title. A chapter of a book of sections begins
+    /// where its first clip does; one of a book of tracks at its file's
+    /// start. A book of one file keeps its chapters' starts only as lengths
+    /// rounded down to a tenth of a second, which add up to a start up to a
+    /// tenth of a second early per chapter before it, so its starts are read
+    /// again from the file's own chapter list, as its parse read them
+    /// (`AudioPlaybackService.extractChapters`); when the file lists other
+    /// chapters than the index (a podcast's chapters kept beside it, FMT25),
+    /// the index's lengths are added up instead.
+    ///
+    /// Bookmarks (FMT06): each where the reader plays it (`bookmarkPlace`),
+    /// named by its name, or "Bookmark N" without one, in the order of their
+    /// numbers.
     /// - Throws: `ChapterListExportError.noHeadings` when the book has no
     ///   saved index; the error reading the package or listing the folder.
-    static func chapterListEntries(ofAudioAt audio: URL, stem: String, access: MaintenanceFileAccess) throws -> [ChapterListEntry] {
+    static func chapterListEntries(
+        of source: ChapterListSource,
+        ofAudioAt audio: URL,
+        stem: String,
+        access: MaintenanceFileAccess
+    ) throws -> [ChapterListEntry] {
         let package = audio.deletingLastPathComponent()
-        guard let index = try access.read(package, { try BookInfo.load(from: package) }).contentIndex,
-              !index.chapters.isEmpty else {
+        let record = try access.read(package, { try BookInfo.load(from: package) })
+        guard let index = record.contentIndex, !index.chapters.isEmpty else {
             throw ChapterListExportError.noHeadings
         }
+        let exportedName = try exportedFileNames(of: index, audio: audio, stem: stem, access: access)
+        switch source {
+        case .headings:
+            let starts = try headingStarts(of: index, audio: audio, access: access)
+            return zip(index.chapters, starts).compactMap { chapter, start in
+                exportedName(chapter.audioFilePath).map { ChapterListEntry(title: chapter.title, file: $0, start: start) }
+            }
+        case .bookmarks:
+            return record.bookmarks.sortedStably { $0.number < $1.number }.compactMap { bookmark in
+                guard let place = bookmarkPlace(bookmark, in: index), let file = exportedName(place.file) else { return nil }
+                let title = bookmark.label.nonBlank ?? BookExportWording.untitledBookmark(number: bookmark.number)
+                return ChapterListEntry(title: title, file: file, start: place.start)
+            }
+        }
+    }
+
+    /// The name Export gives the audio file of the book whose saved index is
+    /// `index` and whose audio is at `audio`, for a chapter's file as the
+    /// index names it (`BookContentChapterIndex.audioFilePath`): the book's
+    /// own file's name for a book of one file, which names none; otherwise
+    /// the track's exported name inside the book's folder `stem`
+    /// (`exportedTrackNames`), or nil for a file that is gone.
+    private static func exportedFileNames(
+        of index: BookContentIndex,
+        audio: URL,
+        stem: String,
+        access: MaintenanceFileAccess
+    ) throws -> (String?) -> String? {
         guard index.audioLayout?.namesChapterFiles == true else {
-            return try singleFileEntries(of: index, audio: audio, access: access)
+            let name = audio.lastPathComponent
+            return { _ in name }
         }
         let listed = try access.read(audio) { try audioFiles(in: audio) }
         let names = Dictionary(
             exportedTrackNames(listed: listed, index: index).map { ($0.path.precomposedStringWithCanonicalMapping, $0.name) }
         ) { first, _ in first }
-        return index.chapters.compactMap { chapter in
-            guard let path = chapter.audioFilePath,
-                  let name = names[path.precomposedStringWithCanonicalMapping] else { return nil }
-            let start = index.audioLayout == .segmented ? (chapter.audio?.startTime ?? 0) : 0
-            return ChapterListEntry(title: chapter.title, file: "\(stem)/\(name)", start: start)
+        return { path in
+            path.flatMap { names[$0.precomposedStringWithCanonicalMapping] }.map { "\(stem)/\($0)" }
         }
     }
 
-    /// The chapters of a book of the one file `audio`, whose saved index is
-    /// `index`, as `chapterListEntries` describes: the starts the file's own
-    /// chapter list gives when it lists as many chapters as the index, and
-    /// the index's lengths added up otherwise.
-    private static func singleFileEntries(
-        of index: BookContentIndex,
-        audio: URL,
-        access: MaintenanceFileAccess
-    ) throws -> [ChapterListEntry] {
-        let listed = try access.read(audio) {
-            try AsyncBridge.waitForResult(reading: audio, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
-                await AudioPlaybackService.extractChapters(from: audio)
+    /// Where each chapter of the book whose saved index is `index` begins in
+    /// its file, as `chapterListEntries` describes for headings.
+    private static func headingStarts(of index: BookContentIndex, audio: URL, access: MaintenanceFileAccess) throws -> [TimeInterval] {
+        switch index.audioLayout {
+        case .segmented?:
+            return index.chapters.map { $0.audio?.startTime ?? 0 }
+        case .multiFile?:
+            return index.chapters.map { _ in 0 }
+        case .singleFile?, nil:
+            let listed = try access.read(audio) {
+                try AsyncBridge.waitForResult(reading: audio, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
+                    await AudioPlaybackService.extractChapters(from: audio)
+                }
             }
+            if listed.count == index.chapters.count {
+                return listed.map(\.startTime)
+            }
+            // Each chapter begins where the lengths before it add up to.
+            var starts: [TimeInterval] = []
+            var running: TimeInterval = 0
+            for chapter in index.chapters {
+                starts.append(running)
+                running += chapter.audio?.duration ?? 0
+            }
+            return starts
         }
-        var running: TimeInterval = 0
-        return index.chapters.enumerated().map { number, chapter in
-            let start = listed.count == index.chapters.count ? listed[number].startTime : running
-            running += chapter.audio?.duration ?? 0
-            return ChapterListEntry(title: chapter.title, file: audio.lastPathComponent, start: start)
+    }
+
+    /// Where the reader plays `bookmark`, in the book whose saved index is
+    /// `index`: the file (as the index names it; nil for a book of one
+    /// file) and the time in it. A bookmark is a place in its chapter at the
+    /// reader's ten characters a second (`ReaderViewModel.audioCharsPerSecond`),
+    /// after the chapter's start as the reader plays it: in a book of one
+    /// file, where the index's lengths of the chapters before it add up to,
+    /// which is where the reader seeks; in a book of tracks, its file's
+    /// start; in a book of sections, its section's start, or, for a section
+    /// of several clips, the clip its place reaches. Nil for a bookmark of a
+    /// chapter the index does not hold.
+    static func bookmarkPlace(_ bookmark: Bookmark, in index: BookContentIndex) -> (file: String?, start: TimeInterval)? {
+        guard index.chapters.indices.contains(bookmark.chapterIndex) else { return nil }
+        let chapter = index.chapters[bookmark.chapterIndex]
+        let rate = ReaderViewModel.audioCharsPerSecond
+        let offset = Double(max(0, bookmark.characterOffset)) / rate
+        switch index.audioLayout {
+        case .singleFile?, nil:
+            return (nil, Double(chapter.startCharacterOffset) / rate + offset)
+        case .multiFile?:
+            return (chapter.audioFilePath, offset)
+        case .segmented?:
+            guard let clips = chapter.audio?.clips, !clips.isEmpty else {
+                return (chapter.audioFilePath, (chapter.audio?.startTime ?? 0) + offset)
+            }
+            // The clip the place reaches, each clip passed taking its length
+            // off the place; past the last clip, that clip's end.
+            var remaining = offset
+            for (number, clip) in clips.enumerated() {
+                if remaining < clip.duration || number == clips.count - 1 {
+                    return (clip.audioFilePath, clip.startTime + min(remaining, clip.duration))
+                }
+                remaining -= clip.duration
+            }
+            return nil
         }
     }
 
@@ -1233,13 +1353,16 @@ enum BookExportService {
         cancellation: BookExportCancellation,
         speech: SpeechExportContext
     ) throws {
-        // A chapter list is made from the book's audio and its index, never
+        // A chapter list is made from the book's audio and its record, never
         // from the audio's bytes, which are not read whole.
-        if case .chapterList(let format) = conversion {
-            let entries = try chapterListEntries(ofAudioAt: source, stem: fileNameStem(for: book.title), access: access)
+        if case .chapterList(let format, let listSource) = conversion {
+            let entries = try chapterListEntries(
+                of: listSource, ofAudioAt: source, stem: fileNameStem(for: book.title), access: access
+            )
             try cancellation.checkCancelled()
+            let bytes = try format.fileBytes(of: entries, book: book)
             try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
-                try format.fileBytes(of: entries, book: book).write(to: scratch, options: .withoutOverwriting)
+                try bytes.write(to: scratch, options: .withoutOverwriting)
             }
             return
         }

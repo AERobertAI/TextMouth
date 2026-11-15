@@ -16,32 +16,56 @@ struct ChapterListEntry: Equatable, Sendable {
     let start: TimeInterval
 }
 
-/// Why Export could not write an audiobook's headings as a chapter list
-/// (FMT24), in words the export's summary names with the file.
+/// Why Export could not write an audiobook's headings or bookmarks as a
+/// chapter list (FMT24, FMT06), in words the export's summary names with
+/// the file.
 enum ChapterListExportError: LocalizedError, Equatable {
     /// The book's package keeps no content index to take its headings from.
     case noHeadings
+    /// Audacity labels mark one audio file, and the book's audio is in
+    /// `fileCount` files.
+    case severalFiles(fileCount: Int)
 
     var errorDescription: String? {
         switch self {
         case .noHeadings:
             return BookExportWording.noHeadingsReason
+        case let .severalFiles(fileCount):
+            return BookExportWording.labelsNeedOneFileReason(fileCount: fileCount)
         }
     }
+}
+
+/// What a chapter list is made of: an audiobook's headings (FMT24, FMT06),
+/// or its bookmarks (FMT06).
+enum ChapterListSource: Equatable, Sendable {
+    case headings
+    case bookmarks
 }
 
 // MARK: - The Formats
 
 /// The formats an audiobook's headings export in, as the Convert headings to
-/// picker lists them (FMT24).
+/// picker lists them (FMT24, FMT06), and the one its bookmarks export in.
 enum ChapterListFormat: String, CaseIterable, Sendable {
     /// A CUE sheet, which CD players' software, audio editors, and
     /// TextMouth itself read (`CueSheet`).
     case cueSheet
+    /// Audacity labels (FMT06), which Audacity imports as a label track
+    /// beside the book's audio, and TextMouth reads beside a folder's audio
+    /// (`AudacityLabels`). They mark one audio file.
+    case audacityLabels
 
-    /// The picker's first choice, its default, which the offer names the
-    /// file by until another is chosen.
+    /// The headings picker's first choice, its default, which the offer
+    /// names the file by until another is chosen.
     static let standard = ChapterListFormat.cueSheet
+
+    /// The formats a list of `source` is written in, in the picker's order:
+    /// every format for headings; Audacity labels alone for bookmarks, which
+    /// mark places, not chapters a CUE sheet's tracks are.
+    static func formats(for source: ChapterListSource) -> [ChapterListFormat] {
+        source == .headings ? allCases : [.audacityLabels]
+    }
 
     /// The format whose picker tag is `choiceID`; nil for a tag the picker
     /// does not list.
@@ -53,7 +77,8 @@ enum ChapterListFormat: String, CaseIterable, Sendable {
     /// The format's tag in the picker.
     var choiceID: String {
         switch self {
-        case .cueSheet: return "headings-cue"
+        case .cueSheet: return "chapter-list-cue"
+        case .audacityLabels: return "chapter-list-labels"
         }
     }
 
@@ -61,6 +86,7 @@ enum ChapterListFormat: String, CaseIterable, Sendable {
     var name: String {
         switch self {
         case .cueSheet: return "CUE sheet"
+        case .audacityLabels: return "Audacity labels"
         }
     }
 
@@ -68,14 +94,23 @@ enum ChapterListFormat: String, CaseIterable, Sendable {
     var fileExtension: String {
         switch self {
         case .cueSheet: return CueSheet.fileExtension
+        case .audacityLabels: return AudacityLabels.fileExtension
         }
     }
 
-    /// The file's bytes for `entries`, the chapters of the book `book`.
-    func fileBytes(of entries: [ChapterListEntry], book: ExportBookDetails) -> Data {
+    /// The file's bytes for `entries`, the chapters or places of the book
+    /// `book`. Audacity labels are points at each entry's start, in UTF-8.
+    /// - Throws: `ChapterListExportError.severalFiles` for labels of entries
+    ///   in more than one audio file.
+    func fileBytes(of entries: [ChapterListEntry], book: ExportBookDetails) throws -> Data {
         switch self {
         case .cueSheet:
             return CueSheetWriter.fileBytes(of: entries, title: book.title, performer: book.author)
+        case .audacityLabels:
+            let files = Set(entries.map(\.file))
+            guard files.count <= 1 else { throw ChapterListExportError.severalFiles(fileCount: files.count) }
+            let labels = entries.map { AudacityLabels.Label(start: $0.start, end: $0.start, text: $0.title) }
+            return Data(AudacityLabels.text(of: labels).utf8)
         }
     }
 }
