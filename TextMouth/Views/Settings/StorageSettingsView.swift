@@ -775,8 +775,12 @@ struct StorageSettingsView: View {
             return nil
         }
         status = StorageStatus(message: LibraryComparisonWording.comparingForUseSentence, isFailure: false).announced()
-        var reader = LibraryCopyReader.app()
-        reader.overallLimit = 60
+        // A minute in all: this is a question put to the listener, who is waiting.
+        let reader = { () -> LibraryCopyReader in
+            var reader = LibraryCopyReader.app()
+            reader.overallLimit = 60
+            return reader
+        }()
         let thisLibrary = libraryViewModel.library
         let thisFolder = TextMouthPaths.root
         let otherFolder = assessment.folder
