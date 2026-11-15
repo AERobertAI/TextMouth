@@ -92,6 +92,8 @@ final class LibraryCloudFetchTests: XCTestCase {
         // The file shows up as a placeholder: reading it is refused, as a
         // read of a dataless file is where downloads are off. It is then
         // only in the cloud, and the fetch brings it.
+        // The fetches made while the wait ran, before the choice.
+        let fetchesBefore = world.fetched.names(in: root).count
         var adoptions = 0
         model.libraryIdentityAdopter = { _, _ in
             adoptions += 1
@@ -103,7 +105,7 @@ final class LibraryCloudFetchTests: XCTestCase {
 
         XCTAssertEqual(adoptions, 1, "the restore was not tried inside the guard")
         XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
-        XCTAssertEqual(world.fetched.names(in: root), ["library-identity.json"], "the choice did not go to the fetch")
+        XCTAssertEqual(Array(world.fetched.names(in: root).dropFirst(fetchesBefore)), ["library-identity.json"], "the choice did not go to the fetch")
         XCTAssertEqual(try LibraryIdentity.read(in: root)?.id, expected, "the library was given another identity")
     }
 
