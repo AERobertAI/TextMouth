@@ -15,7 +15,8 @@ The process's runtime.
   A test that needs the app's behavior builds a runtime value of its own.
 - How others observe it: everything that could reach the user's data follows it: TextMouthPaths.root (which ignores a custom data directory in a test host), this Mac's own folders (MachineLocalPaths), the legacy data locations, AppDelegate's window-restoration setting, and every preference owner.
   SpeechService's convenience initializer still uses UserDefaults.standard directly.
-  In a test host the cloud refresher never refreshes, TextMouthRelauncher never opens TextMouth again, the Now Playing coordinator takes no part in the system's media session, and the feed engine neither works on its own nor reaches the network (both below); tests install fake cloud services through CloudServices.
+  In a test host the cloud refresher never refreshes, TextMouthRelauncher never opens TextMouth again, the Now Playing coordinator takes no part in the system's media session, and the feed engine neither works on its own nor reaches the network (both below).
+  Tests install fake cloud services through CloudServices.
   The opt-in real-drive tests (CloudDriveIntegrationTests) touch only the folders TEXTMOUTH_CLOUD_TEST_ROOTS names, each named TextMouth Cloud Tests, and never move the app's library out of the sandbox.
 
 ## Sandboxes left behind
@@ -25,7 +26,8 @@ Sandboxes left behind.
 
 - Owner: HostedSandboxCleanup, which the test bundle's principal class, TextMouthTestBundle, registers.
   As the bundle starts, it deletes, off the main thread, the sandboxes earlier processes left behind (TextMouthRuntime.removeAbandonedSandboxes): folders named for another process that has ended, as isFolderMakerRunning judges it, the one rule of both sweeps of folders that ended processes leave behind, this one and the archive extraction sweep at launch.
-  The system reuses process numbers, so a running process with the folder's number counts as its maker only when it started no later than an hour after the folder was made (folderMakerStartAllowance, and startDate(ofProcess:), read with sysctl); when either date is unknown, the folder is kept, and so are kept sandboxes and anything that is not a plain folder.
+  The system reuses process numbers, so a running process with the folder's number counts as its maker only when it started no later than an hour after the folder was made (folderMakerStartAllowance, and startDate(ofProcess:), read with sysctl).
+  When either date is unknown, the folder is kept, and so are kept sandboxes and anything that is not a plain folder.
   As the bundle finishes, it waits for that sweep, at most a minute, and deletes its own sandbox (finishWithSandbox()), unless TEXTMOUTH_KEEP_SANDBOX is 1, which marks it kept with a KEPT-SANDBOX.txt file instead.
   A run that crashes leaves its sandbox to the next run's sweep.
 
@@ -66,9 +68,11 @@ Whether hosted windows expose their controls to accessibility.
 - Owner: HostedWindowAccessibility (TextMouthProductionTests/AccessibilityTestSupport.swift), which holds this run's answer: whether the AppKit controls SwiftUI draws in a hosted window, its sliders, steppers, pop-up buttons, and text fields, appear among the window's accessibility elements.
   The development Mac exposes them; a GitHub Actions macOS runner draws the same controls but exposes none of them, so a check that reads them there would fail for want of the capability rather than for a missing control.
   SwiftUI's own text and buttons have elements only for a connected assistive app, except a Text that can be selected (textSelection(.enabled)), which is drawn through AppKit and appears among those controls as a static text whose value and character count a test reads (ReaderTextAreaAccessibilityTests).
-- Who may write it: the first call of hostedWindowsExposeAccessibility() in a run measures it, on a probe of its own, never on the view under test: it hosts a labelled stepper (LoneStepper) and waits, as withHostedView waits out a slow first render, for a stepper to appear among the window's accessibility elements.
+- Who may write it: the first call of hostedWindowsExposeAccessibility() in a run measures it, on a probe of its own, never on the view under test.
+  It hosts a labelled stepper (LoneStepper) and waits, as withHostedView waits out a slow first render, for a stepper to appear among the window's accessibility elements.
   HostedWindowAccessibility.assuming(_:_:) puts another answer in its place for the tests of the skip itself, which must see both answers on every Mac, and then puts back the one it had.
-- How others observe it: every test that reads hosted controls through accessibleControls(in:) first calls skipUnlessHostedWindowsExposeAccessibility(), through withHostedControls, which throws for that reason, or on its own, and where the answer is no it is skipped, before its view is hosted, with the one message HostedWindowAccessibility.unavailableMessage; the run's log then has one HOSTED_ACCESSIBILITY_UNAVAILABLE line saying how many steppers the probe drew.
+- How others observe it: every test that reads hosted controls through accessibleControls(in:) first calls skipUnlessHostedWindowsExposeAccessibility(), through withHostedControls, which throws for that reason, or on its own, and where the answer is no it is skipped, before its view is hosted, with the one message HostedWindowAccessibility.unavailableMessage.
+  The run's log then has one HOSTED_ACCESSIBILITY_UNAVAILABLE line saying how many steppers the probe drew.
   Because the probe never looks at the view under test, a control missing from that view, or left without its label, still fails wherever the controls are exposed, as AccessibilityTestSupportTests shows with a stepper left without a label, an expected failure.
 
 ## A hosted view's work during a wait
@@ -77,7 +81,8 @@ Whether hosted windows expose their controls to accessibility.
 A hosted view's own work while a test waits.
 
 - Owner: the test.
-  An asynchronous test method runs as a job of the main queue, and the run loop a test spins while it waits (waitUntil, which withHostedView uses) never drains that queue, so a hosted view's own tasks, such as the Transcribe Audio sheet's loading and a transcription's progress, never run while an asynchronous test waits for them.
+  An asynchronous test method runs as a job of the main queue, and the run loop a test spins while it waits (waitUntil, which withHostedView uses) never drains that queue.
+  So a hosted view's own tasks, such as the Transcribe Audio sheet's loading and a transcription's progress, never run while an asynchronous test waits for them.
   A test that waits for them is synchronous, as TranscriptionSheetViewTests' are.
 
 ## SwiftUI's checkboxes and steppers in a hosted test
@@ -86,7 +91,8 @@ A hosted view's own work while a test waits.
 SwiftUI's checkboxes and steppers in a hosted test.
 
 - Owner: the test.
-  SwiftUI draws a Toggle checkbox as a button with no target and no action, so a test can read its state but not press it: what a checkbox's binding does belongs in static functions the test calls, as FeedThresholdControl's isOff(_:rule:), shownNumber(_:remembering:rule:), and value(off:remembering:rule:) and RepeatedSymbolsSettingsView's neverCollapses(_:) are.
+  SwiftUI draws a Toggle checkbox as a button with no target and no action, so a test can read its state but not press it.
+  What a checkbox's binding does belongs in static functions the test calls, as FeedThresholdControl's isOff(_:rule:), shownNumber(_:remembering:rule:), and value(off:remembering:rule:) and RepeatedSymbolsSettingsView's neverCollapses(_:) are.
   NSStepper's accessibilityPerformIncrement() on the view changes nothing, so a test raises a stepper through its accessibility element from accessibleControls(in:), as RepeatedSymbolSettingsViewTests and FeedUISettingsTests do.
   SwiftUI gives a menu Picker's NSPopUpButton no action of its own, so a test chooses an item through NSMenu.performActionForItem(at:), as a click does (FeedItemUIPolicyControlsTests).
 
@@ -96,7 +102,8 @@ SwiftUI's checkboxes and steppers in a hosted test.
 A hosted view whose width outgrows the width it is offered.
 
 - Owner: the test.
-  A hosting view sets its window's smallest and largest sizes from its content's, so content whose width follows the width it is given and adds to it, as a macOS form in the columns style did, makes the window chase it until AppKit raises "more Update Constraints in Window passes than there are views in the window", which ends the test host with a crash dialog the user sees (in exploratory runs no committed test makes).
+  A hosting view sets its window's smallest and largest sizes from its content's.
+  So content whose width follows the width it is given and adds to it, as a macOS form in the columns style did, makes the window chase it until AppKit raises "more Update Constraints in Window passes than there are views in the window", which ends the test host with a crash dialog the user sees (in exploratory runs no committed test makes).
   Host such a view inside a frame of a fixed size, as SettingsTabFitTests hosts each Settings tab at the window's size, or measure it with NSHostingController.sizeThatFits(in:) and no window.
   The hosting helpers, withHostedView (TextMouthProductionTests/AccessibilityTestSupport.swift) and hostOffscreen (TextMouthProductionTests/ViewsAndWindowsTestSupport.swift), say so in their documentation.
 
@@ -134,7 +141,8 @@ The network.
 
 The system's media session.
 
-- Owner: NowPlayingService.shared, which in a process hosting tests takes no part in it (installsSystemIntegrations(in:)): it registers no MediaPlayer command targets, tells the system's Now Playing center nothing, and starts no CoreAudio device listener, though it still routes the commands handed to it among its readers.
+- Owner: NowPlayingService.shared, which in a process hosting tests takes no part in it (installsSystemIntegrations(in:)).
+  It registers no MediaPlayer command targets, tells the system's Now Playing center nothing, and starts no CoreAudio device listener, though it still routes the commands handed to it among its readers.
   The test host is TextMouth.app itself, with the bundle identifier of the developer's own copy, and macOS sends the AirPods and the media keys to the app that last said it was playing, so a suite whose readers play silent test audio could otherwise take the developer's AirPods presses.
   MediaCommandPlaybackTests and NowPlayingOwnershipTests give their readers a coordinator of their own (IntegrationWorld.openReader(nowPlaying:)) and see what the system would be told through a writer of their own, and RecordedSoundEffects (TextMouthProductionTests/IntegrationTestSupport.swift) records the sounds a reader asks for and plays none, for the tests of which sounds a reader makes.
 
