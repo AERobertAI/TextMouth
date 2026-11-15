@@ -53,6 +53,43 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 ## Lessons
 <!-- id: orchestrator-lessons; keys: disk, icon cache, lsregister, usage override, weekly reset, stall-watch, exit status; src: Scripts/agents/stall-watch.py, Scripts/agents/wait-for-usage-reset.py, Scripts/agents/usage-watch-unscoped.py, Scripts/agents/run_suite.py -->
 
+### Briefs and launches
+<!-- id: lessons-briefs-and-launches; keys: brief, launch, SendMessage, subagent limit, recommended answer, extract-report; src: Scripts/agents/extract-report.py -->
+
+- Save a subagent's report from its final message (`Scripts/agents/extract-report.py` prints it): a subagent often cannot write outside its worktree.
+- Keep the user's rules apart from yours: never pass off a rule of the orchestrator's as the user's.
+- When an agent's task is to search for inputs that defeat a security check, the model's safeguards can stop it, on Sonnet and Opus alike.
+  Don't do its work yourself and don't hand the case to another agent: make the defence not depend on the search.
+- When the user has not answered a question, build the recommended answer and record that choice.
+- Put the rule against reading or copying the user's live library (`AGENTS.md`, The user's standing rules) in every prompt, a reviewer's included: a reviewer copied two books to `/tmp` when its prompt lacked it.
+- A message sent with SendMessage reaches an agent at its next tool call, and a question on the board can go unseen, so send a message for anything urgent.
+- **The Agent tool runs at most 20 subagents at once** in a session ("Concurrent subagent limit reached (20)"), so count the leads, reviewers, and workers before a launch.
+
+### Trains and builds
+<!-- id: lessons-trains-and-builds; keys: train base, zsh status, build-train, shared base; src: Scripts/agents/build-train.py -->
+
+- When branches conflict, make one shared base early (`build-train.py loop --base <branch>`) and have each agent request its real branch: a private train copy of a branch tangles with other agents' commits.
+- Never assign `status` in a zsh script that waits on a suite: it is read-only there, so the script dies after the suite and reports a failure; use another name.
+
+### Reviews and merges
+<!-- id: lessons-reviews-and-merges; keys: review, fix round, verifier, integration branch, merge-tree, regenerate-project, merge-chain, exit status; src: Scripts/agents/merge-chain.sh, Scripts/agents/regenerate-project.py, Scripts/agents/run_suite.py -->
+
+- Take every branch through a review, a fix round, a narrow check, the Mac's full suite on an integration branch, and a fast-forward of main: every review finds real problems, so keep review, fix, and verify as separate steps.
+- Review a large or data-touching branch whole, first with Opus, and a small batch with Sonnet: the review of a whole branch is worth its cost for anything that rewrites the live library.
+- Give the narrow check to a fresh Sonnet verifier with the review report, the fix range, and one shared brief: it takes 2 to 18 minutes and costs less than resuming the reviewer.
+- Give each fix round its own review, right after it or after the merge, and have it measure on real samples: one braille fix split 98 of 233 titles of a real book.
+- Integrate on a fresh branch from main that merges only verified branches, so main stays installable; a branch that fails verification is left out.
+  Merge two conflicting team branches there, in a scratch worktree, and fast-forward main once the suite is green.
+- Scout conflicts before merging with `git merge-tree --write-tree --name-only main <branch>`, or with a trial merge made with `git commit-tree` while the reviews run: neither touches the working tree.
+- Run `Scripts/agents/regenerate-project.py` after every merge, clean or not: a clean textual merge of `project.pbxproj` can leave out a branch's new file when the branch never listed it.
+- Run a full suite in the lead's worktree while the review runs, to find full-suite-only failures early; three `TranscriptionFixtureTests` skip there, since their TestData zips are untracked.
+- Start `Scripts/agents/merge-chain.sh` with the Bash tool's background mode: a shell `&` gives no notice when the merge ends.
+- **The Mac suite's exit status is the gate.**
+  Read `Scripts/agents/run_suite.py`'s exit status, not the Executed line: "1 failure (0 unexpected)" is a real failure.
+
+### Usage, disk, and the Mac
+<!-- id: lessons-usage-disk-and-the-mac; keys: disk, icon cache, usage override, weekly reset, stall-watch, login expiry, scratchpad, 403; src: Scripts/agents/stall-watch.py, Scripts/agents/wait-for-usage-reset.py, Scripts/agents/usage-watch-unscoped.py -->
+
 - **Deleting to free disk:** the user allows the orchestrator, when the disk runs low or whenever it helps, to delete build folders that can be rebuilt.
   That means DerivedData, release and scratch builds, and finished agents' worktrees, each folder's apps unregistered first (the icon-cache lesson).
   When the disk falls under 8 GB, clear finished worktrees and scratch at once, with literal paths.
@@ -61,16 +98,27 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
   At each merge check `stat -f %l /Library/Caches/com.apple.iconservices.store` (entries plus two), and tell the user when it passes 10,000.
   Before deleting any build folder run `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u <folder>/Build/Products/Debug/TextMouth.app`.
   Batch targeted test runs into fewer launches.
+- Under 10 GB free, run one heavy job at a time and delete `build/DerivedData-main` right after each merge suite: an idle one blocked a team for 45 minutes.
+- Keep your scripts and working files in `build/orchestrator/`, never in the session's scratch folder: a restart of the Mac or of the session empties it, and the old session's agents cannot be resumed ("No transcript found").
+  Agents commit small and often, and a fresh agent finishes from the branches.
 - **The usage override before the weekly reset** (Saturdays at 8:00 a.m. Eastern).
   On a Friday night or Saturday morning, keep a full set of agents going until the limit runs out, and tell every agent so in its launch message.
   An agent that follows the usage rule stops itself at a "critical" reading, so say in the launch message whenever the user has overridden it.
   Keep a background task that exits after the reset, so you are re-invoked to resume agents that were cut off.
+- Agent work may run the weekly window down to about 10% left.
 - **A spent usage window:** nothing re-invokes you when it comes back, and once the limit is reached you cannot start a watcher.
   At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking you, when a window it saw spent has headroom again.
+- A login expiry or an API 403 ("Please run /login") stops every agent and watcher silently, and the usage monitor exits with "AUTH PROBLEM".
+  After the user logs in, a SendMessage to each agent's id resumes it with its uncommitted work; take over the last steps of a lead near a million tokens instead of resuming it.
+- After a weekly reset, resume few agents at first: a resumed long-context agent is costly (3% of a week in 10 minutes).
 - **Stalled agents:** an agent can stall with "no progress for 600s": a message to its id resumes it with its context intact, and its branch keeps its commits.
   A background suite stopped at its time limit must be rerun.
   While agents work, run `python3 -I Scripts/agents/stall-watch.py --subagents ~/.claude/projects/<project folder>/<session id>/subagents` as a background task.
   It exits naming any agent whose tool call has waited fifteen minutes for its result, usually at a permission prompt.
-- **The Agent tool runs at most 20 subagents at once** in a session ("Concurrent subagent limit reached (20)"), so count the leads, reviewers, and workers before a launch.
-- **The Mac suite's exit status is the gate.**
-  Read `Scripts/agents/run_suite.py`'s exit status, not the Executed line: "1 failure (0 unexpected)" is a real failure.
+
+### Teams
+<!-- id: lessons-teams; keys: team lead, outside review, signature, Sonnet lead; src: .claude/skills/agent-bbs/SKILL.md -->
+
+- A team lead may run on Sonnet: Sonnet leads matched Opus leads on waves of small tasks with exact line ranges; keep Opus for a large design and the first outside review.
+- Give a team branch an in-team reviewer and then an outside review before the merge; the outside review's fixes are small enough for one agent each.
+- When one team declares a signature that another calls, pick that single commit onto the integration branch at once, so the other team can rebase.
