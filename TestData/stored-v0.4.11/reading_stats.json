@@ -1,0 +1,15 @@
+{
+  "bookListeningSeconds" : {
+    "09471AEE-2A72-4464-8AA4-40B23BAD5A58" : 45.5,
+    "1AEAFD6E-8F7F-4904-A827-397C91F4AB5D" : 90
+  },
+  "dailyListeningSeconds" : {
+    "2026-11-14" : 90,
+    "2026-11-15" : 45.5
+  },
+  "dayKeyVersion" : 1,
+  "finishedBooks" : [
+
+  ],
+  "totalListeningSeconds" : 135.5
+}

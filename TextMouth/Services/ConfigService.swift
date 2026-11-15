@@ -234,7 +234,10 @@ final class ConfigService: ObservableObject {
     ///
     /// Which preferences the file carries, and why the others stay out of
     /// it, is set out in `Portability`, below.
-    struct AppConfig: Codable, Equatable {
+    ///
+    /// The file's keys that this TextMouth does not know are kept with the
+    /// settings (`unknownKeys`, V04) and written back as they were.
+    struct AppConfig: Codable, Equatable, KeepsUnknownKeysBesideSynthesizedCoding {
         var selectedVoiceID: String = ""
         /// Words per minute (50–650). 0 means "not yet set by user".
         var wordsPerMinute: Double = SettingsPolicy.wordsPerMinute.configDefault
@@ -467,6 +470,27 @@ final class ConfigService: ObservableObject {
         /// lacks, and "unicode", which an import recognizes by a file's bytes
         /// and never takes from the setting (`BrailleFileCode.importChoices`).
         var brailleFileCode: String = ""
+
+        /// The top-level keys of config.json that this TextMouth does not
+        /// know (V04, `UnknownKeys`): a later TextMouth's settings, or a
+        /// note someone kept in the file by hand. They are read with the
+        /// file (`ConfigService.decode(_:)`), kept through every change of a
+        /// setting, since a change is made to the configuration in use and
+        /// never by making a new one, and written back with the file
+        /// (`ConfigService.fileData(for:)`). They take part in `==`, so a
+        /// file that differs from the settings in use only in such a key is
+        /// still taken up, and the merge of an edit found on disk
+        /// (`ConfigService.merging(ours:theirs:base:)`), which compares the
+        /// configurations as the file holds them, takes the file's, since
+        /// nothing here ever changes one. The synthesized encoder passes
+        /// them over, and the decoder below does not read them.
+        var unknownKeys = UnknownKeys()
+
+        /// Whether `name` is a key of config.json that this version knows
+        /// (`KeepsUnknownKeysBesideSynthesizedCoding`).
+        static func isCodingKey(_ name: String) -> Bool {
+            CodingKeys(stringValue: name) != nil
+        }
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -1075,11 +1099,14 @@ final class ConfigService: ObservableObject {
     }
 
     /// The exact bytes `saveToDisk()` writes for `config`: sorted, indented
-    /// JSON that stays readable for people who edit the file by hand.
+    /// JSON that stays readable for people who edit the file by hand. The
+    /// keys `config` holds that this TextMouth does not know are written
+    /// among its own, sorted with them (V04); a configuration without any
+    /// is written exactly as before.
     nonisolated static func fileData(for config: AppConfig) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(config)
+        return try encoder.encode(WithUnknownKeys(config))
     }
 
     /// Reads config.json into `config` before returning.
@@ -1132,9 +1159,11 @@ final class ConfigService: ObservableObject {
     }
 
     /// Decodes config.json's bytes. The decoder is lenient: a single bad
-    /// value is repaired and logged rather than failing the whole file.
+    /// value is repaired and logged rather than failing the whole file. The
+    /// keys this TextMouth does not know are kept in the result
+    /// (`AppConfig.unknownKeys`, V04).
     nonisolated static func decode(_ contents: Data) throws -> AppConfig {
-        try JSONDecoder().decode(AppConfig.self, from: contents)
+        try JSONDecoder().decode(WithUnknownKeys<AppConfig>.self, from: contents).value
     }
 
     // MARK: - External Edits

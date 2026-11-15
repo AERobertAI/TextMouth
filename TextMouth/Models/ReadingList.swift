@@ -13,7 +13,7 @@ import Foundation
 /// moved, and holds each book at most once. It is saved in library.json
 /// with the rest of the index (`Library.readingList`); a book removed from
 /// the library leaves it (`Library.removeBook(id:)`).
-struct ReadingList: Codable, Equatable, Sendable {
+struct ReadingList: Codable, Equatable, Sendable, KeepsUnknownKeysBesideSynthesizedCoding {
 
     // MARK: Options
 
@@ -101,6 +101,23 @@ struct ReadingList: Codable, Equatable, Sendable {
     /// existed; it acts on books finished from the moment it is turned on,
     /// and takes off none already finished.
     var removesFinished: Bool
+    /// The keys of the list in library.json that this TextMouth does not
+    /// know (V04, `UnknownKeys`), as an option a later TextMouth adds is,
+    /// written back as they were; none in a list made here. It is not one
+    /// of the coding keys below, so the list's own coding passes it over:
+    /// `Library` reads and writes them beside the list's fields
+    /// (`WithUnknownKeys`).
+    var unknownKeys = UnknownKeys()
+
+    /// Whether `name` is a key of the stored list that this version knows
+    /// (`KeepsUnknownKeysBesideSynthesizedCoding`).
+    static func isCodingKey(_ name: String) -> Bool {
+        CodingKeys(stringValue: name) != nil
+    }
+
+    /// What the stored list holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(isKnown: { ReadingList.isStoredKey($0) })
 
     /// A list of `bookIDs`, in that order and each kept once, with the
     /// given options: by default empty, continuing to the book below,
@@ -221,7 +238,9 @@ struct ReadingList: Codable, Equatable, Sendable {
     /// The keys of the list in library.json. A TextMouth older than
     /// `removesFinished` reads a list with that key all the same: it names
     /// only the keys it knows and ignores the rest, and so loses the option
-    /// (reads as off) should it save the list.
+    /// (reads as off) should it save the list. From V04 on a TextMouth
+    /// keeps the keys it does not know (`unknownKeys`), so that one keeps
+    /// such an option through its saves.
     private enum CodingKeys: String, CodingKey {
         case bookIDs, continuation, skipsFinished, removesFinished
     }

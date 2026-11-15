@@ -211,6 +211,8 @@ final class BookBoxTests: XCTestCase {
             ("brailleFileCode", { $0.brailleFileCode = $1.brailleFileCode }),
             ("textEncoding", { $0.textEncoding = $1.textEncoding }),
             ("textEncodingSource", { $0.textEncodingSource = $1.textEncodingSource }),
+            // The keys a later TextMouth added to the row (V04).
+            ("unknownKeys", { $0.unknownKeys = $1.unknownKeys }),
     ] }
 
     /// `book` with `other`'s id, made through its JSON (the id is a `let`).

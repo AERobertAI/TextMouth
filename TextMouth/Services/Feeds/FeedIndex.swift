@@ -45,9 +45,18 @@ struct FeedIndexNewerLayout: Error, Equatable {
 
 extension FeedIndex: Codable {
     /// The index's keys: its layout's version, its feed, and its rows.
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case formatVersion, feedID, books
     }
+
+    /// What a feed's index holds, for the scan that says whether the file
+    /// can hold unknown keys (`StoredKeyScan`): its rows keep them (V04).
+    /// The index's own top level keeps none, so a key added there only
+    /// makes the decode look through the rows.
+    static let keySchema = StoredKeySchema(
+        names: CodingKeys.names,
+        objects: [CodingKeys.books.stringValue: Book.keySchema]
+    )
 
     /// Reads an index: its layout's version first, so one a newer TextMouth
     /// wrote is never read as this layout (`FeedIndexNewerLayout`); an index
@@ -120,9 +129,14 @@ enum FeedIndexFiles {
 
     /// The index `data` holds. Throws when it holds none, or
     /// `FeedIndexNewerLayout` for one a newer TextMouth wrote.
+    ///
+    /// The bytes are scanned first for a key a row does not know
+    /// (`StoredKeyScan`); only an index that may hold one is looked through
+    /// for them as it is decoded (V04).
     static func decoded(_ data: Data) throws -> FeedIndex {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+        decoder.userInfo = StoredKeyScan.userInfo(forDecoding: data, schema: FeedIndex.keySchema)
         return try decoder.decode(FeedIndex.self, from: data)
     }
 
@@ -375,9 +389,15 @@ enum FeedIndexFiles {
     /// that feed's folder in the data directory at `root`: a feed item of
     /// that feed, whatever feed its row named (the folder decides), with no
     /// library folder, and its file at its place in the package.
+    ///
+    /// A row that already names this feed keeps its link as it is, with the
+    /// keys a later TextMouth keeps in it (V04); a link made anew here, for
+    /// a row that named another feed or none, has none.
     static func placed(_ row: Book, in root: URL, of feedID: UUID) -> Book {
         var placed = row
-        placed.feedLink = FeedBookLink(feedID: feedID, itemID: row.feedLink?.itemID ?? "")
+        if row.feedLink?.feedID != feedID {
+            placed.feedLink = FeedBookLink(feedID: feedID, itemID: row.feedLink?.itemID ?? "")
+        }
         placed.folderPath = ""
         placed.filePath = path(row.filePath, inPackageNamed: row.tmbDirectoryName, at: placed.packageDirectory(inDataDirectory: root))
         return placed

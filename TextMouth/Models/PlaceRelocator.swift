@@ -1604,9 +1604,14 @@ extension PlaceRelocator {
     }
 
     /// The skip of `heading` in the new text `new`, with the anchor at its
-    /// start; `skipped`'s own anchor when none can be captured there.
+    /// start; `skipped`'s own anchor when none can be captured there. It is
+    /// the same skip, following its heading, so it keeps the keys of
+    /// `skipped` that this TextMouth does not know (V04), as a position and
+    /// a bookmark keep theirs when they are moved (`moved(_:to:in:)`).
     private static func skip(of heading: Heading, keeping skipped: SkippedHeading, in new: BookWords) -> SkippedHeading {
-        SkippedHeading(heading, anchor: TextAnchor(capturingAt: start(of: heading), in: new) ?? skipped.anchor)
+        var moved = SkippedHeading(heading, anchor: TextAnchor(capturingAt: start(of: heading), in: new) ?? skipped.anchor)
+        moved.unknownKeys = skipped.unknownKeys
+        return moved
     }
 }
 

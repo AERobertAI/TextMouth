@@ -264,7 +264,7 @@ extension Transcript {
 /// index: the transcript's layout version, its language, when it was
 /// made, and, for one TextMouth's recognizer did not make, where it came
 /// from.
-struct TranscriptNote: Codable, Hashable, Sendable {
+struct TranscriptNote: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The layout version of the book's transcript.json.
     var version: Int
     /// The language the book was transcribed in (`Transcript.locale`).
@@ -274,6 +274,48 @@ struct TranscriptNote: Codable, Hashable, Sendable {
     /// Where the transcript came from (`Transcript.source`); nil for one
     /// recognition made, and then left out of the record, as before.
     var source: TranscriptSource? = nil
+    /// The keys of the stored note that this TextMouth does not know (V04),
+    /// written back as they were; none in a note made here, as one made
+    /// from a new transcript is.
+    var unknownKeys = UnknownKeys()
+}
+
+// The coding is in an extension, so the struct keeps its memberwise
+// initializer.
+extension TranscriptNote {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case version, locale, createdAt, source
+    }
+
+    /// The names of a note's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored note holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames, objects: ["source": TranscriptSource.keySchema])
+
+    /// Reads a note as the synthesized decoder read it (its version,
+    /// language, and date required; its source optional), and keeps every
+    /// other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        locale = try container.decode(String.self, forKey: .locale)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        source = try container.decodeIfPresent(TranscriptSource.self, forKey: .source)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the note as the synthesized encoder wrote it (the source is
+    /// left out when nil), after the keys this version does not know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(version, forKey: .version)
+        try container.encode(locale, forKey: .locale)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(source, forKey: .source)
+    }
 }
 
 // MARK: - Where a Transcript Came From
@@ -292,7 +334,7 @@ struct TranscriptNote: Codable, Hashable, Sendable {
 /// cannot be decoded is set aside unread) nor is lost when this TextMouth
 /// saves the transcript again, as an edit or a cleanup does.
 /// `knownOrigin` and `knownFormat` read them as this TextMouth knows them.
-struct TranscriptSource: Codable, Hashable, Sendable {
+struct TranscriptSource: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// How a transcript reached its book. The raw values are kept in
     /// transcript.json and bookInfo.json, so they never change.
     enum Origin: String, Sendable {
@@ -323,6 +365,45 @@ struct TranscriptSource: Codable, Hashable, Sendable {
     /// earlier TextMouth wrote, which cannot read this field and keeps
     /// `format` as the first file's.
     var formats: [String]?
+    /// The keys of the stored source that this TextMouth does not know
+    /// (V04), in transcript.json and in the book's record alike, written
+    /// back as they were; none in a source made here.
+    var unknownKeys = UnknownKeys()
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case origin, format, fileName, formats
+    }
+
+    /// The names of a source's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored source holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames)
+
+    /// Reads a source as the synthesized decoder read it (its origin and
+    /// format required; its file name and formats optional), and keeps
+    /// every other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        origin = try container.decode(String.self, forKey: .origin)
+        format = try container.decode(String.self, forKey: .format)
+        fileName = try container.decodeIfPresent(String.self, forKey: .fileName)
+        formats = try container.decodeIfPresent([String].self, forKey: .formats)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the source as the synthesized encoder wrote it (its file name
+    /// and formats left out when nil), after the keys this version does not
+    /// know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(origin, forKey: .origin)
+        try container.encode(format, forKey: .format)
+        try container.encodeIfPresent(fileName, forKey: .fileName)
+        try container.encodeIfPresent(formats, forKey: .formats)
+    }
 
     /// The source of a transcript that reached its book by `origin`, read
     /// from a file of `format` named `fileName`. A name given with folders

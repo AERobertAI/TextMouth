@@ -1517,9 +1517,15 @@ enum LibraryPersistenceService {
     /// does nothing else: no log line, no memory of the bytes, no
     /// protection of an index that fails. Compare Libraries reads another
     /// copy's index this way, so reading it leaves no trace in this library.
+    ///
+    /// The bytes are scanned first for a key some part of the index does
+    /// not know (`StoredKeyScan`), and only an index that may hold one is
+    /// looked through for them, row by row, as it is decoded (V04): an
+    /// index this TextMouth or an earlier one wrote holds none.
     static func decodeIndex(from data: Data) throws -> Library {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+        decoder.userInfo = StoredKeyScan.userInfo(forDecoding: data, schema: Library.keySchema)
         return try decoder.decode(Library.self, from: data)
     }
 

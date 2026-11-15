@@ -234,6 +234,12 @@ enum DuplicateReplacement {
         carried.dateAdded = existing.dateAdded
         carried.lastOpened = existing.lastOpened
         carried.keepHandEditedMetadata(of: existing)
+        // The keys of the old row that this TextMouth does not know (V04):
+        // the row stays the same book's, under the same ID, so what a later
+        // TextMouth keeps in it stays too. (The new copy's row, just
+        // imported here, holds none.) The old package's record goes with
+        // its package, and the keys only that record held go with it.
+        carried.unknownKeys = existing.unknownKeys
         carried.brailleTableOrigin = brailleTableOrigin(replacing: existing, with: copy)
         // A text book's places and speed mean nothing to an audiobook, and
         // an audiobook's mean nothing to a text book.
