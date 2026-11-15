@@ -8,7 +8,7 @@ import XCTest
 /// (`MarkdownDocParser`), which makes the reading text, the headings, and the
 /// pages, and the exporter's (`ExportDocumentWalker`), which makes the
 /// document every export writer reads. The records here were made while both
-/// walked swift-markdown's tree, the day before they were moved to cmark's
+/// walked swift-markdown's tree, just before they were moved to cmark's
 /// own tree, so this test is the proof that the move changed nothing a
 /// listener hears, sees in a heading list, or finds in an exported file. It
 /// stays as the check for any later change to either walk, or to cmark.
