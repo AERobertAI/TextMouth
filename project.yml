@@ -554,18 +554,30 @@ targets:
     sources:
       - TextMouthiOSTests
       # Mac test files the iPhone's unit tests share by path (one file serves both bundles; see docs/developer/testing.md).
+      - TextMouthProductionTests/ArchiveBudgetTests.swift
       - TextMouthProductionTests/AudioSeekAndObserverTests.swift
       - TextMouthProductionTests/AudioZIPClassificationTests.swift
+      - TextMouthProductionTests/BookAuthorPlaceholderTests.swift
+      - TextMouthProductionTests/BookMetadataUpdateTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift
       - TextMouthProductionTests/CollectionTestSupport.swift
+      - TextMouthProductionTests/DOCXMalformedXMLTests.swift
+      - TextMouthProductionTests/DOCXStructureTests.swift
       - TextMouthProductionTests/DOCXTestPackages.swift
       - TextMouthProductionTests/DamagedFileTestSupport.swift
+      - TextMouthProductionTests/DocumentByteLimitTests.swift
+      - TextMouthProductionTests/EPUBStructureFailureTests.swift
       - TextMouthProductionTests/EndOfBookRuleTests.swift
+      - TextMouthProductionTests/ExtractionReportTests.swift
       - TextMouthProductionTests/FFmpegMetadataTests.swift
       - TextMouthProductionTests/FinishedBookModelTests.swift
       - TextMouthProductionTests/HostedTestIsolationSupport.swift
+      - TextMouthProductionTests/ImportConcurrencyTests.swift
+      - TextMouthProductionTests/ImportDecisionQueueTests.swift
       - TextMouthProductionTests/ImportDecisionTestSupport.swift
       - TextMouthProductionTests/ImportFuzzMutator.swift
+      - TextMouthProductionTests/ImportFuzzMutatorTests.swift
+      - TextMouthProductionTests/ImportProgressWordingTests.swift
       - TextMouthProductionTests/ImportRefusalTestSupport.swift
       - TextMouthProductionTests/KF8Fixture.swift
       - TextMouthProductionTests/KFXFixture.swift
@@ -575,8 +587,15 @@ targets:
       - TextMouthProductionTests/ListNeighborsTests.swift
       - TextMouthProductionTests/LogTestSupport.swift
       - TextMouthProductionTests/MOBIFixture.swift
+      - TextMouthProductionTests/MarkdownEmphasisTests.swift
+      - TextMouthProductionTests/MarkdownNestingTests.swift
+      - TextMouthProductionTests/MarkdownPageMarkerTests.swift
       - TextMouthProductionTests/MarkupFuzzGenerator.swift
+      - TextMouthProductionTests/MarkupGuardTests.swift
       - TextMouthProductionTests/MediaGestureDetectorTests.swift
+      - TextMouthProductionTests/PackageNavigationAuditTests.swift
+      - TextMouthProductionTests/PageModelTests.swift
+      - TextMouthProductionTests/ParserContentFidelityTests.swift
       - TextMouthProductionTests/PhoneAudioErrorCodeTests.swift
       - TextMouthProductionTests/PhoneAudioEventPolicyTests.swift
       - TextMouthProductionTests/PhoneAudioPaceTests.swift
@@ -591,8 +610,10 @@ targets:
       - TextMouthProductionTests/SpeechRenderCoordinatorTests.swift
       - TextMouthProductionTests/StorageGenerationTestSupport.swift
       - TextMouthProductionTests/SubstitutionCompositionTests.swift
+      - TextMouthProductionTests/TMBNameTests.swift
       - TextMouthProductionTests/TextAnchorRealReadings.swift
       - TextMouthProductionTests/TextEncodingFixtures.swift
+      - TextMouthProductionTests/TextutilHTMLStructureTests.swift
       - TextMouthProductionTests/TimeLeftEstimateTests.swift
       - TextMouthProductionTests/ZIPTestSupport.swift
       # End of the shared Mac test files.
