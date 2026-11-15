@@ -344,8 +344,10 @@ struct Library: Codable, Equatable, KeepsUnknownKeys {
         case books, folders, folderSortSettings, readingList
     }
 
-    /// The names of library.json's sections that this version knows.
-    private static let knownKeyNames = CodingKeys.names
+    /// The names of library.json's sections that this version knows. Not
+    /// private: the salvage of an index that cannot be read as a whole
+    /// keeps every other section too (`SalvagedLibraryArrangement`).
+    static let knownKeyNames = CodingKeys.names
 
     /// What library.json holds, for the scan that says whether the file can
     /// hold unknown keys (`StoredKeyScan`): its sections, and of them the

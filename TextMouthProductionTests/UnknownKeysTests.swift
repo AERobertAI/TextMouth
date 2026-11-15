@@ -844,6 +844,43 @@ final class UnknownKeysTests: XCTestCase {
         XCTAssertEqual(written.state.revision, 7)
     }
 
+    /// An index that cannot be read as a whole still gives its reading
+    /// list with the keys the list does not know, and the sections of the
+    /// index this TextMouth does not know; and at launch, when the session
+    /// holds nothing, the library that stands in for the index takes both
+    /// from it (review6, finding 3).
+    func testTheSalvageOfAnUnreadableIndexKeepsUnknownKeys() throws {
+        var book = Self.plainBook()
+        book.feedLink = nil
+        var index = try XCTUnwrap(try Self.tree(LibraryPersistenceService.encodedIndex(Self.library(of: [book]))) as? [String: Any])
+        // The folders in a layout this version cannot read make the whole
+        // index unreadable.
+        index["folders"] = "in a later layout"
+        index[Self.addedKey] = Self.everyKind
+        var list = try Self.object(in: index, at: ["readingList"])
+        list["shuffles"] = true
+        index["readingList"] = list
+        let data = try Self.data(index)
+        XCTAssertThrowsError(try LibraryPersistenceService.decodeIndex(from: data))
+
+        let salvaged = SalvagedLibraryArrangement.read(from: data)
+        XCTAssertEqual(salvaged.unread, [])
+        XCTAssertEqual(salvaged.readingList?.bookIDs, [book.id])
+        XCTAssertEqual(salvaged.readingList?.unknownKeys, UnknownKeys(["shuffles": .bool(true)]))
+        XCTAssertEqual(Set(salvaged.unknownSections.members.keys), [Self.addedKey])
+
+        // At launch the session holds nothing, so both come from the bytes.
+        let atLaunch = LibraryViewModel.recoveredArrangement(session: Library()) { data }
+        XCTAssertEqual(atLaunch.readingList.unknownKeys, UnknownKeys(["shuffles": .bool(true)]))
+        XCTAssertEqual(atLaunch.unknownSections, salvaged.unknownSections)
+
+        // A session that read its index whole keeps its own.
+        var session = Self.library(of: [book])
+        session.unknownKeys = UnknownKeys(["sessionRead": .integer(1)])
+        let later = LibraryViewModel.recoveredArrangement(session: session) { data }
+        XCTAssertEqual(later.unknownSections, session.unknownKeys)
+    }
+
     // MARK: - config.json's Saves and Merges
 
     /// A setting changed and saved keeps config.json's unknown keys, and

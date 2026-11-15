@@ -124,6 +124,10 @@ struct SalvagedLibraryArrangement: Equatable {
     var sortSettings: [String: FolderSortSetting]?
     /// The parts the index holds that could not be read, wholly or in part.
     var unread: LibraryIndexArrangement
+    /// The top-level sections of the index that this TextMouth does not
+    /// know (V04, `Library.unknownKeys`), kept so that Rebuild Library Index
+    /// writes them back; none when the index holds none or gives nothing.
+    var unknownSections = UnknownKeys()
 
     /// Reads the arrangement from `data`, the bytes of an unreadable index,
     /// or from nothing, when no copy of it could be read, which gives
@@ -135,7 +139,8 @@ struct SalvagedLibraryArrangement: Equatable {
         return SalvagedLibraryArrangement(
             readingList: fields.readingList,
             sortSettings: fields.sortSettings,
-            unread: fields.unread
+            unread: fields.unread,
+            unknownSections: fields.unknownSections
         )
     }
 
@@ -145,6 +150,7 @@ struct SalvagedLibraryArrangement: Equatable {
         var readingList: ReadingList? = ReadingList()
         var sortSettings: [String: FolderSortSetting]? = [:]
         var unread: LibraryIndexArrangement = []
+        var unknownSections = UnknownKeys()
 
         /// The keys library.json writes them under (`Library.CodingKeys`).
         private enum CodingKeys: String, CodingKey {
@@ -152,11 +158,15 @@ struct SalvagedLibraryArrangement: Equatable {
         }
 
         /// Reads each part present in the index; a missing part, or one
-        /// written as null, holds nothing and so loses nothing.
+        /// written as null, holds nothing and so loses nothing. The reading
+        /// list is read with the keys it does not know, as `Library` reads
+        /// it, and the sections of the index this TextMouth does not know
+        /// are kept as they are (V04).
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
+            unknownSections = UnknownKeys(from: decoder, besides: Library.knownKeyNames)
             if Self.holds(.readingList, in: container) {
-                readingList = try? container.decode(ReadingList.self, forKey: .readingList)
+                readingList = (try? container.decode(WithUnknownKeys<ReadingList>.self, forKey: .readingList))?.value
                 if readingList == nil {
                     unread.insert(.readingList)
                 }
@@ -274,8 +284,9 @@ extension LibraryViewModel {
             unreadableRows: library.unreadableRows
         )
         // So are the sections a later TextMouth keeps in library.json that
-        // this one does not know, when the session read any (V04).
-        library.unknownKeys = feedItems.unknownKeys
+        // this one does not know: the session's, or at launch, when the
+        // session read nothing, the unreadable index's own (V04).
+        library.unknownKeys = arrangement.unknownSections
         indexRecovery = LibraryIndexRecovery(failure: failure, arrangementNotKept: arrangement.notKept)
         showIndexRecoveryOptions = true
     }
@@ -290,6 +301,10 @@ extension LibraryViewModel {
         /// The parts this session did not hold and the unreadable index's
         /// bytes did not give.
         var notKept: LibraryIndexArrangement
+        /// The index's sections that this TextMouth does not know (V04):
+        /// the session's when it holds any, and otherwise those the
+        /// unreadable index's bytes give.
+        var unknownSections = UnknownKeys()
     }
 
     /// The arrangement of the library shown while the index cannot be read
@@ -305,10 +320,13 @@ extension LibraryViewModel {
         let holdsReadingList = session.readingList != ReadingList()
         let holdsSortSettings = !session.folderSortSettings.isEmpty
         guard !holdsReadingList || !holdsSortSettings else {
+            // A session that holds both read its index whole, with its
+            // unknown sections.
             return RecoveredArrangement(
                 readingList: session.readingList,
                 sortSettings: session.folderSortSettings,
-                notKept: []
+                notKept: [],
+                unknownSections: session.unknownKeys
             )
         }
         let salvaged = SalvagedLibraryArrangement.read(from: unreadableIndex())
@@ -322,7 +340,8 @@ extension LibraryViewModel {
         return RecoveredArrangement(
             readingList: holdsReadingList ? session.readingList : salvaged.readingList ?? ReadingList(),
             sortSettings: holdsSortSettings ? session.folderSortSettings : salvaged.sortSettings ?? [:],
-            notKept: notKept
+            notKept: notKept,
+            unknownSections: session.unknownKeys.isEmpty ? salvaged.unknownSections : session.unknownKeys
         )
     }
 
