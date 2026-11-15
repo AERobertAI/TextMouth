@@ -62,7 +62,8 @@ TextMouthPaths.cachedAudioDir(in:) names a per-package cachedAudio folder (TextM
 ## Frozen performance test oracles
 <!-- id: frozen-performance-test-oracles; keys: golden tests, benchmark, baseline, oracle, legacy code, speech preparation; src: TextMouthProductionTests/TextPipelineFixtures.swift, TextMouthProductionTests/TextPipelineBenchmarkTests.swift, TextMouthProductionTests/SpeechPreparationSubstitutionTests.swift, TextMouthProductionTests/SpeechPreparationPauseAndSymbolTests.swift, TextMouthProductionTests/SpeechPreparationCacheTests.swift -->
 
-The performance tests keep, verbatim, the code each change replaced, as the oracle and the baseline the new code is compared with: each speech-preparation test file keeps its own privately (legacyTransform, legacyPauses, legacyRuns, legacyPreparedSpeech), and the text pipeline's are kept once, in TextPipelineBefore (TextMouthProductionTests/TextPipelineFixtures.swift), for the golden tests and the benchmarks.
+The performance tests keep, verbatim, the code each change replaced, as the oracle and the baseline the new code is compared with.
+Each speech-preparation test file keeps its own privately (legacyTransform, legacyPauses, legacyRuns, legacyPreparedSpeech), and the text pipeline's are kept once, in TextPipelineBefore (TextMouthProductionTests/TextPipelineFixtures.swift), for the golden tests and the benchmarks.
 They are frozen on purpose and must not be changed to call the new code.
 
 ## Feed badge and book row badges
@@ -80,7 +81,8 @@ One speaker of short announcements in the app's own voice could serve both.
 ## Elapsed time rounding
 <!-- id: elapsed-time-rounding; keys: TimeFormatting, spoken time, timeOnBookStep, elapsedStep, import progress, download wait; src: TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift -->
 
-ImportProgressWording.timeOnBook(_:) (Models/ImportProgressWording.swift) counts the time on a book in whole 5-second steps, as ReaderCloudWording.elapsed(since:at:) (ViewModels/ReaderViewModel+CloudDownload.swift) counts a download's wait, so VoiceOver and a braille display don't churn; one TimeFormatting helper could serve both (board #1460).
+ImportProgressWording.timeOnBook(_:) (Models/ImportProgressWording.swift) counts the time on a book in whole 5-second steps, as ReaderCloudWording.elapsed(since:at:) (ViewModels/ReaderViewModel+CloudDownload.swift) counts a download's wait, so VoiceOver and a braille display don't churn.
+One TimeFormatting helper could serve both (board #1460).
 
 ## Listing a folder without downloading
 <!-- id: listing-folder-without-downloading; keys: contentsOfDirectory, cloud placeholder, FeedRecordAbsence, package listing; src: TextMouth/ViewModels/LibraryViewModel+FeedDownloadReturn.swift, TextMouth/Services/Feeds/FeedItemPackage.swift -->
@@ -91,6 +93,10 @@ FeedRecordAbsence's notesOfThisMac(in:) (ViewModels/LibraryViewModel+FeedDownloa
 <!-- id: xml-escaping; keys: escape, ampersand, markup, attribute, PEF, apostrophe; src: TextMouth/Services/Export/XMLEscaping.swift, TextMouth/Services/BrailleFileWriter.swift, TextMouth/Services/Feeds/FeedTextConverter.swift, TextMouth/Services/Feeds/FeedOPML.swift, TextMouth/Parsers/SSMLReader.swift, TextMouth/Services/Feeds/FeedParser.swift, TextMouth/Services/Feeds/FeedEpisodeImporter.swift -->
 
 XMLEscaping (Services/Export/XMLEscaping.swift) escapes text for XML for every writer of it.
-The feed, OPML, and SSML code use it (FeedOPML writes attributes with XMLEscaping.attribute, so it no longer writes &apos;; SSMLReader uses XMLEscaping.markup directly; FeedTextConverter.escaped stays as a one-line delegate to XMLEscaping.markup, since FeedParser, FeedEpisodeImporter, and test support call it, and it walks scalars, as a parser reads, where the old Character walk left a "&" with a combining accent raw).
+The feed, OPML, and SSML code use it:
+- FeedOPML writes attributes with XMLEscaping.attribute, so it no longer writes &apos;;
+- SSMLReader uses XMLEscaping.markup directly;
+- FeedTextConverter.escaped stays as a one-line delegate to XMLEscaping.markup, since FeedParser, FeedEpisodeImporter, and test support call it, and it walks scalars, as a parser reads, where the old Character walk left a "&" with a combining accent raw.
+
 One copy is left: BrailleFileWriter.escaped (Services/BrailleFileWriter.swift, for the PEF's head), which could use it (an open follow-up in the TODO, from team export).
 The PEF's version leaves out a vertical tab or a form feed where XMLEscaping writes a space.
