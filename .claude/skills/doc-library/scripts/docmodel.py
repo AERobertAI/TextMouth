@@ -40,6 +40,16 @@ SCOPES = {
 }
 # Pages that are logs: dated history is allowed there, so the lint skips its date rules.
 LOG_PAGES = frozenset({"docs/user/changelog.md", "docs/agents/history.md"})
+
+
+def is_log_page(path: str) -> bool:
+    """Whether ``path`` (POSIX, from the root) is a log page, where dated history, and names of what was removed, are allowed.
+
+    The one test the lint's rules and ``stale`` share, so that they agree on what a log is.
+    """
+    return path in LOG_PAGES
+
+
 # Pages that index the others, whose lines are links.
 INDEX_PAGES = ("README.md", "ARCHITECTURE.md")
 # The pages beyond the ``docs`` scope that the lint covers and an id is looked up in.
