@@ -208,6 +208,6 @@ The last passes fail on none of them.
   - `PhoneValueRowTests` against a row that is not stacked;
   - the Return key in Book Information's multi-line fields (a Return is dropped, so the value stays on one line);
   - anything that needs VoiceOver.
-- **Contrast:** Apple's audit says iOS's secondary gray only nearly passes contrast, so the phone draws all its text at full contrast (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms.md)).
+- **Contrast:** Apple's audit says iOS's secondary gray only nearly passes contrast, so the phone draws all its text at full contrast (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms-phone-interface.md)).
   That follows the recommended answer to question 2 of section 6 in `humanQuestions/2026-11-08.md`, which the user has not answered.
   Undoing it is one line.
