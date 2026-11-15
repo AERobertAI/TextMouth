@@ -187,6 +187,36 @@ final class PageImageImportTests: XCTestCase {
         XCTAssertTrue(content.pages.isEmpty)
     }
 
+    /// A comic book archive in a ZIP batch with a page that cannot be read is
+    /// imported without that page, and the batch's alert lists it among the
+    /// books with pages that could not be read, keeping the original; the
+    /// scripted recognizer stands in for Vision.
+    func testABatchNamesTheUnreadablePageOfAnArchive() throws {
+        let saved = PageImageReader.defaultRecognizer
+        defer { PageImageReader.defaultRecognizer = saved }
+        PageImageReader.defaultRecognizer = ScriptedPageRecognizer([
+            .lines(PageImageFixtures.paragraph(["Sailings resume at dawn"])),
+        ])
+        let comic = try PageImageFixtures.comicArchive(named: "notices.cbz", [
+            TestZIPEntry("1.png", try PageImageFixtures.plainPage()),
+            TestZIPEntry("2.png", Data("not a picture".utf8)),
+        ], for: self)
+
+        let result = FileImportService.importSupportedFiles([comic], toFolder: "")
+        for book in result.books {
+            addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        }
+
+        XCTAssertEqual(result.books.map(\.format), [.comic])
+        XCTAssertTrue(result.keepsOriginal)
+        XCTAssertEqual(
+            result.failureSummary,
+            "Imported 1 book, but 1 book has pages that could not be read:\nnotices.cbz: OCR could not run on 1 of 2 pages, "
+                + "so text that appears only in its images is missing: page 2 (its file could not be read as a picture).\n"
+                + "The original file was kept."
+        )
+    }
+
     // MARK: - Pictures Among Other Files
 
     /// A picture is a book only when chosen on its own: among other files it
