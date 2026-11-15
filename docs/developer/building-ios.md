@@ -114,8 +114,11 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
 - **Why a run is quick.**
   Three things keep it short.
   The build products are kept between runs with `actions/cache`.
-  Each job restores the newest cache for this Xcode, and `Scripts/agents/restore_mtimes.py` gives every file unchanged since that build (by its git blob hash, from a manifest saved beside the products) one fixed old time, because a fresh checkout would otherwise make Xcode compile everything again.
-  A warm build took 1.3 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it).
+  Each job restores the newest cache for this Xcode, and `Scripts/agents/restore_mtimes.py` gives every tracked file a time taken from its own git blob hash, so the same text has the same time in every run, whichever run built the products.
+  A fresh checkout would otherwise make Xcode compile everything again.
+  The manifest saved beside the products now only names the files that differ, for the run's page.
+  A warm build took about 2 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it).
+  To see where a job's minutes go, a request sent by hand may carry `diagnose`, `audio_probe`, `ax_probe`, or `parallel_workers` (see [Tests on GitHub Actions](testing-github.md)).
   A long request runs as up to four jobs side by side, each with its share of the test classes (`Scripts/agents/shard.py` deals them out by their times on the runner in `class-times.json`; `plan_shards.py` starts the jobs; `merge_shards.py` joins their results into the one artifact the Mac reads).
   And a test that waits for something the runner lacks fails after 2 minutes (xcodebuild rounds to the minute), or is left out (`Scripts/agents/runner-skips.conf`).
   [Tests on GitHub Actions](testing-github.md) has the details and the times.

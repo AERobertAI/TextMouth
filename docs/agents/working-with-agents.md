@@ -94,7 +94,7 @@ It makes this its last step before the train request: a test file that does not 
 
 **Asks once, for everything.**
 It sends one request for a batch of work, not one per commit, naming every class and area the change could break, not only those it edited: a class left out costs a second train.
-Ask for a train naming your classes and areas, not for a full suite: each full suite on GitHub holds the one `TestBuild` lane 30 to 40 minutes (the iPhone job) and every train waits behind it.
+Ask for a train naming your classes and areas, not for a full suite: each full suite on GitHub holds the one `TestBuild` lane about 26 minutes (the iPhone job is the longest) and every train waits behind it; a train of 3 classes takes about 9.
 The orchestrator's Mac suite at the merge is the full check.
 A fix to a shared writer needs the golden and heading-annotation classes in its request: one marker change passed 388 tests and failed three at the merge.
 Name the policy tests your change calls for.
@@ -135,7 +135,7 @@ The train does not run the iOS census on this Mac: the run builds the iPhone app
 Your result lists "iOS errors in files your branch changes" from that build, with the errors themselves (a failed iPhone build is information; it does not change the train's verdict on the tests).
 A train leaves 5 minutes after the first waiting request, and a push waits for any run already on `TestBuild`, so a train's run is never cut off by another sender's.
 If the push or the run fails, the board says "the run on GitHub failed, so your request waits for the next train": the request is already back in the queue, so the agent does not ask again.
-A remote train's tests skip the 103 entries of `Scripts/agents/runner-skips.conf` (audio-playing tests among them), and your result has a "Not run on GitHub, no verdict: X (reason)" line for each one you asked for.
+A remote train's tests skip the 14 entries of `Scripts/agents/runner-skips.conf` (the audio engine's and the Ogg decoders' tests among them; the other audio tests run), and your result has a "Not run on GitHub, no verdict: X (reason)" line for each one you asked for.
 They have no verdict, so say so in your report and ask the orchestrator to run them in a local train.
 A timing failure on the runner that passes on the Mac is flaky there; do not raise the test's limit.
 A remote loop started with `--soon N` leaves N minutes after a request instead of on the hour, so a fix may get its result sooner; the rules above hold either way.

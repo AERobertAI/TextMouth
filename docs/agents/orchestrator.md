@@ -178,8 +178,8 @@ The test command is made in one place, `Scripts/agents/test_command.py`, which t
 A remote train takes no heavy-work lock, skips the disk check and the iOS census, and shares the train's own lock with a remote suite, since a newer push to `TestBuild` cancels the older run.
 If its push or run fails, it puts every request back in the queue, tells each agent and the orchestrator, and the loop waits 15 minutes before the next try.
 A long request runs as up to four parallel jobs (`Scripts/agents/shard.py` deals the classes out; `merge_shards.py` joins the results into the one artifact the Mac reads), and build products are cached between runs (`restore_mtimes.py`).
-The full suite took 13 to 16 minutes (three clean runs in a row) against 80 without finishing before the tuning.
-The runner cannot play or read audio, so `Scripts/agents/runner-skips.conf` lists the 103 entries (103 of about 11,960 tests) it does not run, each with its reason.
+The full suite takes about 26 minutes, the iPhone job being the longest part (80 without finishing before the tuning).
+The runner cannot start the audio engine and has other limits, so `Scripts/agents/runner-skips.conf` lists the 14 entries (of about 12,470 tests) it does not run, each with its reason.
 Each remote result says which of an agent's requested tests were among them ("Not run on GitHub, no verdict").
 A remote suite is therefore not the last check before a release: run those on this Mac too, with a local `build-train.py run`, which takes the heavy-work lock.
 A push to `TestBuild` also refuses a tree whose `.github/workflows/` or `.github/actions/` differs from origin's main, once origin's main holds `test-build.yml`.

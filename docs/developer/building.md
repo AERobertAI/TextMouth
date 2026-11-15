@@ -263,7 +263,7 @@ One machine could not finish the whole suite in the old job's 60-minute limit (r
 
 **What the suite on GitHub is not, compared with step 4 of `make check` on this Mac.**
 It is weaker in four ways, and only `make check` here is the full gate:
-- The 103 tests of `Scripts/agents/runner-skips.conf` are left out, as on `TestBuild`, so no job on GitHub runs them.
+- The 14 tests of `Scripts/agents/runner-skips.conf` are left out, as on `TestBuild`, so no job on GitHub runs them.
 - The limits of `KF8HostileFileTests` and `MOBIHostileFileTests` are multiplied by 2.5 (`TestMachine.timeScale`, which only `run-on-runner.py` sets).
 - The performance baselines run on no GitHub machine.
   The request says `"strict_performance": true`, which hands `TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1` to the test host as `make test PERFORMANCE_STRICT=1` does.
