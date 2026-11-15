@@ -759,6 +759,22 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
   First runs, November 9, 2026, seed 1 and 2,000 rounds each: The Time Machine 1,736 read and 264 refused, the Quay Almanac hybrid 1,863 and 137, Yellow Wallpaper in KF8 1,830 and 170.
   Seed 2, 2,000 rounds over four books: 1,820 and 180.
   No trap, no slow or large round, and no SwiftSoup, `MarkupGuard`, or converter failure.
+- **The stack proof's first full run:**
+  In Release, 22 of 23 cases passed on the first full run.
+  The 23rd, a raw closed-span case 3,000 deep, was changed to 5,000 deep and run by hand: it overflows, which is the control's point.
+  The whole script was not run again after that edit.
+- **Gutenberg's KF8 book:**
+  It is no longer refused: `KF8RealBookTests` reads it.
+- **Tests changed by KF8:**
+  - The "KF8 is refused" tests of `MOBIReaderTests` and `MOBIBookStructureTests` now read a KF8 book or call a book without its tables damaged,
+  - `.azw3` is a Kindle extension in `testKindleBooksAreRecognizedByTheirExtensions` and the Finder test, and
+  - `PageReaderVersions.current(for: .mobi)` is "1.0.0" in `PagesUpgradeTests` and `OnDiskContractTests`.
+  (The page said "1.0.0" there; the code and those tests say "1.1.0".)
+- **The train that ran the KF8 classes:**
+  The branch's train (0.4.2) ran 19 classes with `--areas import,feeds` and passed 2,894 tests with 7 skipped.
+  The 19 classes were the KF8, MOBI, and KFX classes, `MarkupGuardTests`, `PagesUpgradeTests`, `OnDiskContractTests`, `DocumentTypeDeclarationTests`, `IOSInfoPlistTests`, `OwnReaderCancellationTests`, and `EPUBExportRealBooksTests`.
+- **The first NUL sweeps:**
+  The review found the first sweeps of `TextFileDecoderTests` could not fail.
 ## From The library index
 
 - **Formats an older build cannot read:** A build from before October 18, 2026 that meets rtf, rtfd, doc, odt, wordml, webarchive, or ssml in an index, or one from before October 20, 2026 that meets braille, fails to decode it.
