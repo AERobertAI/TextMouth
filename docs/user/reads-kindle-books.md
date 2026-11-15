@@ -2,6 +2,7 @@
 <!-- id: reads-kindle; keys: Kindle, MOBI, AZW, AZW3, KF8, KFX, e-book, DRM; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/KFXParser.swift, TextMouth/Models/Book.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
+Every format TextMouth reads, with how well each is tested, is in [the list of formats](formats-list.md).
 
 ## Kindle books in the MOBI format
 <!-- id: kindle-books-mobi-format; keys: .mobi, .prc, .azw, MOBI 6, Mobipocket, copy protection, DRM; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Models/Book.swift -->

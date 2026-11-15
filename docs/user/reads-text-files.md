@@ -2,6 +2,7 @@
 <!-- id: reads-text-files; keys: HTML, Markdown, TXT, PDF, Safari, SSML, encoding; src: TextMouth/Parsers/PlainTextParser.swift, TextMouth/Parsers/HTMLParser.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/PDFTextParser.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
+Every format TextMouth reads, with how well each is tested, is in [the list of formats](formats-list.md).
 
 ## PDF files
 <!-- id: pdf-files; keys: scanned image, OCR, Vision, text recognition, image-only page; src: TextMouth/Parsers/PDFTextParser.swift, TextMouth/Parsers/PDFTextRecognizer.swift, TextMouth/Parsers/PDFRecognitionPlan.swift, TextMouth/Parsers/PDFPageImageScanner.swift -->

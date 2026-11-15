@@ -2,6 +2,7 @@
 <!-- id: reads-audiobooks; keys: audio formats, M4B, MP3, convert, afconvert; src: TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Models/Book.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
+Every format TextMouth reads, with how well each is tested, is in [the list of formats](formats-list.md).
 
 ## Single audio and video files
 <!-- id: single-audio-video-files; keys: MP3, M4A, M4B, WAV, AIFF, FLAC, ALAC, MP4; src: TextMouth/Models/Book.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/AudioFileInfo.swift -->
