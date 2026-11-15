@@ -1,15 +1,15 @@
 # Media playback
-<!-- id: media-playback; keys: ; src: -->
+<!-- id: media-playback; keys: TTS, text to speech, player, remote control, AirPods; src: TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioPlaybackService.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/VoiceCatalog.swift -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Speech for text books
-<!-- id: speech-text-books; keys: ; src: TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SpeechMarkupGuard.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift, TextMouthProductionTests/SpeechMarkupGuardTests.swift, TextMouth/Models/SpeechRefusalReport.swift -->
+<!-- id: speech-text-books; keys: TTS, text to speech, read aloud, direct mode, rendered audio; src: TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift -->
 
 Speech, for text books.
 
 ### Speech owner and who may write it
-<!-- id: speech-owner-who-may-write; keys: ; src: TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SpeechMarkupGuard.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: speech-owner-who-may-write; keys: chunk size, look-ahead, render, warm up, tag guard, SSML, speak; src: TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SpeechMarkupGuard.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift, Scripts/agents/probes/speech-markup-probe-shapes.swift, Scripts/agents/probes/speech-refusal-probe-queue.swift, Scripts/agents/probes/speech-control-character-probe.swift, TextMouthProductionTests/SpeechMarkupGuardTests.swift -->
 
 - Owner: each reader's SpeechService. speak() starts the text at once with AVSpeechSynthesizer.speak(), the direct mode, and, for a text of at most SpeechRenderCoordinator.maximumTextLength UTF-16 units, renders the same text in the background into an AudioEngineService (AVAudioEngine with a time-pitch unit, for instant seeking and speed changes).
   The rendered audio takes over only at a natural break: a seek, a pause and resume, either watchdog's recovery, the recovery from a refused text, or the next chapter through the look-ahead; a sleep timer's fade fades the speech being heard where it is.
@@ -35,7 +35,7 @@ Speech, for text books.
   A resume starts from the word last reported; with none reported yet in direct mode, as when a Pause comes within about 0.3 seconds of Play and the engine's own offset is 0 or stale, it starts from the offset the direct utterance began at, snapped to its word (SpeechService.resumeOffset(reportedWord:usingDirectMode:directModeBaseOffset:engineOffset:), ST03), so a quick Play and Pause keeps the place instead of restarting the chapter.
 
 ### How speech is observed
-<!-- id: how-speech-observed; keys: ; src: TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SpeechMarkupGuard.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/Models/SpeechRefusalReport.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: how-speech-observed; keys: word highlight, cursor, stall, refusal, recovery, sleep fade; src: TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Models/SpeechRefusalReport.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/Services/SpeechMarkupGuard.swift -->
 
 - How others observe it: the reader sets onWordSpoken, which moves its cursor through the offset map (the position timer, every 0.1 s on the main run loop with SpeechService.positionTimerTolerance, 20 ms, publishes the engine's offset in its own turn through publishRenderedPosition(_:generation:), since November 13, 2026: it sets currentWordRange and calls onWordSpoken with the word at the offset, which wordStarting(at:in:) reads on the main thread, only when the offset differs from the last one published, lastPublishedPositionOffset, which each startPositionTracking clears so the new timer's first position is always published, and drops the position when positionGeneration moved, as a seek or a stop does; there is no positionQueue and no hop to a background queue and back, and warmPositionLookup(in:) makes the text's UTF-16 lookup table off the main thread when tracking starts; currentWordRange is a plain property that publishes nothing, since only onWordSpoken carries each word), and, for each play, onUtteranceFinished (the playback generation, above), and mirrors whether speech is playing or paused and its speed.
   Every utterance a synthesizer callback reports (a word, a start, a pause, a continue, a finish, or a cancel) is held until the callback is handled on the main queue (ReportedUtterance), so a new utterance made at a reused address can never take that callback for its own; there the service reads the synthesizer's state from its own synthesizer, never the callback's.
@@ -62,7 +62,7 @@ Speech, for text books.
 - Files: Services/SpeechService.swift, Services/AudioEngineService.swift, Services/SpeechMarkupGuard.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel+VoiceAndSpeed.swift, ViewModels/ReaderViewModel+WhereAmI.swift.
 
 ## Installed voices
-<!-- id: installed-voices; keys: ; src: TextMouth/Services/VoiceCatalog.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Settings/SettingsView.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift -->
+<!-- id: installed-voices; keys: voice list, voice picker, language, enumerate voices; src: TextMouth/Services/VoiceCatalog.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Settings/SettingsView.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift -->
 
 The installed voices.
 
@@ -75,7 +75,7 @@ The installed voices.
 - Files: Services/VoiceCatalog.swift, ViewModels/SettingsViewModel.swift, Views/Reader/ReaderView.swift, Views/Settings/SettingsView.swift, Platform/macOS/App/TextMouthApp.swift.
 
 ## Audiobook playback and its failures
-<!-- id: audiobook-playback-failures; keys: ; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Models/AudioSegment.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Parsers/DAISYParser+Audio.swift, TextMouth/Parsers/DAISYParser.swift, TextMouth/Services/SleepTimerService.swift -->
+<!-- id: audiobook-playback-failures; keys: audio player, M4B, MP3, chapter end, retry, DAISY, stopped responding; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Models/AudioSegment.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Parsers/DAISYParser+Audio.swift, TextMouth/Parsers/DAISYParser.swift, TextMouth/Services/SleepTimerService.swift -->
 
 Audiobook playback, and its failures.
 
@@ -98,7 +98,7 @@ Audiobook playback, and its failures.
 - Files: Services/AudioPlaybackService.swift, Models/AudioSegment.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel+CloudDownload.swift, Parsers/AudioBookParser.swift, Parsers/AudioMediaProbe.swift, Parsers/DAISYParser+Audio.swift.
 
 ## Now Playing and media keys
-<!-- id: now-playing-media-keys; keys: ; src: TextMouth/Services/NowPlayingService.swift, TextMouth/Services/MediaGestureDetector.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/App/MenuCommands.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Models/FineWords.swift, TextMouth/Services/ReaderAutoplayRequests.swift, TextMouth/Models/EndOfBookWording.swift -->
+<!-- id: now-playing-media-keys; keys: MPRemoteCommandCenter, Control Center, AirPods, headphones, Bluetooth, remote commands; src: TextMouth/Services/NowPlayingService.swift, TextMouth/Services/MediaGestureDetector.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/App/MenuCommands.swift -->
 
 Now Playing and media keys.
 
@@ -126,23 +126,23 @@ Now Playing and media keys.
 - Files: Services/NowPlayingService.swift, Services/MediaGestureDetector.swift, ViewModels/ReaderViewModel.swift, ViewModels/ReaderViewModel+Navigation.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel+Bookmarks.swift, Views/Reader/BookReaderWindowView.swift, App/MenuCommands.swift.
 
 ## Audio playback watchdog
-<!-- id: audio-playback-watchdog; keys: ; src: TextMouth/Services/AudioPlaybackService.swift -->
+<!-- id: audio-playback-watchdog; keys: stall, frozen audio, stopped responding, progress check; src: TextMouth/Services/AudioPlaybackService.swift -->
 
 The watchdog (B07): AudioPlaybackService's progress check runs for the whole play, the start check at stallRecoveryTimeout, then every progressCheckInterval.
 A time unmoved for stallLimit with the rate above zero fails as .stoppedResponding, and the player is let go of on stuckPlayerQueue, never on the main thread.
 
 ## Sound effect playback
-<!-- id: sound-effect-playback; keys: ; src: TextMouth/Services/SoundEffectService.swift -->
+<!-- id: sound-effect-playback; keys: sounds, system sound, click, chime, effect; src: TextMouth/Services/SoundEffectService.swift -->
 
 SoundEffectService plays through SystemSoundEffectPlayer, an actor on its own serial queue, and drops sounds while one is still starting (SoundEffectGate).
 
 ## Refusing converted formats in playback
-<!-- id: refusing-converted-formats-playback; keys: ; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Services/ImportAudioConverter.swift -->
+<!-- id: refusing-converted-formats-playback; keys: Ogg, Vorbis, unplayable, last guard, converted format; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AudioEditing/AudioEditorPlayer.swift -->
 
 AudioPlaybackService.fileProblem(at:) refuses, as a last guard, every format the import converts (ImportAudioConverter.isNeverDecodedInApp(_:): a converted extension but TextMouth's own CAF, or a file that begins with OggS), and AudioEditorPlayer holds no item for a preview of one (B06, FMT09).
 
 ## Metadata probing of audio files
-<!-- id: metadata-probing-audio-files; keys: ; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/OggHeaderReader.swift, TextMouth/Parsers/NeroChapterReader.swift -->
+<!-- id: metadata-probing-audio-files; keys: chapters, duration, probe, AVURLAsset, tags; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/OggHeaderReader.swift, TextMouth/Parsers/NeroChapterReader.swift -->
 
 AudioPlaybackService.metadataAsset(for:) is the one place the metadata readers (extractChapters(from:), extractFullMetadata(from:), and getDuration(of:)) open an AVURLAsset to probe a file.
 It returns nil for a file of a format the import converts, by extension in any case (ImportAudioConverter.isConvertedAtImport, CAF included, since an import runs these readers on a source before converting it), so such audio never reaches AVFoundation's probing in the app's process, where AsyncBridge.waitForResult has only the time limit its caller gives it (audioTagsTimeLimit, audioAnalysisTimeLimit; shared helpers); each reader then answers without AVFoundation.
@@ -150,7 +150,7 @@ For an Ogg file, extractFullMetadata fills the title, artist, album, genre, year
 Both paths of extractFullMetadata write the length with one helper, durationString(_:): h:mm:ss from an hour on, else m:ss.
 
 ## Rendered speech feeder exceptions
-<!-- id: rendered-speech-feeder-exceptions; keys: ; src: TextMouth/Services/AudioEngineService.swift, TextMouth/Services/ObjCException.swift -->
+<!-- id: rendered-speech-feeder-exceptions; keys: crash, exception, NSException, speech player, output stops; src: TextMouth/Services/AudioEngineService.swift, TextMouth/Services/ObjCException.swift -->
 
 RenderedSpeechFeeder starts its player node through ObjCException (B08).
 When AVFAudio raises as the audio output stops cycling, the play ends, the node is stopped, and one SPEECH_PLAYER_EXCEPTION: <name>: <reason> line is logged; the engine then shows stopped, resume() returns false, and speech goes on directly, as it does when the engine cannot start; a pre-rendered chapter does the same and logs PRE_RENDERED_START_FAILED.
