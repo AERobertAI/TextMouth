@@ -13,6 +13,11 @@ Each path comes once, at its first reason. ``Files:`` paths come first, then the
 how often the section names them, then in order of first mention. One hit for each,
 as ``path:L-L`` (the declaration's line, or 1), the section's heading, and the reason.
 Exit status 0 with suggestions, 1 without, 2 for a target that names nothing.
+
+With ``--strings`` the suggestions come from the section's interface words instead
+(``wordingsearch``): the heading and each quoted or bold name or menu path are looked up
+among the Swift string literals, and the files holding them are listed, a ``…Wording``
+file first with the files that use it, for a user page that names no code.
 """
 
 from __future__ import annotations
@@ -25,6 +30,7 @@ import output
 import sectionrefs
 import swiftindex
 import targets
+import wordingsearch
 from citations import KIND_FILES, KIND_TEXT
 from docmodel import Page, Section
 from output import Hit
@@ -112,10 +118,21 @@ def suggestion_hits(suggestions: List[Suggestion], section: Section) -> Iterator
                   extra={"reason": suggestion.reason})
 
 
+def run_strings(args: Any, page: Page, section: Section, repo: RepoFiles) -> int:
+    """Print the Swift files whose string literals hold the section's interface words (``--strings``)."""
+    phrases = wordingsearch.interface_phrases(
+        section.title, sectionrefs.section_blocks(page, section))
+    results = wordingsearch.find_in_swift(repo, phrases)
+    total = wordingsearch.emit_files(results, section.heading, args)
+    return output.EXIT_OK if total else output.EXIT_NONE
+
+
 def run(args: Any) -> int:
-    """Print the paths the section ``args.target`` names should cite."""
+    """Print the paths the section ``args.target`` names should cite (or, with ``--strings``, the files of its words)."""
     page, section = targets.resolve_target(args.root, args.target)
     repo = RepoFiles.load(args.root)
+    if args.strings:
+        return run_strings(args, page, section, repo)
     suggestions = suggest_paths(page, section, repo, SwiftIndex.load(repo))
     total = output.emit(suggestion_hits(suggestions, section), args, noun="suggestions")
     return output.EXIT_OK if total else output.EXIT_NONE
@@ -129,4 +146,8 @@ def register(subparsers: Any, common: Any) -> None:
                     "declare the names it mentions, and the file names it writes. TARGET is "
                     "PAGE#HEADING, PAGE:LINE, or a section id.")
     parser.add_argument("target", help="PAGE#HEADING, PAGE:LINE, or a section id")
+    parser.add_argument(
+        "--strings", action="store_true",
+        help="find the code through the section's interface words (its heading and the quoted or bold "
+             "names and menu paths in it) among the app's Swift string literals, a user page's way in")
     parser.set_defaults(func=run, default_max=output.DEFAULT_MAX)
