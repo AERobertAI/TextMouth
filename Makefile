@@ -49,18 +49,18 @@ BUILD_NUMBER := $(shell date -u +"%Y%m%d%H%M%S")
 NO_COVERAGE = CLANG_COVERAGE_MAPPING=NO
 
 # The Release app is compiled to be small: -Osize for the Swift packages as
-# well as the app's own code. project.yml gives the app's target the level
-# (its Release block), but not the packages' targets, which it cannot reach;
-# a setting on the command line does, as NO_COVERAGE's does. Given that way,
-# Xcode also compiles each package file by file instead of whole-module,
-# which makes SwiftSoup 1.06 MB smaller than -Osize whole-module would (the
-# November 13, 2026 size audit measured 2.08 MB saved on the three packages
-# together, at the price of slower HTML parsing at import, about 4 ms for a
-# megabyte of EPUB). So do not add SWIFT_COMPILATION_MODE=wholemodule: it
-# made the app 1.15 MB larger. Only Release gets it: `make debug` keeps
-# Debug's own level so that it can still be stepped through. `make check`
-# and `make install` build through the build rule, so they get it too; an
-# Xcode build from its window does not, as with NO_COVERAGE.
+# well as the app's own code. project.yml gives the app's targets the level
+# (their Release blocks), but not the packages' targets, which it cannot
+# reach; a setting on the command line does, as NO_COVERAGE's does. Given
+# that way, Xcode compiles each package (ZIPFoundation, swift-markdown) file
+# by file instead of whole-module, which is the smaller build for them, so do
+# not add SWIFT_COMPILATION_MODE=wholemodule here. SwiftSoup is not a package
+# but a vendored target (Vendor/SwiftSoup), which project.yml compiles
+# whole-module: with its forced inlining removed, that is its smallest build.
+# Only Release gets the level: `make debug` keeps Debug's own so that it can
+# still be stepped through. `make check` and `make install` build through the
+# build rule, so they get it too; an Xcode build from its window does not, as
+# with NO_COVERAGE.
 SMALL_CODE = $(if $(filter Release,$(CONFIG)),SWIFT_OPTIMIZATION_LEVEL=-Osize)
 
 # Xcode records the exact Swift package revisions here. The file is committed,
@@ -295,6 +295,7 @@ check-selftest:
 	@python3 Scripts/test/test-logs.py --selftest
 	@python3 Scripts/test/ogg-lint.py --selftest
 	@python3 Scripts/test/make-corpus.py --selftest
+	@python3 -I -B Scripts/vendor/swiftsoup/test_make_vendor.py
 
 ## Run only the hosted tests of some areas (or test classes) in one build,
 ## printing a short summary: make test-area AREAS="feeds bookmarks". The areas
@@ -330,7 +331,7 @@ lint-ogg:
 ## records for it, and the baseline's totals may not rise above those at the
 ## merge-base of LINT_BASE and HEAD. Prints what got worse. No building.
 lint-docs:
-	@python3 -I .claude/skills/doc-library/scripts/doclib.py lint --against $(LINT_BASE)
+	@python3 -I -B .claude/skills/doc-library/scripts/doclib.py lint --against $(LINT_BASE)
 
 ## Compile and link the app's sources for iOS with SwiftPM, which needs only
 ## the iOS SDK Xcode includes, not the iOS platform xcodebuild asks for

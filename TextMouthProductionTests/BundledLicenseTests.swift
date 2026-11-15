@@ -45,4 +45,14 @@ final class BundledLicenseTests: XCTestCase {
         XCTAssertTrue(licence.hasPrefix("MIT License"), String(licence.prefix(80)))
         XCTAssertTrue(licence.contains("John Factotum"), String(licence.prefix(120)))
     }
+
+    /// SwiftSoup's licence is in the app: the MIT License, naming jsoup's
+    /// author (whose parser SwiftSoup ports) and the Swift port's. SwiftSoup
+    /// is vendored in Vendor/SwiftSoup and compiled into the app.
+    func testSwiftSoupLicenseShipsWithTheApp() throws {
+        let licence = try licenseText("SwiftSoup", "LICENSE")
+        XCTAssertTrue(licence.hasPrefix("The MIT License"), String(licence.prefix(80)))
+        XCTAssertTrue(licence.contains("Jonathan Hedley"), String(licence.prefix(160)))
+        XCTAssertTrue(licence.contains("Nabil Chatbi"), String(licence.prefix(160)))
+    }
 }

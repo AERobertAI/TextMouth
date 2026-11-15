@@ -79,7 +79,6 @@ LISTED_TESTS_ORIGIN = "TextMouthTests/Sources/Tests"
 # network.
 PACKAGES = [
     ("zipfoundation", "ZIPFoundation", "ZIPFoundation"),
-    ("swiftsoup", "SwiftSoup", "SwiftSoup"),
     ("swift-markdown", "swift-markdown", "swift-markdown"),
     ("swift-cmark", "swift-cmark", "cmark"),
 ]
@@ -223,7 +222,6 @@ let package = Package(
     platforms: [.iOS("{ios_target}"), .macOS(.v14)],
     dependencies: [
         .package(path: "{pkgs / 'ZIPFoundation'}"),
-        .package(path: "{pkgs / 'SwiftSoup'}"),
         .package(path: "{pkgs / 'swift-markdown'}"),
     ],
     targets: [
@@ -239,6 +237,13 @@ let package = Package(
                 .headerSearchPath("libmp3lame"),
                 .unsafeFlags(["-w", "-Os"]),
             ]
+        ),
+        // SwiftSoup, vendored (Vendor/SwiftSoup), as project.yml's SwiftSoup
+        // target builds it: one module, its warnings hidden.
+        .target(
+            name: "SwiftSoup",
+            path: "Vendor/SwiftSoup/Sources",
+            swiftSettings: [.unsafeFlags(["-suppress-warnings"])]
         ),
         // The Objective-C exception catcher.
         .target(

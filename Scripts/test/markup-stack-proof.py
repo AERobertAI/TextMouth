@@ -78,7 +78,7 @@ def build(program, release):
     else:
         # The Debug products were built with coverage on, so their objects need the profile runtime to link.
         command += ["-Onone", "-profile-generate", "-profile-coverage-mapping"]
-    command += [str(HERE / "markup-stack-proof" / program / "main.swift")] + [str(path) for path in GUARD_SOURCES] + [str(products / "SwiftSoup.o")]
+    command += [str(HERE / "markup-stack-proof" / program / "main.swift")] + [str(path) for path in GUARD_SOURCES] + [str(products / "libSwiftSoup.a")]
     done = subprocess.run(command, capture_output=True, text=True)
     if done.returncode != 0:
         print("\n".join(line for line in (done.stdout + done.stderr).splitlines() if "error" in line)[:4000])
