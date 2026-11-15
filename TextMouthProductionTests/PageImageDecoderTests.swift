@@ -156,6 +156,9 @@ final class PageImageDecoderTests: XCTestCase {
         }
         let opaque = try PageImageSource(data: PageImageFixtures.encoded(PageImageFixtures.picture(width: 20, height: 20), as: .jpeg))
         XCTAssertFalse(try opaque.decodedPage(at: 0).hasAlpha)
+        // The fixtures' opaque PNGs decode without alpha too, so the reader's
+        // tests never read one of them again on black.
+        XCTAssertFalse(try PageImageSource(data: PageImageFixtures.plainPage()).decodedPage(at: 0).hasAlpha)
     }
 
     // MARK: - Pages

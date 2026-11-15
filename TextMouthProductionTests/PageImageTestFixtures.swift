@@ -20,14 +20,17 @@ enum PageImageFixtures {
 
     /// A picture `width` by `height` pixels: `ground` everywhere (clear when
     /// nil), with each of `lines` drawn in `ink`, `fontSize` pixels tall,
-    /// one under another from the top, in bold Helvetica.
+    /// one under another from the top, in bold Helvetica. A picture with a
+    /// ground has no alpha channel, so it is written and decoded opaque, as a
+    /// scan or a photograph is; only a clear one has one.
     static func picture(
         width: Int = 1_200, height: Int = 900, lines: [String] = [], fontSize: CGFloat = 64,
         ground: CGColor? = CGColor(gray: 1, alpha: 1), ink: CGColor = CGColor(gray: 0, alpha: 1)
     ) throws -> CGImage {
+        let alpha: CGImageAlphaInfo = ground == nil ? .premultipliedLast : .noneSkipLast
         guard let space = CGColorSpace(name: CGColorSpace.sRGB), let context = CGContext(
             data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-            space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            space: space, bitmapInfo: alpha.rawValue
         ) else { throw FixtureError(description: "no drawing context") }
         let bounds = CGRect(x: 0, y: 0, width: width, height: height)
         context.clear(bounds)
