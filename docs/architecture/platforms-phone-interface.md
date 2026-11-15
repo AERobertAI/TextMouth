@@ -1,10 +1,10 @@
 # The iPhone interface: announcements, text, sheets, and search
-<!-- id: phone-interface; keys: ; src: -->
+<!-- id: phone-interface; keys: iPhone interface, VoiceOver, sheets, phone policies; src:  -->
 
 Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 
 ## The announcement priorities on iOS
-<!-- id: announcement-priorities-ios; keys: ; src: TextMouth/Services/VoiceOverAnnouncer.swift, TextMouth/Phone/PhoneAnnouncer.swift, TextMouth/Phone/VoiceOverAnnouncer+Collecting.swift, TextMouth/Phone/PhoneMoveFeedback.swift -->
+<!-- id: announcement-priorities-ios; keys: UIAccessibility.post, announcement, speech priority, interrupt, queued speech; src: TextMouth/Services/VoiceOverAnnouncer.swift, TextMouth/Platform/iOS/Services/NSAccessibilityPriorityLevel+iOS.swift, TextMouth/Phone/PhoneAnnouncer.swift, TextMouth/Phone/VoiceOverAnnouncer+Collecting.swift, TextMouth/Phone/PhoneMoveFeedback.swift, TextMouthProductionTests/VoiceOverAnnouncerTests.swift -->
 
 - Apple's header (`UIAccessibilityConstants.h`) says the default priority interrupts existing speech but can itself be interrupted.
   It says the low priority is queued and spoken after other speech has finished.
@@ -28,7 +28,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 - Words that should follow VoiceOver's speech go through `say`: the sheets' farewell words, a folder's arrival words, and import results.
 
 ## Book content: PhonePassagePolicy
-<!-- id: book-content-phonepassagepolicy; keys: ; src: TextMouth/Phone/PhonePassagePolicy.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Platform/iOS/Views/Reader/PhoneBookTextView.swift -->
+<!-- id: phone-passage-policy; keys: page turn, Read All, causesPageTurn, Follow in Braille, Cover chapter, accessibilityScroll; src: TextMouth/Phone/PhonePassagePolicy.swift, TextMouth/Platform/iOS/Views/Reader/PhoneBookTextView.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouthProductionTests/PhonePassagePolicyTests.swift -->
 
 - `PhonePassagePolicy` decides what passage Book content holds and when it changes.
   It is a plain type, so the Mac's tests cover every rule.
@@ -58,7 +58,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - The book loading, focus leaving, and the listener's own request always change it.
 
 ## PhoneEscapePolicy
-<!-- id: phoneescapepolicy; keys: ; src: TextMouth/Phone/PhoneEscapePolicy.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryView.swift -->
+<!-- id: phone-escape-policy; keys: two-finger scrub, escape gesture, import question, navigation Back, search field; src: TextMouth/Phone/PhoneEscapePolicy.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryView.swift, TextMouth/Platform/iOS/Views/Import/PhoneImportQuestionSheet.swift, TextMouthProductionTests/PhoneEscapePolicyTests.swift -->
 
 - VoiceOver's escape gesture is the two-finger scrub.
   - The system already pops a pushed screen (the reader, a folder) through the navigation stack's Back.
@@ -74,7 +74,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 - `PhoneLibraryView` attaches it as `.accessibilityAction(.escape)`.
 
 ## Error alert, Speech Stopped, preview pause
-<!-- id: error-alert-speech-stopped-preview; keys: ; src: TextMouth/Models/SpeechRefusalReport.swift, TextMouth/Phone/PhoneErrorAlertPlan.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderErrorAlert.swift -->
+<!-- id: error-alert-speech-stopped-preview; keys: retry, refusal, Speech Stopped, Preview Voice, voice preview, pause sound; src: TextMouth/Phone/PhoneErrorAlertPlan.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderErrorAlert.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSpeechRefusalSheet.swift, TextMouth/Phone/PhoneSpeechRefusalPresentation.swift, TextMouth/Models/SpeechRefusalReport.swift, TextMouth/Phone/PhonePreviewPause.swift, TextMouth/Phone/PhoneSettingsVoicePreview.swift, TextMouth/Phone/PhoneSession.swift -->
 
 - `PhoneErrorAlertPlan` decides what the error alert over the reader shows and does.
   It is the Mac's `ReaderViewModel.ErrorAlert`, with the Mac's buttons.
@@ -106,7 +106,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - Settings and the reader's Voice sheet both use it.
 
 ## PhoneTextStyle: the phone's text at full contrast
-<!-- id: phonetextstyle-phone-text-at-full; keys: ; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryRowViews.swift, TextMouth/Phone/PhoneErrorAlertPlan.swift, TextMouthiOSTests/PhoneValueRowTests.swift -->
+<!-- id: phone-text-style; keys: contrast, accessibility audit, Dynamic Type, secondary gray, tint, PhoneTextColor; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryRowViews.swift, TextMouthiOSTests/PhoneValueRowTests.swift -->
 
 - `TextMouth/Platform/iOS/Views/PhoneTextStyle.swift` holds the colors of the phone's words in one place.
   - The reason is Apple's accessibility audit.
@@ -124,8 +124,9 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 - Two view modifiers apply them: `phoneSecondaryText()` and `phonePrimaryText()`.
   Each draws the color while the control is enabled, and `disabled` while it is not, by reading the `isEnabled` environment value.
   - They name a color outright and not a hierarchical style, because inside a button the hierarchical styles take the button's tint.
+
 ### PhoneActionButton and PhoneValueRow
-<!-- id: phoneactionbutton-phonevaluerow; keys: ; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouth/Phone/PhoneErrorAlertPlan.swift, TextMouthiOSTests/PhoneValueRowTests.swift -->
+<!-- id: phone-action-button-value-row; keys: LabeledContent, ButtonRole, accessibility text size, VStack, stacking; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthiOSTests/PhoneValueRowTests.swift -->
 
 - `PhoneActionButton` is a `Button` whose plain words take `phonePrimaryText()`.
   Use it in place of `Button(title, action:)`.
@@ -140,8 +141,9 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
     At all five accessibility sizes the row must be the stacked height, to within 1.5 points, and at the seven ordinary sizes it must be shorter.
     Un-stacking the row fails it, and so does always stacking it.
     It was not run against an un-stacked row, and that `LabeledContent` lays out side by side outside a Form is inferred.
+
 ### Where the contrast choice stands
-<!-- id: where-contrast-choice-stands; keys: ; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift -->
+<!-- id: where-contrast-choice-stands; keys: humanQuestions, low vision, false positive, audit result, undo; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift -->
 
 - The spec has no section on contrast, so `PhoneTextStyle` cites its words on text sizes by their section names, and no longer by numbers: "The layout" of the reader ("At large text sizes, the grid becomes one column and the screen scrolls") and "A book's row" ("What's visible").
 - Full contrast for all of the phone's text follows the recommended answer to question 2 of section 6 in `humanQuestions/2026-11-08.md`.
@@ -156,7 +158,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   The audit accepts them by the header's label and the contrast kind only (see [Testing TextMouth](../developer/testing.md)).
 
 ## PhoneSheetButton: where a sheet's buttons go
-<!-- id: phonesheetbutton-where-sheet-buttons-go; keys: ; src: TextMouth/Platform/iOS/Views/PhoneSheetButton.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderSheetContent.swift, TextMouth/Phone/PhoneErrorAlertPlan.swift, TextMouth/Platform/iOS/Views/PhoneTextStyle.swift -->
+<!-- id: phone-sheet-button; keys: toolbar, topBarTrailing, cancellationAction, confirmationAction, ToolbarContent, button order; src: TextMouth/Platform/iOS/Views/PhoneSheetButton.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderSheetContent.swift, TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouth/Platform/iOS/Views/PhoneChoiceSheet.swift, TextMouth/Platform/iOS/Views/Library/PhoneBookInfoSheet.swift, TextMouth/Platform/iOS/Views/Library/PhoneFolderSheetForm.swift, TextMouth/Platform/iOS/Views/Library/PhoneFolderDeleteSheet.swift, TextMouth/Platform/iOS/Views/Import/PhoneAddToLibrarySheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSpeechRefusalSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneGoToSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneHeadingsSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSleepTimerSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneVoiceSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneBookmarksSheet.swift -->
 
 - `TextMouth/Platform/iOS/Views/PhoneSheetButton.swift` holds `PhoneSheetButtonPlacement` and `PhoneSheetButton`.
   Every sheet's Cancel, Close, Done, Save, and Back to Book comes from it, and no sheet places one itself.
@@ -196,7 +198,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   A `.accessibilityLabel` on top of it made VoiceOver read "Speed, Speed", so the extra modifier was removed.
 
 ## Search in Book
-<!-- id: search-book; keys: ; src: TextMouth/Phone/PhoneBookSearch.swift, TextMouth/Phone/PhoneFocusRequests.swift, TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Phone/PhoneSession.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Platform/iOS/Views/PhoneFocusRegistry.swift, TextMouth/ViewModels/BookSearchModel.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Views/Reader/BookSearchView.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Phone/PhoneFocusPolicy.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Phone/PhoneReaderSheet.swift -->
+<!-- id: search-book; keys: reader controls, control grid, VoiceOver order, openSearch, gridRows; src: TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneBookSearch.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
 
 - The reader's sixteenth control, `PhoneReaderControl.searchInBook`, comes after Headings and before Go To in VoiceOver's order.
   Its label is "Search in Book", the Mac's command (`ShortcutAction.searchInBook.title`), and its hint is "Opens a search of the book's text."
@@ -219,8 +221,9 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - `testTheGridRowsKeepOrderAndPairs` pins the order, at most three to a row, the three groups, and the last row.
     It does not pin the exact rows.
   - The comments on `PhoneReaderControl.grid` ("three to a row") and above `testTheControlsAreInTheSpecsOrder` ("five full rows and a sixth") still say the old count.
+
 ### The search sheet and its typing pause
-<!-- id: search-sheet-typing-pause; keys: ; src: TextMouth/Phone/PhoneBookSearch.swift, TextMouth/ViewModels/BookSearchModel.swift, TextMouth/Views/Reader/BookSearchView.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Phone/PhoneAnnouncer.swift -->
+<!-- id: search-sheet-typing-pause; keys: debounce, typing pause, Braille Screen Input, BookSearchModel, status line, regular expression; src: TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Phone/PhoneBookSearch.swift, TextMouth/ViewModels/BookSearchModel.swift, TextMouth/Views/Reader/BookSearchView.swift, TextMouthProductionTests/PhoneBookSearchTests.swift, TextMouthProductionTests/BookSearchModelTests.swift -->
 
 - The sheet is `PhoneSearchSheet` (`Platform/iOS/Views/Reader/`), thin over `PhoneBookSearchSource` and over the Mac's `BookSearchModel` and `BookSearchEngine`.
   - VoiceOver's order is the title, Back to Book, the field, the status line, the regular-expression switch, a "Search results" heading, and then the results in the order they lie in the book.
@@ -241,8 +244,9 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
     It would fail at 250 milliseconds.
   - Each completed search says its status once, with low priority (`PhoneAnnouncer`), so typing is never cut off.
     The status line holds the same words for anyone who flicks to it.
+
 ### Going to a result, and the phone's words
-<!-- id: going-result-phone-words; keys: ; src: TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Views/Reader/BookSearchView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderSheetContent.swift, TextMouth/ViewModels/BookSearchModel.swift -->
+<!-- id: going-result-phone-words; keys: transcript jump, Return place, farewell, noTextToSearch, offersTranscription, isTranscribable; src: TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Views/Reader/BookSearchView.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouthProductionTests/PhoneReaderModelTests.swift -->
 
 - A result goes to its place with `ReaderViewModel.goToSearchResult(chapterIndex:characterOffset:inTranscript:)`, which the Mac's sheet now calls too, so one place decides the move: a transcript's result moves the audio to the start of the sentence holding the match, and any other book's moves the place to the match.
   - The Return place is kept, the sheet closes, and the session counts the book as opened (`PhoneReaderModel.noteJumped`).
@@ -258,8 +262,9 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - Two tests in `PhoneReaderModelTests` pin it: a packaged audiobook that `isTranscribable` must not mention "ranscribe" on the phone, and the Mac's words must still name the command.
   - The phone's words for a held edit still mention "your editor" and "content.md".
     The phone cannot hold an edit, so this is a follow-up only.
+
 ### Focus requests and their tickets
-<!-- id: focus-requests-their-tickets; keys: ; src: TextMouth/Platform/iOS/Views/PhoneFocusRegistry.swift, TextMouth/Phone/PhoneFocusRequests.swift, TextMouth/Phone/PhoneFocusPolicy.swift, TextMouth/Phone/PhoneControlKind.swift, TextMouthProductionTests/PhoneFocusRequestsTests.swift -->
+<!-- id: focus-requests-their-tickets; keys: focus ticket, VoiceOver focus, sheet close, focus return, 0.35 seconds; src: TextMouth/Phone/PhoneFocusRequests.swift, TextMouth/Phone/PhoneFocusPolicy.swift, TextMouth/Platform/iOS/Views/PhoneFocusRegistry.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouthProductionTests/PhoneFocusRequestsTests.swift -->
 
 - The focus requests are `PhoneFocusRequests` (`Phone/PhoneFocusRequests.swift`), a plain value with no clock, which the Mac's tests drive by calls alone, and `PhoneFocusRegistry` (`Platform/iOS/Views/`), which observes VoiceOver's landings.
   - A request that waits 0.35 seconds takes a ticket (`request()`, through `PhoneFocusRegistry.beginRequest()`), and asks for it back when its time comes (`claim(_:)`, through `claimRequest(_:)`).
@@ -275,8 +280,9 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
     Nothing tests the iOS posting path.
   - Unverified: whether VoiceOver lands on another reader control by itself as a sheet finishes closing.
     If it does, the return of focus is cancelled by VoiceOver rather than the listener.
+
 ### Closing one reader, and where tests are
-<!-- id: closing-one-reader-where-tests; keys: ; src: TextMouth/Phone/PhoneBookSearch.swift, TextMouth/Phone/PhoneFocusRequests.swift, TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Phone/PhoneSession.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Platform/iOS/Views/PhoneFocusRegistry.swift, TextMouth/ViewModels/BookSearchModel.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Views/Reader/BookSearchView.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryView.swift, TextMouthProductionTests/PhoneSessionTests.swift -->
+<!-- id: closing-one-reader-where-tests; keys: closeBook, Remove from Library, Now Playing, leaveReader, testing; src: TextMouth/Phone/PhoneSession.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryView.swift, TextMouthProductionTests/PhoneSessionTests.swift -->
 
 - `PhoneSession.closeBook(id:)` closes only that book's reader.
   A book on screen with another behind it hands the screen to the one behind, as Back does (`leaveReader`), and a book that is not open does nothing.
@@ -288,7 +294,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 - The tests are in [Testing TextMouth](../developer/testing.md).
 
 ## What is left
-<!-- id: what-left; keys: ; src: TextMouth/Platform/PlatformApplication.swift -->
+<!-- id: what-left; keys: phase 1, typecheck-ios, hand check, bundle identifier, open items; src: TextMouth/Platform/PlatformApplication.swift, Makefile, Scripts/ios/typecheck.py, Scripts/ios/mac-projection.py, project.yml -->
 
 - These are not done: the rotors on Play, Book content's language, the Files drop folder, and sounds.
   [Testing TextMouth](../developer/testing.md) lists the audit findings that are still open.

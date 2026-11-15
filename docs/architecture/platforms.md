@@ -1,5 +1,5 @@
 # The two apps and the platform folders
-<!-- id: two-apps-platform-folders; keys: ; src: -->
+<!-- id: two-apps-platform-folders; keys: iOS port, TextMouthiOS, one codebase, XcodeGen; src: project.yml -->
 
 Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 
@@ -10,7 +10,7 @@ This page says how the code is divided between the two, and then how the iPhone 
 On November 8, 2026 the iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md first ran in the iOS simulator; nothing has run on a phone.
 
 ## One source folder, two apps
-<!-- id: one-source-folder-two-apps; keys: ; src: TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
+<!-- id: one-source-folder-two-apps; keys: targets, XcodeGen, excludes, Swift 6, strict concurrency, shared code; src: project.yml, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
 
 - Both apps compile the TextMouth source folder. project.yml defines `TextMouth`, the Mac app, and `TextMouthiOS`, the iOS app (how they build is in [Building TextMouth](../developer/building.md)).
   The iOS app has the module name TextMouth too, so shared code and shared tests read the same on both.
@@ -23,7 +23,7 @@ On November 8, 2026 the iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-
   `UncheckedConcurrencyPolicyTests` counts `@unchecked Sendable` and `nonisolated(unsafe)` across every Swift file, the platform folders included.
 
 ## The platform folders
-<!-- id: platform-folders; keys: ; src: TextMouth/Platform/PlatformTypes.swift, TextMouth/Platform/PlatformControlStyles.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Platform/iOS/App/FrontWindowKind+iOS.swift -->
+<!-- id: platform-folders; keys: Info.plist, UIBackgroundModes, scene manifest, LSItemContentTypes, check-ios-plist, typealias, UTI; src: project.yml, Makefile, Scripts/ios/sync-info-plist.py, TextMouth/Platform/iOS/Info.plist, TextMouth/Resources/Info.plist, TextMouthProductionTests/IOSInfoPlistTests.swift, TextMouth/Platform/PlatformTypes.swift, TextMouth/Platform/PlatformApplication.swift, TextMouth/Platform/PlatformControlStyles.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Platform/iOS/Services/WatchedProcess+iOS.swift, TextMouth/Platform/macOS/App/FrontWindowKind.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift, TextMouth/Platform/macOS/Services/PackageFileEditing.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Platform/macOS/Services/BookManifestEditor.swift, TextMouth/Platform/macOS/Services/MenuVisibilityManager.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, TextMouth/Platform/macOS/Views/VoiceOverFocus.swift, TextMouth/Platform/macOS/Views/ReadOnlyTextArea.swift, TextMouth/Platform/macOS/Views/SilentKeyEquivalent.swift, TextMouth/Platform/macOS/Views/SwitchedWindowFocus.swift, TextMouth/Platform/macOS/Views/LogsInFinder.swift, TextMouth/Platform/macOS/Views/Reader/WindowAccessor.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorEditMenu.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorLauncher.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorWindowController.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift -->
 
 - `TextMouth/Platform/macOS/` holds what only the Mac compiles.
   Its folders mirror the ones the files came from, so a file keeps its place below `Platform/macOS/`: WatchedProcess, which came from the `Services` folder, is `TextMouth/Platform/macOS/Services/WatchedProcess.swift`.
@@ -61,7 +61,7 @@ On November 8, 2026 the iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-
   - `PlatformControlStyles` gives `checkboxToggleStyle()` (a checkbox on the Mac, a switch on iOS) and `radioGroupPickerStyle()` (a radio group on the Mac, an inline list on iOS).
 
 ## The five kinds of Mac change
-<!-- id: five-kinds-mac-change; keys: ; src: TextMouth/Platform/PlatformTypes.swift, TextMouth/Platform/PlatformControlStyles.swift, TextMouth/Platform/PlatformApplication.swift, TextMouth/Platform/iOS/App/FrontWindowKind+iOS.swift, TextMouth/Platform/macOS/App/FrontWindowKind.swift -->
+<!-- id: five-kinds-mac-change; keys: mac-projection, #if os(macOS), typealias, toggleStyle, pickerStyle, equivalences; src: Scripts/ios/mac-projection.py, Makefile, TextMouth/Platform/PlatformTypes.swift, TextMouth/Platform/PlatformApplication.swift, TextMouth/Platform/PlatformControlStyles.swift, TextMouth/Platform/macOS/App/FrontWindowKind.swift, TextMouth/Platform/macOS/Views/Reader/WindowAccessor.swift, TextMouth/Views/AudioEditor/AudioEditorLauncher+Describe.swift, TextMouth/Services/LibrarySessionLease.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/ContentView.swift -->
 
 The Mac app must compile what it compiled before.
 Every change phase 0 made to a file the Mac compiles is one of these five, and nothing else is allowed without a reason a reviewer reads:
@@ -91,7 +91,7 @@ The other 13 are new shared code that only tests and aliases use (the portable X
 Each of the four closures is a one-line default or argument made into a closure so that an `#if` has a place to sit (LibrarySessionLease's quit, ReadingStatsService's workspace notifications, LibraryViewModel's reveal in Finder, and ContentView's Quit): the Mac still runs the same statement.
 
 ## The iOS stand-ins and IOSUnavailable
-<!-- id: ios-stand-ins-iosunavailable; keys: ; src: TextMouth/Platform/iOS/IOSUnavailable.swift, TextMouthProductionTests/RecordingTestSupport.swift, TextMouthProductionTests/TranscriptionFixtureTests.swift, TextMouth/Platform/iOS/Views/VoiceOverFocus+iOS.swift, TextMouth/Platform/macOS/Views/VoiceOverFocus.swift -->
+<!-- id: ios-stand-ins-iosunavailable; keys: stub, Mac-only types, not available on iPhone, no-op, fallback, UIKit stand-in; src: TextMouth/Platform/iOS/IOSUnavailable.swift, TextMouth/Platform/iOS/Services/WatchedProcess+iOS.swift, TextMouth/Platform/iOS/Services/OrphanedConversionSweep+iOS.swift, TextMouth/Platform/iOS/Services/PackageFileEditing+iOS.swift, TextMouth/Platform/iOS/Services/BookTextEditor+iOS.swift, TextMouth/Platform/iOS/Services/BookManifestEditor+iOS.swift, TextMouth/Platform/iOS/Services/NowPlayingService+iOS.swift, TextMouth/Platform/iOS/Services/NSAccessibilityPriorityLevel+iOS.swift, TextMouth/Platform/iOS/App/FrontWindowKind+iOS.swift, TextMouth/Platform/iOS/Views/Reader/WindowAccessor+iOS.swift, TextMouth/Platform/iOS/Views/SilentKeyEquivalent+iOS.swift, TextMouth/Platform/iOS/Views/SwitchedWindowFocus+iOS.swift, TextMouth/Platform/iOS/Views/LogsInFinder+iOS.swift, TextMouth/Platform/iOS/Views/VoiceOverFocus+iOS.swift, TextMouth/Platform/iOS/Views/ReadOnlyTextArea+iOS.swift, TextMouth/Platform/iOS/Views/AudioEditor/AudioEditorLauncher+iOS.swift, TextMouth/Platform/iOS/Views/AudioEditor/AudioEditorWindowController+iOS.swift, TextMouth/Platform/iOS/Views/Recording/RecordingWindowController+iOS.swift, TextMouth/Platform/iOS/Models/FunctionKeyConstants+iOS.swift, TextMouth/Platform/iOS/Parsers/UIFontDescriptorSymbolicTraits+iOS.swift, TextMouth/Platform/iOS/Windows/PlatformWindow+iOS.swift, TextMouth/Services/RecordingCaptureBackend.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift -->
 
 - Where shared code names a Mac-only type, the type has a stand-in in `Platform/iOS/` with the same name and the members shared code uses.
   The rule is that a name is never taken away from iOS: move a type to `Platform/macOS/` only with a stand-in for each name a shared file still uses.
@@ -115,7 +115,7 @@ Each of the four closures is a one-line default or argument made into a closure 
 - Some Mac-only work has no stand-in file, only an `#else` branch where it is called: the quit hold and the memory guard's alert and quit do nothing on iOS; opening TextMouth again throws `IOSUnavailable`; Word 97-2003 export (`WordDocExportWriter`) is left out of the list of export writers; and the file and folder panels (DAISY folder import, OPML import, the data directory's folder chooser, Export's destination, and the text input's open-in-editor action) are empty branches.
 
 ## The portable XML tree
-<!-- id: portable-xml-tree; keys: ; src: TextMouth/Parsers/PortableXML.swift, TextMouth/Platform/iOS/Parsers/XMLTree+iOS.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/KFXTestBook.swift -->
+<!-- id: portable-xml-tree; keys: XMLDocument, XPath, XMLParser, SwiftSoup, Tidy, differential test, stack size; src: TextMouth/Parsers/PortableXML.swift, TextMouth/Parsers/PortableXMLPath.swift, TextMouth/Parsers/PortableXMLBuilder.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/EPUBParser.swift, TextMouth/Platform/iOS/Parsers/XMLTree+iOS.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/PortableXMLCorpus.swift -->
 
 The EPUB, feed, and OPML readers walk Foundation's `XMLDocument` and search it with XPath. iOS's Foundation has only the streaming `XMLParser`.
 So phase 0 added a portable tree that has the part of the interface those readers use, and gave it Foundation's names on iOS, so the reader files compile for iOS as they are.
@@ -148,7 +148,7 @@ So phase 0 added a portable tree that has the part of the interface those reader
   On iOS it throws `IOSUnavailable` for "Saving a book's details into its EPUB file".
 
 ## The iPhone app
-<!-- id: iphone-app; keys: ; src: TextMouth/Phone/PhoneSession.swift -->
+<!-- id: iphone-app; keys: interface spec, hand-check list, phone code; src: TextMouth/Phone/PhoneSession.swift -->
 
 The iPhone interface is built from research/IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list.
 This section says how the code is put together.
@@ -156,7 +156,7 @@ It describes the code main holds since November 8, 2026: the interface of branch
 The Search in Book of branch `ios/search-1109` (below) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
 
 ### The frame
-<!-- id: frame; keys: ; src: TextMouth/Platform/iOS/App/TextMouthAppDelegate.swift, TextMouth/Platform/iOS/App/MagicTapWindow.swift, TextMouth/Phone/PhoneAppModel.swift, TextMouth/Services/RecordingService.swift, TextMouth/ViewModels/BookRereadChoosing.swift -->
+<!-- id: iphone-frame; keys: UIApplicationDelegate, scene delegate, magic tap, @main, life cycle, two readers; src: TextMouth/Platform/iOS/App/TextMouthAppDelegate.swift, TextMouth/Platform/iOS/App/TextMouthSceneDelegate.swift, TextMouth/Platform/iOS/App/MagicTapWindow.swift, TextMouth/Phone/PhoneAppModel.swift, TextMouth/Phone/PhoneSession.swift, TextMouth/Phone/PhoneLifeCycle.swift, TextMouth/Phone/ReaderPhoneHooks.swift -->
 
 - The iPhone app runs on UIKit's life cycle, not SwiftUI's `App`.
   `TextMouthAppDelegate` is the `@main` type, and the app's one window is `MagicTapWindow`, a subclass that is the reliable home for the magic tap.
@@ -177,7 +177,7 @@ The Search in Book of branch `ios/search-1109` (below) is merged into main with 
   - Every default leaves the reader doing what it does on the Mac.
 
 ### PhoneLaunchRequest
-<!-- id: phonelaunchrequest; keys: ; src: TextMouthProductionTests/PhoneLaunchRequestTests.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouthiOSTests/IOSRuntimeTests.swift, Scripts/test/quit-while-held/Stubs.swift, TextMouth/App/TextMouthRuntime.swift -->
+<!-- id: phone-launch-request; keys: launch environment, UI test sandbox, simctl, SIMCTL_CHILD_, XCTestConfigurationFilePath, debug build; src: TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Platform/iOS/App/TextMouthSceneDelegate.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift, TextMouthiOSTests/IOSRuntimeTests.swift -->
 
 - `PhoneLaunchRequest` is what a UI test, or a run in the simulator, asks of the app at launch through its environment.
   It has two variables.
@@ -204,7 +204,7 @@ The Search in Book of branch `ios/search-1109` (below) is merged into main with 
 - From a shell, `xcrun simctl launch` passes each variable with the prefix `SIMCTL_CHILD_` (see [Building TextMouth](../developer/building.md)).
 
 ### PhoneSession.readerMade
-<!-- id: phonesession-readermade; keys: ; src: TextMouth/Phone/PhoneSession.swift, TextMouth/Platform/iOS/Services/PhoneBackgroundWork.swift, TextMouth/Platform/iOS/Services/PhoneAudioSession.swift -->
+<!-- id: phone-session-reader-made; keys: Combine, PassthroughSubject, hand-over, listeningReader, silent gaps; src: TextMouth/Phone/PhoneSession.swift, TextMouth/Platform/iOS/Services/PhoneAudioSession.swift, TextMouth/Platform/iOS/Services/PhoneBackgroundWork.swift -->
 
 - `PhoneSession.readerMade` is a Combine subject that sends each reader once, as the session makes it.
   It does so before anything can play the reader, and whichever slot the reader takes.
@@ -217,7 +217,7 @@ The Search in Book of branch `ios/search-1109` (below) is merged into main with 
 - `PhoneBackgroundWork` also gives its hooks to the readers that were open before it ran, in either slot.
 
 ### ReaderPhoneHooks.unitInForce
-<!-- id: readerphonehooks-unitinforce; keys: ; src: TextMouth/Phone/ReaderPhoneHooks.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneDefaults.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: reader-phone-hooks-unit-in-force; keys: lock screen, Control Center, skip commands, remote commands, navigation unit; src: TextMouth/Phone/ReaderPhoneHooks.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneDefaults.swift, TextMouth/Phone/PhoneRemoteCommandPolicy.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Platform/iOS/Services/PhoneAudioSession.swift, TextMouth/Services/NowPlayingService.swift -->
 
 - `unitInForce` is a closure in `ReaderPhoneHooks`.
   It answers the unit that the phone's moves go by for this reader now: the book's own unit, else its kind's unit from Settings.
@@ -234,7 +234,7 @@ The Search in Book of branch `ios/search-1109` (below) is merged into main with 
 - On the Mac the closure is nil, and the shared units apply as they did.
 
 ### The crash guard
-<!-- id: crash-guard; keys: ; src: TextMouth/Phone/PhoneSession.swift, TextMouthProductionTests/PhoneSessionTests.swift, TextMouthProductionTests/PhoneLifeCycleReopeningTests.swift, TextMouth/Phone/PhoneAppWording.swift -->
+<!-- id: phone-crash-guard; keys: openingBookID, reopen, relaunch, crash on load, lock-screen Play, UserDefaults; src: TextMouth/Phone/PhoneSession.swift, TextMouth/Phone/PhoneLifeCycle+Reopening.swift, TextMouth/Phone/PhoneAppWording.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouthProductionTests/PhoneSessionTests.swift, TextMouthProductionTests/PhoneLifeCycleReopeningTests.swift -->
 
 - `PhoneSession.openingBookKey` (`phone.openingBookID`) is a preference.
   It is written before a reader is made and removed once the reader's load ends.
@@ -266,7 +266,7 @@ The Search in Book of branch `ios/search-1109` (below) is merged into main with 
 - A lock-screen Play that opens a book takes a hold on the app for the load ("Playing from the lock screen", through `PhoneSession.beginHold`), as going on to the next book does.
 
 ### PhoneScreenHolds
-<!-- id: phonescreenholds; keys: ; src: TextMouth/Phone/PhoneScreenHolds.swift, TextMouth/Platform/iOS/Services/PhoneScreenSleep.swift -->
+<!-- id: phone-screen-holds; keys: isIdleTimerDisabled, idle timer, screen sleep, auto-lock, keep awake; src: TextMouth/Phone/PhoneScreenHolds.swift, TextMouth/Platform/iOS/Services/PhoneScreenSleep.swift, TextMouthProductionTests/PhoneScreenHoldsTests.swift -->
 
 - `PhoneScreenHolds` is the one keeper of the screen's sleep.
   Each owner takes a hold with `begin()`, which returns a closure that lets go.
