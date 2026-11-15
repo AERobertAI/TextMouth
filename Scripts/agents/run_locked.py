@@ -33,7 +33,7 @@ def main():
         print("usage: run_locked.py NAME COMMAND...", file=sys.stderr)
         return 2
     name, command = sys.argv[1], sys.argv[2:]
-    with heavy_lock.held(name, WAIT_SECONDS) as taken:
+    with heavy_lock.held(name, WAIT_SECONDS, heavy_lock.say_wait) as taken:
         if not taken:
             # Never run a heavy job beside another one: the Mac froze that way.
             print(f"run_locked: {name} did not get the lock in time", file=sys.stderr)

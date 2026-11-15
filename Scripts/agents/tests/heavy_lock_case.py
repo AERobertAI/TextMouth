@@ -35,6 +35,7 @@ class HeavyLockTestCase(unittest.TestCase):
         # Never let a test reach the real lock, whatever it does.
         self.assertTrue(str(heavy_lock.LOCK).startswith(str(self.folder)))
         self.assertTrue(str(heavy_lock.FIRST).startswith(str(self.folder)))
+        self.assertTrue(str(heavy_lock._line_dir()).startswith(str(self.folder)))
 
     def live_pid(self):
         """The process ID of another process that runs until the test ends."""
@@ -63,6 +64,22 @@ class HeavyLockTestCase(unittest.TestCase):
     def mark_first(self, pid, until, name="build-train"):
         """Writes a first-in-line mark as a waiting train would."""
         heavy_lock.FIRST.write_text(json.dumps({"pid": pid, "name": name, "since": "now", "until": until}))
+
+    def write_ticket(self, pid, name, deadline=None, stamp=None):
+        """Writes a ticket as a waiting caller of the new code would, with `stamp`
+        (nanoseconds) fixing its place in the line; returns its path."""
+        folder = self.folder / heavy_lock.LINE_NAME
+        folder.mkdir(exist_ok=True)
+        stamp = time.time_ns() if stamp is None else stamp
+        path = folder / f"{stamp:020d}-{pid}.json"
+        path.write_text(json.dumps({"pid": pid, "name": name, "since": "now",
+                                    "deadline": time.time() + 600 if deadline is None else deadline}))
+        return path
+
+    def tickets(self):
+        """The ticket files in the line, in the order they sort."""
+        folder = self.folder / heavy_lock.LINE_NAME
+        return sorted(folder.glob("*.json")) if folder.exists() else []
 
     def later(self, seconds, action):
         """Runs `action` on a thread of its own after `seconds`, unless the test has ended."""

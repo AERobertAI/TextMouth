@@ -88,7 +88,7 @@ def main():
     name, log = arguments
     if remote:
         return run_remote(name, log, remote)
-    with heavy_lock.held(name, WAIT_SECONDS) as taken:
+    with heavy_lock.held(name, WAIT_SECONDS, heavy_lock.say_wait) as taken:
         if not taken:
             print(f"run_suite: {name} did not get the lock in time", file=sys.stderr)
             return 3

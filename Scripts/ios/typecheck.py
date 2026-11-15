@@ -672,7 +672,8 @@ def main(argv):
 
     def waiting(owner):
         say(f"waiting for the heavy-work lock, held by {owner.get('name', '?') if owner else '?'} "
-            f"since {owner.get('since', '?') if owner else '?'}")
+            f"since {owner.get('since', '?') if owner else '?'}; "
+            f"{heavy_lock.describe_wait(owner) if owner else 'next in line'}")
 
     taken = True
     if not args.no_lock:
