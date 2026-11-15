@@ -695,6 +695,13 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
   - After the fix round, one pass passed 26 of 26, including all five and the Library test.
     A second pass was not run, so whether the audit is stable across launches is untested.
   - After that pass only a comment in the search sheet changed, to fix a train failure.
+- **The full suite, first try:** Stopped at its 80-minute limit with 214 of 11,853 tests done.
+- **The full suite before the clean-up:** Four shards, the 2-minute limit, 114 skips: 14.5 to 23 minutes, with 2 to 6 failures in each run and the hangs of 2 minutes each.
+- **The runs before the three clean full suites:** The four runs before runs 42894995288, 42897206889, and 42899832768 took 12.6 to 16.3 minutes and each had 2 to 4 failures.
+- **The runs of the day before the fixes:** Several of the 4-to-6-failure runs of the day before were the hung voice listing and the late cancels, which are fixed.
+- **The decode check in the concurrency pool:**
+  Before the decode check left the pool, `AudioMediaProber.probeConcurrently` ran that call in the app's concurrency pool, so a few such hangs left no thread for the tasks after them.
+  That was why a test that decodes audio sometimes failed together with the one after it, and nothing in the app bounded the call.
 
 ## From Testing TextMouth
 
