@@ -107,15 +107,15 @@ Import questions.
 <!-- id: packages-originals; keys: tmb, package import, reinstate, original file, Trash, ID collision, add back; src: TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/Services/BookTextEditing.swift -->
 
 Packages and originals: FileImportService.isBookPackage(_:) is the one test of the .tmb extension, shared by importFiles, importAndOpenFiles, and deleteOriginalFile(at:).
-importFiles sends a package to openTMBPackage(from:) as importAndOpenFiles does, handing it the window's folder and reading-list request, with only the first of several packages opening a reader (LibraryViewModel.importFiles(urls:toFolder:...)).
-importCandidates lists a .tmb folder in a ZIP as one book and never walks into it.
-The batch identifies it once (identifyTMBPackage) and imports it as a package opened from Finder is, or takes back the package Remove from Library Only retained, and one whose book the library lists, by ID or checksum, is skipped, importZip taking existingBookIDs.
-listedBookID(for:) repairs a listing from a package only when it is the book's own package or the listing has none left, and any other copy opens the listed book and logs TMB_ID_LISTED.
-reasonToKeepOriginal(at:) keeps an original that is a folder, inside a .tmb package, or inside the data directory (resolved links, compared by path component and without regard to case), logging ORIGINAL_KEPT.
-stagedFileName(for:) stages a source named content.md, in any capitals, as "content (book)" with its own extension, so the text cache never replaces the book's file.
-The legacy migration uses it too.
-readableContent catches EditedTextKept, so a package whose record holds a taken edit imports with content.md as it is and the edit kept, and RemovedFromLibraryMarker carries editedText and textCacheFingerprint (decoded leniently) so a book added back keeps its edit.
-A marker without them keeps content.md as a content.md.edited- copy when reading the file would write other text there (BookTextEditWording.replaced, addBackNoCopyKept), and a copy that cannot be kept stops the reinstatement.
+- importFiles sends a package to openTMBPackage(from:) as importAndOpenFiles does, handing it the window's folder and reading-list request, with only the first of several packages opening a reader (LibraryViewModel.importFiles(urls:toFolder:...)).
+- importCandidates lists a .tmb folder in a ZIP as one book and never walks into it.
+  The batch identifies it once (identifyTMBPackage) and imports it as a package opened from Finder is, or takes back the package Remove from Library Only retained, and one whose book the library lists, by ID or checksum, is skipped, importZip taking existingBookIDs.
+- listedBookID(for:) repairs a listing from a package only when it is the book's own package or the listing has none left, and any other copy opens the listed book and logs TMB_ID_LISTED.
+- reasonToKeepOriginal(at:) keeps an original that is a folder, inside a .tmb package, or inside the data directory (resolved links, compared by path component and without regard to case), logging ORIGINAL_KEPT.
+- stagedFileName(for:) stages a source named content.md, in any capitals, as "content (book)" with its own extension, so the text cache never replaces the book's file.
+  The legacy migration uses it too.
+- readableContent catches EditedTextKept, so a package whose record holds a taken edit imports with content.md as it is and the edit kept, and RemovedFromLibraryMarker carries editedText and textCacheFingerprint (decoded leniently) so a book added back keeps its edit.
+  A marker without them keeps content.md as a content.md.edited- copy when reading the file would write other text there (BookTextEditWording.replaced, addBackNoCopyKept), and a copy that cannot be kept stops the reinstatement.
 
 ## Limits of what a file claims
 <!-- id: limits-what-file-claims; keys: XXE, entity expansion, hostile file, untrusted input, stack overflow, integer overflow, malformed header; src: TextMouth/Parsers/EPUBParser.swift, TextMouth/Parsers/EPUBParser+Navigation.swift, TextMouth/Parsers/DAISYParser+NCXParser.swift, TextMouth/Parsers/PDFTextParser.swift, TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AudioPlaybackService.swift, TextMouth/Parsers/AudioContentSniffer.swift -->
