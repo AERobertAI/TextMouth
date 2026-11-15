@@ -799,6 +799,25 @@ final class UnknownKeysTests: XCTestCase {
         XCTAssertEqual(moved.unknownKeys, skip.unknownKeys)
     }
 
+    /// A record takes another record's unknown keys only when both are the
+    /// same book's: an old package two books shared can hold another
+    /// book's record, and what a later TextMouth noted there is not this
+    /// book's (review6, nit).
+    func testARecordOfAnotherBookGivesNoUnknownKeys() {
+        var other = Self.plainBook(seed: 2).makeBookInfo()
+        other.unknownKeys = UnknownKeys(["recordLevel": .integer(1)])
+        other.metadata.unknownKeys = UnknownKeys(["metadataLevel": .integer(2)])
+        other.state.unknownKeys = UnknownKeys(["stateLevel": .integer(3)])
+        let book = Self.plainBook(seed: 3)
+
+        let written = book.bookInfo(replacing: StoredBookRecord(info: other, keepsContentIndex: false), contentIndex: nil)
+
+        XCTAssertNotEqual(other.metadata.bookID, book.id)
+        XCTAssertTrue(written.unknownKeys.isEmpty)
+        XCTAssertTrue(written.metadata.unknownKeys.isEmpty)
+        XCTAssertTrue(written.state.unknownKeys.isEmpty)
+    }
+
     // MARK: - config.json's Saves and Merges
 
     /// A setting changed and saved keeps config.json's unknown keys, and

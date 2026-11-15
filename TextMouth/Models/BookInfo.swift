@@ -119,7 +119,13 @@ struct BookInfo: Codable, KeepsUnknownKeys {
     /// its record. The places inside (the reading position, the bookmarks,
     /// the skipped headings) and the other nested records carry their own
     /// unknown keys with them, from the row.
+    ///
+    /// Nothing is taken from a record of another book, as an old package
+    /// two books shared can hold (`Book.takeStandingReadingState(of:)`
+    /// checks the same): what a later TextMouth noted there is not this
+    /// book's.
     mutating func keepUnknownKeys(of stored: BookInfo) {
+        guard stored.metadata.bookID == metadata.bookID else { return }
         unknownKeys = stored.unknownKeys
         metadata.unknownKeys = stored.metadata.unknownKeys
         state.unknownKeys = stored.state.unknownKeys
