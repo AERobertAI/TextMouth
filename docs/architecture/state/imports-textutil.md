@@ -1,16 +1,16 @@
 # Imports: documents textutil reads
-<!-- id: imports-documents-textutil-reads; keys: ; src: -->
+<!-- id: imports-documents-textutil-reads; keys: textutil, RTF, Word 97-2003, wordml, webarchive, SSML, DTBook, .doc; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Documents textutil reads, web archives, SSML, DTBooks
-<!-- id: documents-textutil-reads-web-archives; keys: ; src: TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Parsers/TextutilHTMLStructure.swift, TextMouth/Parsers/TextutilFieldCodes.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/SSMLReader.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+DTBookHeadParser.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/Book.swift, TextMouth/Models/TextCacheFingerprint.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/ImportFailure.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Resources/Info.plist, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Platform/iOS/Services/WatchedProcess+iOS.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Platform/iOS/IOSUnavailable.swift, TextMouth/Parsers/DOCXParser.swift -->
+<!-- id: documents-textutil-reads-web-archives; keys: .doc, .rtf, .odt, .webarchive, .ssml, DTBook, Word 97-2003, Document import; src: TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Platform/iOS/IOSUnavailable.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Models/TextCacheFingerprint.swift -->
 
 Documents that textutil reads, web archives, SSML files, and DTBooks (FMT13, FMT01, FMT03, FMT07, FMT04): text books that become Markdown, are indexed, and are fingerprinted as a Word document is.
 Since 0.4.1 textutil reads only a compound-file Word document older than Word 6, and only on the Mac (through 0.4.0 it read Word 6 and Word 95 documents too); rtf, rtfd, odt, wordml, and every doc from Word 6 on go to the own readers (below), and iOS, which starts no child process, reads none with textutil (a run throws IOSUnavailable).
 
 ### The formats
-<!-- id: textutil-formats; keys: ; src: Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Models/Book.swift, TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Services/FileImportService.swift -->
+<!-- id: textutil-formats; keys: BookFormat, detect(from:), .xml sniffer, Word template, .dotx, .docm, document types, PEF; src: TextMouth/Models/Book.swift, TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Services/FileImportService.swift, TextMouth/Resources/Info.plist -->
 
 The formats: BookFormat gained rtf, rtfd, doc, odt, wordml, webarchive, and ssml.
 Their raw values are written into library.json and bookInfo.json and never changed, and a build that does not know one cannot decode the index (Index-write suspension, in [The library index](library-index.md)), unless it has V03 (October 23, 2026), which keeps such a row as it was read (Rows this TextMouth cannot read, there).
@@ -19,7 +19,7 @@ BookFormat.detect(from:) names an .xml file by XMLDocumentSniffer.bookFormat(ofF
 FileImportService.supportedTypes offers the matching types in Open Book, and Info.plist makes each a document type at Alternate rank (org.w3.ssml is imported there).
 
 ### The path through textutil
-<!-- id: path-through-textutil; keys: ; src: TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/iOS/Services/WatchedProcess+iOS.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
+<!-- id: path-through-textutil; keys: textutil pipeline, HTML to Markdown, encrypted Word, password protected, page breaks, field codes, heading guess, Word 6; src: TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/TextutilHTMLStructure.swift, TextMouth/Parsers/TextutilFieldCodes.swift, TextMouth/Parsers/TextutilPageBreaks.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/WordDocumentStructure.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift -->
 
 The path of the five formats (rtf, rtfd, doc, odt, and wordml) runs through TextutilDocumentReader, whose parse(url:bookFormat:) serves BookParser and whose extract(from:bookFormat:) serves MarkdownCacheService.extractCache.
 After step 1, htmlText(of:bookFormat:includesPages:) asks OwnDocumentReaders for the HTML (Own readers, below); steps 2 and 3 are textutil's, and run only when it answers nil, which is for a compound-file Word document older than Word 6 alone (WordFileInformationBlock.read answers nil for an nFib under 0x0065):
@@ -37,20 +37,20 @@ After step 1, htmlText(of:bookFormat:includesPages:) asks OwnDocumentReaders for
 4. HTMLToMarkdownConverter writes the Markdown.
 
 ### Names
-<!-- id: textutil-names; keys: ; src: TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift -->
+<!-- id: textutil-names; keys: title and author, document metadata, Author meta, launch refresh, hand-edited title, file name as title, Extraction; src: TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift -->
 
 Names: one run makes the Markdown and the title and author (TextutilDocumentReader.Extraction: the title element and the Author meta of textutil's HTML head, with white space collapsed and the control characters that textutil writes for some Word documents removed).
 MarkdownCacheService.extractCache returns them, and importFileWithReport adopts them (adoptingDocumentNames, through publishReadableBook and readableContent); a regeneration never does, since the book's title and author may have been edited by hand.
 Until then ImportedFileMetadata.read(readingTextutilNames: false) lists the book by its file's name; the launch refresh reads with the default, true, which costs a run of textutil for a Word document older than Word 6 and a read by the own reader for every other.
 
 ### Where textutil writes
-<!-- id: where-textutil-writes; keys: ; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Services/ImportStaging.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
+<!-- id: where-textutil-writes; keys: temporary output, hidden html file, working folder, staged package, failed import leftovers; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Services/ImportStaging.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
 
 Where textutil writes: withWorkingFolder(for:) puts the hidden .<UUID>.textutil.html (TextutilConverter.temporarySuffix) in the staged package when the book's file is in one (ImportStaging.isStagedPackageName), so the output goes with the package should the import fail or be cancelled, and otherwise in a new TextMouth-textutil-<UUID> folder in TextutilDocumentReader.temporaryRoot (the temporary directory), removed afterwards.
 No library package and no folder of an imported file ever receives one.
 
 ### Cancel
-<!-- id: textutil-cancel; keys: ; src: Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/ArchiveExtraction.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Services/AsyncBridge.swift -->
+<!-- id: textutil-cancel; keys: Cancel button, cancel import, kill child process, ZIP batch, no alert, cancellation checks, Redo Text Extraction; src: TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Services/ImportFailure.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/RTFInterpreter.swift, TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/OfficeXMLReader.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/WordDocumentReader.swift -->
 
 Cancel: SerialImportQueue.enqueue binds the queue's cancellation as ImportCancellation.current around each import.
 TextutilConverter.html reads it on the import's thread and waits through AsyncBridge.waitForResult(cancelledBy:), which cancels the detached task, and so kills the child, when ImportCancellation.cancel() runs the handlers that whileRunning(_:then:) registered.
@@ -61,7 +61,7 @@ The readers that ask it: RTF (before the read and every RTFInterpreter.tokensBet
 The Word 97-2003 reader asks none, so it ends at the next step after it is read.
 
 ### Web archives, SSML, and DTBooks
-<!-- id: web-archives-ssml-dtbooks; keys: ; src: TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/BookParser.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/TextFileDecoder.swift -->
+<!-- id: web-archives-ssml-dtbooks; keys: .webarchive, Safari web archive, .ssml, speech markup, DTBook, DAISY XML, dtbook.xml, text encoding; src: TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/SSMLReader.swift, TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+DTBookHeadParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/TextFileDecoder.swift -->
 
 Web archives, SSML, and DTBooks: WebArchiveReader.mainPage(of:) reads the property list's WebMainResource alone (WebResourceData, WebResourceMIMEType, WebResourceTextEncodingName). text/html, application/xhtml+xml, or no type is a page for the HTML path, text/plain a text page for the plain-text path (MainPage.parsed(title:) and markdown(), in BookParser.swift), and any other type throws Failure.notAPage.
 WebSubresources, WebSubframeArchives, and every address are never read, and WebKit is not used.
@@ -71,13 +71,13 @@ The file is never handed to the speech engine as SSML, since AVSpeechUtterance(s
 A DTBook on its own goes to DAISYParser through SingleFileProvider, which lists that file alone, held to the byte limit; DAISYDTBookHeadParser takes its title and author (the dc:Title and dc:Creator metas, else doctitle and docauthor) when no OPF is there; and findDTBookXML finds a DTBook inside a package by the same sniffer, whatever its encoding, prolog, or name.
 
 ### The byte limit
-<!-- id: textutil-byte-limit; keys: ; src: TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/ArchiveEntryReader.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/SSMLReader.swift -->
+<!-- id: textutil-byte-limit; keys: 64 MB, size limit, too large, empty file, symbolic link, text file limit, No Text to Read; src: TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/ArchiveEntryReader.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/SSMLReader.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/DAISYParser.swift -->
 
 The byte limit: DocumentByteLimit is 64 MB (ArchiveEntryLimits.standard.text, narrowed by tests through its task-local current).
 TextutilConverter holds the source and the HTML to it, and DocumentByteLimit.contents(of:) serves WebArchiveReader, SSMLReader, the web-page branch of TextutilDocumentReader, and SingleFileProvider: a symbolic link is sized by its target, an empty file is FileImportError.noTextToRead, and DocumentTooLargeError names the limit.
 
 ### An RTFD is a folder
-<!-- id: rtfd-folder; keys: ; src: TextMouth/Services/FileImportService.swift, TextMouth/Models/TextCacheFingerprint.swift, TextMouthProductionTests/ConfigWatcherTests.swift, TextMouth/Models/ImportDecision.swift -->
+<!-- id: rtfd-folder; keys: .rtfd, RTFD bundle, content checksum, attachment, original kept, keep original, DAISY ZIP with audio, duplicate check; src: TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Models/TextCacheFingerprint.swift, TextMouth/Models/ImportDecision.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 An RTFD is the one text book whose file is a folder. isRTFDFolder(_:) names it. contentChecksum(of:format:) is its checksum, the MD5 of its regular files' sorted relative paths and their MD5s (regularFilePaths(in:) passes over hidden items and symbolic links), and FileStamp(of:) and FingerprintHasher.md5 use the same walk, so a text cache's fingerprints notice a changed attachment (see [Text caches and content indexes](text-caches.md)).
 The package checks (inspectContent, holdsSameContent, reconstructedBook, and contentHash(of:bookID:)) treat it as a document, not a folder of tracks; stageContent(of:format:package:in:) copies a text document that is a symbolic link as its target and removes every link inside a staged RTFD; importCandidates lists an .rtfd folder in a ZIP as one book; and md5Hash(of:) refuses a folder rather than crash.
@@ -85,17 +85,15 @@ ImportedBook.isFromFolder is set, so mayDeleteOriginal is false, and when import
 ImportedBook.tookOnlyPartOfOriginal, set by importDAISYAudioZipWithReport, is the other cause mayDeleteOriginal honors: a ZIP's DAISY book with audio imports as its audio alone, and the archive is scanned without extracting anything (DAISYArchiveLeftovers: holdsText, for a DTBook or a text document a SMIL file names other than the navigation file, and otherBookCount, for books outside the DAISY folder) so that the original is kept only when something is left, and the notice is DAISYArchiveWording.originalKept(bookTitle:leftovers:).
 
 ### Refusals
-<!-- id: textutil-refusals; keys: ; src: Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/FileImportService.swift, TextMouth/Parsers/XMLDocumentSniffer.swift -->
+<!-- id: textutil-refusals; keys: blank document, empty document, No Text to Read, unsupported XML, FileImportError, checkingFormat, docx blank; src: TextMouth/Services/FileImportService.swift, TextMouth/Parsers/XMLDocumentSniffer.swift -->
 
 Refusals: formatsRefusedWhenBlank (rtf, rtfd, doc, docx, odt, wordml, braille, webarchive, ssml, and the plain three; docx, which also covers .dotx, .docm, and .dotm, joined on November 13, 2026, since a Word document of only empty paragraphs converts without error) and refusesBlankText(_:) (those, and a daisy book whose file is an .xml, a DTBook on its own; a DAISY package whose DTBook holds no words still imports) make readableContent throw noTextToRead.
 An .xml file that no format claims throws FileImportError.unsupportedXML, or noTextToRead when XMLDocumentSniffer.holdsNoText(fileAt:) finds it empty or blank, both at the checkingFormat step, before anything is copied.
 
 ### Logs and the sweep
-<!-- id: textutil-logs-sweep; keys: ; src: TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Parsers/TextutilHTMLStructure.swift, TextMouth/Parsers/TextutilFieldCodes.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/SSMLReader.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+DTBookHeadParser.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/Book.swift, TextMouth/Models/TextCacheFingerprint.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/ImportFailure.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Resources/Info.plist, TextMouth/Platform/iOS/Services/OrphanedConversionSweep+iOS.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep.swift, TextMouth/Platform/iOS/Services/WatchedProcess+iOS.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
+<!-- id: textutil-logs-sweep; keys: textutil leftovers, orphan sweep, storage log, hidden .textutil.html, reaper, launch cleanup, log events; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 
 Logs and the sweep: TextutilConverter writes TEXTUTIL_KILLED (the watchdog's reason) and TEXTUTIL_FAILED (wrote nothing, exited with status N, or could not start) as import events.
 OrphanedConversionSweep+Textutil, run by applicationDidFinishLaunching through sweepTextutilInBackground() and never in a hosted test, kills with SIGKILL each /usr/bin/textutil that is run by the current user, is an orphan (parent pid 1), and has a -output argument, read before the --, naming a hidden .<name>.textutil.html (shouldKillTextutil), and removes each real TextMouth-textutil-<UUID> folder in the temporary directory that is over an hour old (sweepTextutilFolders).
 It logs one TEXTUTIL_LEFTOVERS_SWEPT line, in the storage category, when it did either.
 WatchedProcess's reaper and terminateAll() end a running textutil with TextMouth, as they end afconvert.
-
-- Files: Parsers/TextutilDocumentReader.swift, Parsers/TextutilSourceCheck.swift, Parsers/TextutilHTMLStructure.swift, Parsers/TextutilFieldCodes.swift, Services/TextutilConverter.swift, Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift, Parsers/WebArchiveReader.swift, Parsers/SSMLReader.swift, Parsers/XMLDocumentSniffer.swift, Parsers/DAISYParser.swift, Parsers/DAISYParser+DTBookHeadParser.swift, Parsers/DocumentByteLimit.swift, Parsers/BookParser.swift, Parsers/TextFileDecoder.swift, Models/Book.swift, Models/TextCacheFingerprint.swift, Services/MarkdownCacheService.swift, Services/FileImportService.swift, Services/FileImportService+Packages.swift, Services/ArchiveExtraction.swift, Services/AsyncBridge.swift, Services/ImportFailure.swift, ViewModels/LibraryViewModel+Import.swift, Resources/Info.plist.
