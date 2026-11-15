@@ -42,9 +42,9 @@ Part of [TextMouth's documentation](../../README.md).
 ### Pages in DAISY books
 <!-- id: pages-daisy-books; keys: pagenum, page-front, page-normal, DTBook, SMIL, page reader 1.0.1; src: TextMouth/Parsers/DAISYParser+TextExtraction.swift, TextMouth/Parsers/DAISYParser.swift, TextMouth/Models/PageReaderVersions.swift -->
 
-- In a DAISY book, pages are the page numbers the book gives, which are no longer read aloud as "[Page 12]".
-- A DAISY 3 book of several DTBook files numbers a page that holds no words by its place in the whole book: 1, 2, then 3, 4, where each file used to begin again at 1.
-- The first launch after the update of November 13, 2026 reads every DAISY book again, once, as the DAISY page reader changed (version 1.0.1), and your place follows its words.
+- In a DAISY book, pages are the page numbers the book gives, which are not read aloud as "[Page 12]".
+- A DAISY 3 book of several DTBook files numbers a page that holds no words by its place in the whole book: 1, 2, then 3, 4.
+- The first launch of version 0.4.7 reads every DAISY book again, once, as the DAISY page reader changed (version 1.0.1), and your place follows its words.
   Only a DAISY 3 book of several DTBook files, with a page that holds no words after an earlier page or with files that were read out of order, ends with another text; every other DAISY book reads byte for byte as before.
 - A DAISY 2.02 page entry's own number or caption, as "12" under the label "Page 12", is not read either.
 - Any longer or other text a DAISY 2.02 page entry points at is read.

@@ -52,7 +52,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: file-that-none-these-settles; keys: Windows-1252, mojibake, Open Book, Finder, ZIP, feed article; src: TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Services/FileImportService.swift -->
 
 - A file that none of these settles, because it is neither UTF-8, UTF-16, nor UTF-32 and names no encoding, was always read as Windows-1252, so a file in an encoding that Windows-1252 does not match, such as Mac Roman, Cyrillic, or Japanese, had the wrong letters.
-- Since the update of October 24, 2026, TextMouth guesses its encoding when you add the file with Open Book…, from Finder, or in a ZIP of books, and a book whose encoding it guessed is read in that encoding from then on.
+- Since version 0.2.2, TextMouth guesses its encoding when you add the file with Open Book…, from Finder, or in a ZIP of books, and a book whose encoding it guessed is read in that encoding from then on.
 - Only a file you add yourself is guessed at: a feed's article is read as it always was.
 
 ### The encodings TextMouth guesses among
@@ -61,7 +61,7 @@ Part of [TextMouth's documentation](../../README.md).
 - TextMouth guesses among the encodings below.
 - Book Information and Speak Full Info name the one it chose as written here, then "guessed", and one you chose the same way, then "chosen" (see [The Library window](library-window.md)).
 - Windows-1252 is not among them: a file is read as Windows-1252 when no guess can be trusted, though you can choose it.
-- The two DOS code pages and Mac Central European, added on November 13, 2026, are taken only when macOS's own guess names one of them.
+- The two DOS code pages and Mac Central European, added in version 0.4.7, are taken only when macOS's own guess names one of them.
   TextMouth does not try them itself, so a book already in the library is not read differently; the Text Encoding pop-up in Book Information offers all three for you to choose.
 - The encodings, by script:
   - Western European: "Mac Roman (Western European)", "ISO 8859-15 (Western European)", "CP437 (US DOS)", and "CP850 (Western European DOS)".

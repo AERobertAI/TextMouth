@@ -32,7 +32,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - What a file holds decides, not its extension.
 - An Ogg file named .m4a, or an MP2 feed episode saved as .mp3, is converted all the same.
-- TextMouth does not open an Ogg file under another name, an .mp3 or .m4a, with Apple's audio code to read its tags, which is what hung the Mac on October 14, 2026: it reads them from the file's own bytes, and names the book for the file when they can't be read.
+- TextMouth does not open an Ogg file under another name, an .mp3 or .m4a, with Apple's audio code to read its tags: it reads them from the file's own bytes, and names the book for the file when they can't be read.
 - An audio file whose header claims an absurd length, past a year, or an absurd sample rate is refused rather than crashing the import.
 
 ### Lossy audio
@@ -54,7 +54,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: ogg-audio; keys: Vorbis, Opus, Ogg FLAC, Skeleton, OggHeaderReader, macOS 15.4, hang; src: TextMouth/Services/OggHeaderReader.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/ViewModels/ReaderViewModel+OggConversion.swift -->
 
 - TextMouth converts Ogg audio on macOS 15.4 and later, which can read it.
-- It never plays Ogg itself, since macOS's Vorbis decoder can lock up while playing (October 14, 2026).
+- It never plays Ogg itself, since macOS's Vorbis decoder can lock up while playing.
 - It does not ask macOS's audio to open an Ogg file for anything else either: it reads the file's title, artist, album, genre, year, and length from the file's own bytes with code of its own, and only afconvert, run as a separate process that TextMouth watches, decodes it.
 - An Ogg file that claims to last more than a year is refused as unreadable.
 - A file cut from a longer stream, as a live broadcast joined part way through is, reports the length it holds, not the length counted from the start of the broadcast.

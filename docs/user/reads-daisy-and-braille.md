@@ -8,10 +8,10 @@ Part of [TextMouth's documentation](../../README.md).
 
 - TextMouth reads DAISY books, versions 2.02 and 3: a book's folder, its navigation or package file (ncc.html or a .opf file), or a ZIP holding the book.
 - A DTBook file on its own (.xml) imports as a book too, and so does a NIMAS package, which is a DTBook with its package file.
-- A DAISY 3 book that holds several DTBook files is read in one order every time (since November 13, 2026): the package's reading order, else the order its SMIL files point at the files, else the order the package lists them.
+- A DAISY 3 book that holds several DTBook files is read in one order every time (since version 0.4.7): the package's reading order, else the order its SMIL files point at the files, else the order the package lists them.
   A file that none of these places comes last.
 - A DAISY book's audio times may be written as clock values, as 0:02:43.650, as seconds, or, as SMIL allows, with a unit: "500ms", "38.228s", "2min", or "1h".
-  Each unit reads as the time it names; "500ms" used to read as no time.
+  Each unit reads as the time it names.
   A book's audio times are measured when it is imported, so a DAISY book gains them when it is imported again.
 
 ## XML files
@@ -126,7 +126,7 @@ Part of [TextMouth's documentation](../../README.md).
 - The EBAE reading applies to a table of this Mac's that writes EBAE's signs and reads the sign alone as punctuation, as its English EBAE tables do.
 - TextMouth's braille helper tests each table for this when the table is used, so none is picked out by name.
 - The faults of liblouis itself in reading EBAE remain, as a decimal such as 3.5 that comes back as "3.e".
-- A braille book is read again once at the first launch after the update of October 24, 2026, and gets this reading then.
+- A braille book is read again once at the first launch of version 0.2.2, and gets this reading then.
 - A book whose new reading differs from its text keeps a copy of its old text beside it, and its saved places follow their words (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 - Redo Text Extraction reads a book again at any time.
 - Export writes a book's emphasis into braille in UEB, and writes none in EBAE (see [Exporting books](exporting-books.md)).

@@ -114,7 +114,6 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - Text typed in a symbol font, which Word 97 stores as a private-use character, is read the same way.
   In an ordinary text font it is read through the Symbol table as textutil read it, so a letter that stands for mu or pi reads as one, and a checkbox set in Arial reads as a Greek theta.
 - A bullet made by a symbol, at a paragraph's start, makes the paragraph a list item, and a paragraph of only a picture symbol, such as a checkbox, is not written.
-- Before version 0.4.1 a Word 97-2003 document's symbol read as "(".
 - Symbols in Word documents (.docx) and Word 2003 XML are read from version 0.4.2, by the same rules:
   - A symbol is a w:sym element, which names a font and a character code.
     It reads as the character that font shows for the code.
@@ -128,7 +127,6 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
     A symbol in a footnote is read, except in a note's custom mark.
   - A code that is not four hexadecimal digits, or that no table settles, reads as a space.
   - Not read: a font a table style names, a font a theme names alone, and the complex-script and East Asian fonts of a run.
-  - Before version 0.4.2 these symbols were lost: a check box in Wingdings made the words either side run together, and a bullet typed in Symbol was a private-use character.
 - In OpenDocument text, flat .fodt files and OpenOffice 1.x .sxw files are not read.
 - In OpenDocument text, hyperlink addresses are not read, only the links' words.
 - In OpenDocument text, a merged table cell leaves no cell of its own.
