@@ -44,7 +44,9 @@ def main():
     files = [f"{ROOT}/TextMouth/Parsers/{name}.swift" for name in PARSERS]
     files += [f"{ROOT}/TextMouth/Models/{name}.swift" for name in MODELS]
     files += [ROOT + "/TextMouth/Services/OffsetMap.swift", chapters, HERE + "/Main.swift", HERE + "/Stubs.swift"]
-    objects = [f"{PRODUCTS}/{name}.o" for name in ("SwiftSoup", "Markdown", "cmark-gfm", "cmark-gfm-extensions", "CAtomic", "ZIPFoundation")]
+    # SwiftSoup is a vendored static library (libSwiftSoup.a); the other packages leave objects.
+    objects = [f"{PRODUCTS}/libSwiftSoup.a"]
+    objects += [f"{PRODUCTS}/{name}.o" for name in ("Markdown", "cmark-gfm", "cmark-gfm-extensions", "CAtomic", "ZIPFoundation")]
     command = [
         "swiftc", "-swift-version", "5", "-I", PRODUCTS,
         "-I", CHECKOUTS + "/swift-markdown/Sources/CAtomic/include",

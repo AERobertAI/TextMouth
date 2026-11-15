@@ -18,9 +18,6 @@ packages:
   ZIPFoundation:
     url: https://github.com/weichsel/ZIPFoundation.git
     exactVersion: "0.9.20"
-  SwiftSoup:
-    url: https://github.com/scinfu/SwiftSoup.git
-    exactVersion: "2.13.9"
   swift-markdown:
     url: https://github.com/swiftlang/swift-markdown.git
     exactVersion: "0.9.0"
@@ -97,6 +94,32 @@ targetTemplates:
         CLANG_ENABLE_OBJC_ARC: YES
         SKIP_INSTALL: YES
 
+  # SwiftSoup 2.13.9, the HTML and XML parser, vendored in Vendor/SwiftSoup
+  # (see its README.md): the release's own source with attributes changed
+  # and nothing else, written by Scripts/vendor/swiftsoup/make_vendor.py. A
+  # static library the apps link, compiled as one module (every file, so the
+  # compiler can drop what the app never reaches) and, in Release, for size
+  # (-Osize, the smallest build, which the Makefile asks of every target).
+  # The module is named SwiftSoup, as the package was. Its warnings are
+  # SwiftSoup's own and are not shown; the gate counts Swift warnings only.
+  # SwiftSoupCorpusTests checks that it builds the trees the package built.
+  SwiftSoupLibrary:
+    type: library.static
+    # Swift alone: no Objective-C class or category for the linker to keep.
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/SwiftSoup/Sources
+    settings:
+      base:
+        PRODUCT_NAME: SwiftSoup
+        PRODUCT_MODULE_NAME: SwiftSoup
+        SWIFT_SUPPRESS_WARNINGS: YES
+        SKIP_INSTALL: YES
+      configs:
+        Release:
+          SWIFT_COMPILATION_MODE: wholemodule
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
+
 targets:
   TextMouth:
     type: application
@@ -123,7 +146,8 @@ targets:
       # liblouis (FMT21) is under the GNU Lesser General Public License 2.1,
       # LAME (FR04) under the GNU Library General Public License 2, and
       # foliate-js (MIT), whose mobi.js the MOBI reader (FMT42) follows, under
-      # its own MIT licence. They are copied from Vendor, never into the
+      # its own MIT licence, and SwiftSoup (MIT, vendored since November 14,
+      # 2026). They are copied from Vendor, never into the
       # repository a second time, so each stays the vendored release's own
       # text. BundledLicenseTests checks that every one reaches the built app.
       - path: Vendor/liblouis/COPYING.LESSER
@@ -151,6 +175,13 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/foliate-js
+      # SwiftSoup's MIT licence, from the vendored copy, which is compiled
+      # into the app (Vendor/SwiftSoup/README.md).
+      - path: Vendor/SwiftSoup/LICENSE
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/SwiftSoup
     settings:
       groups:
         - appVersion
@@ -214,7 +245,8 @@ targets:
           LD_EXPORT_SYMBOLS: NO
     dependencies:
       - package: ZIPFoundation
-      - package: SwiftSoup
+      # The HTML and XML parser, vendored (Vendor/SwiftSoup).
+      - target: SwiftSoup
       - package: swift-markdown
         product: Markdown
       # The MP3 encoder, linked into the app (MP3Encoder).
@@ -281,6 +313,16 @@ targets:
       - ObjCExceptionCatcherLibrary
     platform: iOS
     deploymentTarget: "26.0"
+  # SwiftSoup, for each app (the template's comment, above, says what it is).
+  SwiftSoup:
+    templates:
+      - SwiftSoupLibrary
+    platform: macOS
+  SwiftSoup_iOS:
+    templates:
+      - SwiftSoupLibrary
+    platform: iOS
+    deploymentTarget: "26.0"
   # The iOS app (phase 0 of the port, IOS-PORT-RESEARCH-2026-11-03.md): the
   # same sources as the Mac app, less TextMouth/Platform/macOS/ and the Mac's
   # resources, with TextMouth/Platform/iOS/ for what only iOS compiles. Its
@@ -331,7 +373,7 @@ targets:
         SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
     dependencies:
       - package: ZIPFoundation
-      - package: SwiftSoup
+      - target: SwiftSoup_iOS
       - package: swift-markdown
         product: Markdown
       - target: LAME_iOS
