@@ -222,9 +222,10 @@ final class CueSheetImportTests: XCTestCase {
         XCTAssertEqual(try chapterTitles(of: imported.book), ["One: 440 Hz", "Two: 660 Hz, by Track Performer", "Three: 880 Hz"])
     }
 
-    /// The tracks no sheet plays follow the sheet's sections, each a section
-    /// titled by its file's name.
-    func testTracksNoSheetPlaysFollowTheSheetsSections() throws {
+    /// The tracks no sheet plays keep their places in Finder's order, each a
+    /// section titled by its file's name: here after the album, whose file
+    /// sorts first.
+    func testTracksNoSheetPlaysKeepTheirPlaces() throws {
         let folder = try copySampleFolder("cue")
         try FileManager.default.removeItem(at: folder.appendingPathComponent("two-files.cue"))
 
@@ -233,6 +234,39 @@ final class CueSheetImportTests: XCTestCase {
         XCTAssertEqual(try chapterTitles(of: imported.book), [
             "One: 440 Hz", "Two: 660 Hz, by Track Performer", "Three: 880 Hz", "part1", "part2",
         ])
+    }
+
+    /// The book plays in its tracks' Finder order, as it does without
+    /// sheets: a track no sheet plays that sorts first stays first, and a
+    /// sheet's sections take the place of its file; a disc's folder without
+    /// a sheet stays before the disc with one; and labels beside the second
+    /// of two tracks follow the first.
+    func testTheBookKeepsItsTracksOrderAroundTheSheetsSections() throws {
+        let album = sources.appendingPathComponent("Album", isDirectory: true)
+        for name in ["01 Intro.wav", "02 Main.wav", "03 Outro.wav"] {
+            try AudioTestFixtures.writeSilence(to: album.appendingPathComponent(name), duration: 2)
+        }
+        try Data(Self.twoTrackSheet(of: "02 Main.wav", first: "Main, opening", second: "Main, close").utf8)
+            .write(to: album.appendingPathComponent("02 Main.cue"))
+        let discs = sources.appendingPathComponent("Discs", isDirectory: true)
+        for name in ["Disc 1/01.wav", "Disc 1/02.wav", "Disc 2/01.wav"] {
+            try AudioTestFixtures.writeSilence(to: discs.appendingPathComponent(name), duration: 2)
+        }
+        try Data(Self.twoTrackSheet(of: "01.wav", first: "Second disc, one", second: "Second disc, two").utf8)
+            .write(to: discs.appendingPathComponent("Disc 2/disc.cue"))
+        let labelled = sources.appendingPathComponent("Labelled", isDirectory: true)
+        for name in ["01.wav", "02.wav"] {
+            try AudioTestFixtures.writeSilence(to: labelled.appendingPathComponent(name), duration: 2)
+        }
+        try Data("0\t0\tArrival\n1\t1\tDeparture\n".utf8).write(to: labelled.appendingPathComponent("02.txt"))
+
+        let albumBook = try FileImportService.importAudioFolderWithReport(from: album, toFolder: folderPath)
+        let discsBook = try FileImportService.importAudioFolderWithReport(from: discs, toFolder: folderPath)
+        let labelledBook = try FileImportService.importAudioFolderWithReport(from: labelled, toFolder: folderPath)
+
+        XCTAssertEqual(try chapterTitles(of: albumBook.book), ["01 Intro", "Main, opening", "Main, close", "03 Outro"])
+        XCTAssertEqual(try chapterTitles(of: discsBook.book), ["01", "02", "Second disc, one", "Second disc, two"])
+        XCTAssertEqual(try chapterTitles(of: labelledBook.book), ["01", "Arrival", "Departure"])
     }
 
     /// A folder whose manifest.json arranges it imports by the manifest, as
@@ -495,6 +529,14 @@ final class CueSheetImportTests: XCTestCase {
             try FileManager.default.copyItem(at: CueSheetTests.sample("audacity-labels/\(name)"), to: folder.appendingPathComponent(name))
         }
         return folder
+    }
+
+    /// A cue sheet of two tracks of `file`, titled `first` and `second`, the
+    /// second beginning a second in.
+    private static func twoTrackSheet(of file: String, first: String, second: String) -> String {
+        "FILE \"\(file)\" WAVE\n"
+            + "  TRACK 01 AUDIO\n    TITLE \"\(first)\"\n    INDEX 01 00:00:00\n"
+            + "  TRACK 02 AUDIO\n    TITLE \"\(second)\"\n    INDEX 01 00:01:00\n"
     }
 
     /// A folder `name` in the sandbox holding a two-second AAC "Book.m4a" and,

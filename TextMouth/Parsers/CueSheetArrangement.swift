@@ -48,8 +48,9 @@ struct CueSheetArrangement: Equatable, Sendable {
     /// The sections, in the order the book plays them, each clip naming its
     /// file by its path from the folder the arrangement was made in.
     var segments: [AudioSegment]
-    /// The audio files the sections play, each once, in the order first
-    /// played, with their paths from that folder.
+    /// The audio files the sheets' and label files' sections play, each
+    /// once, in the order first played, with their paths from that folder (a
+    /// folder's track that no list plays, a section of its own, is not one).
     var files: [M3UPlaylist.Track]
     /// The names each sheet used gave that are no file of the book, sheet by
     /// sheet; a sheet that skipped nothing is not listed.
@@ -153,11 +154,12 @@ struct CueSheetArrangement: Equatable, Sendable {
     /// book for it; the tracks it names then import as they would without
     /// it. One that plays a file an earlier one plays (a second copy of a
     /// sheet, a ripper's sheet for the same files, a label file beside a
-    /// sheet) is passed over. When any gives sections, the tracks none plays
-    /// follow, in Finder's order, each a section titled by its file's name,
-    /// as a manifest's tracks list leaves its unlisted tracks to follow, so
-    /// no audio is left out of the book. The title and the author are those
-    /// every sheet used agrees on.
+    /// sheet) is passed over. When any gives sections, the book plays in its
+    /// tracks' Finder order, as it would without them: each list's sections
+    /// at the place of the first of its files, and each track none plays,
+    /// whole, at its own place, a section titled by its file's name, as the
+    /// track would be, so no audio is left out of the book and none moves.
+    /// The title and the author are those every sheet used agrees on.
     static func arranging(folder: URL, measure: Measure) -> CueSheetArrangement? {
         let listURLs = chapterLists(in: folder)
         guard !listURLs.isEmpty else { return nil }
@@ -187,9 +189,9 @@ struct CueSheetArrangement: Equatable, Sendable {
         var arrangement = CueSheetArrangement(
             title: nil, author: nil, segments: [], files: [], skipped: [], unusedSheets: []
         )
-        var titles: [String?] = []
-        var authors: [String?] = []
-        var played = Set<String>()
+        // The sections of each list used, and which of them plays each file.
+        var used: [SheetSections] = []
+        var listPlaying: [String: Int] = [:]
         for (name, kind, sheetSections) in made {
             guard let sheetSections else {
                 arrangement.unusedSheets.append(UnusedSheet(name: name, kind: kind, reason: .unreadable))
@@ -203,26 +205,38 @@ struct CueSheetArrangement: Equatable, Sendable {
                 arrangement.unusedSheets.append(UnusedSheet(name: name, kind: kind, reason: .timesPastAudio))
                 continue
             }
-            let files = Set(sheetSections.files.map(\.path))
-            guard played.isDisjoint(with: files) else { continue }
-            played.formUnion(files)
+            let files = sheetSections.files.map(\.path)
+            guard files.allSatisfy({ listPlaying[$0] == nil }) else { continue }
+            for file in files { listPlaying[file] = used.count }
             if !sheetSections.skipped.isEmpty {
                 arrangement.skipped.append(SkippedNames(sheet: name, entries: sheetSections.skipped))
             }
             arrangement.usedLists.append(name)
-            arrangement.segments += sheetSections.segments
-            arrangement.files += sheetSections.files
-            titles.append(sheetSections.title)
-            authors.append(sheetSections.author)
+            used.append(sheetSections)
         }
-        guard arrangement.arrangesAnything else { return arrangement }
-        for path in tracks where !played.contains(path) {
-            arrangement.segments.append(AudioSegment(
-                title: AudioTrackPlan.fileTitle(of: path), file: path, startTime: 0, endTime: 0
-            ))
+        guard !used.isEmpty else { return arrangement }
+        // The tracks in Finder's order, each list's sections at the first of
+        // its files, every track no list plays whole at its own.
+        var placed = Set<Int>()
+        for path in tracks {
+            guard let list = listPlaying[path] else {
+                arrangement.segments.append(AudioSegment(
+                    title: AudioTrackPlan.fileTitle(of: path), file: path, startTime: 0, endTime: 0
+                ))
+                continue
+            }
+            guard placed.insert(list).inserted else { continue }
+            arrangement.segments += used[list].segments
+            arrangement.files += used[list].files
         }
-        arrangement.title = agreed(titles)
-        arrangement.author = agreed(authors)
+        // Every list's files are among the tracks, so each was placed; one
+        // that somehow was not follows, so none of its audio is lost.
+        for (list, sections) in used.enumerated() where !placed.contains(list) {
+            arrangement.segments += sections.segments
+            arrangement.files += sections.files
+        }
+        arrangement.title = agreed(used.map(\.title))
+        arrangement.author = agreed(used.map(\.author))
         return arrangement
     }
 
