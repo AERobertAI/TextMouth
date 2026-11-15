@@ -1,22 +1,22 @@
 # Pages in a reader
-<!-- id: reader-pages-page; keys: ; src: -->
+<!-- id: reader-pages-page; keys: page numbers, page labels, printed page, page break, PageBreak; src: TextMouth/Models/BookPages.swift, TextMouth/Models/ReaderPageWording.swift, TextMouth/ViewModels/ReaderViewModel+Pages.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## Pages
-<!-- id: reader-pages; keys: ; src: -->
+<!-- id: reader-pages; keys: page labels, roman numerals, printed page numbers, PageBreak, page list; src: TextMouth/Models/BookPages.swift, TextMouth/Models/PageReaderVersions.swift -->
 
 Pages: a book can have pages, numbered as its source numbers them, such as 12, xii, or A-3 ([What TextMouth reads](what-textmouth-reads.md) says which books have them).
 A page is a place in the book's text and adds no words: nothing is read aloud for a page, and moving by page moves no saved place.
 A page begins at its first whole word.
 
 ## A page break inside a heading
-<!-- id: reader-page-break-inside-heading; keys: ; src: -->
+<!-- id: reader-page-break-inside-heading; keys: pagebreak, epub:type, page-list, Part 9Two, heading text; src: TextMouth/Models/PageReaderVersions.swift, TextMouth/Parsers/HTMLReadingText.swift -->
 
 In an EPUB or HTML book, the number of a page break inside a heading is no part of the heading, as it is no part of the text: a heading written "Part 9Two", with the page break's number between the words, is the heading "Part Two" in the text, in Show Headings, and for Next Heading, and page 9 begins where the heading does.
 
 ## Page as a navigation unit
-<!-- id: reader-page-as-navigation-unit; keys: ; src: -->
+<!-- id: reader-page-as-navigation-unit; keys: SkipUnit, skip unit, navigation unit, cycle units, one page; src: TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Models/ReaderPageWording.swift -->
 
 Page is a navigation unit, between Paragraph and Heading in the list of units.
 With Page chosen, Skip Forward and Skip Backward move by page, and Cycle Forward Navigation Unit and Cycle Backward Navigation Unit stop at it.
@@ -24,13 +24,13 @@ A book without pages has none to move by: the cycle passes Page over there, and 
 Neither has a book of only one page, which has no other page to go to: there the pickers leave Page out, and a skip by Page says "This book has only one page." and moves nothing.
 
 ## Navigation unit pickers in a book without pages
-<!-- id: reader-navigation-unit-pickers-book-without; keys: ; src: -->
+<!-- id: reader-navigation-unit-pickers-book-without; keys: navigationUnitChoices, skip unit pickers, Playback tab, playback bar; src: TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/Views/Reader/PlaybackControlsView.swift -->
 
 For a book without pages, the playback bar's navigation unit pickers, the one VoiceOver calls Navigation unit or the two called Forward navigation unit and Backward navigation unit, leave Page out of their lists, unless Page is the unit in force, which stays in the list so that the picker shows its value.
 The four skip unit pickers in the Playback tab of Settings (see [Settings](settings.md)) list Page for every book.
 
 ## Skip by page
-<!-- id: reader-skip-page; keys: ; src: -->
+<!-- id: reader-skip-page; keys: nextPage, previousPage, Return button, previous reading position; src: TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/Models/BookPages.swift, TextMouth/Models/ReaderPageWording.swift -->
 
 With Page chosen, Skip Forward moves to the start of the next page and says its label, as in "Page 13", and Skip Backward moves to the start of the page being read, or to the start of the one before it when the reading position is within 10 characters of that start, and says its label.
 On the last page Skip Forward does nothing, and at the start of the first page, or before it, Skip Backward does nothing.
@@ -39,7 +39,7 @@ A page that begins in a section you skip, or after the book's last word, is pass
 Each move keeps the place it began at for the toolbar's Return button, which VoiceOver calls "Return to previous reading position".
 
 ## Go to Page
-<!-- id: reader-go-page; keys: ; src: -->
+<!-- id: reader-go-page; keys: goToPage, jump to page, page panel, repeated label, goToPageLabelIsRepeated; src: TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/Models/ReaderPageWording.swift, TextMouth/Views/Reader/ReaderJumpPanels.swift, TextMouth/Models/KeyboardShortcut.swift -->
 
 Go to Page… (Option-Command-G) opens a panel below the status row with one field, labelled "Page", whose hint says how many pages the book has and what to type, as in "This book has 300 pages, from i to 300.
 Type a page as the book numbers it, such as 12 or xii."
@@ -52,7 +52,7 @@ The count is in words up to the tenth and in figures after, as in "the 11th page
 Return while the field still holds the label it started at closes the panel, leaving the place where it is and saying nothing, unless another page of the book carries that label too: then Return goes to that label's next page, and after the last page that carries it, to the first, so Return on the starting label steps through the pages of a repeated label.
 
 ## Where Go to Page puts the cursor
-<!-- id: reader-where-go-page-puts-cursor; keys: ; src: -->
+<!-- id: reader-where-go-page-puts-cursor; keys: jumpAnnouncement, page has no words, skipped section, cursor is on page; src: TextMouth/Models/ReaderPageWording.swift, TextMouth/ViewModels/ReaderViewModel+Pages.swift -->
 
 When the cursor does not land on the page asked for, Go to Page says where it is, and why when the book's pages say, in place of "Jumped to page 7.", so that its words agree with the status row:
 
@@ -66,21 +66,21 @@ When the cursor does not land on the page asked for, Go to Page says where it is
 - A skip by Page says the label of the page the cursor reaches, as before.
 
 ## Go to Page refuses what is not a page
-<!-- id: reader-go-page-refuses-what-not; keys: ; src: -->
+<!-- id: reader-go-page-refuses-what-not; keys: invalid page, page not found, Type a page number, typed page; src: TextMouth/Models/ReaderPageWording.swift, TextMouth/ViewModels/ReaderViewModel+Pages.swift -->
 
 Go to Page… refuses what is not a page, under the field and aloud, and leaves the panel open: "Type a page number." for an empty field; "There is no page 400 in this book.
 Its pages run from i to 300." for a page the book does not have; and, for a book of one page, "There is no page 400 in this book.
 Its only page is 1."
 
 ## Go to Page in a book without pages
-<!-- id: reader-go-page-book-without-pages; keys: ; src: -->
+<!-- id: reader-go-page-book-without-pages; keys: pageCommandHasPages, dimmed, disabled menu item, one page, still loading; src: TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/App/MenuCommands.swift, TextMouth/Models/ReaderPageWording.swift -->
 
 In a book without pages, the Navigate menu dims Go to Page…, and its key says "This book has no pages." and does nothing.
 In a book of only one page the menu dims it too, its key says "This book has only one page." and does nothing, and Where Am I? leaves the page out.
 While a book is still loading, Go to Page… and Skip Forward or Skip Backward with Page chosen do nothing and say nothing, since the book may have pages.
 
 ## The page button in the status row
-<!-- id: reader-page-button-status-row; keys: ; src: -->
+<!-- id: reader-page-button-status-row; keys: page button, Page 12 of 300, pageButtonHint, status row, showsPageInReader; src: TextMouth/Models/ReaderPageWording.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Reader/ReaderJumpPanels.swift, TextMouth/Models/BookPages.swift -->
 
 The status row has a button beside the percent that shows the page being read, as in "Page 12 of 300", or "Before page i" before the first page; VoiceOver reads the same words as its label.
 The N of "of N" is the largest page label that is a whole number, so a book numbered i to xiv and then 1 to 300 says "of 300", and a book with no such label counts its pages.
@@ -89,7 +89,7 @@ The button is drawn in a book of more than one page while "Show the page on the 
 A page the book names "Page 12" is page 12, so the button never says "Page Page 12".
 
 ## Where Am I? and the page
-<!-- id: reader-where-am-i-page; keys: ; src: -->
+<!-- id: reader-where-am-i-page; keys: Where Am I, Full Summary, Before page, summary, saysPageInWhereAmI; src: TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/Models/ReaderPageWording.swift, TextMouth/Models/BookPages.swift -->
 
 Where Am I? says the page right after the heading number, as in "Dune.
 The Battle.
