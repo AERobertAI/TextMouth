@@ -649,3 +649,8 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Windows
 
 - **The Library's category picker:** Until October 30, 2026 the picker was a segmented control of the five categories, read as "Library category"; it is now a pop-up button, the View pop-up.
+
+## From Windows: the Library's sheets, search, and Speak Info
+
+- **Escape in the new-folder fields:** On main before October 10, Escape offered as a key equivalent reached the Move sheet's own Cancel and closed the whole sheet, with the keyboard in the name field or out of it.
+- **Speak Info's keys:** ShortcutAction.speakInfo and speakFullInfo were a plain I and I twice until October 17, 2026, when a letter alone became the Library list's.
