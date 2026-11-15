@@ -419,7 +419,8 @@ enum BookCloudWording {
         case .currentNotReported:
             return "\(serviceStartingSentence) doesn't say whether the copy of this book on this Mac is the latest, "
                 + "so its download can't be removed, and waiting won't change that. "
-                + "Delete the book's files in \(service) itself if you need the space."
+                + "To free the space anyway, have \(service) itself make the book online-only in the Finder, "
+                + "which keeps its copy in the cloud."
         }
     }
 
