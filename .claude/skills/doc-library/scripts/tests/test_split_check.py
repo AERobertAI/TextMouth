@@ -6,6 +6,7 @@ import time
 
 from doclib_case import DocLibCase
 
+import baseline
 import splitcheck
 from output import UsageError
 
@@ -236,3 +237,110 @@ class FilesToSrcTests(DocLibCase):
         status, out, _ = self.run_cli("split-check", "old.md,other.md", "new.md", "--files-to-src")
         self.assertEqual(status, 1)
         self.assertEqual(out.splitlines()[-1], "  project.yml")
+
+
+# One paragraph with a dated sentence (a ``date`` violation) and one with a 350-character line
+# (a ``line-length`` violation): the lint counts each, and a split can move them between pages.
+DATED = "On March 3, 2026 it changed."
+LONG = "word " * 70
+INDEX = "# Index\n\n- [Old](docs/old.md) the old page\n- [One](docs/new1.md) page one\n- [Two](docs/new2.md) page two\n"
+
+
+def page(title: str, *paragraphs: str) -> str:
+    """A docs page: a heading, then each paragraph."""
+    return f"# {title}\n\n" + "\n\n".join(paragraphs) + "\n"
+
+
+class UpdateBaselineTests(DocLibCase):
+    """--update-baseline: the OLD pages' lint counts follow the words to the NEW pages."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        # The index links all three pages from the start, so the split adds no index-link violation.
+        self.git_repo({"README.md": INDEX, "docs/old.md": page("Old", DATED, DATED, LONG, DATED),
+                       "docs/new1.md": page("One"), "docs/new2.md": page("Two")})
+
+    def set_baseline(self, data: dict) -> None:
+        """Write ``data`` as the lint baseline."""
+        baseline.write_baseline(self.root, data)
+
+    def split(self, *argv: str):
+        """Run ``split-check --update-baseline`` with ``argv``; return (status, standard output lines)."""
+        status, out, _ = self.run_cli("split-check", *argv, "--update-baseline")
+        return status, out.splitlines()
+
+    def test_a_split_within_the_pool_hands_the_counts_to_the_new_pages_and_drops_the_old_entry(self) -> None:
+        self.set_baseline({"docs/old.md": {"date": 3, "line-length": 1}, "docs/other.md": {"date": 5}})
+        self.write_tree({"docs/new1.md": page("One", DATED, DATED, LONG), "docs/new2.md": page("Two", DATED)})
+        (self.root / "docs/old.md").unlink()
+        status, lines = self.split("HEAD:docs/old.md", "docs/new1.md", "docs/new2.md")
+        self.assertEqual(status, 0, lines)
+        self.assertEqual(baseline.load_baseline(self.root), {
+            "docs/new1.md": {"date": 2, "line-length": 1}, "docs/new2.md": {"date": 1}, "docs/other.md": {"date": 5}})
+        self.assertIn("lowered docs/old.md date 3 -> 0", lines)
+        self.assertIn("raised docs/new1.md date 0 -> 2", lines)
+
+    def test_a_split_that_raises_a_rule_is_refused_and_writes_nothing(self) -> None:
+        # The baseline allows one date, but the page already has three: the split may not pass them on.
+        self.set_baseline({"docs/old.md": {"date": 1, "line-length": 1}})
+        before = (self.root / baseline.BASELINE).read_text()
+        self.write_tree({"docs/new1.md": page("One", DATED, DATED, LONG), "docs/new2.md": page("Two", DATED)})
+        (self.root / "docs/old.md").unlink()
+        status, lines = self.split("HEAD:docs/old.md", "docs/new1.md", "docs/new2.md")
+        self.assertEqual(status, 1)
+        self.assertEqual(len(lines), 2, lines)
+        self.assertIn("3 violations of date", lines[1])
+        self.assertIn("allow 1", lines[1])
+        self.assertEqual((self.root / baseline.BASELINE).read_text(), before)
+
+    def test_a_split_that_keeps_the_old_page_as_one_of_the_new_ones_keeps_its_entry_with_its_new_counts(self) -> None:
+        self.set_baseline({"docs/old.md": {"date": 3, "line-length": 1}})
+        self.write_tree({"docs/old.md": page("Old", DATED, DATED, LONG), "docs/new1.md": page("One", DATED)})
+        status, lines = self.split("HEAD:docs/old.md", "docs/old.md", "docs/new1.md")
+        self.assertEqual(status, 0, lines)
+        self.assertEqual(baseline.load_baseline(self.root), {
+            "docs/old.md": {"date": 2, "line-length": 1}, "docs/new1.md": {"date": 1}})
+
+    def test_the_pool_adds_up_every_old_page(self) -> None:
+        # A move from old.md into new2.md, which had a date of its own: both are OLD, and both are NEW.
+        self.write_tree({"docs/new2.md": page("Two", DATED)})
+        self.commit_all("new2 has a date")
+        self.set_baseline({"docs/old.md": {"date": 3, "line-length": 1}, "docs/new2.md": {"date": 1}})
+        self.write_tree({"docs/old.md": page("Old", DATED, DATED), "docs/new2.md": page("Two", LONG, DATED, DATED)})
+        status, lines = self.split("HEAD:docs/old.md,HEAD:docs/new2.md", "docs/old.md", "docs/new2.md")
+        self.assertEqual(status, 0, lines)
+        self.assertEqual(baseline.load_baseline(self.root), {
+            "docs/old.md": {"date": 2}, "docs/new2.md": {"date": 2, "line-length": 1}})
+
+    def test_a_count_over_the_sum_of_the_old_pages_is_refused(self) -> None:
+        self.write_tree({"docs/new2.md": page("Two", DATED)})
+        self.commit_all("new2 has a date")
+        self.set_baseline({"docs/old.md": {"date": 2, "line-length": 1}, "docs/new2.md": {"date": 1}})
+        self.write_tree({"docs/old.md": page("Old", DATED, DATED), "docs/new2.md": page("Two", LONG, DATED, DATED)})
+        status, lines = self.split("HEAD:docs/old.md,HEAD:docs/new2.md", "docs/old.md", "docs/new2.md")
+        self.assertEqual(status, 1, lines)
+        self.assertIn("4 violations of date", lines[1])
+        self.assertIn("allow 3", lines[1])
+
+    def test_the_pool_adds_what_a_new_page_that_is_not_old_already_has(self) -> None:
+        self.set_baseline({"docs/old.md": {"date": 2, "line-length": 1}, "docs/new1.md": {"date": 1}})
+        self.write_tree({"docs/old.md": page("Old", DATED, DATED, LONG), "docs/new1.md": page("One", DATED)})
+        status, lines = self.split("HEAD:docs/old.md", "docs/old.md", "docs/new1.md")
+        self.assertEqual(status, 0, lines)
+        self.assertEqual(baseline.load_baseline(self.root), {
+            "docs/old.md": {"date": 2, "line-length": 1}, "docs/new1.md": {"date": 1}})
+
+    def test_nothing_changes_when_the_words_do_not_match_or_the_baseline_has_no_entry_for_the_old_pages(self) -> None:
+        self.set_baseline({"docs/other.md": {"date": 5}})
+        self.write_tree({"docs/new1.md": page("One", DATED, DATED, LONG, DATED)})
+        (self.root / "docs/old.md").unlink()
+        status, lines = self.split("HEAD:docs/old.md", "docs/new1.md")
+        self.assertEqual((status, lines[-1]), (0, "split-check: the baseline holds nothing for the OLD pages; left as it is"))
+        self.assertEqual(baseline.load_baseline(self.root), {"docs/other.md": {"date": 5}})
+        # Words that do not match: the baseline stays as it is.
+        self.set_baseline({"docs/old.md": {"date": 3}})
+        before = (self.root / baseline.BASELINE).read_text()
+        self.write_tree({"docs/new1.md": page("One", DATED, DATED, LONG)})
+        status, lines = self.split("HEAD:docs/old.md", "docs/new1.md")
+        self.assertEqual(status, 1)
+        self.assertEqual((self.root / baseline.BASELINE).read_text(), before)

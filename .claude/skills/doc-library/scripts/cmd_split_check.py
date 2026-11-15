@@ -14,6 +14,9 @@ quote markers, front matter, and white space do not count (see ``splitcheck.word
 block counts as words on either side, and every repository path OLD's blocks name must
 be named by a NEW marker's ``src`` or a NEW ``Files:`` block.
 
+``--update-baseline``, when the check passes, moves the lint baseline's counts with the
+words: the OLD pages' counts become the NEW pages' (see ``update_baseline``).
+
 Prints ``split-check: same words (N words)`` and exits 0, or the first difference
 (both places, up to eight words around it, both counts) and exits 1. A path outside
 the repository or a ref git does not know is a usage error (exit status 2).
@@ -24,7 +27,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, List
 
+import baseline
+import cmd_lint
 import docmodel
+import lintrules
 import output
 import splitcheck
 from docmodel import Page
@@ -47,6 +53,41 @@ def words_of(pages: List[Page], files_to_src: bool) -> List[Word]:
     for page in pages:
         found.extend(splitcheck.page_words(page, page.path, files_to_src))
     return found
+
+
+def unique_paths(root: Path, specs: List[str]) -> List[str]:
+    """The pages the specs name as paths from the root, each once, in the order given."""
+    return list(dict.fromkeys(splitcheck.spec_path(root, spec) for spec in specs))
+
+
+def update_baseline(root: Path, old_specs: List[str], new_specs: List[str]) -> int:
+    """Hand the OLD pages' lint baseline counts to the NEW pages, after the words matched.
+
+    Nothing is done when the baseline holds nothing for the OLD pages. Each rule's
+    count over the NEW pages may not pass its pool (``splitcheck.rule_pools``): when
+    one does, nothing is written and the rule is named (exit 1). Otherwise each NEW
+    page's entry becomes its counts today, and an OLD page that is not a NEW page and
+    no longer exists loses its entry.
+    """
+    old_pages, new_pages = unique_paths(root, old_specs), unique_paths(root, new_specs)
+    base = baseline.load_baseline(root) or {}
+    if not any(base.get(page) for page in old_pages):
+        print("split-check: the baseline holds nothing for the OLD pages; left as it is")
+        return output.EXIT_OK
+    now = baseline.counts(lintrules.lint(root))
+    overruns = splitcheck.pool_overruns(base, now, old_pages, new_pages)
+    if overruns:
+        for rule, held, pool in overruns:
+            print(f"split-check: the baseline is not updated: the NEW pages have {held} violations of {rule}, "
+                  f"the OLD pages and the baseline allow {pool}")
+        return output.EXIT_NONE
+    gone = {page for page in old_pages if page not in new_pages and not (root / page).exists()}
+    updated = splitcheck.hand_over(base, now, new_pages, gone)
+    cmd_lint.print_changes(base, updated)
+    if updated != base:
+        baseline.write_baseline(root, updated)
+    print("split-check: the baseline now holds the OLD pages' counts on the NEW pages")
+    return output.EXIT_OK
 
 
 def run(args: Any) -> int:
@@ -73,6 +114,8 @@ def run(args: Any) -> int:
     if failed:
         return output.EXIT_NONE
     print(f"split-check: same words ({len(old_words)} words)")
+    if args.update_baseline:
+        return update_baseline(args.root, args.old.split(","), args.new)
     return output.EXIT_OK
 
 
@@ -87,4 +130,7 @@ def register(subparsers: Any, common: Any) -> None:
     parser.add_argument("new", nargs="+", help="the page(s) after, in reading order: a file, or REF:PATH")
     parser.add_argument("--files-to-src", action="store_true",
                         help="leave Files: blocks out, and require each path OLD's name to be named in NEW")
+    parser.add_argument("--update-baseline", action="store_true",
+                        help="when the words match, hand the OLD pages' lint baseline counts to the NEW pages "
+                             "(never raising a rule's total)")
     parser.set_defaults(func=run, default_max=0)

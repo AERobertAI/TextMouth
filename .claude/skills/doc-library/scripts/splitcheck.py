@@ -15,9 +15,11 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
+import baseline
 import docmodel
+from baseline import Counts
 from citations import FILES_LINE, files_block_paths
 from docmodel import Block, Page
 from output import UsageError
@@ -192,6 +194,37 @@ def spec_path(root: Path, spec: str) -> str:
     """
     path = spec.split(":", 1)[1] if ":" in spec else spec
     return docmodel.name_inside(root, path) or path
+
+
+def rule_pools(base: Counts, old_pages: List[str], new_pages: List[str]) -> Dict[str, int]:
+    """What the baseline lets a split's NEW pages hold, by rule: the pool of each rule.
+
+    The pool is the sum of the OLD pages' counts plus the counts the baseline already
+    holds for the NEW pages that are not OLD pages (a page counted once when it is both).
+    """
+    pool: Dict[str, int] = {}
+    for page in old_pages + [page for page in new_pages if page not in old_pages]:
+        for rule, count in base.get(page, {}).items():
+            pool[rule] = pool.get(rule, 0) + count
+    return pool
+
+
+def pool_overruns(base: Counts, now: Counts, old_pages: List[str], new_pages: List[str]) -> List[Tuple[str, int, int]]:
+    """Each ``(rule, the NEW pages' count, the pool)`` where the NEW pages hold more than the pool, by rule."""
+    pool = rule_pools(base, old_pages, new_pages)
+    held = baseline.totals(baseline.restrict(now, pages=set(new_pages)))
+    return [(rule, held[rule], pool.get(rule, 0)) for rule in sorted(held) if held[rule] > pool.get(rule, 0)]
+
+
+def hand_over(base: Counts, now: Counts, new_pages: List[str], gone: Set[str]) -> Counts:
+    """The baseline after a split: each NEW page holds today's counts, and the ``gone`` pages hold none.
+
+    ``base`` is the baseline, ``now`` the lint's counts today. Every other page's entry stays.
+    """
+    result: Counts = {page: dict(rules) for page, rules in base.items() if page not in gone}
+    for page in new_pages:
+        result[page] = dict(now.get(page, {}))
+    return baseline.normalized(result)
 
 
 def _context(listed: List[Word], index: int) -> str:
