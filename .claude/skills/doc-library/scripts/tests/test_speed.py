@@ -154,6 +154,24 @@ class SentenceGateTests(DocLibCase):
             self.assertEqual(sentences.split_sentences(text), self.reference(text), repr(text))
 
 
+class CodeSpanFastPathTests(DocLibCase):
+    """code_spans answers at once for a text with no backtick, as the full scan would."""
+
+    @staticmethod
+    def full_scan(text: str) -> list:
+        """code_spans without its fast path, by clearing its cache and adding a backtick pair that is then dropped."""
+        return [span for span in sentences.code_spans(text + "``") if span[1] <= len(text)]
+
+    def test_texts_without_a_backtick_have_no_spans(self) -> None:
+        for text in ("", "plain", "two\nlines. Here", "a 'quote' and \"another\""):
+            self.assertEqual(sentences.code_spans(text), [], repr(text))
+            self.assertEqual(self.full_scan(text), [], repr(text))
+
+    def test_texts_with_one_are_scanned(self) -> None:
+        self.assertEqual(sentences.code_spans("a `b` c"), [(2, 5, "b")])
+        self.assertEqual(sentences.code_spans("a ` b"), [])
+
+
 # The first version of the Swift scan: one pattern for each declaring keyword, tried at every position.
 _OLD_PATTERNS = tuple(
     (keyword, re.compile(keyword.encode("ascii") + rb"\s+(?=([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*))"))

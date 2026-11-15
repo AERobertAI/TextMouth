@@ -33,6 +33,7 @@ OPENERS = "`\"'“‘([*_"
 URL_TRAILING = ".,;:!?)]'\""
 
 _TERMINATOR = re.compile(r"[.!?]")
+_BACKTICK_RUN = re.compile(r"`+")
 # A terminator, its closers, and white space: all a sentence's end needs before the checks
 # of ``_sentence_end_at``; a text with none of these has a single sentence.
 _POSSIBLE_END = re.compile("[.!?][" + re.escape(CLOSERS) + r"]*\s")
@@ -61,7 +62,10 @@ def code_spans(text: str) -> List[Tuple[int, int, str]]:
     plain text and starts no span. The content has its line breaks turned into
     spaces, and one leading and one trailing space removed when both are there.
     """
-    runs = [match.span() for match in re.finditer(r"`+", text)]
+    # No backtick, no span: the commonest case, settled before any pattern runs.
+    if "`" not in text:
+        return []
+    runs = [match.span() for match in _BACKTICK_RUN.finditer(text)]
     spans: List[Tuple[int, int, str]] = []
     index = 0
     while index < len(runs):
