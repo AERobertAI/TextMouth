@@ -1,10 +1,10 @@
 # Settings: the Storage tab
-<!-- id: settings-storage-tab; keys: ; src: -->
+<!-- id: settings-storage-tab; keys: Storage settings, data directory, library folder, disk space, maintenance; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Models/SettingsPolicy.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## Storage Directory
-<!-- id: storage-directory; keys: ; src: -->
+<!-- id: storage-directory; keys: data directory, library location, dataDirectoryPath, Status, newer version of TextMouth, library.json, feed index; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
 
 The Storage tab's Storage Directory group shows where the library is (see [Where TextMouth keeps your library](where-your-library-lives.md)) and its Status, and, under the Status, when any are kept, how many books this TextMouth cannot read because a newer one wrote them, as in "1 book in this library needs a newer version of TextMouth.
 It is kept as it is, but not shown." or "3 books in this library need a newer version of TextMouth.
@@ -12,12 +12,12 @@ They are kept as they are, but not shown."
 The count joins the books of library.json to those of the feeds' indexes, and the group says nothing when there are none.
 
 ## Audio Editing storage
-<!-- id: audio-editing-storage; keys: ; src: -->
+<!-- id: audio-editing-storage; keys: original audio, recordingOriginalPolicy, recordingOriginalDays, useInstalledFFmpeg, filter presets, Filter Presets; src: TextMouth/Views/Settings/AudioEditingSettingsSection.swift, TextMouth/Views/Settings/AudioFilterPresetsView.swift, TextMouth/Models/AudioEditWording.swift -->
 
 The Storage tab's Audio Editing group sets how long the original audio of recordings and edited audiobooks is kept, whether an installed ffmpeg runs the audio editor's filters, whether the editor previews a filter before applying it and plays half a second after each move, and, through Filter Presets…, the editor's filter presets (see [Editing audio](editing-audio.md)).
 
 ## Import Behavior
-<!-- id: import-behavior; keys: ; src: -->
+<!-- id: import-behavior; keys: importDeleteBehavior, keepsOriginalOfConvertedAudio, .convertedOriginals, Keep Original, Delete After Import, Ask Each Time, Ogg; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Models/ConvertedOriginalWording.swift, TextMouth/Models/OriginalFileDeletionWording.swift, TextMouth/Models/ImportDecision.swift -->
 
 The Storage tab's Import Behavior group sets what happens to the original file after an import (After Importing a Book: Keep Original, the default, Delete After Import, or Ask Each Time; see [Adding books](adding-books.md)), and has Keep originals of converted audio, off by default, a switch whose hint VoiceOver reads as "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package."
 Its caption under the switch changes with it.
@@ -31,7 +31,7 @@ Export's Original file offers it, with the hint "The book's own file, as it was 
 (see [Exporting books](exporting-books.md)). config.json holds the switch as keepsOriginalOfConvertedAudio (see [Editing settings in config.json](config-json.md)).
 
 ## Find Duplicate Books
-<!-- id: find-duplicate-books; keys: ; src: -->
+<!-- id: find-duplicate-books; keys: duplicates, MD5, same ISBN, same title, same author, Scan for Duplicates, Next Groups; src: TextMouth/Views/Settings/DuplicateFinderView.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
 
 The Storage tab's Find Duplicate Books… groups the library's books, never a feed's episodes and articles, by the criteria you check: Identical File (MD5), checked as the sheet opens, Same ISBN, Same Title, and Same Author.
 Checked criteria combine, so Same Title with Same Author groups by both, and no separate Same Title & Author is offered; a book without an author is left out while Same Author is checked, so check Same Title alone to find two copies of it.
@@ -42,7 +42,7 @@ After a removal, the list shows the page now holding the group that headed the p
 Before the first scan, the sheet says "Check the criteria above, then Scan for Duplicates."
 
 ## Redo Text Extraction
-<!-- id: redo-text-extraction; keys: ; src: -->
+<!-- id: redo-text-extraction; keys: re-read text, reextract, Library Maintenance, text encoding, edited text; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
 
 The Storage tab's Redo Text Extraction…, in its Library Maintenance group, reads every text book's file again after asking first, and shows its progress (see [Where TextMouth keeps your library](where-your-library-lives.md), under content.md, and [Editing a book's text](editing-book-text.md) for what it does to text you edited).
 It waits while TextMouth reads any book's file again in another encoding, with the Text Encoding pop-up in Book Information (see [The Library window](library-window.md)): it starts nothing, and the status line under its button says, and VoiceOver announces once, "TextMouth is reading “Moby-Dick” again in another encoding.
