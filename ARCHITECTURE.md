@@ -31,6 +31,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Media playback](docs/architecture/state/media-playback.md)
 - [Timers and statistics](docs/architecture/state/timers-and-statistics.md)
 - [Windows](docs/architecture/state/windows.md)
+  - [Windows: sheets, search, Speak Info](docs/architecture/state/windows-sheets.md)
 - [Saving failures](docs/architecture/state/saving-failures.md)
 - [Imports](docs/architecture/state/imports.md): the import itself, its progress, questions, and folders.
   - [Duplicates](docs/architecture/state/imports-duplicates.md): unanswered duplicates, and Replace Existing.
