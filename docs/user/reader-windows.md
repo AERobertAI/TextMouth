@@ -66,8 +66,19 @@ When the book has left the library, as when it was removed while its reader stay
 ## The reader's panels
 <!-- id: reader-panels; keys: ; src: -->
 
+### Show Headings
+<!-- id: reader-show-headings; keys: ; src: -->
+
 The reader's panels: in Show Headings, each heading's row offers Go To and Skip Section, or Include Section, among its actions in VoiceOver's Actions menu (VO-Command-Space), as its context menu does, and its hint says "Goes to this heading and closes the list."; the level filter, Show levels, offers Level 1, Levels 1 to 2, and so on, and All levels.
+
+### Show Bookmarks
+<!-- id: reader-show-bookmarks; keys: ; src: -->
+
 In Show Bookmarks, a bookmark's row ends with the day it was added, as in "Bookmark 3, The Battle, Note: Check this, added October 9, 2026", which the Bookmarks rotor says too, and its hint says "Goes to this bookmark and closes the list."; with no bookmarks, the panel names the key that adds one, in words, as in "Command + B adds a bookmark at the current position.", or, while that command has no key, says "Add Bookmark adds one at the current position."
+
+### Go to Percent and Go to Time
+<!-- id: reader-go-percent-go-time; keys: ; src: -->
+
 The status row's percent and time left are buttons, each opening a panel below it with one labelled field, Return to jump, and Escape to close it: the percent opens Go to Percent, whose field, "Percent through the book", starts at the place's percent; the time left opens Go to Time, whose field takes a time typed or pasted as 1:02:03, 62:03, 3723, or 12:04.3, and starts at the place's time, in whole seconds.
 For an audiobook the field is "Time in the recording": every time that names a place counts the recording's own time, whatever the speed, so a time from a chapter list, show notes, the audio editor, the Headings sheet, or Copy Reading Position lands where it says.
 For a text book it is "Time at 500 words a minute", at the book's own speed.
@@ -77,7 +88,15 @@ The recording lasts 9 hours, 41 minutes, 7 seconds.", shown under the field and 
 Return, or Jump, while the field still holds the value it started at closes the panel as Escape does and leaves the place exactly where it is, saying nothing: the starting time drops the place's fraction of a second and the starting percent is rounded to a tenth, so jumping to either would move the place a little, and a finished book would no longer be finished.
 In Show Headings, Time In gives each heading's time on the same clock, for an audiobook the same at every speed, so it can be typed into Go to Time, and Duration gives each heading's length at the book's speed, to the next heading shown, the last to the very end of the book (a last chapter of exactly 25:03 shows 25:03).
 The sheet follows a change of speed, or of the setting that names the speed, made while it is open.
+
+### Copy Reading Position
+<!-- id: reader-copy-reading-position; keys: ; src: -->
+
 Copy Reading Position adds the place's time, as in "at 2:13:05 of 9:41:07 in the recording", or for a text book "at 2:10:24 of 4:20:49 at 500 words a minute", which Go to Time takes back; a finished book copies "Finished" in place of its percent, time, and time left.
+
+### A book's own settings
+<!-- id: reader-book-own-settings; keys: ; src: -->
+
 A book's own settings open from the reader's toolbar.
 For a text book the button is Voice, which VoiceOver calls Change voice for this book, and its sheet, Voice & Speed for This Book, holds the book's voice, speed, and pitch and what happens when the book ends; there Save to Global Settings, which the playback bar offers too, makes the book's voice, speed, and pitch the defaults, and Reset to Global Settings removes all three from the book, saying "Using global voice, speed, and pitch settings".
 For an audiobook the button is Audio Settings, named the same on screen and by VoiceOver, and its sheet, Audio Settings for This Book, holds the book's speed, one slider VoiceOver reads as "Audio speed, 1.25 times speed", which moves by 0.05 times; what happens when the book ends; and Reset to Normal Speed while the book has a speed of its own.
