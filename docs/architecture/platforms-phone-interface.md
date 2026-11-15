@@ -248,7 +248,8 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 ### Going to a result, and the phone's words
 <!-- id: going-result-phone-words; keys: transcript jump, Return place, farewell, noTextToSearch, offersTranscription, isTranscribable; src: TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Views/Reader/BookSearchView.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouthProductionTests/PhoneReaderModelTests.swift -->
 
-- A result goes to its place with `ReaderViewModel.goToSearchResult(chapterIndex:characterOffset:inTranscript:)`, which the Mac's sheet now calls too, so one place decides the move: a transcript's result moves the audio to the start of the sentence holding the match, and any other book's moves the place to the match.
+- A result goes to its place with `ReaderViewModel.goToSearchResult(chapterIndex:characterOffset:inTranscript:)`, which the Mac's sheet now calls too, so one place decides the move.
+  A transcript's result moves the audio to the start of the sentence holding the match, and any other book's moves the place to the match.
   - The Return place is kept, the sheet closes, and the session counts the book as opened (`PhoneReaderModel.noteJumped`).
   - What the jump says is collected and said after the sheet has closed (`PhoneSheetFarewell`).
     A transcript jump says "Moved to <the time>, <the heading>."
