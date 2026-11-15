@@ -34,7 +34,6 @@ Where the library lives, and each book's cloud state.
   In a process hosting tests the shared refresher never refreshes.
 - How others observe it: every Library window observes BookCloudStates.shared.
   Only in a cloud location do its rows show and speak each book's note (BookCloudNote) and does TimeRemainingBar count the books in the cloud; elsewhere the list is as it was.
-- Files: Models/CloudStorageContract.swift, Services/UbiquitousItemStatusProvider.swift, Services/BookCloudStorageService.swift, Services/PublishedFileProgress.swift, Services/NetworkReachability.swift, ViewModels/LibraryViewModel+Cloud.swift, Views/Library/BookCloudNote.swift, Views/Library/LibrarySubviews.swift.
 
 ## The list's cloud commands
 <!-- id: list-cloud-commands; keys: LibraryCloudCommands, LibraryCloudCommand, LibraryCloudRefusal, DownloadOrigin, context menu, Library menu; src: TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/VoiceOverAnnouncer.swift -->
@@ -51,7 +50,6 @@ The list's cloud commands.
   VoiceOverAnnouncer announces each command's start and, when every download was removed, one summary from the window that asked; a removal that kept any download is shown in an alert alone (LibraryCloudRefusal), whose message is the whole summary of what was removed, what stayed, and why, with nothing announced besides (REV14's alert-only rule, #2094); Keep on This Mac's one announcement covers the start of the downloads it begins, and a refresh's downloads of kept books announce nothing but that notice for the reading list's books.
   LibraryCloudWording words every title and announcement.
   Book Info reads a book's metadata off the main thread through LibraryBookInfoReader and never downloads: a book only in the cloud shows the metadata the library keeps, and writing such an EPUB's file is refused.
-- Files: ViewModels/LibraryViewModel+Cloud.swift, Models/LibraryCloudWording.swift, Views/Library/LibraryView.swift, Views/Library/LibrarySubviews.swift, Views/Library/LibraryBookInfoLoader.swift.
 
 ## Books kept on this Mac
 <!-- id: books-kept-this-mac; keys: KeptBooks, keep downloaded, pin offline, downloadWhatFits, free space reserve, keepsReadingListBooks, reading list keep; src: TextMouth/Services/KeptBooks.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Views/Library/BookCloudNote.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/App/MenuCommands.swift, TextMouth/Services/ArchiveBudget.swift, TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/LibraryInfoWording.swift -->
@@ -82,7 +80,6 @@ Books kept on this Mac (Keep on This Mac).
   After each refresh, LibraryCloudRefresher hands the library to LibraryCloudCommands.downloadEvictedKeptBooks(in:), which downloads every kept book the refresh recorded as only in the cloud, announcing nothing; one whose download failed waits keptBookRetryDelay, five minutes, before a refresh tries it again.
   Remove Download refuses a kept book (BookCloudError.keptOnThisMac).
   The log has KEEP_ON_MAC lines for keeping and stopping, and KEPT_BOOK_DOWNLOAD lines for the downloads.
-- Files: Services/KeptBooks.swift, ViewModels/LibraryViewModel+Cloud.swift, Models/LibraryCloudWording.swift, Models/CloudStorageContract.swift, Views/Library/BookCloudNote.swift, Views/Library/LibrarySubviews.swift, Views/Library/LibraryView.swift, App/MenuCommands.swift.
 
 ## Maintenance in a cloud library
 <!-- id: maintenance-cloud-library; keys: dataless files, startup repair, metadata refresh, text cache batch, CloudSkips, MaintainedFiles, fileInCloud; src: TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/TextCacheUpdateQueue.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Models/TextCacheFingerprint.swift -->
@@ -94,4 +91,3 @@ Maintenance in a cloud library.
   Each pass counts the books it left in its CloudSkips.
 - How others observe it: a pass that skipped any book writes one MAINTENANCE_SKIPPED_IN_CLOUD line, and Redo Text Extraction also says how many in Storage settings' status line (textReextractionOutcome(skippedInCloud:)).
   A skipped book is caught up the next time its files are on this Mac, and a reader that downloads a book rebuilds its outdated cache as it loads.
-- Files: Services/MaintenanceFileAccess.swift, ViewModels/LibraryViewModel+Migration.swift, ViewModels/LibraryViewModel+MetadataRefresh.swift, Services/FileImportService.swift, Services/TextCacheUpdateQueue.swift, Services/BookContentAnalysisService.swift, Models/TextCacheFingerprint.swift.
