@@ -82,18 +82,33 @@ enum FFmpegContainer: String, CaseIterable, Equatable, Sendable {
         return nil
     }
 
-    /// Whether `bytes` begin an Ogg page whose first packet is a Speex
-    /// header. An Ogg page is 27 bytes of header ("OggS", the version, the
-    /// header type, the granule position, the serial number, the page
-    /// number, and the checksum), then its number of segments and a table
-    /// of that many lacing values; the first packet's bytes follow the
-    /// table. A Speex header packet starts with "Speex" and three spaces.
+    /// The most beginning-of-stream pages looked through for a Speex header:
+    /// an Ogg file's first pages begin its streams, one each, and a Skeleton
+    /// track's may come before the sound's.
+    static let maximumOpeningPages = 4
+
+    /// Whether `bytes` begin an Ogg file one of whose first pages, those that
+    /// begin its streams, holds a Speex header. An Ogg page is 27 bytes of
+    /// header ("OggS", the version, the header type, whose bit 0x02 marks the
+    /// beginning of a stream, the granule position, the serial number, the
+    /// page number, and the checksum), then its number of segments and a
+    /// table of that many lacing values, whose sum is the length of the
+    /// packets that follow the table. A Speex header packet starts with
+    /// "Speex" and three spaces. The walk stops at the first page that
+    /// begins no stream, and never reads past `bytes`.
     static func isOggSpeex(_ bytes: [UInt8]) -> Bool {
-        let segmentCountOffset = 26
-        guard bytes.starts(with: Array("OggS".utf8)), bytes.count > segmentCountOffset else { return false }
-        let segments = Int(bytes[segmentCountOffset])
-        guard segments > 0 else { return false }
-        return ascii(in: bytes, at: segmentCountOffset + 1 + segments, is: "Speex   ")
+        var page = 0
+        for _ in 0..<maximumOpeningPages {
+            let segmentCountOffset = page + 26
+            guard ascii(in: bytes, at: page, is: "OggS"), segmentCountOffset < bytes.count,
+                  bytes[page + 5] & 0x02 != 0 else { return false }
+            let segments = Int(bytes[segmentCountOffset])
+            let packets = segmentCountOffset + 1 + segments
+            if segments > 0, ascii(in: bytes, at: packets, is: "Speex   ") { return true }
+            guard packets <= bytes.count else { return false }
+            page = packets + bytes[(segmentCountOffset + 1)..<packets].reduce(0) { $0 + Int($1) }
+        }
+        return false
     }
 
     // MARK: - The Formats TextMouth Reads Itself

@@ -109,6 +109,25 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertEqual(FFmpegContainer.of(page(segments: 1, packet: Array("OpusHead".utf8))), .ogg)
     }
 
+    /// A Skeleton track's page may begin the file before the Speex stream's:
+    /// the pages that begin streams are walked by their lengths, so Speex is
+    /// found on the second; a file cut from a stream, whose first page begins
+    /// none, holds no header to find.
+    func testSpeexIsFoundAfterASkeletonPage() {
+        /// An Ogg page of one packet, `packet`, beginning a stream when `begins`.
+        func page(_ packet: [UInt8], begins: Bool = true) -> [UInt8] {
+            Array("OggS".utf8) + [0, begins ? 2 : 0] + [UInt8](repeating: 0, count: 20) + [1, UInt8(packet.count)] + packet
+        }
+        let skeleton = page(Array("fishead".utf8) + [UInt8](repeating: 0, count: 57))
+        let speex = page(Array("Speex   1.2rc1".utf8) + [UInt8](repeating: 0, count: 66))
+        XCTAssertTrue(FFmpegContainer.isOggSpeex(skeleton + speex))
+        XCTAssertEqual(FFmpegContainer.of(skeleton + speex), .oggSpeex)
+        XCTAssertFalse(FFmpegContainer.isOggSpeex(skeleton + page(Array("\u{01}vorbis".utf8) + [0, 0, 0, 0])))
+        XCTAssertFalse(FFmpegContainer.isOggSpeex(page(Array("Speex   ".utf8), begins: false)))
+        // A walk that runs past the bytes there are ends without a trap.
+        XCTAssertFalse(FFmpegContainer.isOggSpeex(Array(skeleton.prefix(40))))
+    }
+
     // MARK: - Which Files Go to ffmpeg
 
     /// A file goes to ffmpeg by its extension, in any case, or, whatever its
