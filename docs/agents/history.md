@@ -1017,3 +1017,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Third-party code
 
 - **The mobi.js that was read:** Four of the Kindle reader's files follow mobi.js closely, as read on November 4, 2026 (mobi.js last changed in commit 9a676796, April 3, 2026).
+
+## From The reader's moves between books, and search
+
+- **A book read from the reading list ends by the list (FR09):** handleEndOfBook() hands a book read from the list to finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:replayingAFinishedEnd:), in place of the book's own end-of-book behavior, as the user decided.
