@@ -41,7 +41,7 @@ Tests that act as a person does find what tests of the parts miss: the first iPh
   - `PhoneControlButtonTests` (12 tests) tests the reader's UIKit control: its words, its traits, that it is one element, its actions, and its smallest height of 44 points.
   - `IOSRuntimeTests` (4 tests) tests the iOS runtime: that a hosting process runs in a sandbox, that a UI test's launch request does too, that without the request the home is the app's container, and that the library lives in Application Support.
     The two tests that read `PhoneLaunchRequest` are inside `#if DEBUG`, as the type is, so a Release test run has 2 of the 4.
-  - `PhoneValueRowTests` (3 tests) measures `PhoneValueRow` at the 12 Dynamic Type sizes: stacked at the 5 accessibility sizes, side by side at the 7 others (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms.md)).
+  - `PhoneValueRowTests` (3 tests) measures `PhoneValueRow` at the 12 Dynamic Type sizes: stacked at the 5 accessibility sizes, side by side at the 7 others (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms-phone-interface.md)).
     A third test checks that SwiftUI still has 5 and 7.
 - `TextMouthiOSUITests` is an XCUITest bundle that drives the app from outside, in the simulator.
   It has 35 tests, of which 13 press Play or type (the 6 of `PlaybackUITests`, 6 of the 7 of `SearchUITests`, all but its empty sheet's, and the Search test of `LargeTextUITests`) and run only where sound is allowed, on GitHub's runner (see In the simulator, sound tests run on GitHub only, below).
