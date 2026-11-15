@@ -49,7 +49,7 @@ extension XCTestCase {
             hasAppleAACEncoder: { _ in true },
             command: { _, output, plan, _ in
                 log?.append(plan)
-                return command?(output) ?? (URL(fileURLWithPath: "/bin/cp"), [finished.path, output.path])
+                return command?(output) ?? (executable: URL(fileURLWithPath: "/bin/cp"), arguments: [finished.path, output.path])
             },
             limits: { _ in
                 WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
@@ -366,6 +366,19 @@ final class FFmpegImportConversionTests: XCTestCase {
             ImportedFileMetadata.read(from: wma, format: .audio)
         }
         XCTAssertEqual([unnamed.title, unnamed.author], ["tones", Book.unknownAuthor])
+    }
+
+    /// ffprobe is asked only of files ffmpeg converts: an AC-3 file, which
+    /// afconvert converts, is never read by it, though the stand-in would
+    /// answer with a title.
+    func testFFprobeIsAskedOnlyOfFilesFFmpegConverts() async throws {
+        let standIn = try ffmpegStandIn(report: standInWMAReport)
+        let ac3 = try source("ac3/tones.ac3", named: "tones.ac3")
+        let ac3Tags = await FFmpegAudioConverter.tags(of: ac3, using: standIn)
+        XCTAssertNil(ac3Tags)
+        let wmaTags = await FFmpegAudioConverter.tags(of: try source(), using: standIn)
+        XCTAssertEqual(wmaTags?.tags["title"], "Three Tones")
+        XCTAssertEqual(wmaTags?.duration, 3.999)
     }
 
     // MARK: - The iPhone

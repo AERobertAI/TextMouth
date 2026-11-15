@@ -1,4 +1,5 @@
 import XCTest
+import UniformTypeIdentifiers
 @testable import TextMouth
 
 /// The containers only ffmpeg reads, told from their first bytes (FMT31,
@@ -143,6 +144,37 @@ final class FFmpegImportSnifferTests: XCTestCase {
             XCTAssertFalse(FeedMediaKind.audioExtensions.contains(ext), ext)
         }
         XCTAssertTrue(FFmpegAudioConverter.extensions.isDisjoint(with: ["tta", "wv", "ape"]))
+    }
+
+    /// Finder offers TextMouth for every extension ffmpeg converts, as one
+    /// document type, a Viewer at rank Alternate (never the default app for
+    /// a video), naming the system's types and TextMouth's own for those
+    /// macOS does not declare; .spx, the System Profiler's, by extension only.
+    func testFinderOffersTheFFmpegFormatsAsOneAlternateViewer() throws {
+        let type = try XCTUnwrap(documentType(listing: "wma"))
+        XCTAssertEqual(type["CFBundleTypeName"] as? String, "Audio and Video Converted with ffmpeg")
+        XCTAssertEqual(type["CFBundleTypeRole"] as? String, "Viewer")
+        XCTAssertEqual(type["LSHandlerRank"] as? String, "Alternate")
+        XCTAssertEqual(Set(type["CFBundleTypeExtensions"] as? [String] ?? []), FFmpegAudioConverter.extensions)
+        XCTAssertEqual(type["LSItemContentTypes"] as? [String], [
+            "com.microsoft.windows-media-wma", "com.microsoft.advanced-systems-format", "com.microsoft.windows-media-wmv",
+            "com.textmouth.musepack", "com.textmouth.matroska-audio", "com.textmouth.matroska-video", "org.webmproject.webm",
+            "com.textmouth.webm-audio", "public.avi", "com.adobe.flash.video", "com.real.realaudio", "com.real.realmedia",
+            "com.real.realmedia-vbr",
+        ])
+        XCTAssertFalse((type["LSItemContentTypes"] as? [String] ?? []).contains("com.apple.systemprofiler.document"))
+    }
+
+    /// The Open panel offers every extension ffmpeg converts, by the type
+    /// the extension has in this process (the system's, TextMouth's own
+    /// declaration, or one made for it).
+    func testTheOpenPanelOffersEveryFFmpegExtension() {
+        let offered = Set(FileImportService.supportedTypes)
+        let missing = FFmpegAudioConverter.extensions.sorted().filter { ext in
+            guard let type = UTType(filenameExtension: ext) else { return true }
+            return !offered.contains(type)
+        }
+        XCTAssertEqual(missing, [])
     }
 
     /// A file that holds TTA, WavPack, or Monkey's Audio is never ffmpeg's,
