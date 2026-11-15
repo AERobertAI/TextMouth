@@ -52,6 +52,7 @@ The `src` is `suggest_paths(page, section, repo, index)`: every suggestion whose
 
 ### The command
 
+- PAGE is named as every command names a page, through `targets.resolve_page` (its path, or the unique end of it), and read with `pagewrite.read_page_text`; `cmd_reflow.py` does the same, and is the other writing command to copy the shape of.
 - For each section of the page at level 1 or deeper whose `marker` is None, the marker line goes on the line straight after its heading. A section that has a marker, a stray one included, is left alone; so is text before the first heading.
 - The page's other lines are not touched: removing the added lines gives back the old text exactly, which `mark` checks before writing, besides `pagewrite`'s own checks; it also checks that parsing the new text gives every section that lacked a marker the id it was given, and no stray markers. Any failed check writes nothing, prints what failed, and exits 1.
 - A page holding `\r` is refused (as `reflow` does, through `pagewrite`).
