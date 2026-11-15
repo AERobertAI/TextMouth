@@ -69,8 +69,11 @@ struct StoredKeySchema: Sendable {
 ///
 /// Looking object by object costs a decode about 1.6 microseconds for each
 /// object (a second keyed container) and 0.15 for each of its keys (their
-/// list), some 30 milliseconds for a library index of 1,500 rows. The scan
-/// reads the same index in about 5, and says whether that work is needed.
+/// list): measured in an optimized model of a 1,500-row index, 14
+/// milliseconds on a decode of 22. The scan read 2.4 MB of such an index in
+/// 4.5 milliseconds, and says whether that work is needed. (In a debug
+/// build, as the tests are, the scan is about ten times slower and spares
+/// nothing; `UnknownKeysTests` prints both.)
 ///
 /// It reads no values and builds nothing: it steps over strings, numbers,
 /// and brackets, and looks up each member name of each object the schema
