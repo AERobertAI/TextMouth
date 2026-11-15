@@ -554,11 +554,14 @@ targets:
     sources:
       - TextMouthiOSTests
       # Mac test files the iPhone's unit tests share by path (one file serves both bundles; see docs/developer/testing.md).
+      - TextMouthProductionTests/AudioSeekAndObserverTests.swift
+      - TextMouthProductionTests/AudioZIPClassificationTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift
       - TextMouthProductionTests/CollectionTestSupport.swift
       - TextMouthProductionTests/DOCXTestPackages.swift
       - TextMouthProductionTests/DamagedFileTestSupport.swift
       - TextMouthProductionTests/EndOfBookRuleTests.swift
+      - TextMouthProductionTests/FFmpegMetadataTests.swift
       - TextMouthProductionTests/FinishedBookModelTests.swift
       - TextMouthProductionTests/HostedTestIsolationSupport.swift
       - TextMouthProductionTests/ImportDecisionTestSupport.swift
@@ -573,6 +576,11 @@ targets:
       - TextMouthProductionTests/LogTestSupport.swift
       - TextMouthProductionTests/MOBIFixture.swift
       - TextMouthProductionTests/MarkupFuzzGenerator.swift
+      - TextMouthProductionTests/MediaGestureDetectorTests.swift
+      - TextMouthProductionTests/PhoneAudioErrorCodeTests.swift
+      - TextMouthProductionTests/PhoneAudioEventPolicyTests.swift
+      - TextMouthProductionTests/PhoneAudioPaceTests.swift
+      - TextMouthProductionTests/PhoneAudioWordingTests.swift
       - TextMouthProductionTests/PlaceRelocatorTestSupport.swift
       - TextMouthProductionTests/PlaybackFuzzOperations.swift
       - TextMouthProductionTests/PlaybackFuzzOperationsTests.swift
