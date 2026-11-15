@@ -69,11 +69,49 @@ def timing_summary(text):
     return text[marker:] if marker >= 0 else ""
 
 
+# Two files the incremental probes touch: a file few others use, and the hub nearly every file uses.
+LEAF_PROBE = "TextMouth/Models/TitleTyping.swift"
+HUB_PROBE = "TextMouth/Models/Book.swift"
+
+
+def build_and_report(label, root, command, log):
+    """Builds with `command` (timed, logged to `log` afresh), then prints what the build did: its seconds, its task
+    counts, how many Swift files it compiled and how many of them are the app's own, the test bundle's, or generated, and
+    (for the first build only, `label` "first") the first FILES_NAMED of them and Xcode's timing summary."""
+    log.write_bytes(b"")
+    seconds, _ = timed(label, [*command, "-showBuildTimingSummary"], root, log)
+    text = log.read_text(encoding="utf-8", errors="replace")
+    counts, files = task_counts(text)
+    prefix = str(root) + "/"
+    names = [path.replace(prefix, "") for path in files]
+    by_folder = collections.Counter(name.split("/", 1)[0] for name in names)
+    print(f"DIAGNOSE [{label}] tasks: " + (", ".join(f"{k} {v}" for k, v in sorted(counts.items())) or "none"), flush=True)
+    print(f"DIAGNOSE [{label}] Swift files compiled: {len(names)} " + str(dict(by_folder)), flush=True)
+    if label == "first":
+        for name in names[:FILES_NAMED]:
+            print("DIAGNOSE   compiled", name, flush=True)
+        print("DIAGNOSE timing summary:\n" + (timing_summary(text)[:6000] or "(none)"), flush=True)
+    return seconds
+
+
+def probe_edit(root, relative, label, command, log):
+    """Appends a comment line to the tracked file `relative`, rebuilds (reporting as build_and_report), and puts the file
+    back as git has it, so the tests that follow run on the tree they were sent."""
+    path = Path(root) / relative
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write("\n// diagnose probe\n")
+    try:
+        return build_and_report(label, root, command, log)
+    finally:
+        subprocess.run(["git", "checkout", "--", relative], cwd=root, capture_output=True)
+
+
 def diagnose(root, derived, build_command, out):
     """Prints the machine, then times package resolution and the build (`build_command`, the argv of a
-    build-for-testing with -showBuildTimingSummary added here) and prints what the build did. `derived` is the
-    derived-data folder; `out` the output folder the log goes into (diagnose-build.log, which is not uploaded: the
-    report is in the job's log)."""
+    build-for-testing; -showBuildTimingSummary is added here), a second build with nothing changed, and rebuilds after a
+    comment is added to a leaf file and then to the hub (Book.swift), saying each time what was compiled. `derived` is
+    the derived-data folder; `out` the folder the log goes into (diagnose-build.log, which is not uploaded: the report is in
+    the job's log)."""
     print("DIAGNOSE machine:", shell_text(["sysctl", "-n", "hw.ncpu", "hw.memsize", "machdep.cpu.brand_string"]).replace("\n", " | "), flush=True)
     print("DIAGNOSE disk:", shell_text(["df", "-h", "/"]).splitlines()[-1], flush=True)
     print("DIAGNOSE derived data before:", shell_text(["du", "-sh", str(derived)]), flush=True)
@@ -81,14 +119,8 @@ def diagnose(root, derived, build_command, out):
     log.write_bytes(b"")
     base = ["-project", "TextMouth.xcodeproj", "-scheme", "TextMouth", "-derivedDataPath", str(derived)]
     timed("package resolution", ["xcodebuild", "-resolvePackageDependencies", *base], root, log)
-    seconds, _ = timed("build-for-testing", [*build_command, "-showBuildTimingSummary"], root, log)
-    text = log.read_text(encoding="utf-8", errors="replace")
-    counts, files = task_counts(text)
-    print("DIAGNOSE tasks:", ", ".join(f"{name} {count}" for name, count in sorted(counts.items())) or "none", flush=True)
-    print(f"DIAGNOSE Swift files compiled: {len(files)}", flush=True)
-    for path in files[:FILES_NAMED]:
-        print("DIAGNOSE   compiled", path.replace(str(root) + "/", ""), flush=True)
-    summary = timing_summary(text)
-    print("DIAGNOSE timing summary:\n" + (summary[:6000] or "(none)"), flush=True)
+    build_and_report("first", root, build_command, log)
     print("DIAGNOSE derived data after:", shell_text(["du", "-sh", str(derived)]), flush=True)
-    print(f"DIAGNOSE the build took {seconds:.1f} s", flush=True)
+    build_and_report("nothing changed", root, build_command, log)
+    probe_edit(root, LEAF_PROBE, "leaf edited", build_command, log)
+    probe_edit(root, HUB_PROBE, "hub edited", build_command, log)

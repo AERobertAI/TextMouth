@@ -72,16 +72,31 @@ def restore(root, manifest_path):
     return kept, changed
 
 
+# How many changed files main() names, so that a run's log shows what the build had to look at.
+NAMED = 40
+
+
+def changed_names(current, old):
+    """The paths whose blob differs from the manifest `old` (or are new), sorted; empty with no manifest."""
+    if old is None:
+        return []
+    return sorted(path for path, blob in current.items() if old.get(path) != blob)
+
+
 def main(argv):
     """Restores the times and says what it did."""
     if len(argv) != 1:
         print("usage: restore_mtimes.py MANIFEST", file=sys.stderr)
         return 2
     manifest = Path(argv[0])
-    had = read_manifest(manifest) is not None
+    old = read_manifest(manifest)
+    had = old is not None
+    names = changed_names(tracked_hashes(Path.cwd()), old)
     kept, changed = restore(Path.cwd(), manifest)
     print(f"restore_mtimes: {'manifest found' if had else 'no manifest, so a complete build'}; "
           f"{kept} files unchanged (given the fixed time), {changed} changed or new (left as checked out)")
+    for name in names[:NAMED]:
+        print(f"restore_mtimes:   changed {name}")
     return 0
 
 
