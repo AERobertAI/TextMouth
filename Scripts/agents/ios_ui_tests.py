@@ -312,8 +312,12 @@ TIMES_FILE = Path(__file__).resolve().parent / "ios-class-times.json"
 # at a second each).
 SECONDS_PER_TEST = {UI_BUNDLE: 25.0, UNIT_BUNDLE: 0.05}
 # One iPhone job's share of tests, in seconds, past which another job is worth its own set-up (the platform's download, the
-# build, the simulator's boot: about 10 to 13 minutes on the runner).
-TARGET_SHARD_SECONDS = 480
+# build, the simulator's boot: about 12 minutes on the runner, since the build names one architecture). Measured in run
+# 43716590818: the full suite's tests are about 1,000 seconds (873 of interface tests in 6 classes, 90 of unit tests), which
+# two jobs run in about 14 minutes each; a third job would save about 2.6 minutes of them but takes a macOS slot from the
+# Mac tests' shards (5 at once, plan_shards.py), whose third shard ends 5 or more minutes later than that. So the full suite
+# is two jobs, and a third comes only past 1,200 seconds.
+TARGET_SHARD_SECONDS = 600
 # The most iPhone jobs: a free account runs 5 macOS jobs at once, and the Mac tests' shards share them.
 MAX_SHARDS = 3
 
