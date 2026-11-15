@@ -658,3 +658,14 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
   It takes about 52 seconds in a full run; it took about 154 seconds before October 17, 2026.
 - **Opt-in sweeps, the textfmt team's run of the import fuzz:**
   The textfmt team's run over those 21 made 351 damaged copies, and no check broke.
+
+## From Tests of the markup guard, Kindle, and MOBI readers
+
+- **The markup guard tests, the policy test of the big stack:**
+  Its first form let a depth walk move out of the closure; the November 8 check found that.
+- **The KF8 fuzz kit, its first build:**
+  It was built and run in 0.4.3: the builder lacked five parser files and looked for packages in a build folder a worktree does not have, and now builds.
+- **The KF8 fuzz kit, its first runs:**
+  First runs, November 9, 2026, seed 1 and 2,000 rounds each: The Time Machine 1,736 read and 264 refused, the Quay Almanac hybrid 1,863 and 137, Yellow Wallpaper in KF8 1,830 and 170.
+  Seed 2, 2,000 rounds over four books: 1,820 and 180.
+  No trap, no slow or large round, and no SwiftSoup, `MarkupGuard`, or converter failure.

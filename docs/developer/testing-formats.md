@@ -22,7 +22,6 @@ Its documents are made so that a failure is a failed assertion and not a trapped
 - The big stack (0.4.2) has its own tests: `testTheBigStackHoldsTheDeepestTreeThePassLetsThrough` (its size, a whole number of megabytes, from the measured cost of a level), `testTheBodyRunsOnAThreadWithTheBigStackAndItsResultComesBack`, a parse from a 512 KiB worker thread that gives the same tree as SwiftSoup alone in each of the three parsers, and `testTheSecondLayerHasALimitOfItsOwnWhenOneIsSet`, which sets `Limits.deepestTree` apart from `deepestNesting` on a tree of 60 levels.
 - The policy test of the stack is `testEverySwiftSoupParseInTheGuardRunsOnTheBigStack`.
   It reads MarkupGuard.swift without its line comments and requires 3 `SwiftSoup.parse` calls, each the argument of `requireDepth(of:atMost:)` inside an `onLargeStack` closure, so that neither a parse nor a depth walk can leave the big stack, and a refused tree is released there.
-  Its first form let a depth walk move out of the closure; the November 8 check found that.
   It does not strip block comments, and `testEveryParseGoesThroughTheGuard` matches fixed names only, so a typealias would evade it.
 - `Scripts/test/markup-stack-proof.py` (with the programs in `Scripts/test/markup-stack-proof/measure` and `proof`) proves in child processes what the test host cannot, that the guard's parse does not overflow a stack:
   - `build` compiles the two programs against the committed MarkupGuard sources and the SwiftSoup of the last build, in debug, Release, or both.
@@ -112,7 +111,6 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
 
 - `Scripts/test/kf8-fuzz` (`build-reader.py`, `fuzz.py`, `Main.swift`, `Stubs.swift`) is a fuzz kit that damages books at random with a seed and reads each in a child process.
   It is not part of the suite.
-  It was built and run in 0.4.3: the builder lacked five parser files and looked for packages in a build folder a worktree does not have, and now builds.
   - `build-reader.py OUTPUT [WORKFOLDER]` builds the reader program with `swiftc`, from the repository's sources and the packages an earlier Release build left in `build/DerivedData/Build/Products/Release`.
     In a worktree with none, set `KF8_FUZZ_BUILD` to another checkout's `build` folder.
     It is heavy: run it under `run_locked.py`.
@@ -124,9 +122,6 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
   - `fuzz.py --reader PATH --work FOLDER --seed N --rounds N BOOK...` changes one to four bytes of a copy of a book each round, half in the first 6 KB or the last 40 KB, and runs the reader with a time limit (`--seconds`, 5 by default) and a memory limit (`--megabytes`, 1024).
     A signal, a time over the limit, or a peak memory over it fails the round, and a trapping round's file is kept as `trap-<round>.bin`.
     It deletes nothing.
-  - First runs, November 9, 2026, seed 1 and 2,000 rounds each: The Time Machine 1,736 read and 264 refused, the Quay Almanac hybrid 1,863 and 137, Yellow Wallpaper in KF8 1,830 and 170.
-    Seed 2, 2,000 rounds over four books: 1,820 and 180.
-    No trap, no slow or large round, and no SwiftSoup, `MarkupGuard`, or converter failure.
 
 ### The train that ran the KF8 classes
 <!-- id: train-that-ran-kf8-classes; keys: train, KF8, MOBI, KFX, skipped tests; src: TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/DocumentTypeDeclarationTests.swift, TextMouthProductionTests/IOSInfoPlistTests.swift, TextMouthProductionTests/OwnReaderCancellationTests.swift, TextMouthProductionTests/EPUBExportRealBooksTests.swift -->
