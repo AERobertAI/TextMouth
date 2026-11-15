@@ -14,7 +14,10 @@ The file project.yml copies them from Vendor, never into the repository a second
 LAME 3.100's MP3 encoder, "LAME Ain't an MP3 Encoder", by Mike Cheng, Mark Taylor, and The LAME Project (https://lame.sourceforge.io; LAME's own notes give www.mp3dev.org), under the GNU Library General Public License, version 2, whose text is Vendor/lame/COPYING.
 TextMouth writes MP3 with it (see [Editing audio](../user/editing-audio.md)).
 
-- Vendor/lame holds the encoder's files of LAME's release tarball, lame-3.100.tar.gz (SHA-256 ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e), each unchanged: COPYING, LICENSE, README, include/lame.h, and the sources and headers in libmp3lame that LAME's own Makefile builds its library from, less the decoder's glue and the x86 assembly.
+- Vendor/lame holds the encoder's files of LAME's release tarball, lame-3.100.tar.gz (SHA-256 ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e), each unchanged:
+  - COPYING, LICENSE, README, include/lame.h;
+  - and the sources and headers in libmp3lame that LAME's own Makefile builds its library from, less the decoder's glue and the x86 assembly.
+
   TextMouth adds two files of its own: config.h, in place of the one LAME's configure script writes, and include/module.modulemap, through which Swift imports lame.h.
 - project.yml builds it as a static library the app links, so `make build` builds the app from that source, and the app can be rebuilt with a changed LAME: replace those files from another release, compare config.h with the one its configure script writes, and run `make check`.
 - The licence asks that a copy of the app given to anyone else carry this notice and the licence's text, which the app carries in Licenses/LAME (above).
@@ -25,12 +28,17 @@ TextMouth writes MP3 with it (see [Editing audio](../user/editing-audio.md)).
 liblouis 3.39.0, the open-source braille translator and back-translator, by John J. Boyer, its founder, and the liblouis contributors (Vendor/liblouis/AUTHORS), under the GNU Lesser General Public License, version 2.1 or any later version, whose text is Vendor/liblouis/COPYING.LESSER.
 TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and braille books](../user/reads-daisy-and-braille.md) and [Exporting braille files](../user/exporting-braille.md)).
 
-- Vendor/liblouis holds, unchanged, these files of liblouis's release tarball, liblouis-3.39.0.tar.gz (https://github.com/liblouis/liblouis/releases/tag/v3.39.0; SHA-256 629fa8cb0dfd9ad457c5bf47a42f0953b673e62c8ad6b1d03ddc4e2bd20008f1, the digest GitHub publishes for it, which project.yml records): COPYING.LESSER, README, AUTHORS, NEWS, the sources and headers in liblouis/ that its Makefile.am builds the library from (liblouis.h.in among them), and in tables/ the four English tables built into TextMouth, with the 13 files they include, 17 in all.
+- Vendor/liblouis holds, unchanged, these files of liblouis's release tarball, liblouis-3.39.0.tar.gz (https://github.com/liblouis/liblouis/releases/tag/v3.39.0; SHA-256 629fa8cb0dfd9ad457c5bf47a42f0953b673e62c8ad6b1d03ddc4e2bd20008f1, the digest GitHub publishes for it, which project.yml records):
+  - COPYING.LESSER, README, AUTHORS, NEWS;
+  - the sources and headers in liblouis/ that its Makefile.am builds the library from (liblouis.h.in among them);
+  - and in tables/ the four English tables built into TextMouth, with the 13 files they include, 17 in all.
+
   The four are Unified English uncontracted (en-ueb-g1.ctb) and contracted (en-ueb-g2.ctb) braille, and English uncontracted (en-us-g1.ctb) and contracted (en_US.tbl) braille as used in the U.S. It also holds, unchanged from that tarball, three display tables that only the tests read: en-us-brf.dis (North American Braille ASCII), de-eurobrl6.dis (Eurobraille, six-dot, lowercase, SBS Zürich 2009), and de-eurobrl6u.dis (the same code in capitals), 20 files in all; BrailleFileCodeTests compares TextMouth's own tables with them, 64 cells of 64.
   No translation table includes them, so the helper never loads them; they are bundled with the tables folder (Vendor/liblouis/tables, into Contents/Resources/liblouis/tables), 6,793 bytes.
 - TextMouth adds two files of its own: config.h, in place of the one liblouis's configure script writes, and include/liblouis.h, the release's liblouis.h.in with its one substitution made, 32-bit wide characters (UCS-4), so every Unicode character and braille cell fits.
   Nothing of the release was run (not configure, make, or any script), and nothing from liblouis's tools/ folder, which is GPL 3, is used.
-- project.yml builds it as a static library that only the TextMouthBraille helper links, so liblouis runs only in that helper and never in TextMouth's own process: it is C that reads untrusted braille and text, it has had memory-safety bugs, and it is not thread-safe (see Braille files, in [Imports: braille tables and the translator](../architecture/state/imports-braille-tables.md)).
+- project.yml builds it as a static library that only the TextMouthBraille helper links, so liblouis runs only in that helper and never in TextMouth's own process.
+  It is C that reads untrusted braille and text, it has had memory-safety bugs, and it is not thread-safe (see Braille files, in [Imports: braille tables and the translator](../architecture/state/imports-braille-tables.md)).
   Static linking suits the licence, as it does LAME's: the app's whole source, liblouis's included, is in the repository, so `make build` builds the app from that source, and the app can be rebuilt with a changed liblouis.
 - To update it, replace those files from a newer release, make include/liblouis.h again from its liblouis.h.in, compare config.h with what the new sources read, and run `make check`.
 - The licence asks that a copy of the app given to anyone else carry the licence's text, which the app carries in Licenses/liblouis (above).
@@ -41,7 +49,12 @@ TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and
 <!-- id: foliate-js-mobi-js-kindle; keys: mobi.js, foliate-js, Kindle reader, PalmDOC, HUFF/CDIC, NCX, KF8; src: Vendor/foliate-js/LICENSE, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIPalmDatabase.swift -->
 
 foliate-js's mobi.js, the Kindle reader of the book renderer behind the Foliate e-book reader, by John Factotum (https://github.com/johnfactotum/foliate-js), under the MIT License, whose text is Vendor/foliate-js/LICENSE ("Copyright (c) 2022 John Factotum"; SHA-256 b621ffc351fe263bc9b09dd0bc1c9332fda9c462a3904c1e4f0b4d3236b9c28c, the file as of foliate-js commit c986ba68, unchanged).
-TextMouth's Kindle reader (see [What TextMouth reads: Kindle books](../user/reads-kindle-books.md)) is Swift of its own, but four of its files follow mobi.js closely (mobi.js last changed in commit 9a676796), and each says so: MOBIText.swift (PalmDOC decompression and the records' trailing entries), MOBIIndex.swift (the NCX index), MOBIHuffman.swift (HUFF/CDIC decompression, whose format leaves little room for another way), and KF8Layout.swift (how a KF8 book's skeleton, fragment, and flow tables are read; its join of a document is a piece table of TextMouth's own, and no code is copied).
+TextMouth's Kindle reader (see [What TextMouth reads: Kindle books](../user/reads-kindle-books.md)) is Swift of its own, but four of its files follow mobi.js closely (mobi.js last changed in commit 9a676796), and each says so:
+- MOBIText.swift (PalmDOC decompression and the records' trailing entries);
+- MOBIIndex.swift (the NCX index);
+- MOBIHuffman.swift (HUFF/CDIC decompression, whose format leaves little room for another way);
+- and KF8Layout.swift (how a KF8 book's skeleton, fragment, and flow tables are read; its join of a document is a piece table of TextMouth's own, and no code is copied).
+
 KF8Book.swift reads mobi.js's getNCX and its kindle:pos links as a map for what a contents entry's two numbers mean.
 MOBIHeaders.swift and MOBIPalmDatabase.swift take only the header fields' offsets from it.
 
@@ -71,7 +84,13 @@ SwiftSoup 2.13.9 (https://github.com/scinfu/SwiftSoup, under the MIT License, it
 No third-party code is in TextMouth's own document readers: rich text, Word 97-2003, Word (DOCX), OpenDocument text, Word 2003 XML, and Kindle KFX.
 Each was written from its format's published specification, and no other reader's source was read or copied.
 
-- The specifications are Microsoft's Rich Text Format 1.9.1; [MS-DOC], [MS-CFB], and [MS-OLEPS] for Word 97-2003; ECMA-376 for Word (DOCX), where its rule for toggle properties decides hidden text; OASIS's OpenDocument 1.3; Microsoft's Office 2003 XML Reference Schemas for Word 2003 XML; and Amazon's published Ion text and binary specification for KFX's container, with the project's own notes on the KFX format.
+- The specifications are:
+  - Microsoft's Rich Text Format 1.9.1;
+  - [MS-DOC], [MS-CFB], and [MS-OLEPS] for Word 97-2003;
+  - ECMA-376 for Word (DOCX), where its rule for toggle properties decides hidden text;
+  - OASIS's OpenDocument 1.3;
+  - Microsoft's Office 2003 XML Reference Schemas for Word 2003 XML;
+  - and Amazon's published Ion text and binary specification for KFX's container, with the project's own notes on the KFX format.
 - Apache POI's HWPF and the ODF libraries odfdo and the ODF Toolkit were looked at only as maps of a format's structure (the Word piece table's layout; the shape of an OpenDocument package).
   None of their code is used.
   The source code of LibreOffice, antiword, catdoc, wvWare, and every other GPL or LGPL project is never read.
