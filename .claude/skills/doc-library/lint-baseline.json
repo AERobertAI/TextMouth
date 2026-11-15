@@ -56,7 +56,7 @@
     "docs/developer/testing-github.md": {"date": 15, "line-length": 49, "sentences-per-line": 40, "stale": 1},
     "docs/developer/testing-goldens.md": {"date": 3, "line-length": 25, "sentences-per-line": 16},
     "docs/developer/testing-iphone.md": {"date": 15, "line-length": 45, "sentences-per-line": 74, "stale": 1, "user-quote": 2},
-    "docs/developer/testing-tools.md": {"date": 8, "line-length": 36, "sentences-per-line": 35, "user-quote": 1},
+    "docs/developer/testing-tools.md": {"date": 8, "line-length": 20, "user-quote": 1},
     "docs/developer/testing.md": {"date": 8, "line-length": 35, "section-length": 1, "sentences-per-line": 36},
     "docs/developer/third-party-code.md": {"date": 2, "line-length": 15, "marker-missing": 1, "sentences-per-line": 14},
     "docs/user/adding-books.md": {"date": 3, "line-length": 39, "marker-missing": 55, "page-size": 1, "sentences-per-line": 95},
