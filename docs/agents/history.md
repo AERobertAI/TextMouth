@@ -849,6 +849,8 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From The reader
 
 - **Next Page and Previous Page commands:** The separate Next Page and Previous Page commands were removed at the user's request on November 5, 2026.
+- **A label on the reader's text (A11):** ReaderTextArea puts its label, ReaderTextArea.accessibilityLabel ("Book content"), on its ScrollView, never on the Text: a label on a SwiftUI Text replaces the text's accessibility value.
+  So a playing book's text read "Book content", and a paused one's, selectable, held the book's characters under that 12-character value, of which VoiceOver read twelve (A11).
 
 ## From Windows
 
@@ -1015,3 +1017,21 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Third-party code
 
 - **The mobi.js that was read:** Four of the Kindle reader's files follow mobi.js closely, as read on November 4, 2026 (mobi.js last changed in commit 9a676796, April 3, 2026).
+
+## From The reader's moves between books, and search
+
+- **A book read from the reading list ends by the list (FR09):** handleEndOfBook() hands a book read from the list to finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:replayingAFinishedEnd:), in place of the book's own end-of-book behavior, as the user decided.
+
+## From The reader's playback and speech
+
+- **The three-second rule:** No press depends on when the last one came: the three-second rule is retired.
+- **WhereAmIInterruptionPolicy:** WhereAmIInterruptionPolicy, whose blocksBookPlayback(isAnnouncementSpeaking:) no longer decided anything, is gone.
+- **The end sound's window:** A Play pressed in the window by a reader with nothing in Where Am I?'s hands starts at once, as before.
+- **Held audio under the end sound:** The end sound's work plays the held audio once (startPlayHeldByWhereAmI()), where it once started at once, under the end sound.
+- **An announcement's end after a stop (REV11):** The announcement's end neither resumes the stopped book nor tells Now Playing that it plays, which once took back the AirPods Release Media Controls had let go (REV11).
+- **A cancel nobody asked for (REV12, REV13):** A cancel the reader did not ask for starts a held Play, a held chapter, and a play waiting for its chapter's speech, where a cancel once dropped a held Play (REV12) and paused a waiting play (REV13).
+- **Auto-play on navigate and the sleep timer's start:** playUnlessUnderWay() serves Auto-play on navigate and a sleep timer set to start playback, both of which once went through Play/Pause, pausing a play waiting for its chapter and ending an announcement in place of playing.
+
+## From Transcription
+
+- **isTranscriptCleanable:** Retranscribe Audio…, Clean Up Transcript (Experimental)…, and Delete Transcript… are offered for a feed's episode too, since a transcript is the listener's own work (isTranscriptCleanable is gone).
