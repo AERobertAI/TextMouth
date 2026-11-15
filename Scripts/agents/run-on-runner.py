@@ -50,6 +50,7 @@ sys.dont_write_bytecode = True
 AGENTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(AGENTS))
 import github_run  # noqa: E402  (the path above must be set first)
+import runner_audio_probe  # noqa: E402
 import runner_diagnose  # noqa: E402
 import ios_ui_tests  # noqa: E402
 import shard  # noqa: E402
@@ -213,6 +214,9 @@ def run_tests(train, request, out, limit_minutes):
         import testkit
         runner_diagnose.diagnose(ROOT, derived, testkit.build_command(
             ROOT, [], str(derived), jobs=RUNNER_JOBS, use_slot=False, action="build-for-testing"), out)
+    if request.get("audio_probe"):
+        # A request sent by hand asks whether audio decodes here and what makes it (runner_audio_probe.py).
+        runner_audio_probe.probe(out / "audio-probe")
     print("command:", " ".join(command), flush=True)
     process = subprocess.Popen(command, cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT, env=runner_environment(request))
     finished = threading.Event()
