@@ -1,5 +1,5 @@
 # Search Library
-<!-- id: search-library; keys: ; src: -->
+<!-- id: search-library; keys: find in all books, Option-Command-F, Edit > Find, full-text search, global search; src: TextMouth/App/MenuCommands.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/LibrarySearchWording.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -12,7 +12,7 @@ Part of [TextMouth's documentation](../../README.md).
   Search Library looks in all of them, and shares its way of matching, so a word found in one is found in the other.
 
 ## The window
-<!-- id: window; keys: ; src: -->
+<!-- id: library-search-window; keys: Search the library field, Close, Stop, Command-Period, progress bar, Results list, 300 milliseconds; src: TextMouth/Platform/macOS/Views/LibrarySearch/LibrarySearchWindowController.swift, TextMouth/Platform/macOS/Views/LibrarySearch/LibrarySearchWindowView.swift, TextMouth/ViewModels/LibrarySearchModel.swift, TextMouth/Models/LibrarySearchWording.swift -->
 
 - The window is called "Search Library".
   There is one, whichever window opened it.
@@ -33,7 +33,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Return in the search field moves to the first result.
 
 ## Match Case and Regular Expression
-<!-- id: match-case-regular-expression; keys: ; src: -->
+<!-- id: library-search-match-case-regex; keys: case folding, ICU regex, Invalid regular expression, Unicode, accents, soft hyphen; src: TextMouth/Services/TextSearch/LibrarySearchEngine.swift, TextMouth/Services/TextSearch/LibrarySearchSpecials.swift, TextMouth/Services/TextSearch/LibrarySearchPrefilter.swift, TextMouth/Models/LibrarySearchWording.swift -->
 
 - Match Case is unchecked unless you check it.
   Unchecked, capital and small letters match each other, with the full folding of Unicode: "STRASSE" finds "Straße".
@@ -46,7 +46,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Search in Book has the same Match Case checkbox, unchecked unless you check it, with the hint "When checked, a match must have the same capital and small letters as the search text".
 
 ## What is searched
-<!-- id: what-searched; keys: ; src: -->
+<!-- id: library-search-what-searched; keys: Markdown marks, feed items, audiobook transcript, cloud books, unreadable books; src: TextMouth/Services/TextSearch/LibrarySearchText.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift, TextMouth/ViewModels/LibrarySearchModel.swift -->
 
 - Search Library searches the text of each book as the reader shows it: the words of its chapters, without the Markdown marks, the links' addresses, or the page and chapter markers that the book's text file holds.
   A match is therefore a phrase the reader would speak, and opening it goes to those words.
@@ -58,7 +58,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A book whose text cannot be read is left out too, and the status says so.
 
 ## The status line
-<!-- id: status-line; keys: ; src: -->
+<!-- id: library-search-status-line; keys: Searching, Searched, Preparing books, No matches, Stopped after, More than 41,000 matches; src: TextMouth/Models/LibrarySearchWording.swift, TextMouth/ViewModels/LibrarySearchModel.swift -->
 
 - Before anything is typed: "Type text to find in every book of the library."
 - While a search runs: "Searching 750 books…", then "Searched 120 of 750 books…".
@@ -70,7 +70,7 @@ Part of [TextMouth's documentation](../../README.md).
 - When the library has no book with text, it says "No book in the library has text to search."
 
 ## The results
-<!-- id: results; keys: ; src: -->
+<!-- id: library-search-results; keys: grouped by book, Show all matches, Books rotor, Matches rotor, limits, 20 per book, 1,000 in all; src: TextMouth/ViewModels/LibrarySearchModel.swift, TextMouth/Platform/macOS/Views/LibrarySearch/LibrarySearchWindowView.swift, TextMouth/Models/LibrarySearchWording.swift -->
 
 - The results are a list grouped by book.
   Each book's heading, which VoiceOver reads as a heading, gives its title, its author unless none is known, and how many matches it holds: "The Long Road, by Ines Okonkwo-Varga: 12 matches", or "more than 1,000 matches" for a book with more.
@@ -86,7 +86,7 @@ Part of [TextMouth's documentation](../../README.md).
   The book's heading keeps its real count when Show All has seen every match.
 
 ## Opening a match
-<!-- id: opening-match; keys: ; src: -->
+<!-- id: library-search-opening-match; keys: Moved to the match, Go Back, jump to match, nearest match, text changed since the search; src: TextMouth/Services/LibrarySearchJumpRequests.swift, TextMouth/ViewModels/ReaderViewModel+LibrarySearch.swift, TextMouth/Models/LibrarySearchWording.swift -->
 
 - Opening a match opens the book in its reader window, or brings its open window forward, and moves the reader to the match.
   The reader looks again in its own text with the same matching, so that an edit of the text since the search, or a rebuilt text, still lands on the nearest match.
@@ -98,7 +98,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Nothing is spoken if the reader has closed, has taken a later match, or Go Back has already undone the move.
 
 ## The first search, and the search texts
-<!-- id: first-search-search-texts; keys: ; src: -->
+<!-- id: library-search-search-texts; keys: Search Text folder, Caches, background pass, LIBRARY_SEARCH_PREPARATION, Low Power Mode, free space reserve, Time Machine; src: TextMouth/Services/TextSearch/LibrarySearchPreparer.swift, TextMouth/Services/TextSearch/LibrarySearchText.swift, TextMouth/Services/TextCacheUpdateQueue.swift, TextMouth/Models/LibrarySearchWording.swift -->
 
 - Searching a library of 750 books in a second or two is possible because TextMouth keeps the text of each book, ready to search, in a store of this Mac's own, outside the library.
   The store is the folder Search Text in ~/Library/Caches/com.textmouth.TextMouth (see [Where TextMouth keeps your library](where-your-library-lives.md)).
@@ -119,7 +119,7 @@ Part of [TextMouth's documentation](../../README.md).
 - The debug log has one line for each background pass, LIBRARY_SEARCH_PREPARATION, with counts only (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 
 ## What Search Library does not do
-<!-- id: what-search-library-does-not; keys: ; src: -->
+<!-- id: library-search-limits; keys: not searched, iPhone, folder search, transcribed audiobook, limitations; src: TextMouth/ViewModels/LibrarySearchModel.swift, TextMouth/ViewModels/ReaderViewModel+LibrarySearch.swift -->
 
 - It does not search a feed's articles or episodes, or the text of a book in the cloud that is not on this Mac.
 - On the iPhone, Search in Book has no Match Case checkbox yet, and there is no Search Library screen.
