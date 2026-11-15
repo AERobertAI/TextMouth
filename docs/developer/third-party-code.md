@@ -1,5 +1,5 @@
 # Third-party code
-<!-- id: third-party-code; keys: ; src: TextMouthProductionTests/BundledLicenseTests.swift -->
+<!-- id: third-party-code; keys: licences, licenses, vendored code, Vendor folder, attribution, MIT, LGPL; src: project.yml, TextMouthProductionTests/BundledLicenseTests.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -8,7 +8,7 @@ It builds in two libraries by other authors, follows a third author's code close
 The licence files of all three ship inside the app, in Contents/Resources/Licenses, one folder for each: Licenses/LAME holds COPYING and LICENSE, Licenses/liblouis holds COPYING.LESSER and README, and Licenses/foliate-js holds LICENSE. project.yml copies them from Vendor, never into the repository a second time, so each stays its author's own text, and BundledLicenseTests checks that all five reach the built app.
 
 ## LAME, the MP3 encoder
-<!-- id: lame-mp3-encoder; keys: ; src: -->
+<!-- id: lame-mp3-encoder; keys: LAME, libmp3lame, lame.h, module.modulemap, MP3 export, LGPL 2; src: project.yml, Vendor/lame/COPYING, Vendor/lame/config.h, Vendor/lame/include/lame.h, Vendor/lame/include/module.modulemap -->
 
 LAME 3.100's MP3 encoder, "LAME Ain't an MP3 Encoder", by Mike Cheng, Mark Taylor, and The LAME Project (https://lame.sourceforge.io; LAME's own notes give www.mp3dev.org), under the GNU Library General Public License, version 2, whose text is Vendor/lame/COPYING.
 TextMouth writes MP3 with it (see [Editing audio](../user/editing-audio.md)).
@@ -19,7 +19,7 @@ TextMouth writes MP3 with it (see [Editing audio](../user/editing-audio.md)).
 - The licence asks that a copy of the app given to anyone else carry this notice and the licence's text, which the app carries in Licenses/LAME (above).
 
 ## liblouis, the braille translator
-<!-- id: liblouis-braille-translator; keys: ; src: TextMouthProductionTests/BrailleFileCodeTests.swift -->
+<!-- id: liblouis-braille-translator; keys: liblouis, braille translator, TextMouthBraille, liblouis.h.in, UCS-4, LGPL 2.1, VoiceOver braille tables; src: project.yml, Vendor/liblouis/COPYING.LESSER, Vendor/liblouis/AUTHORS, Vendor/liblouis/config.h, Vendor/liblouis/include/liblouis.h, TextMouthBraille/main.c, TextMouthProductionTests/BrailleFileCodeTests.swift -->
 
 liblouis 3.39.0, the open-source braille translator and back-translator, by John J. Boyer, its founder, and the liblouis contributors (Vendor/liblouis/AUTHORS), under the GNU Lesser General Public License, version 2.1 or any later version, whose text is Vendor/liblouis/COPYING.LESSER.
 TextMouth reads and writes braille with it (see [What TextMouth reads](../user/what-textmouth-reads.md) and [Exporting books](../user/exporting-books.md)).
@@ -37,7 +37,7 @@ TextMouth reads and writes braille with it (see [What TextMouth reads](../user/w
   It reads them where they are on the system volume and never copies, changes, or downloads them, so the app does not grow (see the Braille tab, under [Settings](../user/settings.md)).
 
 ## foliate-js's mobi.js, the Kindle reader it follows
-<!-- id: foliate-js-mobi-js-kindle; keys: ; src: TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/KF8Book.swift -->
+<!-- id: foliate-js-mobi-js-kindle; keys: mobi.js, foliate-js, Kindle reader, PalmDOC, HUFF/CDIC, NCX, KF8; src: Vendor/foliate-js/LICENSE, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIPalmDatabase.swift -->
 
 foliate-js's mobi.js, the Kindle reader of the book renderer behind the Foliate e-book reader, by John Factotum (https://github.com/johnfactotum/foliate-js), under the MIT License, whose text is Vendor/foliate-js/LICENSE ("Copyright (c) 2022 John Factotum"; SHA-256 b621ffc351fe263bc9b09dd0bc1c9332fda9c462a3904c1e4f0b4d3236b9c28c, the file as of foliate-js commit c986ba68, unchanged).
 TextMouth's Kindle reader (see [What TextMouth reads](../user/what-textmouth-reads.md)) is Swift of its own, but four of its files follow mobi.js closely, as read on November 4, 2026 (mobi.js last changed in commit 9a676796, April 3, 2026), and each says so: MOBIText.swift (PalmDOC decompression and the records' trailing entries), MOBIIndex.swift (the NCX index), MOBIHuffman.swift (HUFF/CDIC decompression, whose format leaves little room for another way), and KF8Layout.swift (how a KF8 book's skeleton, fragment, and flow tables are read; its join of a document is a piece table of TextMouth's own, and no code is copied).
@@ -48,7 +48,7 @@ MOBIHeaders.swift and MOBIPalmDatabase.swift take only the header fields' offset
 - The licence asks that its notice go with every copy of the code or of a substantial part of it, which the app carries in Licenses/foliate-js (above).
 
 ## The Swift packages
-<!-- id: swift-packages; keys: ; src: TextMouth/Parsers/MarkupScanner.swift, TextMouth/Parsers/MarkupNesting.swift -->
+<!-- id: swift-packages; keys: SwiftSoup, ZIPFoundation, swift-markdown, swift-cmark, jsoup, markup guard, Package.resolved; src: project.yml, TextMouth/Parsers/MarkupScanner.swift, TextMouth/Parsers/MarkupNesting.swift -->
 
 The Swift packages ZIPFoundation, SwiftSoup, and swift-markdown, with the swift-cmark it builds on, each under its own licence; The make check gate, above, says how their versions are pinned.
 
@@ -59,7 +59,7 @@ The Swift packages ZIPFoundation, SwiftSoup, and swift-markdown, with the swift-
   - Both were written from SwiftSoup's source, and when SwiftSoup is updated they must be read against the new source again: a tag or a rule the new version reads differently is a level the guard cannot count (see Shared helpers, in [Architecture](../../ARCHITECTURE.md)).
 
 ## No third-party code in the document readers
-<!-- id: no-third-party-code-document; keys: ; src: -->
+<!-- id: no-third-party-code-document; keys: clean-room, specifications, RTF, MS-DOC, ECMA-376, OpenDocument, KFX, samples.tsv; src: TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/CompoundFile.swift, TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/KFXParser.swift, Scripts/make-kfx-sample.py, TestData/format-samples/samples.tsv -->
 
 No third-party code is in TextMouth's own document readers: rich text, Word 97-2003, Word (DOCX), OpenDocument text, Word 2003 XML, and Kindle KFX.
 Each was written from its format's published specification, and no other reader's source was read or copied.
