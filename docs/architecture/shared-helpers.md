@@ -95,7 +95,11 @@ An edit in the user's editor (TranscriptEditing.apply) and a cleanup (Transcript
 ## TranscriptAccuracy
 <!-- id: transcriptaccuracy; keys: word error rate, WER, read-aloud match; src: TextMouth/Services/TranscriptAccuracy.swift, TextMouth/Services/TranscriptEditAlignment.swift -->
 
-TranscriptAccuracy (Services/TranscriptAccuracy.swift): a transcript aligned word by word with the text that was read aloud, its words compared as the edit alignment compares them (TranscriptEditAlignment.key(of:)), with every apostrophe read as one; the differences sorted into the kinds of mistake a recognizer makes, its confidence weighed against them, and the corrections that would have been right in every place they apply.
+TranscriptAccuracy (Services/TranscriptAccuracy.swift): a transcript aligned word by word with the text that was read aloud:
+- its words compared as the edit alignment compares them (TranscriptEditAlignment.key(of:)), with every apostrophe read as one;
+- the differences sorted into the kinds of mistake a recognizer makes;
+- its confidence weighed against them;
+- and the corrections that would have been right in every place they apply.
 It is in the app rather than the tests so that later work, such as learning rules from the user's own edits, can use it.
 
 ## RowNoteBadge
@@ -122,7 +126,9 @@ FileImportService.isManagedPackageName(_:) and isSymbolicLink(_:) are the check'
 ## Audio edit history store and package
 <!-- id: audio-edit-history-store-package; keys: audio editor, undo history, revision log, mutex; src: TextMouth/Services/AudioEditing/AudioEditHistoryStore.swift, TextMouth/Services/AudioEditing/AudioEditPackage.swift -->
 
-AudioEditHistoryStore and AudioEditPackage (Services/AudioEditing/): the one way to change a book's audio edit history, under one lock for the whole process, and where a package keeps that history, its originals, and its takes, with the one check that a path a history records stays inside the package.
+AudioEditHistoryStore and AudioEditPackage (Services/AudioEditing/):
+- the one way to change a book's audio edit history, under one lock for the whole process;
+- and where a package keeps that history, its originals, and its takes, with the one check that a path a history records stays inside the package.
 
 ## Data directory migrator and location
 <!-- id: data-directory-migrator-location; keys: move library, copy and rename, symlink, relocate, storage move; src: TextMouth/Services/DataDirectoryMigrator.swift -->
@@ -183,7 +189,8 @@ VoiceOverAnnouncer (Services/VoiceOverAnnouncer.swift): every VoiceOver announce
 ## Sheet focus marker
 <!-- id: sheet-focus-marker; keys: focus state, accessibility focus, FocusState, defaultFocus; src: TextMouth/Views/Transcription/TranscriptionSheet.swift -->
 
-focusing(_:first:_:) (Views/Transcription/TranscriptionSheet.swift): marks a sheet's control that takes keyboard focus while the sheet's focus is on it, and that VoiceOver moves to once when it becomes the sheet's first control; the Transcribe Audio sheet and the Clean Up sheet both mark theirs with it.
+focusing(_:first:_:) (Views/Transcription/TranscriptionSheet.swift): marks a sheet's control that takes keyboard focus while the sheet's focus is on it, and that VoiceOver moves to once when it becomes the sheet's first control.
+The Transcribe Audio sheet and the Clean Up sheet both mark theirs with it.
 
 ## VoiceCatalog
 <!-- id: voicecatalog; keys: AVSpeechSynthesisVoice, voice list, voice picker; src: TextMouth/Services/VoiceCatalog.swift -->
@@ -229,7 +236,18 @@ The caller must encode the same content to the same bytes, with sorted keys and 
 ## MachineLocalPaths
 <!-- id: machinelocalpaths; keys: not synced, iCloud, local folder, working copy; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/AudioEditing/AudioEditComposition.swift, TextMouth/Services/AudioEditing/AudioEditCaches.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/RecordingTake.swift -->
 
-MachineLocalPaths (Models/CloudStorageContract.swift): this Mac's own folders, which never sync: its Logs folder, the working copies, import staging, archive extraction, the takes being recorded (MachineLocalPaths.recordings, in Services/RecordingTake.swift), the feeds' downloads waiting to be imported (MachineLocalPaths.feedDownloads, in Services/Feeds/FeedStore.swift), and, in its Caches folder, the kept reading text, the feeds' fetch details and resume data, audio editing's scratch folders (AudioEditScratch, in Services/AudioEditing/AudioEditComposition.swift), and the audio editor's clips (AudioEditCaches.clipsRoot, in Services/AudioEditing/AudioEditCaches.swift).
+MachineLocalPaths (Models/CloudStorageContract.swift): this Mac's own folders, which never sync:
+- its Logs folder;
+- the working copies;
+- import staging;
+- archive extraction;
+- the takes being recorded (MachineLocalPaths.recordings, in Services/RecordingTake.swift);
+- the feeds' downloads waiting to be imported (MachineLocalPaths.feedDownloads, in Services/Feeds/FeedStore.swift);
+- and, in its Caches folder:
+  - the kept reading text;
+  - the feeds' fetch details and resume data;
+  - audio editing's scratch folders (AudioEditScratch, in Services/AudioEditing/AudioEditComposition.swift);
+  - and the audio editor's clips (AudioEditCaches.clipsRoot, in Services/AudioEditing/AudioEditCaches.swift).
 
 ## NetworkReachability
 <!-- id: networkreachability; keys: offline, expensive network, data limits, constrained; src: TextMouth/Services/NetworkReachability.swift -->
