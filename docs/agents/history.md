@@ -931,6 +931,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - Packages and originals (isBookPackage, the package handling of importFiles and importZip) dates from October 31, 2026.
 - Limits of what a file claims (EPUBParser.readingXML, withNCX) dates from October 31, 2026.
 - The Word documents joined formatsRefusedWhenBlank on November 13, 2026.
+- NSDirectoryEnumerator.skipDescendants() on a file or a symbolic link skips the contents of the next folder listed beside it, which lost the tracks of a book whose folder listed a link right before a folder.
 
 ## From Known duplication
 
