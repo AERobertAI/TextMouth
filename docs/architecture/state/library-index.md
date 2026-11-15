@@ -14,8 +14,11 @@ The library: every book's row, the folders, each location's sort, and the readin
 Owner: LibraryViewModel.library, published on the main actor.
 It is the live copy; library.json, with each feed's own index (see [Feed items](library-index-reading-feeds.md)), is its saved form.
 Each location's sort is kept in folderSortSettings under the location's key (LibraryLocation.sortSettingsKey): a folder's path in Folders, and in every other category a reserved key (LibraryCategory.sortSettingsKey: __allItems__, __unopened__, __recent__, and __readingList__, under which nothing is saved), which no folder may take as its name (BookFolder.reservedNames, made from those keys and the former No Folder category's __noFolder__).
-The Feeds view and each view the listener made (LibraryViewDefinition.sortSettingsKey) keep their sorts under "/views/" and the view's stored identity (LibraryViewDefinition.sortSettingsKeyPrefix), as "/views/Feeds" or "/views/" and a UUID: a folder path never begins with "/", so no folder can take such a key and BookFolder.reservedNames needs no more names, and renaming, moving, deleting, and repairing folders never touch these keys, which are not valid library paths.
-The Library tab's commands write them through LibraryViewsSettingsActions: Duplicate copies the sort shown to the copy's key, Delete removes the deleted view's key, and Restore Default removes the restored view's key, or, for Unopened, writes its shipped sort under __unopened__; the editor's Sort By and Order save under the same key as the Sort menu.
+The Feeds view and each view the listener made (LibraryViewDefinition.sortSettingsKey) keep their sorts under "/views/" and the view's stored identity (LibraryViewDefinition.sortSettingsKeyPrefix), as "/views/Feeds" or "/views/" and a UUID.
+A folder path never begins with "/", so no folder can take such a key and BookFolder.reservedNames needs no more names.
+And renaming, moving, deleting, and repairing folders never touch these keys, which are not valid library paths.
+The Library tab's commands write them through LibraryViewsSettingsActions: Duplicate copies the sort shown to the copy's key, Delete removes the deleted view's key, and Restore Default removes the restored view's key, or, for Unopened, writes its shipped sort under __unopened__.
+The editor's Sort By and Order save under the same key as the Sort menu.
 An older TextMouth keeps these keys, reading every key of folderSortSettings and writing them back.
 
 ### Who may write the library
@@ -25,13 +28,18 @@ Who may write it: LibraryViewModel and its extensions, on the main actor.
 Each change is followed by save(), which hands a snapshot to LibraryPersistenceService.save(_:).
 That waits half a second on the service's serial queue, and only the newest snapshot is written, so an older snapshot never lands after a newer one.
 A reading checkpoint goes through saveReadingCheckpoint(_:of:writingWithin:) instead, which lets its snapshot wait up to five minutes (readingCheckpointDelay), since the book's record holds the checkpoint meanwhile: any ordinary save writes it sooner, and writePendingIndexSoon() brings it forward when a reader closes (unregisterOpenBook) and when a record cannot take its checkpoint, being only in the cloud or failing to be written.
-Until an index write holds every checkpoint, ReadingCheckpointJournal names the books whose records are ahead in reading-checkpoints.json, noting each before its record is written, and launch's repair gives each book it names its record's newer position and last-opened date (booksWithCheckpointsAhead() and adoptNewerRecordedPositions). flushPendingSave() writes a waiting snapshot before the app quits.
-Every write first writes each feed's index whose bytes changed or whose file is gone (see [Feed items](library-index-reading-feeds.md)), then replaces library.json atomically, as compact JSON with sorted keys (encodedIndex(_:)), unless it holds those bytes already: they equal what this process last read or wrote of it, and the file is still there (writeLibraryFileIfChanged(_:), through libraryIndexOnDisk, a SavedFile.OnDiskMemory confined to the save queue like the feed indexes' memory).
+Until an index write holds every checkpoint, ReadingCheckpointJournal names the books whose records are ahead in reading-checkpoints.json, noting each before its record is written.
+And launch's repair gives each book it names its record's newer position and last-opened date (booksWithCheckpointsAhead() and adoptNewerRecordedPositions). flushPendingSave() writes a waiting snapshot before the app quits.
+Every write first writes each feed's index whose bytes changed or whose file is gone (see [Feed items](library-index-reading-feeds.md)), then replaces library.json atomically, as compact JSON with sorted keys (encodedIndex(_:)), unless it holds those bytes already.
+They equal what this process last read or wrote of it, and the file is still there (writeLibraryFileIfChanged(_:), through libraryIndexOnDisk, a SavedFile.OnDiskMemory confined to the save queue like the feed indexes' memory).
 A save that changes nothing of the library's own books, as the reading checkpoints of a feed episode do while it plays (its row is in its feed's index), therefore writes nothing to library.json.
 The keys are sorted because Library.folderSortSettings is a dictionary, whose order can differ between two equal ones; the first save after upgrading from a release that wrote them unsorted rewrites the file once.
-A write skipped so still counts as a save: it settles an earlier failed write (failureCenter.recordSuccess(.libraryIndex)), such as a feed's index that could not be written and is written by the retry while library.json is unchanged, and clears the checkpoint journal, as a write does.
-A write of library.json that throws, as a write of a feed's index does, forgets what the file was remembered to hold (SavedFile.OnDiskMemory.write(_:for:using:), in [shared helpers](../shared-helpers.md)), since the file's state is then unknown: the retry, and any later save whatever it holds, writes again.
-Reading library.json notes its bytes (rememberLibraryIndex(_:readFrom:)), so the first save after launch writes nothing when it changes nothing; a library.json that cannot be read or decoded is forgotten, so the next save writes it whatever it would encode to.
+A write skipped so still counts as a save.
+It settles an earlier failed write (failureCenter.recordSuccess(.libraryIndex)), such as a feed's index that could not be written and is written by the retry while library.json is unchanged, and clears the checkpoint journal, as a write does.
+A write of library.json that throws, as a write of a feed's index does, forgets what the file was remembered to hold (SavedFile.OnDiskMemory.write(_:for:using:), in [shared helpers](../shared-helpers.md)), since the file's state is then unknown.
+The retry, and any later save whatever it holds, writes again.
+Reading library.json notes its bytes (rememberLibraryIndex(_:readFrom:)), so the first save after launch writes nothing when it changes nothing.
+A library.json that cannot be read or decoded is forgotten, so the next save writes it whatever it would encode to.
 
 ### How others observe the library
 <!-- id: how-others-observe-library; keys: ObservableObject, Published, sort setting, sort order, FolderSortSetting, Sort menu, manual order; src: TextMouth/Models/Library.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryBookUpdates.swift -->
@@ -42,9 +50,14 @@ Every change of library is offered first to LibraryViewModel.listCache (the list
 No timer republishes the library: nothing a Library window shows depends on the clock, and a value that ever does should use a TimelineView rather than a tick that redraws every window.
 Every window, menu, and list reads a location's sort through Library.sortState(at:), from Library.sortSetting(at:) (Models/LibrarySortState.swift).
 At the Reading List, which shows an order of its own (LibraryLocation.keepsItsOwnOrder), that is always FolderSortSetting.readingListOrder, shown as manual order, and userChangedSort(_:at:) saves nothing there.
-Anywhere else it is the first of these that exists: the setting saved under the location's key; in Unopened alone, which took No Folder's place, the setting saved under No Folder's key, __noFolder__, unless its field is manual order, which was the arrangement of the root's books alone; and the category's default (title ascending; last opened descending in Recently Opened; date added descending in Unopened, FolderSortSetting.unopenedDefault, since no unopened book has been opened).
+Anywhere else it is the first of these that exists:
+- the setting saved under the location's key;
+- in Unopened alone, which took No Folder's place, the setting saved under No Folder's key, __noFolder__, unless its field is manual order, which was the arrangement of the root's books alone;
+- and the category's default (title ascending; last opened descending in Recently Opened; date added descending in Unopened, FolderSortSetting.unopenedDefault, since no unopened book has been opened).
+
 Nothing is written under __noFolder__ again, so a sort chosen in Unopened, saved under __unopened__, takes that one's place for good.
-Outside the Reading List, userChangedSort(_:at:) saves only a sort that LibrarySortState.applying(_:) changed: choosing the field shown again returns the sort unchanged (A11), so nothing is saved, and only LibrarySortChange.reverseDirection, the menu's Sort Ascending or Sort Descending, reverses a direction.
+Outside the Reading List, userChangedSort(_:at:) saves only a sort that LibrarySortState.applying(_:) changed.
+Choosing the field shown again returns the sort unchanged (A11), so nothing is saved, and only LibrarySortChange.reverseDirection, the menu's Sort Ascending or Sort Descending, reverses a direction.
 
 ### A book's row in memory
 <!-- id: book-row-memory; keys: copy-on-write, add a field, new field, Book fields, Mirror, memory size; src: TextMouth/Models/Book.swift, TextMouthProductionTests/BookBoxTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
@@ -52,7 +65,8 @@ Outside the Reading List, userChangedSort(_:at:) saves only a sort that LibraryS
 A book's row in memory (audit C13): struct Book keeps its whole API, but its stored fields live in one private final class, Book.Storage.
 Every copy of a Book shares that box until one copy is written.
 Each setter and `_modify` calls makeUnique() first, which copies the box with Storage.copy() when isKnownUniquelyReferenced says it is shared.
-Copying the library's array of 1,500 books then copies 1,500 references rather than 1,500 sets of 51 fields, and the Release app is about 0.9 MB smaller: the value witness functions (copy, destroy) of Book and of every type that holds one, as LatestDurableState and LoadedContent do, now handle one reference instead of about 30 fields.
+Copying the library's array of 1,500 books then copies 1,500 references rather than 1,500 sets of 51 fields, and the Release app is about 0.9 MB smaller.
+The value witness functions (copy, destroy) of Book and of every type that holds one, as LatestDurableState and LoadedContent do, now handle one reference instead of about 30 fields.
 Writing a field of a shared book copies its box once; nothing writes every book of a copy often (the launch refresh, renumbering and a folder rename write only the books they change).
 Storage is `@unchecked Sendable` because a shared box is never written (UncheckedConcurrencyPolicyTests pins it).
 
