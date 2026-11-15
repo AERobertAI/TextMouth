@@ -51,6 +51,12 @@ class SuggestIdTests(unittest.TestCase):
         self.assertEqual(suggest_id("Tom & Jerry", "p", set()), "tom-jerry")
         self.assertEqual(suggest_id("&", "p", set()), "and")
 
+    def test_a_possessive_is_left_out_and_an_apostrophe_joins_its_word(self) -> None:
+        # platforms.md has "PhoneTextStyle: the phone's text at full contrast".
+        self.assertEqual(suggest_id("the phone's text", "p", set()), "phone-text")
+        self.assertEqual(suggest_id("the sheet’s buttons", "p", set()), "sheet-buttons")
+        self.assertEqual(suggest_id("Don't stop", "p", set()), "dont-stop")
+
     def test_a_title_of_punctuation_gives_section(self) -> None:
         self.assertEqual(suggest_id("?! --", "p", set()), "section")
         self.assertEqual(suggest_id("", "p", set()), "section")
@@ -237,7 +243,9 @@ class MarkCommandTests(DocLibCase):
 
     def test_dry_run_prints_the_same_and_writes_nothing(self) -> None:
         status, hits, err = self.mark("reading", "--dry-run")
-        self.assertEqual((status, len(hits), err), (0, 4, "mark: docs/reading.md: 4 markers added\n"))
+        self.assertEqual(
+            (status, len(hits), err),
+            (0, 4, "mark: docs/reading.md: 4 markers would be added (--dry-run: nothing written)\n"))
         self.assertEqual(self.page(), PAGE)
         # The real run then prints the very same hits.
         self.assertEqual(self.mark("reading")[1], hits)

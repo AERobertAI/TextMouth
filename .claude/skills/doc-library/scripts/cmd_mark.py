@@ -54,6 +54,10 @@ _UNWRITABLE_IN_SRC = (",", ";", "-->")
 
 # A run of lowercase letters and digits: one word of an id.
 _WORD = re.compile(r"[a-z0-9]+")
+# A possessive ending (straight or curly apostrophe), which an id leaves out: "phone's" is "phone".
+_POSSESSIVE = re.compile(r"['’]s\b")
+# Any other apostrophe joins its word's halves: "don't" is "dont", not "don" and "t".
+_APOSTROPHE = re.compile(r"['’]")
 
 
 # ---------------------------------------------------------------------------
@@ -61,8 +65,12 @@ _WORD = re.compile(r"[a-z0-9]+")
 # ---------------------------------------------------------------------------
 
 def _words(text: str) -> List[str]:
-    """The words of ``text`` for an id: lowercase runs of letters and digits, ``&`` read as ``and``."""
-    return _WORD.findall(text.lower().replace("&", " and "))
+    """The words of ``text`` for an id: lowercase runs of letters and digits, ``&`` read as ``and``.
+
+    A possessive ``'s`` is left out and other apostrophes dropped, so a word is never cut in two.
+    """
+    text = _APOSTROPHE.sub("", _POSSESSIVE.sub("", text.lower()))
+    return _WORD.findall(text.replace("&", " and "))
 
 
 def _cut_at_hyphen(base: str, length: int) -> str:
@@ -237,7 +245,8 @@ def run(args: Any) -> int:
         return output.EXIT_NONE
     output.emit((Hit(path, a.new_number, a.new_number, a.section.heading, a.line) for a in additions),
                 args, noun="markers")
-    print(f"mark: {path}: {len(additions)} markers added", file=sys.stderr)
+    done = "would be added (--dry-run: nothing written)" if args.dry_run else "added"
+    print(f"mark: {path}: {len(additions)} markers {done}", file=sys.stderr)
     return output.EXIT_OK
 
 
