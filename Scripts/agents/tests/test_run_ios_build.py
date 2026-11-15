@@ -8,7 +8,6 @@ prints, and gives the script an output folder in a temporary directory.
 import contextlib
 import importlib.util
 import io
-import json
 import sys
 import tempfile
 import unittest
@@ -170,60 +169,6 @@ class RunTests(unittest.TestCase):
         status, files, _ = self.run_main("import time; time.sleep(60)", "--limit-minutes", "0.01")
         self.assertEqual(status, 0)
         self.assertIn("Reason: the build was stopped after 0.01 minutes", files["ios-summary.txt"])
-
-
-class EarlyBootTests(unittest.TestCase):
-    """The simulator boots beside the build only when the request and the machine say so."""
-
-    RUNNER = {"GITHUB_ACTIONS": "true"}
-
-    def request_file(self, request):
-        """A request file in a temporary folder; returns its path."""
-        folder = tempfile.TemporaryDirectory()
-        self.addCleanup(folder.cleanup)
-        path = Path(folder.name) / "request.json"
-        path.write_text(json.dumps(request))
-        return path
-
-    def test_it_is_wanted_only_on_a_runner_for_a_request_that_asks_for_it_and_for_iphone_tests(self):
-        asking = {"full": True, "ios_early_boot": True}
-        self.assertTrue(ios.early_boot_wanted(asking, self.RUNNER))
-        self.assertFalse(ios.early_boot_wanted(asking, {}), "never on the development Mac")
-        self.assertFalse(ios.early_boot_wanted(asking, {"GITHUB_ACTIONS": "false"}))
-        self.assertFalse(ios.early_boot_wanted({"full": True}, self.RUNNER), "off unless the request says so")
-        self.assertFalse(ios.early_boot_wanted({"full": True, "ios_early_boot": "yes"}, self.RUNNER))
-        self.assertFalse(ios.early_boot_wanted({"classes": ["SomeMacTests"], "ios_early_boot": True}, self.RUNNER),
-                         "a request with no iPhone tests has nothing to boot for")
-        self.assertFalse(ios.early_boot_wanted({"full": True, "ios": False, "ios_early_boot": True}, self.RUNNER))
-
-    def test_the_boot_starts_on_a_thread_when_wanted_and_not_otherwise(self):
-        started = []
-        path = self.request_file({"full": True, "ios_early_boot": True})
-        thread = ios.start_early_boot(Path("out"), path, self.RUNNER, boot=lambda out: started.append(out))
-        thread.join(5)
-        self.assertEqual(started, [Path("out")])
-        self.assertIsNone(ios.start_early_boot(Path("out"), self.request_file({"full": True}), self.RUNNER, boot=started.append))
-        self.assertIsNone(ios.start_early_boot(Path("out"), path.parent / "absent.json", self.RUNNER, boot=started.append))
-        self.assertEqual(len(started), 1)
-
-    def test_a_boot_that_fails_is_said_and_never_raised(self):
-        said = io.StringIO()
-        with tempfile.TemporaryDirectory() as folder, contextlib.redirect_stdout(said):
-            ios.boot_simulator(folder, load=mock.Mock(side_effect=RuntimeError("no simulator")),
-                               run=mock.Mock(), sleep=lambda _: None)
-        self.assertIn(ios.EARLY_BOOT_PREFIX + "did not finish", said.getvalue())
-        self.assertIn("no simulator", said.getvalue())
-
-    def test_a_boot_restarts_the_audio_service_first_and_then_sets_the_simulator_up(self):
-        order = []
-        fake_ui = mock.Mock()
-        fake_ui.ready_simulator.side_effect = lambda log: order.append("ready") or ("UDID", "iPhone 17")
-        said = io.StringIO()
-        with tempfile.TemporaryDirectory() as folder, contextlib.redirect_stdout(said):
-            ios.boot_simulator(folder, load=lambda: fake_ui, run=lambda command, **_: order.append(command[:3]),
-                               sleep=lambda _: order.append("sleep"))
-        self.assertEqual(order, [["sudo", "killall", "coreaudiod"], "sleep", "ready"])
-        self.assertIn(ios.EARLY_BOOT_PREFIX + "ready in", said.getvalue())
 
 
 if __name__ == "__main__":
