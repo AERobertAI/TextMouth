@@ -10,7 +10,6 @@
     "docs/architecture/platforms-phone-interface.md": {"line-length": 1},
     "docs/architecture/platforms.md": {"line-length": 9},
     "docs/architecture/reading-a-book.md": {"line-length": 17},
-    "docs/architecture/shared-helpers-parsers.md": {"line-length": 4},
     "docs/architecture/state/audio-edits.md": {"line-length": 26},
     "docs/architecture/state/cloud-state.md": {"line-length": 17},
     "docs/architecture/state/data-directory.md": {"line-length": 25},
