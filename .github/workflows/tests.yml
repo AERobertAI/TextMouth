@@ -253,11 +253,7 @@ jobs:
         id: day
         run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
 
-      # The iPhone app's own build products, under names of their own. Unlike the Mac's, one is kept for each commit run,
-      # and the newest one is restored (restore-keys is a prefix: GitHub gives the most recently made match): a day's cache
-      # made by its first run was stale for every later run of the day, and in run 43716590818 the iPhone build compiled all
-      # 1,086 files of its modules for 8 to 12 minutes, where a build from the last run's products compiles the few files
-      # that changed (3.5 minutes, run f3 of November 14).
+      # The iPhone app's own build products, kept as the Mac app's are (see the test job), under names of their own.
       - name: Restore the build products
         id: cache
         if: ${{ needs.plan.outputs.cold != 'true' }}
@@ -267,7 +263,7 @@ jobs:
             build/remote-DerivedData-ios
             !build/remote-DerivedData-ios/Logs
             build/remote-cache-ios
-          key: build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}-${{ github.sha }}
+          key: build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
           restore-keys: |
             build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-
 
@@ -319,9 +315,9 @@ jobs:
         timeout-minutes: 45
         run: python3 -I -B Scripts/agents/run-ios-ui-tests.py --out build/remote-ios --shard ${{ matrix.shard }} --of ${{ needs.plan.outputs.ios_shards }}
 
-      # Only products of a build that finished are worth keeping: the newest cache is the one the next run starts from, so
-      # a build that stopped early (the first probe run, which lacked the platform) must not be it. The script exits 0
-      # either way; its summary says which.
+      # Only products of a build that finished are worth keeping for the day: the cache is one for each day and is not
+      # saved again once it exists, so a build that stopped early (the first probe run, which lacked the platform) must
+      # not take the day's place. The script exits 0 either way; its summary says which.
       - name: Did the build finish?
         id: built
         if: ${{ !cancelled() }}
@@ -338,7 +334,7 @@ jobs:
             build/remote-DerivedData-ios
             !build/remote-DerivedData-ios/Logs
             build/remote-cache-ios
-          key: build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}-${{ github.sha }}
+          key: build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
 
       # The upload failed once on GitHub's side ("Failed to CreateArtifact: Unable to make request: ETIMEDOUT", run
       # 42932008427), which left the join saying the iPhone build was NOT RUN. So it is tried again once if it failed. Neither

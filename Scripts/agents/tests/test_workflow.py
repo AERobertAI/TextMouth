@@ -327,8 +327,7 @@ class JobsTests(unittest.TestCase):
         save = job[job.index("Save the build products"):]
         self.assertIn("!cancelled() && matrix.shard == 1 &&", save.split("uses:")[0])
 
-    def test_each_cache_is_saved_only_on_a_miss_and_without_the_logs_folder(self):
-        # The Mac's cache is one a day; the iPhone's is one for each commit (see the next test).
+    def test_each_cache_is_one_a_day_saved_only_on_a_miss_and_without_the_logs_folder(self):
         for name, derived in (("test", "build/remote-DerivedData"), ("ios", "build/remote-DerivedData-ios")):
             with self.subTest(job=name):
                 job = self.job(name)
@@ -336,28 +335,13 @@ class JobsTests(unittest.TestCase):
                 self.assertEqual(len(keys), 2, "a restore and a save")
                 for key in keys:
                     self.assertIn("steps.day.outputs.day", key)
-                    if name == "test":
-                        self.assertNotIn("github.sha", key, "a key that changes with every push fills the cache")
+                    self.assertNotIn("github.sha", key, "a key that changes with every push fills the cache")
                 for step in ("Restore the build products", "Save the build products"):
                     part = job[job.index(step):]
                     part = part[:part.index("key:")]
                     self.assertIn(f"!{derived}/Logs", part, f"{step} must leave the Logs folder out")
                 save = job[job.index("Save the build products"):]
                 self.assertIn("steps.cache.outputs.cache-hit != 'true'", save.split("uses:")[0])
-
-    def test_the_iphone_cache_is_made_again_for_each_commit_and_the_newest_is_restored(self):
-        """Run 43716590818 restored the day's first cache, made 6 hours before from another tree, and compiled all 1,086 files
-        of its modules in 8 to 12 minutes. The key holds the commit, so every run that finishes a build leaves its products
-        for the next, and the restore falls back to the newest cache by the key's prefix, which the commit does not end."""
-        job = self.job("ios")
-        keys = [line.strip() for line in job.splitlines() if line.strip().startswith("key:")]
-        self.assertEqual(len(keys), 2)
-        for key in keys:
-            self.assertTrue(key.endswith("-${{ steps.day.outputs.day }}-${{ github.sha }}"), key)
-        fallback = job[job.index("restore-keys:"):].splitlines()[1].strip()
-        self.assertEqual(fallback, "build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-")
-        for key in keys:
-            self.assertTrue(key.split("key: ")[1].startswith(fallback), "the prefix must match the keys it falls back to")
 
     def test_a_days_cache_is_saved_only_from_a_build_that_finished(self):
         # The cache is one a day and never saved again once it exists: the first probe run of November 10 lacked the
