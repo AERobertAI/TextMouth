@@ -356,7 +356,7 @@ extension EPUBParser {
         bookTitle: String,
         startPages: [MarkdownPageMarker]
     ) throws -> PreparedChapter? {
-        guard !withoutPageMarkers(converted).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        guard !holdsOnlyWhitespaceAndPageMarkers(converted) else { return nil }
         // Each start page is a block of its own at the very start, which names
         // the same place as the block after it (MarkdownMarkerWriter).
         var markdown = ""
@@ -570,10 +570,63 @@ extension EPUBParser {
         return text
     }
 
-    /// `markdown` without its page markers, for judging whether a document
-    /// holds any text.
-    private static func withoutPageMarkers(_ markdown: String) -> String {
-        markdown.replacingOccurrences(of: "<!-- page: [^<>]+ -->", with: "", options: .regularExpression)
+    /// Whether `markdown` holds nothing but white space and page markers, so
+    /// that a document converted to it is blank. It is what removing every
+    /// `<!-- page: [^<>]+ -->` with a regular expression, trimming
+    /// `whitespacesAndNewlines`, and asking whether anything is left once
+    /// answered, which read the whole chapter and built a copy of it (7% of
+    /// an EPUB import before the November 14, 2026 speed-up, H5). The text
+    /// is read from its start, skipping white space and markers, until the
+    /// first other character: for any chapter with words that is its first
+    /// few characters.
+    ///
+    /// A marker is `MarkdownPageMarker.prefix`, then one or more characters
+    /// that are neither "<" nor ">", then `MarkdownPageMarker.suffix`. Since
+    /// the suffix ends in ">" and the label holds none, the marker ends at
+    /// the first ">" after the prefix, which must be preceded by the rest of
+    /// the suffix and at least one character before that. A "<" before the
+    /// ">" means no marker begins there, and its text is read.
+    static func holdsOnlyWhitespaceAndPageMarkers(_ markdown: String) -> Bool {
+        let scalars = markdown.unicodeScalars
+        var position = scalars.startIndex
+        while position < scalars.endIndex {
+            let scalar = scalars[position]
+            if CharacterSet.whitespacesAndNewlines.contains(scalar) {
+                position = scalars.index(after: position)
+            } else if scalar == "<", let end = endOfPageMarker(beginningAt: position, in: scalars) {
+                position = end
+            } else {
+                // Text that stays.
+                return false
+            }
+        }
+        return true
+    }
+
+    /// Where the page marker (as `holdsOnlyWhitespaceAndPageMarkers` defines
+    /// it) that begins at `start` in `scalars` ends, or nil when none does.
+    private static func endOfPageMarker(
+        beginningAt start: String.UnicodeScalarView.Index,
+        in scalars: String.UnicodeScalarView
+    ) -> String.UnicodeScalarView.Index? {
+        var position = start
+        // The prefix, scalar by scalar.
+        for expected in MarkdownPageMarker.prefix.unicodeScalars {
+            guard position < scalars.endIndex, scalars[position] == expected else { return nil }
+            position = scalars.index(after: position)
+        }
+        // The label and the rest of the suffix, up to the first ">", with no "<" before it.
+        let labelStart = position
+        while position < scalars.endIndex, scalars[position] != ">" {
+            if scalars[position] == "<" { return nil }
+            position = scalars.index(after: position)
+        }
+        guard position < scalars.endIndex else { return nil }
+        // What came before the ">" must end with the suffix up to its ">", after at least one label character.
+        let beforeClosing = Array(MarkdownPageMarker.suffix.unicodeScalars.dropLast())
+        let between = Array(scalars[labelStart..<position])
+        guard between.count > beforeClosing.count, between.suffix(beforeClosing.count) == beforeClosing[...] else { return nil }
+        return scalars.index(after: position)
     }
 
     // MARK: - Tables of Contents
