@@ -228,7 +228,7 @@ Save waits for a title of more than spaces, and drops the spaces typed around th
 
 A braille book's sheet, under the heading Book Information, has the same fields and one more row, "Braille Code", after Format, which names the code the book was imported with, such as "Unified English Braille, contracted (Grade 2)".
 VoiceOver reads it as "Braille Code, Unified English Braille, contracted (Grade 2)".
-A book read with one of this Mac's tables (see [Settings](settings-braille.md)) has its language after the code, as in "French braille, contracted (Grade 2), in French", or, for a table that states no contraction, "Italian braille, in Italian"; Speak Full Info says the same words after "Braille code: ".
+A book read with one of this Mac's tables (see [Settings](settings.md)) has its language after the code, as in "French braille, contracted (Grade 2), in French", or, for a table that states no contraction, "Italian braille, in Italian"; Speak Full Info says the same words after "Braille code: ".
 When this Mac no longer has the table, the row gives the table's stored name instead, as in "mac:fr-bfu-g2.ctb".
 
 ### The Text Encoding row
