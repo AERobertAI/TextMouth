@@ -185,19 +185,33 @@ final class FFmpegImportPlanTests: XCTestCase {
 
     // MARK: - Tags
 
-    /// A book takes the file's own tags, and the stream's where the file
-    /// names none (Ogg keeps its comments on the stream); the conversion
-    /// writes itself only the carried keys the file leaves to the stream.
+    /// A book takes the file's own tags, and, in Ogg alone, the stream's
+    /// where the file names none (Ogg keeps its comments on the stream); the
+    /// conversion writes itself only the carried keys the file leaves to the
+    /// stream. In Matroska and AVI a stream's title is its track's name, so
+    /// a file that names no title of its own takes none (review9 finding 3).
     func testTheFilesTagsComeFirstAndTheStreamsFillTheGaps() throws {
         let speex = try report(stream: #""codec_name": "speex", "sample_rate": "16000", "channels": 1, "tags": {"title": "Speex Title", "ARTIST": "Speex Artist", "encoder": "Lavc"}"#,
                                format: #""format_name": "ogg", "tags": {"album": "Album"}"#)
         let stream = try XCTUnwrap(speex.chosenAudio)
-        XCTAssertEqual(speex.tags(of: stream), ["album": "Album", "title": "Speex Title", "artist": "Speex Artist", "encoder": "Lavc"])
-        XCTAssertEqual(speex.streamTagsToCarry(of: stream).map { "\($0.key)=\($0.value)" }, ["title=Speex Title", "artist=Speex Artist"])
+        XCTAssertEqual(speex.tags(of: stream, in: .oggSpeex), ["album": "Album", "title": "Speex Title", "artist": "Speex Artist", "encoder": "Lavc"])
+        XCTAssertEqual(speex.streamTagsToCarry(of: stream, in: .oggSpeex).map { "\($0.key)=\($0.value)" }, ["title=Speex Title", "artist=Speex Artist"])
         let mka = try report(twoTrackReport)
         // The file names its title; a track's title is the track's name, not the book's.
-        XCTAssertEqual(mka.tags(of: try XCTUnwrap(mka.chosenAudio))["title"], "Tones in Matroska")
-        XCTAssertTrue(mka.streamTagsToCarry(of: try XCTUnwrap(mka.chosenAudio)).isEmpty)
+        XCTAssertEqual(mka.tags(of: try XCTUnwrap(mka.chosenAudio), in: .matroska)["title"], "Tones in Matroska")
+        XCTAssertTrue(mka.streamTagsToCarry(of: try XCTUnwrap(mka.chosenAudio), in: .matroska).isEmpty)
+        let trackNames: [(container: FFmpegContainer, trackName: String, format: String)] = [
+            (.matroska, "Stereo", "matroska,webm"), (.avi, "Soundtrack", "avi"),
+        ]
+        for (container, trackName, format) in trackNames {
+            let named = try report(stream: #""codec_name": "flac", "sample_rate": "44100", "channels": 2, "tags": {"title": "\#(trackName)", "language": "eng"}"#,
+                                   format: #""format_name": "\#(format)", "tags": {"encoder": "mkvmerge"}"#)
+            let track = try XCTUnwrap(named.chosenAudio)
+            XCTAssertEqual(named.tags(of: track, in: container), ["encoder": "mkvmerge"], "\(container)")
+            XCTAssertTrue(named.streamTagsToCarry(of: track, in: container).isEmpty, "\(container)")
+        }
+        XCTAssertTrue(FFprobeReport.streamTagsAreTheFiles(in: .ogg))
+        XCTAssertEqual(FFmpegContainer.allCases.filter { FFprobeReport.streamTagsAreTheFiles(in: $0) }, [.oggSpeex, .ogg])
     }
 
     // MARK: - The Plan

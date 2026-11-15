@@ -264,7 +264,7 @@ enum FFmpegAudioConverter {
 
     /// What a book of the file at `url` is named by, before it is converted:
     /// the tags of the sound it is made of, as ffprobe reports them
-    /// (`FFprobeReport.tags(of:)`, keys in lowercase), and how long that
+    /// (`FFprobeReport.tags(of:in:)`, keys in lowercase), and how long that
     /// sound lasts, when the file says. The import names a book of one file
     /// by them (`AudioPlaybackService.extractFullMetadata`), since no Apple
     /// framework opens such a file in the app. Nil when it is no file only
@@ -276,7 +276,7 @@ enum FFmpegAudioConverter {
               case let .found(programs) = tool.locate(),
               let report = try? await tool.probe(url, container, programs),
               let stream = report.chosenAudio else { return nil }
-        return (report.tags(of: stream), report.duration(of: stream))
+        return (report.tags(of: stream, in: container), report.duration(of: stream))
     }
 
     // MARK: - The Plan
@@ -378,7 +378,7 @@ enum FFmpegAudioConverter {
             sourceChannels: channels,
             sourceSampleRate: rate,
             duration: duration,
-            tags: report.streamTagsToCarry(of: stream).map { Plan.Tag(key: $0.key, value: $0.value) }
+            tags: report.streamTagsToCarry(of: stream, in: container).map { Plan.Tag(key: $0.key, value: $0.value) }
         )
     }
 

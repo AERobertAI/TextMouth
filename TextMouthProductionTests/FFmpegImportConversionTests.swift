@@ -467,6 +467,16 @@ final class FFmpegImportConversionTests: XCTestCase {
         }
         XCTAssertEqual([fromStream.title, fromStream.author], ["Field Notes", "A Speaker"])
 
+        // Matroska keeps a track's name on the stream: a file that names no
+        // title of its own keeps its file's name (review9 finding 3).
+        let trackNamed = #"{"streams": [{"index": 0, "codec_type": "audio", "codec_name": "flac", "sample_rate": "44100", "channels": 2, "disposition": {"default": 1}, "tags": {"title": "Stereo"}}], "format": {"format_name": "matroska,webm"}}"#
+        let mkv = try source("mkv/three-tones-flac.mkv", named: "Lecture.mkv")
+        let mkvStandIn = try ffmpegStandIn(report: trackNamed)
+        let fromTrackName = FFmpegAudioConverter.$tool.withValue(mkvStandIn) {
+            ImportedFileMetadata.read(from: mkv, format: .audio)
+        }
+        XCTAssertEqual(fromTrackName.title, "Lecture")
+
         let missingStandIn = try ffmpegStandIn(located: .ffmpegMissing, report: standInWMAReport)
         let unnamed = FFmpegAudioConverter.$tool.withValue(missingStandIn) {
             ImportedFileMetadata.read(from: wma, format: .audio)

@@ -216,11 +216,21 @@ struct FFprobeReport: Equatable, Sendable {
 
     // MARK: - Tags
 
-    /// The tags a book of `stream` takes: the file's own, then, for any key
-    /// the file leaves out, the stream's (Ogg keeps its comments on the
-    /// stream, so a Speex file's title is there). The keys are lowercase.
-    func tags(of stream: Stream) -> [String: String] {
-        tags.merging(stream.tags) { own, _ in own }
+    /// Whether the tags of a stream in `container` stand for the file's own
+    /// where its format leaves a key out: only in Ogg, which keeps its
+    /// comments on the stream (a Speex file's title is there). Matroska and
+    /// AVI keep a track's name there ("Stereo", "Soundtrack"), which is no
+    /// book's title (review9 finding 3).
+    static func streamTagsAreTheFiles(in container: FFmpegContainer) -> Bool {
+        container == .ogg || container == .oggSpeex
+    }
+
+    /// The tags a book of `stream`, in a file of `container`, takes: the
+    /// file's own, then, in Ogg alone (`streamTagsAreTheFiles(in:)`), the
+    /// stream's for any key the file leaves out. The keys are lowercase.
+    func tags(of stream: Stream, in container: FFmpegContainer) -> [String: String] {
+        guard Self.streamTagsAreTheFiles(in: container) else { return tags }
+        return tags.merging(stream.tags) { own, _ in own }
     }
 
     /// The keys of the tags carried into the converted file that ffmpeg's
@@ -228,12 +238,14 @@ struct FFprobeReport: Equatable, Sendable {
     /// album, its artist, the date, the genre, the composer, and a comment.
     static let carriedTagKeys = ["title", "artist", "album", "album_artist", "date", "genre", "composer", "comment"]
 
-    /// The tags of `carriedTagKeys` that the file leaves to `stream`, which
-    /// the conversion writes itself (`-metadata`), since `-map_metadata 0`
-    /// copies only the file's own; in key order. Empty when the file names
-    /// them all, or the stream names none of them.
-    func streamTagsToCarry(of stream: Stream) -> [(key: String, value: String)] {
-        Self.carriedTagKeys.compactMap { key in
+    /// The tags of `carriedTagKeys` that the file, of `container`, leaves to
+    /// `stream`, which the conversion writes itself (`-metadata`), since
+    /// `-map_metadata 0` copies only the file's own; in key order. Empty when
+    /// the file names them all, the stream names none of them, or the file
+    /// is no Ogg (`streamTagsAreTheFiles(in:)`).
+    func streamTagsToCarry(of stream: Stream, in container: FFmpegContainer) -> [(key: String, value: String)] {
+        guard Self.streamTagsAreTheFiles(in: container) else { return [] }
+        return Self.carriedTagKeys.compactMap { key in
             guard tags[key] == nil, let value = stream.tags[key], !value.isEmpty else { return nil }
             return (key, value)
         }
