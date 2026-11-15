@@ -571,11 +571,11 @@ def parse(path: str, text: str) -> Page:
                 size=len(text.encode("utf-8")))
 
 
-def load_page(root: Path, path: str) -> Page:
-    """Read and parse the page at ``root/path``, which must lie inside ``root``.
+def read_page_bytes(root: Path, path: str) -> bytes:
+    """The raw bytes of the page at ``root/path``, which must lie inside ``root``.
 
-    The file is read as UTF-8 (bad bytes become U+FFFD). A path that leaves the root
-    (``..``, or a symlink pointing out) or names no file is a UsageError.
+    A path that leaves the root (``..``, or a symlink pointing out) or names no
+    file is a UsageError.
     """
     root_real = Path(os.path.realpath(root))
     target = Path(os.path.realpath(root_real / path))
@@ -585,10 +585,19 @@ def load_page(root: Path, path: str) -> Page:
         raise UsageError(f"{path} is outside the repository") from None
     if not target.is_file():
         raise UsageError(f"no such page: {path}")
-    data = target.read_bytes()
+    return target.read_bytes()
+
+
+def parse_bytes(path: str, data: bytes) -> Page:
+    """Parse a page's bytes as UTF-8 (bad bytes become U+FFFD); its ``size`` is ``len(data)``."""
     page = parse(path, data.decode("utf-8", errors="replace"))
     page.size = len(data)
     return page
+
+
+def load_page(root: Path, path: str) -> Page:
+    """Read and parse the page at ``root/path``, which must lie inside ``root``."""
+    return parse_bytes(path, read_page_bytes(root, path))
 
 
 def load_pages(root: Path, paths: Iterable[str]) -> List[Page]:
