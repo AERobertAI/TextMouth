@@ -233,7 +233,8 @@ While a text field or text view has the keyboard (isTextInput(_:): any text view
 - every key with neither Command nor Control,
 - and every key TextEditingKeys (Models/TextEditingKeys.swift) lists:
   - Delete, Forward Delete, the arrows, Home, End, Page Up, and Page Down with any modifiers;
-  - the Edit menu's Command-A, C, V, X, and Z and Shift-Command-Z, which KeyBinding.editMenuCommands writes once, with their names (KeyBinding.systemCommands and TextEditingKeys.editMenuKeys derive from it), matched by the binding's stroke (TextEditingKeys.contains(_:)), so a double press of such a key stays the field's;
+  - the Edit menu's Command-A, C, V, X, and Z and Shift-Command-Z, which KeyBinding.editMenuCommands writes once, with their names (KeyBinding.systemCommands and TextEditingKeys.editMenuKeys derive from it), matched by the binding's stroke (TextEditingKeys.contains(_:)).
+    So a double press of such a key stays the field's;
   - and Control, without Command, with the letters AppKit's standard key bindings give a command.
 
 For those the manager posts nothing and returns the event, so the Edit menu and then the field get it.
