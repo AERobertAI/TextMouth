@@ -17,6 +17,7 @@ Each part below is a page of its own under docs/architecture, so an agent can re
 Each entry names a kind of state, then its owner, who may write it, how others observe it, and the files involved.
 
 - [The library index](docs/architecture/state/library-index.md)
+  - [The reading list and feed items](docs/architecture/state/library-index-reading-feeds.md)
 - [Package records](docs/architecture/state/package-records.md)
 - [Audio edits](docs/architecture/state/audio-edits.md)
 - [Text caches and content indexes](docs/architecture/state/text-caches.md)
