@@ -285,7 +285,11 @@ extension ReaderViewModel {
             restartPlaybackAtCursor()
             return
         }
+        // The pause is over: a look-ahead let go of during a long pause
+        // renders again at once when the cursor is within the lead.
+        endLongPause()
         if speechService.resume() {
+            startLookAheadRenderIfDue()
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
             )
@@ -319,6 +323,9 @@ extension ReaderViewModel {
             restartAudioAtCursor(volume: audioPlaybackService.intendedVolume)
             return
         }
+        // Whatever follows, the pause this ends is over, even when the book
+        // then ends with nothing left to say.
+        endLongPause()
         speechService.stop()
         if speakCurrentChapter() {
             nowPlayingService.updateNowPlayingInfo(
@@ -520,6 +527,7 @@ extension ReaderViewModel {
             audioPlaybackService.stop()
         } else {
             stopWaitingForChapterSpeech()
+            endLongPause()
             speechService.stop()
             // Stopped speech looks ahead to nothing: the next Play chooses
             // the next chapter afresh. Abandoning the look-ahead now also
@@ -811,6 +819,8 @@ extension ReaderViewModel {
         let play = beginChapterPlay()
         listenForSpeechEnd(of: play)
         DiagnosticLog.trace(.playback, "startSpeaking: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(play.generation)")
+        // A new play ends any pause, however long it had lasted.
+        endLongPause()
 
         currentTransformation = speech.transformation
         currentOffsetMap = speech.offsetMap
@@ -1046,6 +1056,7 @@ extension ReaderViewModel {
             isCurrentlyPaused = false
         } else {
             stopWaitingForChapterSpeech()
+            endLongPause()
             speechService.stop()
             discardLookAhead()
         }
@@ -1127,6 +1138,8 @@ extension ReaderViewModel {
         )
         recordPlaybackStopped()
         savePosition()
+        // Speech that paused itself is in a pause like any other.
+        watchPauseForGrowingLong()
     }
 
     // MARK: - Where a Chapter's End Stops the Timer
@@ -1345,6 +1358,36 @@ extension ReaderViewModel {
         let engine: AudioEngineService
     }
 
+    /// A look-ahead whose speech is prepared and whose render waits for the
+    /// current chapter's end to come within the lead (`LookAheadLead`).
+    struct LookAheadWait: Equatable {
+        /// The chapter that was playing when the render began to wait: the
+        /// lead is measured to its end, and a cursor in any other chapter
+        /// starts nothing.
+        let playingChapterIndex: Int
+        /// The UTF-16 length of that chapter's speech, or nil when the
+        /// reader holds no speech for it, and the render is due at once.
+        let playingSpeechLength: Int?
+        /// The UTF-16 length of the next chapter's speech, which sets how
+        /// long its render takes, and so the lead.
+        let nextSpeechLength: Int
+        /// Whether the render, once due, was held off by the phone's memory
+        /// or heat (`mayRenderAhead`), so that it is logged once, not at
+        /// every word spoken until the phone recovers.
+        var wasHeldOff = false
+    }
+
+    /// Whether the system allows a look-ahead render now: on the iPhone,
+    /// what its life cycle says of the memory left and the heat
+    /// (`SpeechRenderCoordinator.mayRenderAhead`); always on the Mac.
+    nonisolated static func systemMayRenderAhead() -> Bool {
+        #if os(iOS)
+        return SpeechRenderCoordinator.shared.mayRenderAhead()
+        #else
+        return true
+        #endif
+    }
+
     /// What rendering `speech` asks of the synthesizer now: its exact text,
     /// in the voice chosen now.
     func renderRequest(for speech: ChapterSpeech) -> SpeechRenderRequest {
@@ -1359,9 +1402,13 @@ extension ReaderViewModel {
         preparedSpeech(forChapterAt: chapterIndex).map { renderRequest(for: $0).signature }
     }
 
-    /// Pre-render the next speakable chapter's audio in the background so
-    /// the chapter transition is instant. Chapters with nothing to say are
-    /// passed over exactly as the utterance-finished path passes over them.
+    /// Choose the next speakable chapter and prepare its speech now, so the
+    /// chapter transition is instant, and render its audio in the background
+    /// once the current chapter's end is within the lead
+    /// (`startLookAheadRenderIfDue()`): at once for a current chapter
+    /// shorter than the lead, or already that near its end. Chapters with
+    /// nothing to say are passed over exactly as the utterance-finished path
+    /// passes over them.
     ///
     /// The chapter's speech is carried to the moment it begins, so the
     /// chapter's end prepares nothing. A long chapter whose speech is not
@@ -1372,15 +1419,7 @@ extension ReaderViewModel {
         // speakable chapter changes when sections are skipped, so an old
         // engine must never stay paired with a newly chosen chapter.
         discardLookAhead()
-
-        #if os(iOS)
-        // The iPhone's life cycle holds look-ahead renders off when memory is
-        // short or the phone is hot (`SpeechRenderCoordinator.mayRenderAhead`).
-        guard SpeechRenderCoordinator.shared.mayRenderAhead() else {
-            DiagnosticLog.trace(.playback, "preRender: held off by the phone's memory or thermal state")
-            return
-        }
-        #endif
+        _lookAheadChoiceCountForTesting += 1
 
         // Render exactly the text playback will speak for that chapter.
         let search = searchForSpeakableChapter(from: currentChapterIndex + 1, preparingLongChapters: .inBackground)
@@ -1396,6 +1435,67 @@ extension ReaderViewModel {
             return
         }
 
+        waitForLead(toRender: speech)
+        startLookAheadRenderIfDue()
+    }
+
+    /// Have the render of `speech`, the look-ahead's chapter, wait for the
+    /// lead, measured over the speech the reader plays now; with none
+    /// loaded the render is due at once.
+    private func waitForLead(toRender speech: ChapterSpeech) {
+        lookAheadWait = LookAheadWait(
+            playingChapterIndex: currentChapterIndex,
+            playingSpeechLength: currentTransformation?.modifiedText.utf16Length,
+            nextSpeechLength: speech.text.utf16Length
+        )
+    }
+
+    /// Start the render the look-ahead waits to make, once the listening
+    /// time left in the playing chapter falls within the lead for the next
+    /// one (`LookAheadLead`, audit C11). Until then the reader holds the
+    /// next chapter's speech and none of its audio.
+    ///
+    /// The cursor asks at every move (`currentCharacterOffset`), so speech
+    /// reaching the lead and a seek into it both start the render, and a
+    /// seek back out of it leaves a render made or under way alone. The
+    /// speed is read as it is asked, so a faster speed reaches the lead
+    /// sooner. Nothing starts while a pause has grown long (`longPause`):
+    /// the resume asks again. Nor while the iPhone is hot or short of memory
+    /// (`mayRenderAhead`): the render waits, and each later word asks again.
+    func startLookAheadRenderIfDue() {
+        // Asked at every spoken word: with no render waiting, nothing more.
+        guard let wait = lookAheadWait else { return }
+        guard !longPause.hasElapsed,
+              wait.playingChapterIndex == currentChapterIndex,
+              let speech = chapterSpeechCache.lookAheadSpeech else { return }
+        if let playingLength = wait.playingSpeechLength {
+            let spokenOffset = currentOffsetMap?.toModified(currentCharacterOffset) ?? currentCharacterOffset
+            guard LookAheadLead.isReached(
+                unitsLeft: playingLength - spokenOffset,
+                wordsPerMinute: speechService.wordsPerMinute,
+                nextChapterLength: wait.nextSpeechLength
+            ) else { return }
+        }
+        // Asked now, as the render is about to start, and not when the wait
+        // began minutes earlier: a phone that has grown hot or short of
+        // memory since renders nothing, and one that has recovered renders
+        // at the next word. Refused, the render goes on waiting.
+        guard mayRenderAhead() else {
+            if !wait.wasHeldOff {
+                lookAheadWait?.wasHeldOff = true
+                DiagnosticLog.trace(.playback, "preRender: chapter \(speech.chapterIndex) is due, held off by the phone's memory or thermal state")
+            }
+            return
+        }
+        lookAheadWait = nil
+        DiagnosticLog.trace(.playback, "preRender: chapter \(speech.chapterIndex) is due; rendering it ahead")
+        renderLookAhead(speech)
+    }
+
+    /// Queue the render of `speech`, the next speakable chapter, and make it
+    /// the reader's look-ahead.
+    private func renderLookAhead(_ speech: ChapterSpeech) {
+        let nextIdx = speech.chapterIndex
         let request = renderRequest(for: speech)
         let lookAhead = LookAhead(chapterIndex: nextIdx, signature: request.signature, engine: AudioEngineService())
         self.lookAhead = lookAhead
@@ -1459,7 +1559,58 @@ extension ReaderViewModel {
     func discardLookAhead() {
         lookAhead?.engine.cancelRender()
         lookAhead = nil
+        lookAheadWait = nil
         chapterSpeechCache.forgetLookAhead()
+    }
+
+    // MARK: - A Long Pause (audit C11)
+
+    /// Watch the pause a text book has just been left in for growing long
+    /// (`LongPauseWatch.delay`), when the reader settles into it
+    /// (`settleIntoLongPause()`). A pause already watched keeps its time,
+    /// and one that has grown long stays long; speech that is not paused,
+    /// and an audiobook, are not watched.
+    ///
+    /// Every way a text book is left paused comes through here: Pause
+    /// (`pause(playingPauseSound:)`), a Where Am I? announcement that ends
+    /// with the book it paused left paused (`settlePauseLeftByWhereAmI()`),
+    /// and speech that paused itself (`settleStopMadeBySpeech()`).
+    func watchPauseForGrowingLong() {
+        guard !isAudioBook, speechService.isPaused, !longPause.isWaiting, !longPause.hasElapsed else { return }
+        longPause.begin { [weak self] in self?.settleIntoLongPause() }
+    }
+
+    /// The pause has grown long: let go of the next chapter's rendered
+    /// audio. The chapter being read keeps its own audio, so resuming plays
+    /// from it as ever. Nothing changes for speech that is no longer paused.
+    private func settleIntoLongPause() {
+        guard !isAudioBook, speechService.isPaused else { return }
+        releaseLookAheadAudioForLongPause()
+    }
+
+    /// Let go of the look-ahead's rendered audio, or abandon its render
+    /// still under way, and keep the speech it was rendered from: the render
+    /// waits again, and the resume starts it at once if the cursor is within
+    /// the lead (`startLookAheadRenderIfDue()`). A look-ahead that holds no
+    /// render, waiting already or with none to make, is left as it is.
+    private func releaseLookAheadAudioForLongPause() {
+        guard let lookAhead, let speech = chapterSpeechCache.lookAheadSpeech,
+              speech.chapterIndex == lookAhead.chapterIndex else { return }
+        DiagnosticLog.trace(
+            .playback,
+            "preRender: paused for \(Int(LongPauseWatch.delay)) s; let go of chapter \(lookAhead.chapterIndex)'s "
+                + "rendered audio (\(lookAhead.engine.renderedAudioByteCount) bytes), keeping its speech"
+        )
+        lookAhead.engine.cancelRender()
+        self.lookAhead = nil
+        waitForLead(toRender: speech)
+    }
+
+    /// The pause is over, or what was paused is gone: stop watching it.
+    /// Every way out of a text book's pause comes through here: a resume, a
+    /// new play of a chapter, a stop, and the reader closing, which stops.
+    private func endLongPause() {
+        longPause.end()
     }
 
     /// Take the look-ahead's engine to play `speech`, the chapter that is
@@ -1511,10 +1662,13 @@ extension ReaderViewModel {
     /// current voice, still has the signature it renders, as after a section
     /// is skipped in the chapter being spoken; a repeated notice of one change
     /// therefore does nothing more. Otherwise its render is abandoned and the
-    /// next speakable chapter, which may now be another one, is queued to
-    /// render from the current settings, so the next chapter keeps its
-    /// instant start. Speed and pitch are not such settings: they are applied
-    /// as the audio plays.
+    /// next speakable chapter, which may now be another one, is chosen and
+    /// prepared from the current settings, its render queued at once or left
+    /// waiting for the lead (`preRenderNextChapter()`), so the next chapter
+    /// keeps its instant start. A look-ahead whose render still waits is
+    /// always chosen again: it has no signature to compare, and choosing
+    /// costs only a search of speech already prepared. Speed and pitch are
+    /// not such settings: they are applied as the audio plays.
     ///
     /// Nothing happens unless a text book's speech is playing or paused.
     /// Speech already prepared from the current settings is not prepared
@@ -3595,6 +3749,9 @@ extension ReaderViewModel {
             } else {
                 speechService.pause()
             }
+            // A pause that lasts lets go of what only an instant resume
+            // needs (audit C11).
+            watchPauseForGrowingLong()
         }
         // Now safe to clean up fade state. Audio books still restore here;
         // TTS restores inside SpeechService after the engine has stopped.

@@ -663,6 +663,9 @@ extension ReaderViewModel {
             isCurrentlyPlaying = true
             isCurrentlyPaused = true
         }
+        // The announcement's own pause was never watched, meant to last
+        // seconds; left standing, it is watched as `pause()`'s is (C11).
+        watchPauseForGrowingLong()
     }
 
     /// Ends a Where Am I announcement as the book stops: by `stop()`, which

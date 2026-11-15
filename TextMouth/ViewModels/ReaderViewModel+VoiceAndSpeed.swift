@@ -99,8 +99,11 @@ extension ReaderViewModel {
         // stale: each speed or pitch step in Settings, which every playing
         // reader hears, leaves a look-ahead in the voice in effect alone
         // (PERF02). The global voice may have changed before this runs, so
-        // the look-ahead's own voice is what is compared.
-        let lookAheadVoiceIsCurrent = lookAhead.map {
+        // the look-ahead's own voice is what is compared. A look-ahead whose
+        // render still waits for the lead (`lookAheadWait`) has no voice yet:
+        // it renders in the voice in effect when it falls due, so no step
+        // makes it stale.
+        let lookAheadVoiceIsCurrent = lookAheadWait != nil || lookAhead.map {
             $0.signature.voiceIdentifier == speechService.currentVoice?.identifier
         } ?? false
         if !lookAheadVoiceIsCurrent {

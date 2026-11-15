@@ -361,8 +361,10 @@ final class SpeechRenderCoordinator: Sendable {
     private let renderPermission = OSAllocatedUnfairLock<@Sendable () -> Bool>(initialState: { true })
 
     /// Whether the next chapter may be rendered ahead now
-    /// (`renderPermission`), asked by the reader's look-ahead
-    /// (`ReaderViewModel.preRenderNextChapter()`) before it renders. The
+    /// (`renderPermission`), asked by the reader's look-ahead as each render
+    /// falls due, the lead before the current chapter's end
+    /// (`ReaderViewModel.startLookAheadRenderIfDue()`), not when the chapter
+    /// is chosen: a render refused goes on waiting and is asked again. The
     /// chapter being read is never held off: a chapter not rendered plays on
     /// directly, and its next chapter starts the ordinary way.
     var mayRenderAhead: @Sendable () -> Bool {
