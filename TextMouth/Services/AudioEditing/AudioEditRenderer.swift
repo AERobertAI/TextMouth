@@ -815,9 +815,8 @@ enum AudioEditRenderer {
     /// first, a piece of an MP3 at 22.05 or 44.1 kHz began wrong.
     /// - Throws: the sources' errors (`AudioEditStretchSound.pieces(of:)`),
     ///   `CancellationError`, what `consume` throws, or
-    ///   `AudioEditError.renderFailed` when a reader fails or the pieces
-    ///   decode short of the edits by more than a save takes in its file
-    ///   (`AudioEditBookRender.lengthTolerance`).
+    ///   `AudioEditError.renderFailed` when a reader fails or a piece
+    ///   decodes short by more than `fillableShortfall`.
     static func readStretches(
         of timeline: AudioEditTimeline,
         sources: AudioEditComposition.Sources,
@@ -837,46 +836,59 @@ enum AudioEditRenderer {
         let total = Int((Double(timeline.length) * ratio).rounded())
         var position: Int64 = 0
         var written = 0
+        // The format the readers decode to, as the last buffer read was:
+        // silence making up a piece is made in it.
+        var format: CMFormatDescription?
         for piece in pieces {
             position += piece.length
             // Each piece ends where the edits so far end at the render's
             // rate, so rounding never adds up from piece to piece.
             let end = Int((Double(position) * ratio).rounded())
-            let handed = try await read(
+            try await read(
                 piece,
                 settings: settings,
                 handingOver: end - written,
                 from: written,
                 of: total,
+                format: &format,
                 progress: progress,
                 consume: consume
             )
-            written += handed
-        }
-        guard Double(total - written) <= settings.sampleRate * AudioEditBookRender.lengthTolerance else {
-            throw AudioEditError.renderFailed("the edited audio decoded to \(written) of \(total) frames")
+            written = end
         }
     }
+
+    /// The most a piece may decode short of its length, in seconds, made up
+    /// with silence at its end: as much as a save lets its file differ from
+    /// the edits (`AudioEditBookRender.lengthTolerance`). A resampler keeps
+    /// back the last 8 to 31 frames of a file read to its very end, as a
+    /// take recorded at another rate than the book's is when used to its
+    /// last frame; a piece short by more is refused, its sound not all
+    /// there.
+    static let fillableShortfall = AudioEditBookRender.lengthTolerance
 
     /// Reads `piece` with an asset reader of its own, decoded to
     /// `settings.readerSettings`, from `readRunUp` before it to
     /// `readRunPast` past it, as far as its file goes either way, and hands
-    /// `consume` the piece's own frames, at most `frames` of them, buffer by
+    /// `consume` exactly `frames` frames of the piece's own, buffer by
     /// buffer, each timed as following the `start` frames handed over
     /// before it, telling `progress` how far the render's `total` frames it
-    /// has come. Returns how many it handed over.
+    /// has come. Frames the read comes up short of, at most
+    /// `fillableShortfall`, are made up with silence in `format`, the
+    /// format the readers decode to, which each buffer read updates.
     /// - Throws: `CancellationError`, what `consume` throws, or
     ///   `AudioEditError.renderFailed` when AVFoundation refuses or fails the
-    ///   read; the reader is cancelled then.
+    ///   read, or it comes up shorter; the reader is cancelled then.
     private static func read(
         _ piece: AudioEditStretchSound.Piece,
         settings: AudioRenderSettings,
         handingOver frames: Int,
         from start: Int,
         of total: Int,
+        format: inout CMFormatDescription?,
         progress: (@Sendable (Double) -> Void)?,
         consume: (CMSampleBuffer) async throws -> Void
-    ) async throws -> Int {
+    ) async throws {
         let scale = CMTimeScale(settings.sampleRate.rounded())
         // The run-up in whole frames at the render's rate, so that the
         // piece's first frame is the first one kept: half a second, or as
@@ -914,6 +926,7 @@ enum AudioEditRenderer {
                 // completed.
                 let drop = min(Int(runUp) - dropped, CMSampleBufferGetNumSamples(buffer))
                 dropped += drop
+                format = CMSampleBufferGetFormatDescription(buffer) ?? format
                 guard let sample = try slice(of: buffer, from: drop, atMost: frames - handed) else { continue }
                 try await consume(try timed(sample, at: start + handed, rate: settings.sampleRate))
                 handed += CMSampleBufferGetNumSamples(sample)
@@ -924,7 +937,66 @@ enum AudioEditRenderer {
             throw error
         }
         guard reader.status == .completed else { throw failure(reader.error) }
-        return handed
+        let missing = frames - handed
+        guard missing > 0 else { return }
+        guard Double(missing) <= settings.sampleRate * fillableShortfall else {
+            throw AudioEditError.renderFailed("a stretch of the edits decoded to \(handed) of \(frames) frames")
+        }
+        // Should no buffer have been read yet, the format is the one the
+        // settings describe, which differs from the readers' only in making
+        // 8-bit integers unsigned (`silence` fills those with their middle).
+        guard let silentFormat = format ?? AVAudioFormat(settings: settings.readerSettings)?.formatDescription else {
+            throw AudioEditError.renderFailed("the decoded audio has no format")
+        }
+        try await consume(try silence(missing, in: silentFormat, at: start + handed, rate: settings.sampleRate))
+        progress?(total > 0 ? min(1, Double(start + frames) / Double(total)) : 1)
+    }
+
+    /// `frames` frames of silence in `format`, decoded audio as a reader
+    /// hands it over, timed to start `frame` frames into the render at
+    /// `rate`.
+    /// - Throws: `AudioEditError.renderFailed` when the buffer can't be made.
+    private static func silence(_ frames: Int, in format: CMFormatDescription, at frame: Int, rate: Double) throws -> CMSampleBuffer {
+        guard let stream = CMAudioFormatDescriptionGetStreamBasicDescription(format)?.pointee, stream.mBytesPerFrame > 0 else {
+            throw AudioEditError.renderFailed("the decoded audio has no frame size")
+        }
+        let length = frames * Int(stream.mBytesPerFrame)
+        var block: CMBlockBuffer?
+        var status = CMBlockBufferCreateWithMemoryBlock(
+            allocator: kCFAllocatorDefault,
+            memoryBlock: nil,
+            blockLength: length,
+            blockAllocator: kCFAllocatorDefault,
+            customBlockSource: nil,
+            offsetToData: 0,
+            dataLength: length,
+            flags: kCMBlockBufferAssureMemoryNowFlag,
+            blockBufferOut: &block
+        )
+        guard status == noErr, let block else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        // Silence is zero in floats and in signed integers; an 8-bit integer
+        // without a sign holds it at its middle, 128.
+        let isUnsignedByte = stream.mBitsPerChannel == 8
+            && stream.mFormatFlags & (kAudioFormatFlagIsFloat | kAudioFormatFlagIsSignedInteger) == 0
+        status = CMBlockBufferFillDataBytes(
+            with: CChar(bitPattern: isUnsignedByte ? 0x80 : 0),
+            blockBuffer: block,
+            offsetIntoDestination: 0,
+            dataLength: length
+        )
+        guard status == noErr else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        var sample: CMSampleBuffer?
+        status = CMAudioSampleBufferCreateReadyWithPacketDescriptions(
+            allocator: kCFAllocatorDefault,
+            dataBuffer: block,
+            formatDescription: format,
+            sampleCount: frames,
+            presentationTimeStamp: CMTime(value: CMTimeValue(frame), timescale: CMTimeScale(rate.rounded())),
+            packetDescriptions: nil,
+            sampleBufferOut: &sample
+        )
+        guard status == noErr, let sample else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        return sample
     }
 
     /// `sample`, decoded audio, timed to start `frame` frames into the

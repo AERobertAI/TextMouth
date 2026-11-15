@@ -146,6 +146,48 @@ final class AudioEditRenderingTests: XCTestCase {
         XCTAssertTrue(problems.isEmpty, problems.joined(separator: "\n"))
     }
 
+    // MARK: - Another Rate
+
+    /// A punch-in whose take was recorded at another rate than the book's,
+    /// as a Mac's microphone records at 48 kHz, keeps the book's length to
+    /// the frame and the sound after it in place: the take, resampled to the
+    /// book's 44.1 kHz and used to its last frame, decodes 16 frames short,
+    /// which silence makes up (`AudioEditRenderer.fillableShortfall`).
+    /// Left short, each such take moved everything after it earlier, and
+    /// some 56 of them made a save refuse its file as short.
+    func testATakeAtAnotherRateKeepsTheBooksLengthAndTheSoundAfterIt() async throws {
+        let folder = try makeFolder()
+        let book = folder.appendingPathComponent("Canal Survey.caf")
+        try AudioTestFixtures.writeIdentityRamp(to: book, frames: 132_300, sampleRate: 44_100)
+        try AudioTestFixtures.writeTone(
+            to: folder.appendingPathComponent("audioEdits/takes/take.m4a"),
+            frames: 48_000,
+            sampleRate: 48_000,
+            settings: [AVFormatIDKey: kAudioFormatAppleLossless, AVEncoderBitDepthHintKey: 16]
+        )
+        let base = try await AudioEditBase.load(book, name: "Canal Survey.caf")
+        var timeline = base.timeline
+        try timeline.applyRearranging(.replace(
+            AudioTimeRange(start: 1, end: 2),
+            with: AudioEditTake(file: "audioEdits/takes/take.m4a", range: AudioTimeRange(start: 0, end: 1))
+        ))
+        let output = folder.appendingPathComponent("punched in.caf")
+
+        _ = try await AudioEditRenderer.render(
+            timeline,
+            sources: AudioEditComposition.Sources(base: base, package: folder, scratch: folder),
+            to: output,
+            format: .pcmCAF,
+            metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
+        )
+
+        let samples = try AudioTestFixtures.floatSamples(of: output)
+        XCTAssertEqual(samples.count, 132_300, "the book's length")
+        XCTAssertEqual(samples[checked: 44_099].map(AudioTestFixtures.rampSample), .frame(.book, 44_099), "the sound before the take")
+        XCTAssertEqual(samples[checked: 88_200].map(AudioTestFixtures.rampSample), .frame(.book, 88_200), "the sound after the take")
+        XCTAssertEqual(samples[checked: 132_299].map(AudioTestFixtures.rampSample), .frame(.book, 132_299), "the book's last frame")
+    }
+
     // MARK: - Chapters
 
     /// Chapter markers written into an M4A file read back through the app's

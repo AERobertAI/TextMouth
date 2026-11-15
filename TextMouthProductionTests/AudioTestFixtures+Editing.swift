@@ -97,6 +97,15 @@ extension AudioTestFixtures {
     /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url`
     /// as AAC in an MPEG-4 audio file, at the bit rate Core Audio chooses.
     static func writeToneAAC(to url: URL, frames: Int = 24_000, sampleRate: Double = 8_000) throws {
+        try writeTone(to: url, frames: frames, sampleRate: sampleRate, settings: [AVFormatIDKey: kAudioFormatMPEG4AAC])
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url`
+    /// through AVAudioFile, stored as `settings` say beside the rate and
+    /// the one channel (Apple Lossless, FLAC, big-endian PCM, ...), in a
+    /// file of the type the extension names.
+    static func writeTone(to url: URL, frames: Int, sampleRate: Double, settings: [String: Any]) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let format = try XCTUnwrap(AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false))
         let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)))
         buffer.frameLength = AVAudioFrameCount(frames)
@@ -106,7 +115,7 @@ extension AudioTestFixtures {
         }
         let file = try AVAudioFile(
             forWriting: url,
-            settings: [AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: sampleRate, AVNumberOfChannelsKey: 1],
+            settings: settings.merging([AVSampleRateKey: sampleRate, AVNumberOfChannelsKey: 1]) { _, new in new },
             commonFormat: .pcmFormatFloat32,
             interleaved: false
         )
