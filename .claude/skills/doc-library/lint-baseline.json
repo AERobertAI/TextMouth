@@ -29,7 +29,7 @@
     "docs/architecture/state/imports-office-xml.md": {"line-length": 11},
     "docs/architecture/state/imports-rtf-and-word.md": {"line-length": 29},
     "docs/architecture/state/imports-text-encoding-choice.md": {"line-length": 10},
-    "docs/architecture/state/imports-text-encodings.md": {"line-length": 35},
+    "docs/architecture/state/imports-text-encodings.md": {"line-length": 33},
     "docs/architecture/state/imports-textutil.md": {"line-length": 17},
     "docs/architecture/state/imports.md": {"line-length": 34},
     "docs/architecture/state/library-index-reading-feeds.md": {"line-length": 35},
