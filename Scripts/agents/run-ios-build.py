@@ -23,9 +23,13 @@ Usage: python3 -I -B Scripts/agents/run-ios-build.py [--out DIR] [--derived-data
 Run it from the repository root. Python 3 standard library only.
 """
 import argparse
+import importlib.util
+import json
+import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -34,6 +38,9 @@ sys.dont_write_bytecode = True
 
 # The repository's root, where the build runs.
 ROOT = Path(__file__).resolve().parents[2]
+AGENTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(AGENTS))
+import ios_ui_tests  # noqa: E402
 # The longest the build may take, in minutes: under the workflow job's limit of 30, which the platform download (about 3
 # minutes) comes out of. A build from nothing took 8 to 10 minutes on November 10, 2026.
 DEFAULT_LIMIT_MINUTES = 20
@@ -54,6 +61,59 @@ def build_command(derived_data):
     return ["xcodebuild", "build-for-testing", "-project", "TextMouth.xcodeproj", "-scheme", SCHEME,
             "-destination", DESTINATION, "-derivedDataPath", str(derived_data),
             "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO"]
+
+
+# The longest the build waits, after it ends, for the simulator that boots beside it, in seconds. The first boot of a
+# device took 5.7 minutes on the runner (run 43680762117), a build of changed files 2 to 7, so the build ends first or soon after.
+BOOT_JOIN_SECONDS = 420
+# What is said before and after the simulator's early boot, so that a run's log shows how long it took.
+EARLY_BOOT_PREFIX = "early simulator boot: "
+
+
+def early_boot_wanted(request, environment):
+    """Whether the simulator should boot while the app builds: only on a GitHub runner (the boot restarts the audio service with
+    sudo), only for a request with "ios_early_boot": true, and only when the request asks for iPhone tests to run."""
+    return (environment.get("GITHUB_ACTIONS") == "true" and request.get("ios_early_boot") is True
+            and bool(ios_ui_tests.wanted(request, ROOT)))
+
+
+def load_ui_script():
+    """The run-ios-ui-tests.py module, loaded by path (its name has hyphens), for its simulator set-up."""
+    spec = importlib.util.spec_from_file_location("run_ios_ui_tests", AGENTS / "run-ios-ui-tests.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def boot_simulator(out, load=load_ui_script, run=subprocess.run, sleep=time.sleep):
+    """Restarts the audio service (the simulator plays through the machine's, as the interface tests need), then makes the
+    simulator ready as the tests' own set-up does (run-ios-ui-tests.py ready_simulator), writing its notes to
+    ios-boot.log in the output folder. A failure is said and swallowed: the tests' step does its own set-up, which finds the device booted
+    or boots it."""
+    began = time.monotonic()
+    try:
+        run(["sudo", "killall", "coreaudiod"], capture_output=True, timeout=30)
+        sleep(5)
+        ui = load()
+        with open(Path(out) / "ios-boot.log", "w", encoding="utf-8") as log:
+            _, simulator = ui.ready_simulator(log)
+        print(f"{EARLY_BOOT_PREFIX}ready in {time.monotonic() - began:.0f} s: {simulator}", flush=True)
+    except Exception as failure:  # noqa: BLE001  (any failure is only said: the tests' step sets the simulator up itself)
+        print(f"{EARLY_BOOT_PREFIX}did not finish after {time.monotonic() - began:.0f} s: {failure}", flush=True)
+
+
+def start_early_boot(out, request_path=None, environment=None, boot=boot_simulator):
+    """Starts the simulator's boot on a thread when the request wants it (early_boot_wanted) and returns the thread, else
+    None. The request is the one the workflow wrote (.github/test-request.json)."""
+    try:
+        request = json.loads(Path(request_path or ROOT / ".github" / "test-request.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(request, dict) or not early_boot_wanted(request, os.environ if environment is None else environment):
+        return None
+    thread = threading.Thread(target=boot, args=(out,), daemon=True)
+    thread.start()
+    return thread
 
 
 def relative(path, root):
@@ -147,7 +207,11 @@ def main(argv):
     command = build_command((ROOT / args.derived_data).resolve())
     print("command:", " ".join(command), flush=True)
     started = time.monotonic()
+    booting = start_early_boot(out)
     status, timed_out = run_build(command, out / "ios.log", args.limit_minutes)
+    if booting is not None:
+        # The boot goes on beside the build; the tests' step needs it, so it is waited for (up to a limit) before this ends.
+        booting.join(BOOT_JOIN_SECONDS)
     log_text = (out / "ios.log").read_text(encoding="utf-8", errors="replace")
     write_results(out, parse_errors(log_text), log_text, status, timed_out, time.monotonic() - started,
                   args.limit_minutes)
