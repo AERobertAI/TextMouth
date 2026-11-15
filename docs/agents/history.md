@@ -624,3 +624,13 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **A spent usage window:** On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
 - **The Executed line:** Main was fast-forwarded once on the Executed line of a run with "1 failure (0 unexpected)" and taken back within a minute.
 - **Disk under 8 GB:** The disk reached 2.7 GB free during measurements on November 14, 2026.
+- **Where things stand, written on November 14, 2026.** Main was at 0.4.10, with `v0.4.9` at 8918f4ee and `v0.4.8` at 82e68c0d, all three tags unpushed (main itself was pushed that day), and the user still ran 0.4.2.
+  The Release app was 18.3 MB (18,291,664 bytes; 0.4.9 was 19.6 MB).
+  The BRF fixes from the user's Life of Pi: running heads left out (keyed without their numbers), print page change lines, chapter rows as headings, title and author from the braille title page, and the English Braille, American Edition suggestion announced once.
+  All 13 "St."/"Still." places in Life of Pi read as its EPUB does (checked by the orchestrator, read-only).
+  The Reading List's cloud follow-ups: unknown sizes one at a time, books left out logged.
+  Every merge went review, then a fix round, then often a check, then a Mac full suite on `integrate/1113`, then a fast-forward.
+- **The lessons of that night (November 14, 2026), which hold for any campaign.** A reviewer said UEB writes 6-N and 6-Y; two agents' `make check` runs held the heavy lock for an hour each without `SIGN_APP=true`; main was fast-forwarded once on the Executed line and taken back within a minute.
+  A branch that adds a test file must commit the regenerated project, since trains regenerate it and never notice when it's missing.
+  The orchestrator's log ran up to 5.5 hours ahead of the clock and told the user the reset was near when it was five hours away.
+  The disk reached 2.7 GB free during measurements.

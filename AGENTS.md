@@ -73,28 +73,15 @@ The agent:
 - Run every `make check` with `SIGN_APP=true`: without it `codesign` waits on the login keychain while holding the heavy lock.
 - Write times from `date`, never from a guess.
 
-## Where things stood on November 14, 2026
+## Where things stand
 
-- Main is at version 0.4.10 (tagged `v0.4.10`; `v0.4.9` at 8918f4ee and `v0.4.8` at 82e68c0d; all three unpushed, and the user still runs 0.4.2).
-  The Release app is 18.3 MB (18,291,664 bytes; 0.4.9 was 19.6 MB).
-  Since 0.4.7 main holds:
-  - the audit's runtime fixes C3 (the reader window redraws only when what it shows changes, `ReaderShownState`, the sleep countdown in `SleepTimerStatusLabel`), C4, C6, C7, C8, C9, C16, and C17;
-  - the BRF fixes from the user's Life of Pi: running heads left out (keyed without their numbers), print page change lines, chapter rows as headings, title and author from the braille title page, and the English Braille, American Edition suggestion announced once;
-  - the EBAE decoding fixes in the braille helper (`fix_ebae_cells`).
-    All 13 "St."/"Still." places in Life of Pi read as its EPUB does (checked by the orchestrator, read-only);
-  - the Reading List's cloud follow-ups (unknown sizes one at a time, books left out logged);
-  - in 0.4.10: the braille code guess at import (`BrailleTableOrigin`, the Braille tab's switch, Keep This Code, kept through Replace Existing), the sort helper (C10), and `Book` in one copy-on-write box (C13, `Book.Storage`; how to add a field is in `docs/architecture/state/library-index.md`);
-  - every hosted test class placed in an area of `Scripts/test/areas.conf` (a new `readers` area; `run-area.py --unassigned` says 0).
-- Every merge went review, then a fix round, then often a check, then a Mac full suite on `integrate/1113` (read `run_suite.py`'s exit status, not the Executed line), then a fast-forward.
-  The records are in the TODO.
-- Not done, each needing the user's yes: the audit's C11, C12, C14, C15, and C19, and the cloud library's Phase 0 guards (questions in `humanQuestions/2026-11-13.md`).
-- Lessons of that night, which hold for any campaign:
-  - A braille rule an agent states is a claim to check: a reviewer said UEB writes 6-N and 6-Y, and the user, a braille reader, knew UEB had dropped ation and ally (BANA's UEB FAQ).
-    Check rules against BANA, ICEB, or `lou_translate` on the repo's tables, and build test cells from liblouis forward, not by hand.
-  - Every `make check` an agent runs needs `SIGN_APP=true`: without it `codesign` waits on the login keychain, and two agents' runs held the heavy lock for an hour each.
-  - The Mac suite's exit status is the gate.
-    "1 failure (0 unexpected)" is a real failure: main was fast-forwarded once on the Executed line and taken back within a minute.
-  - A branch that adds a test file must commit the regenerated project: trains regenerate it, so they never notice when it's missing.
-  - Write times from `date`.
-    The orchestrator's log ran up to 5.5 hours ahead of the clock and told the user the reset was near when it was five hours away.
-  - When the disk falls under 8 GB, clear finished worktrees and scratch at once (literal paths); it reached 2.7 GB free during measurements.
+- Main is version 0.4.10 (tag `v0.4.10`, a1214dc0, pushed to GitHub with main); `v0.4.9` is at 8918f4ee and `v0.4.8` at 82e68c0d, and the user still runs 0.4.2.
+  The Release app is 18.3 MB (0.4.9 was 19.6 MB).
+- Since 0.4.7 main holds:
+  - the audit's runtime fixes C3 (the reader window redraws only when what it shows changes: `ReaderShownState`, `SleepTimerStatusLabel`), C4, C6 to C9, C16, and C17;
+  - the BRF fixes from the user's Life of Pi, and the EBAE decoding fixes (`fix_ebae_cells` in `TextMouthBraille/main.c`);
+  - the Reading List's cloud follow-ups;
+  - the braille code guess at import (`BrailleTableOrigin`, the Braille tab's switch, Keep This Code), the sort helper (C10), and `Book` in one copy-on-write box (C13, `Book.Storage`; see `docs/architecture/state/library-index.md` for adding a field);
+  - every hosted test class placed in an area of `Scripts/test/areas.conf` (`run-area.py --unassigned` says 0).
+- Every merge went review, a fix round, often a check, a Mac full suite on an `integrate/` branch, then a fast-forward; the TODO records each.
+- Not done, each needing the user's yes: the audit's C11, C12, C14, C15, and C19, and the cloud library's Phase 0 guards (`humanQuestions/2026-11-13.md`).
