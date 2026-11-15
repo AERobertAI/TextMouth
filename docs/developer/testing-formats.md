@@ -71,6 +71,7 @@ The Kindle samples in `TestData/format-samples/mobi` have no goldens.
 MOBIReaderTests reads two of them:
 - Project Gutenberg's MOBI 6 book, and
 - `ferry-notes-ncx.mobi`, a small book with a table of contents that `Scripts/make-mobi-ncx-sample.py` makes with calibre's `ebook-convert` (calibre writes a new identifier into every conversion, so the script's output never matches the sample byte for byte).
+
 It checks that a copy of the MOBI 6 book marked as encrypted, which is not really encrypted, is refused.
 `KF8RealBookTests`, below, reads Gutenberg's KF8 book.
 
@@ -108,6 +109,7 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
     - without the shared-container rule the licence's opening lands in the essay (3,599 and 2,693 words);
     - without the continuation it is 4 chapters;
     - without the footer exemption Pride and Prejudice is 67 chapters, not 66.
+
     The two-section cut was proven with a throwaway program, not an XCTest run.
     The `<a>` skip in `openingContainer` has no test.
 
@@ -118,6 +120,7 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
   - by `SoftHyphenEffectTests` (the measured effects on search and braille, see Shared helpers in [Architecture](../../ARCHITECTURE.md)),
   - by `KF8ReviewFixTests.testEverySpellingOfASoftHyphenIsLeftOut` (every spelling `ParserUtilities.removingSoftHyphens` catches, and the ones it leaves alone: `&SHY;`, `&Shy;`, `&shy1`, `&shyx`, other numbers, and a huge one), and
   - by `MOBIBookStructureTests` for a MOBI 6 book's words, labels, Windows-1252 text, and plain PalmDOC text.
+
   `MOBIReaderTests`, `PagesUpgradeTests`, and `OnDiskContractTests` expect the `.mobi` page reader line "1.1.0".
 - `PortableXMLDifferentialTests` lists two known differences for the new EPUB, its `toc.xhtml` and `toc.ncx`: they write the title across two lines with `&#13;`, which Foundation's tidy reading keeps and the portable tree collapses.
   The strict reading, which the EPUB reader uses on both platforms, agrees.
@@ -175,6 +178,7 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
   - `testTextInOtherEncodingsIsNeverTakenForUnmarkedUnicode` (the same sentences in more than 20 encodings),
   - `testTheTextSamplesInTestDataAreNeverTakenForUnmarkedUnicode` (89 samples, about 124,000 windows), and
   - the two sweeps with one to four NULs put in at random, `testTheTextSamplesInTestDataWithStrayNULsAreNeverTakenForUnmarkedUnicode` and `testStrayNULsDoNotTurnTextIntoUnmarkedUnicode`.
+
   The NUL sweeps are the ones that can fail: without a zero byte the rules for other scripts cannot fire.
 - `testARecordedEncodingAndTheLegacyEvidenceAskOnlyTheOldRule` pins that a book's recorded encoding, and the web archive and web-page .doc readers, ask for Latin UTF-16 alone.
   `testAUTF16ColumnOfSingleCharactersIsNotTakenForUTF32` pins a column of one character to a line.
@@ -189,6 +193,7 @@ Three are libmobi's test samples, under libmobi's LGPL-3.0, whose text and the G
 - a kindlegen book compressed with HUFF/CDIC, whose digest is also that of the same book stored uncompressed, so it proves the HUFF reading;
 - a Windows-1252 book with a short header; and
 - an early Mobipocket book whose PalmDOC text is HTML.
+
 The other two are Gutenberg's Ghosts as kindlegen made it, a book holding both MOBI 6 and KF8, and a book in Afrikaans in the older Mobipocket style, whose records carry two trailing entries.
 Of more than 40 real books checked when these were chosen, none decoded to less text than it declared, and two dictionaries decoded to 166 bytes more, which the reader cuts off.
 `samples.tsv` gives each one's source.
