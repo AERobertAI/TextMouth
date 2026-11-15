@@ -1,10 +1,10 @@
 # Settings
-<!-- id: settings; keys: ; src: -->
+<!-- id: settings; keys: Preferences, Settings window, Command-Comma, config.json; src: TextMouth/Views/Settings/SettingsView.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## The tabs
-<!-- id: tabs; keys: ; src: -->
+<!-- id: tabs; keys: Preferences, tab bar, Voice tab, Feeds tab, slider value, scrolling tab, VoiceOver slider; src: TextMouth/Views/Settings/SettingsView.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
 
 Settings has these tabs.
 
@@ -20,7 +20,7 @@ Four tabs have pages of their own, and this page holds the rest:
 - [Settings: the Storage tab](settings-storage.md), with the library folder, imports, duplicates, and maintenance.
 
 ## Open the next book in
-<!-- id: open-next-book; keys: ; src: -->
+<!-- id: open-next-book; keys: nextBookWindow, End of Book, When book ends, This Window, A New Window, next book; src: TextMouth/Models/NextBookWindow.swift, TextMouth/Views/NextBookWindowPicker.swift, TextMouth/Views/Settings/SettingsView.swift -->
 
 The Playback tab's End of Book group has, just below the When book ends pop-up and the captions under it, a pop-up button, "Open the next book in", with the choices "This Window", the default, and "A New Window".
 Its hint, which a caption under the pop-up shows and VoiceOver reads once, as the pop-up's hint, is "Where the next book opens when listening goes on from one book to another: in this window in place of the book here, or in a new window.
@@ -28,19 +28,19 @@ A book already open in another window is brought forward, and with This Window t
 It decides where the next book opens at the end of a book, with Next in Reading List and Previous in Reading List, and with Next in Folder and Previous in Folder, unless a feed or a folder has a choice of its own (see [Reader windows](reader-windows.md), [Podcasts and article feeds](feeds.md), and [The Library window](library-window.md)). config.json holds it as nextBookWindow, the choice's name (see [Editing settings in config.json](config-json.md)).
 
 ## Show Export in the reader toolbar
-<!-- id: show-export-reader-toolbar; keys: ; src: -->
+<!-- id: show-export-reader-toolbar; keys: showExportInReaderToolbar, Export button, reader toolbar; src: TextMouth/Models/BookExportWording.swift, TextMouth/Views/Settings/SettingsView.swift -->
 
 The Playback tab's Reader Toolbar section has Show Export in the reader toolbar, off by default, which puts an Export button in every reader's toolbar.
 File menu, Export… is there either way.
 
 ## Speed with time left
-<!-- id: speed-time-left; keys: ; src: -->
+<!-- id: speed-time-left; keys: includeSpeedWithTimes, time left, total time, status row, words a minute, playback speed; src: TextMouth/Models/ReaderTimeWording.swift, TextMouth/Views/Settings/SettingsView.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift -->
 
 The Playback tab's Times group has Include the speed with time left and total time, off by default, which names the speed those times count at beside them: on the reader's status row, as in "3:44:01 left at 2.0x", which VoiceOver reads as "at 2.0 times speed", or "at 500 words a minute" for a text book; in Where Am I?'s time left, and its full summary's total; in Copy Reading Position's time left; and in the Headings sheet's durations.
 An audiobook at 1x names nothing, and Where Am I?'s time left in the heading never names the speed.
 
 ## Pages in the reader and Where Am I?
-<!-- id: pages-reader-where-am-i; keys: ; src: -->
+<!-- id: pages-reader-where-am-i; keys: showsPageInReader, saysPageInWhereAmI, page number, Go to Page, page navigation unit; src: TextMouth/Models/ReaderPageWording.swift, TextMouth/Views/Settings/SettingsView.swift -->
 
 The Playback tab's Pages group has two checkboxes, both on by default.
 "Show the page on the reader screen" puts the page being read beside the percent on a reader's status row, for a book of more than one page; its hint is "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page."
@@ -49,12 +49,12 @@ Each hint is shown as a caption under its checkbox, and VoiceOver says it once, 
 The Page navigation unit and Go to Page… work whichever way the checkboxes are set (see [Reader windows](reader-windows.md)). config.json holds them as showsPageInReader and saysPageInWhereAmI (see [Editing settings in config.json](config-json.md)).
 
 ## Transcription
-<!-- id: settings-transcription; keys: ; src: -->
+<!-- id: settings-transcription; keys: transcriptionLocale, offerTranscriptionAfterImport, speech recognition, language, Transcribe Audio; src: TextMouth/Models/TranscriptionWording.swift, TextMouth/Views/Transcription/TranscriptionSettingsSection.swift -->
 
 The Playback tab's Transcription group chooses the language audiobooks are transcribed in, and whether TextMouth offers to transcribe each audiobook it imports (see [Transcribing an audiobook](transcribing.md)).
 
 ## Repeated Symbols
-<!-- id: repeated-symbols; keys: ; src: -->
+<!-- id: repeated-symbols; keys: repeatedSymbolStyle, repeatedSymbolThreshold, repeatedSymbolSet, asterisks, separator line, run of symbols; src: TextMouth/Views/Settings/RepeatedSymbolsSettingsView.swift, TextMouth/Services/RepeatedSymbolRule.swift -->
 
 The Text tab's Repeated Symbols group sets how the voice reads one symbol written several times in a row, directly or with single spaces between, such as a separator line of asterisks.
 Say how many, the default, reads a run of 4 or more as a count, such as "7 asterisks"; Leave out skips the run with a pause; Repeat each symbol reads every one.
@@ -64,19 +64,19 @@ Only speech changes: the text on screen and on a braille display keeps every sym
 A change applies from the next chapter spoken.
 
 ## Reset the text rules
-<!-- id: reset-text-rules; keys: ; src: -->
+<!-- id: reset-text-rules; keys: substitutions, substitutions.json, regular expression, $1, Reset to Defaults, pronunciation rules; src: TextMouth/Views/Settings/SubstitutionsSettingsView.swift, TextMouth/Services/TextSubstitutionService.swift -->
 
 The Text tab's Reset to Defaults asks first, naming how many rules it replaces, as in "The 15 rules in the list will be replaced by TextMouth's 16 default rules.
 Rules you added or changed will be lost."
 In a regular expression rule's replacement, $1, $2, and so on put back what each group of the pattern matched, as the replacement field's hint says, naming the dollar sign in words.
 
 ## Reset sound effects
-<!-- id: reset-sound-effects; keys: ; src: -->
+<!-- id: reset-sound-effects; keys: soundEffectsEnabled, soundEffectsVolume, soundEffectAssignments, sound assignments, Reset to Defaults; src: TextMouth/Views/Settings/SoundEffectsSettingsView.swift -->
 
 The Sounds tab's Reset to Defaults gives the sound assignments, the volume, and sounds on their defaults again at once, and VoiceOver says "The sound effects are reset to the defaults."
 
 ## Books Finished and listening time
-<!-- id: books-finished-listening-time; keys: ; src: -->
+<!-- id: books-finished-listening-time; keys: reading_stats.json, streak, Recently Finished, Today, This Week, All Time, sleep; src: TextMouth/Views/Settings/ReadingStatsView.swift, TextMouth/Models/ReadingStatsTile.swift, TextMouth/Services/ReadingStatsService.swift -->
 
 The Stats tab's Books Finished This Year and Books Finished All Time count text books, audiobooks, and podcast episodes apart as well as together, under each count and spoken with it as one sentence, as in "7 books finished this year: 4 text books, 2 audiobooks, and 1 podcast episode".
 An article from a feed counts as a text book.
@@ -88,6 +88,6 @@ Once on each Mac, after a launch's maintenance that has read reading_stats.json,
 The time the Mac sleeps with a book playing is never counted as listening: not in Today, This Week, All Time, the streak, or the book's total.
 
 ## Restart timer gesture note
-<!-- id: restart-timer-gesture-note; keys: ; src: -->
+<!-- id: restart-timer-gesture-note; keys: restartTimerGestureEnabled, restartTimerGesturePattern, Restart Sleep Timer, bluetooth, media gesture, Miscellaneous tab; src: TextMouth/Views/Settings/MiscellaneousSettingsView.swift -->
 
 The Miscellaneous tab's note under the restart timer gesture names the action that does the same from the keyboard as the Shortcuts tab names it: "The keyboard shortcut for the same action is Restart Sleep Timer in the Shortcuts tab; its default is Shift + Command + R."
