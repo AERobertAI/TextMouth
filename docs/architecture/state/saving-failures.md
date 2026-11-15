@@ -1,10 +1,10 @@
 # Saving failures
-<!-- id: saving-failures; keys: ; src: -->
+<!-- id: saving-failures; keys: persistence failure, unsaved changes, write failure; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Outstanding failed writes
-<!-- id: outstanding-failed-writes; keys: ; src: TextMouth/Services/PersistenceFailureCenter.swift, TextMouth/Views/Library/PersistenceFailureBanner.swift, TextMouth/App/UnsavedChangesTermination.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/TextSubstitutionService.swift -->
+<!-- id: outstanding-failed-writes; keys: PersistenceFailure, PersistenceSubsystem, PersistenceBannerRow, PersistenceFailureBanner, recordFailure, recordSuccess, save failed, originalFileCleanup; src: TextMouth/Services/PersistenceFailureCenter.swift, TextMouth/Views/Library/PersistenceFailureBanner.swift, TextMouth/App/UnsavedChangesTermination.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/TextSubstitutionService.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift -->
 
 Outstanding failed writes.
 
@@ -16,7 +16,7 @@ Outstanding failed writes.
 - Files: Services/PersistenceFailureCenter.swift, Views/Library/PersistenceFailureBanner.swift, App/UnsavedChangesTermination.swift, Services/Feeds/FeedStore.swift.
 
 ## Quitting with something unsaved
-<!-- id: quitting-something-unsaved; keys: ; src: TextMouth/App/UnsavedChangesTermination.swift, TextMouth/App/QuitRequest.swift, TextMouth/App/QuitFinisher.swift, TextMouth/App/QuitReason.swift, TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/Views/QuitNotice.swift -->
+<!-- id: quitting-something-unsaved; keys: applicationShouldTerminate, TerminationDecision, terminateNow, QuitReason, QuitHold, QuitFinisher, QuitNotice, quit alert; src: TextMouth/App/UnsavedChangesTermination.swift, TextMouth/App/QuitRequest.swift, TextMouth/App/QuitFinisher.swift, TextMouth/App/QuitReason.swift, TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/Views/QuitNotice.swift -->
 
 Quitting with something unsaved (UnsavedChangesTerminationGuard; the whole quit is in [Launch](../launch.md)).
 
