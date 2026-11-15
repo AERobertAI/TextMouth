@@ -8,6 +8,7 @@ from doclib_case import DocLibCase
 
 import cmd_stale
 import docmodel
+import lintrules
 from cmd_stale import Allowlist, StaleItem, load_allowlist, parse_allowlist, stale_items
 from repofiles import RepoFiles
 from swiftindex import SwiftIndex
@@ -232,6 +233,52 @@ class OutputTests(StaleTestCase):
             StaleItem("docs/p.md", 4, "Page", "path", "Models/Gone.swift", "text", "missing path: Models/Gone.swift", "s"),
             StaleItem("docs/p.md", 4, "Page", "name", "Gone", None, "unknown name: Gone", "s"),
         ])
+
+
+class LogPageTests(StaleTestCase):
+    """The two logs may name what was removed: ``stale`` skips them unless ``--logs`` says otherwise."""
+
+    # One removed file named in each of the two logs and in a reference page.
+    GONE = "Removed `TextMouth/Models/Gone.swift`.\n"
+
+    def write_logs_and_page(self) -> None:
+        """Write both log pages and one reference page, each citing the same missing file."""
+        self.write_tree({
+            "docs/user/changelog.md": f"# Changelog\n\n{self.GONE}",
+            "docs/agents/history.md": f"# History\n\n{self.GONE}",
+            "docs/architecture/p.md": "# P\n\nSee `TextMouth/Models/Gone.swift`.\n",
+        })
+
+    def test_the_logs_are_left_out_by_default(self) -> None:
+        self.write_logs_and_page()
+        status, lines, err = self.stale()
+        self.assertEqual((status, lines), (1, ["docs/architecture/p.md:3-3  P  missing path: TextMouth/Models/Gone.swift"]))
+        self.assertIn("1 stale references", err)
+
+    def test_the_logs_option_adds_them(self) -> None:
+        self.write_logs_and_page()
+        status, lines, err = self.stale("--logs")
+        self.assertEqual(status, 1)
+        self.assertEqual({line.split(":", 1)[0] for line in lines},
+                         {"docs/user/changelog.md", "docs/agents/history.md", "docs/architecture/p.md"})
+        self.assertIn("3 stale references", err)
+
+    def test_a_tree_with_stale_names_only_in_the_logs_is_clean_without_the_option(self) -> None:
+        self.write_tree({"docs/agents/history.md": f"# History\n\n{self.GONE}"})
+        self.assertEqual(self.stale()[0], 0)
+        self.assertEqual(self.stale("--logs")[0], 1)
+
+    def test_the_lint_rule_and_the_command_agree_on_which_pages_count(self) -> None:
+        self.write_logs_and_page()
+        # The command's pages, and the pages the lint's rule reports, are the same set with and without logs.
+        command_pages = {line.split(":", 1)[0] for line in self.stale()[1]}
+        lint_pages = {violation.page for violation in lintrules.lint(self.root, ["stale"])}
+        self.assertEqual(command_pages, lint_pages)
+        self.assertEqual(command_pages, {"docs/architecture/p.md"})
+
+    def test_the_log_test_is_one_function_for_the_lint_and_the_command(self) -> None:
+        self.assertTrue(all(docmodel.is_log_page(path) and lintrules.is_log(path) for path in docmodel.LOG_PAGES))
+        self.assertFalse(docmodel.is_log_page("docs/architecture/p.md"))
 
 
 class AllowlistTests(DocLibCase):

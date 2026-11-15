@@ -2,6 +2,7 @@
 
     python3 -I .claude/skills/doc-library/scripts/doclib.py stale
     python3 -I .claude/skills/doc-library/scripts/doclib.py stale --scope all
+    python3 -I .claude/skills/doc-library/scripts/doclib.py stale --logs
 
 Two kinds of stale reference, one hit for each, at its line:
 
@@ -14,6 +15,10 @@ Two kinds of stale reference, one hit for each, at its line:
 What the check cannot judge, or that is not TextMouth's own (Apple's SDK, a vendored
 package, an Info.plist key), is listed in ``stale-allowlist.txt`` beside the skill;
 ``load_allowlist`` reads it. ``stale_items`` is the function the lint counts.
+
+The two log pages (``docmodel.LOG_PAGES``) are left out, as the lint's ``stale`` rule
+leaves them out: a log may name what was removed, since it is history. ``--logs`` reads
+them too, to see what history names.
 
 Always one line on standard error: ``doclib: N stale references (P paths, M names)``.
 Exit status 0 when there are none, 1 when there are some.
@@ -211,13 +216,18 @@ def item_hit(item: StaleItem) -> Hit:
 
 
 def run(args: Any) -> int:
-    """Report the stale references of the scope's pages."""
-    pages = docmodel.load_pages(args.root, docmodel.scope_pages(args.root, args.scope))
+    """Report the stale references of the scope's pages, the log pages only with ``--logs``."""
+    paths = docmodel.scope_pages(args.root, args.scope)
+    if not args.logs:
+        # The same page test the lint's rule applies (docmodel.is_log_page).
+        paths = [path for path in paths if not docmodel.is_log_page(path)]
+    pages = docmodel.load_pages(args.root, paths)
     repo = RepoFiles.load(args.root)
     items = stale_items(pages, repo, SwiftIndex.load(repo), load_allowlist(args.root))
     output.emit((item_hit(item) for item in items), args, noun="stale references")
-    paths = sum(1 for item in items if item.kind == KIND_PATH)
-    print(f"doclib: {len(items)} stale references ({paths} paths, {len(items) - paths} names)", file=sys.stderr)
+    path_count = sum(1 for item in items if item.kind == KIND_PATH)
+    print(f"doclib: {len(items)} stale references ({path_count} paths, {len(items) - path_count} names)",
+          file=sys.stderr)
     return output.EXIT_NONE if items else output.EXIT_OK
 
 
@@ -227,4 +237,6 @@ def register(subparsers: Any, common: Any) -> None:
         "stale", parents=[common], help="paths and code names the docs cite that no longer exist",
         description="Report each cited path that names nothing and each backticked code name "
                     "the Swift sources do not declare, except what the allowlist names.")
+    parser.add_argument("--logs", action="store_true",
+                        help="include the log pages (changelog, history), which name what was removed")
     parser.set_defaults(func=run, default_max=output.DEFAULT_MAX)
