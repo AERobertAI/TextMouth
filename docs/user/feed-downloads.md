@@ -22,8 +22,11 @@ A feed's list follows a change of the choice or the number at once; what downloa
 Under the default, a feed's folder lists every episode and article the feed lists, and TextMouth keeps downloaded those of the newest 5 not yet played, newest by publication date, a serial show's too.
 It downloads each of them by itself, at launch, after you subscribe, after each refresh, and once one of its own downloads finishes, an episode only on a network without data limits.
 Played ones count among the newest 5, so playing one never downloads an older one, while deleting one with Delete Episode… brings the next older one in.
-When TextMouth holds more than 5 of its own downloads of a feed, as once a newer episode has arrived, it deletes for good the files of its oldest downloads beyond the newest 5 until it holds 5, keeping, as Delete Download keeps them, the place, bookmarks, settings, and transcript of any you opened (see [Commands](feed-commands.md)).
-This rule never removes a download you asked for, one made before the rule existed, one on the reading list, or one open in a reader, being transcribed, or being exported, or whose text is open in an editor with Edit Text, which it leaves for a later pass, nor, in a library in the cloud, one not wholly on this Mac, and a download that waits or fails removes nothing.
+When TextMouth holds more than 5 of its own downloads of a feed, as once a newer episode has arrived, it deletes for good the files of its oldest downloads beyond the newest 5 until it holds 5.
+It keeps, as Delete Download keeps them, the place, bookmarks, settings, and transcript of any you opened (see [Commands](feed-commands.md)).
+This rule never removes a download you asked for, one made before the rule existed, one on the reading list, or one open in a reader, being transcribed, or being exported, or whose text is open in an editor with Edit Text, which it leaves for a later pass.
+Nor does it remove, in a library in the cloud, one not wholly on this Mac.
+A download that waits or fails removes nothing.
 Opening or playing one of TextMouth's own downloads doesn't make it yours: it still goes once it falls beyond the newest 5, its place kept.
 An item becomes yours when you ask for its download, even while TextMouth's own download of it waits or runs, when you choose Cancel Download or Delete Download on it (the Feed Downloads section's Cancel doesn't make it yours, below), or when a download you asked for fails.
 From then on the rule never downloads it by itself, nor removes its download, though the rule that deletes played downloads still does (see [Commands](feed-commands.md)).

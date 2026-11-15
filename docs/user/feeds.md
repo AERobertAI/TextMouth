@@ -3,7 +3,8 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
-TextMouth subscribes to podcasts and article feeds, and lists each feed's episodes and articles in a library folder of its own, while it keeps their downloads in a folder of the feed's own in the data directory, with an index of their own, so the library's index lists books only ([What TextMouth reads](what-textmouth-reads.md) gives the formats, the refreshes, and the downloads).
+TextMouth subscribes to podcasts and article feeds, and lists each feed's episodes and articles in a library folder of its own.
+It keeps their downloads in a folder of the feed's own in the data directory, with an index of their own, so the library's index lists books only ([What TextMouth reads](what-textmouth-reads.md) gives the formats, the refreshes, and the downloads).
 A feed's commands, and an episode's, are in their rows' context menus and among the rows' actions in VoiceOver's Actions menu (VO-Command-Space), under the same names.
 
 ## Subscribing
@@ -31,7 +32,9 @@ VoiceOver hears how many were found, as in "3 podcasts found for “braille”."
 
 TextMouth reads the feed first, then makes a folder named after it, numbered when the name is taken, so a failure leaves the library as it was: the failure stays in the sheet with its reason, which VoiceOver hears.
 A page naming several feeds lists them, to choose one.
-A feed, and an OPML file, that has a tag of more than 1,024 attributes, or is written in an encoding TextMouth can't read safely (UTF-7, say, or an ISO-2022 or EBCDIC one), fails with the reason that any damaged feed gives, as in "The feed is damaged at line 1: it has a tag with too many attributes for TextMouth to read safely." or "The feed is damaged at line 1: it is written in the UTF-7 encoding, which TextMouth cannot read safely.", and an OPML file with "That OPML file is damaged at line 1: " and the same reason.
+A feed, and an OPML file, that has a tag of more than 1,024 attributes, or is written in an encoding TextMouth can't read safely (UTF-7, say, or an ISO-2022 or EBCDIC one), fails with the reason that any damaged feed gives.
+The reason reads, as in "The feed is damaged at line 1: it has a tag with too many attributes for TextMouth to read safely." or "The feed is damaged at line 1: it is written in the UTF-7 encoding, which TextMouth cannot read safely."
+An OPML file fails with "That OPML file is damaged at line 1: " and the same reason.
 The check is made before the feed is read, so a feed built to stall the reader costs nothing.
 A feed that defines entities of its own, as some old feeds do, is still read.
 A moment after the sheet closes, VoiceOver hears what came, as in "Subscribed to Planet Money: 381 episodes.", or, under Only the newest 10 listed, "Subscribed to Planet Money: 10 of 381 episodes listed."
@@ -120,7 +123,8 @@ An episode is New when it was published after you subscribed, and has been neith
 ### Downloads kept from an earlier version
 <!-- id: feeds-earlier-downloads; keys: upgrade, migration, downloaded episodes, Feeds folder, not downloaded; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedIndex.swift -->
 
-At the first launch of a version that keeps downloads in the feed's own folder, an episode or article downloaded earlier, which the library listed as a book in the feed's folder, moves into the feed's own folder in the data directory, keeping its place, bookmarks, settings, place in the reading list, and history in Stats.
+At the first launch of a version that keeps downloads in the feed's own folder, an episode or article downloaded earlier, which the library listed as a book in the feed's folder, moves into the feed's own folder in the data directory.
+It keeps its place, bookmarks, settings, place in the reading list, and history in Stats.
 A download of a feed whose record is gone, as one an earlier version unsubscribed you from, stays a book of the library, where it was.
 An older version of TextMouth doesn't see the downloaded episodes and articles, which its library's index no longer holds, and marks them not downloaded.
 A newer version marks them downloaded again at its next launch, each whose file is on this Mac, while one whose file is only in the cloud stays not downloaded until a launch finds its file here.
