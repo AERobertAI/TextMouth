@@ -26,6 +26,8 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
 - `github_run.py`'s workflow guard is on: a change to `.github/workflows/` or `.github/actions/` runs on `TestBuild` only after it is on GitHub's main, so it ships with a release push after an outside review.
 - Nothing on this Mac may start an iPhone simulator: the iPhone tests run on GitHub, and `make typecheck-ios` needs only Xcode's SDK.
 - Never read or write the user's live library at `~/.TextMouth` from a test or an experiment; copy what a test needs into its own sandbox, and read its logs only for a diagnosis.
+- Never search from `/` or the home folder (`find`, `mdfind`, `du`, `ls -R`): it walks the user's Downloads, Documents, and cloud drives and puts macOS privacy prompts on their screen.
+- Never play, probe, or decode Ogg through Apple's frameworks in a test or an experiment: its Vorbis decoder locked up in `AVPlayer` once and took the Mac down; `make lint-ogg` flags new calls.
 - Only the orchestrator merges into `main`, with `git merge --no-ff` and only after the full hosted suite is green on the merged tree; the project `CLAUDE.md` otherwise forbids merging.
   Every merge is recorded in the TODO and described in the pages under `docs/` by a documentation pass.
 - Follow `CLAUDE.md`'s Code Style, Git Workflow, and Accessibility; each commit has a test, and every control is keyboard-operable with every value spoken.
