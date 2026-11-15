@@ -254,6 +254,28 @@ final class AudioEditorSavingTests: XCTestCase {
         )
     }
 
+    /// With the checkbox on and no marker of either kind, an export writes
+    /// no label file and says so, as the checkbox's hint says before it.
+    func testAnExportAskedForLabelsWithNoMarkersSaysSo() async throws {
+        let harness = try await openRamp(seconds: 2)
+        let model = harness.model
+        model.exportsLabels = true
+        let folder = try makeSandboxDirectory("editor-no-labels")
+
+        await model.export(as: .wav, to: folder.appendingPathComponent("Quiet.wav"))
+
+        XCTAssertEqual(
+            harness.announcements.sentences.last,
+            "Exported “Quiet.wav”. It has no markers, so no label file was written."
+        )
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["Quiet.wav"])
+        XCTAssertTrue(model.labelEntries.isEmpty)
+        XCTAssertEqual(
+            AudioEditorWording.exportLabelsNothingHint,
+            "The audio has no chapter markers or markers yet, so no label file would be written."
+        )
+    }
+
     // MARK: - Exporting
 
     /// Export writes the edited audio, unsaved edits and all, to another

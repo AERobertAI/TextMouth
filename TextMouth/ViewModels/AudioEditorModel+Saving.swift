@@ -179,12 +179,13 @@ extension AudioEditorModel {
 
     // MARK: Labels Beside an Export (FMT06)
 
-    /// What an export says once its audio at `url` is written: that alone,
-    /// or, with `exportsLabels` and any marker to write, with the label file
-    /// written beside it, or why it could not be.
+    /// What an export says once its audio at `url` is written: that alone;
+    /// or, with `exportsLabels`, with the label file written beside it, or
+    /// why it could not be, or that there was no marker to write.
     private func exportLabelsIfAsked(beside url: URL) -> String {
         let exported = url.lastPathComponent
-        guard exportsLabels, !labelEntries.isEmpty else { return AudioEditorWording.exported(file: exported) }
+        guard exportsLabels else { return AudioEditorWording.exported(file: exported) }
+        guard !labelEntries.isEmpty else { return AudioEditorWording.exportedWithoutLabels(file: exported) }
         do {
             let labels = try exportLabels(beside: url)
             return AudioEditorWording.exported(file: exported, labels: labels.lastPathComponent)

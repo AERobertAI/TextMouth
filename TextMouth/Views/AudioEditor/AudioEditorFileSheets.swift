@@ -72,9 +72,12 @@ struct AudioEditorExportSheet: View {
             .pickerStyle(.menu)
             .accessibilityLabel(AudioEditorWording.formatLabel)
             .modifier(InitialVoiceOverFocusModifier(isTarget: true))
-            // The markers as an Audacity label file beside the audio (FMT06).
+            // The markers as an Audacity label file beside the audio (FMT06);
+            // its hint says when there is none to write.
             Toggle(AudioEditorWording.exportLabelsToggle, isOn: $model.exportsLabels)
-                .accessibilityHint(AudioEditorWording.exportLabelsHint)
+                .accessibilityHint(
+                    model.labelEntries.isEmpty ? AudioEditorWording.exportLabelsNothingHint : AudioEditorWording.exportLabelsHint
+                )
             Text(AudioEditorWording.exportButtonHint)
                 .font(.caption)
                 .foregroundColor(.secondary)

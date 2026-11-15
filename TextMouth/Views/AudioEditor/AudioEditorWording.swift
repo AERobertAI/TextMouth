@@ -741,6 +741,16 @@ enum AudioEditorWording {
     static let exportLabelsHint = "Writes the chapter markers and the markers beside the audio, "
         + "in an Audacity label file of the same name, which Audacity imports as a label track."
 
+    /// The checkbox's hint while the audio has no marker of either kind to
+    /// write.
+    static let exportLabelsNothingHint = "The audio has no chapter markers or markers yet, so no label file would be written."
+
+    /// Said as an export ends that was asked for labels but had no marker to
+    /// write.
+    static func exportedWithoutLabels(file: String) -> String {
+        "Exported “\(file)”. It has no markers, so no label file was written."
+    }
+
     /// Said when an export fails.
     static func exportFailed(_ reason: String) -> String {
         "The audio couldn't be exported. \(reason)"
