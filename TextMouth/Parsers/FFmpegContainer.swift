@@ -99,9 +99,12 @@ enum FFmpegContainer: String, CaseIterable, Equatable, Sendable {
     // MARK: - The Formats TextMouth Reads Itself
 
     /// The signatures of the lossless formats TextMouth reads with readers
-    /// of its own (TTA, WavPack, and Monkey's Audio), which go by a file's
-    /// content: ffmpeg never takes a file that holds one, whatever its name.
-    static let ownReaderSignatures = ["TTA1", "wvpk", "MAC "]
+    /// of its own (TTA, WavPack, and Monkey's Audio, whose files of
+    /// floating-point samples begin "MACF"), which go by a file's content:
+    /// ffmpeg never takes a file that holds one, whatever its name. The
+    /// readers' own sniff (`OwnAudioConverter.format(of:)`, agent ownreaders)
+    /// knows the same four.
+    static let ownReaderSignatures = ["TTA1", "wvpk", "MAC ", "MACF"]
 
     /// Whether the file at `url` holds TTA, WavPack, or Monkey's Audio: one
     /// of `ownReaderSignatures` at its start, or after the ID3v2 tag it

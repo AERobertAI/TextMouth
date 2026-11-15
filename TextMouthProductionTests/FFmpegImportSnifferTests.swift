@@ -190,6 +190,10 @@ final class FFmpegImportSnifferTests: XCTestCase {
         let ape = folder.appendingPathComponent("Disc.webm")
         try Data(Array("MAC ".utf8) + [0x96, 0x0F, 0, 0]).write(to: ape)
         XCTAssertFalse(FFmpegAudioConverter.converts(ape))
+        // Monkey's Audio of floating-point samples.
+        let floats = folder.appendingPathComponent("Floats.mka")
+        try Data(Array("MACF".utf8) + [0x96, 0x0F, 0, 0]).write(to: floats)
+        XCTAssertFalse(FFmpegAudioConverter.converts(floats))
         // An ID3v2 tag of 20 bytes (version 4, no flags) before the signature.
         let tagged = folder.appendingPathComponent("Tagged.wma")
         try Data(Array("ID3".utf8) + [4, 0, 0, 0, 0, 0, 20] + [UInt8](repeating: 0, count: 20) + Array("TTA1".utf8) + [1, 0])
