@@ -100,6 +100,27 @@ final class AudioEditRenderingTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(values.last), 1, accuracy: 0.001)
     }
 
+    // MARK: - Compressed Books
+
+    /// An MP3 book's cut renders to the sample: what a render decodes is what
+    /// the MP3 decodes to on its own, at the same frames, nothing silenced at
+    /// the cut and nothing shifted after it. Read through the edits'
+    /// composition, as renders were until November 15, 2026, every read
+    /// silenced 796 frames around this very cut, and some shifted the sound
+    /// after it 337 frames early (`AudioEditRenderer.readStretches`).
+    func testAnMP3BooksCutRendersToTheSamplesTheBookDecodesTo() async throws {
+        try await assertCutRendersExactly(bookNamed: "Canal Survey.mp3") {
+            try AudioTestFixtures.writeToneMP3(to: $0, sampleRate: Self.rate)
+        }
+    }
+
+    /// An AAC book's cut renders to the sample too.
+    func testAnAACBooksCutRendersToTheSamplesTheBookDecodesTo() async throws {
+        try await assertCutRendersExactly(bookNamed: "Canal Survey.m4a") {
+            try AudioTestFixtures.writeToneAAC(to: $0, sampleRate: Self.rate)
+        }
+    }
+
     // MARK: - Chapters
 
     /// Chapter markers written into an M4A file read back through the app's
@@ -311,6 +332,51 @@ final class AudioEditRenderingTests: XCTestCase {
         try AudioTestFixtures.writeIdentityRamp(to: base, frames: Int(seconds * Self.rate), sampleRate: Self.rate)
         let loaded = try await AudioEditBase.load(base, name: "Canal Survey.caf")
         return (AudioEditComposition.Sources(base: loaded, package: folder, scratch: folder), folder)
+    }
+
+    /// Checks that the second second cut from a 3-second book named `name`,
+    /// which `write` writes, renders into a CAF file of floats holding
+    /// exactly the samples the book decodes to on its own at frames 0 to
+    /// 8,000 and 16,000 to 24,000, naming the first that differ.
+    private func assertCutRendersExactly(
+        bookNamed name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        write: (URL) throws -> Void
+    ) async throws {
+        let folder = try makeFolder()
+        let book = folder.appendingPathComponent(name)
+        try write(book)
+        let base = try await AudioEditBase.load(book, name: name)
+        XCTAssertEqual(base.frames, 24_000, "the book does not measure 3 seconds", file: file, line: line)
+        var timeline = base.timeline
+        try timeline.applyRearranging(.cut(AudioTimeRange(start: 1, end: 2)))
+        let output = folder.appendingPathComponent("cut.caf")
+
+        let outcome = try await AudioEditRenderer.render(
+            timeline,
+            sources: AudioEditComposition.Sources(base: base, package: folder, scratch: folder),
+            to: output,
+            format: .pcmCAF,
+            metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
+        )
+
+        XCTAssertFalse(outcome.copiedSamples, "compressed samples were not decoded", file: file, line: line)
+        let decoded = try AudioTestFixtures.floatSamples(of: book)
+        let expected = Array(decoded.prefix(8_000)) + Array(decoded.dropFirst(16_000))
+        let rendered = try AudioTestFixtures.floatSamples(of: output)
+        XCTAssertEqual(rendered.count, expected.count, "the cut lasts \(rendered.count) frames, not \(expected.count)", file: file, line: line)
+        // Within 1e-4 of full scale, the harness's measure: a silenced or
+        // shifted sample of this tone misses by thousands of times that.
+        let wrong = zip(rendered, expected).enumerated().filter { abs($0.element.0 - $0.element.1) > 1e-4 }
+        XCTAssertEqual(
+            wrong.count,
+            0,
+            "\(wrong.count) samples differ from the book's own, the first at frame \(wrong.first?.offset ?? -1): "
+                + "\(wrong.prefix(3).map { "\($0.element.0) for \($0.element.1)" })",
+            file: file,
+            line: line
+        )
     }
 
     /// Checks that `samples` are exactly `expectedPieces`, naming the first

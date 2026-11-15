@@ -82,7 +82,10 @@ struct AudioEditBase: Sendable {
 /// A composition of an edit timeline: one audio track that plays every
 /// stretch of the timeline from its source, in order, referring to the
 /// source files without copying them (FR04). It plays in an `AVPlayer` for
-/// a preview, sample-exact, and is what a render reads.
+/// a preview, and a render copies samples stored as they are through it; a
+/// render that decodes reads the stretches one by one instead
+/// (`AudioEditRenderer.readStretches`), since AVFoundation decodes an MP3
+/// wrongly through a composition.
 ///
 /// Silence is inserted as sound, from a silent file in the scratch folder,
 /// never as an empty range: a composition with an empty range cannot be
@@ -157,9 +160,10 @@ struct AudioEditComposition {
 
 /// Where the stretches of a timeline find their sound (FR04): each file
 /// opened once, with its first audio track, and each stretch as the pieces
-/// of those files it plays, in order, as a composition is made of them
-/// (`AudioEditComposition.make`). The assets opened are kept here, so they
-/// live as long as it is used.
+/// of those files it plays, in order. A composition is made of them
+/// (`AudioEditComposition.make`), and a render that decodes reads them one
+/// by one (`AudioEditRenderer.readStretches`). The assets opened are kept
+/// here, so they live as long as it is used.
 struct AudioEditStretchSound {
     /// One piece of a stretch: `range` of `track`, the first audio track of
     /// the file `asset` opened, in that file's own time, lasting `length`

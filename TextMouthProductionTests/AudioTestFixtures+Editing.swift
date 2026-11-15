@@ -73,6 +73,46 @@ extension AudioTestFixtures {
         }
     }
 
+    /// `frames` frames of a 440 Hz tone at three tenths of full scale, at
+    /// `sampleRate`: compressed audio to decode, whose every sample differs
+    /// from its neighbours, so a sample missing or out of place shows.
+    static func tone(frames: Int, sampleRate: Double) -> [Float] {
+        (0..<frames).map { 0.3 * Float(sin(2 * Double.pi * 440 * Double($0) / sampleRate)) }
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url`
+    /// as an MP3 at `kilobitsPerSecond`, with the LAME built in, as TextMouth
+    /// writes an MP3 book's file: its ID3 tag titled "Canal Survey" and its
+    /// gapless records.
+    static func writeToneMP3(to url: URL, frames: Int = 24_000, sampleRate: Double = 8_000, kilobitsPerSecond: Int = 32) throws {
+        let encoder = try MP3Encoder(
+            writingTo: url,
+            settings: MP3EncoderSettings(sampleRate: Int(sampleRate), channels: 1, kilobitsPerSecond: kilobitsPerSecond),
+            tag: MP3Tag(title: "Canal Survey")
+        )
+        try tone(frames: frames, sampleRate: sampleRate).withUnsafeBufferPointer { try encoder.encode(interleaved: $0) }
+        try encoder.finish()
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url`
+    /// as AAC in an MPEG-4 audio file, at the bit rate Core Audio chooses.
+    static func writeToneAAC(to url: URL, frames: Int = 24_000, sampleRate: Double = 8_000) throws {
+        let format = try XCTUnwrap(AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false))
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)))
+        buffer.frameLength = AVAudioFrameCount(frames)
+        let channel = try XCTUnwrap(buffer.floatChannelData)[0]
+        for (index, sample) in tone(frames: frames, sampleRate: sampleRate).enumerated() {
+            channel[index] = sample
+        }
+        let file = try AVAudioFile(
+            forWriting: url,
+            settings: [AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: sampleRate, AVNumberOfChannelsKey: 1],
+            commonFormat: .pcmFormatFloat32,
+            interleaved: false
+        )
+        try file.write(from: buffer)
+    }
+
     /// What `sample`, read from an edited identity ramp, is.
     static func rampSample(_ sample: Float) -> RampSample {
         if sample == 0 { return .silence }
