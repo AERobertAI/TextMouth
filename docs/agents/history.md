@@ -887,6 +887,8 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 
 - DAISY 3 books of several DTBook files, and SMIL clocks, came on November 13, 2026.
 - DAISYParser.parseTime: "500ms" used to read as no time.
+- Raising DAISY's page reader version to "1.0.1" made every stamped DAISY book read again once at the next launch, though only a book of several DTBook files with a wordless page after an earlier page, or whose files were read out of order, makes another text.
+- A web page named .doc, a web archive, and SSML "now" honoured includesPages: false.
 
 ## From Imports: duplicates
 
