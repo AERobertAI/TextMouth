@@ -64,11 +64,17 @@ Clean Up Transcript (Experimental)…, in the same places for a transcribed audi
 The sheet names the rules in use, as in "Rules: your copy, version 1 of DATE, 2 rules.",
 - says what they would change, as in "23 corrections in 19 sentences.",
 - and lists each rule that changes something, with its count and up to three examples, before and after, each read by VoiceOver as one line.
+
 A rule that would leave a sentence with no text at all, as a rule that turns "um" into nothing would for a sentence that is only "Um", leaves that sentence as it is, neither listing nor counting it.
+
 It says when the transcript was last cleaned up.
+
 VoiceOver moves to Apply when the rules change something, and to Cancel otherwise, then hears the sheet's lines.
+
 Return presses Apply, and Escape presses Cancel.
+
 Coming back to TextMouth, as after editing the rules, shows what the rules would change then.
+
 While the book is being transcribed, or its transcript can't be read, the sheet only says so.
 ## What Apply does
 <!-- id: what-apply-does; keys: transcript.json.before-cleanup, backup copy, refused, word timings; src: TextMouth/Models/TranscriptCleanupWording.swift, TextMouth/Services/TranscriptCleanup.swift, TextMouth/Services/TranscriptCleanupStore.swift -->
@@ -77,14 +83,19 @@ Apply keeps the transcript as it was beside it, as transcript.json.before-cleanu
 - rewrites each sentence the rules changed, keeping its time in the audio and dropping its words' timings, as an edit in your own editor does,
 - notes the cleanup in the transcript,
 - and writes the book's text again from it.
+
 Open readers show the cleaned text as the book plays on, and VoiceOver hears "Cleaned up the transcript of Moby-Dick: 23 corrections."
+
 Positions and bookmarks stay as they were, since they count time.
+
 Apply is refused, saying why, when the book is being transcribed,
 - when the transcript changed after the sheet showed it, as when another Mac transcribed the book again,
 - when the book's audio changed after it was transcribed,
 - when the book's text is only in iCloud,
 - or when the text holds changes that TextMouth can't keep a copy of before it replaces them.
+
 The last two say, after "Couldn't clean up the transcript of Moby-Dick: ", "The book's text is only in iCloud, so TextMouth leaves it as it is.
+
 Download the book, then try again." and "The book's text holds changes TextMouth couldn't keep a copy of, so it leaves the text as it is."
 ## Undo Cleanup
 <!-- id: undo-cleanup; keys: restore transcript, Edit Text session, last cleanup; src: TextMouth/Models/TranscriptCleanupWording.swift, TextMouth/ViewModels/TranscriptCleanupSheetModel.swift, TextMouth/Services/TranscriptCleanupStore.swift -->
@@ -100,10 +111,15 @@ After a cleanup, an undo, or a new transcription, choose Edit Text again to edit
 A feed episode's transcript can be edited and cleaned up as any audiobook's can:
 - Edit Text in Default Editor, Edit Text With…, and Clean Up Transcript (Experimental)… are offered for a transcribed episode in its feed, in its row's menu and its reader's Book menu,
 - while Edit Audio…, Book Info's editing, and, for a feed's article, Edit Text still are not (see [Podcasts and article feeds](feeds.md)).
+
 Your changes stay with the episode in its feed, even after its download is deleted; Delete Episode… and Delete Feed… delete them, and Move to Library… keeps them with the episode as a book.
+
 The words are: "This episode's transcript, with your changes, stays with the episode in its feed, even after its download is deleted.
+
 Deleting the episode or the feed deletes it; Move to Library keeps it with the episode as a book."
+
 The Clean Up sheet has them on a line of its own, after the line that calls the cleanup experimental, and VoiceOver says them after the first edit of an episode's text that Edit Text takes, as "Text updated.
+
 " followed by them; a later edit in the session says only "Text updated".
 ## Cleanup rules and Edit Rules…
 <!-- id: cleanup-rules-edit-rules; keys: transcript-cleanup.json, Edit Rules, British spelling, built-in rules; src: TextMouth/Models/TranscriptCleanupRules.swift, TextMouth/Services/TranscriptCleanupRuleFile.swift, TextMouth/Resources/transcript-cleanup.json -->
@@ -119,14 +135,18 @@ A rule has a pattern and a replacement;
 - wholeWord, true unless set, which matches whole words only, keeping the punctuation around them and a possessive "'s" after them, as "Bennett's" becomes "Bennet's", where false matches inside words too;
 - evidence, how many places it was right in, 0 for a rule of your own;
 - and an optional note.
+
 Matching ignores case and the kind of apostrophe, the replacement takes the case of the words it replaces, and the rules apply in order.
+
 Your copy can't be used when TextMouth can't read it in that format,
 - or when its version is below 1, its date isn't a day written as `2026-10-04`,
 - or one of its rules has an empty pattern or replacement, a pattern without a letter or figure, or a replacement holding its own pattern, which every cleanup would change again:
 - the sheet says why, naming the field, as in "rules[2].replacement is empty",
 - a copy of it is kept beside it, its name followed by .unreadable- and the date and time,
 - and TextMouth's own rules stand in until you correct it.
+
 While your copy is only in the cloud, TextMouth asks the sync service for it, and its own rules stand in meanwhile.
+
 When TextMouth's own rules are newer than your copy, the sheet says so.
 ## Delete Transcript…
 <!-- id: delete-transcript; keys: remove transcript, reading text, transcribe again; src: TextMouth/Models/TranscriptionWording.swift, TextMouth/Services/TranscriptDeletion.swift -->
