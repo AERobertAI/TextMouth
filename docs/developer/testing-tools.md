@@ -1,5 +1,5 @@
 # Reusable test tools
-<!-- id: reusable-test-tools; keys: ; src: -->
+<!-- id: reusable-test-tools; keys: Scripts/test, selftest, test scripts, make check, xcodebuild; src: Scripts/test/, Makefile, Scripts/check-selftest.sh -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -9,7 +9,7 @@ Among its checks, `make check-selftest` runs every Python tool's selftest, and t
 The times below leave out the build, which takes about 5 minutes when nothing is built yet, and longer while agents hold all three build slots.
 
 ## Load-sensitive tests made to wait
-<!-- id: load-sensitive-tests-made-wait; keys: ; src: TextMouthProductionTests/BookSearchModelTests.swift, TextMouthProductionTests/FeedDownloadTests.swift, TextMouthProductionTests/StorageGenerationMoveTests.swift, TextMouthProductionTests/DataDirectoryMoveTests.swift, TextMouthProductionTests/ViewsAndWindowsReaderSheetTests.swift -->
+<!-- id: load-sensitive-tests-made-wait; keys: flaky, flakiness, timing, deadline, busy Mac, expectation, slow Mac; src: TextMouthProductionTests/BookSearchModelTests.swift, TextMouthProductionTests/FeedDownloadTests.swift, TextMouthProductionTests/StorageGenerationMoveTests.swift, TextMouthProductionTests/DataDirectoryMoveTests.swift, TextMouthProductionTests/ViewsAndWindowsReaderSheetTests.swift, TextMouthProductionTests/IntegrationSleepTimerTests.swift, TextMouthProductionTests/ContinueToNextBookTests.swift, TextMouthProductionTests/BookmarkKeyboardAccessTests.swift, TextMouthProductionTests/ReadingCheckpointTests.swift, TextMouthProductionTests/ShortcutConfigFileTests.swift, TextMouthProductionTests/PlaybackSettingsAuditTests.swift, TextMouthProductionTests/FeedUICommandsTests.swift -->
 
 The load-sensitive tests of the October 30, 2026 audit are no longer load-sensitive, each made to wait for the thing it checks rather than for a moment, and shown to fail when its app code is broken and to pass 5 to 20 times of 5 to 20 under a busy Mac:
 
@@ -21,7 +21,7 @@ The load-sensitive tests of the October 30, 2026 audit are no longer load-sensit
 - Still load-sensitive, by design: the performance baselines and the audiobook-open benchmark; five classes keep fixed warm-ups with the same risk.
 
 ## The build train
-<!-- id: build-train; keys: ; src: TextMouthProductionTests/RecordingTestSupport.swift, TextMouthProductionTests/TranscriptionFixtureTests.swift, TextMouthProductionTests/ContentIndexValidationTests.swift, Scripts/agents/build-train.py -->
+<!-- id: build-train; keys: train, queue, TestBuild, train/base, hung test, request, GitHub Actions, wait-for-result; src: Scripts/agents/build-train.py, Scripts/agents/wait-for-result.py, Scripts/agents/heavy_lock.py, Scripts/agents/github_run.py, Scripts/test/run-area.py, TextMouthProductionTests/ContentIndexValidationTests.swift -->
 
 The build train, `Scripts/agents/build-train.py`, is how agents build.
 On October 31, 2026 the Mac froze under the agents' builds, so agents no longer build on their own: an agent commits its work on its branch and asks the train to test it (`build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]`), and one scheduled build every hour, on the hour (`build-train.py loop`, or `run` for one), pools every waiting request.
@@ -52,14 +52,14 @@ That watches only the train's own copy of the app.
   A symbolic link hid the folder listed right after it, and a fixture that assumed the listing put a link before a folder passed against the old code on one volume, so the fixture grows, folder by folder or link by link, until a link really is listed right before a folder, and fails loudly if it never is (`ContentIndexValidationTests`).
 
 ## Portable XML differential tests
-<!-- id: portable-xml-differential-tests; keys: ; src: TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouth/Platform/iOS/Parsers/XMLTree+iOS.swift, TextMouthProductionTests/PortableXMLCorpus.swift -->
+<!-- id: portable-xml-differential-tests; keys: XMLDocument, PortableXMLDocument, differential, EPUB, OPML, iOS XML, knownDifferences; src: TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/PortableXMLCorpus.swift, TextMouth/Parsers/PortableXML.swift, TextMouth/Parsers/PortableXMLBuilder.swift, TextMouth/Platform/iOS/Parsers/XMLTree+iOS.swift -->
 
 `PortableXMLDifferentialTests` (in the import and feeds areas) tests the portable XML tree that the iOS app reads EPUB, feed, and OPML files with (see [The two apps and the platform folders](../architecture/platforms.md)).
 It compares that tree with Foundation's `XMLDocument` on 104 documents, each read strictly and tidied: the XML documents of the test EPUBs, the feed, OPML, and OPF fixtures, and 61 small documents in `PortableXMLCorpus`.
 It fails on any difference that its `knownDifferences` does not list with the reason and evidence, and on a listed difference that has gone away.
 
 ## Mac braille table check tests
-<!-- id: mac-braille-table-check-tests; keys: ; src: TextMouthProductionTests/MacBrailleTableCheckTests.swift -->
+<!-- id: mac-braille-table-check-tests; keys: peakResidentBytes, liblouis, braille helper, watchdog, flaky, peak memory, table check; src: TextMouthProductionTests/MacBrailleTableCheckTests.swift, TextMouth/Services/MacBrailleTableCheck.swift -->
 
 `MacBrailleTableCheckTests` reads the memory of the braille helper it checks a table with, and its reading can miss all three short runs of a table, so that `testFrenchGermanAndSpanishPassAndRoundTrip` fails at its `peakResidentBytes` assertion for a table, with the load time before it passing.
 The watchdog takes a reading only after one poll interval (1 ms) passes with the helper still running, and a helper that ends first leaves a peak of 0.
@@ -67,13 +67,13 @@ The test passed in the 13 train runs before it first failed, in train 1104-0000 
 If it fails again, run the same class on main, to show that the failure predates the change; any other test failing beside it is not this.
 
 ## Golden tests against a Release build
-<!-- id: golden-tests-against-release-build; keys: ; src: TextMouthProductionTests/TextPipelineGoldenTests.swift, TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/ParserContentFidelityTests.swift -->
+<!-- id: golden-tests-against-release-build; keys: release-goldens, Release, Osize, optimizer, miscompile, goldens, testability; src: Scripts/test/release-goldens.sh, Makefile, TextMouthProductionTests/TextPipelineGoldenTests.swift, TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/ParserContentFidelityTests.swift -->
 
 Run the golden tests against a Release build: `make release-goldens` (`Scripts/test/release-goldens.sh`) runs the five classes that pin what every reader makes of a book (`TextPipelineGoldenTests`, `DocumentGoldenTests`, `MarkupGuardTests`, `PortableXMLDifferentialTests`, `ParserContentFidelityTests`) against the Release configuration with `-Osize` and testability on, so that an optimizer miscompile cannot hide behind the Debug suite, which is the only build the ordinary suite tests.
 Run it once before a release; it takes about 14 minutes and 1.5 GB (see The Release golden tests in [Building TextMouth](building.md)).
 
 ## Run only some tests
-<!-- id: run-only-some-tests; keys: ; src: -->
+<!-- id: run-only-some-tests; keys: test-area, AREAS, AREA_ARGS, areas.conf, run-area, --changed, --repeat, flaky test; src: Scripts/test/run-area.py, Scripts/test/areas.conf, Scripts/test/testkit.py, Makefile -->
 
 Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `make test-area AREAS="feeds bookmarks"`, where `AREA_ARGS` passes options, as in `make test-area AREAS=feeds AREA_ARGS=--dry-run`.
 
@@ -93,7 +93,7 @@ Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `mak
   The testkit team's lead measured the whole suite, `all`, at about 16 minutes of test time on October 17, 2026.
 
 ## Check the lines a branch adds
-<!-- id: check-lines-branch-adds; keys: ; src: TextMouth/Services/ImportAudioConverter.swift, Scripts/test/trap-lint.py, Scripts/test/test-diff.py, Scripts/test/a11y-lint.py, Scripts/test/ogg-lint.py -->
+<!-- id: check-lines-branch-adds; keys: lint-tests, lint-a11y, lint-ogg, LINT_BASE, linter, static check, Vorbis, Apple reader; src: Scripts/test/trap-lint.py, Scripts/test/test-diff.py, Scripts/test/a11y-lint.py, Scripts/test/ogg-lint.py, Scripts/test/difflint.py, Makefile, TextMouth/Services/ImportAudioConverter.swift -->
 
 Check the lines a branch adds, without building, in seconds.
 They compare against `main`; `LINT_BASE=REF` on the `make` line compares against another branch point.
@@ -108,14 +108,14 @@ They compare against `main`; `LINT_BASE=REF` on the `make` line compares against
   On those three linters, `--all` audits every line of the tree instead and exits 0, `--counts` with it prints only the counts, and `--rule NAME` shows one rule's hits.
 
 ## Read test logs
-<!-- id: read-test-logs; keys: ; src: -->
+<!-- id: read-test-logs; keys: slowest, compare, flaky, xcodebuild log, test log, run.log; src: Scripts/test/test-logs.py -->
 
 Read logs: `python3 Scripts/test/test-logs.py slowest LOG` lists the slowest tests of a log (`-n N` sets how many, 20 by default, and `--classes` adds the 10 slowest classes), `compare OLD NEW` lists what changed between two logs (a test now failing, new, gone, or slower, meaning it takes more than `--slower` seconds, 2 by default, and more than 1.5 times its old time), and `flaky LOG LOG...` lists the tests that differ in outcome or time across two or more logs.
 `compare` exits 1 when a test is now failing, is new and failing, or is gone.
 A 22 MB log takes under a second.
 
 ## Quitting while work is held
-<!-- id: quitting-while-work-held; keys: ; src: TextMouth/App/QuitReason.swift, TextMouthProductionTests/QuitWhileHeldTests.swift, TextMouth/App/UnsavedChangesTermination.swift, TextMouth/App/QuitRequest.swift, TextMouth/App/QuitHold.swift -->
+<!-- id: quitting-while-work-held; keys: terminate, terminateLater, kAEQuitReason, Quit Anyway, log out, Command-Q, probe, AppKit; src: TextMouth/App/QuitReason.swift, TextMouth/App/QuitRequest.swift, TextMouth/App/QuitHold.swift, TextMouth/App/QuitFinisher.swift, TextMouth/App/UnsavedChangesTermination.swift, Scripts/test/quit-while-held.py, Scripts/test/quit-while-held/main.swift, Scripts/test/quit-while-held/Stubs.swift, TextMouthProductionTests/QuitWhileHeldTests.swift, Scripts/agents/run_locked.py, Scripts/test/areas.conf -->
 
 Quitting while work is held (0.4.4): what the hosted suite cannot do, because no test may quit the test host, `Scripts/test/quit-while-held.py` does in child processes of real AppKit.
 
@@ -150,7 +150,7 @@ Quitting while work is held (0.4.4): what the hosted suite cannot do, because no
 - Not tested: a real log out or shut down from loginwindow, which sends the reason as an attribute or a parameter that the SDK header does not settle, and whether VoiceOver speaks the panel's announcement when TextMouth is not the front app.
 
 ## Documents to try
-<!-- id: documents-try; keys: ; src: -->
+<!-- id: documents-try; keys: make-corpus, corpus-report, corpus, hazard, importers, sample documents, manifest; src: Scripts/test/make-corpus.py, Scripts/test/corpus-report.sh, TestData/format-samples/, TextMouthProductionTests/CorpusReportTests.swift, TextMouthProductionTests/CorpusRunner.swift, TextMouthProductionTests/CorpusReport.swift -->
 
 Documents to try:
 
@@ -169,7 +169,7 @@ Documents to try:
   It takes about 7 seconds of test time on TestData and 2 minutes on the generated corpus.
 
 ## Test matrices
-<!-- id: test-matrices; keys: ; src: TextMouthProductionTests/EndBehaviorMatrixAudioSupport.swift, TextMouthProductionTests/EndBehaviorMatrixTests.swift, TextMouthProductionTests/WindowsMatrixTests.swift -->
+<!-- id: test-matrices; keys: matrix, end of book, sleep timer, cells, windows, table, end behavior; src: TextMouthProductionTests/EndBehaviorMatrixTests.swift, TextMouthProductionTests/EndBehaviorMatrixAudioSupport.swift, TextMouthProductionTests/EndBehaviorMatrixChapteredTests.swift, TextMouthProductionTests/WindowsMatrixTests.swift -->
 
 Matrices, always on, each with its table in its file's header comment:
 
@@ -180,12 +180,12 @@ Matrices, always on, each with its table in its file's header comment:
   It takes about 8 seconds.
 
 ## Keyboard reachability
-<!-- id: keyboard-reachability; keys: ; src: TextMouthProductionTests/KeyboardReachabilityTests.swift -->
+<!-- id: keyboard-reachability; keys: shortcuts, default key, unboundActions, menu item, key collision, reachability; src: TextMouthProductionTests/KeyboardReachabilityTests.swift -->
 
 Keyboard: `KeyboardReachabilityTests`, which takes under a second, checks that every action has a way in (a default key or a menu item, or an entry in its `unboundActions` list with the reason), that no two default keys collide where both act, that every menu item is an action or is accounted for, that every default key can be spoken, and that no default key is one the shortcut rules refuse.
 
 ## Playback fuzz
-<!-- id: playback-fuzz; keys: ; src: TextMouthProductionTests/PlaybackFuzzTests.swift -->
+<!-- id: playback-fuzz; keys: fuzz, random operations, seed, P09, silent reader, TEXTMOUTH_PLAYBACK_FUZZ_SEED; src: TextMouthProductionTests/PlaybackFuzzTests.swift, TextMouthProductionTests/PlaybackFuzzOperations.swift, Scripts/test/run-area.py -->
 
 Playback fuzz: `PlaybackFuzzTests` applies seeded random operations (play, pause, seeks, skips, headings, voice and speed changes, route losses, media commands, stale renders, sleep timers, and time passing) to a silent reader of each of three kinds of book, a text book, a one-file audiobook, and a three-file audiobook, and after each operation checks what a listener depends on (P09 in TODO-2026-09-04.md).
 Nothing is heard.
@@ -194,7 +194,7 @@ A failure's message starts with the seed, the step, and the operations so far, a
 For a long run: `python3 Scripts/test/run-area.py --classes PlaybackFuzzTests --env TEXTMOUTH_PLAYBACK_FUZZ_SEQUENCES=200 --env TEXTMOUTH_PLAYBACK_FUZZ_SEED=N`, which takes about 26 minutes; `TEXTMOUTH_PLAYBACK_FUZZ_LENGTH` sets the operations in a sequence.
 
 ## Opt-in sweeps
-<!-- id: opt-sweeps; keys: ; src: Scripts/test/run-area.py -->
+<!-- id: opt-sweeps; keys: voice sweep, import fuzz, storage drill, disk image, hdiutil, damaged books, voices, opt-in; src: Scripts/test/voice-sweep.sh, Scripts/test/import-fuzz.sh, Scripts/test/storage-drill.sh, Scripts/test/storage-drill-selftest.sh, Scripts/test/run-area.py, TextMouthProductionTests/VoiceSweepTests.swift, TextMouthProductionTests/VoiceSweepReport.swift, TextMouthProductionTests/ImportFuzzTests.swift, TextMouthProductionTests/ImportFuzzMutator.swift, TextMouthProductionTests/StorageDrillTests.swift, TextMouthProductionTests/DiskImageDrill.swift -->
 
 Opt-in sweeps: each skips unless its script sets its environment variable, and each script runs its test class through `run-area.py`, which builds first.
 
@@ -219,6 +219,6 @@ Opt-in sweeps: each skips unless its script sets its environment variable, and e
   `Scripts/test/storage-drill-selftest.sh`, which `make check-selftest` runs, tests those verdicts in a second, without building, with stand-ins for `run-area.py` and `hdiutil`.
 
 ## Measure listener-heard changes on real samples
-<!-- id: measure-listener-heard-changes-real; keys: ; src: TextMouthProductionTests/CorpusReportTests.swift -->
+<!-- id: measure-listener-heard-changes-real; keys: corpus, real samples, listener, synthetic text, documents folder; src: TextMouthProductionTests/CorpusReportTests.swift, TextMouthProductionTests/CorpusRunner.swift, Scripts/test/corpus-report.sh -->
 
 Where a fix changes what a listener hears, measure it on real samples: a synthetic text can pass while a real book shows the difference (`CorpusReportTests` reports on a folder of documents).
