@@ -1,6 +1,8 @@
 # What TextMouth reads: text, HTML, PDF, and web archive files
 <!-- id: what-textmouth-reads-text-html; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## PDF files
 <!-- id: pdf-files; keys: ; src: -->
 

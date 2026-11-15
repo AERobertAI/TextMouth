@@ -1,6 +1,8 @@
 # What TextMouth reads: pages, tables, and limits
 <!-- id: what-textmouth-reads-pages-tables; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Pages
 <!-- id: pages; keys: ; src: -->
 

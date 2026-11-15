@@ -1,6 +1,8 @@
 # What TextMouth reads: transcripts, feeds, and packages
 <!-- id: what-textmouth-reads-transcripts-feeds; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Transcripts of audiobooks, on macOS 26 and later
 <!-- id: transcripts-audiobooks-macos-26-later; keys: ; src: -->
 

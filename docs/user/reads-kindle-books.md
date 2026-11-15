@@ -1,6 +1,8 @@
 # What TextMouth reads: Kindle books
 <!-- id: what-textmouth-reads-kindle-books; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Kindle books in the MOBI format
 <!-- id: kindle-books-mobi-format; keys: ; src: -->
 

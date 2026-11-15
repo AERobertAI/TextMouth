@@ -1,6 +1,8 @@
 # What TextMouth reads: DAISY and braille books
 <!-- id: what-textmouth-reads-daisy-braille; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## DAISY books
 <!-- id: daisy-books; keys: ; src: -->
 
