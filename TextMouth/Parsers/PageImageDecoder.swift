@@ -238,7 +238,16 @@ struct PageImageSource {
         guard let image = CGImageSourceCreateThumbnailAtIndex(source, index, options as CFDictionary) else {
             throw PageImageError.cannotDecode
         }
-        return DecodedPage(image: image)
+        return DecodedPage(image: image, hasAlpha: Self.declaresAlpha(properties))
+    }
+
+    /// Whether a picture's properties say it has transparency
+    /// (`kCGImagePropertyHasAlpha`): what the picture says of itself, not
+    /// whether ImageIO gives the decoded picture an alpha channel, which it
+    /// gives an opaque HEIC photograph too. A picture that says nothing has
+    /// none.
+    static func declaresAlpha(_ properties: [CFString: Any]) -> Bool {
+        (properties[kCGImagePropertyHasAlpha] as? NSNumber)?.boolValue ?? false
     }
 }
 
@@ -249,15 +258,11 @@ struct DecodedPage {
     /// The picture as decoded, possibly with an alpha channel.
     let image: CGImage
 
-    /// Whether the picture has an alpha channel, so that what it draws on
+    /// Whether the picture says it has transparency
+    /// (`PageImageSource.declaresAlpha(_:)`), so that what it draws on
     /// transparency could be lost against one background and seen against
     /// another.
-    var hasAlpha: Bool {
-        switch image.alphaInfo {
-        case .none, .noneSkipFirst, .noneSkipLast: return false
-        default: return true
-        }
-    }
+    let hasAlpha: Bool
 
     /// The background a page is flattened onto.
     enum Background: Sendable {

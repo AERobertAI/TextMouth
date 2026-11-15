@@ -51,6 +51,18 @@ final class PageImageReaderTests: XCTestCase {
         XCTAssertEqual(extraction.markdown, "<!-- page: 1 -->\n\nFerry leaves at noon")
     }
 
+    /// An opaque HEIC, which ImageIO decodes with an alpha channel (measured
+    /// on macOS 26: premultiplied alpha), is judged by what it says of
+    /// itself: with nothing found on white, it is not read again on black.
+    func testAnOpaqueHEICIsReadOnce() throws {
+        let heic = try copyOfFormatSample("heic/page-one.heic")
+        let script = Script([.lines([])])
+
+        XCTAssertThrowsError(try read(heic, with: script))
+
+        XCTAssertEqual(script.pictures.count, 1, "an opaque HEIC is not read again on black")
+    }
+
     /// An opaque picture in which nothing is found is not read again, and
     /// imports nothing, saying so.
     func testAPictureWithoutTextIsRefused() throws {

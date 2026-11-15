@@ -195,15 +195,14 @@ final class PageImageDecoderTests: XCTestCase {
     // MARK: - The Samples
 
     /// The picture samples decode as their kinds, at their size, the
-    /// transparent PNG with an alpha channel and the TIFF as two pages. (The
-    /// HEIC decoder gives an opaque picture an alpha channel of its own, so
-    /// its alpha is not judged.)
+    /// transparent PNG with transparency and the TIFF as two pages. The HEIC
+    /// is opaque, as it says, though its decoder gives it an alpha channel.
     func testTheSamplesDecode() throws {
         let samples: [(path: String, type: String, pages: Int, alpha: Bool?)] = [
             ("png/page-one.png", "public.png", 1, false),
             ("png/page-one-transparent.png", "public.png", 1, true),
             ("jpeg/page-one.jpg", "public.jpeg", 1, false),
-            ("heic/page-one.heic", "public.heic", 1, nil),
+            ("heic/page-one.heic", "public.heic", 1, false),
             ("tiff-multipage/two-pages.tiff", "public.tiff", 2, false),
         ]
         for sample in samples {
