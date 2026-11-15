@@ -11,6 +11,7 @@ enum BookExportWording {
     static func name(of kind: BookExportKind) -> String {
         switch kind {
         case .audio: return "Audio"
+        case .headings: return "Headings"
         case .originalRecording: return "Original recording"
         case .originalAudio: return "Original audio (before edits)"
         case .transcript: return "Transcript"
@@ -26,6 +27,8 @@ enum BookExportWording {
         switch kind {
         case .audio:
             return "The book's audio: its file, or its tracks in a folder named after the book, each named for its chapter."
+        case .headings:
+            return chapterListChoiceHint(for: .standard)
         case .originalFile:
             return "The book's own file, as it was imported; for an audiobook, its audio files as they were before "
                 + "TextMouth converted them."
@@ -56,7 +59,11 @@ enum BookExportWording {
     /// never sound alike when one export shows both, and `convertToLabel`
     /// beside any other.
     static func convertToLabel(for kind: BookExportKind) -> String {
-        kind == .transcript ? "Convert transcript to" : convertToLabel
+        switch kind {
+        case .transcript: return "Convert transcript to"
+        case .headings: return "Convert headings to"
+        default: return convertToLabel
+        }
     }
 
     /// What the picker calls its first choice, the picker's default: the
@@ -71,7 +78,11 @@ enum BookExportWording {
     /// "Text as HTML". A kind whose text is not converted, or no conversion
     /// (nil), keeps `name(of:)`.
     static func name(of kind: BookExportKind, convertedTo conversionName: String?) -> String {
-        guard let conversionName, kind.convertsText else { return name(of: kind) }
+        guard let conversionName else { return name(of: kind) }
+        if kind.writesChapterList {
+            return "\(name(of: kind)) as \(conversionName)"
+        }
+        guard kind.convertsText else { return name(of: kind) }
         return "Text as \(conversionName)"
     }
 
@@ -82,6 +93,21 @@ enum BookExportWording {
         guard let conversionName, kind.convertsText else { return hint(for: kind) }
         return "The book's text as \(conversionName), \(madeFromTheMarkdown)"
     }
+
+    // MARK: A Book's Headings (FMT24)
+
+    /// What the Convert headings to picker's hint says while `format` is
+    /// chosen, and what the Headings checkbox exports in it.
+    static func chapterListChoiceHint(for format: ChapterListFormat) -> String {
+        switch format {
+        case .cueSheet:
+            return "Each heading's title and where it begins, as a CUE sheet that names the audio as Audio exports it."
+        }
+    }
+
+    /// Why a book's headings were not written: it keeps no record of them
+    /// yet, after the file's name in the export's failure sentence.
+    static let noHeadingsReason = "TextMouth has not read this book's headings yet. Open the book once, then export them again."
 
     /// Where a text writer's file comes from, which every hint of one ends
     /// with: a text book's, and a transcript's text (`transcriptTextHint(as:)`).
@@ -187,7 +213,8 @@ enum BookExportWording {
     /// book: "Transcript as WebVTT", "Transcript as HTML". Spoken audio, one
     /// file whose size is unknown until it is spoken (FMT43), says neither a
     /// size nor a file count: "Text as spoken audio", or "Text as spoken
-    /// audio, in the cloud".
+    /// audio, in the cloud". Nor do an audiobook's headings, one file written
+    /// in the format chosen (FMT24): "Headings as CUE sheet".
     /// - Parameters:
     ///   - kind: The checkbox's kind.
     ///   - bookCount: How many books the dialog exports from.
@@ -196,7 +223,8 @@ enum BookExportWording {
     ///   - byteCount: Their size in bytes.
     ///   - inCloudCount: How many books hold it only in the cloud.
     ///   - conversionName: The name of the writer the kind's text is
-    ///     converted to ("HTML"), which the label says and leaves the size
+    ///     converted to ("HTML"), or of the format an audiobook's headings
+    ///     are written in ("CUE sheet"), which the label says and leaves the size
     ///     out for: a converted file's size is not known until it is written,
     ///     and the Markdown's would mislead (RTF of Cyrillic text is about
     ///     3.2 times larger, Word 97-2003 two or more times); nil for the
@@ -216,7 +244,9 @@ enum BookExportWording {
         transcriptAs transcriptConversionName: String? = nil
     ) -> String {
         let transcriptConversion = kind == .transcript ? transcriptConversionName : nil
-        let converted = (conversionName != nil && kind.convertsText) || transcriptConversion != nil
+        // A chapter list (FMT24) is always written, never copied, so it has
+        // no size before it is written either.
+        let converted = (conversionName != nil && kind.convertsText) || kind.writesChapterList || transcriptConversion != nil
         // Spoken audio is one file, whose size is unknown until it is spoken.
         let spoken = kind == .spokenAudio
         var parts = [transcriptConversion.map(transcriptName(as:)) ?? name(of: kind, convertedTo: conversionName)]

@@ -45,9 +45,9 @@ final class BookExportServiceTests: XCTestCase {
         XCTAssertTrue(offer.items.allSatisfy { !$0.isInCloud && $0.folderName == nil })
     }
 
-    /// A multi-file audiobook offers its audio alone: its tracks, together
-    /// in a folder named after the book, in the order it plays them, each
-    /// numbered and named for its chapter.
+    /// A multi-file audiobook offers its audio, and its headings as a chapter
+    /// list (FMT24): its tracks, together in a folder named after the book,
+    /// in the order it plays them, each numbered and named for its chapter.
     func testAMultiFileAudiobookOffersItsTracksNamedForTheirChapters() throws {
         let world = try makeIntegrationWorld("Export Audio Offer")
         let book = try world.makeSilentAudioBook(title: "Tide Clock Recordings", trackDurations: [1, 1, 1])
@@ -55,7 +55,7 @@ final class BookExportServiceTests: XCTestCase {
 
         let offer = BookExportService.offer(for: book)
 
-        XCTAssertEqual(offer.items.map(\.kind), [.audio])
+        XCTAssertEqual(offer.items.map(\.kind), [.audio, .headings])
         let audio = try XCTUnwrap(offer.item(.audio))
         XCTAssertEqual(audio.folderName, "Tide Clock Recordings")
         XCTAssertEqual(audio.suggestedName, "Tide Clock Recordings")
@@ -224,7 +224,7 @@ final class BookExportServiceTests: XCTestCase {
         let destination = try makeSandboxDirectory("Export Track Originals Destination")
         let outcome = BookExportService.export([offer], kinds: [.originalAudio], to: destination)
 
-        XCTAssertEqual(offer.items.map(\.kind), [.audio, .originalAudio])
+        XCTAssertEqual(offer.items.map(\.kind), [.audio, .headings, .originalAudio])
         XCTAssertEqual(offer.item(.originalAudio)?.files.map(\.path), ["01.wav", "03.wav"])
         XCTAssertEqual(outcome.failures, [])
         let folder = destination.appendingPathComponent("Tide Clock Recordings - Original Audio", isDirectory: true)

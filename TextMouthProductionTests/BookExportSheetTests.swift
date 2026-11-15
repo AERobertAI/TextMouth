@@ -120,8 +120,13 @@ final class BookExportSheetTests: XCTestCase {
         await model.load()
 
         XCTAssertEqual(model.title, "Export 2 Books")
-        XCTAssertEqual(model.choices.map(\.kind), [.audio, .originalFile, .markdown, .plainText])
-        XCTAssertTrue(model.choices.allSatisfy { $0.label.contains(", 1 book, ") }, "\(model.choices.map(\.label))")
+        XCTAssertEqual(model.choices.map(\.kind), [.audio, .headings, .originalFile, .markdown, .plainText])
+        // Each copied kind says its size after its count; the headings (FMT24),
+        // written in the format chosen, say none.
+        let copied = model.choices.filter { $0.kind != .headings }
+        XCTAssertTrue(copied.allSatisfy { $0.label.contains(", 1 book, ") }, "\(copied.map(\.label))")
+        let headings = try XCTUnwrap(model.choices.first { $0.kind == .headings })
+        XCTAssertEqual(model.label(for: headings), "Headings as CUE sheet, 1 book")
         XCTAssertEqual(model.checked, [.audio])
     }
 
@@ -238,7 +243,7 @@ final class BookExportSheetTests: XCTestCase {
         XCTAssertEqual(
             BookExportKind.allCases.map(BookExportWording.name(of:)),
             [
-                "Audio", "Original file", "Text as Markdown", "Text as plain text", "Text as spoken audio",
+                "Audio", "Headings", "Original file", "Text as Markdown", "Text as plain text", "Text as spoken audio",
                 "Original recording", "Original audio (before edits)", "Transcript",
             ]
         )

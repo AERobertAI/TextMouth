@@ -439,6 +439,17 @@ final class BookExportModel: ObservableObject, Identifiable {
         if kind == .transcript {
             return transcriptConversionChoices
         }
+        // An audiobook's headings are always written in a format chosen
+        // here (FMT24), the first until another is.
+        if kind.writesChapterList {
+            return ChapterListFormat.allCases.map { format in
+                BookExportConversionChoice(
+                    id: format.choiceID,
+                    name: format.name,
+                    hint: BookExportWording.chapterListChoiceHint(for: format)
+                )
+            }
+        }
         guard kind.convertsText else { return [] }
         let markdown = BookExportConversionChoice(
             id: TextExportWriters.markdownID,
@@ -515,8 +526,19 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// for the transcript, whose checkbox names its own conversion
     /// (`transcriptFormat(for:)`, `transcriptWriter(for:)`).
     private func conversionName(for kind: BookExportKind) -> String? {
+        if let format = chapterListFormat(for: kind) {
+            return format.name
+        }
         guard kind.convertsText else { return nil }
         return writer(id: conversionID(for: kind))?.name
+    }
+
+    /// The format an audiobook's headings are written in (FMT24): the one
+    /// chosen beside the Headings checkbox, the first until another is; nil
+    /// for every other kind.
+    private func chapterListFormat(for kind: BookExportKind) -> ChapterListFormat? {
+        guard kind.writesChapterList else { return nil }
+        return ChapterListFormat(choiceID: conversionID(for: kind)) ?? .standard
     }
 
     /// The format of captions the transcript is written in (FMT23): the one
@@ -545,6 +567,9 @@ final class BookExportModel: ObservableObject, Identifiable {
     func hint(for kind: BookExportKind) -> String {
         if let format = transcriptFormat(for: kind) {
             return BookExportWording.transcriptHint(as: format)
+        }
+        if let format = chapterListFormat(for: kind) {
+            return BookExportWording.chapterListChoiceHint(for: format)
         }
         if let textWriter = transcriptWriter(for: kind) {
             return BookExportWording.transcriptTextHint(as: textWriter.name)
@@ -595,6 +620,9 @@ final class BookExportModel: ObservableObject, Identifiable {
             }
             if let format = transcriptFormat(for: kind) {
                 made[kind] = .timedText(format)
+            }
+            if let format = chapterListFormat(for: kind) {
+                made[kind] = .chapterList(format)
             }
         }
         if isChecked(.spokenAudio), let request = speechRequest {

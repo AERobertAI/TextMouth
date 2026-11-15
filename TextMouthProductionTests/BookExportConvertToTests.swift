@@ -52,10 +52,15 @@ final class BookExportConvertToTests: XCTestCase {
             XCTAssertEqual(BookExportWording.name(of: kind, convertedTo: nil), BookExportWording.name(of: kind))
             XCTAssertEqual(BookExportWording.hint(for: kind, convertedTo: nil), BookExportWording.hint(for: kind))
             if !kind.convertsText {
-                XCTAssertEqual(BookExportWording.name(of: kind, convertedTo: "HTML"), BookExportWording.name(of: kind))
                 XCTAssertEqual(BookExportWording.hint(for: kind, convertedTo: "HTML"), BookExportWording.hint(for: kind))
             }
+            // The headings are always written in a format, which their name
+            // says (FMT24).
+            if !kind.convertsText && !kind.writesChapterList {
+                XCTAssertEqual(BookExportWording.name(of: kind, convertedTo: "HTML"), BookExportWording.name(of: kind))
+            }
         }
+        XCTAssertEqual(BookExportWording.name(of: .headings, convertedTo: "CUE sheet"), "Headings as CUE sheet")
     }
 
     /// A converted checkbox's label names the conversion and says no size (a
@@ -143,7 +148,8 @@ final class BookExportConvertToTests: XCTestCase {
             Array(choices.dropFirst()),
             TextExportWriters.all.map { BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint) }
         )
-        for kind in BookExportKind.allCases where kind != .markdown && kind != .transcript {
+        // The headings' picker lists the chapter list formats (FMT24).
+        for kind in BookExportKind.allCases where kind != .markdown && kind != .transcript && kind != .headings {
             XCTAssertEqual(model.conversionChoices(for: kind), [], "\(kind) has no picker")
         }
     }
