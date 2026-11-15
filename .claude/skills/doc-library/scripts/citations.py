@@ -12,13 +12,13 @@ import re
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Sequence, Set, Tuple
 
-from repofiles import RepoFiles
+from repofiles import APP_FOLDER, RepoFiles
 # The one scanner of backtick runs, shared with the sentence splitter.
 from sentences import code_spans
 
 __all__ = [
     "FILES_LINE", "IDENTIFIER", "Citation", "code_spans", "path_tokens",
-    "files_block_paths", "citations", "identifier_spans",
+    "files_block_paths", "citations", "identifier_spans", "names_path",
 ]
 
 # A block that starts, after optional indentation and an optional list marker,
@@ -164,3 +164,23 @@ def identifier_spans(blocks: Iterable[Tuple[int, str]]) -> List[Tuple[int, str]]
             if IDENTIFIER.match(content):
                 found.append((_line_of(first_line, text, start), content))
     return found
+
+
+def names_path(citation: Citation, target: str, written: str) -> bool:
+    """Whether ``citation`` names ``target``, a file or a folder (ending in ``/``).
+
+    ``written`` is the path as the caller wrote it (``where``'s NAME, or the changed
+    file's path), for a citation that resolves to nothing. A citation names the
+    target when the target is among its paths, one of its paths is a folder holding
+    the target, or the target is a folder holding one of its paths. A citation that
+    resolves to nothing (a file since removed) names it when its token, or
+    ``TextMouth/`` plus its token, is the target or ``written``.
+    """
+    for path in citation.paths:
+        if RepoFiles.covers(path, target) or RepoFiles.covers(target, path):
+            return True
+    if citation.paths:
+        return False
+    # Docs may leave out the ``TextMouth/`` prefix of an app source path.
+    spellings = (citation.token, f"{APP_FOLDER}/{citation.token}")
+    return target in spellings or written in spellings
