@@ -10,6 +10,7 @@ named LINT-FAILS). The script changes to the repository it is run in, so these
 tests never touch this checkout, build anything, or take the heavy-work lock.
 """
 import os
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -18,6 +19,9 @@ from pathlib import Path
 
 # The real script under test, beside this tests folder.
 CHAIN = Path(__file__).resolve().parent.parent / "merge-chain.sh"
+
+# The real skill in this checkout, which case 6 copies into the throwaway repository.
+SKILL = Path(__file__).resolve().parents[3] / ".claude/skills/doc-library"
 
 WRAPPER_PATH = ".claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh"
 DOCLIB_PATH = ".claude/skills/doc-library/scripts/doclib.py"
@@ -63,6 +67,8 @@ class MergeChainCase(unittest.TestCase):
             "GIT_COMMITTER_NAME": "chain test", "GIT_COMMITTER_EMAIL": "chain-test@example.invalid",
             "MERGE_LOG_DIR": str(self.logs), "SUITE_RECORD": str(self.suite_record),
             "LINT_RECORD": str(self.lint_record),
+            # The real lint, run in the throwaway repository, must leave no __pycache__ there.
+            "PYTHONDONTWRITEBYTECODE": "1",
         })
 
     @staticmethod
@@ -244,6 +250,54 @@ class MergeChainTests(MergeChainCase):
         self.assertEqual(status, 1, out)
         self.assertIn("CHAIN_STOPPED after nosuchbranch", out)
         self.assertEqual(self.tip(), before)
+        self.assertEqual(self.suite_runs(), 0)
+
+
+class RealLintTests(MergeChainCase):
+    """The chain with the real doc-library skill, and a baseline the real lint made."""
+
+    def make_repo_with_the_real_lint(self):
+        """Make the repository with a copy of the skill, a docs page, and a baseline from ``lint --update-baseline``."""
+        self.make_repo(with_doclib=False)
+        # The skill's code and word list, not its tests or the real baseline (the lint makes its own).
+        shutil.copytree(SKILL, self.repo / ".claude/skills/doc-library", ignore=shutil.ignore_patterns(
+            "tests", "__pycache__", "lint-baseline.json"))
+        self.write_files({"README.md": "# Index\n\n- [Page](docs/page.md) the page\n"})
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "the skill")
+        made = subprocess.run(["python3", "-I", DOCLIB_PATH, "lint", "--update-baseline"],
+                              cwd=self.repo, env=self.env, capture_output=True, text=True)
+        self.assertEqual(made.returncode, 0, made.stdout + made.stderr)
+        self.assertTrue((self.repo / ".claude/skills/doc-library/lint-baseline.json").is_file())
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "the baseline")
+
+    def test_a_branch_that_adds_a_sales_word_is_stopped_by_the_real_lint_and_a_code_branch_is_merged(self):
+        self.make_repo_with_the_real_lint()
+        self.make_branch("salesy", {"docs/page.md": "# Page\n\nThe seamless reader.\n"})
+        self.make_branch("code", {"App.swift": "let a = 2\n"})
+        before = self.tip()
+        status, out = self.run_chain("salesy")
+        self.assertEqual(status, 1, out)
+        self.assertIn("CHAIN_STOPPED after salesy", out)
+        self.assertIn("sales-word", out, "the failure should show what got worse")
+        self.assertIn("DOCS_LINT_FAILED", self.log_text("salesy"))
+        self.assertEqual(self.tip(), before)
+        self.assertFalse((self.repo / ".git/MERGE_HEAD").exists())
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertEqual(self.suite_runs(), 0)
+        status, out = self.run_chain("code")
+        self.assertEqual(status, 0, out)
+        self.assertIn("DOCS_LINT_OK", self.log_text("code"))
+        self.assertEqual(self.suite_runs(), 1)
+
+    def test_a_docs_branch_that_breaks_no_rule_is_merged_without_the_suite(self):
+        self.make_repo_with_the_real_lint()
+        self.make_branch("docs", {"docs/page.md": "# Page\n\nSomething more to say.\n"})
+        status, out = self.run_chain("docs")
+        self.assertEqual(status, 0, out)
+        self.assertIn("DOCS_LINT_OK", self.log_text("docs"))
+        self.assertIn("MARKDOWN_ONLY_NO_SUITE", self.log_text("docs"))
         self.assertEqual(self.suite_runs(), 0)
 
 
