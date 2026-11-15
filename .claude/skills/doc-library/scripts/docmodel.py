@@ -571,14 +571,37 @@ def parse(path: str, text: str) -> Page:
                 size=len(text.encode("utf-8")))
 
 
+def name_inside(root: Path, name: str) -> Optional[str]:
+    """``name`` as a path relative to ``root``, or None when its spelling leaves the root.
+
+    Decided from the text alone, before the file system is asked anything, so a
+    name such as ``/Users/x/.TextMouth/library.json`` or ``~/.TextMouth`` is never
+    looked at: a home path or a ``..`` component is refused, and an absolute path
+    is accepted only when it starts with the root's own path.
+    """
+    if not name or name.startswith("~"):
+        return None
+    if os.path.isabs(name):
+        prefix = str(root).rstrip("/") + "/"
+        if not name.startswith(prefix):
+            return None
+        name = name[len(prefix):]
+    if not name or ".." in Path(name).parts:
+        return None
+    return name
+
+
 def read_page_bytes(root: Path, path: str) -> bytes:
     """The raw bytes of the page at ``root/path``, which must lie inside ``root``.
 
-    A path that leaves the root (``..``, or a symlink pointing out) or names no
-    file is a UsageError.
+    A path that leaves the root (by its spelling, or through a symlink pointing
+    out) or names no file is a UsageError.
     """
+    relative = name_inside(root, path)
+    if relative is None:
+        raise UsageError(f"{path} is outside the repository")
     root_real = Path(os.path.realpath(root))
-    target = Path(os.path.realpath(root_real / path))
+    target = Path(os.path.realpath(root_real / relative))
     try:
         target.relative_to(root_real)
     except ValueError:

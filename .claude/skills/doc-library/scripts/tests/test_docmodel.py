@@ -10,6 +10,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import List, Tuple
+from unittest import mock
 
 from doclib_case import DocLibCase
 
@@ -435,6 +436,39 @@ class ScopeAndLoadTests(DocLibCase):
         self.write_tree({"docs/a.md": "# a\n", "docs/b.md": "# b\n"})
         pages = docmodel.load_pages(self.root, ["docs/b.md", "docs/a.md"])
         self.assertEqual([p.path for p in pages], ["docs/b.md", "docs/a.md"])
+
+    def test_name_inside_judges_a_name_by_its_spelling(self) -> None:
+        inside = str(self.root / "docs" / "a.md")
+        cases = {
+            "docs/a.md": "docs/a.md",
+            inside: "docs/a.md",
+            "/Users/nobody/.TextMouth/library.json": None,
+            "~/.TextMouth/library.json": None,
+            "../outside.md": None,
+            "docs/../../outside.md": None,
+            "": None,
+        }
+        for name, expected in cases.items():
+            with self.subTest(name=name):
+                self.assertEqual(docmodel.name_inside(self.root, name), expected)
+
+    def test_a_name_outside_the_root_is_refused_before_any_file_system_call(self) -> None:
+        # The user's live library must never be looked at, not even by realpath's lstat.
+        self.write_tree({"docs/a.md": "# a\n"})
+        real_realpath = os.path.realpath
+
+        def guarded(path, *args, **kwargs):
+            """os.path.realpath that fails the test when asked about the live library."""
+            if ".TextMouth" in os.fspath(path):
+                self.fail(f"realpath was asked about {path}")
+            return real_realpath(path, *args, **kwargs)
+
+        with mock.patch("os.path.realpath", guarded):
+            for name in ("/Users/nobody/.TextMouth/x.md", "~/.TextMouth/x.md"):
+                with self.subTest(name=name), self.assertRaises(UsageError):
+                    docmodel.load_page(self.root, name)
+            status, _, err = self.run_cli("show", "/Users/nobody/.TextMouth/x.md:1")
+        self.assertEqual(status, 2, err)
 
 
 if __name__ == "__main__":

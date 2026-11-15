@@ -86,7 +86,15 @@ def _stem(path: str) -> str:
 
 
 def _named_file(root: Path, name: str) -> Optional[str]:
-    """The page at ``root/name`` (or ``root/name.md``) when it is a file inside the root."""
+    """The page at ``root/name`` (or ``root/name.md``) when it is a file inside the root.
+
+    A name whose spelling leaves the root is not looked up at all (see
+    ``docmodel.name_inside``).
+    """
+    inside = docmodel.name_inside(root, name)
+    if inside is None:
+        return None
+    name = inside
     root_real = Path(os.path.realpath(root))
     for candidate in ((name,) if name.endswith(".md") else (name, name + ".md")):
         target = Path(os.path.realpath(root_real / candidate))
