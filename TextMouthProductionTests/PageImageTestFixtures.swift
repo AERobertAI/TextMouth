@@ -81,12 +81,14 @@ enum PageImageFixtures {
             let typed = Array(type.utf8) + body
             return bigEndian(UInt32(body.count)) + typed + bigEndian(crc32(typed))
         }
-        let header = bigEndian(width) + bigEndian(height) + [8, 0, 0, 0, 0]
+        // Bit depth 8, gray, deflate, no filter method, not interlaced.
+        let form: [UInt8] = [8, 0, 0, 0, 0]
+        let header = bigEndian(width) + bigEndian(height) + form
         // A complete zlib stream of nothing: far too little for the rows.
         let emptyStream: [UInt8] = [0x78, 0x9C, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01]
-        let bytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] + chunk("IHDR", header)
-            + chunk("IDAT", emptyStream) + chunk("IEND", [])
-        return Data(bytes)
+        let signature: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        let chunks = chunk("IHDR", header) + chunk("IDAT", emptyStream) + chunk("IEND", [])
+        return Data(signature + chunks)
     }
 
     /// The CRC-32 PNG's chunks carry (ISO 3309), computed bit by bit.
@@ -104,14 +106,18 @@ enum PageImageFixtures {
     /// The gray level, from 0 to 255, of the pixel at `x`, `y` (from the top
     /// left) of `image`, read from an 8-bit gray copy of it.
     static func gray(of image: CGImage, x: Int, y: Int) throws -> UInt8 {
-        var pixel: [UInt8] = [0]
-        guard let context = CGContext(
-            data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 1,
-            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue
-        ) else { throw FixtureError(description: "no gray context") }
-        // Drawn so that the wanted pixel falls on the context's only one.
-        context.draw(image, in: CGRect(x: -x, y: -(image.height - 1 - y), width: image.width, height: image.height))
-        return pixel[0]
+        var pixel: UInt8 = 0
+        // The context draws into the byte it is given, so it lives only
+        // while that byte's address is valid.
+        try withUnsafeMutableBytes(of: &pixel) { byte in
+            guard let context = CGContext(
+                data: byte.baseAddress, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 1,
+                space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue
+            ) else { throw FixtureError(description: "no gray context") }
+            // Drawn so that the wanted pixel falls on the context's only one.
+            context.draw(image, in: CGRect(x: -x, y: -(image.height - 1 - y), width: image.width, height: image.height))
+        }
+        return pixel
     }
 
     // MARK: - Files
