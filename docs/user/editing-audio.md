@@ -148,7 +148,8 @@ Originals whose time is up are deleted when TextMouth starts, after a recording 
 <!-- id: audio-editor-filters; keys: highpass, equalizer, loudnorm, Use ffmpeg for filters, Remove Rumble, Audiobook Loudness; src: TextMouth/Services/AudioEditing/AudioFilterProcessor.swift, TextMouth/Services/AudioEditing/AudioFilterRunner.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Services/AudioEditing/AudioFilterPresets.swift -->
 
 Filters are written as ffmpeg writes them, such as highpass=f=80,equalizer=f=3000:t=q:w=1:g=3.
-Without ffmpeg, TextMouth runs volume, highpass, lowpass, equalizer, afade, atempo, loudnorm, silenceremove, acompressor, and areverse itself, as ffmpeg does, though its loudnorm applies one gain, as ffmpeg's two-pass normalization does, where ffmpeg in one pass changes its gain as it goes; it says which filters it runs when a chain asks for another.
+Without ffmpeg, TextMouth runs volume, highpass, lowpass, equalizer, afade, atempo, loudnorm, silenceremove, acompressor, and areverse itself, as ffmpeg does, though its loudnorm applies one gain, as ffmpeg's two-pass normalization does, where ffmpeg in one pass changes its gain as it goes.
+It says which filters it runs when a chain asks for another.
 A filter given no value for an option it needs is refused, with the filter and the option named and what to give, as in "The equalizer filter needs its frequency: give a number from 0.0001 to 999999."
 A width that makes no usable filter at its frequency is refused too, as in "The equalizer filter's width can't be “5000”: give a narrower width, since this one makes no usable filter at 3000 Hz.", where it used to ruin the audio it was applied to.
 With ffmpeg installed (Homebrew's, MacPorts', or one on PATH), Use ffmpeg for filters, in the Audio Editing group and on by default, runs every filter ffmpeg has; the switch's help names where TextMouth found ffmpeg, and without one, a line says that it isn't installed.
