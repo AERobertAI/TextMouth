@@ -3,11 +3,11 @@
 
 Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 
-TextMouth is a Mac app, and since November 4, 2026 (phase 0 of the iOS port) a second app, for iOS, compiles from the same code.
+TextMouth is a Mac app, and, since phase 0 of the iOS port, a second app, for iOS, compiles from the same code.
 The design is in research/IOS-PORT-RESEARCH-2026-11-03.md, in the repository root, whose sections "How one codebase builds both apps" and "A plan in phases" this page follows.
 Phase 0 had one goal: the iOS app compiles and links, and the Mac app does exactly what it did.
 This page says how the code is divided between the two, and then how the iPhone app built on that division is put together (see "The iPhone app", below).
-On November 8, 2026 the iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md first ran in the iOS simulator; nothing has run on a phone.
+The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the iOS simulator; nothing has run on a phone.
 
 ## One source folder, two apps
 <!-- id: one-source-folder-two-apps; keys: targets, XcodeGen, excludes, Swift 6, strict concurrency, shared code; src: project.yml, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
@@ -86,7 +86,7 @@ Its list of equivalences lives in `Scripts/ios/mac-projection.py`: a new helper 
 One limit: it pools the removed lines of all the files, so a real deletion of a line such as `}` can count as moved when another file adds the same text.
 The final review of phase 0 read the 13 files it listed with a stricter matcher and found nothing hidden.
 
-On November 4 the projection read 105 changed Swift files, of which 92 are unchanged for the Mac.
+In phase 0 the projection read 105 changed Swift files, of which 92 are unchanged for the Mac.
 The other 13 are new shared code that only tests and aliases use (the portable XML tree and the three shared files directly in `Platform/`), the three declarations split out unchanged, which add only their imports and an `extension` line, and four closures reflowed around a `#if`.
 Each of the four closures is a one-line default or argument made into a closure so that an `#if` has a place to sit (LibrarySessionLease's quit, ReadingStatsService's workspace notifications, LibraryViewModel's reveal in Finder, and ContentView's Quit): the Mac still runs the same statement.
 
@@ -152,7 +152,7 @@ So phase 0 added a portable tree that has the part of the interface those reader
 
 The iPhone interface is built from research/IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list.
 This section says how the code is put together.
-It describes the code main holds since November 8, 2026: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below).
+It describes the code main holds: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below).
 The Search in Book of branch `ios/search-1109` (below) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
 
 ### The frame
@@ -190,8 +190,7 @@ The Search in Book of branch `ios/search-1109` (below) is merged into main with 
     So are its tests: `PhoneLaunchRequestTests` on the Mac, and the two tests of `IOSRuntimeTests` that read it.
   - The two places that read the environment are inside `#if DEBUG` on iOS: `TextMouthRuntime.detect`, which sets the sandbox (also inside `#if os(iOS)`, so no Mac code names the type), and the scene delegate, which opens the file.
     `PhoneLaunchRequestTests.testTheRequestIsReadOnlyInTheIPhonesDebugBuild` pins those reads, and that the Search in Book sheet reads no launch variable, and `testTheTypeIsCompiledIntoDebugBuildsOnly` that the type is debug only.
-  - A third variable, `TEXTMOUTH_SEARCH_IN_BOOK`, filled the Search in Book field at launch so that a UI test did not type.
-    It was removed on November 10, 2026: the interface tests type on GitHub's runners now.
+  - No launch variable fills the Search in Book field: the interface tests type on GitHub's runners.
   - A release build holds neither the type nor its two variable names, so no environment variable can steer it.
     A Release build for the simulator succeeded, and `strings` found none of the type or its variables in the Release binary and three in the Debug one.
     That was measured when the type had two variables, which it has again.

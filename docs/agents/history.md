@@ -714,3 +714,11 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - The performance tests' frozen oracles are the code that the changes of October 3, 2026 replaced.
 - The feed, OPML, and SSML code began to use XMLEscaping on November 13, 2026.
 - BrailleFileWriter.escaped, the one copy left, came from team export on October 19, 2026, and the PEF writer of October 20, 2026 joined it.
+
+## From The two apps and the platform folders
+
+- Phase 0 of the iOS port, which made the iOS app compile from the same code, finished on November 4, 2026, the day of the projection of 105 changed Swift files.
+- The iPhone interface first ran in the iOS simulator on November 8, 2026.
+- The page's account of the iPhone app described the code main held since November 8, 2026.
+- A third launch variable, `TEXTMOUTH_SEARCH_IN_BOOK`, filled the Search in Book field at launch so that a UI test did not type.
+- It was removed on November 10, 2026: the interface tests type on GitHub's runners now.
