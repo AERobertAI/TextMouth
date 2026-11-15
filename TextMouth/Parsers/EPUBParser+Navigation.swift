@@ -186,17 +186,10 @@ extension EPUBParser {
                 )
                 continue
             }
-            // Each document is read inside an autorelease pool, so the
-            // temporary objects Foundation makes while reading it are freed
-            // before the next one, not when the whole book is done (a book
-            // of 4,000 small chapters held about 44 KB of them for each).
-            let read = autoreleasepool {
-                readSpineDocument(
-                    archive: archive, path: path, number: number, navigation: &navigation,
-                    pages: pageTargets.htmlTargets(in: path), includesPages: includesPages
-                )
-            }
-            switch read {
+            switch readSpineDocument(
+                archive: archive, path: path, number: number, navigation: &navigation,
+                pages: pageTargets.htmlTargets(in: path), includesPages: includesPages
+            ) {
             case .document(let document):
                 documents.append(document)
             case .omitted(let reason):
@@ -207,19 +200,15 @@ extension EPUBParser {
         var chapters: [PreparedChapter] = []
         for document in documents {
             do {
-                // Inside an autorelease pool for the same reason as the reading above.
-                let prepared = try autoreleasepool { () throws -> PreparedChapter? in
-                    let targets = navigation.targets(in: document.path)
-                    let markdown = try finishedMarkdown(
-                        of: document, targets: targets, archive: archive,
-                        pages: pageTargets.htmlTargets(in: document.path), includesPages: includesPages
-                    )
-                    return try preparedChapter(
-                        from: document, markdown: markdown, targets: targets, bookTitle: opfData.title,
-                        startPages: pageTargets.documentMarkers(in: document.path)
-                    )
-                }
-                guard let chapter = prepared else {
+                let targets = navigation.targets(in: document.path)
+                let markdown = try finishedMarkdown(
+                    of: document, targets: targets, archive: archive,
+                    pages: pageTargets.htmlTargets(in: document.path), includesPages: includesPages
+                )
+                guard let chapter = try preparedChapter(
+                    from: document, markdown: markdown, targets: targets, bookTitle: opfData.title,
+                    startPages: pageTargets.documentMarkers(in: document.path)
+                ) else {
                     report.blankChapterCount += 1
                     continue
                 }
