@@ -183,7 +183,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Not changed: an EPUB keeps its soft hyphens, which do the same there. No EPUB in the test collection holds one.
 
 ### Text files in more encodings
-- A plain text, Markdown, or HTML file that is UTF-16 or UTF-32 and has no byte-order mark is now found in more cases, and read right instead of as garbage (see [What TextMouth reads](what-textmouth-reads.md)).
+- A plain text, Markdown, or HTML file that is UTF-16 or UTF-32 and has no byte-order mark is now found in more cases, and read right instead of as garbage (see [What TextMouth reads](reads-text-files.md)).
   - Found: UTF-32 in either byte order, and UTF-16 in Greek, Cyrillic, Armenian, Hebrew, Arabic, Chinese, Japanese, or Korean. Before, only UTF-16 in Latin letters was found.
   - Book Information names the encoding it found, as in "UTF-16 (little-endian), recognized by its bytes".
   - A few stray zero bytes in a UTF-8 or 8-bit file do not make it UTF-16. In testing, 89 text samples and the same sentences in more than 20 encodings were read as before.
@@ -221,7 +221,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ## 0.4.2 (November 8, 2026)
 ### Export a text book as spoken audio
-- A text book's Export dialog has a checkbox, "Text as spoken audio", that speaks the book with its voice into one audio file, M4B, M4A, or MP3, with a chapter at each heading (see [Exporting books](exporting-books.md)).
+- A text book's Export dialog has a checkbox, "Text as spoken audio", that speaks the book with its voice into one audio file, M4B, M4A, or MP3, with a chapter at each heading (see [Exporting books](exporting-spoken-audio.md)).
 - Its options are Format, From and To (the book's headings), Speed, and Pitch, which start at the book's own speed and pitch, and a line naming the voice and one about Apple's licence. They have no group of their own, so VoiceOver reaches them right after the checkbox.
 - The dialog reads the book's headings only once spoken audio is checked, so it opens at once.
 - An MP3 has chapters for its first 255 headings only. Past 255, a line after the Format pop-up says so and suggests M4B, and the end of the export says so too.
@@ -238,14 +238,14 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Book > Attach Transcript… gives an audiobook a transcript from a WebVTT (.vtt) or SubRip (.srt) file, on any macOS, with nothing transcribed. It asks first before replacing a transcript the book has, and says so if you edited or cleaned it up (see [Transcribing an audiobook](transcribing.md)).
 - An audiobook imported with a .vtt or .srt file beside its audio, named as a track is with its extension changed (01.vtt beside 01.mp3), takes that file as the track's transcript, whether the book came as one file, a folder of tracks, a ZIP, or a playlist. No transcription is offered then.
   A file that can't be used is named once the import is done, and never fails it.
-- A downloaded podcast episode brings its own transcript and chapters, for every feed (see [Podcasts and article feeds](feeds.md)). The chapters become its headings when its audio has none.
+- A downloaded podcast episode brings its own transcript and chapters, for every feed (see [Podcasts and article feeds](feed-listening-and-settings.md)). The chapters become its headings when its audio has none.
 - Downloading an episode again replaces its own transcript with the new one, unless you made, edited, or cleaned up the transcript.
 - Book Information has a read-only Transcript detail that says where a transcript came from and when, as in "Attached from “lecture.vtt” on October 30, 2026."
 - Transcribe Audio… is dimmed for a book while a transcript is being attached to it, and says "A transcript is being attached to Moby-Dick. Transcribe it once that finishes." from any other route.
 - Export's Transcript checkbox has a "Convert transcript to" pop-up that adds WebVTT and SubRip captions, one file for the book, timed from the start of its audio. SubRip writes a few strings as character references so that they read back as written, and other players may show those as written.
 - A Transcript item that holds no timed transcript can't be written as captions, and the export says so: "The book has no timed transcript to write as captions."
 - Replace Existing keeps a transcript that recognition made, or that you edited or cleaned up, over the transcript file the new copy brought. An untouched transcript from outside, attached or a podcast's, gives way to the file.
-  The duplicate question says which will happen, and afterwards VoiceOver names a file that wasn't used and points to Attach Transcript… (see [Adding books](adding-books.md)).
+  The duplicate question says which will happen, and afterwards VoiceOver names a file that wasn't used and points to Attach Transcript… (see [Adding books](duplicate-books.md)).
 - Fixed in the same work:
   - a speaker was misnamed after a cue that changes voice partway;
   - a 20 MB file of blank lines took 640 MB and now takes 80 MB;
@@ -262,7 +262,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Not read: a font a table style names, a font a theme names alone, and the complex-script and East Asian fonts.
 
 ### Kindle books in the KF8 format
-- An .azw3 book now imports, with its chapters, its headings at the levels its author gave them, and its print pages when it has page breaks (see [What TextMouth reads](what-textmouth-reads.md)). A KF8 book named .mobi or .azw imports too.
+- An .azw3 book now imports, with its chapters, its headings at the levels its author gave them, and its print pages when it has page breaks (see [What TextMouth reads](reads-kindle-books.md)). A KF8 book named .mobi or .azw imports too.
   Earlier versions refused them with "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
 - A .mobi file that holds a book twice, in MOBI 6 and in KF8, is read from its KF8 half. When the KF8 half can't be read, it is read from its MOBI 6 half.
 - A copy-protected book is still refused, in either half of such a file: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." TextMouth never tries to remove copy protection.
@@ -316,7 +316,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### Files built to stall an import
 - A Word, EPUB, DAISY, SSML, OpenDocument text, Word 2003 XML, or PEF file can hold one start tag with thousands of attributes, which takes the system's XML reader longer the more it holds, minutes for a tag of 200,000.
   TextMouth now refuses a tag with more than 1,024 attributes, 27 times the most any real file in its collection has, before reading it, as damaged: "The file “word/document.xml” in this document is damaged or incomplete: it has a tag with too many attributes for TextMouth to read safely.
-  Get a fresh copy of the document, then import it again." An EPUB says "this EPUB book", a DAISY book "this DAISY book", and an SSML file "This SSML file is damaged or incomplete: it has a tag with too many attributes for TextMouth to read safely." See [Adding books](adding-books.md).
+  Get a fresh copy of the document, then import it again." An EPUB says "this EPUB book", a DAISY book "this DAISY book", and an SSML file "This SSML file is damaged or incomplete: it has a tag with too many attributes for TextMouth to read safely." See [Adding books](import-progress-and-errors.md).
 - The limit on the length of a start tag, one million bytes in OpenDocument text and Word 2003 XML, is gone, since the length of a tag costs nothing: only its attributes do.
   A Word document that holds a picture's data in one very long attribute (`o:gfxdata`, 267 KB in a government form) reads, and so do the words after a picture whose data passes 10 MB once encoded (a photo of about 7.5 MB), which the system's XML reader stopped at, losing every word after it.
 - A Word, EPUB, DAISY, or SSML file whose document type declaration defines entities of its own is refused, where only the declaration's presence was a problem for OpenDocument text and Word 2003 XML before:
@@ -367,7 +367,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Word 6 and Word 95 documents
 - TextMouth reads Word 6 and Word 95 documents (.doc and .dot) with code of its own, on the Mac as on iPhone, where Apple's textutil does not exist.
-  On the Mac, textutil read them before; now textutil is left only a Word document older than Word 6, and nothing else, and on iOS such a document is refused as before (see [What TextMouth reads](what-textmouth-reads.md) and [Adding books](adding-books.md)).
+  On the Mac, textutil read them before; now textutil is left only a Word document older than Word 6, and nothing else, and on iOS such a document is refused as before (see [What TextMouth reads](what-textmouth-reads.md) and [Adding books](import-progress-and-errors.md)).
   A Word 1 or Word 2 document is not a compound file and is refused at once, as before: "This file could not be read as a Word 97-2003 document. It may be damaged, or another kind of file."
 - Headings are the document's own heading styles, where textutil lost them.
   A document that names its own headings keeps exactly those, and a document that names none still gets the guess from font sizes and bold, which finds fewer headings than textutil guessed in a few documents, mostly in table cells and list items, where TextMouth never guesses.
@@ -398,7 +398,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
   - Markup nested thousands of levels deep overflowed the stack of an import.
   - A document of millions of tags filled the Mac's memory, since each tag takes a kilobyte or two however few bytes it has.
 - TextMouth now looks through the markup once before it reads it, and again at the tree it makes. A broken declaration is read as nothing, with the words around it, and no sentence is spoken.
-- Markup that passes a limit is refused with a sentence that says what is wrong and what to do, and never calls the file damaged, since it may not be (see [Adding books](adding-books.md)):
+- Markup that passes a limit is refused with a sentence that says what is wrong and what to do, and never calls the file damaged, since it may not be (see [Adding books](import-progress-and-errors.md)):
   - More than 128 levels deep: "This file's markup nests more than 128 levels deep, which TextMouth can't read safely. Get another copy of the file, or save it in another format, then import it again."
   - Too much markup in one document: "One document in this file holds too much markup for TextMouth to read without running out of memory. Divide the document into smaller files, then import them."
   - More than 1,000 attributes on one tag: "One tag in this file has more than 1,000 attributes, which TextMouth can't read safely. Get another copy of the file, or save it in another format, then import it again."
@@ -416,18 +416,18 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ## 0.4.0 (November 6, 2026)
 ### Kindle books in the KFX format
 - TextMouth reads Kindle books in the KFX format that are not copy-protected: .kfx, .kfx-zip, and .azw8 files, and an .azw file that holds KFX, as Kindle's apps name their KFX books.
-  Each becomes a text book like any other, shown in the Library window as Kindle Book (KFX), so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](what-textmouth-reads.md)).
-- A book's chapters come from its own table of contents, and its headings keep the levels the book gives them. A book with a print page list has pages, so Page, Skip Forward, Skip Backward, and Go to Page… work as they do in an EPUB (see [Reader windows](reader-windows.md)).
+  Each becomes a text book like any other, shown in the Library window as Kindle Book (KFX), so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](reads-kindle-books.md)).
+- A book's chapters come from its own table of contents, and its headings keep the levels the book gives them. A book with a print page list has pages, so Page, Skip Forward, Skip Backward, and Go to Page… work as they do in an EPUB (see [Reader windows](reader-pages.md)).
   A page list that a machine made to approximate pages is not read as pages.
 - A copy-protected book is refused, never read, and TextMouth never tries to remove the protection: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
   A book with no flowing text, such as a fixed-layout book, a print replica, a comic, a magazine, a children's book, or a notebook, is refused with "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
-  A Kindle Create package (.kpf) is refused with "This file is a Kindle Create package, which TextMouth can't read yet." [Adding books](adding-books.md) gives every sentence.
+  A Kindle Create package (.kpf) is refused with "This file is a Kindle Create package, which TextMouth can't read yet." [Adding books](import-progress-and-errors.md) gives every sentence.
 
 ### OpenDocument text and Word 2003 XML
 - TextMouth reads OpenDocument text (.odt, .ott) and Word 2003 XML with code of its own, on the Mac as on iPhone, where Apple's textutil does not exist. On the Mac, textutil now reads only Word 6 and Word 95 documents, which iPhone still refuses.
 - Headings are the document's own, where textutil lost them and guessed from font sizes. A document that names even one heading keeps exactly the ones it names, and a document that names none still gets the guess.
 - Pages are found from the document's page breaks, the pages its styles and master pages begin, and, in OpenDocument text, the soft page breaks its program recorded.
-- An .odt's author is read, where textutil lost it. A book added before this version keeps its author Unknown until you import the file again with Replace Existing (see [Adding books](adding-books.md)).
+- An .odt's author is read, where textutil lost it. A book added before this version keeps its author Unknown until you import the file again with Replace Existing (see [Adding books](import-progress-and-errors.md)).
 - A picture, formula, or chart in an OpenDocument text is read as its description. Hidden text, tracked deletions, comments, headers, and footers are not read, and footnotes and endnotes follow the text.
 
 ### Every document reader reads the same
@@ -455,7 +455,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - TextMouth also gets your settings, statistics, substitutions, and feed records in the background when a library in the cloud opens, and never saves over a copy still in the cloud.
 - TextMouth can no longer freeze at launch waiting for a folder that is only in the cloud.
 ### Commands
-- The Next Page and Previous Page commands and their keys are gone. To move by page, choose Page as the navigation unit and use Skip Forward and Skip Backward, or use Go to Page… (Option-Command-G) (see [Reader windows](reader-windows.md)).
+- The Next Page and Previous Page commands and their keys are gone. To move by page, choose Page as the navigation unit and use Skip Forward and Skip Backward, or use Go to Page… (Option-Command-G) (see [Reader windows](reader-pages.md)).
   A key you gave either of those commands is dropped the next time TextMouth opens, and your other shortcuts are kept.
 
 ## 0.3.1 (November 5, 2026)
@@ -464,24 +464,24 @@ Every version of TextMouth, newest first, and what changed for you in each.
   Apple's textutil tool read them on the Mac before, and does not exist on iOS (see [What TextMouth reads](what-textmouth-reads.md)).
 - A document's headings are the ones its author set: a paragraph in a heading style, or with an outline level, is a heading at that level, where textutil lost the styles and guessed from font sizes. A document that names no heading still gets the guess from font sizes and bold.
 - Pages that textutil lost are found. In rich text, a paragraph set to start a page and a section that starts a page begin pages, as a page break does.
-  In a Word 97-2003 document, a paragraph set to start a page, directly or by its style, and a section that starts a page begin pages, as the author's page breaks do (see [Reader windows](reader-windows.md)).
+  In a Word 97-2003 document, a paragraph set to start a page, directly or by its style, and a section that starts a page begin pages, as the author's page breaks do (see [Reader windows](reader-pages.md)).
 - A Word field's code, which textutil sometimes read aloud as words such as TITLE and MERGEFORMAT, is never read, only the field's result. A Word document's headers are no longer read at the end of the book.
   Text a tracked change deleted is left out, and the footnotes and endnotes follow the main text.
 - Hidden text in a rich text document is not read, and neither are its headers, footers, and footnotes. The words in a drawing's text box are read.
 - A rich text file that textutil refused as damaged, such as one that begins {\rtf with no version number, is read.
 - Rich text in a code page of two-byte characters, such as Japanese, Chinese, or Korean, is read whole.
 - An .rtfd package is held to the 64 MB limit by its text file, TXT.rtf, alone, and its attachments no longer count.
-- Rich text, rich text with attachments, and Word 97-2003 documents read the same on iOS as on the Mac. OpenDocument text, Word 2003 XML, and Word 6 and Word 95 documents are still read by textutil on the Mac, and on iOS are refused (see [Adding books](adding-books.md)).
+- Rich text, rich text with attachments, and Word 97-2003 documents read the same on iOS as on the Mac. OpenDocument text, Word 2003 XML, and Word 6 and Word 95 documents are still read by textutil on the Mac, and on iOS are refused (see [Adding books](import-progress-and-errors.md)).
 - The first time this version opens, every rich text, rich text with attachments, and Word 97-2003 book is read again once, for its headings and its pages. Your place follows its words, and a book whose text you changed with Edit Text keeps that text.
 
 ## 0.3.0 (November 4, 2026)
 ### Kindle books
 - TextMouth reads Kindle books that are not copy-protected, in the MOBI format: .mobi, .prc, and .azw files in the older MOBI 6 format, and the MOBI 6 part of a .mobi made for both formats, as many Kindle books are.
-  Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](what-textmouth-reads.md)).
+  Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](reads-kindle-books.md)).
 - A book's chapters come from its own table of contents, the entries under a chapter being its headings, and a book with no table of contents is a chapter for each page break its maker wrote. What a book's head says about it is never read aloud.
 - Open Book… offers Kindle books, and Finder offers TextMouth in the Open With menu for them.
 - A copy-protected book is refused, never read: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." A book only in the newer KF8 format, as an .azw3 is, is refused for now, with "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
-  [Adding books](adding-books.md) gives every sentence.
+  [Adding books](import-progress-and-errors.md) gives every sentence.
 - Kindle books have no pages yet.
 
 ### Older versions
@@ -501,11 +501,11 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ## 0.2.5 (November 1, 2026)
 ### The next book in this window
 - When listening goes on from one book to another, at the end of a book or with Next in Reading List and Previous in Reading List, the next book now shows in the window you are in, in place of the book there, instead of opening a new window.
-  The window keeps its place and size on the screen, and the book you leave is saved as closing its window saves it (see [Reader windows](reader-windows.md)).
+  The window keeps its place and size on the screen, and the book you leave is saved as closing its window saves it (see [Reader windows](reader-book-end.md)).
 - A book already open in another window comes forward, and the window you moved from closes, so no two windows show one book. A sheet or an alert open over the window, a field being typed in, Edit Text in use for the book, or a library that is moving or not available still opens a new window.
 - The Playback tab of Settings has a pop-up button, "Open the next book in", with "This Window", the default, and "A New Window", which keeps the way earlier versions went. config.json holds it as nextBookWindow (see [Settings](settings.md) and [Editing settings in config.json](config-json.md)).
 - Feed Info has a pop-up button of its own, "Open the next episode in", "Open the next article in", or "Open the next item in", and Folder Settings has "Open the next book in", each with "Use the global setting" first, then "This Window" and "A New Window".
-  It is dimmed, with a hint that says when it is available, while the feed's or folder's items do not go on to another item when one ends (see [Podcasts and article feeds](feeds.md) and [The Library window](library-window.md)).
+  It is dimmed, with a hint that says when it is available, while the feed's or folder's items do not go on to another item when one ends (see [Podcasts and article feeds](feed-listening-and-settings.md) and [The Library window](library-window.md)).
 
 ### Next and Previous in a folder
 - The Navigate menu has Next in Folder and Previous in Folder, in a reader window, with no keys until you give them some in the Shortcuts tab.
@@ -527,7 +527,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### Library
 - The Library window's View pop-up, which VoiceOver calls "Library view", replaces the row of categories, and offers the views you choose, in the order you choose: Folders, All Items, Unopened, Recently Opened, Reading List, Feeds, and views of your own (see [The Library window](library-window.md)).
 - A new Feeds view lists the feeds alone, each by title, and the pop-up offers it only while there is a feed, until you set it to Always.
-- The Library tab of Settings, between Stats and Feeds, lists the views in order, and sets each one to Always, When Applicable, or Hidden, with Move Up and Move Down (see [Settings](settings.md)).
+- The Library tab of Settings, between Stats and Feeds, lists the views in order, and sets each one to Always, When Applicable, or Hidden, with Move Up and Move Down (see [Settings](settings-library.md)).
 - New View…, Edit…, Duplicate, Delete…, and Restore Default… make and change views, with what each lists, All Conditions or Any Condition, nine kinds of condition, one item for each feed, a sort, and a limit, and a count of what the draft lists.
   The built-in views are changed the same way, and Restore Default… gives one back.
 - A view you hide, or that lists nothing, stays in a window that shows it until you choose another, and a view deleted while a window shows it moves that window to the first view offered and says so.
@@ -535,15 +535,15 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - The libraryViews key of config.json holds the views, and every view's sort stays in library.json (see [Editing settings in config.json](config-json.md)). A TextMouth older than 0.2.4 drops the key from config.json, but the Mac keeps the views.
 
 ### Braille
-- A BRF or BRL file is read in the braille file characters it is written in: North American Braille ASCII, Eurobraille, six-dot (German-speaking countries), or Unicode braille patterns, which TextMouth recognizes by the file's bytes (see [What TextMouth reads](what-textmouth-reads.md)).
+- A BRF or BRL file is read in the braille file characters it is written in: North American Braille ASCII, Eurobraille, six-dot (German-speaking countries), or Unicode braille patterns, which TextMouth recognizes by the file's bytes (see [What TextMouth reads](reads-daisy-and-braille.md)).
 - The Braille tab has a "Braille file characters" pop-up for the books you add from then on, and the Export dialog has one for a BRF, which starts from it.
 - Book Information has a "Braille File Characters" pop-up that reads a BRF or BRL book again in other characters, asking first, and Speak Full Info says "Braille characters: North American Braille ASCII".
-- A file in eight-bit computer braille or in UTF-16 is refused by name, with a sentence that says so (see [Adding books](adding-books.md)).
+- A file in eight-bit computer braille or in UTF-16 is refused by name, with a sentence that says so (see [Adding books](import-progress-and-errors.md)).
 - Replace Existing keeps a braille book's characters.
 - Stop in the Export dialog ends a braille export at once, even while its translation runs.
 - Caution: a library holding books set to Eurobraille or Unicode braille patterns should not be opened in a TextMouth older than 0.2.4.
   An older TextMouth reads such a book as North American Braille ASCII when it reads its file again, which gives wrong numbers and punctuation, or refuses a Unicode book and keeps its old text.
-  And it drops the setting at its next save (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+  And it drops the setting at its next save (see [Where TextMouth keeps your library](book-packages.md)).
 
 ### Reading and playing
 - Quitting while a book plays keeps its place to the second, not up to 30 seconds back, and a book at rest writes nothing at quit, so a Mac left idle never undoes another Mac's newer places in a shared library.
@@ -590,10 +590,10 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ## 0.2.3 (October 25, 2026)
 ### Reading
-- You can choose the encoding a plain text, Markdown, or HTML book's file is read in, which mends a guess that was wrong or missed, and the book is read again in it with its places moving to their words (see [The Library window](library-window.md)).
+- You can choose the encoding a plain text, Markdown, or HTML book's file is read in, which mends a guess that was wrong or missed, and the book is read again in it with its places moving to their words (see [The Library window](book-information.md)).
 - Automatic, in the same choice, reads the file as TextMouth reads a file you add, which takes a choice back.
 - A file is read in the encoding you choose whatever its bytes say of themselves, and one with a byte that is not valid in it is refused with "“Moby-Dick” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding. Nothing was changed."
-- Characters of JIS X 0212 in EUC-JP, the euro sign in Big5 and EUC-KR, and Big5-HKSCS characters are refused when you choose those encodings, since macOS reads them wrongly or not at all (see [What TextMouth reads](what-textmouth-reads.md)).
+- Characters of JIS X 0212 in EUC-JP, the euro sign in Big5 and EUC-KR, and Big5-HKSCS characters are refused when you choose those encodings, since macOS reads them wrongly or not at all (see [What TextMouth reads](reads-text-files.md)).
 
 ### Library
 - Book Information's Text Encoding is a pop-up button now, for every plain text, Markdown, or HTML book you added from a file, where it was a row only for a book whose encoding was guessed.
@@ -604,7 +604,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A book is not read again in another encoding, and the sheet says why, while the library's text is being read again, while the book is being exported, or while it is being read again already.
 - Edit Text stops for a book you have read again in another encoding, keeps your edit as a copy, and says "Edit Text has stopped for Moby-Dick, since its file was read again. Choose Edit Text again to edit the new text."
 - Edit Text, Replace Existing, and Redo Text Extraction wait while a book is read again in another encoding, and say "TextMouth is reading “Moby-Dick” again in another encoding. Try again when that finishes.", where Redo Text Extraction in Storage settings said nothing.
-- A TextMouth older than 0.2.3 drops the note that an encoding was chosen: 0.2.2 reads the book in the same encoding as a guess, and 0.1.1 drops the encoding too (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- A TextMouth older than 0.2.3 drops the note that an encoding was chosen: 0.2.2 reads the book in the same encoding as a guess, and 0.1.1 drops the encoding too (see [Where TextMouth keeps your library](book-packages.md)).
 
 ## 0.2.2 (October 24, 2026)
 ### Reading
@@ -616,8 +616,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - The playback bar's navigation unit pickers leave Page out for a book without pages.
 - A PDF's own page label that looks like a number with a thousands separator, such as 1.100, stays as the PDF gives it, and a PDF already in your library keeps its old labels until Redo Text Extraction reads it again.
 - Plain text books have pages: each form feed between words begins one, up to 100,000.
-- The first time this version opens, every braille, plain text, EPUB, and HTML book is read again once, and a braille book whose new reading differs from its text keeps a copy of its old text beside it (see [Where TextMouth keeps your library](where-your-library-lives.md)).
-- A plain text, Markdown, or HTML file that is neither UTF-8 nor UTF-16 and names no encoding is no longer always read as Windows-1252, since TextMouth now guesses its encoding when you add it, and books already in your library keep their text (see [What TextMouth reads](what-textmouth-reads.md)).
+- The first time this version opens, every braille, plain text, EPUB, and HTML book is read again once, and a braille book whose new reading differs from its text keeps a copy of its old text beside it (see [Where TextMouth keeps your library](book-packages.md)).
+- A plain text, Markdown, or HTML file that is neither UTF-8 nor UTF-16 and names no encoding is no longer always read as Windows-1252, since TextMouth now guesses its encoding when you add it, and books already in your library keep their text (see [What TextMouth reads](reads-text-files.md)).
 
 ### Braille
 - BRF and PEF books have pages, the braille pages an embosser or a braille display counts, named by their braille page number read as print, such as 12 or p1, and Next Page, Previous Page, and Go to Page… move by them.
@@ -636,8 +636,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Replace Existing removes the old copy's files only after the library holds the new copy, and says so if it cannot remove them.
 - When Replace Existing keeps an edit of the old copy's text as a copy, VoiceOver says where it was kept.
 - Edit Text says it has stopped for a book that Replace Existing replaced.
-- Book Information shows a Text Encoding row, and Speak Full Info says the encoding, as in "Text encoding: Windows-1251 (Cyrillic), guessed.", for a text book whose encoding was guessed (see [The Library window](library-window.md)).
-- A TextMouth older than 0.2.2 drops a guessed encoding when it saves a book, and that book's text may then read as Windows-1252 again the next time it is rebuilt (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- Book Information shows a Text Encoding row, and Speak Full Info says the encoding, as in "Text encoding: Windows-1251 (Cyrillic), guessed.", for a text book whose encoding was guessed (see [The Library window](book-information.md)).
+- A TextMouth older than 0.2.2 drops a guessed encoding when it saves a book, and that book's text may then read as Windows-1252 again the next time it is rebuilt (see [Where TextMouth keeps your library](book-packages.md)).
 
 ## 0.2.1 (October 23, 2026)
 ### Reading
