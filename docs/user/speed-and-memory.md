@@ -3,7 +3,7 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
-TextMouth was measured against a library the size of its developer's on October 3, 2026, and changed wherever a listener could notice what it cost.
+TextMouth was measured against a library the size of its developer's, and changed wherever a listener could notice what it cost.
 What changed in use:
 
 ## Starting to listen
@@ -42,7 +42,10 @@ Long chapters:
 Audiobooks:
 
 - In an audiobook whose chapters are files of their own, each chapter follows the one before without the short silence of starting the player again.
-  Where playback may have to stop or wait, it does so as before: at the book's last chapter, while the reader's own End of heading sleep timer stops at the chapter's end, as it does in an audiobook, whose chapters are its headings, and before a chapter whose file is only in the cloud, which downloads first.
+  Where playback may have to stop or wait, it does so as before:
+  - at the book's last chapter;
+  - while the reader's own End of heading sleep timer stops at the chapter's end, as it does in an audiobook, whose chapters are its headings;
+  - before a chapter whose file is only in the cloud, which downloads first.
 
 ## Memory
 <!-- id: memory; keys: ; src: -->
@@ -78,7 +81,9 @@ Searching the library's text:
 
 - Search Library finds a word in every book of a 750-book library in about a second, because TextMouth keeps each book's text, ready to search, in its own folder on this Mac (see [Search Library](search-library.md) and [Where TextMouth keeps your library](where-your-library-lives.md)).
   A search holds about 100 MB of memory while it runs.
-- The first time, after each new installation, TextMouth makes those texts in the background after launch: about 51 seconds of processor time and about 650 MB written for the library it was measured on, spread over low-priority work on two books at a time, and a pass over an unchanged library afterwards takes about half a second.
+- The first time, after each new installation, TextMouth makes those texts in the background after launch.
+  That takes about 51 seconds of processor time and writes about 650 MB for the library it was measured on, spread over low-priority work on two books at a time.
+  A pass over an unchanged library afterwards takes about half a second.
   It never runs in Low Power Mode, while the data directory moves, or when the disk would be left with less than 1 GB free, and it never downloads a book.
 - A search made before the background work has reached a book makes that book's text itself and says "Preparing 120 of 737 books…"; the first search of all took about 8 seconds on that library.
 
@@ -91,7 +96,8 @@ Saving your place:
   A feed's episode or article goes to its feed's own index the same way.
   A crash loses no more than before: the next launch takes the newer positions from the records (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 - Saving a book's place no longer rewrites its index of chapters and headings, which has a file of its own, and library.json is written without line breaks, so listening writes a small fraction of what it did, which matters most in a library in the cloud, where every write is uploaded.
-  library.json and each feed's index are also written only when what they hold differs from what TextMouth last read or wrote of them, so a save that changes nothing in one writes nothing to it; listening to a feed's episode, whose place is in its feed's index, usually leaves library.json alone.
+  Both library.json and each feed's index are also written only when what they hold differs from what TextMouth last read or wrote of them, so a save that changes nothing in one writes nothing to it.
+  Listening to a feed's episode, whose place is in its feed's index, usually leaves library.json alone.
 - A change in Settings is saved to config.json a moment after the last one, so dragging a slider writes the file once.
 
 ## Quitting while work is under way
@@ -115,8 +121,8 @@ Quitting while work is under way (0.4.4):
 - Pressing Command-Q again, or choosing Quit in the Dock again, while TextMouth finishes no longer quits at once and cuts the work off.
   TextMouth says the same words again and goes on finishing.
 - Quit Anyway in the alert about changes that could not be saved still quits after the work has finished, and the alert is not shown a second time.
-- While such work was under way, choosing Quit Anyway, or answering an audio editor's or the Record window's question, used to leave TextMouth open with its windows stuck.
-  That hang is gone: the quit now ends.
+- While such work is under way, choosing Quit Anyway, or answering an audio editor's or the Record window's question, ends the quit.
+  TextMouth does not stay open with its windows stuck.
 - Log out, restart, and shut down wait for the same work as before, with the same words, and are not cancelled by it.
   If you log out while TextMouth is finishing for your Quit, the log out goes on when the work has ended.
 - Work that cannot end gives up after its limit, so the waits add up to about 18 seconds at most (3, 10, and 5).
@@ -143,6 +149,6 @@ Elsewhere:
 - In a library in the cloud, each reading of the books' states looks once at where the library lives, and while a book downloads, the frequent checks read only the downloading books.
   A library outside a cloud location stops at that one look.
 - Storage settings check the data directory in the background, so a slow or unplugged drive can't hold up the window.
-- A VoiceOver focus request for a window that closes before the request runs is dropped; it once could crash TextMouth.
+- A VoiceOver focus request for a window that closes before the request runs is dropped.
 
 PerformanceBaselineTests keep these gains: a number they measure that grows to more than twice its recorded baseline fails the test suite (see [The performance baselines](../developer/testing.md#the-performance-baselines), under [Building and testing](../developer/building.md)).
