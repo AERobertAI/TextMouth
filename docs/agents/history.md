@@ -634,3 +634,9 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
   A branch that adds a test file must commit the regenerated project, since trains regenerate it and never notice when it's missing.
   The orchestrator's log ran up to 5.5 hours ahead of the clock and told the user the reset was near when it was five hours away.
   The disk reached 2.7 GB free during measurements.
+- **CLAUDE.md's merge and push authorization:** the orchestrator's push of main and its version tags at a version bump it judges a fairly stable release has been in CLAUDE.md since November 14, 2026.
+  The merge authorization (`git merge --no-ff` after a green full suite, each merge recorded in the TODO) is older.
+  The parenthetical also said "task agents never push except to `TestBuild` through the train tools, and installing stays the user's", and pointed to "The user's standing rules" in AGENTS.md.
+- **CLAUDE.md's Start here:** it listed the project's documents (writing-docs.md, README.md, ARCHITECTURE.md, the TODO, AGENT-NOTES, `research/`), the message board with its build wrapper `build-slot-with-bbs.sh`, `merge-chain.sh` and `extract-report.py`.
+  It also gave the `*.md` gitignore rule and the `humanQuestions/` rule.
+  AGENTS.md's Start here holds them now, and the orchestrator's tools are in orchestrator.md.

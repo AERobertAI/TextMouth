@@ -2,7 +2,6 @@
   "version": 1,
   "pages": {
     "ARCHITECTURE.md": {"date": 1, "index-line": 1, "line-length": 2, "sentences-per-line": 2},
-    "CLAUDE.md": {"date": 1, "line-length": 2, "page-size": 1, "sentences-per-line": 4},
     "README.md": {"date": 1, "index-line": 16, "line-length": 6, "sentences-per-line": 6},
     "docs/agents/history.md": {"line-length": 18},
     "docs/agents/orchestrator.md": {"date": 14, "line-length": 14, "sentences-per-line": 18, "user-quote": 6},
