@@ -27,7 +27,7 @@ A field once marked stays marked, even if you later type back what the file says
 The metadata refresh after an update never replaces a field edited by hand (see library.json, under [Where TextMouth keeps your library](where-your-library-lives.md)).
 
 ## Reading an audiobook's tags
-<!-- id: reading-audiobook-tags; keys: audio tags, ID3, hung file, album, artist, cloud only; src: TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Views/Library/LibrarySheetViews.swift -->
+<!-- id: reading-audiobook-tags; keys: audio tags, ID3, hung file, album, artist, cloud only; src: TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Views/Library/LibrarySheetViews.swift -->
 
 Book Information for an audiobook reads the tags of its audio file when it opens.
 If that read has not finished after 30 seconds, as with a file that hangs the system's audio reader, the sheet stops waiting and shows the details TextMouth keeps for the book, and does not read that file's tags again until TextMouth is opened again, or the file changes.
