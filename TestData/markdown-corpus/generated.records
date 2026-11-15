@@ -418,6 +418,284 @@ chapter starts at block 0 ""
 paragraph ["One Two Three"]
 paragraph ["Four"]
 epub d52fd91573421d01 in 5 files
+=== carriage return entity before a block
+markdown "a&#13;\n\nb\n\n# h&#13;\n\nc"
+-- read whole
+text "a\r\n\nb\n\nh\r\n\n\n\nc"
+title "h\r"
+heading 1 at 7 chapter 0 "h\r" id "0-7-1-h\r"
+heading ranges 0
+-- read chapter 0 "" markers read
+text "a\r\n\nb\n\nh\r\n\n\n\nc"
+title "h\r"
+heading 1 at 7 chapter 0 "h\r" id "0-7-1-h\r"
+heading ranges 0
+-- read chapter 0 "" markers unread
+text "a\r\n\nb\n\nh\r\n\n\n\nc"
+title "h\r"
+heading 1 at 7 chapter 0 "h\r" id "0-7-1-h\r"
+heading ranges 0
+-- tree limit 1: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 2: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 3: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 4: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 5: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 6: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 7: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 8: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 9: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 10: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 12: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 16: 0042fedb17d02052 text "a\r\n\nb\n\nh\r\n\n\n\nc"
+-- export words
+paragraph ["a"]
+paragraph ["b"]
+heading 1 #h ["h"]
+paragraph ["c"]
+html "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Corpus Book</title>\n<meta name=\"author\" content=\"Corpus Author\"/>\n</head>\n<body>\n<nav aria-label=\"Contents\">\n<ol>\n<li><a href=\"#h\">h</a></li>\n</ol>\n</nav>\n<p>a</p>\n<p>b</p>\n<h1 id=\"h\">h</h1>\n<p>c</p>\n</body>\n</html>\n"
+markdown "a\n\nb\n\n# h\n\nc\n"
+rtf b920204097e17115
+braille blocks 079059e94484fae5
+-- export structure
+chapter starts at block 0 ""
+paragraph ["a"]
+paragraph ["b"]
+heading 1 #h ["h"]
+paragraph ["c"]
+epub e680f4bd75c83607 in 5 files
+=== carriage return entity before a block, not ASCII
+markdown "é&#13;\n\nb\n\n# h&#13;\n\nc"
+-- read whole
+text "é\r\n\nb\n\nh\r\n\n\n\nc"
+title "h\r"
+heading 1 at 7 chapter 0 "h\r" id "0-7-1-h\r"
+heading ranges 0
+-- read chapter 0 "" markers read
+text "é\r\n\nb\n\nh\r\n\n\n\nc"
+title "h\r"
+heading 1 at 7 chapter 0 "h\r" id "0-7-1-h\r"
+heading ranges 0
+-- read chapter 0 "" markers unread
+text "é\r\n\nb\n\nh\r\n\n\n\nc"
+title "h\r"
+heading 1 at 7 chapter 0 "h\r" id "0-7-1-h\r"
+heading ranges 0
+-- tree limit 1: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 2: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 3: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 4: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 5: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 6: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 7: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 8: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 9: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 10: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 12: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- tree limit 16: d919512ee0225e49 text "é\r\n\nb\n\nh\r\n\n\n\nc"
+-- export words
+paragraph ["é"]
+paragraph ["b"]
+heading 1 #h ["h"]
+paragraph ["c"]
+html "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Corpus Book</title>\n<meta name=\"author\" content=\"Corpus Author\"/>\n</head>\n<body>\n<nav aria-label=\"Contents\">\n<ol>\n<li><a href=\"#h\">h</a></li>\n</ol>\n</nav>\n<p>é</p>\n<p>b</p>\n<h1 id=\"h\">h</h1>\n<p>c</p>\n</body>\n</html>\n"
+markdown "é\n\nb\n\n# h\n\nc\n"
+rtf 1fa15cd56db8f610
+braille blocks 49b541b6bc969c8e
+-- export structure
+chapter starts at block 0 ""
+paragraph ["é"]
+paragraph ["b"]
+heading 1 #h ["h"]
+paragraph ["c"]
+epub 41ca46b665d28ac6 in 5 files
+=== code ending in a carriage return
+markdown "```\ncode\r```\n\nafter\n\n    more code\rlast"
+-- read whole
+text "code\n\n\nafter\n\nmore code\n\n\nlast"
+title "Corpus"
+heading ranges 0
+-- read chapter 0 "" markers read
+text "code\n\n\nafter\n\nmore code\n\n\nlast"
+title ""
+heading ranges 0
+-- read chapter 0 "" markers unread
+text "code\n\n\nafter\n\nmore code\n\n\nlast"
+title ""
+heading ranges 0
+-- tree limit 1: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 2: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 3: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- tree limit 4: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- tree limit 5: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- tree limit 6: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- tree limit 7: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- tree limit 8: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- tree limit 9: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- tree limit 10: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- tree limit 12: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- tree limit 16: a7b0f574361bf584 text "code\n\n\nafter\n\nmore code\n\n\nlast"
+-- export words
+title heading 1 #corpus-book ["Corpus Book"]
+code "code"
+paragraph ["after"]
+code "more code"
+paragraph ["last"]
+html "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Corpus Book</title>\n<meta name=\"author\" content=\"Corpus Author\"/>\n</head>\n<body>\n<h1 id=\"corpus-book\">Corpus Book</h1>\n<pre><code>code</code></pre>\n<p>after</p>\n<pre><code>more code</code></pre>\n<p>last</p>\n</body>\n</html>\n"
+markdown "```\ncode\n```\n\nafter\n\n```\nmore code\n```\n\nlast\n"
+rtf f4f4c6c6ab22480f
+braille blocks 47c8dfb977acf57e
+-- export structure
+title heading 1 #corpus-book ["Corpus Book"]
+chapter starts at block 0 ""
+code "code"
+paragraph ["after"]
+code "more code"
+paragraph ["last"]
+epub dd3fd494cdc7bb97 in 5 files
+=== code with carriage returns and line feeds
+markdown "```\r\ncode\r\n```\r\n\r\nafter é\r\n\r\n    more\r\n\r\nlast"
+-- read whole
+text "code\n\n\nafter é\n\nmore\n\n\nlast"
+title "Corpus"
+heading ranges 0
+-- read chapter 0 "" markers read
+text "code\n\n\nafter é\n\nmore\n\n\nlast"
+title ""
+heading ranges 0
+-- read chapter 0 "" markers unread
+text "code\n\n\nafter é\n\nmore\n\n\nlast"
+title ""
+heading ranges 0
+-- tree limit 1: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 2: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 3: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- tree limit 4: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- tree limit 5: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- tree limit 6: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- tree limit 7: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- tree limit 8: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- tree limit 9: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- tree limit 10: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- tree limit 12: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- tree limit 16: 00ff7732302320fc text "code\n\n\nafter é\n\nmore\n\n\nlast"
+-- export words
+title heading 1 #corpus-book ["Corpus Book"]
+code "code"
+paragraph ["after é"]
+code "more"
+paragraph ["last"]
+html "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Corpus Book</title>\n<meta name=\"author\" content=\"Corpus Author\"/>\n</head>\n<body>\n<h1 id=\"corpus-book\">Corpus Book</h1>\n<pre><code>code</code></pre>\n<p>after é</p>\n<pre><code>more</code></pre>\n<p>last</p>\n</body>\n</html>\n"
+markdown "```\ncode\n```\n\nafter é\n\n```\nmore\n```\n\nlast\n"
+rtf 8d368ef5396bde59
+braille blocks c698e29f2e6a2898
+-- export structure
+title heading 1 #corpus-book ["Corpus Book"]
+chapter starts at block 0 ""
+code "code"
+paragraph ["after é"]
+code "more"
+paragraph ["last"]
+epub e18abce6cc29509e in 5 files
+=== carriage return entity in a table and a list
+markdown "| a&#13; |\n|---|\n| b&#13; |\n\nafter\n\n- item&#13;\n\n> quote&#13;\n\nend"
+-- read whole
+text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+title "Corpus"
+heading ranges 0
+-- read chapter 0 "" markers read
+text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+title ""
+heading ranges 0
+-- read chapter 0 "" markers unread
+text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+title ""
+heading ranges 0
+-- tree limit 1: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 2: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 3: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 4: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 5: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 6: 6f27047b10b0342b text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+-- tree limit 7: 6f27047b10b0342b text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+-- tree limit 8: 6f27047b10b0342b text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+-- tree limit 9: 6f27047b10b0342b text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+-- tree limit 10: 6f27047b10b0342b text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+-- tree limit 12: 6f27047b10b0342b text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+-- tree limit 16: 6f27047b10b0342b text "a\r\n\nb\r\n\n\n\nafter\n\nitem\r\n\nquote\r\n\nend"
+-- export words
+title heading 1 #corpus-book ["Corpus Book"]
+table with a header row
+  row "a"
+  row "b"
+paragraph ["after"]
+list bullets start 1 depth 0
+  item
+    paragraph ["item"]
+quote
+  paragraph ["quote"]
+paragraph ["end"]
+html "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Corpus Book</title>\n<meta name=\"author\" content=\"Corpus Author\"/>\n</head>\n<body>\n<h1 id=\"corpus-book\">Corpus Book</h1>\n<table>\n<thead>\n<tr><th>a</th></tr>\n</thead>\n<tbody>\n<tr><td>b</td></tr>\n</tbody>\n</table>\n<p>after</p>\n<ul>\n<li>item</li>\n</ul>\n<blockquote>\n<p>quote</p>\n</blockquote>\n<p>end</p>\n</body>\n</html>\n"
+markdown "| a |\n| --- |\n| b |\n\nafter\n\n- item\n\n> quote\n\nend\n"
+rtf 2831036a551712ca
+braille blocks 43538bfb14387a82
+-- export structure
+title heading 1 #corpus-book ["Corpus Book"]
+chapter starts at block 0 ""
+table with a header row
+  row "a"
+  row "b"
+paragraph ["after"]
+list bullets start 1 depth 0
+  item
+    paragraph ["item"]
+quote
+  paragraph ["quote"]
+paragraph ["end"]
+epub a7a72c9657613fde in 5 files
+=== line feed entities
+markdown "a&#10;&#10;\n\nb&#10;\n\nc&#13;&#10;&#10;\n\nd"
+-- read whole
+text "a\n\nb\n\n\nc\r\n\n\n\nd"
+title "Corpus"
+heading ranges 0
+-- read chapter 0 "" markers read
+text "a\n\nb\n\n\nc\r\n\n\n\nd"
+title ""
+heading ranges 0
+-- read chapter 0 "" markers unread
+text "a\n\nb\n\n\nc\r\n\n\n\nd"
+title ""
+heading ranges 0
+-- tree limit 1: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 2: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
+-- tree limit 3: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- tree limit 4: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- tree limit 5: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- tree limit 6: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- tree limit 7: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- tree limit 8: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- tree limit 9: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- tree limit 10: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- tree limit 12: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- tree limit 16: 0799d7afa70b7b2d text "a\n\nb\n\n\nc\r\n\n\n\nd"
+-- export words
+title heading 1 #corpus-book ["Corpus Book"]
+paragraph ["a"]
+paragraph ["b"]
+paragraph ["c"]
+paragraph ["d"]
+html "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Corpus Book</title>\n<meta name=\"author\" content=\"Corpus Author\"/>\n</head>\n<body>\n<h1 id=\"corpus-book\">Corpus Book</h1>\n<p>a</p>\n<p>b</p>\n<p>c</p>\n<p>d</p>\n</body>\n</html>\n"
+markdown "a\n\nb\n\nc\n\nd\n"
+rtf a62620bb71baeb59
+braille blocks 99f914e76d82c9f3
+-- export structure
+title heading 1 #corpus-book ["Corpus Book"]
+chapter starts at block 0 ""
+paragraph ["a"]
+paragraph ["b"]
+paragraph ["c"]
+paragraph ["d"]
+epub 71c2fb84309c359d in 5 files
 === line separators
 markdown "One\u{2028}Two\u{2029}Three\u{85}Four\u{c}Five\u{b}Six"
 -- read whole

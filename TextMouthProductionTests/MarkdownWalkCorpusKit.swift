@@ -72,6 +72,14 @@ enum MarkdownWalkCorpusKit {
             ("break inside emphasis", "*soft\nbreak* and **hard  \nbreak**"),
             ("leading and trailing blank lines", "\n\n\n  Words after blank lines.  \n\n\n"),
             ("carriage returns", "One\r\nTwo\rThree\r\n\r\nFour"),
+            // A carriage return right before a blank line: with the line feed after it, it is
+            // one Character, so the text does not end with a blank line, and another follows.
+            ("carriage return entity before a block", "a&#13;\n\nb\n\n# h&#13;\n\nc"),
+            ("carriage return entity before a block, not ASCII", "é&#13;\n\nb\n\n# h&#13;\n\nc"),
+            ("code ending in a carriage return", "```\ncode\r```\n\nafter\n\n    more code\rlast"),
+            ("code with carriage returns and line feeds", "```\r\ncode\r\n```\r\n\r\nafter é\r\n\r\n    more\r\n\r\nlast"),
+            ("carriage return entity in a table and a list", "| a&#13; |\n|---|\n| b&#13; |\n\nafter\n\n- item&#13;\n\n> quote&#13;\n\nend"),
+            ("line feed entities", "a&#10;&#10;\n\nb&#10;\n\nc&#13;&#10;&#10;\n\nd"),
             ("line separators", "One\u{2028}Two\u{2029}Three\u{85}Four\u{0C}Five\u{0B}Six"),
             ("tabs and nonbreaking spaces", "A\tB\u{A0}C\u{2003}D\n\n\tindented by a tab"),
             ("null character", "Before\u{0}after"),
@@ -244,7 +252,7 @@ enum MarkdownWalkCorpusKit {
         "<!-- textmouth-heading: eyJsZXZlbCI6MiwidGV4dCI6Ik1peGVkIFRhcmdldCJ9 -->",
         "\n<!-- textmouth-heading: eyJsZXZlbCI6MywidGV4dCI6IlNlY29uZCJ9 -->\n",
         "<!--", "-->", "<!-- note -->", "\n<!-- note -->\n", "<b>", "</b>", "<br/>", "\n<div>\n", "\n</div>\n", "<", ">",
-        "&amp;", "&#x41;", "&#0;", "&nosuch;", "&", "[", "]", "[link](https://example.org/x)", "](https://example.org/y)",
+        "&amp;", "&#x41;", "&#0;", "&#13;", "&#10;", "&nosuch;", "&", "[", "]", "[link](https://example.org/x)", "](https://example.org/y)",
         "[ref]", "\n[ref]: https://example.org/r\n", "![", "![alt](pic.png \"t\")", "<https://example.org/a>", "(", ")",
         "\"", "'", "--", "---", "...", "^[", "](k: v)", "\\", "\\*", "@", "@Dir {", "}", ":", "!",
         "\u{0}", "\u{2028}", "\u{A0}", "\u{200B}", "é", "👩‍👧", "\u{301}", "ß",
