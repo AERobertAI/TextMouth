@@ -178,7 +178,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
     They follow the spec now.
 - Why not the system's places, `.cancellationAction` and `.confirmationAction`:
   - In the simulator's tests (iPhone 17, iOS 26), Book Information's and the choice sheet's Cancel were reported missing, though Go To's, in `.topBarTrailing`, was found.
-  - A probe test, `ToolbarPlacementProbeUITests`, put the buttons back in `.cancellationAction` and read the sheet's tree on November 8, 2026.
+  - A probe test put the buttons back in `.cancellationAction` and read the sheet's tree on November 8, 2026.
     The probe was removed in 0.4.3, with its test and its launch variable.
     `PhoneSheetButton.swift`'s comment keeps the history, and it is accurate.
     The buttons were never missing.
