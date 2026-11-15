@@ -179,6 +179,10 @@ final class ReaderViewModel: ObservableObject {
             letGoOfOpenedPlaceAnchorIfLeft()
             schedulePlaybackUIRefresh()
             scheduleLivePositionPublish()
+            // A cursor that speech or a seek carries within the lead of its
+            // chapter's end starts the next chapter's render (audit C11);
+            // nothing is asked while no render waits.
+            startLookAheadRenderIfDue()
         }
     }
     /// Throttled mirror of the current chapter index for SwiftUI/VoiceOver.
@@ -762,6 +766,16 @@ final class ReaderViewModel: ObservableObject {
     /// the current chapter ends; nil when nothing is looked ahead to.
     /// Accessed from Navigation and Playback extensions.
     var lookAhead: LookAhead?
+    /// What the look-ahead's render waits for, while the next chapter's
+    /// speech is prepared and its audio is not asked for yet: the current
+    /// chapter's end coming within the lead (audit C11). Nil once the render
+    /// is asked for, and when nothing is looked ahead to.
+    /// Accessed from the Playback extension.
+    var lookAheadWait: LookAheadWait?
+    /// Watches a text book's pause for growing long, when the reader lets go
+    /// of the look-ahead's audio (audit C11). Accessed from the Playback
+    /// extension.
+    let longPause = LongPauseWatch()
     /// The speech prepared for recent chapters, and the look-ahead's, each
     /// used again while everything it was prepared from stays the same
     /// (PERF02). Accessed from the Playback extension.
