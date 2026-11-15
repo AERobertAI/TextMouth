@@ -1,5 +1,5 @@
 # The audit and its accepted findings
-<!-- id: audit-accepted-findings; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
+<!-- id: audit-accepted-findings; keys: XCUIAccessibilityAuditTypes, accessibility QA, iPhone, VoiceOver; src: TextMouthiOSUITests/TextMouthUITestCase.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -8,7 +8,7 @@ Part of [TextMouth's documentation](../../README.md).
   A screenshot of the audited screen is kept with the results.
 
 ## How the audit runs
-<!-- id: how-audit-runs; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift -->
+<!-- id: how-audit-runs; keys: audit kind, audit loop, SDK kinds, findings, audit types; src: TextMouthiOSUITests/TextMouthUITestCase.swift -->
 
 - **Each kind runs alone.**
   `audit` makes one `performAccessibilityAudit` call for each of the seven kinds, from one table, `auditKinds` in `TextMouthUITestCase` (the kind and its name), which `name(of:)` reads as well.
@@ -25,7 +25,7 @@ Part of [TextMouth's documentation](../../README.md).
   The audit of an element's actions exists on macOS alone (`XCUIAccessibilityAuditTypes.h`).
 
 ## The accepted findings
-<!-- id: accepted-findings; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
+<!-- id: accepted-findings; keys: Accepted struct, allow list, waived finding, color contrast; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/SearchUITests.swift -->
 
 - A finding is accepted only when the app cannot change it, or when it is proven false.
   An `Accepted` value matches the audit's type and the element's label (exactly, or by its start when `labelIsPrefix`), and, for some, Apple's own short description of the finding.
@@ -62,7 +62,7 @@ Part of [TextMouth's documentation](../../README.md).
   To accept a new kind, add an `Accepted` value with its reason to `TextMouthUITestCase`, and add its reason here.
 
 ## Audits that report without failing
-<!-- id: audits-that-report-without-failing; keys: ; src: TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/SearchUITests.swift -->
+<!-- id: audits-that-report-without-failing; keys: soft audit, report only, XCTAttachment, warning; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LibraryUITests.swift, TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
 
 - `audit(_:screen:types:informing:accepting:)` takes `informing`, a kind of finding that is kept with the results and does not fail the test.
   The note is an attachment named "<screen>: findings reported, not failed".
@@ -79,7 +79,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Every other kind of finding on those screens still fails.
 
 ## LargeTextUITests
-<!-- id: largetextuitests; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/ScreenOrderUITests.swift -->
+<!-- id: largetextuitests; keys: accessibility size, AX5, Dynamic Type growth, retry tap; src: TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouth/Platform/iOS/Views/PhoneTextStyle.swift -->
 
 - It audits for Dynamic Type and clipped text only (`sizeFindings`), at the largest size iOS offers, Accessibility Extra Extra Extra Large.
   A bigger size does not exist.
@@ -112,7 +112,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Nothing is pressed but a book's Back, Settings, Add to Library, and Search in Book, and nothing is typed but the one search of the Search test.
 
 ## PlaybackUITests
-<!-- id: playbackuitests; keys: ; src: TextMouthiOSUITests/PlaybackUITests.swift, TextMouthiOSTests/PhoneControlButtonTests.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
+<!-- id: playbackuitests; keys: transport controls, skip sentence, end of heading timer, regression proof, mutation; src: TextMouthiOSUITests/PlaybackUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSTests/PhoneControlButtonTests.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift, TextMouth/Phone/PhoneSleepTimerModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift -->
 
 - They press Play, Pause, the skip buttons, and the Sleep Timer's buttons in the reader, on Alice's Adventures in Wonderland (an EPUB, so nothing is played through Apple's players but the app's own speech), and read what VoiceOver would be given.
   Each starts with `requireSound`, so each skips on this Mac, saying why.
@@ -139,7 +139,7 @@ Part of [TextMouth's documentation](../../README.md).
   `testAnEndOfHeadingTimerSetAtTheCoverPlaysOnAndNamesItsStop` failed with the symptom of run 42948545901, "The book did not start playing ... The control reads \"Play\", and the Sleep Timer reads \"Off\"", and the class's other five tests passed.
 
 ## SearchUITests
-<!-- id: searchuitests; keys: ; src: TextMouthiOSUITests/SearchUITests.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouth/Parsers/WordDocumentStyles.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
+<!-- id: searchuitests; keys: find in book, search sheet, software keyboard, PhoneBookSearchVocabulary; src: TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Phone/PhoneBookSearch.swift -->
 
 - They drive the Search in Book sheet (0.4.4) in the simulator.
   Since November 10, 2026 the searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see In the simulator, sound tests run on GitHub only, below).
@@ -163,7 +163,7 @@ Part of [TextMouth's documentation](../../README.md).
   If the keyboard stays up, the audit runs all the same and a note says so.
 
 ### Dynamic Type, the accepted finding, and the passes
-<!-- id: dynamic-type-accepted-finding-passes; keys: ; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouth/Parsers/WordDocumentStyles.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift -->
+<!-- id: dynamic-type-accepted-finding-passes; keys: search sheet audit, pass history, CI runs, on-screen keyboard; src: TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LibraryUITests.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift -->
 
 - **Dynamic Type is reported, not failed** (November 11, 2026).
   Run 43032983986 failed this audit on four findings, "Dynamic Type font sizes are partially unsupported", on the status line ("7 matches"), the "Search results" heading, the "Use regular expression" switch, and the "Search text" field, which the three full runs before it did not have.
@@ -185,7 +185,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Not verified: anything that needs VoiceOver or sound, the Return place after a jump, and the sheet's focus into its field.
 
 ## Book Information's test expects "Author"
-<!-- id: book-information-test-expects-author; keys: ; src: -->
+<!-- id: book-information-test-expects-author; keys: field label, PhoneLibraryVocabulary, authorFieldLabel; src: TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouth/Phone/PhoneLibraryVocabulary.swift, TextMouth/Platform/iOS/Views/Library/PhoneBookInfoSheet.swift -->
 
 - `testTheBookInformationSheetHasTheSpecsOrder` expects the order "Book Information", "Cancel", "Save", "Book title", "Author", "Publisher", "Publication date", "Format", "Added", "Last Opened", "Word Count".
 - The book is an EPUB.
@@ -194,7 +194,7 @@ Part of [TextMouth's documentation](../../README.md).
   The test used to expect "Book author" and failed for that reason, which was not a missing Cancel.
 
 ## What is still open
-<!-- id: what-still-open; keys: ; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthiOSTests/PhoneValueRowTests.swift -->
+<!-- id: what-still-open; keys: known issues, unverified, audit flakiness, Dynamic Type caption; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouth/Platform/iOS/Views/Settings/PhoneSettingsView.swift, TextMouthiOSUITests/TextMouthUITestCase.swift -->
 
 These are findings with no known cause, and things not verified.
 The last passes of November 9, 2026 fail on none of them.
