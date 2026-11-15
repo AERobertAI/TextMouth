@@ -48,7 +48,7 @@ When generating any creative text (game descriptions, placeholder copy, flavor t
 
 This is a basic native Mac TTS and audio book player app called TextMouth.
 
-Whenever adding a new feature or fixing a bug, work on a local branch and make focused local commits. Do not merge to main or push without explicit instruction. (The user has authorized the orchestrator to merge agent branches into main with `git merge --no-ff` after a green full suite, and to record each merge in the TODO; pushing and installing stay the user's.)
+Whenever adding a new feature or fixing a bug, work on a local branch and make focused local commits. Do not merge to main or push without explicit instruction. (The user has authorized the orchestrator to merge agent branches into main with `git merge --no-ff` after a green full suite, and to record each merge in the TODO. Since November 14, 2026 the orchestrator also pushes main and its version tags to GitHub at a version bump it judges a fairly stable release; task agents never push except to `TestBuild` through the train tools, and installing stays the user's. See "The user's standing rules" in `AGENTS.md`.)
 Use unit tests heavily whenever writing a new feature. Add tests with new features, and verify old tests still describe the correct behavior when fixing bugs.
 
 Consider edge cases carefully before declaring work complete.
