@@ -34,7 +34,7 @@ TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and
   - and in tables/ the four English tables built into TextMouth, with the 13 files they include, 17 in all.
 
   The four are Unified English uncontracted (en-ueb-g1.ctb) and contracted (en-ueb-g2.ctb) braille, and English uncontracted (en-us-g1.ctb) and contracted (en_US.tbl) braille as used in the United States.
-  It also holds, unchanged from that tarball, three display tables that only the tests read, 20 files in all:
+  It also holds, unchanged from that tarball, three display tables that only the tests read, which bring tables/ to 20 files in all:
   - en-us-brf.dis (North American Braille ASCII);
   - de-eurobrl6.dis (Eurobraille, six-dot, lowercase, SBS Zürich 2009);
   - and de-eurobrl6u.dis (the same code in capitals).
