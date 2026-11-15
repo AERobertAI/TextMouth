@@ -23,6 +23,7 @@ The reference pages are under `docs/` (see `README.md` and `ARCHITECTURE.md`).
 - [LIBRARY-SEARCH-RESEARCH-2026-11-13.md](LIBRARY-SEARCH-RESEARCH-2026-11-13.md): Searching the whole library's text (November 13, 2026)
 - [LIBRARY-VIEWS-RESEARCH-2026-10-30.md](LIBRARY-VIEWS-RESEARCH-2026-10-30.md): Library views: research and design (October 30, 2026)
 - [LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md](LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md): A library on each device, with a safer library in the cloud
+- [LOCAL-FIRST-PHASE1-DESIGN-2026-11-15.md](LOCAL-FIRST-PHASE1-DESIGN-2026-11-15.md): The cloud store's Phase 1, as seven branches to build
 - [NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md](NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md): Next book in this window (0.2.5), design note
 - [PAGES-RESEARCH-2026-10-21.md](PAGES-RESEARCH-2026-10-21.md): Pages across formats: research (October 21, 2026)
 - [PLAN-0.2.0-2026-10-23.md](PLAN-0.2.0-2026-10-23.md): The plan for the official 0.2.0 install (October 23, 2026)
