@@ -78,9 +78,9 @@ Book Information's Text Encoding pop-up (encodingchoice): what the Book Info she
   BookRereadPopUp is generic over BookRereadChoosing models (TextEncodingChoiceModel, BrailleFileCodeChoiceModel, and BrailleCodeChoiceModel, in ViewModels/BookRereadChoosing.swift).
   A TextRereadChoice is .textEncoding, .brailleFileCode, or .brailleTable.
   Each pop-up carries its own alert, and a stored code becomes words in BrailleFileCodeWording.name(ofStored:) only.
-  Its cancel() clears pending.
+  The model's cancel() clears pending.
 - How others observe it: LibraryBookInfoSheet draws the row as a BookRereadPopUp (Views/Library/LibrarySheetViews.swift) over the model, a Picker in the menu style whose label and hint are set for VoiceOver (TextEncodingWording.bookInfoLabel and popUpHint).
-  A pop-up button takes no label from the picker's title, and SwiftUI's accessibilityValue never reaches it (TextEncodingPopUpTests measured an empty value).
+  That is because a pop-up button takes no label from the picker's title, and SwiftUI's accessibilityValue never reaches it (TextEncodingPopUpTests measured an empty value).
   The value VoiceOver speaks, before the label, is the selected item's title, so name(of:) names the selected item with what decided the encoding ("Windows-1251 (Cyrillic), guessed") and every other as the catalog does.
   The items are TextEncodingChoices.options, then one more, last, while no option names the encoding (UTF-16, an HTML declaration the catalog lacks) or the state is not known.
   The confirmation is the .alert that BookRereadPopUp carries, over the sheet: its title and message are TextEncodingWording.confirmTitle(bookTitle:option:) and confirmMessage(option:keepsText:stopsEditing:), its buttons Read Again, which reads the book again, and Cancel.
@@ -168,7 +168,7 @@ The Folder Settings sheet and the Add to Library sheet (FR19, FR20): what a Libr
   It reads the rest from the library each time it is asked, so a rename or a choice made in another window shows.
   It reads the global When book ends and Open the next book in from the preferences (SettingsPolicy.endOfBookBehavior and SettingsPolicy.nextBookWindow, storedValue(in:)).
   Its addToLibrary, an AddToLibraryHost in @StateObject, owns an AddToLibraryModel (isPresented, and the choice made while the sheet closes) and a KeyboardShortcutManager of its own, made with installsEventMonitor false so that it reads the preferences store as the app's does and takes no key press.
-  The app's manager, read from the environment, broke existing tests, and the keys the sheet shows may lag a change made in Settings until the next window.
+  It has a manager of its own because the app's manager, read from the environment, broke existing tests, and the keys the sheet shows may lag a change made in Settings until the next window.
 - Who may write it: the toolbar's Feed Settings or Folder Settings button and the Library menu's Folder or Feed Settings call LibraryView.openFolderSettings(_:).
   That menu command is ShortcutAction.folderOrFeedSettings, with no default key, posting showFolderOrFeedSettings, which LibraryFolderSettingsSupport hears for the window that takes commands.
   LibraryFolderSettingsTarget.of(category:folderPath:folders:feedID:feedTitle:) gives the folder the window shows:

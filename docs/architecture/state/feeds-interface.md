@@ -43,7 +43,7 @@ The List and download choice, and the newest-N rule (FR11's branch B): which of 
   - it takes back its downloads not yet under way whose items no longer count (FeedDownloadManager.withdrawRuleDownloads),
   - asks for each of the newest n not played that it may download (ruleMayDownload(_:): never an item the listener asked for, deleted, or stopped, nor one whose download made before the rule went; and an item that failed only in a pass that follows a refresh of its feed),
   - and, holding more of its own downloads than n, removes the files of its oldest outside the newest until it holds n, for good, through removeDue(_:from:by:at:putOffEvent:), as the after-playing sweep does ([Played downloads and their deletion](feeds.md)),
-  - passing over a download the listener asked for, one on the reading list, one in use (feedBooksInUse, as the sweep), and, in a library in the cloud, one this Mac doesn't hold whole, until a later pass.
+  - the removal passing over a download the listener asked for, one on the reading list, one in use (feedBooksInUse, as the sweep), and, in a library in the cloud, one this Mac doesn't hold whole, until a later pass.
   A download that waits or fails removes nothing.
   For a feed that downloads by hand it takes back the rule's downloads not yet under way and removes nothing, and no pass runs while the library's index is being recovered.
   For a feed the listener unsubscribed from (FR11's branch D), whose rules stay in force while checking stops, it takes back its downloads not yet under way and asks for none, while its removals act as above, so its downloads beyond the newest still go.
@@ -158,7 +158,7 @@ The feed reader's interface in a Library window (FR03).
   And at once when nothing was asked (LibraryFeedsPresenter's say(_:afterAlert:in:), through VoiceOverAnnouncer.afterSheetCloses(_:); REV13 item 1): Unsubscribe, Delete Episode, and Delete Feed….
   Delete Feed…, last among a feed's commands (FeedAction.actions(for:noun:isSubscribed:unsubscribeAsks:)) and in Feed Info, asks first (deleteFeedConfirmation(for:in:)).
   The question and message (FeedWording.deleteFeedQuestion(title:) and deleteFeedMessage(downloads:kept:keptParts:noun:folderPath:mode:)) name what goes, to the Trash or for good, the folder that goes when nothing else is in it, and Move to Library… for a download to keep.
-  It then runs FeedCenter.deleteFeed(_:) ([Feed records](feeds.md)) through deleteFeed(_:in:), which first closes Feed Info should it show the feed.
+  Delete Feed… then runs FeedCenter.deleteFeed(_:) ([Feed records](feeds.md)) through deleteFeed(_:in:), which first closes Feed Info should it show the feed.
   Its FeedDeleteOutcome is worded by FeedWording.deletedFeed(_:noun:keptParts:), with keptParts(ofFeed:in:) serving both the question and the announcement, and a FeedDeleteError by deleteFeedRefused(_:title:mode:) in an alert (the presenter's notice) alone.
   Both refuse(message:) and the OPML notices set notice only, as an alert speaks for itself.
   Resubscribe (FeedCenter.resubscribe(_:)) clears the date and checks the feed at once, as Check Feed does (FEED_RESUBSCRIBED, FeedWording.resubscribed(title:)); FeedAction.actions(for:in:) offers one or the other by the feed's state, and Check Feed only while subscribed.

@@ -157,7 +157,7 @@ The sleep timer held for the next book (0.2.5): a running timer goes on with lis
   A held fade is otherwise left to run out, whether a Pause reaches the old reader or it closes, so the expiry is said once, even if the reader has gone, and the book is not started.
   The method releaseHeld(forBook:reason:announcingAfter:) stops a timer held for a book that truly cannot open and says SleepTimerHandOverWording.noBook after the delay, only if no timer in any window has started, been held, or taken one since (SleepTimerRegistry.timerChanges).
   So a Restart in another window meanwhile is not contradicted.
-  It is called:
+  The method releaseHeld is called:
   - from a load failure (showLoadFailure) and a cloud opening that stopped or failed (stopOpening(at:announcing:)), both with afterTheReason, 3 seconds, so the reason is read first;
   - BookReaderWindowView.makeReader for a book deleted since the window was asked for, the same;
   - ReaderOpenRefusal.dropRequests(for:), at once, when the Library refuses the open;
@@ -192,7 +192,7 @@ Listening checkpoints.
 - Who may write it: a reader starts a session when it plays and ends it when it pauses or stops.
   Every 60 seconds a timer checkpoints the open session, crediting the time since the previous checkpoint and saving, so a crash loses at most a minute.
   The method markBookFinished(bookID:title:) counts each book once (P07): it writes an entry only for a book Books Finished counts for the first time, returns whether it did, and posts bookDidFinish at every end it is told of, so a feed item marked unplayed and heard again is played again.
-  A rewind's replay of a finished end tells it nothing (finishAtTheEnd(replayingAFinishedEnd:), [What follows a finished book](reader-navigation.md)).
+  A rewind's replay of a finished end tells it nothing (finishAtTheEnd(replayingAFinishedEnd:), [The end of a chapter and of the book](../reading-a-book.md)).
   The entry records the book with its kind (FinishedBookEntry.kind, a FinishedBookKind: a text book, which an article a feed downloaded is too, an audiobook, or a podcast episode, an audiobook a feed downloaded).
   It is told while the library still holds the book, since a played episode's download is soon deleted.
   The feed engine installs the resolver on the statistics service (ReadingStatsService.finishedBookKind, answered by FeedCenter.finishedBookKind(of:)).
