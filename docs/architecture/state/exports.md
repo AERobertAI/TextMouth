@@ -10,18 +10,33 @@ An export (FR05): what the Export dialog offers, what is checked, where it goes,
 
 - Owner: BookExportModel, one for each Export dialog, on the main actor: the books, what they offer (BookExportOffer), a choice for each kind any of them holds (BookExportChoice), the kinds checked, the destination, and the phase (listing, ready, exporting, or finished).
   The destination starts at the folder last exported to this session, kept only in memory, or else at Documents, in the home TextMouthRuntime names, so a test exports into its sandbox.
-- Who may write it: the dialog's controls, and BookExportService, which never downloads (MaintenanceFileAccess). offer(for:access:) lists, off the main thread, what a book's package holds, from what the file system says: for a folder of tracks it also reads the saved content index (audioFileOrder(listed:index:): the files in the order the chapters and their clips play them, then any others in Finder's order), and for a DAISY book kept as loose files its inventory (DAISYPackageInventory).
-  It lists, too, the originals the audio editor keeps in the package's audioEdits/originals folder (AudioEditPackage.folder, originalsFolderName) as BookExportKind.originalAudio: one file as "<title> - Original Audio" with its own extension, or a book's tracks' originals in a folder of that name, each under its path in the book's audio folder, copied as they are; Export never makes one, and a recording's take stays its Original recording (originalRecording). plan(_:kinds:conversions:in:fileExists:) names every file: one book's items go in the destination, its tracks and a loose DAISY book's files in a folder named after it; several books get a folder each; and a name already taken is followed by a number (UniqueNames, compared without case), so nothing is replaced.
+- Who may write it: the dialog's controls, and BookExportService, which never downloads (MaintenanceFileAccess).
+  BookExportService.offer(for:access:) lists, off the main thread, what a book's package holds, from what the file system says.
+  For a folder of tracks it also reads the saved content index (audioFileOrder(listed:index:): the files in the order the chapters and their clips play them, then any others in Finder's order), and for a DAISY book kept as loose files its inventory (DAISYPackageInventory).
+  It lists, too, the originals the audio editor keeps in the package's audioEdits/originals folder (AudioEditPackage.folder, originalsFolderName) as BookExportKind.originalAudio: one file as "<title> - Original Audio" with its own extension.
+  Or it lists a book's tracks' originals in a folder of that name, each under its path in the book's audio folder.
+  Both are copied as they are.
+  Export never makes one, and a recording's take stays its Original recording (originalRecording).
+  BookExportService.plan(_:kinds:conversions:in:fileExists:) names every file.
+  One book's items go in the destination, its tracks and a loose DAISY book's files in a folder named after it.
+  Several books get a folder each.
+  A name already taken is followed by a number (UniqueNames, compared without case), so nothing is replaced.
   When Export is pressed, the model lists the books again as the library holds them, and runs export(_:kinds:conversions:to:access:cancellation:progress:) off the main thread.
   It leaves out books and items only in the cloud, copies each file with dataless files left in the cloud, and writes the plain text (plainText(fromMarkdown:at:title:): the chapters as the reader parses them).
-  The Text as Markdown item, and the Markdown of a transcribed audiobook's Transcript, are made from content.md, not copied: markdownFile(of:from:as:) lists each as a .converted source by BookExportConversion.markdown, with content.md's size as the offer's, and only transcript.json is copied byte for byte.
-  Every file, whether copied, plain text, or converted (text export, below), is made at a scratch URL in a new scratch folder (writeThroughScratchFile): the system's item-replacement folder on the volume of the nearest existing folder that holds the target (makeScratchFolder(near:)), or, when the system makes none, a new "TextMouth Export <UUID>" folder in the temporary directory.
+  The Text as Markdown item, and the Markdown of a transcribed audiobook's Transcript, are made from content.md, not copied.
+  BookExportService.markdownFile(of:from:as:) lists each as a .converted source by BookExportConversion.markdown, with content.md's size as the offer's.
+  Only transcript.json is copied byte for byte.
+  Every file, whether copied, plain text, or converted (text export, below), is made at a scratch URL in a new scratch folder (writeThroughScratchFile).
+  The folder is the system's item-replacement folder on the volume of the nearest existing folder that holds the target (makeScratchFolder(near:)), or, when the system makes none, a new "TextMouth Export <UUID>" folder in the temporary directory.
   When the file is whole and Stop has not been pressed, moveExclusively moves it to its target, and the target's folder is made only then.
-  The move is an exclusive rename (renamex_np with RENAME_EXCL, which the file system makes atomic: FileManager.moveItem checks and then renames, so a file made between the two would be replaced) or, where the volume cannot do that (EXDEV, ENOTSUP, or EINVAL), an exclusive copy (copyfile with COPYFILE_EXCL) and then the removal of the source.
+  The move is an exclusive rename (renamex_np with RENAME_EXCL, which the file system makes atomic).
+  FileManager.moveItem checks and then renames, so a file made between the two would be replaced.
+  Where the volume cannot do that (EXDEV, ENOTSUP, or EINVAL), the move is an exclusive copy (copyfile with COPYFILE_EXCL) and then the removal of the source.
   A target that exists, even one made an instant ago, fails that file with fileWriteFileExists and is left as it was, and the scratch folder is removed in every case.
   So an export never replaces a file in the chosen folder, removes none that was there before it began, and leaves no half-written file after a Stop or a failure.
   The one thing it removes in the folder is the partial file that copyExclusively created itself, when an exclusive copy fails for a reason other than an existing target (an open follow-up in the TODO, from team export).
-  Stop (BookExportCancellation) is read before each file and, through checkCancelled(), between a conversion's steps and a writer's blocks, so a conversion ends partway; a copy already begun finishes in the scratch folder, and writeThroughScratchFile, checking once more before the move, does not move it.
+  Stop (BookExportCancellation) is read before each file and, through checkCancelled(), between a conversion's steps and a writer's blocks, so a conversion ends partway.
+  A copy already begun finishes in the scratch folder, and writeThroughScratchFile, checking once more before the move, does not move it.
   Either way the file is neither exported nor a failure, and the files after it are not started.
   A destination inside the data directory is refused (BookExportModel.isInsideDataDirectory).
 - How others observe it: BookExportSheet shows the model, VoiceOver's focus on its first checkbox.
@@ -35,22 +50,31 @@ An export (FR05): what the Export dialog offers, what is checked, where it goes,
 Text export (FMT18, FMT19, FMT22): what the Convert to picker, beside Text as Markdown, makes of a text book's content.md in place of its Markdown (T3: Markdown is written too, and no export copies content.md).
 What each format keeps and leaves out is in [Exporting books](../../user/exporting-books.md).
 
-- Owner: BookExportModel keeps the Convert to choice of each kind whose text a writer can convert (conversionIDs: a writer's id, or TextExportWriters.markdownID until another is chosen; BookExportKind.convertsText is true for .markdown alone) and each writer's options (optionsStates, one TextExportOptionsState for each writer chosen, kept for the dialog's life), and BookExportSheet draws the picker beside the checked checkbox, with the chosen writer's options view under it.
+- Owner: BookExportModel keeps the Convert to choice of each kind whose text a writer can convert (conversionIDs: a writer's id, or TextExportWriters.markdownID until another is chosen).
+  BookExportKind.convertsText is true for .markdown alone.
+  BookExportModel keeps each writer's options too (optionsStates, one TextExportOptionsState for each writer chosen, kept for the dialog's life).
+  BookExportSheet draws the picker beside the checked checkbox, with the chosen writer's options view under it.
   TextMouth/Services/Export/ holds the writers and what they read:
 
 ### The document, the walker, and the first writers
 <!-- id: document-walker-first-writers; keys: ExportDocument, swift-markdown, chapter markers, HTML export, RTF export, Word export, page breaks, BCP 47; src: TextMouth/Services/Export/ExportDocument.swift, TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Services/Export/HTMLExportWriter.swift, TextMouth/Services/Export/RTFExportWriter.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, TextMouth/Services/Export/XHTMLMarkup.swift, TextMouth/Services/Export/XMLEscaping.swift, TextMouth/Parsers/MarkdownMarker.swift -->
 
 - ExportDocument, the model every writer reads.
-  For a writer that asks (EPUB, since 0.4.1) it also says where each chapter begins (chapterStarts, ExportChapterStart), where each page begins (ExportPageBreak: the block case .pageBreak between blocks, ExportRun.pageBreak inside text, and ExportTable.cellPages for a page that starts in a table cell, ExportCellPage), and the places the book's contents point at (ExportNavigationTarget: .navigationTarget between blocks and ExportRun.navigationTarget inside text, a heading annotation of content.md that a converted book carries for a contents entry naming a styled paragraph, an anchor, or a deeper entry of a Kindle book; ExportContentsItem is one entry of the contents, a heading or a target), all read where the reader reads them.
+  For a writer that asks (EPUB, since 0.4.1) it also says where each chapter begins (chapterStarts, ExportChapterStart).
+  It says where each page begins (ExportPageBreak: the block case .pageBreak between blocks, ExportRun.pageBreak inside text, and ExportTable.cellPages for a page that starts in a table cell, ExportCellPage).
+  It says the places the book's contents point at (ExportNavigationTarget: .navigationTarget between blocks and ExportRun.navigationTarget inside text).
+  The target is a heading annotation of content.md that a converted book carries for a contents entry naming a styled paragraph, an anchor, or a deeper entry of a Kindle book.
+  ExportContentsItem is one entry of the contents, a heading or a target.
+  All three are read where the reader reads them.
 - ExportDocumentWalker, the one swift-markdown walk of content.md, since Markdown stays the base.
   It splits the text into chapters at the markers exactly as the reader does, so text before the first marker is left out, as the reader leaves it out.
   ExportWalkOptions says what the walk keeps besides the words: keepsChapters and keepsPageMarkers, off in .plain (HTML, RTF, Word, and braille get the document they always did) and on in .bookStructure, which a writer asks for in TextExportWriter.walkOptions.
-  The decoding of a marker line is MarkdownMarker (Parsers/MarkdownMarker.swift), moved out of the reader unchanged and shared with the exporters; one effect reaches every writer: the walk no longer drops the words that follow a marker on the same line.
+  The decoding of a marker line is MarkdownMarker (Parsers/MarkdownMarker.swift), shared with the reader and the exporters; the walk keeps the words that follow a marker on the same line.
   A target in a table cell is a place before the table; a page that starts in a cell stays in it.
 - TextExportWriter, the writer protocol, with the TextExportWriters.all registry, the TextExportConversion erasure, and the dialog's options state (TextExportOptionsState).
 - HTMLExportWriter with XMLEscaping, RTFExportWriter, and WordDocExportWriter, which is Apple's .docFormat from TextMouth's RTF.
-  HTMLExportWriter and EPUBExportWriter write their blocks through XHTMLMarkup (Services/Export/XHTMLMarkup.swift), so a heading, a list, or a table is written once, and their contents lists through ExportContentsList (the same file): one list for each item, a heading that rises out of a skipped level joining its sibling's list and an entry above the outermost level lowering it, where the HTML writer used to put two lists in one item.
+  HTMLExportWriter and EPUBExportWriter write their blocks through XHTMLMarkup (Services/Export/XHTMLMarkup.swift), so a heading, a list, or a table is written once.
+  They write their contents lists through ExportContentsList (the same file): one list for each item, a heading that rises out of a skipped level joining its sibling's list and an entry above the outermost level lowering it.
   ExportBookDetails.languageTag accepts a language only if it is a well-formed BCP 47 tag, for HTML, PEF, and EPUB.
 
 ### The EPUB package
@@ -99,8 +123,12 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
 ### The Markdown writer, and adding a writer
 <!-- id: markdown-writer-adding-writer; keys: Markdown export, md, escaping, backslash, content.md, new writer, picker order; src: TextMouth/Services/Export/MarkdownExportWriter.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Parsers/MarkdownLiteral.swift, TextMouth/Parsers/MarkdownEmphasis.swift -->
 
-- MarkdownExportWriter, the Markdown choice, listed first by TextExportWriters.markdownID and not in TextExportWriters.all (its id is "md"): headings, paragraphs, lists, quotes, code, breaks, and tables, with emphasis (MarkdownEmphasis.markdown(_:styles:literal:), given MarkdownLiteral.minimallyEscaped as its literal writer) and web and mail links, and no title heading, so the file is the book's text as content.md holds it, without its marker lines.
-  It writes only the backslashes Markdown needs (MarkdownLiteral.minimallyEscaped, and guardingLineStart for each line's start, which also guards a line that would read as a table's delimiter row, and an exclamation mark that ends the words before a link is escaped). content.md, TextMouth's own cache, escapes every ASCII punctuation character so that its reader reads exactly a book's characters, and stays as it is: no export copies it.
+- MarkdownExportWriter is the Markdown choice, listed first by TextExportWriters.markdownID and not in TextExportWriters.all (its id is "md").
+  It writes headings, paragraphs, lists, quotes, code, breaks, and tables, with emphasis (MarkdownEmphasis.markdown(_:styles:literal:), given MarkdownLiteral.minimallyEscaped as its literal writer) and web and mail links, and no title heading.
+  So the file is the book's text as content.md holds it, without its marker lines.
+  It writes only the backslashes Markdown needs (MarkdownLiteral.minimallyEscaped, and guardingLineStart for each line's start, which also guards a line that would read as a table's delimiter row, and an exclamation mark that ends the words before a link is escaped).
+  The file content.md, TextMouth's own cache, escapes every ASCII punctuation character so that its reader reads exactly a book's characters, and stays as it is.
+  No export copies it.
 - Adding a writer: one new file plus one line in TextExportWriters.all, where the picker's order is the array's order.
   Scripts/agents/briefs/2026-10-19/export/interface-for-braille.md describes the interface.
 
@@ -109,32 +137,79 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
 
 - Braille (FMT22): BRFExportWriter and PEFExportWriter (Services/Export/BrailleExportWriters.swift), last in TextExportWriters.all, write a book as braille.
   What the files hold and the layout's rules are in [Exporting books](../../user/exporting-braille.md); the translator, its helper, and the table catalog are under Braille files in [Imports](imports-braille-tables.md).
-  - Blocks: BrailleExportBlocks.blocks(of:) turns an ExportDocument into BrailleBlocks, and printBlocks(of:) gives each its emphasis (BraillePrintBlock): a block's print keeps its runs' italic (isEmphasis) and bold (isStrong) as flags on each scalar (EmphasizedText(runs:)), and a link's address is not written.
+  - Blocks: BrailleExportBlocks.blocks(of:) turns an ExportDocument into BrailleBlocks, and printBlocks(of:) gives each its emphasis (BraillePrintBlock).
+    A block's print keeps its runs' italic (isEmphasis) and bold (isStrong) as flags on each scalar (EmphasizedText(runs:)), and a link's address is not written.
     The text of a table's cells, a code block's lines, an ordered item's number, and the title carries no emphasis.
-    The title heading comes first, as level 1, when the document has one; a heading keeps its level; a paragraph is a paragraph; a list item is a list item at its depth, an ordered list's beginning with its number and a period; a quote is the text of its blocks; a code block is a paragraph for each of its lines that has text; a table is a paragraph for each row, its cells joined by semicolons; a thematic break is nothing.
-  - Writing: BrailleExportWriting.write checks the cancellation, binds BookExportCancellation.childProcesses, the ImportCancellation that Stop sets with the export's own flag, as ImportCancellation.current around the translation, so Stop kills the braille helper at once instead of waiting for a translation that can run for up to a minute on a long book (TODO 3985), asks BrailleDocumentWriter for the file's bytes (its translator's hidden files go in the scratch folder that holds the target), checks again, and writes them with .withoutOverwriting; a BrailleTranslator.Failure becomes a TextExportError with its sentence.
-    BrailleDocumentWriter translates the blocks' text, with its emphasis, to braille (BrailleTranslator, print to braille, with the options' table; liblouis writes the table's emphasis indicators for the classes the helper finds liblouis reads back exactly (the helper, in [Imports](imports-braille-tables.md)), UEB's; EBAE's italic and bold, which liblouis misreads, and most of this Mac's tables write plain braille, byte for byte as without emphasis, although the helper reads EBAE's signs in a braille book), lays the cells out with BrailleLayout.pages(of:format:), and frames the pages with BrailleFileWriter: brf(pages:lineEnd:code:), each row's cells written in the options' braille file code (BrailleFileCode: a byte of North American Braille ASCII or of Eurobraille, which are ASCII only, or Unicode braille patterns in UTF-8 with no byte order mark and the blank cell as U+2800), with the line end after each row and one form feed between pages, or pef(pages:metadata:format:), PEF 2008-1 XML in one volume of the options' cells and lines (PEFExportWriter.metadata(of:): the title, the author or none, the language or "en", a urn:uuid identifier, and the day).
+    The title heading comes first, as level 1, when the document has one;
+    - a heading keeps its level;
+    - a paragraph is a paragraph;
+    - a list item is a list item at its depth, an ordered list's beginning with its number and a period;
+    - a quote is the text of its blocks;
+    - a code block is a paragraph for each of its lines that has text;
+    - a table is a paragraph for each row, its cells joined by semicolons;
+    - a thematic break is nothing.
+  - Writing: BrailleExportWriting.write checks the cancellation.
+    It binds BookExportCancellation.childProcesses, the ImportCancellation that Stop sets with the export's own flag, as ImportCancellation.current around the translation.
+    So Stop kills the braille helper at once instead of waiting for a translation that can run for up to a minute on a long book (TODO 3985).
+    It asks BrailleDocumentWriter for the file's bytes (its translator's hidden files go in the scratch folder that holds the target), checks again, and writes them with .withoutOverwriting.
+    A BrailleTranslator.Failure becomes a TextExportError with its sentence.
+    BrailleDocumentWriter translates the blocks' text, with its emphasis, to braille (BrailleTranslator, print to braille, with the options' table).
+    Liblouis writes the table's emphasis indicators for the classes the helper finds liblouis reads back exactly (the helper, in [Imports](imports-braille-tables.md)), UEB's.
+    EBAE's italic and bold, which liblouis misreads, and most of this Mac's tables write plain braille, byte for byte as without emphasis, although the helper reads EBAE's signs in a braille book.
+    It lays the cells out with BrailleLayout.pages(of:format:).
+    It frames the pages with BrailleFileWriter: brf(pages:lineEnd:code:).
+    Each row's cells are written in the options' braille file code (BrailleFileCode: a byte of North American Braille ASCII or of Eurobraille, which are ASCII only, or Unicode braille patterns in UTF-8 with no byte order mark and the blank cell as U+2800).
+    The line end goes after each row, and one form feed between pages.
+    Or it frames them with pef(pages:metadata:format:), PEF 2008-1 XML in one volume of the options' cells and lines (PEFExportWriter.metadata(of:): the title, the author or none, the language or "en", a urn:uuid identifier, and the day).
     Both write six-dot cells only (sixDotCells(of:)), so the eight-dot cell liblouis writes for the backslash of an escape becomes ⠳ and TextMouth reads its own files.
-    Any other eight-dot cell is refused, never written as its six-dot part: sixDotCell(of:) throws EightDotCell, whose sentence names the print character the table writes with it (BrailleDocumentWriter finds it by translating each distinct character of the block alone), and BrailleExportWriting turns it into a TextExportError.
+    Any other eight-dot cell is refused, never written as its six-dot part: sixDotCell(of:) throws EightDotCell, whose sentence names the print character the table writes with it (BrailleDocumentWriter finds it by translating each distinct character of the block alone).
+    BrailleExportWriting turns it into a TextExportError.
     No table writes an emphasis indicator in eight dots (all 328 of macOS 26's were measured), so emphasis adds no such failure.
     Before translating, BrailleDocumentWriter.printForBraille(_:) writes an eight-dot braille pattern already in the print as its six-dot part and removes Unicode's noncharacters.
     The PEF escapes its head's text with an escaped(_:) of its own (see [Known duplication](../known-duplication.md)).
-  - Layout: BrailleLayout is pure Swift over translated cells: BANA's margins, each list set apart by blank lines (setListsApart), pagination (Paginator), and the cuts of a word too long for a line (cutLength(of:room:)).
-  - Options: BrailleExportOptions (a BraillePageFormat with the cells per line, 18 to 80, the lines per page, 4 to 50, and whether pages are numbered; the table; the BRF's BrailleLineEnd, and the BRF's fileCode, a BrailleFileCode) is the two writers' Options, started by BrailleExportOptions.standard() from BraillePreferences.importTable() and, for the file code, the Braille setting's, BraillePreferences.importFileCode() (never Unicode braille patterns, which the Export dialog offers but the setting does not), or from the default table, with replacedTable set, when that is one of this Mac's tables that this Mac does not offer or that a kept verdict refused this session (isUnusableMacTable; a too-slow refusal and a check that could not be made are not kept); the options view then says BrailleExportWording.startsFromDefault(replacing:) until another table is chosen.
-    BrailleExportOptionsView draws them under the picker, with the words in BrailleExportWording and no line ends or braille file characters for a PEF; a BRF's two own pop-ups, drawn by one menuPopUp builder, come last, the braille file characters (BrailleFileCode.all) after the line ends, so every other control keeps its place in the reading order; its language, code, and contraction pop-ups are BrailleTablePickers, which the Braille tab of Settings draws too, each with hints of its own (see [Preferences](preferences.md)).
-    A Mac table chosen there is checked off the main thread (The check of this Mac's tables, in [Imports](imports-braille-tables.md)) through BrailleTableChoiceChecks.shared, which BookExportModel.export waits on in its exporting phase (finished(unless:), ended at once by Stop or the dialog closing), so the export writes with the table the pop-ups show; BookExportSheet gives the Export button BookExportWording.exportWaitsHint meanwhile.
+
+### Braille layout and options
+<!-- id: braille-layout-options; keys: BrailleLayout, BraillePageFormat, cells per line, BrailleLineEnd, BrailleFileCode, replacedTable, BrailleTablePicker; src: TextMouth/Services/BrailleLayout.swift, TextMouth/Services/BrailleDocumentWriter.swift, TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Views/Export/BookExportSheet.swift -->
+
+- Layout: BrailleLayout is pure Swift over translated cells: BANA's margins, each list set apart by blank lines (setListsApart), pagination (Paginator), and the cuts of a word too long for a line (cutLength(of:room:)).
+- Options: BrailleExportOptions (a BraillePageFormat with the cells per line, 18 to 80, the lines per page, 4 to 50, and whether pages are numbered; the table; the BRF's BrailleLineEnd, and the BRF's fileCode, a BrailleFileCode) is the two writers' Options.
+  It is started by BrailleExportOptions.standard() from BraillePreferences.importTable() and, for the file code, the Braille setting's, BraillePreferences.importFileCode() (never Unicode braille patterns, which the Export dialog offers but the setting does not).
+  Or it is started from the default table, with replacedTable set, when that is one of this Mac's tables that this Mac does not offer or that a kept verdict refused this session (isUnusableMacTable; a too-slow refusal and a check that could not be made are not kept).
+  The options view then says BrailleExportWording.startsFromDefault(replacing:) until another table is chosen.
+  BrailleExportOptionsView draws them under the picker, with the words in BrailleExportWording and no line ends or braille file characters for a PEF.
+  A BRF's two own pop-ups, drawn by one menuPopUp builder, come last, the braille file characters (BrailleFileCode.all) after the line ends, so every other control keeps its place in the reading order.
+  Its language, code, and contraction pop-ups are BrailleTablePickers, which the Braille tab of Settings draws too, each with hints of its own (see [Preferences](preferences.md)).
+  A Mac table chosen there is checked off the main thread (The check of this Mac's tables, in [Imports](imports-braille-tables.md)) through BrailleTableChoiceChecks.shared.
+  BookExportModel.export waits on it in its exporting phase (finished(unless:), ended at once by Stop or the dialog closing).
+  So the export writes with the table the pop-ups show.
+  BookExportSheet gives the Export button BookExportWording.exportWaitsHint meanwhile.
 
 ### How the dialog and the job use the writers
 <!-- id: how-dialog-job-use-writers; keys: BookExportConversion, converted files, failure sentence, picker choices, export tests, EPUBCheck tests, Word export failure; src: TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, Scripts/test/areas.conf, TextMouthProductionTests/EPUBExportWriterTests.swift, TextMouthProductionTests/EPUBExportWriterNavigationTests.swift, TextMouthProductionTests/EPUBLinkAddressTests.swift, TextMouthProductionTests/ExportContentsListTests.swift, TextMouthProductionTests/ExportDocumentWalkerStructureTests.swift, TextMouthProductionTests/EPUBExportRoundTripTests.swift, TextMouthProductionTests/EPUBExportRealBooksTests.swift, TextMouthProductionTests/EPUBCheckTests.swift, TextMouthProductionTests/MarkdownExportWriterTests.swift -->
 
-- Who may write it: BookExportService, as above, off the main thread and one book at a time. plan(_:kinds:conversions:in:fileExists:) plans a converted kind's files as .converted sources (BookExportFile.Source), each named with the writer's extension in place of the Markdown's and made unique like any other name.
-  BookExportConversion is the job runner's conversion, text now and audio later: it gives the extension, the kinds it applies to, and the name the picker says; BookExportConversion.markdown, the Markdown writer with no options, is what the offer's Markdown files are converted by, and files(of:for:conversions:) converts a copied or an already converted file, so that choosing another writer replaces the Markdown the offer lists. writeConverted reads content.md as the reader does (MarkdownCacheService.cacheText), walks it, and has the writer write it to a scratch file, which is moved into place as above.
-  A writer that cannot write a book throws a TextExportError, whose sentence the export names after the file, as in "Couldn't export <file name>: <sentence>" (BookExportWording.failureSentence), and the other books still export; WordDocExportWriter.failureSentence is the Word writer's, for a book Apple's reader or writer refuses.
-- How others observe it: the checkbox's words follow the picker (BookExportWording.name(of:convertedTo:), hint(for:convertedTo:), and choiceLabel(kind:bookCount:availableItemCount:fileCount:byteCount:inCloudCount:convertedTo:), which gives no size while a writer is chosen, since a converted file's size is known only once it is written).
+- Who may write it: BookExportService, as above, off the main thread and one book at a time.
+  BookExportService.plan(_:kinds:conversions:in:fileExists:) plans a converted kind's files as .converted sources (BookExportFile.Source), each named with the writer's extension in place of the Markdown's and made unique like any other name.
+  BookExportConversion is the job runner's conversion, text now and audio later: it gives the extension, the kinds it applies to, and the name the picker says.
+  BookExportConversion.markdown, the Markdown writer with no options, is what the offer's Markdown files are converted by.
+  BookExportService.files(of:for:conversions:) converts a copied or an already converted file, so that choosing another writer replaces the Markdown the offer lists.
+  BookExportService.writeConverted reads content.md as the reader does (MarkdownCacheService.cacheText), walks it, and has the writer write it to a scratch file, which is moved into place as above.
+  A writer that cannot write a book throws a TextExportError, whose sentence the export names after the file, as in "Couldn't export <file name>: <sentence>" (BookExportWording.failureSentence), and the other books still export.
+  WordDocExportWriter.failureSentence is the Word writer's, for a book Apple's reader or writer refuses.
+- How others observe it: the checkbox's words follow the picker (BookExportWording.name(of:convertedTo:), hint(for:convertedTo:), and choiceLabel(kind:bookCount:availableItemCount:fileCount:byteCount:inCloudCount:convertedTo:)).
+  BookExportWording.choiceLabel gives no size while a writer is chosen, since a converted file's size is known only once it is written.
   The picker lists BookExportConversionChoice values: Markdown (BookExportWording.markdownChoiceName and markdownChoiceHint, which is also the Text as Markdown checkbox's hint while Markdown is chosen: hint(for:)), then each writer's name and hint.
-- Tests: the export area of Scripts/test/areas.conf (`python3 Scripts/test/run-area.py export`), with the dialog's sheet in the sheets area and the braille writers also in the braille area.
-  The EPUB writer's tests are EPUBExportWriterTests (the package, with the clock fixed so the bytes are the same each run, the failures, and, in EPUBExportWriterNavigationTests, its contents and page list), EPUBLinkAddressTests, ExportContentsListTests (the structure of skipped levels, and 300 seeded random sequences), ExportDocumentWalkerStructureTests, EPUBExportRoundTripTests and EPUBExportRealBooksTests (each of 17 real books exported, imported again with EPUBParser.prepareBook, and compared with the reader's own reading: the words, the pages with the same word before each, the headings), and EPUBCheckTests, which runs `epubcheck` where /opt/homebrew/bin/epubcheck exists, skips where it does not, and fails when it ran and gave no summary.
-  MarkdownMinimalEscapingTests reads every string of one or two characters over a, 1, é, a space, and the 32 ASCII punctuation characters, and every three-character string over the punctuation, a, and a space, back through swift-markdown as a paragraph, a heading, and a list item, in the plain form and with smart punctuation; MarkdownExportWriterTests writes each kind of block and run, and walks the file back to the blocks it was written from.
+- Tests:
+  - the export area of Scripts/test/areas.conf (`python3 Scripts/test/run-area.py export`), with the dialog's sheet in the sheets area and the braille writers also in the braille area.
+  - The EPUB writer's tests are:
+    - EPUBExportWriterTests (the package, with the clock fixed so the bytes are the same each run, the failures, and, in EPUBExportWriterNavigationTests, its contents and page list),
+    - EPUBLinkAddressTests,
+    - ExportContentsListTests (the structure of skipped levels, and 300 seeded random sequences),
+    - ExportDocumentWalkerStructureTests,
+    - EPUBExportRoundTripTests and EPUBExportRealBooksTests (each of 17 real books exported, imported again with EPUBParser.prepareBook, and compared with the reader's own reading: the words, the pages with the same word before each, the headings), and
+    - EPUBCheckTests, which runs `epubcheck` where /opt/homebrew/bin/epubcheck exists, skips where it does not, and fails when it ran and gave no summary.
+  - MarkdownMinimalEscapingTests reads every string of one or two characters over a, 1, é, a space, and the 32 ASCII punctuation characters, and every three-character string over the punctuation, a, and a space.
+    It reads them back through swift-markdown as a paragraph, a heading, and a list item, in the plain form and with smart punctuation.
+  - MarkdownExportWriterTests writes each kind of block and run, and walks the file back to the blocks it was written from.
 
 ## Transcripts as captions
 <!-- id: transcripts-as-captions; keys: WebVTT, SubRip, SRT, captions, subtitles, timed text, transcript.json; src: TextMouth/Services/Export/TimedTextWriters.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Parsers/TimedTextMarkup.swift -->
@@ -145,7 +220,8 @@ Transcripts as captions (FMT23; 0.4.2).
   EPUB stays among the text writers, since it writes the transcript's text as every other text writer does.
 - Who may write it: TimedTextWriters (Services/Export/TimedTextWriters.swift).
   WebVTTWriter escapes a cue's text as XML does and writes a cue ending where it begins as ending a millisecond later.
-  SubRipWriter ends lines with CR LF, starts the file with the UTF-8 byte-order mark (TranscriptExportFormat.fileBytes), and writes as character references what a reader would take for structure: the ">" of "-->", a "<" with a ">" after it, "{" before a backslash, and an "&" that begins a reference TimedTextMarkup decodes.
+  SubRipWriter ends lines with CR LF, starts the file with the UTF-8 byte-order mark (TranscriptExportFormat.fileBytes).
+  It writes as character references what a reader would take for structure: the ">" of "-->", a "<" with a ">" after it, "{" before a backslash, and an "&" that begins a reference TimedTextMarkup decodes.
   A cue left with no text is passed over, and SubRip numbers count only the cues written.
 - A Transcript item that holds Markdown and no transcript.json is a failure the export reads out: BookExportWording.noTimedTranscriptReason.
   A transcript only in the cloud is noted, with the book named, as any cloud kind is.
