@@ -40,7 +40,6 @@
     "docs/architecture/state/package-records.md": {"line-length": 25},
     "docs/architecture/state/preferences-shortcuts.md": {"line-length": 21},
     "docs/architecture/state/preferences.md": {"line-length": 20},
-    "docs/architecture/state/reader-playback.md": {"line-length": 20},
     "docs/architecture/state/recordings.md": {"line-length": 6},
     "docs/architecture/state/saving-failures.md": {"line-length": 1},
     "docs/architecture/state/text-caches-rereads-edits.md": {"line-length": 37},

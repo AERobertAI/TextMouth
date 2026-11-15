@@ -1021,3 +1021,13 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From The reader's moves between books, and search
 
 - **A book read from the reading list ends by the list (FR09):** handleEndOfBook() hands a book read from the list to finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:replayingAFinishedEnd:), in place of the book's own end-of-book behavior, as the user decided.
+
+## From The reader's playback and speech
+
+- **The three-second rule:** No press depends on when the last one came: the three-second rule is retired.
+- **WhereAmIInterruptionPolicy:** WhereAmIInterruptionPolicy, whose blocksBookPlayback(isAnnouncementSpeaking:) no longer decided anything, is gone.
+- **The end sound's window:** A Play pressed in the window by a reader with nothing in Where Am I?'s hands starts at once, as before.
+- **Held audio under the end sound:** The end sound's work plays the held audio once (startPlayHeldByWhereAmI()), where it once started at once, under the end sound.
+- **An announcement's end after a stop (REV11):** The announcement's end neither resumes the stopped book nor tells Now Playing that it plays, which once took back the AirPods Release Media Controls had let go (REV11).
+- **A cancel nobody asked for (REV12, REV13):** A cancel the reader did not ask for starts a held Play, a held chapter, and a play waiting for its chapter's speech, where a cancel once dropped a held Play (REV12) and paused a waiting play (REV13).
+- **Auto-play on navigate and the sleep timer's start:** playUnlessUnderWay() serves Auto-play on navigate and a sleep timer set to start playback, both of which once went through Play/Pause, pausing a play waiting for its chapter and ending an announcement in place of playing.
