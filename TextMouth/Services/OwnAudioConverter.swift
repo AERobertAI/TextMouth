@@ -20,6 +20,9 @@ import AVFoundation
 /// calls it from the import's own task, which the import's Stop cancels;
 /// the cancellation is seen between two blocks.
 enum OwnAudioConverter {
+    /// The most frames handed to the encoder in one buffer.
+    static let framesPerAppend = 32_768
+
     /// The format of the file at `url` among those TextMouth's own readers
     /// read, told from its first bytes; nil for any other file, one that
     /// cannot be opened, and one only in the cloud (never downloaded).
@@ -173,14 +176,19 @@ enum OwnAudioConverter {
                 try Task.checkCancellation()
                 if stream.isFloat { block = OwnAudioSamples.wholeNumbers(fromFloats: block) }
                 if !gains.isEmpty { block = OwnAudioSamples.stereo(block, gains: gains) }
+                // A decoder's block may hold half a minute (a Monkey's Audio
+                // frame at Insane); the encoder is fed a piece at a time.
                 let frames = block.count / target.channels
-                guard frames > 0 else { continue }
-                let buffer = try sampleBuffer(
-                    OwnAudioSamples.packed(block, bits: bits, container: container),
-                    frames: frames, startingAt: written, sampleRate: stream.sampleRate, description: description
-                )
-                try await AudioEditRenderer.append(buffer, to: input, of: writer)
-                written += frames
+                for start in stride(from: 0, to: frames, by: Self.framesPerAppend) {
+                    let count = min(Self.framesPerAppend, frames - start)
+                    let piece = Array(block[start * target.channels..<(start + count) * target.channels])
+                    let buffer = try sampleBuffer(
+                        OwnAudioSamples.packed(piece, bits: bits, container: container),
+                        frames: count, startingAt: written, sampleRate: stream.sampleRate, description: description
+                    )
+                    try await AudioEditRenderer.append(buffer, to: input, of: writer)
+                    written += count
+                }
             }
         } catch {
             writer.cancelWriting()
