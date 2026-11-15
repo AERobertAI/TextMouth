@@ -1,6 +1,8 @@
 # Settings: the Library tab
 <!-- id: settings-library-tab; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Library tab: views
 <!-- id: library-tab-views; keys: ; src: -->
 

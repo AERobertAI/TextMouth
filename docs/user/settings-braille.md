@@ -1,6 +1,8 @@
 # Settings: the Braille tab
 <!-- id: settings-braille-tab; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Braille tab
 <!-- id: braille-tab; keys: ; src: -->
 

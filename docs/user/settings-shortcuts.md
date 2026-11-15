@@ -1,6 +1,8 @@
 # Settings: the Shortcuts tab
 <!-- id: settings-shortcuts-tab; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Shortcuts tab: changing keys
 <!-- id: shortcuts-tab-changing-keys; keys: ; src: -->
 

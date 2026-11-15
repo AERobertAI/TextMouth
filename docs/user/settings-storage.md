@@ -1,6 +1,8 @@
 # Settings: the Storage tab
 <!-- id: settings-storage-tab; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Storage Directory
 <!-- id: storage-directory; keys: ; src: -->
 
