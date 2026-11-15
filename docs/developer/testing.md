@@ -1,17 +1,17 @@
 # Testing TextMouth
-<!-- id: testing-textmouth; keys: ; src: -->
+<!-- id: testing-textmouth; keys: unit tests, test suite, how to test; src: -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## The hosted test suite
-<!-- id: hosted-test-suite; keys: ; src: TextMouth/Views/Reader/SleepTimerStatusLabel.swift, TextMouthProductionTests/TranscriptionFixtureTests.swift, TextMouthProductionTests/TranscriptAccuracyMeasurementTests.swift, TextMouthProductionTests/LibraryTypeSelectProbeTests.swift, TextMouthProductionTests/LibraryTypeSelectBehaviorTests.swift -->
+<!-- id: hosted-test-suite; keys: test host, hosted tests, unit tests, test bundle; src: project.yml, TextMouthProductionTests/Info.plist -->
 
 The tests are one XCTest bundle, TextMouthProductionTests, hosted by the app itself: Xcode launches TextMouth.app and runs the tests inside it, so they exercise the real code through `@testable import TextMouth`.
 New tests belong in TextMouthProductionTests/.
 The files under TextMouthTests/Sources/Tests are older scenario groups that project.yml lists one by one.
 
 ### Hosted tests touch no user data
-<!-- id: hosted-tests-touch-no-user; keys: ; src: -->
+<!-- id: hosted-tests-touch-no-user; keys: isHostedTest, test isolation, no user data, TextMouthRuntime, notifications, media keys; src: TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/VoiceOverAnnouncer.swift, TextMouth/Services/AudioInputPermission.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/HostedTestObservers.swift -->
 
 A process hosting tests never touches your data.
 When the XCTestConfigurationFilePath environment variable is set, as XCTest sets it, TextMouth keeps its data directory, this Mac's own folders (its Logs folder, its folders in Application Support, and its caches), and its preferences in a sandbox folder named TextMouthTests- followed by the process number, in the temporary directory.
@@ -21,7 +21,7 @@ Nor does it reach the network: its feed connections refuse every request, the fe
 Nor does that process post a notification, or ask permission for one.
 
 ### Test sandboxes
-<!-- id: test-sandboxes; keys: ; src: -->
+<!-- id: test-sandboxes; keys: temporary directory, sandbox sweep, abandonedSandboxes, TEXTMOUTH_KEEP_SANDBOX, leftover sandboxes; src: TextMouth/App/TextMouthRuntime.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, TextMouthProductionTests/HostedTestObservers.swift -->
 
 Each run deletes its sandbox as it finishes, and, as it starts, deletes in the background the sandboxes that earlier runs left behind, such as one that crashed.
 The system reuses process numbers, so a sandbox counts as left behind once no process with its number is running, or the one running started more than an hour after the sandbox was made.
@@ -29,7 +29,7 @@ With TEST_RUNNER_TEXTMOUTH_KEEP_SANDBOX=1, a run keeps its sandbox for you to lo
 Delete a kept sandbox when you are done with it.
 
 ### Running the suite
-<!-- id: running-suite; keys: ; src: project.yml -->
+<!-- id: running-suite; keys: ProductionTestRunner, test runner, Package.swift, DerivedData, parallel testing, one test class; src: Makefile, project.yml, TextMouthTests/Package.swift, TextMouthTests/ProductionTestRunner/main.swift, Scripts/test/run-area.py, Scripts/test/areas.conf -->
 
 - `make test` runs the whole suite.
   It runs `swift run` in TextMouthTests/, whose small runner calls:
@@ -43,7 +43,7 @@ Delete a kept sandbox when you are done with it.
   To run several classes, or whole areas, in one build, use `Scripts/test/run-area.py` (see Reusable test tools, below).
 
 ### Tests that skip in an ordinary run
-<!-- id: tests-that-skip-ordinary-run; keys: ; src: -->
+<!-- id: tests-that-skip-ordinary-run; keys: XCTSkip, skipped tests, accessibility permission, SwiftUI elements, profiling, opt-in tests; src: TextMouthTests/README.md, Scripts/profile-production-playback.sh, TextMouthProductionTests/ProductionPlaybackProfilingTests.swift, TextMouthProductionTests/EPUBHeadingRecoveryTests.swift, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/BookmarkKeyboardAccessTests.swift, TextMouthProductionTests/RecordingEndToEndTests.swift, TextMouthProductionTests/RecordingPermissionTests.swift, TextMouth/Services/AudioInputPermission.swift -->
 
 - A full run compiles the app and runs every test; Reusable test tools, below, gives how long that takes.
   Some tests skip in an ordinary run:
@@ -62,7 +62,7 @@ Delete a kept sandbox when you are done with it.
     Every other recording test uses a stand-in microphone and an answer of its own to the permission question, so the suite never shows the prompt.
 
 ### More tests that skip in an ordinary run
-<!-- id: more-tests-that-skip-ordinary; keys: ; src: TextMouthProductionTests/TranscriptionFixtureTests.swift, TextMouthProductionTests/TranscriptAccuracyMeasurementTests.swift, TextMouthProductionTests/LibraryTypeSelectProbeTests.swift, TextMouthProductionTests/LibraryTypeSelectBehaviorTests.swift, TextMouthProductionTests/LibraryTitleTypingTests.swift -->
+<!-- id: more-tests-that-skip-ordinary; keys: XCTSkip, opt-in tests, speech recognition, LAME, sweeps, TestMachine; src: TextMouthProductionTests/TranscriptionFixtureTests.swift, TextMouthProductionTests/TranscriptAccuracyMeasurementTests.swift, TextMouthProductionTests/LibraryTypeSelectProbeTests.swift, TextMouthProductionTests/LibraryTypeSelectBehaviorTests.swift, TextMouthProductionTests/LibraryTitleTypingTests.swift, TextMouthProductionTests/TitleTypingTests.swift, TextMouthProductionTests/MP3EncoderTests.swift, TextMouthProductionTests/AudioFilterTests.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/VoiceSweepTests.swift, TextMouthProductionTests/ImportFuzzTests.swift, TextMouthProductionTests/StorageDrillTests.swift, TextMouthProductionTests/CorpusReportTests.swift, Scripts/agents/run-on-runner.py, Scripts/agents/github_run.py, Scripts/test/voice-sweep.sh, Scripts/test/import-fuzz.sh, Scripts/test/storage-drill.sh, Scripts/test/corpus-report.sh -->
 
 - The real-drive tests, which run only when you name folders on cloud drives for them (see Testing on real cloud drives).
 - The transcription tests that use this Mac's own speech recognizer (TranscriptionFixtureTests), which run only on macOS 26 or later, on a Mac that can run the recognizer, with the English speech model installed, and in a checkout whose TestData holds the two untracked DAISY audio ZIPs; each transcribes one short file.
@@ -89,13 +89,13 @@ Delete a kept sandbox when you are done with it.
 - The performance baselines tests, while the Mac is busy, and on a Mac model or in a build configuration other than their baselines' (see The performance baselines).
 
 ### The tests on GitHub's macOS runner
-<!-- id: tests-github-macos-runner; keys: ; src: -->
+<!-- id: tests-github-macos-runner; keys: GitHub Actions, check gate, runner skips, CI; src: .github/workflows/check.yml, Scripts/agents/runner-skips.conf, Scripts/agents/runner_skips.py, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/PerformanceBaselineSupport.swift -->
 
 - GitHub's macOS runner, where the gate's suite runs for every push to main and every pull request from this repository (see [The make check gate](building.md#the-make-check-gate), which says in what ways it is weaker than `make check` here), skips more tests than the development Mac: the 103 of `Scripts/agents/runner-skips.conf` (see Tests on GitHub Actions, below), and the following.
   There SwiftUI builds no accessibility structure, a hosted window exposes none of its AppKit controls to accessibility, and keyboard navigation is off, so the three kinds of test above that read accessibility or need keyboard navigation skip rather than fail, as do the opt-in tests and benchmarks, and the performance baselines tests, whose baselines belong to the development Mac's model (so a request for strict baselines checks no baseline on a runner).
 
 ### Benchmarks of the performance work
-<!-- id: benchmarks-performance-work; keys: ; src: TextMouthProductionTests/ViewsAndWindowsBenchmarks.swift, TextMouthProductionTests/DuplicateFinderTests.swift, TextMouthProductionTests/TextPipelineBenchmarkTests.swift, TextMouthProductionTests/PersistenceCostTests.swift, TextMouthProductionTests/LibraryModelBenchmarkTests.swift -->
+<!-- id: benchmarks-performance-work; keys: opt-in benchmarks, timing tests, speed tests, Release build, TEST_RUNNER prefix; src: TextMouthProductionTests/ViewsAndWindowsBenchmarks.swift, TextMouthProductionTests/DuplicateFinderTests.swift, TextMouthProductionTests/TextPipelineBenchmarkTests.swift, TextMouthProductionTests/PersistenceCostTests.swift, TextMouthProductionTests/LibraryModelBenchmarkTests.swift, TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift, TextMouthProductionTests/SpeechEngineCreationTests.swift, TextMouthProductionTests/SpeechVoiceWarmUpTests.swift, TextMouthProductionTests/AudioEngineBehaviorTests.swift, TextMouthProductionTests/CompletionGenerationTests.swift -->
 
 - The benchmarks of the performance work of October 3, 2026, time what each change made faster and print their figures in the test log.
   They are opt-in, since they take minutes or need a run of their own, and each group runs when its variable is 1; xcodebuild hands a variable whose name starts with TEST_RUNNER_ to the test host without that prefix:
@@ -110,7 +110,7 @@ Delete a kept sandbox when you are done with it.
     They check what a change costs in counts that follow from the code alone, such as bytes written, file-system calls, and publishes of the library, never in time, which a busy Mac would change, and print their figures on lines beginning PERSISTENCE_COST: and PERFMODEL:.
 
 ### Tests of the audit's small runtime fixes
-<!-- id: tests-audit-small-runtime-fixes; keys: ; src: TextMouthProductionTests/TimerCoalescingTests.swift, TextMouth/Services/SleepTimerService.swift, TextMouthProductionTests/ReaderRefreshLeadingEdgeTests.swift, TextMouthProductionTests/TimeRemainingTallyTests.swift, TextMouth/Models/FolderPathEquivalence.swift -->
+<!-- id: tests-audit-small-runtime-fixes; keys: timer tolerance, countdown timer, leading edge refresh, time remaining tally, speech position tick; src: TextMouthProductionTests/TimerCoalescingTests.swift, TextMouth/Services/SleepTimerService.swift, TextMouthProductionTests/ReaderRefreshLeadingEdgeTests.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouthProductionTests/TimeRemainingTallyTests.swift, TextMouth/ViewModels/TimeRemainingTally.swift, TextMouth/ViewModels/LiveReadingPositions.swift, TextMouthProductionTests/PlaybackLifecyclePolicyTests.swift, TextMouth/Services/SpeechService.swift -->
 
 - The tests of the audit's small runtime fixes (November 13, 2026) run in every run, with nothing heard and no waiting on a real clock:
   - `TimerCoalescingTests` (area `playback-end`) reads each loosened timer's tolerance, a tenth of its interval: the statistics checkpoint, the session lease, and the speech watchdog.
@@ -123,7 +123,7 @@ Delete a kept sandbox when you are done with it.
   - The audio-engine tests skip on GitHub's runner, so only the Mac suite covers them.
 
 ### Reader shown state tests
-<!-- id: reader-shown-state-tests; keys: ; src: TextMouth/Views/Reader/SleepTimerStatusLabel.swift, TextMouthProductionTests/ReaderShownStateTests.swift, TextMouth/ViewModels/ReaderShownState.swift, TextMouth/Views/ViewBodyCounter.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: reader-shown-state-tests; keys: shown state, reader announcements, sleep timer countdown, view body count, hand check; src: TextMouthProductionTests/ReaderShownStateTests.swift, TextMouth/ViewModels/ReaderShownState.swift, TextMouth/Views/ViewBodyCounter.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Views/Reader/SleepTimerStatusLabel.swift, TextMouthProductionTests/AccessibilityTestSupport.swift -->
 
 - `ReaderShownStateTests` (area `sheets`, November 14, 2026) tests the reader window's shown state (`ReaderShownState`):
   - `testTheStateEqualsWhatTheViewsBuildFromTheCursorAtEveryStep` walks the cursor and builds each label and value the views draw from the raw cursor, then compares them with what the shown state holds; `testAStepThatChangesASpokenLabelChangesTheState`, `testAStepThatChangesOnlyTheHeadingOrOnlyThePageIsAnnounced`, and `testABookmarkComingNearIsAnnounced` pin the steps a view would otherwise miss.
@@ -133,24 +133,24 @@ Delete a kept sandbox when you are done with it.
     Only `testTheReadersCountdownLabelsAreDrawnByTheTimersOwnLabel`, which reads the two views' sources for `SleepTimerStatusLabel`, guards the production labels where it skips, so the countdown needs a hand check with VoiceOver: a 15-minute timer, both labels changing each second, playing and paused, and gone when the timer stops.
 
 ### A hosted failure with exit code 0
-<!-- id: hosted-failure-exit-code-0; keys: ; src: -->
+<!-- id: hosted-failure-exit-code-0; keys: host quit, system log, XCTest failure, own TextMouth running; src: -->
 
 - A hosted test that fails with the message `The test runner exited with code 0` may be the user's own TextMouth starting beside the host, which shares its bundle identifier.
   Read the system log for `terminate:`, and run the class alone before calling it a fault; a run cut short by an ordinary quit the host received while frontmost is settled the same way.
 
 ### Outside constants in tests
-<!-- id: outside-constants-tests; keys: ; src: -->
+<!-- id: outside-constants-tests; keys: SDK constant, quit reason, wrong value pinned; src: -->
 
 - A test takes an outside constant, such as a quit-reason keyword, from the SDK and not from the code it tests: a test and its code that pin the same wrong value both pass.
 
 ## The performance baselines
-<!-- id: performance-baselines; keys: ; src: TextMouthProductionTests/PerformanceBaselineTests.swift -->
+<!-- id: performance-baselines; keys: PerformanceBaselineTests, speed regression, performance tests; src: TextMouthProductionTests/PerformanceBaselineTests.swift -->
 
 PerformanceBaselineTests keep what the performance work of October 3, 2026 made faster from slipping back.
 They measure a library and books generated to the size of the developer's, never your own library, and run in every run of the suite, in about half a minute.
 
 ### What the baselines measure
-<!-- id: what-baselines-measure; keys: ; src: -->
+<!-- id: what-baselines-measure; keys: launch time, sort time, speech preparation, memory peak, 643-book library; src: TextMouthProductionTests/PerformanceBaselineTests.swift, TextMouthProductionTests/PerformanceBaselineFixtures.swift, TextMouthProductionTests/performance-substitutions.json -->
 
 They measure:
 
@@ -165,7 +165,7 @@ They measure:
 - the main-thread time one reader publish costs the open Headings sheet.
 
 ### How the baselines judge
-<!-- id: how-baselines-judge; keys: ; src: -->
+<!-- id: how-baselines-judge; keys: warning threshold, twice the baseline, median of five, busy Mac, load average; src: TextMouthProductionTests/PerformanceBaselineSupport.swift, TextMouthProductionTests/performance-baselines.json, Makefile, Scripts/check.sh -->
 
 How they judge:
 
@@ -179,7 +179,7 @@ How they judge:
   A baselines file that is missing or can't be read fails the tests rather than skipping them.
 
 ### Recording new baselines
-<!-- id: recording-new-baselines; keys: ; src: -->
+<!-- id: recording-new-baselines; keys: make perf-baselines, PERFORMANCE_RECORD, rewrite baselines, quiet Mac; src: Makefile, Scripts/perf-baselines.sh, TextMouthProductionTests/performance-baselines.json, TextMouthProductionTests/PerformanceBaselineSupport.swift -->
 
 Recording new baselines:
 
@@ -190,7 +190,7 @@ Recording new baselines:
   Review the file's diff and commit it with the change it records.
 
 ### The recorded baselines
-<!-- id: recorded-baselines; keys: ; src: -->
+<!-- id: recorded-baselines; keys: baseline figures, Mac15,12, milliseconds, performance numbers; src: TextMouthProductionTests/performance-baselines.json -->
 
 - The baselines recorded on October 3, 2026, on the development Mac (a Mac15,12: Apple M3, 8 cores, 8 GB), in a Debug build, each the median of five runs:
   - Launch with 643 books: 134.252 milliseconds.
@@ -207,7 +207,7 @@ Recording new baselines:
   - One reader publish to the Headings sheet: 1.652 milliseconds of main-thread time.
 
 ## Testing on real cloud drives
-<!-- id: testing-real-cloud-drives; keys: ; src: TextMouthProductionTests/CloudDriveIntegrationTests.swift, TextMouthProductionTests/CloudDriveTestSupportTests.swift, TextMouthProductionTests/LibraryCloudFetchTests.swift, TextMouthProductionTests/LibraryLaunchFilesTests.swift -->
+<!-- id: testing-real-cloud-drives; keys: File Provider, evict, dataless file, cloud fetch, real drive, sync service; src: TextMouthProductionTests/CloudDriveIntegrationTests.swift, TextMouthProductionTests/CloudDriveTestSupport.swift, TextMouthProductionTests/CloudDriveTestSupportTests.swift, TextMouthProductionTests/LibraryCloudFetchTests.swift, TextMouthProductionTests/LibraryLaunchFilesTests.swift, research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md -->
 
 CloudDriveIntegrationTests runs the cloud services against real sync services.
 It is opt-in: its tests skip unless the TEXTMOUTH_CLOUD_TEST_ROOTS environment variable lists folders for them.
