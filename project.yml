@@ -618,6 +618,7 @@ targets:
       - TextMouthProductionTests/LibraryViewFilterEvaluatorTests.swift
       - TextMouthProductionTests/ListNeighborsTests.swift
       - TextMouthProductionTests/ListeningDayKeyMigrationTests.swift
+      - TextMouthProductionTests/LogLocationTests.swift
       - TextMouthProductionTests/LogTestSupport.swift
       - TextMouthProductionTests/MOBIFixture.swift
       - TextMouthProductionTests/MarkdownEmphasisTests.swift
