@@ -59,7 +59,9 @@ A text that goes to iCloud while the audio is being transcribed is caught when t
 <!-- id: clean-up-transcript-experimental; keys: ; src: -->
 
 Clean Up Transcript (Experimental)…, in the same places for a transcribed audiobook, a feed's episode included, opens the Clean Up sheet, which corrects words the recognizer always writes another way, by rules, and changes nothing until you press Apply.
-The sheet names the rules in use, as in "Rules: your copy, version 1 of October 4, 2026, 2 rules.", says what they would change, as in "23 corrections in 19 sentences.", and lists each rule that changes something, with its count and up to three examples, before and after, each read by VoiceOver as one line.
+The sheet names the rules in use, as in "Rules: your copy, version 1 of October 4, 2026, 2 rules.",
+- says what they would change, as in "23 corrections in 19 sentences.",
+- and lists each rule that changes something, with its count and up to three examples, before and after, each read by VoiceOver as one line.
 A rule that would leave a sentence with no text at all, as a rule that turns "um" into nothing would for a sentence that is only "Um", leaves that sentence as it is, neither listing nor counting it.
 It says when the transcript was last cleaned up.
 VoiceOver moves to Apply when the rules change something, and to Cancel otherwise, then hears the sheet's lines.
@@ -69,10 +71,17 @@ While the book is being transcribed, or its transcript can't be read, the sheet 
 ## What Apply does
 <!-- id: what-apply-does; keys: ; src: -->
 
-Apply keeps the transcript as it was beside it, as transcript.json.before-cleanup, rewrites each sentence the rules changed, keeping its time in the audio and dropping its words' timings, as an edit in your own editor does, notes the cleanup in the transcript, and writes the book's text again from it.
+Apply keeps the transcript as it was beside it, as transcript.json.before-cleanup,
+- rewrites each sentence the rules changed, keeping its time in the audio and dropping its words' timings, as an edit in your own editor does,
+- notes the cleanup in the transcript,
+- and writes the book's text again from it.
 Open readers show the cleaned text as the book plays on, and VoiceOver hears "Cleaned up the transcript of Moby-Dick: 23 corrections."
 Positions and bookmarks stay as they were, since they count time.
-Apply is refused, saying why, when the book is being transcribed, when the transcript changed after the sheet showed it, as when another Mac transcribed the book again, when the book's audio changed after it was transcribed, when the book's text is only in iCloud, or when the text holds changes that TextMouth can't keep a copy of before it replaces them.
+Apply is refused, saying why, when the book is being transcribed,
+- when the transcript changed after the sheet showed it, as when another Mac transcribed the book again,
+- when the book's audio changed after it was transcribed,
+- when the book's text is only in iCloud,
+- or when the text holds changes that TextMouth can't keep a copy of before it replaces them.
 The last two say, after "Couldn't clean up the transcript of Moby-Dick: ", "The book's text is only in iCloud, so TextMouth leaves it as it is.
 Download the book, then try again." and "The book's text holds changes TextMouth couldn't keep a copy of, so it leaves the text as it is."
 ## Undo Cleanup
@@ -86,7 +95,9 @@ After a cleanup, an undo, or a new transcription, choose Edit Text again to edit
 ## A feed episode's transcript
 <!-- id: feed-episode-transcript; keys: ; src: -->
 
-A feed episode's transcript can be edited and cleaned up as any audiobook's can: Edit Text in Default Editor, Edit Text With…, and Clean Up Transcript (Experimental)… are offered for a transcribed episode in its feed, in its row's menu and its reader's Book menu, while Edit Audio…, Book Info's editing, and, for a feed's article, Edit Text still are not (see [Podcasts and article feeds](feeds.md)).
+A feed episode's transcript can be edited and cleaned up as any audiobook's can:
+- Edit Text in Default Editor, Edit Text With…, and Clean Up Transcript (Experimental)… are offered for a transcribed episode in its feed, in its row's menu and its reader's Book menu,
+- while Edit Audio…, Book Info's editing, and, for a feed's article, Edit Text still are not (see [Podcasts and article feeds](feeds.md)).
 Your changes stay with the episode in its feed, even after its download is deleted; Delete Episode… and Delete Feed… delete them, and Move to Library… keeps them with the episode as a book.
 The words are: "This episode's transcript, with your changes, stays with the episode in its feed, even after its download is deleted.
 Deleting the episode or the feed deletes it; Move to Library keeps it with the episode as a book."
@@ -102,9 +113,17 @@ For British spelling, choose English (United Kingdom) as the transcription langu
 ## The fields of a rule
 <!-- id: fields-rule; keys: ; src: -->
 
-A rule has a pattern and a replacement; wholeWord, true unless set, which matches whole words only, keeping the punctuation around them and a possessive "'s" after them, as "Bennett's" becomes "Bennet's", where false matches inside words too; evidence, how many places it was right in, 0 for a rule of your own; and an optional note.
+A rule has a pattern and a replacement;
+- wholeWord, true unless set, which matches whole words only, keeping the punctuation around them and a possessive "'s" after them, as "Bennett's" becomes "Bennet's", where false matches inside words too;
+- evidence, how many places it was right in, 0 for a rule of your own;
+- and an optional note.
 Matching ignores case and the kind of apostrophe, the replacement takes the case of the words it replaces, and the rules apply in order.
-Your copy can't be used when TextMouth can't read it in that format, or when its version is below 1, its date isn't a day written as 2026-10-04, or one of its rules has an empty pattern or replacement, a pattern without a letter or figure, or a replacement holding its own pattern, which every cleanup would change again: the sheet says why, naming the field, as in "rules[2].replacement is empty", a copy of it is kept beside it, its name followed by .unreadable- and the date and time, and TextMouth's own rules stand in until you correct it.
+Your copy can't be used when TextMouth can't read it in that format,
+- or when its version is below 1, its date isn't a day written as 2026-10-04,
+- or one of its rules has an empty pattern or replacement, a pattern without a letter or figure, or a replacement holding its own pattern, which every cleanup would change again:
+- the sheet says why, naming the field, as in "rules[2].replacement is empty",
+- a copy of it is kept beside it, its name followed by .unreadable- and the date and time,
+- and TextMouth's own rules stand in until you correct it.
 While your copy is only in the cloud, TextMouth asks the sync service for it, and its own rules stand in meanwhile.
 When TextMouth's own rules are newer than your copy, the sheet says so.
 ## Delete Transcript…
@@ -118,7 +137,9 @@ While the book is being transcribed, Delete Transcript… says to cancel the tra
 
 The Playback tab of Settings has a Transcription group.
 Transcription language lists the languages the recognizer supports, each marked installed or needs download.
-Offer to transcribe after importing an audiobook, off by default, asks after each audiobook TextMouth imports, after the import's other questions, "Transcribe the Audiobook?": Transcribe, which Return presses, opens the sheet, which starts at once when the language's model is on this Mac, and otherwise offers the model's download, after which you choose Transcribe, and Not Now, which Escape presses, leaves the book as it is.
+Offer to transcribe after importing an audiobook, off by default, asks after each audiobook TextMouth imports, after the import's other questions, "Transcribe the Audiobook?":
+- Transcribe, which Return presses, opens the sheet, which starts at once when the language's model is on this Mac, and otherwise offers the model's download, after which you choose Transcribe,
+- and Not Now, which Escape presses, leaves the book as it is.
 
 ## Transcripts that come from a file
 <!-- id: transcripts-that-come-from-file; keys: ; src: -->
