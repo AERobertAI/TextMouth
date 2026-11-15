@@ -43,7 +43,10 @@ It changes nothing in a title: Book Information, a reader window, Now Playing, S
     A feed's item that is not downloaded has no row to select, and is not reached.
 - In Ignored When Typing and Sorting, every Library list sorts titles by where they file, so The Hobbit is among the H's, and shows its row as "Hobbit, The", with the article after the main title, so a subtitle keeps its place: "Hobbit, The: There and Back Again".
   Two titles that file the same, "Hobbit" and "The Hobbit", stay apart, the one without the article first.
-  - It applies to the Title sort and to every tie broken by title, in Folders, All Items, Unopened, Recently Opened, and any view of your own, and to the ties a view's limit breaks by title; to the Feeds section, whose feeds sort and show without their leading articles; to the titles a feed's items show, which stay in the feed's own order, newest first; and to the Books rotor.
+  - It applies to the Title sort and to every tie broken by title, in Folders, All Items, Unopened, Recently Opened, and any view of your own, and to the ties a view's limit breaks by title.
+    It applies also to the Feeds section, whose feeds sort and show without their leading articles.
+    It applies also to the titles a feed's items show, which stay in the feed's own order, newest first.
+    It applies also to the Books rotor.
     A folder's manual order stays as you arranged it, and books you have not placed in it follow the order of their titles as this choice reads them; the Reading List keeps the order you gave it, in every choice.
   - A row's VoiceOver label, a braille display, and the Books rotor read the title as the row shows it, and so does the Folders rotor's entry for a feed whose row stands for its folder.
     A folder's name is shown and typed as written.
@@ -61,8 +64,10 @@ Its first search after a new installation may take several seconds while TextMou
 ## Speak Info
 <!-- id: library-window-speak-info; keys: brief summary, Shift-Command-I, spoken summary, reading list place; src: TextMouth/ViewModels/LibraryInfoSpeaker.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Models/SummaryPress.swift, TextMouth/ViewModels/ReaderViewModel+SpeakInfo.swift -->
 
-Speak Info, Shift-Command-I or Library menu, Speak Info (in a reader window the same key speaks that window's book, as [Reader windows](reader-windows.md) says), speaks the selected row's brief summary in TextMouth's own voice, the voice and speed set in the Voice tab of Settings, as Where Am I? speaks a position in a reader, so it works with VoiceOver off too.
-A book's summary gives its title, its author unless none is known, its format, its folder or "Not in a folder", or, for a feed's episode or article, its feed, as in "In The Digital Antiquarian, a feed", its place in the reading list, for a book in it, in every view, as in "In reading list, 3 of 12", its progress and time left as its row says them, and "Unopened" for a book never opened, as in "Middlemarch.
+Speak Info, Shift-Command-I or Library menu, Speak Info (in a reader window the same key speaks that window's book, as [Reader windows](reader-windows.md) says), speaks the selected row's brief summary in TextMouth's own voice.
+It uses the voice and speed set in the Voice tab of Settings, as Where Am I? speaks a position in a reader, so it works with VoiceOver off too.
+A book's summary gives its title, its author unless none is known, its format, its folder or "Not in a folder", or, for a feed's episode or article, its feed, as in "In The Digital Antiquarian, a feed".
+It also gives its place in the reading list, for a book in it, in every view, as in "In reading list, 3 of 12", its progress and time left as its row says them, and "Unopened" for a book never opened, as in "Middlemarch.
 By George Eliot.
 EPUB.
 In Classics.
@@ -70,7 +75,8 @@ In reading list, 3 of 12.
 42 percent.
 2 hours, 5 minutes remaining."
 A folder's gives its name, "Folder", its books, in it and in every folder inside it, with how many are unopened, and its feeds, when it holds any.
-A feed's gives its title, "Feed", "Unsubscribed" while you are unsubscribed from it, "Folder missing" when its folder is gone, its items counted as its row counts them (see Feeds in the library, under [Podcasts and article feeds](feeds.md)), and its last check, or, for a feed you unsubscribed from, since when it hasn't been checked, as in "Finish It!.
+A feed's gives its title, "Feed", "Unsubscribed" while you are unsubscribed from it, "Folder missing" when its folder is gone, and its items counted as its row counts them (see Feeds in the library, under [Podcasts and article feeds](feeds.md)).
+It also gives its last check, or, for a feed you unsubscribed from, since when it hasn't been checked, as in "Finish It!.
 Feed.
 Unsubscribed.
 10 of 381 episodes listed.
@@ -108,7 +114,11 @@ Release Media Controls ends the announcement with the book, so the book stays st
 A jump while Where Am I? speaks, by Next Heading or Previous Heading, a heading, bookmark, or search result picked from its list, Go to a percent or a time, or Return to previous position, ends the announcement as a skip does.
 A book it paused plays on from where the jump lands, and a book a Play was pressed for starts there.
 With Auto-play on navigate, a heading, bookmark, or search result picked from its list also plays a book paused or stopped before the announcement, from where the jump lands.
-Should the speech engine cancel the announcement before it ends, whatever waited for it starts as the announcement's end would have started it: a book you pressed Play for during the announcement, the one it paused included; a chapter whose files arrived during it; and a book waiting for its chapter's speech, at once or as soon as the speech is ready.
+Should the speech engine cancel the announcement before it ends, whatever waited for it starts as the announcement's end would have started it:
+- a book you pressed Play for during the announcement, the one it paused included
+- a chapter whose files arrived during it
+- a book waiting for its chapter's speech, at once or as soon as the speech is ready
+
 With no Play pressed, the book the announcement paused stays paused, and Play/Pause resumes it.
 
 ### A book waiting to start
@@ -130,8 +140,20 @@ In a library in the cloud, a chapter whose files arrive while Where Am I? speaks
 ### What the full summary adds
 <!-- id: what-full-summary-adds; keys: date added, last opened, bookmarks, braille code, file size, Text encoding sentence; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift -->
 
-A book's full summary adds when it was added and last opened, its bookmarks, a braille book's code, said right after the bookmarks as "Braille code: Unified English Braille, contracted (Grade 2)", and, for a BRF or BRL book, its braille file characters right after the code, as "Braille characters: North American Braille ASCII", its file size, unless its files are in the cloud, which are never downloaded to measure them, its cloud note and whether it is kept on this Mac, and whether a reader window has it open; a folder's adds its subfolders and the time left in all its books; and a feed's adds its folder and its address.
-The full summary of a text book that records an encoding, guessed or chosen (see [What TextMouth reads](what-textmouth-reads.md)), says so right after the bookmarks, in the sentence "Text encoding: Windows-1251 (Cyrillic), guessed." or "Text encoding: Shift JIS (Japanese), chosen."; the brief summary does not, and a book that records no encoding has no such sentence, since Speak Full Info never reads a book's file to find one.
+A book's full summary adds:
+- when it was added and last opened
+- its bookmarks
+- a braille book's code, said right after the bookmarks as "Braille code: Unified English Braille, contracted (Grade 2)"
+- for a BRF or BRL book, its braille file characters right after the code, as "Braille characters: North American Braille ASCII"
+- its file size, unless its files are in the cloud, which are never downloaded to measure them
+- its cloud note and whether it is kept on this Mac
+- whether a reader window has it open
+
+A folder's adds its subfolders and the time left in all its books.
+A feed's adds its folder and its address.
+The full summary of a text book that records an encoding, guessed or chosen (see [What TextMouth reads](what-textmouth-reads.md)), says so right after the bookmarks.
+The sentence is "Text encoding: Windows-1251 (Cyrillic), guessed." or "Text encoding: Shift JIS (Japanese), chosen."
+The brief summary does not, and a book that records no encoding has no such sentence, since Speak Full Info never reads a book's file to find one.
 
 ### Text fields and the Shortcuts tab
 <!-- id: text-fields-shortcuts-tab; keys: Shortcuts tab, Information group, text field, key conflict; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/Services/KeyboardShortcutManager.swift -->
