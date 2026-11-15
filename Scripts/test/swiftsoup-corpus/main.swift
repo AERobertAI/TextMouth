@@ -7,6 +7,7 @@
 // file SwiftSoupCorpusTests uses, so the damage and the summaries are the same.
 //
 // Usage: soupcorpus DIRECTORY DAMAGED_COPIES
+//    or: soupcorpus --time FILE (html|xml) RUNS   (the median parse time)
 //   Every file of DIRECTORY, in the order of its name: one line "name TAB html
 //   TAB xml TAB fragment"; then, for each file of at most 300,000 bytes,
 //   DAMAGED_COPIES lines named "name#damagedN".
@@ -57,7 +58,31 @@ func run(directory: String, damagedCopies: Int) throws {
     }
 }
 
+/// The median of `runs` timings of parsing `markup`, in milliseconds, with
+/// the HTML parser or (`xml`) SwiftSoup's XML parser, after one warm-up parse.
+func medianParseMilliseconds(_ markup: String, xml: Bool, runs: Int) throws -> Double {
+    func parse() throws {
+        _ = xml ? try SwiftSoup.parse(xmlSafe(markup), "", Parser.xmlParser()) : try SwiftSoup.parseHTML(markup, "")
+    }
+    try parse()
+    var times: [Double] = []
+    for _ in 0..<runs {
+        let start = DispatchTime.now().uptimeNanoseconds
+        try parse()
+        times.append(Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
+    }
+    times.sort()
+    return times[times.count / 2]
+}
+
 let arguments = CommandLine.arguments
+// Timing mode: soupcorpus --time FILE (html|xml) RUNS prints the median parse time.
+if arguments.count == 5, arguments[1] == "--time", let runs = Int(arguments[4]), runs > 0 {
+    let bytes = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
+    let median = try medianParseMilliseconds(SoupCorpusKit.markup(of: [UInt8](bytes)), xml: arguments[3] == "xml", runs: runs)
+    print(String(format: "%@ %@ %d bytes: median of %d parses %.2f ms", arguments[2], arguments[3], bytes.count, runs, median))
+    exit(0)
+}
 guard arguments.count == 3, let copies = Int(arguments[2]), copies >= 0 else {
     FileHandle.standardError.write(Data("usage: soupcorpus DIRECTORY DAMAGED_COPIES\n".utf8))
     exit(2)

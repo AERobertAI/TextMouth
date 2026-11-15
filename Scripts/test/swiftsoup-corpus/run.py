@@ -33,6 +33,7 @@ Options:
   --work DIR       scratch folder (default: build/swiftsoup-corpus of the main
                    checkout); files in it are overwritten, none deleted
   --damaged N      damaged copies of each document (default 20)
+  --timing-runs N  parses timed for the speed lines (default 31)
 
 Exit status: 0 when every parse is identical, 1 when any differs, 2 for a
 problem building or running.
@@ -126,6 +127,23 @@ def run_program(program, corpus, damaged, output):
     return time.monotonic() - start
 
 
+def time_parses(upstream, vendored, corpus, runs):
+    """Prints the median time of the HTML parser on the largest .html
+    document of the corpus and of the XML parser on its largest .xml one, for
+    the release and for the copy (the harness of the November 14, 2026
+    research: frankenstein.html and the DTBook of hyperion_daisy.zip)."""
+    rows = [line.split("\t") for line in (corpus / "index.tsv").read_text(encoding="utf-8").splitlines()]
+    for mode, extension in (("html", ".html"), ("xml", ".xml")):
+        candidates = [row for row in rows if row[0].endswith(extension)]
+        if not candidates:
+            continue
+        largest = max(candidates, key=lambda row: int(row[1]))
+        for name, program in (("upstream", upstream), ("vendored", vendored)):
+            done = subprocess.run([str(program), "--time", str(corpus / largest[0]), mode, str(runs)],
+                                  capture_output=True, text=True, check=False)
+            print(f"timing {name}: {done.stdout.strip()} ({largest[2]})")
+
+
 def compare(left, right, index):
     """Compares two output files line by line; returns (lines, differing lines,
     the first few differing names with the parse that differs)."""
@@ -157,6 +175,7 @@ def main(argv=None):
     parser.add_argument("--testdata", type=Path, default=MAIN_CHECKOUT / "TestData")
     parser.add_argument("--work", type=Path, default=MAIN_CHECKOUT / "build" / "swiftsoup-corpus")
     parser.add_argument("--damaged", type=int, default=20)
+    parser.add_argument("--timing-runs", type=int, default=31, help="parses timed for each parser (default 31)")
     options = parser.parse_args(argv)
 
     for needed in (options.upstream / "Sources", options.vendored / "Sources", options.testdata, KIT, DRIVER):
@@ -173,6 +192,7 @@ def main(argv=None):
     seconds_upstream = run_program(upstream, corpus, options.damaged, options.work / "upstream.out")
     seconds_vendored = run_program(vendored, corpus, options.damaged, options.work / "vendored.out")
 
+    time_parses(upstream, vendored, corpus, options.timing_runs)
     lines, differing, lengths = compare(options.work / "upstream.out", options.work / "vendored.out", corpus / "index.tsv")
     print(f"inputs: {lines} ({documents} documents and {lines - documents} damaged copies), parses: {lines * 3}")
     print(f"time: upstream {seconds_upstream:.1f} s, vendored {seconds_vendored:.1f} s")
