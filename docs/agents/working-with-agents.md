@@ -9,7 +9,13 @@ The briefs of each day's wave are kept under `Scripts/agents/briefs/`, and `Scri
 
 Several coding agents can work on TextMouth at once, each in its own git worktree on its own branch, coordinated through a shared message board: the agent-bbs skill, in .claude/skills/agent-bbs/.
 Its SKILL.md is the full reference.
-AGENTS.md, in the repository root, is the protocol those agents and their orchestrator follow: the user's standing rules, the build wrapper and the crash-proof tests rule, the board routine, the report format, and how a branch is merged with Scripts/agents/merge-chain.sh and recorded in TODO-2026-09-04.md.
+AGENTS.md, in the repository root, is the protocol those agents and their orchestrator follow:
+- the user's standing rules;
+- the build wrapper and the crash-proof tests rule;
+- the board routine;
+- the report format;
+- and how a branch is merged with Scripts/agents/merge-chain.sh and recorded in TODO-2026-09-04.md.
+
 AGENT-NOTES-2026-10-04.md lists what past agents left unverified.
 
 ## The board is one SQLite file
