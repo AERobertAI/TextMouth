@@ -73,6 +73,13 @@ It announces when it starts, and gives one summary when every book has ended, na
 Remove Download frees the space a downloaded book takes on this Mac, leaving it in the cloud.
 It deletes nothing from the cloud, so it doesn't ask first.
 It refuses a book open in a reader, a book kept on this Mac, and one with changes not yet uploaded.
+It also refuses when the sync service doesn't prove that the cloud holds the book's copy: no upload state, an upload error, two versions of a file, or a copy on this Mac that isn't said to be the latest.
+Each refusal says what to do, since the only copy might be the one on this Mac; the first and the last say "Try again in a moment.", and a conflict says to settle it in the sync service first.
+When the sync service reports no downloading status at all, waiting won't change that, so the refusal says so and ends, for Google Drive:
+  "To free the space anyway, choose Show in Finder, then use Google Drive's Offline Access menu.
+  That keeps the book's copy in the cloud."
+For Dropbox it says "choose Make online-only", for iCloud Drive "choose Remove Download", and for another drive "use the drive's own command to keep the book only online".
+TextMouth never deletes anything for you.
 When it keeps any download, an alert says what was removed, what stayed, and why; VoiceOver reads the alert, and nothing repeats it.
 When every download is removed, one announcement says so.
 
@@ -289,12 +296,18 @@ A TextMouth from 0.2.1 to 0.3.2 opens a library that holds a KFX book, a format 
 ### Conflict copies
 <!-- id: conflict-copies; keys: library 2.json, library (1).json, duplicate files, merge; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/Feeds/FeedStore.swift -->
 
-TextMouth leaves alone the conflict copies a sync service makes of library.json, library-identity.json, config.json, reading_stats.json, substitutions.json, a feed's record, and a book's package and record, such as "library 2.json" or "library (1).json":
+TextMouth leaves alone the conflict copies a sync service makes of library.json, library-identity.json, config.json, reading_stats.json, substitutions.json, a feed's record and its index of episodes, and a book's package and record, such as "library 2.json" or "library (1).json":
 - it never reads one in place of the file it copies,
 - nor adopts a copied package as a second book,
 - and leaves each where it is.
 
 It doesn't merge what two Macs wrote.
+In a library in the cloud it does tell you, once for each copy, when a library is opened: an alert titled "Conflicting Copies Found" says which sync service set aside a copy of what, where it is, and what it holds beside what the original holds, and ends "TextMouth hasn't merged it or removed it."
+For example, for a feed's index: "It holds 0 episodes; the index holds 1 episode."
+The alert lists five copies at most, the rest go to the log; OK is the default, and Show in Finder shows the first copy's folder.
+It recognizes iCloud Drive's " 2" names, Google Drive's " (1)", and Dropbox's "(NAME's conflicted copy DATE)" and "(Case Conflict)" names, and iCloud's unresolved versions of a file.
+A copy not yet on this Mac is not downloaded to look inside it, and the alert says so.
+A copy is reported again only if it changes or you haven't yet seen the report; this Mac remembers what it reported.
 
 ### Statistics and substitutions only in the cloud
 <!-- id: statistics-substitutions-only-cloud; keys: reading_stats.json, substitutions.json, Retry, standard rules; src: TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift -->

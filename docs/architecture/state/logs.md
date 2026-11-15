@@ -69,7 +69,8 @@ The diagnostic logs.
   - The reader: READER_DOWNLOAD_STARTED, READER_DOWNLOAD_FINISHED, READER_DOWNLOAD_FAILED, READER_DOWNLOAD_CANCELLED, READER_READ_REFUSED, WORKING_COPY_MADE, WORKING_COPY_SKIPPED, WORKING_COPY_REMOVED, WORKING_COPY_LEFT, and WORKING_COPIES_SWEPT.
   - Maintenance: MAINTENANCE_SKIPPED_IN_CLOUD, one line for each pass that left books in the cloud.
   - Package records: BOOK_RECORD_IN_CLOUD, once for each book whose saves go to library.json alone while its record is only in the cloud.
-  - The data directory: DATA_DIRECTORY_FOUND, DATA_DIRECTORY_AVAILABLE, DATA_DIRECTORY_UNAVAILABLE, DATA_DIRECTORY_UNMOUNTED, DATA_DIRECTORY_LOST, DATA_DIRECTORY_MOVE, DATA_DIRECTORY_SWITCH, LIBRARY_IDENTITY, LIBRARY_SESSION, SUBSTITUTIONS_FILE, and READING_STATS_FILE.
+  - The data directory: DATA_DIRECTORY_FOUND, DATA_DIRECTORY_AVAILABLE, DATA_DIRECTORY_UNAVAILABLE, DATA_DIRECTORY_UNMOUNTED, DATA_DIRECTORY_LOST, DATA_DIRECTORY_MOVE, DATA_DIRECTORY_SWITCH, LIBRARY_IDENTITY, and LIBRARY_SESSION.
+    Beside them are LIBRARY_COMPARED, CONFLICT_COPY_FOUND, SUBSTITUTIONS_FILE, and READING_STATS_FILE.
 
 ### Log tags: transcripts, recordings, and audio editing
 <!-- id: log-tags-transcripts-recordings-audio; keys: TRANSCRIPT_FILE, TRANSCRIPTION_STARTED, RECORDING_STARTED, AUDIO_EDITS_SAVED, AUDIO_EDITOR; src: TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorLauncher.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/Services/AudioEditing/AudioEditHistoryStore.swift, TextMouth/Services/AudioEditing/AudioFilterPresets.swift, TextMouth/Services/AudioEditing/AudioOriginalSweep.swift, TextMouthProductionTests/LogContentPolicyTests.swift -->

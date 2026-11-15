@@ -55,6 +55,12 @@ The list's cloud commands.
   Downloads start in three ways, each downloading its books one at a time and recording each one's progress and how it ended: Download Now; Keep on This Mac, for the books it keeps that are in the cloud; and the refresh that finds kept books only in the cloud.
   Each says and logs what its DownloadOrigin calls for.
   Remove Download refuses a book open in a reader or kept on this Mac without asking the storage (BookCloudError.bookIsOpen and .keptOnThisMac), the storage refuses one with changes not uploaded, and a second request for a book under way does nothing.
+  The storage also refuses unless the sync service proves the cloud's copy (BookCloudError.cloudCopyNotProven(CloudCopyDoubt), from CloudItemStatus.cloudCopyDoubt, read for each downloaded file the removal would remove):
+  - an upload state not given counts as not uploaded (.uploadNotReported);
+  - then an upload error (.uploadFailed) and a conflict (.inConflict);
+  - a downloading status other than current that the drive reported (.notCurrent);
+  - and no downloading status at all (.currentNotReported).
+  BookCloudWording.removalRefusal words each; only .currentNotReported is lasting, and it names the current drive's own online-only command (onlineOnlyCommand(of:)) after Show in Finder, never a deletion.
 - How others observe it: BookCloudStates.shared shows each download in every window.
   VoiceOverAnnouncer announces each command's start and, when every download was removed, one summary from the window that asked.
   A removal that kept any download is shown in an alert alone (LibraryCloudRefusal), whose message is the whole summary of what was removed, what stayed, and why, with nothing announced besides (REV14's alert-only rule, #2094).

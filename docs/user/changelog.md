@@ -17,6 +17,10 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - When a library's index or identity file hasn't arrived from the sync service, TextMouth waits for it, then shows Library Not Available with your choices: Open Without the Index…, Restore Its Identity…, or Give It a New Identity…. Each asks first, and nothing is opened as a new library on its own.
 - Statistics and settings files that haven't arrived are no longer written over by this Mac's.
 - A book you moved to the library with Move to Library… stays there when another Mac's out-of-date feed still lists it.
+- Storage settings has a new button, Compare Libraries…. It lists what differs between this library and another copy of it, such as newer places, bookmarks, books, the reading list, and folders, and changes nothing.
+- Use This Library now says which copy of the library is newer, and what only each holds, instead of "may not have its latest changes". While it compares, which can take up to a minute, Stop Comparing skips it.
+- When a sync service sets aside a conflicting copy of a library file, a feed's record or index, or a book's record, TextMouth tells you once, in an alert, and leaves the copy where it is.
+- Remove Download is stricter: it refuses a book unless the sync service says its upload finished and the copy on this Mac is the latest. If your drive never says so, the refusal tells you to free the space with the drive's own command, and nothing is deleted.
 
 ### Not changed
 - How any book reads: the new copy reads every test document exactly as the old library did.

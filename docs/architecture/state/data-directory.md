@@ -85,6 +85,7 @@ Its location, and moving it.
   So a move, a rebuild, or a folder edit under way refuses it with the StorageBusyError naming that operation, and nothing starts one while the switch runs.
   It writes pending saves, refuses while changes can't be saved unless the library is unavailable, records the folder for the next launch with TextMouthPaths.setCustomRoot (nil for the default location), and has TextMouthRelauncher open a new instance of TextMouth and quit this one.
   A process hosting tests never opens again.
+  Before the confirmation, Storage settings runs the comparison of Compare Libraries for at most 60 seconds, which Stop Comparing (a cancel flag) ends, and the confirmation says which copy is newer (StorageWording.copyOfCurrentLibrarySentence(_:), LibraryComparisonWording.newerCopySentence).
 
 ### How a move is observed
 <!-- id: how-move-observed; keys: progress sheet, move progress, Move cancelled, quit during move, status line; src: TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/Views/Library/DataDirectoryMoveSheet.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
