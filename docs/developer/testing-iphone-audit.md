@@ -73,7 +73,7 @@ Part of [TextMouth's documentation](../../README.md).
   - Sleep Timer, for its stepper's label, a system control's;
   - Book Information, for the read-only rows at the bottom;
   - the Search in Book sheet with results (`testTheSearchSheetPassesTheAudit`), for the status line, the "Search results" heading, the regular-expression switch, and the field; `LargeTextUITests` measures that these grow (see SearchUITests, below).
-- `LargeTextUITests` does not use it any more: it fails on what it finds, except the accepted findings above.
+- `LargeTextUITests` does not use it: it fails on what it finds, except the accepted findings above.
 - A test that reports is not proof that the screen passes.
   `LargeTextUITests` audits the same screens at the largest size.
 - Every other kind of finding on those screens still fails.
@@ -86,7 +86,7 @@ Part of [TextMouth's documentation](../../README.md).
 - The size is set at launch with `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` (`TextMouthUITestCase.largestText`), as the Larger Text setting would.
   Nothing changes the simulator's own settings.
 - **Dynamic Type and clipped text fail** (0.4.3).
-  Now only the accepted findings above pass, and any other Dynamic Type finding, such as a fixed font on either screen, fails.
+  Only the accepted findings above pass, and any other Dynamic Type finding, such as a fixed font on either screen, fails.
 - Its four tests:
   - `testTheLibraryWithABookHoldsAtTheLargestText` audits the Library with a book, as it first appears and then scrolled once, since the summary row is below the first screen at this size.
     It accepts the system parts and `librarySummary`, and, scrolled, the three nameless findings.
@@ -148,8 +148,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: searchuitests; keys: find in book, search sheet, software keyboard, PhoneBookSearchVocabulary; src: TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Phone/PhoneBookSearch.swift -->
 
 - They drive the Search in Book sheet (0.4.4) in the simulator.
-  The searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see In the simulator, sound tests run on GitHub only, below).
-  The launch variable `TEXTMOUTH_SEARCH_IN_BOOK` that used to fill the field is gone.
+  The searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see [In the simulator, sound tests run on GitHub only](testing-iphone.md)).
   The word searched for is "Cheshire" in Alice's Adventures in Wonderland, which the book holds in several chapters, far below the 500-result limit.
   A result's jump is silent, since Auto-play after navigation is off in the launch's sandbox.
 - The sheet's search waits a second for typing to pause, so each test first waits for the status line to end in " matches", " match", or "No matches", for up to the usual patience.
@@ -163,8 +162,8 @@ Part of [TextMouth's documentation](../../README.md).
   - `testAResultTakesTheReaderToItsPlace`: choosing the first result closes the sheet, puts Search in Book back on the reader, leaves Play unpressed, and within the patience puts the word into Book content's text.
   - `testTheSearchSheetPassesTheAudit`: the audit of the sheet with results.
 - The audit's keyboard.
-  The field takes the keyboard, which the audit reads too: with it up, pass 1 found 7 contrast findings on result rows under the keyboard and 3 "TUIPredictionViewCell" element-description findings of the system keyboard's own.
-  A swipe of the whole app did not put the keyboard away in pass 2.
+  The field takes the keyboard, which the audit reads too: with it up, the audit finds contrast findings on result rows under the keyboard and "TUIPredictionViewCell" element-description findings of the system keyboard's own.
+  A swipe of the whole app does not put the keyboard away.
   So the test drags from the "Search results" heading to the navigation bar, a scroll of the list, which is silent and puts the keyboard away (`scrollDismissesKeyboard`).
   If the keyboard stays up, the audit runs all the same and a note says so.
 
@@ -176,7 +175,7 @@ Part of [TextMouth's documentation](../../README.md).
   Its code draws all of it in the system's styles with no fixed size (`Text`, `TextField`, `Toggle`, a section header), and `LargeTextUITests.testTheSearchSheetHoldsAtTheLargestText` measures each of the four parts at the largest size against the default and passed (run 43041108180).
   So the findings are the audit's own, which come and go, like the Library's summary row and the other sheets' (see Audits that report without failing, above), and the audit reports Dynamic Type without failing it.
   Clipped text and every other kind still fail.
-  The audit's helpers (`openSearchSheet`, `waitForStatus`, `waitForResults`) now live in `TextMouthUITestCase`.
+  The audit's helpers (`openSearchSheet`, `waitForStatus`, `waitForResults`) live in `TextMouthUITestCase`.
 - Accepted: the system's title, Back to Book, the clipped text of a scroll, and one contrast finding that stays, on "CHAPTER VI.
   Pig and Pepper", the first result's heading at y 71 scrolled under the navigation bar's glass.
   It is matched by that exact label and the contrast kind, and every other contrast finding fails.
@@ -192,7 +191,6 @@ Part of [TextMouth's documentation](../../README.md).
 - The book is an EPUB.
   Its form uses the Mac's metadata editor's words, so its author field is "Author".
   A book with no more than a title and author has "Book author".
-  The test used to expect "Book author" and failed for that reason, which was not a missing Cancel.
 
 ## What is still open
 <!-- id: what-still-open; keys: known issues, unverified, audit flakiness, Dynamic Type caption; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouth/Platform/iOS/Views/Settings/PhoneSettingsView.swift, TextMouthiOSUITests/TextMouthUITestCase.swift -->

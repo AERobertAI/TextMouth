@@ -666,6 +666,13 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **The 503 on downloads:** GitHub answered "503 Egress is over the account limit" to `gh run download` for a while (November 10, about 16:00 local).
 - **The workflow guard was off at first:** until `test-build.yml` was on origin's main, the page said "the guard is off until then: on November 10, 2026 origin's main has only `check.yml`, and pushing main after the branch that adds `tests.yml` merges switches it on".
   Main has held `test-build.yml` since the first push at 0.4.10, so the guard is on.
+- **The full suite, first try:** Stopped at its 80-minute limit with 214 of 11,853 tests done.
+- **The full suite before the clean-up:** Four shards, the 2-minute limit, 114 skips: 14.5 to 23 minutes, with 2 to 6 failures in each run and the hangs of 2 minutes each.
+- **The runs before the three clean full suites:** The four runs before runs 42894995288, 42897206889, and 42899832768 took 12.6 to 16.3 minutes and each had 2 to 4 failures.
+- **The runs of the day before the fixes:** Several of the 4-to-6-failure runs of the day before were the hung voice listing and the late cancels, which are fixed.
+- **The decode check in the concurrency pool:**
+  Before the decode check left the pool, `AudioMediaProber.probeConcurrently` ran that call in the app's concurrency pool, so a few such hangs left no thread for the tasks after them.
+  That was why a test that decodes audio sometimes failed together with the one after it, and nothing in the app bounded the call.
 
 ## From Document goldens
 
@@ -695,13 +702,10 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
   - After the fix round, one pass passed 26 of 26, including all five and the Library test.
     A second pass was not run, so whether the audit is stable across launches is untested.
   - After that pass only a comment in the search sheet changed, to fix a train failure.
-- **The full suite, first try:** Stopped at its 80-minute limit with 214 of 11,853 tests done.
-- **The full suite before the clean-up:** Four shards, the 2-minute limit, 114 skips: 14.5 to 23 minutes, with 2 to 6 failures in each run and the hangs of 2 minutes each.
-- **The runs before the three clean full suites:** The four runs before runs 42894995288, 42897206889, and 42899832768 took 12.6 to 16.3 minutes and each had 2 to 4 failures.
-- **The runs of the day before the fixes:** Several of the 4-to-6-failure runs of the day before were the hung voice listing and the late cancels, which are fixed.
-- **The decode check in the concurrency pool:**
-  Before the decode check left the pool, `AudioMediaProber.probeConcurrently` ran that call in the app's concurrency pool, so a few such hangs left no thread for the tasks after them.
-  That was why a test that decodes audio sometimes failed together with the one after it, and nothing in the app bounded the call.
+- **The Search in Book launch variable:** The launch variable `TEXTMOUTH_SEARCH_IN_BOOK` that used to fill the field is gone.
+- **The Book Information test's field label:** The test used to expect "Book author" and failed for that reason, which was not a missing Cancel.
+- **The keyboard's first audits:** With the keyboard up, pass 1 found 7 contrast findings on result rows under the keyboard and 3 "TUIPredictionViewCell" element-description findings of the system keyboard's own.
+  A swipe of the whole app did not put the keyboard away in pass 2.
 
 ## From Testing TextMouth
 
