@@ -273,6 +273,9 @@ extension LibraryViewModel {
             // still the user's: Rebuild Library Index writes them back (V03).
             unreadableRows: library.unreadableRows
         )
+        // So are the sections a later TextMouth keeps in library.json that
+        // this one does not know, when the session read any (V04).
+        library.unknownKeys = feedItems.unknownKeys
         indexRecovery = LibraryIndexRecovery(failure: failure, arrangementNotKept: arrangement.notKept)
         showIndexRecoveryOptions = true
     }

@@ -254,13 +254,13 @@ struct KeptRowPackages: Equatable, Sendable {
 ///
 /// Its `==` is the one Swift synthesizes, which compares every stored field
 /// (`books`, `folders`, `folderSortSettings`, `readingList`, `feedShelf`,
-/// and `unreadableRows`), each with its own synthesized `==`; a field added
+/// `unreadableRows`, and `unknownKeys`), each with its own `==`; a field added
 /// later is compared too, or the build fails until it can be. Work that runs
 /// off the main actor and then publishes a library it made from a snapshot
 /// (`LibraryViewModel.library(after:current:)` and
 /// `library(afterMoving:from:current:)`) asks this whether anything changed
 /// meanwhile, so no change to any part is undone.
-struct Library: Codable, Equatable {
+struct Library: Codable, Equatable, KeepsUnknownKeys {
     /// The rows of the library model's books: every book of the library's
     /// own, and, while TextMouth runs, the rows of feed items whose files
     /// are here (FR11), which the library's lists and counts leave out
@@ -282,6 +282,13 @@ struct Library: Codable, Equatable {
     /// every save, and are never shown or counted. A library that replaces
     /// the one loaded carries these over.
     var unreadableRows: [UnreadableLibraryRow]
+    /// The top-level sections of library.json that this TextMouth does not
+    /// know (V04, `UnknownKeys`): what a later TextMouth keeps beside the
+    /// books, folders, sort settings, and reading list, written back at
+    /// every save exactly as it was. None in a library made here. A library
+    /// that replaces the one loaded carries these over, as it carries
+    /// `unreadableRows`.
+    var unknownKeys = UnknownKeys()
 
     /// How many rows are kept unshown in all: those of library.json and
     /// those of the feeds' indexes (`FeedShelf.unreadableRows`).
@@ -333,9 +340,12 @@ struct Library: Codable, Equatable {
 
     /// The keys of library.json. The feed shelf has none: it is never
     /// written there.
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case books, folders, folderSortSettings, readingList
     }
+
+    /// The names of library.json's sections that this version knows.
+    private static let knownKeyNames = CodingKeys.names
 
     /// Backward-compatible decoding: folderSortSettings may be absent in
     /// older library.json files, and the reading list in any written before
@@ -358,6 +368,8 @@ struct Library: Codable, Equatable {
         folderSortSettings = try container.decodeIfPresent([String: FolderSortSetting].self, forKey: .folderSortSettings) ?? [:]
         readingList = (try? container.decodeIfPresent(ReadingList.self, forKey: .readingList)) ?? ReadingList()
         feedShelf = FeedShelf()
+        // Every other section is kept as it is, to be written back (V04).
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
     }
 
     /// Writes the library as library.json holds it: the books of the
@@ -368,6 +380,9 @@ struct Library: Codable, Equatable {
     /// Rebuild Library Index, and the data-directory move) encodes a library
     /// this way, so none can.
     func encode(to encoder: Encoder) throws {
+        // The sections this version does not know first, so one of its own
+        // always wins (V04); nothing at all for a library without any.
+        try unknownKeys.write(to: encoder)
         var container = encoder.container(keyedBy: CodingKeys.self)
         // The books, then the rows kept as they were read (V03). Without any
         // kept row this writes exactly what encoding the array wrote.
