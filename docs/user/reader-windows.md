@@ -46,7 +46,18 @@ In a reader it is a VoiceOver announcement, made while the book goes on playing,
 ## The Navigate menu
 <!-- id: reader-navigate-menu; keys: menu bar, Go Forward, Show Headings, Show Sleep Timer, Book Info, jump history; src: TextMouth/App/MenuCommands.swift, TextMouth/Models/KeyboardShortcut.swift -->
 
-The Navigate menu holds Go to Library, Go Back, which in a reader returns to where the last jump began (see below), and Go Forward, Next Heading and Previous Heading, Go to Page… (Pages, below), Next in Reading List and Previous in Reading List (below), Next in Folder and Previous in Folder (below), Show Headings, Show Sleep Timer, and Book Info.
+The Navigate menu holds:
+
+- Go to Library,
+- Go Back, which in a reader returns to where the last jump began (see below),
+- and Go Forward,
+- Next Heading and Previous Heading,
+- Go to Page… (Pages, below),
+- Next in Reading List and Previous in Reading List (below),
+- Next in Folder and Previous in Folder (below),
+- Show Headings,
+- Show Sleep Timer,
+- and Book Info.
 
 ## Headings that begin at one place
 <!-- id: reader-headings-that-begin-at-one; keys: nested headings, subheading, heading chain, outermost heading, Next Heading; src: TextMouth/ViewModels/ReaderViewModel+Navigation.swift -->
@@ -160,7 +171,14 @@ Search in Book on an audiobook with no text to search says why, in place of open
 ## The Book menu
 <!-- id: reader-book-menu; keys: Edit Text With, Retranscribe Audio, Clean Up Transcript, Delete Transcript, Edit Audio, Move to Library, Export; src: TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/App/MenuCommands.swift -->
 
-The Book menu holds Edit Text in Default Editor and Edit Text With…, available for a text book and a transcribed audiobook, a feed's episode included, but not a feed's article, then Transcribe Audio…, available for an audiobook and named Retranscribe Audio… once it has a transcript, Clean Up Transcript (Experimental)… and Delete Transcript…, for a transcribed one, then Edit Audio…, for an audiobook other than a feed's episode (see [Editing audio](editing-audio.md)), and last Move to Library…, for an episode or article downloaded in its feed (see [Podcasts and article feeds](feeds.md)).
+The Book menu holds:
+
+- Edit Text in Default Editor and Edit Text With…, available for a text book and a transcribed audiobook, a feed's episode included, but not a feed's article,
+- then Transcribe Audio…, available for an audiobook and named Retranscribe Audio… once it has a transcript,
+- Clean Up Transcript (Experimental)… and Delete Transcript…, for a transcribed one,
+- then Edit Audio…, for an audiobook other than a feed's episode (see [Editing audio](editing-audio.md)),
+- and last Move to Library…, for an episode or article downloaded in its feed (see [Podcasts and article feeds](feeds.md)).
+
 File menu, Export… exports the reader's book.
 
 ## Edit Manifest

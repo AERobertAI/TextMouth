@@ -48,7 +48,11 @@ Type a page as the book numbers it, such as 12 or xii."
 The field starts at the label of the page being read, empty before the first page, and has the keyboard.
 Return, or Jump, goes to the start of the page typed and says "Jumped to page 12."; Escape, or Cancel, closes the panel.
 Capitals and spaces around the page don't matter: "XII" is page xii.
-A label that more than one page has, such as "2" on the plates and in the text, goes to the first such page after the page being read, or to the first in the book when none comes after it, and the jump says which of them it reached, counting from the first in book order: "Jumped to page 2, the second page labelled 2.", or "Jumped to page 2, the first page labelled 2." after the wrap.
+A label that more than one page has, such as "2" on the plates and in the text, goes to the first such page after the page being read, or to the first in the book when none comes after it, and the jump says which of them it reached, counting from the first in book order:
+
+- "Jumped to page 2, the second page labelled 2.", or
+- "Jumped to page 2, the first page labelled 2." after the wrap.
+
 The count is in words up to the tenth and in figures after, as in "the 11th page labelled 2".
 Return while the field still holds the label it started at closes the panel, leaving the place where it is and saying nothing, unless another page of the book carries that label too.
 Then Return goes to that label's next page, and after the last page that carries it, to the first, so Return on the starting label steps through the pages of a repeated label.
@@ -64,7 +68,12 @@ When the cursor does not land on the page asked for, Go to Page says where it is
 - A page whose every word is in a skipped section, when the book is playing, since speech goes on with the next words it reads: "Page 40 is in a skipped section, so the cursor is on page 52."
   With the book stopped, the cursor stays on such a page, as on any other, and the jump says "Jumped to page 40."
 - No reason in the pages, as when a text substitution deletes every word of the page: "The cursor is on page 52."
-- A page of a label that other pages carry too is named as which of them it is, and so is the page the cursor is on, as in "The first page labelled 3 has no words, so the cursor is on the second page labelled 3.", "Page 5 has no words, so the cursor is on the second page labelled 2.", "The second page labelled 2 has no words, so the cursor is on page 3.", and "The second page labelled 2 is in a skipped section, so the cursor is on page 3."
+- A page of a label that other pages carry too is named as which of them it is, and so is the page the cursor is on, as in:
+  - "The first page labelled 3 has no words, so the cursor is on the second page labelled 3.",
+  - "Page 5 has no words, so the cursor is on the second page labelled 2.",
+  - "The second page labelled 2 has no words, so the cursor is on page 3.", and
+  - "The second page labelled 2 is in a skipped section, so the cursor is on page 3."
+
 - A skip by Page says the label of the page the cursor reaches, as before.
 
 ## Go to Page refuses what is not a page

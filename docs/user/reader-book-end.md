@@ -75,7 +75,13 @@ Where the next book opens, whenever listening goes on from one book to another, 
   The choice is read as the next book is asked for, so one changed meanwhile counts.
 - A book already open in another window comes forward with that window, and, with This Window, this window closes, so no two windows show one book.
   With A New Window, this window stays open.
-- With This Window, a new window opens all the same when switching this window could lose something: this window has closed, as when you press Command-W just after VoiceOver says "Starting: <title>", or is no longer on screen (a window that is minimized, or hidden along with TextMouth by Command-H, still counts as on screen); a sheet or an alert is open over it (Edit Book Information, Search in Book, the headings, the bookmarks, the sleep timer, the voice, Export, or an error); a text field of the window is being typed in (Go to Percent, Go to Time, or Go to Page); this book's text is being edited in another app with Edit Text; or the library is moving or not available.
+- With This Window, a new window opens all the same when switching this window could lose something:
+  - this window has closed, as when you press Command-W just after VoiceOver says "Starting: <title>", or is no longer on screen (a window that is minimized, or hidden along with TextMouth by Command-H, still counts as on screen);
+  - a sheet or an alert is open over it (Edit Book Information, Search in Book, the headings, the bookmarks, the sleep timer, the voice, Export, or an error);
+  - a text field of the window is being typed in (Go to Percent, Go to Time, or Go to Page);
+  - this book's text is being edited in another app with Edit Text;
+  - or the library is moving or not available.
+
   The next book then opens as with A New Window, and a book already open in another window comes forward as above, with this window left open.
 
 ## The sleep timer when listening goes on
@@ -127,7 +133,15 @@ A one-file audiobook with chapter markers plays its last chapter to its file's e
 Unless it loops, a book that plays or is read to its end is saved exactly at its end, its last chapter at its full length, and stays finished after its window closes or TextMouth quits.
 A finished book whose last chapter has grown shorter since, as when its text is read anew or edited, opens at its new end, still finished, as its row says; a place saved past the end of any other chapter opens at that chapter's end.
 A finished book's library row says "Finished" in place of its percent and time left, as in "Dune, by Frank Herbert, Finished, EPUB", and so do Speak Info, Where Am I?, and Copy Reading Position, while the reader's own status row keeps its percent and time.
-Play on a finished book does what its end did, without playing the end again: with Stop it says "Finished: Dune" and plays nothing; with Stop, and Play Starts Over, which stops at the end as Stop does, it starts the book over from its beginning, saying "Starting again: Dune"; with Continue to Next Book it goes on to the next book not finished (the very next book where Skip finished is cleared), or says why none follows, as the end did; with Loop to Start it plays the book again; a book with no choice of its own whose feed or folder has one does what that choice says (above); and a book read from the reading list does what the list's own When a book ends says (below).
+Play on a finished book does what its end did, without playing the end again:
+
+- with Stop it says "Finished: Dune" and plays nothing;
+- with Stop, and Play Starts Over, which stops at the end as Stop does, it starts the book over from its beginning, saying "Starting again: Dune";
+- with Continue to Next Book it goes on to the next book not finished (the very next book where Skip finished is cleared), or says why none follows, as the end did;
+- with Loop to Start it plays the book again;
+- a book with no choice of its own whose feed or folder has one does what that choice says (above);
+- and a book read from the reading list does what the list's own When a book ends says (below).
+
 A caption under the Playback tab's picker says what Play does with the first two.
 A backward skip after the end replays the end (above), which counts as no new finish, and a forward skip at the end stays there.
 Go to Percent with 100 lands just short of the end, so Play then plays the last moment and ends the book again.
@@ -137,10 +151,14 @@ Go to Percent with 100 lands just short of the end, so Play then plays the last 
 
 A book you open from the Reading List, by its row, its Open item, or Return, is read from the list.
 Its window is titled "Reading List: Moby-Dick by Herman Melville" in place of "Book: Moby-Dick by Herman Melville", the line under its title says where it stands, as in "Reading list, book 3 of 12", and the full Where Am I? adds the same words.
-When it ends, the list's When a book ends decides what follows, in place of the book's own end-of-book setting: the book below it, or above it, as the option says, opens and plays, read from the list too, passing over finished books while Skip finished books is checked, as in "Starting: Dune"; or the book stops, and VoiceOver says why, as in "Finished: Moby-Dick.
-End of the reading list.", "Finished: Moby-Dick.
-The reading list is set to stop when a book ends.", or "Finished: Moby-Dick.
-Every book below it in the reading list is finished."
+When it ends, the list's When a book ends decides what follows, in place of the book's own end-of-book setting:
+
+- the book below it, or above it, as the option says, opens and plays, read from the list too, passing over finished books while Skip finished books is checked, as in "Starting: Dune";
+- or the book stops, and VoiceOver says why, as in "Finished: Moby-Dick.
+  End of the reading list.", "Finished: Moby-Dick.
+  The reading list is set to stop when a book ends.", or "Finished: Moby-Dick.
+  Every book below it in the reading list is finished."
+
 Either way the book counts as finished.
 A sleep timer running in that window goes on with the next book, as it does in a folder (see The sleep timer when listening goes on, above).
 Navigate menu, Next in Reading List and Previous in Reading List open the book below or above, passing over finished books the same way, and play it when this book was playing, as in "Starting: Dune"; from a book that wasn't playing, they open the next without playing it, as in "Opening: Dune".

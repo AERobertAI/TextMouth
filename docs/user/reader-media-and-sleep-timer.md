@@ -65,7 +65,12 @@ Headings are one concept for any book: where the next heading of any level begin
 ### End of heading
 <!-- id: reader-end-heading; keys: End of chapter, End of document, stop at heading, Restart Sleep Timer, chapter end; src: TextMouth/Services/SleepTimerService.swift, TextMouth/Models/DocumentContent.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift -->
 
-End of heading pauses playback where the heading playing ends: within a chapter, where the next heading begins, with the cursor put back at that heading for Play to start it; at a chapter's end, when the next chapter opens with the next heading, as every audiobook chapter does, with the reader waiting at the start of that chapter, which Play starts; and at the book's end, which ends the last heading.
+End of heading pauses playback where the heading playing ends:
+
+- within a chapter, where the next heading begins, with the cursor put back at that heading for Play to start it;
+- at a chapter's end, when the next chapter opens with the next heading, as every audiobook chapter does, with the reader waiting at the start of that chapter, which Play starts;
+- and at the book's end, which ends the last heading.
+
 A timer for the end of the heading set where there is nothing to read, as on a book's cover, waits for the end of the heading that playback starts in, so Play does not stop in silence at once.
 A next chapter that has text before its first heading, or no heading at all, goes on under the same heading, so playback goes on into it.
 Restart Sleep Timer after a timer saved as End of chapter, or as End of document, arms End of heading.
@@ -83,7 +88,12 @@ End of book pauses playback when the book ends, before the book starts again or 
 
 An audiobook fades out toward a stop at a chapter's end over the sleep timer's Fade out time, in Playback settings, when one is set.
 Speech is not faded toward such a stop, and an m4b's chapter marker inside one file stops the timer a moment past the marker, without a fade, the cursor put back at the marker.
-When a timer counting minutes runs out and a Fade out time is set, playback fades out over that time before it pauses: an audiobook in its own audio, speech playing from the audio TextMouth prepared in that audio, and speech read straight from the voice in ever quieter stretches, the voice starting again from the word it had reached.
+When a timer counting minutes runs out and a Fade out time is set, playback fades out over that time before it pauses:
+
+- an audiobook in its own audio,
+- speech playing from the audio TextMouth prepared in that audio, and
+- speech read straight from the voice in ever quieter stretches, the voice starting again from the word it had reached.
+
 Speech read straight from the voice does not move to the prepared audio as the fade begins, a move that could repeat or skip a few words.
 
 ### One sleep timer for each window

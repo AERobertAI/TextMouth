@@ -12,7 +12,12 @@ Part of [TextMouth's documentation](../../README.md).
 A book's text can hold what looks like markup, such as the <sm> and </sm> one novel marks its silent messages with, and the speech engine of macOS 26.3.1 takes such tags for speech markup.
 It skipped the rest of a passage after an opening tag, and refused a passage holding a closing tag alone, after which the book's speech stopped and couldn't be started again.
 TextMouth hands the voice each tag with its two angle brackets changed to single angle quotation marks, which the engine doesn't take for markup, so the brackets are silent and what is between them, a tag's name included, is spoken.
-The engine takes for an opening tag any name of letters, figures, or symbols between angle brackets, with no space or slash inside it and spaces around it or not, such as <sm>, < sm >, <5>, <...>, <=>, or <*>; such a name followed by name=value attributes, as in <a href="x">; and empty brackets, <> or < >.
+The engine takes for an opening tag:
+
+- any name of letters, figures, or symbols between angle brackets, with no space or slash inside it and spaces around it or not, such as <sm>, < sm >, <5>, <...>, <=>, or <*>;
+- such a name followed by name=value attributes, as in <a href="x">;
+- and empty brackets, <> or < >.
+
 Each of these made it skip the rest of a passage without a sound, and TextMouth silences the brackets of every one, and of every closing tag, such as </sm>.
 A less-than or greater-than sign that isn't part of a tag, as in "x < y and y > z", is still read aloud, except in audio TextMouth prepared again with every angle bracket silent (below).
 An ampersand is left for the voice, which reads it as "and".
@@ -41,7 +46,19 @@ That one more try belongs to the place: once speech has gone on from it, a refus
 Refused there again, with no prepared audio to go on from, speech stops with the cursor at that passage.
 And the book's window shows a sheet headed "Speech Stopped", with one sentence under the heading, which VoiceOver reads with it: "The Mac's speech engine refused to speak the text here, twice, so speech stopped.
 Play tries again from the same place."
-Below them, a read-only text area labelled Details, which VoiceOver reads line by line and a braille display pans, holds a report for finding the cause: the book and its format; the place, as the brief Where Am I? says it, then the chapter, and the character where speech stopped, counted both in the book's text and in the spoken text, whose offsets the speech log gives; how many times that place was refused while the window has been open; the time, as the logs write it; up to 100 characters before where speech stopped and 400 from it, of the book's text and of the text exactly as it was handed to the speech engine, after the substitutions and the markup guard, with where the refused text begins and ends said in words on lines of their own; the markup guard in force; the voice, the speed, and the rate, pitch, and volume handed to the engine; macOS's version; TextMouth's build; and the last 40 lines the book's speech logged, including the routine lines that the speech log's file keeps only while tracing is on, which hold offsets and lengths, never the book's words.
+Below them, a read-only text area labelled Details, which VoiceOver reads line by line and a braille display pans, holds a report for finding the cause:
+
+- the book and its format;
+- the place, as the brief Where Am I? says it, then the chapter, and the character where speech stopped, counted both in the book's text and in the spoken text, whose offsets the speech log gives;
+- how many times that place was refused while the window has been open;
+- the time, as the logs write it;
+- up to 100 characters before where speech stopped and 400 from it, of the book's text and of the text exactly as it was handed to the speech engine, after the substitutions and the markup guard, with where the refused text begins and ends said in words on lines of their own;
+- the markup guard in force;
+- the voice, the speed, and the rate, pitch, and volume handed to the engine;
+- macOS's version;
+- TextMouth's build;
+- and the last 40 lines the book's speech logged, including the routine lines that the speech log's file keeps only while tracing is on, which hold offsets and lengths, never the book's words.
+
 Copy Details copies the whole report as plain text and says "Details copied"; Show Logs in Finder opens the folder the logs are written to, and says why, aloud and under the buttons, when Finder can't; and Close, Return, or Escape closes the sheet.
 With the book's window in front, VoiceOver moves to the sheet's heading and hears nothing else.
 When another window or app is in front, a panel such as Headings or Bookmarks, the Export dialog, a transcription dialog, or an error alert is open over the book, or the report is open already, VoiceOver says instead "Speech stopped: the speech engine refused this passage.
