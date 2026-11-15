@@ -436,7 +436,9 @@ enum AudioChapterTrack {
 /// should the writer refuse, it is decoded and written again instead. An
 /// MPEG-4 file gets the timeline's chapter markers, laid out ahead of the
 /// audio: interleaved with it, the writer refuses a title until the audio
-/// reaches it and stalls a long file (the research prototype).
+/// reaches it and stalls a long file (the research prototype). A WAVE,
+/// AIFF, or CAF file gets them as its marker list once its audio is
+/// written (FMT11).
 enum AudioEditRenderer {
     /// What a render wrote.
     struct Outcome: Equatable, Sendable {
@@ -483,6 +485,11 @@ enum AudioEditRenderer {
         let standard = AudioRenderSettings.make(format, for: sources.base)
         let settings = requested ?? standard
         let chapters = format.isMPEG4 ? chapterList(of: timeline, leadingTitle: metadata.title) : []
+        // A WAVE, AIFF, or CAF file keeps its chapters as markers, written
+        // once its audio is (FMT11). A render to settings of a caller's own (a
+        // filter's stretch, MP3's intermediate file) is no file anyone keeps,
+        // and gets none.
+        let markers = format.isPCM && requested == nil ? chapterList(of: timeline, leadingTitle: metadata.title) : []
         let tags = format.isMPEG4 ? await metadataItems(from: sources.base.url, overriding: metadata) : []
         // Every source is opened, and every stretch checked against it,
         // before the file a render replaces is removed, so a render that
@@ -500,6 +507,7 @@ enum AudioEditRenderer {
                 try await write(.stored(storedFormat), to: destination, settings: settings, chapters: chapters, tags: tags) { consume in
                     try await drain(output, of: reader, made: made, progress: progress, consume: consume)
                 }
+                writeMarkers(markers, to: destination)
                 return Outcome(frames: made.frames, copiedSamples: true)
             } catch is CancellationError {
                 throw CancellationError()
@@ -512,7 +520,29 @@ enum AudioEditRenderer {
         try await write(.decoded, to: destination, settings: settings, chapters: chapters, tags: tags) { consume in
             try await readStretches(pieces, timelineRate: timeline.sampleRate, settings: settings, progress: progress, consume: consume)
         }
+        writeMarkers(markers, to: destination)
         return Outcome(frames: timeline.length, copiedSamples: false)
+    }
+
+    /// The tag of the debug-log line saying a render's chapter markers could
+    /// not be written (FMT11).
+    static let markersNotWrittenLogTag = "AUDIO_MARKERS_NOT_WRITTEN"
+
+    /// Writes `markers`, a render's chapters, into the WAVE, AIFF, or CAF
+    /// file just written at `destination` as its marker list (FMT11,
+    /// `AudioMarkerList`): each at its start, named by its title, the same
+    /// list an MPEG-4 file's chapter track holds, the sound before the first
+    /// marker included, so the chapters read back exactly
+    /// (`FileChapterReaders`). Nothing for no markers. A failure leaves the
+    /// file whole without markers, and is recorded as one line,
+    /// `AUDIO_MARKERS_NOT_WRITTEN: <file>: <reason>`, which names no folder.
+    private static func writeMarkers(_ markers: [AudioRenderChapter], to destination: URL) {
+        guard !markers.isEmpty else { return }
+        do {
+            try AudioMarkerList.write(markers.map { (title: $0.title, start: $0.start) }, to: destination)
+        } catch {
+            DiagnosticLog.event(.storage, "\(markersNotWrittenLogTag): \(destination.lastPathComponent): \(error)")
+        }
     }
 
     /// Renders `timeline` as MP3 at `destination` through an installed

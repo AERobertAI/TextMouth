@@ -30,10 +30,14 @@ enum AudioEditorPolicyChoice: String, CaseIterable, Identifiable, Sendable {
 
 extension AudioRenderFormat {
     /// Whether a file in this format keeps chapter markers: an MPEG-4
-    /// file's chapter track, or an MP3's ID3 chapter frames (`MP3Tag`);
-    /// WAVE, AIFF, and CAF have no place for them.
+    /// file's chapter track, an MP3's ID3 chapter frames (`MP3Tag`), and a
+    /// WAVE, AIFF, or CAF file's markers (FMT11, `AudioMarkerList`), which
+    /// the renderer writes once the audio is. Every format the editor writes
+    /// keeps them; the warning that a file leaves them out
+    /// (`AudioEditorWording.chaptersLeftOut`) stays for a format that would
+    /// not.
     var holdsChapterMarkers: Bool {
-        isMPEG4 || self == .mp3
+        isMPEG4 || self == .mp3 || isPCM
     }
 }
 
