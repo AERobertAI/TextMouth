@@ -100,6 +100,21 @@ final class StaleRowGuardTests: CloudMaintenanceTestCase {
                        "a row whose state stands keeps its own opening, as before")
     }
 
+    /// The skipped headings go with the later place as one, their IDs, which
+    /// older builds read, and the headings with their places together, as the
+    /// record kept them.
+    func testTheSkippedHeadingsGoWithTheLaterPlaceAsAPair() throws {
+        var row = try rowReadHere()
+        var other = readOnTheOtherMac(row)
+        other.setSkippedHeadings([SkippedHeading(level: 2, label: "Notes", chapterIndex: 0, characterOffset: 30)])
+
+        XCTAssertTrue(row.takeStandingReadingState(of: other.makeBookInfo()))
+
+        XCTAssertEqual(row.skippedHeadingIDs, other.skippedHeadingIDs)
+        XCTAssertEqual(row.skippedHeadings, other.skippedHeadings)
+        XCTAssertNotNil(row.skippedHeadings?.first, "the row took no skipped heading")
+    }
+
     /// Another book's record, as an old shared package may hold, gives the
     /// row nothing.
     func testAnotherBooksRecordChangesNothing() throws {
