@@ -143,7 +143,7 @@ So "can" in "can't", which contracted EBAE reads as one rule from ⠉⠄⠞, is 
 <!-- id: ebae-fix-pass; keys: en_US.tbl, word signs, initials, still, before, micro sign, spacing fix; src: TextMouthBraille/main.c, TextMouthProductionTests/BrailleEbaeFixesTests.swift, TextMouthProductionTests/BrailleEmphasisReadingTests.swift -->
 
 - The EBAE fix pass (`fix_ebae_cells`): what contracted EBAE's table (liblouis's en-us-g2.ctb) misreads in a book set in it, as the user's Life of Pi BRF showed, is fixed in TextMouth's own pass over the cells before liblouis reads them.
-  So that it holds for any table that reads EBAE, the bundled or this Mac's, which TextMouth never edits.
+  That is so that the fix holds for any table that reads EBAE, the bundled or this Mac's, which TextMouth never edits.
   The pass only rewrites cells into cells that liblouis reads right, spaced apart or spelled in letters (which liblouis reads as it reads the contraction's letters in print), so the emphasis pass and its safety net read the very same cells.
   Measured on the Life of Pi's text through en_US.tbl, piped, the words that did not match the print fell from 2,266 (2.21 percent) to 703 (0.68 percent): "ofthe" from 613 to 0, "andthe" from 201 to 2, "ofa" from 192 to 1, "witha" from 148 to 3, "forthe" from 114 to 0, "withthe" from 89 to 0.
   - The gate: read_braille runs it, as its first step, only when uses_code(emphasis, CODE_EBAE) holds, the table writes EBAE's emphasis signs (found by translating a probe, never by the table's name), and table_emphasis.contracted does.

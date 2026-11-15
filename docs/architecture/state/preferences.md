@@ -19,7 +19,7 @@ The preferences store.
     It also owns the rules, kept in substitutions.json.
   - KeyboardShortcutManager: the record of the shortcuts the user edited, under keyboardShortcutEdits, from which every action's keys in force follow.
     No key is in force for two actions in one kind of window (ShortcutScope: every window but an audio editor's, Library windows, reader windows, the audio editor's windows, or the Record window; [Preferences: keyboard shortcuts](preferences-shortcuts.md)).
-    It also holds the double-press time, under shortcutDoublePressSeconds.
+    The manager also holds the double-press time, under shortcutDoublePressSeconds.
     The whole map of every action's keys that earlier releases saved, under customKeyboardBindings, is read once, at the first launch without a record, and never written again.
   - SleepTimerService: the last timer started, under sleepTimer.lastUsedDuration.
   - TextMouthPaths and the library model, through DataDirectoryPreferences: the data directory's location, a bookmark of its folder, and the identity of the library expected there, under textMouthDataDirectory, textMouthDataDirectoryBookmark, and textMouthLibraryIdentity.

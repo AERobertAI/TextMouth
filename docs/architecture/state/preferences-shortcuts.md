@@ -108,7 +108,7 @@ A change of either in the store reaches the manager through its PreferenceObserv
   It holds the nine keys matched by their codes (Space, Tab, Return, Delete, Escape, and the arrows).
   It holds every AppKit function key, held as its private-use character but named in words (Forward Delete, Home, End, Page Up, Page Down, the F keys, and the rest), the keypad's Enter, and the punctuation marks, named in words and shown as themselves.
   Any other key is its character, a letter in capitals, and a double press ends in " twice".
-  Its words include the announcement of a key recorded, with every action that lost a key to it (actions(thatLostKeysSince:besides:)).
+  ShortcutsSettingsWording's words also include the announcement of a key recorded, with every action that lost a key to it (actions(thatLostKeysSince:besides:)).
   They include that of a reset, with the keys the action has then and, when the reset changed it, where it works (resetAnnouncement(for:keys:worksIn:)).
   ShortcutBindingRow adds a Works in Picker on each row whose action has more than one scope available, bound to the manager's scope(of:) and setScope(_:for:) and announced by scopeChanged(_:to:takenFrom:).
   A key from the private-use area that no name says can no longer be recorded or read (KeyBinding.isUnnamedPrivateUseCharacter(_:)).

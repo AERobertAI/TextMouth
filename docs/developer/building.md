@@ -32,7 +32,7 @@ Run these from the repository root:
   The Release build is compiled for size.
   The app's own code takes `-Osize` from project.yml's Release settings.
   The three Swift packages (ZIPFoundation, swift-markdown, and the swift-cmark it builds on) take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages.
-  So does the vendored SwiftSoup library, whose template in project.yml leaves it to the Makefile.
+  So does the vendored SwiftSoup library, whose template in project.yml also sets it in Release (SWIFT_OPTIMIZATION_LEVEL: -Osize).
   The build asks for whole-module mode only for SwiftSoup; for the rest it would make the app 1.15 MB larger.
   The executable is linked without an export trie (`LD_EXPORT_SYMBOLS: NO`, Release only), because nothing links against the app.
   A build made from Xcode's own window gives the packages no `-Osize`, as it drops no coverage either, since only the Makefile's command line does either.
