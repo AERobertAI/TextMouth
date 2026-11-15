@@ -567,6 +567,10 @@ targets:
       - TextMouthProductionTests/DOCXStructureTests.swift
       - TextMouthProductionTests/DOCXTestPackages.swift
       - TextMouthProductionTests/DamagedFileTestSupport.swift
+      - TextMouthProductionTests/DataDirectoryAvailabilityTests.swift
+      - TextMouthProductionTests/DataDirectoryCopyTests.swift
+      - TextMouthProductionTests/DataDirectoryCreationTests.swift
+      - TextMouthProductionTests/DataDirectoryServicesTests.swift
       - TextMouthProductionTests/DocumentByteLimitTests.swift
       - TextMouthProductionTests/EPUBLinkAddressTests.swift
       - TextMouthProductionTests/EPUBStructureFailureTests.swift
@@ -637,12 +641,16 @@ targets:
       - TextMouthProductionTests/ReadingTextCacheTests.swift
       - TextMouthProductionTests/RemovalWordingTests.swift
       - TextMouthProductionTests/RunLoopWaiting.swift
+      - TextMouthProductionTests/SharedPackageMigrationTests.swift
       - TextMouthProductionTests/SourceScanSymlinkTests.swift
       - TextMouthProductionTests/SourceScanTestSupport.swift
       - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
       - TextMouthProductionTests/SpeechPreparationSubstitutionTests.swift
       - TextMouthProductionTests/SpeechRenderCoordinatorTests.swift
+      - TextMouthProductionTests/StorageDestinationAssessmentTests.swift
       - TextMouthProductionTests/StorageGenerationTestSupport.swift
+      - TextMouthProductionTests/StorageGenerationTests.swift
+      - TextMouthProductionTests/StorageGenerationWorkTests.swift
       - TextMouthProductionTests/SubstitutionCompositionTests.swift
       - TextMouthProductionTests/TMBNameTests.swift
       - TextMouthProductionTests/TextAnchorFineWordsTests.swift
