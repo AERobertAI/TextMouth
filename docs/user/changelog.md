@@ -4,6 +4,15 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.11 (November 15, 2026)
+
+### Smaller and faster
+- The app is about 0.4 MB smaller, and it reads HTML about 40% faster, which shortens adding an EPUB, HTML, or Kindle book: TextMouth now builds its own copy of SwiftSoup, the library that reads HTML, so that the parts it never uses are left out.
+- The licence of SwiftSoup is now in the app with the others.
+
+### Not changed
+- How any book reads: the new copy reads every test document exactly as the old library did.
+
 ## 0.4.10 (November 14, 2026)
 
 ### Braille books whose code TextMouth guesses
