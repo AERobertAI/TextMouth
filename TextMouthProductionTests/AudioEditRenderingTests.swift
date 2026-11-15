@@ -7,12 +7,15 @@ import XCTest
 /// came from (the research prototype's method, `AudioTestFixtures.writeIdentityRamp`):
 /// a cut, a move, inserted silence, and a punch-in land on exactly the
 /// samples expected, in the preview's composition and in CAF and WAVE files;
-/// every cut of MP3 and AAC books renders to the samples the book decodes
-/// to on its own; chapter markers written into M4A and M4B files read back
-/// through the app's own parser, an m4b's own chapters following a cut, a
-/// ten-minute file's included; a chapter-only edit keeps an m4b's AAC
-/// samples as they were; and cuts of linear PCM are copied as stored. No
-/// sound is played.
+/// every cut of MP3, AAC, AIFF, FLAC, and Apple Lossless books renders to
+/// the samples the book decodes to on its own; takes recorded at another
+/// rate and books above 48 kHz keep their length to the frame; a render of
+/// many stretches keeps its memory flat, and one missing a source leaves
+/// the file it would replace; chapter markers written into M4A and M4B
+/// files read back through the app's own parser, an m4b's own chapters
+/// following a cut, a ten-minute file's included; a chapter-only edit keeps
+/// an m4b's AAC samples as they were; and cuts of linear PCM are copied as
+/// stored. No sound is played.
 final class AudioEditRenderingTests: XCTestCase {
 
     /// Frames a second of the audio.
@@ -146,46 +149,130 @@ final class AudioEditRenderingTests: XCTestCase {
         XCTAssertTrue(problems.isEmpty, problems.joined(separator: "\n"))
     }
 
+    /// Every cut of a book stored losslessly, as 16-bit AIFF, FLAC, or Apple
+    /// Lossless at 44.1 kHz, renders, decoded, to the sample too.
+    func testEveryCutOfALosslessBookRendersToTheSamplesTheBookDecodesTo() async throws {
+        let formats: [(name: String, settings: [String: Any])] = [
+            ("Canal Survey.aiff", [
+                AVFormatIDKey: kAudioFormatLinearPCM, AVLinearPCMBitDepthKey: 16, AVLinearPCMIsFloatKey: false,
+                AVLinearPCMIsBigEndianKey: true, AVLinearPCMIsNonInterleaved: false,
+            ]),
+            ("Canal Survey.flac", [AVFormatIDKey: kAudioFormatFLAC]),
+            ("Canal Survey.m4a", [AVFormatIDKey: kAudioFormatAppleLossless, AVEncoderBitDepthHintKey: 16]),
+        ]
+        var problems: [String] = []
+        for format in formats {
+            let book = try makeFolder().appendingPathComponent(format.name)
+            try AudioTestFixtures.writeTone(to: book, frames: 132_300, sampleRate: 44_100, settings: format.settings)
+            problems += try await cutRenderProblems(of: book).map { "\(format.name): \($0)" }
+        }
+        XCTAssertTrue(problems.isEmpty, problems.joined(separator: "\n"))
+    }
+
     // MARK: - Another Rate
 
     /// A punch-in whose take was recorded at another rate than the book's,
-    /// as a Mac's microphone records at 48 kHz, keeps the book's length to
-    /// the frame and the sound after it in place: the take, resampled to the
-    /// book's 44.1 kHz and used to its last frame, decodes 16 frames short,
-    /// which silence makes up (`AudioEditRenderer.fillableShortfall`).
-    /// Left short, each such take moved everything after it earlier, and
-    /// some 56 of them made a save refuse its file as short.
+    /// as a Mac's microphone records at 48 kHz and AirPods at 24 kHz, keeps
+    /// the book's length to the frame and the sound after it in place: the
+    /// take, resampled to the book's 44.1 kHz and used to its last frame,
+    /// decodes 16 or 31 frames short, which silence makes up
+    /// (`AudioEditRenderer.fillableShortfall`). Left short, each such take
+    /// moved everything after it earlier, and some 56 of them made a save
+    /// refuse its file as short.
     func testATakeAtAnotherRateKeepsTheBooksLengthAndTheSoundAfterIt() async throws {
+        for takeRate in [48_000.0, 24_000.0] {
+            let folder = try makeFolder()
+            let book = folder.appendingPathComponent("Canal Survey.caf")
+            try AudioTestFixtures.writeIdentityRamp(to: book, frames: 132_300, sampleRate: 44_100)
+            try AudioTestFixtures.writeTone(
+                to: folder.appendingPathComponent("audioEdits/takes/take.m4a"),
+                frames: Int(takeRate),
+                sampleRate: takeRate,
+                settings: [AVFormatIDKey: kAudioFormatAppleLossless, AVEncoderBitDepthHintKey: 16]
+            )
+            let base = try await AudioEditBase.load(book, name: "Canal Survey.caf")
+            var timeline = base.timeline
+            try timeline.applyRearranging(.replace(
+                AudioTimeRange(start: 1, end: 2),
+                with: AudioEditTake(file: "audioEdits/takes/take.m4a", range: AudioTimeRange(start: 0, end: 1))
+            ))
+            let output = folder.appendingPathComponent("punched in.caf")
+
+            _ = try await AudioEditRenderer.render(
+                timeline,
+                sources: AudioEditComposition.Sources(base: base, package: folder, scratch: folder),
+                to: output,
+                format: .pcmCAF,
+                metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
+            )
+
+            let samples = try AudioTestFixtures.floatSamples(of: output)
+            let take = "a take at \(Int(takeRate)) Hz"
+            XCTAssertEqual(samples.count, 132_300, "\(take): the book's length")
+            XCTAssertEqual(samples[checked: 44_099].map(AudioTestFixtures.rampSample), .frame(.book, 44_099), "\(take): the sound before it")
+            XCTAssertEqual(samples[checked: 88_200].map(AudioTestFixtures.rampSample), .frame(.book, 88_200), "\(take): the sound after it")
+            XCTAssertEqual(samples[checked: 132_299].map(AudioTestFixtures.rampSample), .frame(.book, 132_299), "\(take): the book's last frame")
+        }
+    }
+
+    /// A book above 48 kHz, cut and rendered at 48 kHz, as an AAC or MP3
+    /// export of it is, renders to the sample: each stretch is what the
+    /// whole book resampled holds at the same frames, and the book's end,
+    /// which the resampler keeps 8 frames of, is made up with silence, so
+    /// the render keeps the edits' length, as the MP3 it is exported to
+    /// does. Read over just its range, each stretch came up 8 frames short.
+    func testABookAbove48kHzResamplesToTheSampleAndKeepsItsLength() async throws {
         let folder = try makeFolder()
         let book = folder.appendingPathComponent("Canal Survey.caf")
-        try AudioTestFixtures.writeIdentityRamp(to: book, frames: 132_300, sampleRate: 44_100)
         try AudioTestFixtures.writeTone(
-            to: folder.appendingPathComponent("audioEdits/takes/take.m4a"),
-            frames: 48_000,
-            sampleRate: 48_000,
-            settings: [AVFormatIDKey: kAudioFormatAppleLossless, AVEncoderBitDepthHintKey: 16]
+            to: book,
+            frames: 288_000,
+            sampleRate: 96_000,
+            settings: [
+                AVFormatIDKey: kAudioFormatLinearPCM, AVLinearPCMBitDepthKey: 32, AVLinearPCMIsFloatKey: true,
+                AVLinearPCMIsBigEndianKey: false, AVLinearPCMIsNonInterleaved: false,
+            ]
         )
         let base = try await AudioEditBase.load(book, name: "Canal Survey.caf")
+        let sources = AudioEditComposition.Sources(base: base, package: folder, scratch: folder)
         var timeline = base.timeline
-        try timeline.applyRearranging(.replace(
-            AudioTimeRange(start: 1, end: 2),
-            with: AudioEditTake(file: "audioEdits/takes/take.m4a", range: AudioTimeRange(start: 0, end: 1))
-        ))
-        let output = folder.appendingPathComponent("punched in.caf")
+        try timeline.applyRearranging(.cut(AudioTimeRange(start: 1, end: 2)))
+        let output = folder.appendingPathComponent("resampled.caf")
 
         _ = try await AudioEditRenderer.render(
             timeline,
-            sources: AudioEditComposition.Sources(base: base, package: folder, scratch: folder),
+            sources: sources,
             to: output,
             format: .pcmCAF,
+            settings: AudioRenderSettings(format: .pcmCAF, sampleRate: 48_000, channels: 1, bitRate: nil, bitsPerSample: 32, isFloat: true),
             metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
         )
 
-        let samples = try AudioTestFixtures.floatSamples(of: output)
-        XCTAssertEqual(samples.count, 132_300, "the book's length")
-        XCTAssertEqual(samples[checked: 44_099].map(AudioTestFixtures.rampSample), .frame(.book, 44_099), "the sound before the take")
-        XCTAssertEqual(samples[checked: 88_200].map(AudioTestFixtures.rampSample), .frame(.book, 88_200), "the sound after the take")
-        XCTAssertEqual(samples[checked: 132_299].map(AudioTestFixtures.rampSample), .frame(.book, 132_299), "the book's last frame")
+        let rendered = try AudioTestFixtures.floatSamples(of: output)
+        XCTAssertEqual(rendered.count, 96_000, "the cut book's length at 48 kHz")
+        // The whole book resampled, but for the frames its resampler keeps
+        // back at the end, which the render makes up with silence.
+        let whole = try await Self.readerSamples(of: AVURLAsset(url: book), at: 48_000)
+        let expected = Array(whole.prefix(48_000) + whole.dropFirst(96_000))
+        XCTAssertGreaterThan(expected.count, 96_000 - 960, "the whole book resampled lost more than 20 ms")
+        let wrong = zip(rendered, expected).enumerated().filter { abs($0.element.0 - $0.element.1) > 1e-4 }
+        XCTAssertEqual(
+            wrong.count,
+            0,
+            "the first wrong samples, the cut at frame 48,000: "
+                + "\(wrong.prefix(3).map { "at \($0.offset): \($0.element.0) for \($0.element.1)" })"
+        )
+        XCTAssertEqual(rendered.dropFirst(expected.count).filter { $0 != 0 }.count, 0, "the render's end is not silence")
+
+        let exported = folder.appendingPathComponent("exported.mp3")
+        _ = try await AudioEditRenderer.render(
+            timeline,
+            sources: sources,
+            to: exported,
+            format: .mp3,
+            metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
+        )
+        XCTAssertEqual(try AVAudioFile(forReading: exported).length, 96_000, "the MP3 export's length at 48 kHz")
     }
 
     // MARK: - Memory
@@ -549,11 +636,17 @@ final class AudioEditRenderingTests: XCTestCase {
     /// Every sample of `made`'s composition, read as AVAssetReader reads it,
     /// as mono 32-bit floats at the timeline's rate.
     private static func compositionSamples(_ made: AudioEditComposition) async throws -> [Float] {
-        let tracks = try await made.composition.loadTracks(withMediaType: .audio)
-        let reader = try AVAssetReader(asset: made.composition)
+        try await readerSamples(of: made.composition, at: made.sampleRate)
+    }
+
+    /// Every sample of `asset`'s audio, read whole as AVAssetReader reads
+    /// it, as mono 32-bit floats at `rate`.
+    private static func readerSamples(of asset: AVAsset, at rate: Double) async throws -> [Float] {
+        let tracks = try await asset.loadTracks(withMediaType: .audio)
+        let reader = try AVAssetReader(asset: asset)
         let output = AVAssetReaderAudioMixOutput(audioTracks: tracks, audioSettings: [
             AVFormatIDKey: kAudioFormatLinearPCM,
-            AVSampleRateKey: made.sampleRate,
+            AVSampleRateKey: rate,
             AVNumberOfChannelsKey: 1,
             AVLinearPCMBitDepthKey: 32,
             AVLinearPCMIsFloatKey: true,
