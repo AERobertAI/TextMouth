@@ -1,6 +1,7 @@
 # Book Information
-
 <!-- id: book-information; keys: ; src: -->
+
+Part of [TextMouth's documentation](../../README.md).
 
 ## Details you edited by hand
 <!-- id: details-you-edited-hand; keys: ; src: -->

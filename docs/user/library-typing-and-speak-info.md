@@ -1,6 +1,7 @@
 # Letter keys and Speak Info
-
 <!-- id: library-typing-and-speak-info; keys: ; src: -->
+
+Part of [TextMouth's documentation](../../README.md).
 
 ## Letter keys in a Library window
 <!-- id: letter-keys-library-window; keys: ; src: -->
