@@ -222,9 +222,13 @@ final class ContentAnalysisMergeTests: XCTestCase {
     }
 
     /// A book rebuilt from its record has every field it was saved with,
-    /// placed where the caller found its package.
+    /// placed where the caller found its package. The keys a later
+    /// TextMouth added to its row are the one thing a record cannot give
+    /// back (V04): a record keeps its own, under its own names, so the
+    /// rebuilt row has none (`Book.init(record:filePath:folderPath:tmbDirectoryName:)`).
     func testBookRebuiltFromItsRecordHasEveryField() {
         let book = Self.bookWithEveryFieldSet(seed: 5)
+        XCTAssertFalse(book.unknownKeys.isEmpty, "the fixture must hold a row's unknown key")
 
         let rebuilt = Book(
             record: book.makeBookInfo(),
@@ -233,7 +237,10 @@ final class ContentAnalysisMergeTests: XCTestCase {
             tmbDirectoryName: book.tmbDirectoryName
         )
 
-        XCTAssertEqual(rebuilt, book)
+        XCTAssertTrue(rebuilt.unknownKeys.isEmpty)
+        var expected = book
+        expected.unknownKeys = UnknownKeys()
+        XCTAssertEqual(rebuilt, expected)
     }
 
     // MARK: - Dropping Stale Results
@@ -796,7 +803,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
             level: 1 + (seed + 2) % 6, label: "Waiting \(seed)", chapterIndex: seed + 50, characterOffset: seed * 11,
             anchor: anchor(seed: seed, at: "waiting heading")
         )
-        return Book(
+        var book = Book(
             id: UUID(),
             title: "Title \(seed)",
             author: "Author \(seed)",
@@ -860,6 +867,11 @@ final class ContentAnalysisMergeTests: XCTestCase {
             // of an odd and an even seed still differ in it.
             brailleTableOrigin: seed.isMultiple(of: 2) ? nil : .guessed
         )
+        // A key a later TextMouth added to the row (V04), which no
+        // initializer sets: a row holds one only when it was read from a
+        // file that had it.
+        book.unknownKeys = UnknownKeys(["addedLater": .string("later-\(seed)")])
+        return book
     }
 
     /// A saved place's anchor (T06) whose every value derives from `seed`

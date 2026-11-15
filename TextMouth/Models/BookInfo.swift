@@ -20,7 +20,13 @@ import Foundation
 /// record written since finds no index in it and builds the book's index
 /// once, as for any book without one, keeping it inside bookInfo.json, from
 /// where the next save here moves it out again.
-struct BookInfo: Codable {
+///
+/// A record keeps the keys it does not know (V04, `UnknownKeys`): those of
+/// bookInfo.json's top level here (`unknownKeys`), and those of its
+/// metadata and its state in each of them. A save of a book's state writes
+/// a new record from the book's row, and takes all three from the record it
+/// replaces (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`).
+struct BookInfo: Codable, KeepsUnknownKeys {
     var metadata: BookMetadata
     var state: BookState
     var bookmarks: [Bookmark]
@@ -29,15 +35,23 @@ struct BookInfo: Codable {
     /// On disk it lives in contentIndex.json; bookInfo.json holds it only as
     /// an older version of TextMouth wrote it (see the type's notes).
     var contentIndex: BookContentIndex?
+    /// The top-level keys of bookInfo.json that this TextMouth does not
+    /// know (V04), written back as they were; none in a record made here.
+    var unknownKeys = UnknownKeys()
 
     /// The keys of bookInfo.json. The content index is only ever read under
     /// its key, from a record an older version wrote; it is never written.
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case metadata
         case state
         case bookmarks
         case contentIndex
     }
+
+    /// The names of bookInfo.json's keys that this version knows. The
+    /// content index's is one of them, so an index an older version kept
+    /// inside the record is never kept a second time as an unknown key.
+    private static let knownKeyNames = CodingKeys.names
 
     init(
         metadata: BookMetadata = BookMetadata(),
@@ -54,31 +68,51 @@ struct BookInfo: Codable {
     /// Decodes a package's bookInfo.json. `BookState` repairs what it can
     /// check on its own; the per-book speed also depends on the format, so
     /// its range is applied here, once the metadata is known.
+    ///
+    /// The metadata and the state are read with the keys each does not
+    /// know (`WithUnknownKeys`, V04), and the record's own are kept too.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        metadata = try container.decode(BookMetadata.self, forKey: .metadata)
-        state = try container.decode(BookState.self, forKey: .state)
+        metadata = try container.decode(WithUnknownKeys<BookMetadata>.self, forKey: .metadata).value
+        state = try container.decode(WithUnknownKeys<BookState>.self, forKey: .state).value
         bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
         contentIndex = try container.decodeIfPresent(BookContentIndex.self, forKey: .contentIndex)
         state.applyLocalSpeedRange(
             isAudio: metadata.format.isAudio,
             codingPath: container.codingPath + [CodingKeys.state]
         )
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
     }
 
     /// Encodes the record as bookInfo.json holds it: its metadata, state,
-    /// and bookmarks. The content index is never encoded here; it is written
-    /// to contentIndex.json (`save(to:)` and `saveRecord(to:)`).
+    /// and bookmarks, each after the keys this version does not know (V04).
+    /// The content index is never encoded here; it is written to
+    /// contentIndex.json (`save(to:)` and `saveRecord(to:)`).
     func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(metadata, forKey: .metadata)
-        try container.encode(state, forKey: .state)
+        try container.encode(WithUnknownKeys(metadata), forKey: .metadata)
+        try container.encode(WithUnknownKeys(state), forKey: .state)
         try container.encode(bookmarks, forKey: .bookmarks)
+    }
+
+    /// Takes the keys `stored`, the record this one replaces, holds that
+    /// this TextMouth does not know (V04): the record's own, its
+    /// metadata's, and its state's. This record is made from the book's row
+    /// (`Book.makeBookInfo()`), which knows nothing of them, so without
+    /// this every save of a book would drop what a later TextMouth keeps in
+    /// its record. The places inside (the reading position, the bookmarks,
+    /// the skipped headings) and the other nested records carry their own
+    /// unknown keys with them, from the row.
+    mutating func keepUnknownKeys(of stored: BookInfo) {
+        unknownKeys = stored.unknownKeys
+        metadata.unknownKeys = stored.metadata.unknownKeys
+        state.unknownKeys = stored.state.unknownKeys
     }
 }
 
 /// Built-in and user-editable metadata for a book
-struct BookMetadata: Codable {
+struct BookMetadata: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     var title: String
     var author: String
     var format: BookFormat
@@ -184,6 +218,18 @@ struct BookMetadata: Codable {
     /// TextMouth drops it when it next writes the record.
     @LenientOptional var movedToLibrary: Date? = nil
 
+    /// The keys of the stored metadata that this TextMouth does not know
+    /// (V04), written back as they were; none in metadata made here. The
+    /// synthesized coding passes them over: `BookInfo` reads and writes
+    /// them beside the fields (`WithUnknownKeys`).
+    var unknownKeys = UnknownKeys()
+
+    /// Whether `name` is a key of the stored metadata that this version
+    /// knows (`KeepsUnknownKeysBesideSynthesizedCoding`).
+    static func isCodingKey(_ name: String) -> Bool {
+        CodingKeys(stringValue: name) != nil
+    }
+
     init(
         title: String = "Untitled",
         author: String = Book.unknownAuthor,
@@ -232,7 +278,7 @@ struct BookMetadata: Codable {
 }
 
 /// Reading state and computed book data
-struct BookState: Codable {
+struct BookState: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     var readingPosition: ReadingPosition?
     var totalWordCount: Int?
     var totalCharacterCount: Int?
@@ -307,6 +353,19 @@ struct BookState: Codable {
     /// writes the later carries the higher revision, across restarts too.
     /// Nil in a record written before revisions were kept, which counts as 0.
     var revision: Int?
+
+    /// The keys of the stored state that this TextMouth does not know
+    /// (V04), written back as they were; none in a state made here. The
+    /// synthesized encoder passes them over, and the decoder below does not
+    /// read them: `BookInfo` reads and writes them beside the fields
+    /// (`WithUnknownKeys`).
+    var unknownKeys = UnknownKeys()
+
+    /// Whether `name` is a key of the stored state that this version knows
+    /// (`KeepsUnknownKeysBesideSynthesizedCoding`).
+    static func isCodingKey(_ name: String) -> Bool {
+        CodingKeys(stringValue: name) != nil
+    }
 
     init(
         readingPosition: ReadingPosition? = nil,

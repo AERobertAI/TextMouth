@@ -225,12 +225,44 @@ enum BookFormat: String, Codable, CaseIterable {
 /// (`Book.applyContentAnalysis(_:cacheFormatVersion:)`). The record is kept
 /// with the book's analysis fields (`Book.ContentAnalysisFields`), in its
 /// library row and its package record, so a rebuilt library keeps it.
-struct EditedText: Codable, Hashable, Sendable {
+struct EditedText: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The digest of the content.md bytes the edit left, as
     /// `BookTextEditSessions.check` computes it (`FingerprintHasher.digestOfData`).
     var cacheDigest: String
     /// When TextMouth took the edit as the book's text.
     var takenAt: Date
+    /// The keys of the stored record that this TextMouth does not know
+    /// (V04), written back as they were; none in a record made here.
+    var unknownKeys = UnknownKeys()
+}
+
+// The coding is in an extension, so the struct keeps its memberwise
+// initializer.
+extension EditedText {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case cacheDigest, takenAt
+    }
+
+    /// The names of the record's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// Reads a record as the synthesized decoder read it, both fields
+    /// required, and keeps every other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        cacheDigest = try container.decode(String.self, forKey: .cacheDigest)
+        takenAt = try container.decode(Date.self, forKey: .takenAt)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the record as the synthesized encoder wrote it, after the
+    /// keys this version does not know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(cacheDigest, forKey: .cacheDigest)
+        try container.encode(takenAt, forKey: .takenAt)
+    }
 }
 
 /// One book of the library: its row, and what the app keeps of it.
@@ -247,7 +279,7 @@ struct EditedText: Codable, Hashable, Sendable {
 /// `Equatable`, and `Hashable` read the fields, so the stored JSON is
 /// exactly what a plain struct of the same fields wrote
 /// (`OnDiskContractTests`).
-struct Book: Identifiable, Codable, Hashable {
+struct Book: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     /// Every stored field of a book, held once and shared by every copy of
     /// the struct until one is written.
     ///
@@ -312,6 +344,7 @@ struct Book: Identifiable, Codable, Hashable {
         var brailleFileCode: String? = nil
         var textEncoding: String? = nil
         var textEncodingSource: TextEncodingSource? = nil
+        var unknownKeys = UnknownKeys()
         init(id: UUID, format: BookFormat, dateAdded: Date) {
             self.id = id
             self.format = format
@@ -368,6 +401,7 @@ struct Book: Identifiable, Codable, Hashable {
             c.brailleFileCode = brailleFileCode
             c.textEncoding = textEncoding
             c.textEncodingSource = textEncodingSource
+            c.unknownKeys = unknownKeys
             return c
         }
     }
@@ -807,10 +841,34 @@ struct Book: Identifiable, Codable, Hashable {
         set { makeUnique(); storage.textEncodingSource = newValue }
         _modify { makeUnique(); yield &storage.textEncodingSource }
     }
-    private enum CodingKeys: String, CodingKey {
+    /// The keys of this book's library row that this TextMouth does not know
+    /// (V04, `UnknownKeys`): what a later TextMouth added to the row, read
+    /// with it and written back with it exactly as they were. Empty for
+    /// every row this version or an earlier one wrote, and for every book
+    /// made here. They are the row's own: every change to a field leaves
+    /// them alone, a copy keeps them, and they are compared by `==`. The
+    /// package's record keeps its own (`BookInfo.unknownKeys`,
+    /// `BookMetadata.unknownKeys`, `BookState.unknownKeys`), under names of
+    /// its own, so neither is ever written into the other.
+    var unknownKeys: UnknownKeys {
+        get { storage.unknownKeys }
+        set { makeUnique(); storage.unknownKeys = newValue }
+        _modify { makeUnique(); yield &storage.unknownKeys }
+    }
+    /// The keys of a library row. `CaseIterable`, so that the names this
+    /// version knows can be listed (`knownKeyNames`) and tests can hold the
+    /// hand-written encoder and decoder to them.
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case id, title, author, format, filePath, md5Hash, folderPath, dateAdded, lastOpened, readingPosition, bookmarks, totalWordCount, totalCharacterCount, tmbDirectoryName, sourceFilePath, lastPlaybackStarted, lastPlaybackStopped, localVoiceID, localWPM, localPitch, skippedHeadingIDs, skippedHeadings, waitingSkippedHeadings, localEndOfBookBehavior, localSkipForwardUnit, localSkipBackwardUnit, manualSortOrder, audioDuration, audioAlbum, audioGenre, audioYear, epubPublisher, epubPublicationDate, epubISBN, epubLanguage, epubIdentifier, epubVersion, cacheFormatVersion, contentIndexVersion, textCacheFingerprint, editedText, pageReaderVersion, metadataReaderVersion, handEdits, feedLink, brailleTable, brailleTableVersion, brailleTableOrigin, brailleFileCode, textEncoding, textEncodingSource
     }
+    /// The names of a row's keys that this version knows: every other member
+    /// of a row is kept as it is (`unknownKeys`). Not private, so a test can
+    /// hold the encoder and the box's fields to them.
+    static let knownKeyNames = CodingKeys.names
     func encode(to encoder: Encoder) throws {
+        // The row's unknown keys first, so a field always wins (V04);
+        // nothing at all for a row without any.
+        try storage.unknownKeys.write(to: encoder)
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(storage.id, forKey: .id)
         try container.encode(storage.title, forKey: .title)
@@ -917,6 +975,7 @@ struct Book: Identifiable, Codable, Hashable {
             && lhs.storage.brailleFileCode == rhs.storage.brailleFileCode
             && lhs.storage.textEncoding == rhs.storage.textEncoding
             && lhs.storage.textEncodingSource == rhs.storage.textEncodingSource
+            && lhs.storage.unknownKeys == rhs.storage.unknownKeys
     }
     func hash(into hasher: inout Hasher) {
         hasher.combine(storage.id)
@@ -970,6 +1029,7 @@ struct Book: Identifiable, Codable, Hashable {
         hasher.combine(storage.brailleFileCode)
         hasher.combine(storage.textEncoding)
         hasher.combine(storage.textEncodingSource)
+        // The unknown keys add nothing to a hash (`UnknownKeys.hash(into:)`).
     }
     /// A book is unopened while it has never been opened (`lastOpened` is
     /// nil). It is what the Unopened category lists, and what a row's "New"
@@ -1204,6 +1264,9 @@ struct Book: Identifiable, Codable, Hashable {
         // TextMouth's value), counts as nobody: the table then reads as the
         // listener's own, with no "guessed" said of it.
         storage.brailleTableOrigin = fields.optionalValue(.brailleTableOrigin) { $0 }
+        // Every member that is none of the keys above is kept as it is, to
+        // be written back with the row (V04).
+        storage.unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -1898,6 +1961,12 @@ struct Book: Identifiable, Codable, Hashable {
             recorded.contentAnalysisFields = stored.info.state.contentAnalysisFields
         }
         var info = recorded.makeBookInfo()
+        // The keys of the stored record that this TextMouth does not know,
+        // at its top level, in its metadata, and in its state (V04): the
+        // new record is made from the row, which knows nothing of them.
+        if let stored {
+            info.keepUnknownKeys(of: stored.info)
+        }
         info.contentIndex = index
         if let contentIndex {
             info.state.transcript = contentIndex.transcript?.transcript
@@ -2015,6 +2084,17 @@ struct Book: Identifiable, Codable, Hashable {
     /// where its package is now; a caller that found the package in the
     /// Library folder clears the link, since a package there is a book of
     /// the library's own (`placedInLibraryFolder()`, FR11).
+    ///
+    /// The row made here holds no unknown keys of its own (V04), on
+    /// purpose: a record keeps the keys it does not know under its own
+    /// sections (`BookInfo.unknownKeys`, and its metadata's and state's),
+    /// whose names are not a row's (a record's "publisher" is a row's
+    /// "epubPublisher"), so nothing says which of them a later TextMouth
+    /// would write in a row. The record keeps them; a row rebuilt from it,
+    /// as Rebuild Library Index rebuilds every row, starts without. The
+    /// places and the other records nested in it (the reading position, the
+    /// bookmarks, the fingerprints) keep theirs, since they are the same
+    /// objects in a row and in a record.
     init(record: BookInfo, filePath: String, folderPath: String, tmbDirectoryName: String) {
         let metadata = record.metadata
         let state = record.state
@@ -2279,7 +2359,7 @@ extension Book {
     /// when the record has been kept. Every editor's save adds the fields
     /// it changed (`Book.markEditedByHand(_:)`); nothing ever removes one,
     /// so a field edited back to an earlier value stays the user's own.
-    struct HandEdits: Codable, Hashable, Sendable {
+    struct HandEdits: Codable, Hashable, Sendable, KeepsUnknownKeys {
         /// The fields edited by hand, in `MetadataField.allCases` order and
         /// each once (`MetadataField.ordered(_:)`), so one record is always
         /// written as the same bytes.
@@ -2291,6 +2371,16 @@ extension Book {
         /// may hold older edits nothing recorded, so the launch metadata
         /// refresh treats them as it treats a row without a record.
         var sinceImport: Bool
+        /// The keys of the stored record that this TextMouth does not know
+        /// (V04), written back as they were; none in a record made here.
+        var unknownKeys = UnknownKeys()
+
+        private enum CodingKeys: String, CodingKey, CaseIterable {
+            case fields, sinceImport
+        }
+
+        /// The names of the record's keys that this version knows.
+        private static let knownKeyNames = CodingKeys.names
 
         /// The record of `fields`, kept since the import when `sinceImport`.
         init(fields: Set<MetadataField> = [], sinceImport: Bool) {
@@ -2305,12 +2395,23 @@ extension Book {
         /// Decodes a record, keeping the fields this version knows: a name
         /// a newer version of TextMouth wrote for a field this one cannot
         /// edit is left out rather than failing the row, and a record
-        /// without `sinceImport` counts as begun by an edit.
+        /// without `sinceImport` counts as begun by an edit. Every other key
+        /// of the record is kept as it is (V04).
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             let names = try container.decodeIfPresent([String].self, forKey: .fields) ?? []
             fields = MetadataField.ordered(Set(names.compactMap(MetadataField.init(rawValue:))))
             sinceImport = try container.decodeIfPresent(Bool.self, forKey: .sinceImport) ?? false
+            unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+        }
+
+        /// Writes the record as the synthesized encoder wrote it, after the
+        /// keys this version does not know (V04).
+        func encode(to encoder: Encoder) throws {
+            try unknownKeys.write(to: encoder)
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(fields, forKey: .fields)
+            try container.encode(sinceImport, forKey: .sinceImport)
         }
 
         /// Whether `field` was edited by hand.
@@ -2349,7 +2450,7 @@ extension Book {
     }
 }
 
-struct ReadingPosition: Codable, Hashable {
+struct ReadingPosition: Codable, Hashable, KeepsUnknownKeys {
     var chapterIndex: Int
     var headingIndex: Int?
     var characterOffset: Int
@@ -2360,6 +2461,18 @@ struct ReadingPosition: Codable, Hashable {
     /// found again when the book's text is read anew (`TextAnchorFinder`);
     /// nil for a place saved before anchors, or by a build without them.
     var anchor: TextAnchor?
+    /// The keys of the stored position that this TextMouth does not know
+    /// (V04), written back as they were. A position made here, as for a new
+    /// place, has none: what a later TextMouth noted about the place it
+    /// replaces would describe the wrong place.
+    var unknownKeys = UnknownKeys()
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case chapterIndex, headingIndex, characterOffset, globalCharacterOffset, lastUpdated, anchor
+    }
+
+    /// The names of a position's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
 
     init(chapterIndex: Int = 0, headingIndex: Int? = nil, characterOffset: Int = 0, globalCharacterOffset: Int? = nil, anchor: TextAnchor? = nil) {
         self.chapterIndex = chapterIndex
@@ -2374,7 +2487,8 @@ struct ReadingPosition: Codable, Hashable {
     /// can have (negative, or too large for an `Int`) instead of failing the
     /// book and, with it, the whole library. The reader still clamps the
     /// result against the loaded content. An anchor that cannot be read
-    /// counts as none: the place keeps its numbers.
+    /// counts as none: the place keeps its numbers. Every other key of the
+    /// position is kept as it is (V04).
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
@@ -2384,10 +2498,25 @@ struct ReadingPosition: Codable, Hashable {
         globalCharacterOffset = fields.optionalPosition(.globalCharacterOffset)
         lastUpdated = try container.decode(Date.self, forKey: .lastUpdated)
         anchor = fields.optionalValue(.anchor) { $0 }
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the position as the synthesized encoder wrote it (an optional
+    /// field is left out when nil), after the keys this version does not
+    /// know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(chapterIndex, forKey: .chapterIndex)
+        try container.encodeIfPresent(headingIndex, forKey: .headingIndex)
+        try container.encode(characterOffset, forKey: .characterOffset)
+        try container.encodeIfPresent(globalCharacterOffset, forKey: .globalCharacterOffset)
+        try container.encode(lastUpdated, forKey: .lastUpdated)
+        try container.encodeIfPresent(anchor, forKey: .anchor)
     }
 }
 
-struct Bookmark: Identifiable, Codable, Hashable {
+struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     let id: UUID
     var number: Int
     var chapterIndex: Int
@@ -2399,6 +2528,17 @@ struct Bookmark: Identifiable, Codable, Hashable {
     /// (`TextAnchorFinder`); nil for a bookmark made before anchors, or by a
     /// build without them.
     var anchor: TextAnchor?
+    /// The keys of the stored bookmark that this TextMouth does not know
+    /// (V04), written back as they were; none in a bookmark made here. A
+    /// bookmark renamed or given its words in place keeps them.
+    var unknownKeys = UnknownKeys()
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case id, number, chapterIndex, characterOffset, label, dateCreated, anchor
+    }
+
+    /// The names of a bookmark's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
 
     init(
         id: UUID = UUID(),
@@ -2421,7 +2561,7 @@ struct Bookmark: Identifiable, Codable, Hashable {
     /// Decodes a saved bookmark, repairing a location no bookmark can have
     /// (negative, or too large for an `Int`) instead of failing the book. An
     /// anchor that cannot be read counts as none: the bookmark keeps its
-    /// numbers.
+    /// numbers. Every other key of the bookmark is kept as it is (V04).
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
@@ -2432,6 +2572,22 @@ struct Bookmark: Identifiable, Codable, Hashable {
         label = try container.decode(String.self, forKey: .label)
         dateCreated = try container.decode(Date.self, forKey: .dateCreated)
         anchor = fields.optionalValue(.anchor) { $0 }
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the bookmark as the synthesized encoder wrote it (the anchor
+    /// is left out when nil), after the keys this version does not know
+    /// (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(number, forKey: .number)
+        try container.encode(chapterIndex, forKey: .chapterIndex)
+        try container.encode(characterOffset, forKey: .characterOffset)
+        try container.encode(label, forKey: .label)
+        try container.encode(dateCreated, forKey: .dateCreated)
+        try container.encodeIfPresent(anchor, forKey: .anchor)
     }
 
     /// Concise label shared by bookmark rows and the bookmarks rotor, such as
@@ -2470,7 +2626,7 @@ struct Bookmark: Identifiable, Codable, Hashable {
 /// section 5). A book keeps both, in step (`Book.skippedHeadings`,
 /// `Book.skippedHeadingIDs`): the IDs for older builds, which know nothing
 /// else.
-struct SkippedHeading: Codable, Hashable, Sendable {
+struct SkippedHeading: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The heading's level, 1 to 6.
     var level: Int
     /// The heading's label, as the Headings sheet shows it.
@@ -2483,6 +2639,17 @@ struct SkippedHeading: Codable, Hashable, Sendable {
     /// The text at the heading's start when it was skipped; nil for a skip
     /// made before anchors.
     var anchor: TextAnchor?
+    /// The keys of the stored skip that this TextMouth does not know (V04),
+    /// written back as they were; none in a skip made here, or read from a
+    /// heading ID alone.
+    var unknownKeys = UnknownKeys()
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case level, label, chapterIndex, characterOffset, anchor
+    }
+
+    /// The names of a skip's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
 
     init(level: Int, label: String, chapterIndex: Int, characterOffset: Int, anchor: TextAnchor? = nil) {
         self.level = level
@@ -2490,6 +2657,31 @@ struct SkippedHeading: Codable, Hashable, Sendable {
         self.chapterIndex = chapterIndex
         self.characterOffset = characterOffset
         self.anchor = anchor
+    }
+
+    /// Reads a skip as the synthesized decoder read it (its level, label,
+    /// chapter, and offset required; its anchor optional), and keeps every
+    /// other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        level = try container.decode(Int.self, forKey: .level)
+        label = try container.decode(String.self, forKey: .label)
+        chapterIndex = try container.decode(Int.self, forKey: .chapterIndex)
+        characterOffset = try container.decode(Int.self, forKey: .characterOffset)
+        anchor = try container.decodeIfPresent(TextAnchor.self, forKey: .anchor)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the skip as the synthesized encoder wrote it (the anchor is
+    /// left out when nil), after the keys this version does not know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(level, forKey: .level)
+        try container.encode(label, forKey: .label)
+        try container.encode(chapterIndex, forKey: .chapterIndex)
+        try container.encode(characterOffset, forKey: .characterOffset)
+        try container.encodeIfPresent(anchor, forKey: .anchor)
     }
 
     /// The skip of `heading`, with the text at its start.

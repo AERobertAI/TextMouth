@@ -689,9 +689,14 @@ final class OnDiskContractTests: XCTestCase {
     /// of a property wrapper as "_name" (`BookMetadata.textEncoding`), while
     /// the property, and its key in the file, are "name". A `Book` holds its
     /// fields in a box, so its mirror is the box's (`Book.reflectedFields`).
+    /// `unknownKeys` is left out: it is where a row, a record, and
+    /// config.json hold the keys a later TextMouth added (V04), which are
+    /// written beside the fields and never under a key of that name
+    /// (`UnknownKeysTests` pins that).
     private static func propertyNames(of value: Any) -> Set<String> {
         let mirror = (value as? Book)?.reflectedFields ?? Mirror(reflecting: value)
         return Set(mirror.children.compactMap(\.label).map { $0.hasPrefix("_") ? String($0.dropFirst()) : $0 })
+            .subtracting(["unknownKeys"])
     }
 
     /// A config with every optional setting set, so each one is a key.
