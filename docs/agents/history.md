@@ -654,3 +654,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 
 - **Escape in the new-folder fields:** On main before October 10, Escape offered as a key equivalent reached the Move sheet's own Cancel and closed the whole sheet, with the keyboard in the name field or out of it.
 - **Speak Info's keys:** ShortcutAction.speakInfo and speakFullInfo were a plain I and I twice until October 17, 2026, when a letter alone became the Library list's.
+
+## From Feed options, interface, and arrivals
+
+- **The rotor outside the Folders category:** Outside the Folders category there are neither; until October 7, 2026, the rotor listed folders there that the list didn't show.
