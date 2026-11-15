@@ -162,7 +162,7 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
   The tests that read audio on the runner stay on the skip list.
 - **`SpeechBufferSynthesizerTests.testStopEndsAWriteAtOnce`** looks up a stand-in voice first, which takes longer on a cold runner, so it presses Stop only after the write has started.
   `testStopPressedBeforeTheWriteStartsEndsItWithNothingToStop` pins the other outcome.
-- **A run that failed with no failed test** says why on its page: `judge()` names the first ERROR line, else the first CRASH line, else that the log lacks `** TEST SUCCEEDED **`.
+- **A run that failed with no failed test** says why on its page: the function `unexplained_failure` in `Scripts/agents/run-on-runner.py`, which that script's `judge` calls, names the first ERROR line, else the first CRASH line, else that the log lacks `** TEST SUCCEEDED **`.
 
 ## Flaky or unexplained on the runner
 <!-- id: flaky-unexplained-runner; keys: intermittent, flake, not retried, 503, rate limit, egress, network error; src: TextMouthProductionTests/IntegrationPersistenceTests.swift, TextMouthProductionTests/MenuKeyShortcutTests.swift, TextMouthProductionTests/LibraryLaunchFilesTests.swift, TextMouthProductionTests/RecordingSaveTests.swift, TextMouthProductionTests/IntegrationWindowRoutingTests.swift, TextMouthProductionTests/ContinueToNextBookTests.swift, TextMouthProductionTests/PreferenceStoreTests.swift, TextMouthProductionTests/MigrationStagingLeftoversTests.swift, TextMouthProductionTests/ReaderLifecycleAuditTests.swift, TextMouthProductionTests/NowPlayingOwnershipTests.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, Scripts/agents/runner-skips.conf, Scripts/agents/github_run.py, Scripts/agents/merge_shards.py -->
