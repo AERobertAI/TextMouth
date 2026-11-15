@@ -2,6 +2,7 @@
 <!-- id: reads-pages-limits; keys: page navigation, Go to Page, page break, doc-pagebreak, tables, 64 MB; src: TextMouth/Models/BookPages.swift, TextMouth/Models/ReaderPageWording.swift, TextMouth/Models/PageReaderVersions.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
+Every format TextMouth reads, with how well each is tested, is in [the list of formats](formats-list.md).
 
 ## Pages
 <!-- id: pages; keys: Page unit, Go to Page, page labels, re-read, page reader version; src: TextMouth/Models/BookPages.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Models/ReaderPageWording.swift -->

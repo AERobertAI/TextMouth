@@ -12,6 +12,7 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 
 - [Changelog](docs/user/changelog.md): every version, newest first, and what changed.
 - [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays.
+  - [Formats list](docs/user/formats-list.md): each format, and how well it is tested.
   - [Kindle books](docs/user/reads-kindle-books.md): MOBI, KF8, KFX, PalmDOC, and Kindle Create.
   - [DAISY and braille books](docs/user/reads-daisy-and-braille.md): DAISY, XML, BRF, BRL, and PEF.
   - [Text, HTML, and PDF files](docs/user/reads-text-files.md): encodings, web archives, and SSML.

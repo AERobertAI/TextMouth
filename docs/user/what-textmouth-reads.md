@@ -2,6 +2,7 @@
 <!-- id: reads-documents; keys: supported formats, file types, own readers, textutil, import; src: TextMouth/Models/Book.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/OwnDocumentReaders.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
+Every format TextMouth reads, with how well each is tested, is in [the list of formats](formats-list.md).
 
 ## EPUB files
 <!-- id: epub-files; keys: ZIP member, letter case, XML entity, external entity, title author headings; src: TextMouth/Parsers/EPUBParser.swift, TextMouth/Parsers/ArchiveEntryReader.swift, TextMouth/Parsers/XMLInputGuard.swift -->

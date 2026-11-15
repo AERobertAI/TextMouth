@@ -2,6 +2,7 @@
 <!-- id: reads-daisy-braille; keys: talking book, DTBook, NIMAS, BRF, BRL, PEF, liblouis; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/XMLDocumentSniffer.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
+Every format TextMouth reads, with how well each is tested, is in [the list of formats](formats-list.md).
 
 ## DAISY books
 <!-- id: daisy-books; keys: DAISY 2.02, DAISY 3, ncc.html, OPF, SMIL, clock value, reading order; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+SMILParser.swift, TextMouth/Parsers/DAISYParser+OPFParser.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift -->

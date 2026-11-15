@@ -2,6 +2,7 @@
 <!-- id: reads-transcripts-feeds; keys: transcription, feeds, RSS, packages, .tmb; src: TextMouth/Services/TranscriptionService.swift, TextMouth/Services/Feeds/FeedParser.swift, TextMouth/Services/FileImportService+Packages.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
+Every format TextMouth reads, with how well each is tested, is in [the list of formats](formats-list.md).
 
 ## Transcripts of audiobooks, on macOS 26 and later
 <!-- id: transcripts-audiobooks-macos-26-later; keys: SpeechAnalyzer, speech recognizer, macOS 26, transcript, Where Am I; src: TextMouth/Services/TranscriptionService.swift, TextMouth/Services/TranscriptionEngine.swift, TextMouth/Services/TranscriptionAvailability.swift -->
