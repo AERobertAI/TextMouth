@@ -808,6 +808,9 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 
 - **One sleep timer for each reader window:** Owner: each reader window's own SleepTimerService (November 13, 2026, the user: "I want each sleep timer to be refactored to be per book view window not global").
 - **End of chapter folded into End of the heading:** endOfHeading has been the one place-based timer for any document since October 6, 2026, when End of chapter folded into it.
+- **The countdown label's layout:** BookInfoBar and PlaybackControlsView each gave SleepTimerStatusLabel the layout and the label it had, and the countdown moved only because the reader published eight times a second.
+- **The sleep timer sheets' broadcast:** The broadcast that closed every other sleep timer sheet when one opened (sleepTimerSheetOpened) is gone.
+- **Two heading notifications:** notifyHeadingBoundary and notifyDocumentEnd are gone.
 
 ## From Text caches and content indexes
 
