@@ -144,6 +144,125 @@ final class StaleRowGuardTests: CloudMaintenanceTestCase {
         XCTAssertEqual(Book.ReadingState(record: record), row.readingState, "the row's state should be written whole")
     }
 
+    // MARK: - Opening the Book
+
+    /// A reader opening a book whose record holds the later place opens
+    /// there, with the other Mac's bookmarks and settings; the row takes
+    /// them, the place keeping the other Mac's date, and the record keeps
+    /// them through the reader's saves.
+    @MainActor
+    func testOpeningABookWhoseRecordIsAheadOpensWhereItWasReadLast() throws {
+        let row = try rowReadHere()
+        let other = readOnTheOtherMac(row)
+        try writeRecord(of: other)
+        let model = makeModel(with: [row])
+
+        let reader = try openReader(of: row, in: model)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(reader.currentCharacterOffset, 20, "the reader should open at the other Mac's place")
+        XCTAssertEqual(reader.bookmarks.map(\.label), other.bookmarks.map(\.label))
+        XCTAssertEqual(reader.book.localVoiceID, other.localVoiceID)
+        let saved = try XCTUnwrap(model.bookByID(row.id))
+        XCTAssertEqual(saved.readingPosition?.characterOffset, 20)
+        XCTAssertEqual(saved.readingPosition?.lastUpdated, Self.readThere, "the place should keep the other Mac's date")
+        XCTAssertEqual(saved.bookmarks.map(\.label), other.bookmarks.map(\.label))
+        XCTAssertEqual(saved.localEndOfBookBehavior, other.localEndOfBookBehavior)
+        let record = try BookInfo.load(from: row.tmbDirectory)
+        XCTAssertEqual(record.state.readingPosition?.characterOffset, 20)
+        XCTAssertEqual(record.state.readingPosition?.lastUpdated, Self.readThere)
+        XCTAssertEqual(record.bookmarks.map(\.label), other.bookmarks.map(\.label))
+    }
+
+    /// One Mac: a book opens at its row's place, which keeps its date
+    /// through the load's save, while the book is dated as opened now.
+    @MainActor
+    func testOpeningABookKeepsItsPlacesDate() throws {
+        let row = try rowReadHere()
+        try row.saveBookInfoThrowing()
+        let model = makeModel(with: [row])
+
+        let reader = try openReader(of: row, in: model)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(reader.currentCharacterOffset, 5)
+        let saved = try XCTUnwrap(model.bookByID(row.id))
+        XCTAssertEqual(saved.readingPosition?.lastUpdated, Self.readHere, "opening should not date the place anew")
+        XCTAssertEqual(saved.bookmarks, row.bookmarks)
+        XCTAssertGreaterThan(try XCTUnwrap(saved.lastOpened), Self.readThere, "opening should date the opening")
+        let record = try BookInfo.load(from: row.tmbDirectory)
+        XCTAssertEqual(record.state.readingPosition?.lastUpdated, Self.readHere)
+    }
+
+    /// Closing the reader without moving keeps the place's date.
+    @MainActor
+    func testClosingWithoutMovingKeepsThePlacesDate() throws {
+        let row = try rowReadHere()
+        try row.saveBookInfoThrowing()
+        let model = makeModel(with: [row])
+        let reader = try openReader(of: row, in: model)
+
+        reader.close()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(model.bookByID(row.id)?.readingPosition?.lastUpdated, Self.readHere)
+        XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.readingPosition?.lastUpdated, Self.readHere)
+    }
+
+    /// A place the listener moved to is dated when it is saved, and wins
+    /// over a record the other Mac wrote before.
+    @MainActor
+    func testAPlaceTheListenerMovedToIsDatedNow() throws {
+        let row = try rowReadHere()
+        try row.saveBookInfoThrowing()
+        let model = makeModel(with: [row])
+        let reader = try openReader(of: row, in: model)
+        let before = Date()
+
+        reader.navigateTo(chapterIndex: 0, characterOffset: 30)
+        reader.savePosition()
+        LibraryPersistenceService.flushPendingSave()
+
+        let saved = try XCTUnwrap(model.bookByID(row.id)?.readingPosition)
+        XCTAssertEqual(saved.characterOffset, 30)
+        XCTAssertGreaterThanOrEqual(saved.lastUpdated, before.addingTimeInterval(-1), "a moved place should be dated now")
+        XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.readingPosition?.characterOffset, 30)
+    }
+
+    /// A later load of the same reader, as after an edit of the text, is no
+    /// opening: the reader keeps its cursor, and its place keeps the date of
+    /// the reader's own last save, though its copy of the book still holds
+    /// the place it opened with.
+    @MainActor
+    func testAReloadKeepsTheDateOfTheReadersLastSave() throws {
+        let row = try rowReadHere()
+        try row.saveBookInfoThrowing()
+        let model = makeModel(with: [row])
+        let reader = try openReader(of: row, in: model)
+        reader.navigateTo(chapterIndex: 0, characterOffset: 30)
+        reader.savePosition()
+        let savedAt = try XCTUnwrap(model.bookByID(row.id)?.readingPosition?.lastUpdated)
+
+        reader.loadContent()
+        XCTAssertTrue(waitUntil(timeout: 20) { !reader.isLoading }, "the book should load again within 20 seconds")
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(reader.currentCharacterOffset, 30, "the reload moved the cursor")
+        let saved = try XCTUnwrap(model.bookByID(row.id)?.readingPosition)
+        XCTAssertEqual(saved.characterOffset, 30)
+        XCTAssertEqual(saved.lastUpdated, savedAt, "the reload dated the place as the opening's")
+
+        // The cursor moves on, as playback moves it, before its next
+        // checkpoint; the record holds the last save, later than the place
+        // the reader's copy opened with. A reload is no opening, so the
+        // cursor stays where it is rather than go back to that save.
+        reader.currentCharacterOffset = 40
+        reader.loadContent()
+        XCTAssertTrue(waitUntil(timeout: 20) { !reader.isLoading }, "the book should load again within 20 seconds")
+
+        XCTAssertEqual(reader.currentCharacterOffset, 40, "the reload took the cursor back to the last save")
+    }
+
     // MARK: - Fixtures
 
     /// A packaged book as this Mac last read it: at offset 5, an hour

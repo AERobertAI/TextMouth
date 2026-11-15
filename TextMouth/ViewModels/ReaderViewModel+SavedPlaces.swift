@@ -102,6 +102,38 @@ extension ReaderViewModel {
         book.adoptCapturedAnchors(captured)
     }
 
+    // MARK: A Later Place in the Book's Record (Risk 2)
+
+    /// Takes `recorded`, the reading state that stood between the book's
+    /// row and its record as the book loaded, when the record held the
+    /// later place (`LoadedContent.recordedState`): as another Mac sharing
+    /// the library writes one while this Mac's row lags behind, its listener
+    /// having read the book there since (risk 2 of the local-first
+    /// research). The library's row, this reader's own copy of the book, its
+    /// bookmark list, its cursor, and its voice, speed, and pitch all take
+    /// it, before any move of the places the load made, so the book opens
+    /// where it was read last, with the bookmarks and settings it was left
+    /// with there, and the load's own save keeps that place's date
+    /// (`noteOpenedPlace()`). The row takes it by the same rule
+    /// (`Book.readingState(standingAgainst:)`), so a row that caught up
+    /// meanwhile keeps its own. Nothing is spoken or shown: the book simply
+    /// opens at its place.
+    func takeNewerRecordedState(_ recorded: Book.ReadingState) {
+        libraryViewModel.takeStandingReadingState(recorded, of: book.id)
+        let standing = book.readingState(standingAgainst: recorded)
+        guard standing != book.readingState else { return }
+        let settingsBefore = book.localVoiceSettings
+        book.readingState = standing
+        bookmarks = libraryViewModel.bookByID(book.id) == nil ? book.bookmarks : libraryViewModel.bookmarksForBook(book.id)
+        if let position = standing.readingPosition {
+            currentChapterIndex = position.chapterIndex
+            currentCharacterOffset = position.characterOffset
+        }
+        if book.localVoiceSettings != settingsBefore {
+            applySpeechSettingsOfTheBook()
+        }
+    }
+
     // MARK: Places Moved by a Rebuild of the Text
 
     /// Takes one move of the places of this book made while it loaded

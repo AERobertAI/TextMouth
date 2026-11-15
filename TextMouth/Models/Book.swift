@@ -1754,20 +1754,29 @@ struct Book: Identifiable, Codable, Hashable {
     }
 
     /// The metadata of the record now in this book's package when that
-    /// record is this book's own (its `bookID` is this row's `id`), read
-    /// without downloading anything: what `recordedTextEncodingRecord()`
-    /// and `recordedBrailleFileCode()` weigh against the row. Nil for a book
-    /// without a package, and when the package holds no record, one that
-    /// cannot be read, one only in the cloud, or another book's, as an old
-    /// shared package's may: such a record must never give this row that
+    /// record is this book's own (`ownStoredRecord()`): what
+    /// `recordedTextEncodingRecord()` and `recordedBrailleFileCode()` weigh
+    /// against the row. Such a record must never give this row another
     /// book's encoding or braille file code, which every later reading of
     /// this book would then use.
     private func ownStoredMetadata() -> BookMetadata? {
+        ownStoredRecord()?.metadata
+    }
+
+    /// The record now in this book's package, without its content index,
+    /// when that record is this book's own (its `bookID` is this row's
+    /// `id`), read without downloading anything. Nil for a book without a
+    /// package, and when the package holds no record, one that cannot be
+    /// read, one only in the cloud, or another book's, as an old shared
+    /// package's may. The reader weighs its place against the row's as the
+    /// book opens (`ReaderViewModel.readContent(of:audioTagsFrom:readingTexts:)`,
+    /// risk 2). Blocks on the file, so call it off the main thread.
+    func ownStoredRecord() -> BookInfo? {
         guard !tmbDirectoryName.isEmpty else { return nil }
         let stored = try? DatalessFiles.withoutDownloading { try StoredBookRecord.read(from: tmbDirectory) }
         // The record counts only when it is this book's.
-        guard let metadata = stored?.info.metadata, metadata.bookID == id else { return nil }
-        return metadata
+        guard let info = stored?.info, info.metadata.bookID == id else { return nil }
+        return info
     }
 
     /// The record this book writes over `stored`, the record now in its

@@ -697,6 +697,21 @@ extension LibraryViewModel {
         LibraryPersistenceService.saveBookInfo(for: book)
     }
 
+    /// Gives the row of the book `bookID` the reading state that stands
+    /// between its own and `recorded` (`Book.readingState(standingAgainst:)`),
+    /// as a reader opening the book found its record holding the later
+    /// place (risk 2 of the local-first research,
+    /// `ReaderViewModel.takeNewerRecordedState(_:)`), and saves the row and
+    /// its record as any change of the book is saved. A row holding the
+    /// later place already, or a book no longer in the library, changes and
+    /// writes nothing.
+    func takeStandingReadingState(_ recorded: Book.ReadingState, of bookID: UUID) {
+        guard let row = bookByID(bookID) else { return }
+        let standing = row.readingState(standingAgainst: recorded)
+        guard standing != row.readingState else { return }
+        updateBook(id: bookID) { $0.readingState = standing }
+    }
+
     /// Saves `edit`, one save of a metadata editor, to the row of the book
     /// `bookID`, as every editor's save does, and returns the row as saved,
     /// or nil when the book has left the library.

@@ -158,15 +158,41 @@ extension ReaderViewModel {
             announceToVoiceOver("Audio speed reset to \(AudioSpeed.spokenLabel(for: audioSpeed))")
             return
         }
-        // Apply global settings
-        speechService.setSpeedRealtime(settingsViewModel.wordsPerMinute)
-        speechService.setPitchRealtime(settingsViewModel.pitchMultiplier)
-        if let voice = settingsViewModel.selectedVoice {
-            speechService.currentVoice = voice
-        }
+        // Apply global settings: the book keeps none of its own now.
+        applyGlobalSpeechSettingsWhereTheBookKeepsNone()
         refreshLookAhead()
         warmUpVoice()
         announceToVoiceOver(BookSettingsWording.resetDone)
+    }
+
+    /// Gives the speech service the global speed, pitch, and voice for each
+    /// of the three this book keeps no setting of its own for. A text book
+    /// only: an audiobook's speed is its player's (`audioSpeed`).
+    private func applyGlobalSpeechSettingsWhereTheBookKeepsNone() {
+        if book.localWPM == nil {
+            speechService.setSpeedRealtime(settingsViewModel.wordsPerMinute)
+        }
+        if book.localPitch == nil {
+            speechService.setPitchRealtime(settingsViewModel.pitchMultiplier)
+        }
+        if book.localVoiceID == nil, let voice = settingsViewModel.selectedVoice {
+            speechService.currentVoice = voice
+        }
+    }
+
+    /// Applies this book's voice, speed, and pitch as they are now, and the
+    /// global ones for those it keeps none of, as a reader must when the
+    /// book's own settings change under it: the settings its record held,
+    /// taken as the book opened (`takeNewerRecordedState(_:)`, risk 2), which
+    /// may clear one the reader opened with. An audiobook takes its own
+    /// speed, or the normal one, as the reader takes it when it opens.
+    func applySpeechSettingsOfTheBook() {
+        if isAudioBook {
+            audioSpeed = book.localWPM.map { AudioSpeed.normalized($0) } ?? AudioSpeed.normal
+            return
+        }
+        applyGlobalSpeechSettingsWhereTheBookKeepsNone()
+        applyLocalSpeechOverrides()
     }
 
     /// Whether this book has local voice/speed/pitch overrides
