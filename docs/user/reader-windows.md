@@ -3,6 +3,13 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
+The rest of reading a book has pages of its own:
+
+- [Pages in a reader](reader-pages.md): Go to Page and skipping by page.
+- [Media keys and the sleep timer](reader-media-and-sleep-timer.md): headphones, AirPods, the timer.
+- [When a book ends, and your saved places](reader-book-end.md): what plays next.
+- [When speech or audio goes wrong](reader-speech-problems.md): refusals, stalls, memory limits.
+
 ## A window for each book
 <!-- id: reader-window-each-book; keys: one window per book, several books open, BookReaderWindowView, open book; src: TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
 

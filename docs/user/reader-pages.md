@@ -3,6 +3,8 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
+The reader window itself, its menus, and search are in [Reader windows](reader-windows.md).
+
 ## Pages
 <!-- id: reader-pages; keys: page labels, roman numerals, printed page numbers, PageBreak, page list; src: TextMouth/Models/BookPages.swift, TextMouth/Models/PageReaderVersions.swift -->
 

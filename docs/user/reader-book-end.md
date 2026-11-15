@@ -3,6 +3,8 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
+The reader window itself, its menus, and search are in [Reader windows](reader-windows.md).
+
 ## When a book ends
 <!-- id: reader-when-book-ends; keys: When book ends, end-of-book setting, Stop, Loop to Start, Continue to Next Book, Play Starts Over, EndOfBookRule; src: TextMouth/Models/EndOfBookRule.swift, TextMouth/Models/ListeningOptions.swift, TextMouth/Models/EndOfBookWording.swift -->
 

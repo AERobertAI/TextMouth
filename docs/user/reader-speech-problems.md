@@ -3,6 +3,8 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
+The reader window itself, its menus, and search are in [Reader windows](reader-windows.md).
+
 ## Speech markup in a book's text
 <!-- id: reader-speech-markup-book-text; keys: SSML, angle brackets, speech markup, sm tag, AVSpeechSynthesizer, macOS 26.3.1; src: TextMouth/Services/SpeechMarkupGuard.swift, TextMouth/Services/SpeechService.swift -->
 

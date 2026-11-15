@@ -3,6 +3,8 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
+The reader window itself, its menus, and search are in [Reader windows](reader-windows.md).
+
 ## Headphone and media keys
 <!-- id: reader-headphone-media-keys; keys: AirPods, play pause key, Play command, Now Playing, remote command, last book, MPRemoteCommandCenter; src: TextMouth/Services/NowPlayingService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/MediaGestureDetector.swift -->
 
