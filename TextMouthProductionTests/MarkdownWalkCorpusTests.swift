@@ -241,7 +241,7 @@ final class MarkdownWalkCorpusTests: XCTestCase {
             let now = actual[corpusCase.name] ?? []
             guard was != now else { continue }
             // The first line that differs, or the first line one side lacks.
-            let at = zip(was, now).firstIndex { $0 != $1 } ?? min(was.count, now.count)
+            let at = zip(was, now).enumerated().first { $0.element.0 != $0.element.1 }?.offset ?? min(was.count, now.count)
             differences.append("""
                   - \(corpusCase.name), line \(at + 1):
                       recorded: \(at < was.count ? was[at] : "(no line)")

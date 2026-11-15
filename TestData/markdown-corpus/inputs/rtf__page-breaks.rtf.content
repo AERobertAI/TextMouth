@@ -1,0 +1,15 @@
+<!-- page: 1 -->
+
+First page paragraph one\.
+
+First page paragraph two runs on and <!-- page: 2 -->continues here\.
+
+<!-- page: 3 -->
+
+Third paragraph begins with a page break before\.
+
+Fourth paragraph before a section break\.
+
+<!-- page: 4 -->
+
+Fifth paragraph after it\.

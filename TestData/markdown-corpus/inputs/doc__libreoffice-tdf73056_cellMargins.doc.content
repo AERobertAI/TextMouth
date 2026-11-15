@@ -1,0 +1,37 @@
+<!-- page: 1 -->
+
+Row margin defaults come from last cell\,
+
+not first cell\.
+
+Defaults come from each row\,
+
+not first row\.
+
+So these are not table defaults
+
+\.\.\.they are row defaults\.
+
+I
+
+D
+
+E
+
+N
+
+T
+
+I
+
+C
+
+A
+
+L
+
+\?
+
+Border colors and borderlines
+
+\.\.\.cannot have default values\.
