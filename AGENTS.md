@@ -21,22 +21,18 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
 ## The user's standing rules
 
 - Never install: the user runs `make install` themselves when told main is ready.
-  Task agents never push (except to `TestBuild`, through the train tools).
-  Since November 14, 2026 the orchestrator pushes main and its version tags to GitHub, and only at a version bump it judges a fairly stable release (the user: "You have permission to push to main and tags I say when you increment the release number to a fairly stable release"): a green full Mac suite on that tree, `make check` passed, and nothing private in the commits (no path under `build/`, `humanQuestions/`, or `humanReports/`).
-  Once main holds `tests.yml` (since that first push, 0.4.10), `github_run.py`'s workflow guard is on: a change to `.github/workflows/` or `.github/actions/` runs on `TestBuild` only after it is on GitHub's main, so it ships with a release push after an outside review.
-- When the disk runs low, or whenever it helps, the orchestrator may delete build folders that can be rebuilt (DerivedData, release and scratch builds, finished agents' worktrees), unregistering each folder's apps first (the icon-cache rule below).
-  The user also allowed deleting the iPhone simulator runtime once the iPhone tests ran wholly on GitHub; it was deleted on November 14, 2026 (7.5 GB), and the iPhone type-check (`make typecheck-ios`) needs only Xcode's SDK.
-  Nothing on this Mac may start an iPhone simulator.
-- Never read or write the user's live library at `~/.TextMouth` from a test or an experiment; copy what a test needs into its own sandbox.
-  Reading its logs for a diagnosis is fine.
-- Merges into `main` happen only after the full hosted suite is green on the merged tree, as non-squash merges (`git merge --no-ff`), which the user authorized for the orchestrator; the project `CLAUDE.md` otherwise forbids merging.
-  Every merge is recorded in the TODO and described in the documentation (the pages under docs/, indexed by README.md and ARCHITECTURE.md) by a documentation pass.
-- Small, focused commits, each with a test; comments on every function and non-obvious block; Markdown for every document; a VoiceOver and braille user first: every control keyboard-operable, every value spoken, nothing conveyed by sight alone.
-- The user sees a macOS crash dialog for every test host that aborts, so no test may trap (no unguarded subscript, force unwrap, over-fulfilled expectation, or unowned capture of a released object), and no test may play sound aloud or record from a real microphone without an opt-in environment variable.
-- Only TextMouth's own caches may be cleared; other apps' caches and the user's Trash are theirs.
-- The system icon cache (`/Library/Caches/com.apple.iconservices.store`, root-only, invisible to `du`) grows about 23 MB with every build-and-launch of the test host and only the user can purge it: check `stat -f %l /Library/Caches/com.apple.iconservices.store` (entries plus two) at each merge and tell the user when it passes 10,000; before deleting any build folder run `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u <folder>/Build/Products/Debug/TextMouth.app`; batch targeted test runs into fewer launches.
-- The usage rule in the user's global instructions (wrap up when a limit is nearly spent) can be overridden by the user for a day; when it is, agents keep working until the API refuses them, and unmerged branches wait on their worktrees for the reset.
-  The user set that override as standing for the night before the weekly reset (Saturdays at 8:00 a.m. Eastern; October 10, 2026: "please don't warry about the weekly reset and have a full set of agents going and work until the limit runs out, everything can just be resumed without issue in the new week... and remember this for Friday nights / Saturday mornings before the usage resets"): on a Friday night or Saturday morning keep three builders and the non-building agents going until the limit runs out, tell every agent so in its launch message, and keep a background task that exits after the reset so the orchestrator is re-invoked to resume agents that were cut off.
+- Task agents never push, except to `TestBuild` through the train tools.
+  Only the orchestrator pushes main and its version tags, and only at a version bump it judges a fairly stable release: a green full Mac suite on that tree, `make check` passed, and nothing private in the commits (no path under `build/`, `humanQuestions/`, or `humanReports/`).
+- `github_run.py`'s workflow guard is on: a change to `.github/workflows/` or `.github/actions/` runs on `TestBuild` only after it is on GitHub's main, so it ships with a release push after an outside review.
+- Nothing on this Mac may start an iPhone simulator: the iPhone tests run on GitHub, and `make typecheck-ios` needs only Xcode's SDK.
+- Never read or write the user's live library at `~/.TextMouth` from a test or an experiment; copy what a test needs into its own sandbox, and read its logs only for a diagnosis.
+- Only the orchestrator merges into `main`, with `git merge --no-ff` and only after the full hosted suite is green on the merged tree; the project `CLAUDE.md` otherwise forbids merging.
+  Every merge is recorded in the TODO and described in the pages under `docs/` by a documentation pass.
+- Follow `CLAUDE.md`'s Code Style, Git Workflow, and Accessibility; each commit has a test, and every control is keyboard-operable with every value spoken.
+- No test may trap (no unguarded subscript, force unwrap, over-fulfilled expectation, or unowned capture of a released object), since the user sees a macOS crash dialog for every test host that aborts.
+- No test may play sound aloud or record from a real microphone without an opt-in environment variable.
+- Clear only TextMouth's own caches: other apps' caches and the user's Trash are theirs.
+- The usage rule in the user's global instructions (wrap up when a limit is nearly spent) holds unless your launch message says the user overrode it; then keep working until the API refuses you, and leave unmerged branches on their worktrees for the reset.
 
 ## How a task agent works
 

@@ -43,3 +43,16 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
   - A single Opus fix agent that day cost 1.56.
   - Workers were accepted as written 15 times in 16, when their briefs gave exact line ranges, the mechanism, and the tests.
   - A lead's growing context is the team's largest cost.
+
+## Lessons
+<!-- id: orchestrator-lessons; keys: disk, icon cache, lsregister, usage override, weekly reset, stall-watch; src: Scripts/agents/stall-watch.py, Scripts/agents/wait-for-usage-reset.py, Scripts/agents/usage-watch-unscoped.py -->
+
+- **Deleting to free disk:** the user allows the orchestrator, when the disk runs low or whenever it helps, to delete build folders that can be rebuilt.
+  That means DerivedData, release and scratch builds, and finished agents' worktrees, each folder's apps unregistered first (the icon-cache lesson).
+- **The system icon cache** (`/Library/Caches/com.apple.iconservices.store`, root-only, invisible to `du`) grows about 23 MB with every build-and-launch of the test host, and only the user can purge it.
+  At each merge check `stat -f %l /Library/Caches/com.apple.iconservices.store` (entries plus two), and tell the user when it passes 10,000.
+  Before deleting any build folder run `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u <folder>/Build/Products/Debug/TextMouth.app`.
+  Batch targeted test runs into fewer launches.
+- **The usage override before the weekly reset** (Saturdays at 8:00 a.m. Eastern).
+  On a Friday night or Saturday morning, keep a full set of agents going until the limit runs out, and tell every agent so in its launch message.
+  Keep a background task that exits after the reset, so you are re-invoked to resume agents that were cut off.
