@@ -1,12 +1,12 @@
 # Cloud state
-<!-- id: cloud-state; keys: ; src: -->
+<!-- id: cloud-state; keys: iCloud Drive, Google Drive, Dropbox, File Provider, offline library, sync; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 research/CLOUD-STORAGE-RESEARCH-2026-10-03.md and research/CLOUD-STORAGE-PLAN-2026-10-03.md, at the repository's root, explain the design, and research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md says what real drives have verified and what remains to check by hand.
 
 ## Library location and each book's cloud state
-<!-- id: library-location-each-book-cloud; keys: ; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/UbiquitousItemStatusProvider.swift, TextMouth/Services/BookCloudStorageService.swift, TextMouth/Services/PublishedFileProgress.swift, TextMouth/Services/NetworkReachability.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Views/Library/BookCloudNote.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift -->
+<!-- id: library-location-each-book-cloud; keys: CloudServices, iCloud Drive, Google Drive, Dropbox, dataless, ubiquitous item, evict download, BookCloudStates; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/UbiquitousItemStatusProvider.swift, TextMouth/Services/BookCloudStorageService.swift, TextMouth/Services/PublishedFileProgress.swift, TextMouth/Services/NetworkReachability.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Views/Library/BookCloudNote.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouthProductionTests/CloudTestDoubles.swift -->
 
 Where the library lives, and each book's cloud state.
 
@@ -37,7 +37,7 @@ Where the library lives, and each book's cloud state.
 - Files: Models/CloudStorageContract.swift, Services/UbiquitousItemStatusProvider.swift, Services/BookCloudStorageService.swift, Services/PublishedFileProgress.swift, Services/NetworkReachability.swift, ViewModels/LibraryViewModel+Cloud.swift, Views/Library/BookCloudNote.swift, Views/Library/LibrarySubviews.swift.
 
 ## The list's cloud commands
-<!-- id: list-cloud-commands; keys: ; src: TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/VoiceOverAnnouncer.swift -->
+<!-- id: list-cloud-commands; keys: LibraryCloudCommands, LibraryCloudCommand, LibraryCloudRefusal, DownloadOrigin, context menu, Library menu; src: TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/VoiceOverAnnouncer.swift -->
 
 The list's cloud commands.
 
@@ -54,7 +54,7 @@ The list's cloud commands.
 - Files: ViewModels/LibraryViewModel+Cloud.swift, Models/LibraryCloudWording.swift, Views/Library/LibraryView.swift, Views/Library/LibrarySubviews.swift, Views/Library/LibraryBookInfoLoader.swift.
 
 ## Books kept on this Mac
-<!-- id: books-kept-this-mac; keys: ; src: TextMouth/Services/KeptBooks.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Views/Library/BookCloudNote.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/App/MenuCommands.swift, TextMouth/Services/ArchiveBudget.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/LibraryInfoWording.swift -->
+<!-- id: books-kept-this-mac; keys: KeptBooks, keep downloaded, pin offline, downloadWhatFits, free space reserve, keepsReadingListBooks, reading list keep; src: TextMouth/Services/KeptBooks.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Views/Library/BookCloudNote.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/App/MenuCommands.swift, TextMouth/Services/ArchiveBudget.swift, TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/LibraryInfoWording.swift -->
 
 Books kept on this Mac (Keep on This Mac).
 
@@ -85,7 +85,7 @@ Books kept on this Mac (Keep on This Mac).
 - Files: Services/KeptBooks.swift, ViewModels/LibraryViewModel+Cloud.swift, Models/LibraryCloudWording.swift, Models/CloudStorageContract.swift, Views/Library/BookCloudNote.swift, Views/Library/LibrarySubviews.swift, Views/Library/LibraryView.swift, App/MenuCommands.swift.
 
 ## Maintenance in a cloud library
-<!-- id: maintenance-cloud-library; keys: ; src: TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/TextCacheUpdateQueue.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Models/TextCacheFingerprint.swift -->
+<!-- id: maintenance-cloud-library; keys: dataless files, startup repair, metadata refresh, text cache batch, CloudSkips, MaintainedFiles, fileInCloud; src: TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/TextCacheUpdateQueue.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Models/TextCacheFingerprint.swift -->
 
 Maintenance in a cloud library.
 
