@@ -1,8 +1,11 @@
 # TextMouth architecture
 
-This document explains how TextMouth is put together and, above all, which part of the app owns each kind of state: who keeps it, who may change it, and how everything else finds out about a change. It describes main as of October 10, 2026. When a change moves the ownership of some state, update its page in the same branch.
+This document explains how TextMouth is put together and, above all, which part of the app owns each kind of state: who keeps it, who may change it, and how everything else finds out about a change.
+It describes main as of October 10, 2026.
+When a change moves the ownership of some state, update its page in the same branch.
 
-README.md indexes the pages on building, testing, the files in the data directory, and keeping the library in the cloud. In these pages, paths are relative to the TextMouth source folder unless they start with the name of another top-level folder, and names in the text are the names of Swift types, functions, and properties.
+README.md indexes the pages on building, testing, the files in the data directory, and keeping the library in the cloud.
+In these pages, paths are relative to the TextMouth source folder unless they start with the name of another top-level folder, and names in the text are the names of Swift types, functions, and properties.
 
 Each part below is a page of its own under docs/architecture, so an agent can read only the parts its task touches.
 
