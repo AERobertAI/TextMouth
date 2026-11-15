@@ -12,7 +12,8 @@ The rich text and Word 97-2003 readers replaced textutil in 0.3.1, and the OpenD
 ### The route and the switches
 <!-- id: route-switches; keys: dispatch, kill switch, feature flag, fallback, encrypted doc, TaskLocal, withValue, PhoneImportRefusal; src: TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift -->
 
-The route: TextutilDocumentReader.htmlText(of:bookFormat:includesPages:) decides how the file is read (reading(of:bookFormat:), above), throws PasswordProtectedDocument for a doc whose File Information Block says it is encrypted, and only then asks OwnDocumentReaders.html(of:as:includesPages:) for the HTML.
+The route: TextutilDocumentReader.htmlText(of:bookFormat:includesPages:) decides how the file is read (reading(of:bookFormat:), in [The path through textutil](imports-textutil.md)).
+It throws PasswordProtectedDocument for a doc whose File Information Block says it is encrypted (TextutilSourceCheck.isEncryptedWordDocument) and for an encrypted odt (TextutilSourceCheck.isEncryptedOpenDocument), and only then asks OwnDocumentReaders.html(of:as:includesPages:) for the HTML.
 A string is a reader's answer, and htmlText returns it as Source(html:, isOwnReading: true); nil means this platform reads the format with textutil, and the textutil path follows.
 The router switches on the format as reading(of:) found it, not as the book's name says:
 
@@ -43,7 +44,7 @@ A document with 100,000 breaks or more (TextutilPageBreaks.maximumPages, which i
 ### The page reader
 <!-- id: page-reader; keys: reader version, version stamp, re-read, outdated book, upgrade, semantic version, launch re-read, stale pages; src: TextMouth/Models/PageReaderVersions.swift, TextMouth/Models/SemanticVersion.swift -->
 
-The page reader: PageReaderVersions.current(for:) is "1.2.0" for rtf and rtfd (1.1.0 from 0.3.1; 1.2.0 from 0.4.0), "1.3.0" for doc (1.1.0 from 0.3.1; 1.2.0 from 0.4.0; 1.3.0 from 0.4.1, when the Mac began to read Word 6 and Word 95 documents itself and Word 97-2003 documents began to read their symbols), "1.3.0" for docx and wordml (1.0.0 until 0.4.0; 1.1.0 from 0.4.0; 1.2.0 from 0.4.1, when the docx toggle rule took in a table style's and the document defaults' hiding, and wordml stopped reading a hidden row as hidden words; 1.3.0 from 0.4.2, when both began to read w:sym and symbol-font text), "1.1.0" for odt (1.0.0 until 0.4.0), and "1.0.0" for kfx.
+The page reader: PageReaderVersions.current(for:) is "1.2.0" for rtf and rtfd, "1.3.0" for doc, docx, and wordml, "1.1.0" for odt, and "1.0.0" for kfx.
 The launch re-read (launchRereadIsOn) reads again once each such book whose stamp is behind its format's line or missing; a book stamped without a failure note skips PG16's compare of its text (V05), and one with no stamp goes through it.
 A book stamped "1.2.0" by a newer TextMouth is not outdated for an older one (SemanticVersion.isOutdated compares the three numbers), which leaves the book as it is.
 
@@ -99,8 +100,10 @@ The Word 97-2003 reader (WordDocumentReader, written from [MS-DOC], [MS-CFB], an
    A paragraph is a heading by WordStyleSheet.headingLevel(styleIndex:directOutlineLevel:) (the paragraph's outline level, then each style up the chain: an outline level, or sti 1 to 9, 62 Title, and 74 Subtitle), a bulleted item when it begins with a bullet character and a space (the dash and asterisk only before a tab, by TextutilHTMLStructure.bulletCharacters), a cell of a table or of a table nested in one when it says so, and otherwise p.
    A paragraph that begins a page by its direct property or its style, outside a table and after the first words, adds a page, as a form feed that WordSections.formFeedStartsPage says starts one does.
    With 100,000 page breaks or more the writer throws PageLimitExceeded and the document is written again without pages.
-5. The stories: the main story (ccpText) is written, and, by followingStories(limit:), the footnote story, the endnote story (WordFileInformationBlock.noteRanges), and the main text boxes (ccpTxbx) follow it in that order, each story numbering its lists again from the start; the header, macro, comment, and header text box stories are left out.
-   A note is written only if its reference mark is shown (WordDocumentNotes: PlcffndRef and PlcffndTxt, PlcfendRef and PlcfendTxt, the i-th mark belonging to the i-th note; tables that do not fit read the whole story); a custom mark is read as typed.
+5. The stories: the main story (ccpText) is written, and, by fib.stories(limit:) (WordDocumentStructure.swift), the footnote story, the endnote story, and the main text boxes (ccpTxbx) follow it in that order, each story numbering its lists again from the start.
+   The header, macro, comment, and header text box stories are left out.
+   A note is written only if its reference mark is shown (WordNotes.shownRanges, in WordDocumentNotes.swift: PlcffndRef and PlcffndTxt, PlcfendRef and PlcfendTxt, the i-th mark belonging to the i-th note; tables that do not fit read the whole story); a custom mark is read as typed.
+   The main text boxes are cut by WordNotes.boxRanges.
    The heading guess, the census, hasRealHeading, and the pages come from the main story alone.
    When the main story, its notes, and its boxes hold no words, everything is written, in the order the file keeps it, so a document whose words are in a header is not an empty book.
    The writer's output is held to twice DocumentByteLimit.

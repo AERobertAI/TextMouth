@@ -908,6 +908,10 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Imports: rich text and Word documents
 
 - The own readers of rich text, Word 97-2003, OpenDocument text, and Word 2003 XML (FMT47, FMT27, FMT53) came from November 4 to 6, 2026.
+- The page reader: PageReaderVersions.current(for:) is "1.2.0" for rtf and rtfd (1.1.0 from 0.3.1; 1.2.0 from 0.4.0).
+  "1.3.0" for doc (1.1.0 from 0.3.1; 1.2.0 from 0.4.0; 1.3.0 from 0.4.1, when the Mac began to read Word 6 and Word 95 documents itself and Word 97-2003 documents began to read their symbols).
+  "1.3.0" for docx and wordml (1.0.0 until 0.4.0; 1.1.0 from 0.4.0; 1.2.0 from 0.4.1, when the docx toggle rule took in a table style's and the document defaults' hiding, and wordml stopped reading a hidden row as hidden words; 1.3.0 from 0.4.2, when both began to read w:sym and symbol-font text).
+  "1.1.0" for odt (1.0.0 until 0.4.0), and "1.0.0" for kfx.
 
 ## From Imports: choosing the encoding
 
