@@ -52,6 +52,7 @@ sys.path.insert(0, str(AGENTS))
 import github_run  # noqa: E402  (the path above must be set first)
 import runner_audio_probe  # noqa: E402
 import runner_diagnose  # noqa: E402
+import runner_settings  # noqa: E402
 import ios_ui_tests  # noqa: E402
 import shard  # noqa: E402
 import test_command  # noqa: E402
@@ -231,6 +232,8 @@ def run_tests(train, request, out, limit_minutes):
         import testkit
         runner_diagnose.diagnose(ROOT, derived, testkit.build_command(
             ROOT, [], str(derived), jobs=RUNNER_JOBS, use_slot=False, action="build-for-testing"), out)
+    # The system settings the tests assume (Keyboard navigation on), written on a GitHub runner only.
+    runner_settings.apply(os.environ)
     if request.get("audio_probe"):
         # A request sent by hand asks whether audio decodes here and what makes it (runner_audio_probe.py).
         runner_audio_probe.probe(out / "audio-probe")
