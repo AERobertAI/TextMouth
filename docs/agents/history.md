@@ -899,6 +899,9 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - Kindle MOBI 6 books (FMT42) came on November 4, 2026.
 - KF8 (FMT48) came on November 8, 2026.
 - The continuation rule's measurement on the real books (the last chapters and licences of Pride and Prejudice, Moby Dick, and The Yellow Wallpaper) was made on November 9, 2026.
+- `MOBIBook.refuseProtected`: it was refuseWhatIsNotRead until 0.4.2, and MOBIError.kf8Only is gone.
+- `MOBIMarkup` checked its own nesting until 0.4.1, where it threw damaged for markup nested more than 256 open elements deep (MOBIMarkup.maximumNesting and its estimate of the depth are gone).
+- The first version of the repeated-title exception took any piece that opened in a different section, and the review showed it could cut a chapter in two.
 
 ## From Imports: DOCX, OpenDocument, and Word 2003 XML
 

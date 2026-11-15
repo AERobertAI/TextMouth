@@ -31,7 +31,7 @@ Kindle KFX books (FMT52): DRM-free KFX books, read by TextMouth's own reader, th
 - The refusals: protected (MOBIError.copyProtected: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."), damaged or not a Kindle book (MOBIError, the MOBI sentences), no flowing text (KFXError.noFlowingText: "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."), a Kindle Create package (KFXError.kindleCreatePackage: "This file is a Kindle Create package, which TextMouth can't read yet."), and a partial container (KFXError.partOfABook: "This file holds only part of a Kindle book.
   Open the book's main .kfx file.").
 - Cancellation: KFXWalk asks ImportCancellation.throwIfCancelled() as it works.
-  The sample books and their tests are in [Testing](../../developer/testing-formats.md).
+  The sample books and their tests are in [Tests of the markup guard, Kindle, and MOBI readers](../../developer/testing-formats.md).
 
 ## Kindle MOBI 6 and KF8 books
 <!-- id: kindle-mobi-6-kf8-books; keys: Mobipocket, AZW3, PRC, PalmDOC, Amazon Kindle, kindlegen, e-book, DRM; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/BookParser.swift -->
@@ -49,15 +49,15 @@ The first launch of each reads every .mobi book (.azw3, .azw, and .prc included)
 Before 0.4.2 it had no page reader.
 
 ### Reading a MOBI 6 book
-<!-- id: reading-mobi-6-book; keys: Mobipocket, Palm OS, Huffman, decompression, encryption, table of contents, chapters, TEXtREAd; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/MOBIPalmDatabase.swift, TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouth/Services/MarkdownCacheService.swift -->
+<!-- id: reading-mobi-6-book; keys: Mobipocket, Palm OS, Huffman, decompression, encryption, table of contents, chapters, TEXtREAd; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/MOBIPalmDatabase.swift, TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouth/Services/MarkdownCacheService.swift, Vendor/SwiftSoup/README.md, TextMouthProductionTests/SwiftSoupCorpusTests.swift -->
 
-Reading: BookParser and MarkdownCacheService.extractFromMOBI call MOBIParser, which reads the file's bytes, held to DocumentByteLimit, into a MOBIBook:
+Reading: BookParser and MarkdownCacheService.extractFromKindle call MOBIParser, which reads the file's bytes, held to DocumentByteLimit, into a MOBIBook:
 
 1. MOBIPalmDatabase reads the Palm database's header and record list; its type and creator must be BOOKMOBI or TEXtREAd (else MOBIError.notAKindleBook).
    Every read of the file goes through MOBIView, which checks an offset and a length against the data without adding values the file gives, so no field read from it can overflow or reach past its end.
 2. MOBIHeaders reads record 0: the PalmDOC header (compression, text length, text record count, record size, and encryption) and, in a BOOKMOBI book, the MOBI header (its length, encoding, version, Huffman records, EXTH flag, DRM offset, extra-data flags, and NCX index record) and its EXTH records.
    A field past the end of a shorter, older header reads as absent.
-3. MOBIBook.refuseProtected (it was refuseWhatIsNotRead until 0.4.2, and MOBIError.kf8Only is gone) refuses an encryption field that is not 0 or a DRM offset that is not 0xFFFFFFFF (copyProtected, before any text record is read; nothing removes protection), in the book's first half and in the KF8 half of a hybrid, whichever is read; then MOBIText refuses a compression other than none, PalmDOC, and HUFF/CDIC (unsupportedCompression).
+3. MOBIBook.refuseProtected refuses an encryption field that is not 0 or a DRM offset that is not 0xFFFFFFFF (copyProtected, before any text record is read; nothing removes protection), in the book's first half and in the KF8 half of a hybrid, whichever is read; then MOBIText refuses a compression other than none, PalmDOC, and HUFF/CDIC (unsupportedCompression).
 4. MOBIText joins the text records.
    It takes each record's trailing entries (by the extra-data flags) and multibyte overlap off its end, decompresses it with PalmDOC's LZ77, whose back-references may not reach before the record's own output, or with MOBIHuffman (HUFF/CDIC).
    A text that decompresses past the length the header declares is cut there, as two real dictionaries need, and one that comes up short throws damaged, as a broken download would.
@@ -67,8 +67,9 @@ Reading: BookParser and MarkdownCacheService.extractFromMOBI call MOBIParser, wh
    MOBIMarkup scans the text for filepos targets (none inside a comment, a declaration, or a quoted attribute) and mbp:pagebreak tags, puts an anchor, filepos-N, at each target, takes the Mobipocket tags out, and cuts the text into sections: one for each top-level entry, with the words before the first entry a section of their own, or, with no index, one for each page break.
    No section begins before Scan.bodyStart, the first body tag, else the end of the head, else the text's start, so the head (an OEB metadata block, a guide) is never read: SwiftSoup would move a head element it doesn't know into the body.
    A deeper entry is a heading annotation (level depth + 1, at most 6) at its anchor.
-   MOBIMarkup checks no nesting of its own since 0.4.1, where it threw damaged for markup nested more than 256 open elements deep (MOBIMarkup.maximumNesting and its estimate of the depth are gone): a section's markup reaches SwiftSoup only through MarkupGuard, in HTMLToMarkdownConverter.convert, which refuses markup nested more than 128 levels deep, with too many tags, too many attributes on one tag, or too much work, by throwing MarkupRefusal before SwiftSoup builds anything (see Shared helpers and, for the sentences, [Adding books](../../user/import-progress-and-errors.md)).
+   MOBIMarkup checks no nesting of its own: a section's markup reaches SwiftSoup only through MarkupGuard, in HTMLToMarkdownConverter.convert, which refuses markup nested more than 128 levels deep, with too many tags, too many attributes on one tag, or too much work, by throwing MarkupRefusal before SwiftSoup builds anything (see Shared helpers and, for the sentences, [Import progress and errors](../../user/import-progress-and-errors.md)).
    A section that opens as XML goes to SwiftSoup's XML parser, and a broken declaration in it is rewritten as an empty comment.
+   SwiftSoup is the vendored copy in Vendor/SwiftSoup, not a Swift package, and builds the same trees as the package did (SwiftSoupCorpusTests).
 6. Each section's HTML goes to HTMLToMarkdownConverter with its heading targets, and MarkdownDocParser makes it a chapter.
    A chapter with no heading at its start gets a heading annotation, which is never read aloud, of its entry's title, or "Chapter N", N counting the chapters that hold text.
 7. Soft hyphens (0.4.3): the section's markup, the NCX entries' labels, and the plain text of a TEXtREAd book go through ParserUtilities.removingSoftHyphens (MOBIBook), as KF8's already did, so a MOBI 6 book no longer has the U+00AD that a publisher put inside words.
@@ -118,7 +119,6 @@ It is read by TextMouth's own code, written from the format's published descript
    - The exception is narrow on purpose.
      A piece that opens in another section element still goes on, since a document of two sections that is cut inside the second reopens that section in the new piece, and its second half must not become a chapter.
      A piece after a footer goes on too, so Gutenberg's back page stays with the licence.
-     The first version of the rule took any piece that opened in a different section, and the review showed it could cut a chapter in two.
    - The licence-opening rule: a piece with no heading whose title is the heading the next piece opens with, and that is inside the same element as the next piece (a section element with an id, as Gutenberg's footer#pg-footer is, which calibre opens again in the next piece), is not the end of the chapter before.
      It is the opening of the next piece's section, so the next piece goes on with it (previousOpensThisSection).
      Where the two pieces are not in one element, the piece goes on with the chapter before, as before.
@@ -133,7 +133,7 @@ It is read by TextMouth's own code, written from the format's published descript
 8. The last document is left out when the guide names its start as the book's contents page (generatedContentsCandidate) and KF8Book.isGeneratedContents holds: its only words outside its links are its own title, every link goes to a place in the book (kindle:pos), and each link's words are a label of the contents.
    A last page with words of its own is read.
 9. Rewriting: kindle:flow SVG pictures are put back where they stood, once each, and only a small flow that is an SVG picture is put back; the words in them are read. epub:type values calibre strips of their prefix (type="pagebreak", page-list, landmarks, toc) are put back whole-attribute only, so the shared reading rules find the page breaks and leave the navigation lists unread.
-   Soft hyphens are removed by ParserUtilities.removingSoftHyphens, in a document's markup and in a contents entry's label (see Shared helpers and the MOBI 6 item below); the EPUB reader keeps them.
+   Soft hyphens are removed by ParserUtilities.removingSoftHyphens, in a document's markup and in a contents entry's label (see Shared helpers and the MOBI 6 item above); the EPUB reader keeps them.
    Links (kindle:pos) are never followed, and pictures are read by description.
 10. Pages: the page-break elements a KF8 book kept are pages (the includesPages flag reaches MOBIParser.prepareBook and the converter), and its page list is not kept.
     A MOBI 6 book and a KFX book named .azw have none.
