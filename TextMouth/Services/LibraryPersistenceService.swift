@@ -1501,9 +1501,7 @@ enum LibraryPersistenceService {
     /// rows this version cannot read (V03) logs once how many it keeps; the
     /// log never names them.
     private static func decodeLibrary(from data: Data) throws -> Library {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let library = try decoder.decode(Library.self, from: data)
+        let library = try decodeIndex(from: data)
         let kept = library.unreadableRows.count
         if kept > 0 {
             DiagnosticLog.event(
@@ -1513,6 +1511,16 @@ enum LibraryPersistenceService {
             )
         }
         return library
+    }
+
+    /// Decodes the bytes of a library index as every read of one does, and
+    /// does nothing else: no log line, no memory of the bytes, no
+    /// protection of an index that fails. Compare Libraries reads another
+    /// copy's index this way, so reading it leaves no trace in this library.
+    static func decodeIndex(from data: Data) throws -> Library {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(Library.self, from: data)
     }
 
     // MARK: - Unreadable Index Protection
