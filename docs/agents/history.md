@@ -641,3 +641,20 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **CLAUDE.md's Start here:** it listed the project's documents (writing-docs.md, README.md, ARCHITECTURE.md, the TODO, AGENT-NOTES, `research/`), the message board with its build wrapper `build-slot-with-bbs.sh`, `merge-chain.sh` and `extract-report.py`.
   It also gave the `*.md` gitignore rule and the `humanQuestions/` rule.
   AGENTS.md's Start here holds them now, and the orchestrator's tools are in orchestrator.md.
+
+## From Reusable test tools
+
+- **Load-sensitive tests made to wait:**
+  The load-sensitive tests of the October 30, 2026 audit are no longer load-sensitive.
+- **The build train, why agents stopped building and the hourly schedule:**
+  On October 31, 2026 the Mac froze under the agents' builds, so agents no longer build on their own.
+  Trains left every 30 minutes until November 8, 2026, when the user, finding that the builds took a lot of CPU, asked for "the builds every hour and putting them one after the other".
+- **Run only some tests, the size of areas.conf and the suite's time:**
+  On November 14, 2026 the file has 34 areas, such as `feeds`, `bookmarks`, `export`, `braille`, `readers`, `playback-end`, and `shortcuts`, which between them place all 814 hosted test classes.
+  The testkit team's lead measured the whole suite, `all`, at about 16 minutes of test time on October 17, 2026.
+- **Quitting while work is held, the probe's first version:**
+  The earlier version of the probe sent the keyword it was testing, and passed with the wrong one.
+- **Test matrices, the time of the end-of-book matrix:**
+  It takes about 52 seconds in a full run; it took about 154 seconds before October 17, 2026.
+- **Opt-in sweeps, the textfmt team's run of the import fuzz:**
+  The textfmt team's run over those 21 made 351 damaged copies, and no check broke.

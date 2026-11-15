@@ -11,7 +11,7 @@ The times below leave out the build, which takes about 5 minutes when nothing is
 ## Load-sensitive tests made to wait
 <!-- id: load-sensitive-tests-made-wait; keys: flaky, flakiness, timing, deadline, busy Mac, expectation, slow Mac; src: TextMouthProductionTests/BookSearchModelTests.swift, TextMouthProductionTests/FeedDownloadTests.swift, TextMouthProductionTests/StorageGenerationMoveTests.swift, TextMouthProductionTests/DataDirectoryMoveTests.swift, TextMouthProductionTests/ViewsAndWindowsReaderSheetTests.swift, TextMouthProductionTests/IntegrationSleepTimerTests.swift, TextMouthProductionTests/ContinueToNextBookTests.swift, TextMouthProductionTests/BookmarkKeyboardAccessTests.swift, TextMouthProductionTests/ReadingCheckpointTests.swift, TextMouthProductionTests/ShortcutConfigFileTests.swift, TextMouthProductionTests/PlaybackSettingsAuditTests.swift, TextMouthProductionTests/FeedUICommandsTests.swift -->
 
-The load-sensitive tests of the October 30, 2026 audit are no longer load-sensitive, each made to wait for the thing it checks rather than for a moment, and shown to fail when its app code is broken and to pass 5 to 20 times of 5 to 20 under a busy Mac:
+These tests are not load-sensitive, each made to wait for the thing it checks rather than for a moment, and shown to fail when its app code is broken and to pass 5 to 20 times of 5 to 20 under a busy Mac:
 
 - BookSearchModelTests.testCancelledSearchPublishesNothing and its sibling, whose fake now waits for the cancellation itself.
 - FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped, whose stub drops the connection only once the app has written the first half.
@@ -24,8 +24,7 @@ The load-sensitive tests of the October 30, 2026 audit are no longer load-sensit
 <!-- id: build-train; keys: train, queue, TestBuild, train/base, hung test, request, GitHub Actions, wait-for-result; src: Scripts/agents/build-train.py, Scripts/agents/wait-for-result.py, Scripts/agents/heavy_lock.py, Scripts/agents/github_run.py, Scripts/test/run-area.py, TextMouthProductionTests/ContentIndexValidationTests.swift -->
 
 The build train, `Scripts/agents/build-train.py`, is how agents build.
-On October 31, 2026 the Mac froze under the agents' builds, so agents no longer build on their own: an agent commits its work on its branch and asks the train to test it (`build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]`), and one scheduled build every hour, on the hour (`build-train.py loop`, or `run` for one), pools every waiting request.
-Trains left every 30 minutes until November 8, 2026, when the user, finding that the builds took a lot of CPU, asked for "the builds every hour and putting them one after the other".
+Agents do not build on their own, since their builds froze the Mac: an agent commits its work on its branch and asks the train to test it (`build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]`), and one scheduled build every hour, on the hour (`build-train.py loop`, or `run` for one), pools every waiting request.
 A test that hangs doesn't hold the train: when a run writes nothing to its log for 15 minutes, the train kills its test host, which fails that test as a crash, and the run goes on with the tests after it.
 That watches only the train's own copy of the app.
 
@@ -42,7 +41,7 @@ That watches only the train's own copy of the app.
   After its tests it counts the iOS errors in the merged tree, as `make typecheck-ios CENSUS=1` does, and lists those in the files each branch changes.
   The agent waits for its result in the background with `python3 -I Scripts/agents/wait-for-result.py --agent SLUG`, which exits as soon as the agent's result is written, since an agent that ends its turn to wait is never woken.
   A train kills the test host when a run writes nothing to its log for 15 minutes (`HUNG_RUN_MINUTES` in `Scripts/agents/build-train.py`), so a hung test holds every agent's request that long: every wait in a test takes a limit.
-- A train can build and test on GitHub instead (`build-train.py run --remote`, `loop --remote`, since November 9, 2026): it merges here, pushes the merged tree plus a request to the branch `TestBuild`, waits for the run, and reports from the log it downloads.
+- A train can build and test on GitHub instead (`build-train.py run --remote`, `loop --remote`): it merges here, pushes the merged tree plus a request to the branch `TestBuild`, waits for the run, and reports from the log it downloads.
   It takes no heavy-work lock and runs no iOS census here: the run builds the iPhone app on GitHub and the result lists its errors by file.
   With `loop --remote --soon N` it leaves N minutes after a request instead of on the hour.
   See Tests on GitHub Actions, below.
@@ -63,7 +62,7 @@ It fails on any difference that its `knownDifferences` does not list with the re
 
 `MacBrailleTableCheckTests` reads the memory of the braille helper it checks a table with, and its reading can miss all three short runs of a table, so that `testFrenchGermanAndSpanishPassAndRoundTrip` fails at its `peakResidentBytes` assertion for a table, with the load time before it passing.
 The watchdog takes a reading only after one poll interval (1 ms) passes with the helper still running, and a helper that ends first leaves a peak of 0.
-The test passed in the 13 train runs before it first failed, in train 1104-0000 on November 4, 2026, in code that no change had touched, so when that test alone fails, rerun its class: `python3 -I Scripts/agents/build-train.py request --agent SLUG --branch BRANCH --classes MacBrailleTableCheckTests`.
+The test passed in the 13 train runs before it first failed, in train 1104-0000, in code that no change had touched, so when that test alone fails, rerun its class: `python3 -I Scripts/agents/build-train.py request --agent SLUG --branch BRANCH --classes MacBrailleTableCheckTests`.
 If it fails again, run the same class on main, to show that the failure predates the change; any other test failing beside it is not this.
 
 ## Golden tests against a Release build
@@ -78,7 +77,7 @@ Run it once before a release; it takes about 14 minutes and 1.5 GB (see The Rele
 Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `make test-area AREAS="feeds bookmarks"`, where `AREA_ARGS` passes options, as in `make test-area AREAS=feeds AREA_ARGS=--dry-run`.
 
 - Each name is an area from `Scripts/test/areas.conf` or a test class.
-  On November 14, 2026 the file has 34 areas, such as `feeds`, `bookmarks`, `export`, `braille`, `readers`, `playback-end`, and `shortcuts`, which between them place all 814 hosted test classes.
+  The file has 34 areas, such as `feeds`, `bookmarks`, `export`, `braille`, `readers`, `playback-end`, and `shortcuts`, which between them place every hosted test class.
   `--list` prints the areas, and `all` is every runnable class, those no area lists last.
   A merge that adds test classes should place them: `--unassigned` lists the classes no area names, and ends "0 unassigned classes" when every class is placed.
 - Name every area in one command.
@@ -90,7 +89,7 @@ Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `mak
 - Options: `--classes A,B` adds classes; `--env NAME=VALUE` passes `TEST_RUNNER_NAME=VALUE` to the test host; `--dry-run` prints the command without running it; `--summarize LOG` prints the summary of an existing log; `--changed` picks the classes whose file mentions a type declared in a file changed since the merge-base with `--base REF` (default `main`), and runs them, with `--explain` naming the matching types, `--limit N` keeping the first N classes, and `--list` printing the picks without running them (it is a heuristic, so run the area or `all` before a merge); `--repeat N` builds once, runs the classes N times, and ends with a report of the tests that changed outcome, for a suspected flaky test; `--clean` unregisters the build folder's app and deletes the folder; and `--selftest` checks the script against canned logs.
   `-h` lists the rest.
 - A small area takes a few seconds of tests.
-  The testkit team's lead measured the whole suite, `all`, at about 16 minutes of test time on October 17, 2026.
+  The whole suite, `all`, takes about 16 minutes of test time.
 
 ## Check the lines a branch adds
 <!-- id: check-lines-branch-adds; keys: lint-tests, lint-a11y, lint-ogg, LINT_BASE, linter, static check, Vorbis, Apple reader; src: Scripts/test/trap-lint.py, Scripts/test/test-diff.py, Scripts/test/a11y-lint.py, Scripts/test/ogg-lint.py, Scripts/test/difflint.py, Makefile, TextMouth/Services/ImportAudioConverter.swift -->
@@ -132,7 +131,6 @@ Quitting while work is held (0.4.4): what the hosted suite cannot do, because no
   - `logout-during-quit`: a log out while the person's quit is being finished is answered later too, and replied to as the work ends.
   - `no-work`: with nothing to finish, the quit goes ahead at once.
 - The log-out cases send the SDK's `kAEQuitReason`, never `QuitReason`'s own constant, so a wrong keyword fails them.
-  The earlier version of the probe sent the keyword it was testing, and passed with the wrong one.
 - The script also scans `TextMouth/` (the case `ask-sites`): a line that calls `terminate(`, names terminate in a `#selector`, or calls `exit(` or `_exit(` fails unless the same line contains `quit-ok:` and a reason.
   It does not find `forceTerminate()`, a `Selector("terminate:")` built from a string, `abort()`, or `kill(`.
   The hosted test `QuitWhileHeldTests.testNoSourceAsksAppKitToQuitExceptTheHelperAndTheMemoryGuard` uses the same pattern and checks that it matches samples.
@@ -174,7 +172,7 @@ Documents to try:
 Matrices, always on, each with its table in its file's header comment:
 
 - `EndBehaviorMatrixTests` pins what a book does when it ends, for each of 4 end-of-book behaviors, 5 kinds of content (text, single-file audio, chaptered audio, multi-file audio, and DAISY), and 5 sleep timer states (none; End of book; End of heading; minutes still running at the end; minutes that ran out before it): 100 cells, each with a test, 80 of them in this class and 20 in other classes that the table names.
-  It takes about 52 seconds in a full run; it took about 154 seconds before October 17, 2026.
+  It takes about 52 seconds in a full run.
   Its audio cells still play a book out in real time, but the book is saved 0.3 seconds short of its end (`offsetBeforeTheEnd(ofChapterOf:)`), `waitForTheEndToSettle(of:reports:)` waits only for the player's reports that follow an end, and `nextBookAsked(for:…)` waits for the ask of the next book only in a cell that expects one.
 - `WindowsMatrixTests` pins what Book A keeps doing while Book B is edited, moved, closed, or timed, and while the Library windows close: 117 of the 120 cells (12 states of Book A by 10 things that happen to Book B or to the library), the other 3 being covered by older tests that its table names.
   It takes about 8 seconds.
@@ -204,7 +202,6 @@ Opt-in sweeps: each skips unless its script sets its environment variable, and e
   On the development Mac, 181 voices took 73 seconds of tests, and the English ones 25.
 - `Scripts/test/import-fuzz.sh [--seed N] [--docs a,b] [--pdf]` damages each book in TestData under 300 KB in seeded ways (truncated, emptied, bytes flipped, a window zeroed, removed, or doubled, random bytes added, a ZIP's ends corrupted, NULs or invalid UTF-8 put into text, a megabyte line, deeply nested HTML) and imports every copy as the library does: 103 copies of 6 books, in 3 seconds of tests.
   It damages the format samples that are single files under 300 KB in the same ways, 21 of the 24 (the RTFD and NIMAS folder samples are left out, since a folder has no bytes to damage), taking rich text, SSML, and XML for text and the Word templates and OpenDocument files for ZIPs; a damaged copy keeps the sample's import name, the Word 2003 XML sample's being an .xml file, and `--docs` names such a sample by its path, as in `format-samples/rtf/headings.rtf`.
-  The textfmt team's run over those 21 made 351 damaged copies, and no check broke.
   It checks that each import finishes, refuses cleanly, or gives a book that loads, that a refused import leaves nothing behind, and that the damaged file is left alone.
   `--pdf` adds the two small PDFs.
   A crash of the test host is a finding, not a script failure; the script exits 1 when a case breaks one of those checks and 3 when the test host crashed or the sweep did not finish.
