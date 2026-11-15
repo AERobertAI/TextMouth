@@ -120,9 +120,26 @@ def runner_environment(request):
     return environment
 
 
+# The most test-host clones a request may ask for (the runner has 3 cores and 7 GB).
+MAX_PARALLEL_WORKERS = 3
+
+
+def parallel_arguments(request):
+    """The xcodebuild arguments that run the tests in the request's "parallel_workers" clones of the test host (2 to
+    MAX_PARALLEL_WORKERS), or none for any other value. They come after the command's own `-parallel-testing-enabled NO`,
+    so they win. A request sent by hand asks for them to see whether the runner's cores make the tests faster; no train or
+    suite sets it."""
+    workers = request.get("parallel_workers")
+    if isinstance(workers, bool) or not isinstance(workers, int) or not 2 <= workers <= MAX_PARALLEL_WORKERS:
+        return []
+    return ["-parallel-testing-enabled", "YES", "-parallel-testing-worker-count", str(workers),
+            "-maximum-parallel-testing-workers", str(workers)]
+
+
 def runner_arguments(request, skips):
-    """Every extra xcodebuild argument the runner adds: the time limit, and the tests left out."""
-    return time_limit_arguments(request) + skip_arguments(selected_skips(request, skips))
+    """Every extra xcodebuild argument the runner adds: the time limit, the clones of the test host a hand-sent request
+    asks for, and the tests left out."""
+    return time_limit_arguments(request) + parallel_arguments(request) + skip_arguments(selected_skips(request, skips))
 
 
 def read_request(path):

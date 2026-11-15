@@ -431,6 +431,17 @@ class SkipTests(RunnerTestCase):
         self.assertEqual(arguments[:2], ["-test-timeouts-enabled", "YES"])
         self.assertEqual(arguments[-1], "-skip-testing:TextMouthProductionTests/FooTests/testBar")
 
+    def test_parallel_workers_are_asked_for_only_by_a_request_that_says_so_with_a_sensible_number(self):
+        self.assertEqual(runner.parallel_arguments({}), [])
+        for odd in (True, 1, 0, 4, "2", 2.0, None):
+            with self.subTest(odd=odd):
+                self.assertEqual(runner.parallel_arguments({"parallel_workers": odd}), [])
+        self.assertEqual(runner.parallel_arguments({"parallel_workers": 2}),
+                         ["-parallel-testing-enabled", "YES", "-parallel-testing-worker-count", "2",
+                          "-maximum-parallel-testing-workers", "2"])
+        request = {"full": True, "areas": [], "classes": [], "parallel_workers": 3}
+        self.assertIn("-parallel-testing-worker-count", runner.runner_arguments(request, []))
+
     @staticmethod
     def declared_tests():
         """{class name: {test names}} read from the hosted test sources: a test is a `func test...()` indented one
