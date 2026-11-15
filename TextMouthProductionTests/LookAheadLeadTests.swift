@@ -3,7 +3,7 @@ import XCTest
 
 /// The lead before a chapter's end at which the next chapter's audio is
 /// rendered (`LookAheadLead`, audit C11), and the watch that tells a reader
-/// its pause has grown long (`LongPauseWatch`, audit C11 and C12). Both are
+/// its pause has grown long (`LongPauseWatch`). Both are
 /// plain rules: nothing here renders, speaks, or waits on a clock.
 @MainActor
 final class LookAheadLeadTests: XCTestCase {

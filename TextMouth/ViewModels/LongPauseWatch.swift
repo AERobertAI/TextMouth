@@ -2,14 +2,14 @@ import Foundation
 
 /// Watches for a text book's pause growing long, so that what a paused
 /// reader holds only for an instant resume is let go once the listener has
-/// plainly walked away (audit C11 and C12).
+/// plainly walked away (audit C11).
 ///
-/// One watch serves both savings, so they begin together: when it elapses
-/// the reader lets go of the next chapter's rendered audio
-/// (`ReaderViewModel.releaseLookAheadAudioForLongPause()`) and asks the
-/// paused engine to wake less often (`SpeechService.throttlePausedEngine()`).
-/// Whatever ends the pause ends the watch first: a resume, a new play, a
-/// stop, the reader closing.
+/// When it elapses the reader lets go of the next chapter's rendered audio
+/// (`ReaderViewModel.settleIntoLongPause()`). Whatever ends the pause ends
+/// the watch first: a resume, a new play, a stop, the reader closing. It is
+/// the one timer for anything else a long pause should let go of later, as
+/// the audit's C12 would have the paused engine's output wake less often
+/// (measured and not built: `Scripts/agents/probes/paused-engine-wakeups-probe.swift`).
 ///
 /// A value of its reader, begun and ended only on the main actor.
 @MainActor
@@ -17,10 +17,10 @@ final class LongPauseWatch {
     /// How long a pause lasts before it counts as long: five minutes.
     ///
     /// Shorter pauses are a listener answering the door or a call, who comes
-    /// back expecting everything as it was. Past five minutes the only costs
-    /// of letting go are a render of a few seconds made again, for a pause
-    /// near a chapter's end, and an output buffer set back before the first
-    /// sound; neither is heard. It is the look-ahead's smallest lead too
+    /// back expecting everything as it was. Past five minutes the only cost
+    /// of letting go is a render of a few seconds made again, for a pause
+    /// near a chapter's end, which is not heard. It is the look-ahead's
+    /// smallest lead too
     /// (`LookAheadLead.minimum`), so one number says what "a few minutes"
     /// means to playback.
     static let delay: TimeInterval = 5 * 60
