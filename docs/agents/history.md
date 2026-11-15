@@ -800,3 +800,20 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 
 - **The feed log keys are pinned:** Feeds, every one pinned since the feed review of October 10, 2026.
 - **BRAILLE_TABLE_CHANGED:** A braille book read again with another braille code has written BRAILLE_TABLE_CHANGED since November 13, 2026.
+
+## From The reader
+
+- **Next Page and Previous Page commands:** The separate Next Page and Previous Page commands were removed at the user's request on November 5, 2026.
+
+## From Windows
+
+- **The Library's category picker:** Until October 30, 2026 the picker was a segmented control of the five categories, read as "Library category"; it is now a pop-up button, the View pop-up.
+
+## From Windows: the Library's sheets, search, and Speak Info
+
+- **Escape in the new-folder fields:** On main before October 10, Escape offered as a key equivalent reached the Move sheet's own Cancel and closed the whole sheet, with the keyboard in the name field or out of it.
+- **Speak Info's keys:** ShortcutAction.speakInfo and speakFullInfo were a plain I and I twice until October 17, 2026, when a letter alone became the Library list's.
+
+## From Feed options, interface, and arrivals
+
+- **The rotor outside the Folders category:** Outside the Folders category there are neither; until October 7, 2026, the rotor listed folders there that the list didn't show.
