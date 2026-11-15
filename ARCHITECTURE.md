@@ -43,6 +43,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
   - [Text in other encodings](docs/architecture/state/imports-text-encodings.md): finding and guessing the encoding.
   - [Choosing the encoding](docs/architecture/state/imports-text-encoding-choice.md): the listener's way to mend a guess.
 - [Feeds](docs/architecture/state/feeds.md)
+  - [Feed options, interface, and arrivals](docs/architecture/state/feeds-interface.md)
 - [Recordings](docs/architecture/state/recordings.md)
 - [Transcription](docs/architecture/state/transcription.md)
 - [Exports](docs/architecture/state/exports.md)
