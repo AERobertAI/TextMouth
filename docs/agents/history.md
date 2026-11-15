@@ -648,3 +648,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 
 - **The list overrides a book's own end rule:** A reader that reads its book from the list holds it at its end, and the list overrides the book's own end rule (the user, October 7, 2026).
 - **The In reading list note:** Until October 17, 2026 "In reading list" was a book row's accessibility value, the empty string for a book not in the list.
+## From Timers and statistics
+
+- **One sleep timer for each reader window:** Owner: each reader window's own SleepTimerService (November 13, 2026, the user: "I want each sleep timer to be refactored to be per book view window not global").
+- **End of chapter folded into End of the heading:** endOfHeading has been the one place-based timer for any document since October 6, 2026, when End of chapter folded into it.
