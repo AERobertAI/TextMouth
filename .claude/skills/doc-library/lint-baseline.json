@@ -12,7 +12,7 @@
     "docs/architecture/reading-a-book.md": {"line-length": 18, "marker-missing": 1, "sentences-per-line": 8},
     "docs/architecture/shared-helpers.md": {"date": 4, "line-length": 69, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 55, "user-quote": 1},
     "docs/architecture/state/audio-edits.md": {"line-length": 38, "marker-missing": 1, "section-length": 1, "sentences-per-line": 23},
-    "docs/architecture/state/cloud-state.md": {"line-length": 25, "marker-missing": 1, "sentences-per-line": 15},
+    "docs/architecture/state/cloud-state.md": {"line-length": 24, "sentences-per-line": 15},
     "docs/architecture/state/data-directory.md": {"line-length": 31, "marker-missing": 1, "sentences-per-line": 21},
     "docs/architecture/state/exports.md": {"date": 4, "line-length": 42, "marker-missing": 1, "section-length": 1, "sentences-per-line": 31},
     "docs/architecture/state/feeds.md": {"date": 3, "line-length": 96, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 33},
