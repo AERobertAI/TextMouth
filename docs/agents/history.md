@@ -686,3 +686,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Imports: rich text and Word documents
 
 - The own readers of rich text, Word 97-2003, OpenDocument text, and Word 2003 XML (FMT47, FMT27, FMT53) came from November 4 to 6, 2026.
+
+## From Imports: choosing the encoding
+
+- The measurement of Foundation's readers of several encodings, on macOS 26.3, was made on October 24, 2026.
