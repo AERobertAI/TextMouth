@@ -49,6 +49,9 @@ struct PronunciationLexicon: Equatable {
         case notALexicon
         /// The file is larger than `byteLimit`.
         case tooLarge
+        /// The file declares XML entities, which a lexicon never needs and
+        /// which would be read as nothing.
+        case declaresEntities
     }
 
     /// The lexemes in the file's order, including those that only have
@@ -80,6 +83,8 @@ struct PronunciationLexicon: Equatable {
         parser.shouldResolveExternalEntities = false
         parser.delegate = reader
         let finished = parser.parse()
+        // A declared entity would be read as nothing, silently: refuse it.
+        if reader.declaresEntities { throw ReadError.declaresEntities }
         if reader.rootWasNotALexicon { throw ReadError.notALexicon }
         guard finished else { throw ReadError.notXML }
         return PronunciationLexicon(lexemes: reader.lexemes, unreadCount: reader.unreadCount)
@@ -199,7 +204,7 @@ struct PronunciationLexicon: Equatable {
 
 /// Reads a lexicon's lexemes off an `XMLParser`, ignoring namespaces'
 /// prefixes and every element it does not know (`phoneme`, `example`).
-private final class LexiconXMLReader: NSObject, XMLParserDelegate {
+private final class LexiconXMLReader: EntityRefusingXMLReader {
     /// The lexemes read so far.
     private(set) var lexemes: [PronunciationLexicon.Lexeme] = []
     /// Whether the document's root element is not a `lexicon`.

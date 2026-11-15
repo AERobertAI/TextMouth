@@ -133,6 +133,25 @@ final class PLSAndXSPFPlaylistTests: XCTestCase {
         ])
     }
 
+    /// An XSPF playlist that declares an entity, of either kind, is refused
+    /// in words, not read with the entity as nothing.
+    func testXSPFWithADeclaredEntityIsRefused() {
+        for declaration in [#"<!ENTITY t "Tone">"#, #"<!ENTITY s SYSTEM "file:///nowhere/at/all">"#] {
+            let data = Data("""
+            <?xml version="1.0"?>
+            <!DOCTYPE playlist [\(declaration)]>
+            <playlist version="1" xmlns="http://xspf.org/ns/0/"><trackList><track><location>a.wav</location><title>&t; one</title></track></trackList></playlist>
+            """.utf8)
+            XCTAssertThrowsError(try M3UPlaylist.parseXSPF(data, fileName: "p.xspf"), declaration) {
+                XCTAssertEqual($0 as? M3UPlaylistError, .declaresEntities(fileName: "p.xspf"))
+                XCTAssertEqual(
+                    $0.localizedDescription,
+                    "The playlist “p.xspf” declares XML entities, which TextMouth does not read."
+                )
+            }
+        }
+    }
+
     /// A file that is no XML, a cut-off one, and another kind of XML are
     /// refused with the playlist's name.
     func testXSPFRefusals() {

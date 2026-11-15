@@ -77,6 +77,8 @@ enum PronunciationLexiconWording {
             return "“\(fileName)” is not a pronunciation lexicon: it is not a complete, valid XML file."
         case .notALexicon?:
             return "“\(fileName)” is an XML file, but not a pronunciation lexicon."
+        case .declaresEntities?:
+            return "“\(fileName)” declares XML entities, which TextMouth does not read in a lexicon."
         case .tooLarge?:
             return "“\(fileName)” is too large to read as a pronunciation lexicon."
         case nil:

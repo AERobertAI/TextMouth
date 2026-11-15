@@ -71,7 +71,8 @@ extension M3UPlaylist {
     static let xspfTrackLimit = 100_000
 
     /// The playlist in the XSPF `data`.
-    /// - Throws: `M3UPlaylistError.notReadable` when it is not XML, is cut
+    /// - Throws: `M3UPlaylistError.declaresEntities` when it declares an XML
+    ///   entity, and `M3UPlaylistError.notReadable` when it is not XML, is cut
     ///   off, or its root is not a `playlist`.
     static func parseXSPF(_ data: Data, fileName: String) throws -> M3UPlaylist {
         let reader = XSPFReader()
@@ -81,6 +82,8 @@ extension M3UPlaylist {
         parser.shouldResolveExternalEntities = false
         parser.delegate = reader
         let finished = parser.parse()
+        // A declared entity would be read as nothing, silently: refuse it.
+        if reader.declaresEntities { throw M3UPlaylistError.declaresEntities(fileName: fileName) }
         guard !reader.rootWasNotAPlaylist, finished || reader.reachedTrackLimit else {
             throw M3UPlaylistError.notReadable(fileName: fileName)
         }
@@ -91,7 +94,7 @@ extension M3UPlaylist {
 /// Reads an XSPF playlist's title and tracks off an `XMLParser`, whatever
 /// namespace prefix its elements have, and ignoring every element it does
 /// not know (`creator`, `duration`, `extension`).
-private final class XSPFReader: NSObject, XMLParserDelegate {
+private final class XSPFReader: EntityRefusingXMLReader {
     /// The playlist's own title.
     private(set) var title: String?
     /// The tracks read, as entries.

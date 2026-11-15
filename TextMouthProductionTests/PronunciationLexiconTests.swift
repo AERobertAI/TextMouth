@@ -161,16 +161,23 @@ final class PronunciationLexiconTests: XCTestCase {
         XCTAssertEqual(try PronunciationLexicon.parse(lexiconXML("")).lexemes, [])
     }
 
-    /// An external entity is never resolved: a lexicon naming a file reads
-    /// as its text without the file's.
-    func testAnExternalEntityIsNotResolved() throws {
-        let data = Data("""
-        <?xml version="1.0"?>
-        <!DOCTYPE lexicon [<!ENTITY secret SYSTEM "file:///etc/hosts">]>
-        <lexicon version="1.0" xml:lang="en"><lexeme><grapheme>a</grapheme><alias>x&secret;y</alias></lexeme></lexicon>
-        """.utf8)
-        let replacement = (try? PronunciationLexicon.parse(data))?.substitutionRules.first?.replacement
-        XCTAssertFalse(replacement?.contains("localhost") ?? false)
+    /// A lexicon that declares an entity, of either kind, is refused, not
+    /// read with the entity as nothing ("&w; Wide Web" as " Wide Web").
+    func testADeclaredEntityIsRefused() {
+        let declarations = [
+            #"<!ENTITY w "World">"#,
+            #"<!ENTITY secret SYSTEM "file:///nowhere/at/all">"#,
+        ]
+        for declaration in declarations {
+            let data = Data("""
+            <?xml version="1.0"?>
+            <!DOCTYPE lexicon [\(declaration)]>
+            <lexicon version="1.0" xml:lang="en"><lexeme><grapheme>W3C</grapheme><alias>&w; Wide Web</alias></lexeme></lexicon>
+            """.utf8)
+            XCTAssertThrowsError(try PronunciationLexicon.parse(data), declaration) {
+                XCTAssertEqual($0 as? PronunciationLexicon.ReadError, .declaresEntities)
+            }
+        }
     }
 
     // MARK: - The Rule Limit
@@ -373,6 +380,14 @@ final class PronunciationLexiconTests: XCTestCase {
     }
 
     // MARK: - The Words
+
+    /// The sentence for a lexicon that declares entities.
+    func testTheEntityRefusalWords() {
+        XCTAssertEqual(
+            PronunciationLexiconWording.importFailure(fileName: "a.pls", .declaresEntities),
+            "“a.pls” declares XML entities, which TextMouth does not read in a lexicon."
+        )
+    }
 
     /// The sentences, pinned, for every count.
     func testTheWords() {

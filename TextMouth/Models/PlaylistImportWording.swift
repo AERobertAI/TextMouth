@@ -42,6 +42,11 @@ enum PlaylistImportWording {
         "The playlist “\(fileName)” is not a complete, valid playlist file."
     }
 
+    /// The refusal of an XSPF playlist that declares XML entities.
+    static func declaresEntities(fileName: String) -> String {
+        "The playlist “\(fileName)” declares XML entities, which TextMouth does not read."
+    }
+
     /// Whether this build has the Text settings tab where a lexicon is
     /// imported: the Mac does, the iPhone does not.
     static let hasLexiconImport: Bool = {

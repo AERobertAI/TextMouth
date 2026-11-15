@@ -7,6 +7,9 @@ enum M3UPlaylistError: LocalizedError, Equatable {
     /// An XSPF playlist that is not XML, is cut off, or is some other XML
     /// (FMT12).
     case notReadable(fileName: String)
+    /// An XSPF playlist that declares XML entities, which would be read as
+    /// nothing (FMT12).
+    case declaresEntities(fileName: String)
     /// A .pls file that is a pronunciation lexicon, not a PLS playlist
     /// (FMT08, FMT12): both use the extension.
     case pronunciationLexicon(fileName: String)
@@ -18,6 +21,8 @@ enum M3UPlaylistError: LocalizedError, Equatable {
             return "The playlist “\(fileName)” is too large to read."
         case let .notReadable(fileName):
             return PlaylistImportWording.notReadable(fileName: fileName)
+        case let .declaresEntities(fileName):
+            return PlaylistImportWording.declaresEntities(fileName: fileName)
         case let .pronunciationLexicon(fileName):
             return PlaylistImportWording.pronunciationLexicon(fileName: fileName)
         }
