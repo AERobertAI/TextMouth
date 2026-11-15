@@ -1,10 +1,10 @@
 # Recordings
-<!-- id: recordings; keys: ; src: -->
+<!-- id: recordings; keys: audio recording, Record window, microphone; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## A take being recorded
-<!-- id: take-being-recorded; keys: ; src: TextMouth/Services/RecordingService.swift, TextMouth/Services/RecordingCaptureBackend.swift, TextMouth/Services/RecordingTake.swift, TextMouth/Services/AudioInputPermission.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Views/Recording/RecordingWindowView.swift, TextMouth/Views/Recording/RecordingWording.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/ViewModels/AudioEditorModel.swift, TextMouth/Platform/iOS/Views/Recording/RecordingWindowController+iOS.swift -->
+<!-- id: take-being-recorded; keys: Record window, microphone permission, AVCaptureSession, RecordingLevels, level meter, punch-in, audio recorder, microphone capture; src: TextMouth/Services/RecordingService.swift, TextMouth/Services/RecordingCaptureBackend.swift, TextMouth/Services/RecordingTake.swift, TextMouth/Services/AudioInputPermission.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Views/Recording/RecordingWindowView.swift, TextMouth/Views/Recording/RecordingWording.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/ViewModels/AudioEditorModel+PunchIn.swift -->
 
 A take being recorded (FR04).
 
@@ -23,7 +23,7 @@ A take being recorded (FR04).
 - Files: Services/RecordingService.swift, Services/RecordingCaptureBackend.swift, Services/RecordingTake.swift, Services/AudioInputPermission.swift, ViewModels/RecordingWindowModel.swift, Views/Recording/RecordingWindowView.swift, Views/Recording/RecordingWording.swift, Platform/macOS/Views/Recording/RecordingWindowController.swift, Platform/macOS/App/AppDelegate.swift.
 
 ## Takes left behind
-<!-- id: takes-left-behind; keys: ; src: TextMouth/Services/RecordingTake.swift, TextMouth/Services/RecordingService.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/Views/Recording/RecordingWindowView.swift, TextMouth/Views/Recording/RecordingWording.swift, TextMouth/Platform/iOS/Views/Recording/RecordingWindowController+iOS.swift -->
+<!-- id: takes-left-behind; keys: crash recovery, recovered takes, Recordings folder, Save as Audiobook, orphaned take, leftover take; src: TextMouth/Services/RecordingTake.swift, TextMouth/Services/RecordingService.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/Views/Recording/RecordingWindowView.swift, TextMouth/Views/Recording/RecordingWording.swift -->
 
 Takes left behind (FR04): takes in this Mac's Recordings folder that no window holds, as a crash, a forced quit, or a save that failed after its window closed leaves them.
 
@@ -38,7 +38,7 @@ Takes left behind (FR04): takes in this Mac's Recordings folder that no window h
 - Files: Services/RecordingTake.swift, Services/RecordingService.swift, ViewModels/RecordingWindowModel.swift, Platform/macOS/Views/Recording/RecordingWindowController.swift, Views/Recording/RecordingWindowView.swift, Views/Recording/RecordingWording.swift.
 
 ## Microphones and the chosen one
-<!-- id: microphones-chosen-one; keys: ; src: TextMouth/Services/RecordingInputDevices.swift, TextMouth/Services/RecordingPreferences.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Models/StoredPreference.swift, TextMouth/ViewModels/AudioEditorModel.swift -->
+<!-- id: microphones-chosen-one; keys: Microphone pop-up, input device, RecordingInputCatalog, AVCaptureDevice, default input, recordingInputDeviceID; src: TextMouth/Services/RecordingInputDevices.swift, TextMouth/Services/RecordingPreferences.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Models/StoredPreference.swift, TextMouth/ViewModels/AudioEditorModel+PunchIn.swift -->
 
 Microphones, and which one records.
 
@@ -49,7 +49,7 @@ Microphones, and which one records.
 - Files: Services/RecordingInputDevices.swift, Services/RecordingPreferences.swift, ViewModels/RecordingWindowModel.swift.
 
 ## A saved recording
-<!-- id: saved-recording; keys: ; src: TextMouth/ViewModels/LibraryViewModel+Recording.swift, TextMouth/Services/RecordingEncoder.swift, TextMouth/Services/FileImportService+Recording.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/ViewModels/LibraryViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/AudioEditing/AudioOriginalSweep.swift -->
+<!-- id: saved-recording; keys: Save Again, Open in Reader, Stop and save, M4A, AAC, original take, recording import; src: TextMouth/ViewModels/LibraryViewModel+Recording.swift, TextMouth/Services/RecordingEncoder.swift, TextMouth/Services/FileImportService+Recording.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Services/AudioEditing/AudioOriginalSweep.swift, TextMouth/Models/AudioOriginalPolicy.swift -->
 
 A saved recording.
 
