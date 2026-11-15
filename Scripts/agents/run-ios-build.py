@@ -23,6 +23,7 @@ Usage: python3 -I -B Scripts/agents/run-ios-build.py [--out DIR] [--derived-data
 Run it from the repository root. Python 3 standard library only.
 """
 import argparse
+import platform
 import re
 import subprocess
 import sys
@@ -49,11 +50,24 @@ MISSING_PLATFORM = ("iOS 26.0 is not installed", "is not installed. To use with 
                     "SDK \"iphonesimulator\" cannot be located")
 
 
-def build_command(derived_data):
-    """The argv of the build: build-for-testing of the TextMouthiOS scheme into `derived_data`, unsigned."""
+def host_architecture(machine=None):
+    """The one architecture to build for: the machine's own ("arm64" or "x86_64"), since the simulator the tests run in
+    is built for the machine it runs on. A generic Simulator destination builds both architectures when none is named,
+    which compiled every Swift file twice (1,086 files each way in run 43716590818: about half of the build's minutes
+    on a runner with three cores). `machine` is platform.machine()'s answer; an unknown one gives None, and the build
+    then names no architecture."""
+    machine = platform.machine() if machine is None else machine
+    return {"arm64": "arm64", "aarch64": "arm64", "x86_64": "x86_64", "amd64": "x86_64"}.get(machine.lower())
+
+
+def build_command(derived_data, architecture=None):
+    """The argv of the build: build-for-testing of the TextMouthiOS scheme into `derived_data`, unsigned, for one
+    architecture (this machine's, see host_architecture, unless `architecture` is given)."""
+    architecture = architecture or host_architecture()
+    only = [f"ARCHS={architecture}"] if architecture else []
     return ["xcodebuild", "build-for-testing", "-project", "TextMouth.xcodeproj", "-scheme", SCHEME,
             "-destination", DESTINATION, "-derivedDataPath", str(derived_data),
-            "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO"]
+            "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO", *only]
 
 
 def relative(path, root):
