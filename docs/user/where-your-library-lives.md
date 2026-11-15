@@ -10,8 +10,6 @@ That choice itself is kept in TextMouth's preferences, with a bookmark of the fo
 ## Choosing a location
 <!-- id: choosing-location; keys: Storage tab, Settings, storage location, move the library; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Services/StorageDestinationAssessment.swift -->
 
-Choosing a location:
-
 ### Change Location
 <!-- id: change-location; keys: folder chooser, open panel, Choose Location button, hidden folders; src: TextMouth/Views/Settings/StorageSettingsView.swift -->
 
@@ -69,8 +67,6 @@ Reset to Default moves a library in another folder back to ~/.TextMouth, the sam
 
 ## Moving the library
 <!-- id: moving-library; keys: data directory move, migration, relocate the library; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/DataDirectoryMoveProgress.swift -->
-
-Moving the library:
 
 ### When a move is refused
 <!-- id: when-move-refused; keys: migration refused, open books, books not downloaded, Rebuild Directory; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Services/StorageGeneration.swift -->
@@ -143,8 +139,6 @@ A move still waiting to start its copy doesn't hold up quitting.
 
 ## When the library isn't available
 <!-- id: when-library-isnt-available; keys: unavailable library, missing library, unplugged drive; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift -->
-
-When the library isn't available:
 
 ### How TextMouth checks the data directory
 <!-- id: how-textmouth-checks-data-directory; keys: launch check, unmounted drive, metadata only; src: TextMouth/Services/DataDirectoryAvailability.swift -->
