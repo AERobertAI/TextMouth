@@ -49,7 +49,8 @@ CountWording.list(_:) is the one "a, b, and c" joiner, which the cloud, removal,
 <!-- id: manualbookorder-librarybooksorter; keys: drag reorder, library sort, tie-break; src: TextMouth/Models/LibraryBookSorter.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/ReadingList.swift, TextMouth/Models/LibrarySortState.swift -->
 
 ManualBookOrder and LibraryBookSorter (ViewModels/LibraryViewModel+SortAndOrder.swift, Models/LibraryBookSorter.swift): the library's orderings.
-Manual order (by position, then title, then book ID) is the one order a folder's list, Move Book Up and Down, dragging, and Continue to Next Book all follow; the reading list keeps an order of its own (ReadingList), which Move Book Up and Down and dragging rearrange at the Reading List through the same LibraryReorderTarget.
+Manual order (by position, then title, then book ID) is the one order a folder's list, Move Book Up and Down, dragging, and Continue to Next Book all follow.
+The reading list keeps an order of its own (ReadingList), which Move Book Up and Down and dragging rearrange at the Reading List through the same LibraryReorderTarget.
 
 ## Stable sort helpers
 <!-- id: stable-sort-helpers; keys: stable sort, code size, generic specialization, binary size; src: TextMouth/Models/StableSort.swift, TextMouth/Models/LibraryBookSorter.swift, TextMouth/Services/Feeds/FeedIndex.swift, TextMouth/Models/LibrarySortState.swift -->
@@ -90,7 +91,13 @@ LibraryInfoWording (Models/LibraryInfoWording.swift): every sentence Speak Info 
 ## TextEncodingWording
 <!-- id: textencodingwording; keys: charset, Text Encoding pop-up, Latin-1, code page; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouthProductionTests/TextEncodingChoiceTests.swift -->
 
-TextEncodingWording (Models/LibraryInfoWording.swift, beside LibraryInfoWording): every word of a text book's encoding, made once for the decoder, Speak Info, and Book Information's pop-up (encodingchoice): the label "Text Encoding", the notes that say what decided an encoding (describe(name:basis:): guessed, chosen, from its byte order mark, recognized by its bytes, declared in the file, the default), the pop-up's hint and values, the confirmation's title and message, the announcement when a book is read again, and the refusals, among them notValid(in:subject:), which the decoder's error (TextEncodingError.invalidForChosenEncoding) and Book Information's refusal both say, and readingAgainRefusal(bookTitle:), which every entry point that waits for a re-read says.
+TextEncodingWording (Models/LibraryInfoWording.swift, beside LibraryInfoWording): every word of a text book's encoding, made once for the decoder, Speak Info, and Book Information's pop-up (encodingchoice):
+- the label "Text Encoding";
+- the notes that say what decided an encoding (describe(name:basis:): guessed, chosen, from its byte order mark, recognized by its bytes, declared in the file, the default);
+- the pop-up's hint and values;
+- the confirmation's title and message;
+- the announcement when a book is read again;
+- and the refusals, among them notValid(in:subject:), which the decoder's error (TextEncodingError.invalidForChosenEncoding) and Book Information's refusal both say, and readingAgainRefusal(bookTitle:), which every entry point that waits for a re-read says.
 TextEncodingChoiceTests pins the words.
 
 ## Text TextMouth did not write
@@ -117,7 +124,8 @@ FeedItemPackage.removeWhole(_:in:remove:) (Services/Feeds/FeedItemPackage.swift)
 <!-- id: unopened-books-folder-tree; keys: folder contents, descendants, subfolder, recursive; src: TextMouth/Models/Book.swift, TextMouth/Models/Library.swift -->
 
 Book.isUnopened (Models/Book.swift) and Library.booksInFolderTree(_:) (Models/Library.swift) are the one definition of "never opened" and of "a folder's tree of books" (the library's own books in the folder and below it, never a feed's items): Book.isUnopened is read by the Unopened category, a row's New badge, Speak Info, a feed item's New and its kept package's test, and the recently opened sort; booksInFolderTree by a folder's emptiness test (hasBooks(inFolderTree:), which stops at the first book), its book counts, and its Speak Info.
-Delete Folder… lists the books it removes with booksInFolderTree, and Library.removeFolderAndContents(id:) removes the same books, so a feed's item that names a folder is neither deleted nor dropped; Library.isPath(_:inTreeAt:) is the one "is this path the folder or below it" rule, by whole path components, which the folders, their sort settings, and the books all follow.
+Delete Folder… lists the books it removes with booksInFolderTree, and Library.removeFolderAndContents(id:) removes the same books, so a feed's item that names a folder is neither deleted nor dropped.
+Library.isPath(_:inTreeAt:) is the one "is this path the folder or below it" rule, by whole path components, which the folders, their sort settings, and the books all follow.
 
 ## Array subscript(safe:) in tests
 <!-- id: array-subscript-safe-tests; keys: out of bounds, index safety, XCTest helper, optional element, test support; src: TextMouthProductionTests/CollectionTestSupport.swift -->
@@ -149,7 +157,13 @@ ReaderViewModel.headingAnnouncement(arrivingAt:in:): what a heading jump says, e
 ## PackageFileEditing
 <!-- id: packagefileediting; keys: external editor, file watcher, NSWorkspace, iOS stub; src: TextMouth/Platform/iOS/Services/PackageFileEditing+iOS.swift, TextMouth/Platform/macOS/Services/PackageFileEditing.swift -->
 
-PackageFileEditing (Platform/macOS/Services/PackageFileEditing.swift) holds what Edit Text and Edit Manifest share: the first-use explanation, worded for each kind, the app chooser, the workspace opener, the watcher of a file in a book's package, TextMouth becoming active, and the announcements kept until it does.
+PackageFileEditing (Platform/macOS/Services/PackageFileEditing.swift) holds what Edit Text and Edit Manifest share:
+- the first-use explanation, worded for each kind;
+- the app chooser;
+- the workspace opener;
+- the watcher of a file in a book's package;
+- TextMouth becoming active;
+- and the announcements kept until it does.
 
 ## ObjCException.catching
 <!-- id: objcexception-catching; keys: NSException, try catch, Objective-C bridge, crash guard; src: TextMouth/Services/ObjCException.swift -->
