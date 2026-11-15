@@ -4,7 +4,7 @@
 
 One hit for each section, in page order, none left out: the section's lines, its
 heading as written (``(top)`` for text before the first heading), and its marker id
-(``-`` when it has none) with its size in lines and bytes. The name of the page may
+(``no id`` when it has none) with its size in lines and bytes. The name of the page may
 be its tail (see ``targets.resolve_page``). Exit status 0.
 """
 
@@ -20,6 +20,9 @@ from output import Hit
 
 # What the heading column shows for text before a page's first heading.
 TOP_LABEL = "(top)"
+# What the text shows for a section without a marker id. Words, not a dash, and commas
+# between the fields, so a screen reader does not speak "minus 4 lines".
+NO_ID = "no id"
 
 
 def section_bytes(page: Page, section: Section) -> int:
@@ -35,7 +38,7 @@ def outline_hit(page: Page, section: Section) -> Hit:
     size = section_bytes(page, section)
     return Hit(
         path=page.path, start=section.start, end=section.end, heading=heading,
-        text=f"{ident or '-'}  {lines} lines  {size} bytes",
+        text=f"{ident or NO_ID}, {lines} lines, {size} bytes",
         extra={"id": ident, "level": section.level, "title": section.title, "lines": lines,
                "bytes": size, "path_titles": list(section.path)},
     )

@@ -45,11 +45,11 @@ class OutlineTests(DocLibCase):
         self.assertEqual((status, err), (0, ""))
         lines = out.splitlines()
         self.assertEqual(len(lines), 4)
-        # The text column's white space is collapsed, like every hit's.
-        self.assertEqual(lines[0], f"docs/user/feeds.md:1-1  (top)  - 1 lines {size(FEEDS_LINES[0])} bytes")
-        self.assertEqual(lines[1], f"docs/user/feeds.md:3-6  # Feeds  feeds-top 4 lines {size(*FEEDS_LINES[2:6])} bytes")
-        self.assertEqual(lines[2], f"docs/user/feeds.md:8-11  ## Subscribing  feeds-subscribe 4 lines {size(*FEEDS_LINES[7:11])} bytes")
-        self.assertEqual(lines[3], f"docs/user/feeds.md:13-15  ### Details  - 3 lines {size(*FEEDS_LINES[12:15])} bytes")
+        # Commas separate the fields, so they survive the collapse of white space in a hit's text.
+        self.assertEqual(lines[0], f"docs/user/feeds.md:1-1  (top)  no id, 1 lines, {size(FEEDS_LINES[0])} bytes")
+        self.assertEqual(lines[1], f"docs/user/feeds.md:3-6  # Feeds  feeds-top, 4 lines, {size(*FEEDS_LINES[2:6])} bytes")
+        self.assertEqual(lines[2], f"docs/user/feeds.md:8-11  ## Subscribing  feeds-subscribe, 4 lines, {size(*FEEDS_LINES[7:11])} bytes")
+        self.assertEqual(lines[3], f"docs/user/feeds.md:13-15  ### Details  no id, 3 lines, {size(*FEEDS_LINES[12:15])} bytes")
 
     def test_sizes_count_utf8_bytes_of_the_lines_with_their_line_ends(self) -> None:
         _status, out, _err = self.run_cli("outline", "docs/user/feeds.md", "--json")
@@ -80,7 +80,7 @@ class OutlineTests(DocLibCase):
         self.write_tree({"docs/user/only.md": "# Only\n"})
         status, out, _err = self.run_cli("outline", "only")
         self.assertEqual(status, 0)
-        self.assertTrue(out.startswith("docs/user/only.md:1-1  # Only  - 1 lines"))
+        self.assertTrue(out.startswith("docs/user/only.md:1-1  # Only  no id, 1 lines,"))
 
     def test_an_ambiguous_page_name_lists_both_candidates(self) -> None:
         status, out, err = self.run_cli("outline", "feeds")
