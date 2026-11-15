@@ -1,10 +1,10 @@
 # The reader's playback and speech
-<!-- id: reader-playback; keys: ; src: -->
+<!-- id: reader-playback; keys: reader playback, speech, announcements; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## The playback generation
-<!-- id: playback-generation; keys: ; src: TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, Scripts/test/kf8-fuzz/Stubs.swift -->
+<!-- id: playback-generation; keys: stale callback, ChapterPlay, completion handler, race, chapter advance, loop; src: TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift -->
 
 The playback generation.
 
@@ -16,7 +16,7 @@ The playback generation.
 - Files: ViewModels/ReaderViewModel.swift, ViewModels/ReaderViewModel+Navigation.swift, ViewModels/ReaderViewModel+Playback.swift.
 
 ## Prepared speech
-<!-- id: prepared-speech; keys: ; src: TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/SpeechService.swift -->
+<!-- id: prepared-speech; keys: speech cache, chapter speech, render cache, ChapterSpeechInputs, capacity; src: TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Services/SpeechService.swift -->
 
 Prepared speech: what the reader will say for each chapter.
 
@@ -31,7 +31,7 @@ Prepared speech: what the reader will say for each chapter.
 - Files: ViewModels/ChapterSpeechCache.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel.swift.
 
 ## The look-ahead and render signature
-<!-- id: look-ahead-render-signature; keys: ; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SpeechService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: look-ahead-render-signature; keys: pre-render, next chapter, gapless, speech render signature, AVSpeechSynthesizer, audio engine; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
 
 The look-ahead and its render signature.
 
@@ -46,7 +46,7 @@ The look-ahead and its render signature.
 - Files: ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel+VoiceAndSpeed.swift, ViewModels/ChapterSpeechCache.swift, Services/AudioEngineService.swift, Services/SpeechService.swift.
 
 ## Pause between chapters
-<!-- id: pause-between-chapters; keys: ; src: TextMouth/Models/ChapterPauses.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/AudioManifest.swift -->
+<!-- id: pause-between-chapters; keys: chapter gap, silence between tracks, ChapterPauses, audiobook manifest, wait timer; src: TextMouth/Models/ChapterPauses.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Parsers/AudioManifest.swift -->
 
 A pause between chapters (FR15): the silence a book keeps after a chapter before the next starts, while it plays on.
 
@@ -57,7 +57,7 @@ A pause between chapters (FR15): the silence a book keeps after a chapter before
 - Files: Models/ChapterPauses.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel.swift.
 
 ## Playback and bookmark fixes
-<!-- id: playback-bookmark-fixes; keys: ; src: TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SpeechService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: playback-bookmark-fixes; keys: Next Bookmark, Previous Bookmark, clip end, single-file audiobook, review fixes, bookmark order; src: TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
 
 Playback and bookmark fixes of October 31, 2026: the reader's choices that a review found wrong.
 
@@ -67,7 +67,7 @@ Playback and bookmark fixes of October 31, 2026: the reader's choices that a rev
 - Files: ViewModels/ReaderViewModel+Bookmarks.swift, ViewModels/ReaderViewModel+Playback.swift, Services/SpeechService.swift.
 
 ## Where Am I announcement
-<!-- id: where-am-i-announcement; keys: ; src: TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/ViewModels/ReaderViewModel+EditedText.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel+ReadingList.swift, TextMouth/Models/SummaryPress.swift, TextMouthProductionTests/FullSummaryReaderTests.swift, TextMouthProductionTests/MediaCommandPlaybackTests.swift, TextMouthProductionTests/IntegrationTestSupport.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/NowPlayingService.swift -->
+<!-- id: where-am-i-announcement; keys: Where Am I?, announcement, summary press, brief summary, full summary, AirPods Play, end sound, SummaryPress; src: TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/ViewModels/ReaderViewModel+EditedText.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel+ReadingList.swift, TextMouth/Models/SummaryPress.swift, TextMouthProductionTests/FullSummaryReaderTests.swift, TextMouthProductionTests/MediaCommandPlaybackTests.swift, TextMouthProductionTests/IntegrationTestSupport.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/NowPlayingService.swift -->
 
 A Where Am I? announcement: the reader's summary of where it is, spoken in the app's own voice.
 
@@ -92,7 +92,7 @@ A Where Am I? announcement: the reader's summary of where it is, spoken in the a
 - Files: ViewModels/ReaderViewModel+WhereAmI.swift, ViewModels/ReaderViewModel.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel+Navigation.swift, ViewModels/ReaderViewModel+Bookmarks.swift, ViewModels/ReaderViewModel+EditedText.swift, ViewModels/ReaderViewModel+LibraryUpdates.swift, ViewModels/ReaderViewModel+CloudDownload.swift, ViewModels/ReaderViewModel+ReadingList.swift, Models/SummaryPress.swift, TextMouthProductionTests/FullSummaryReaderTests.swift, TextMouthProductionTests/MediaCommandPlaybackTests.swift, TextMouthProductionTests/IntegrationTestSupport.swift.
 
 ## Speech refusal report
-<!-- id: speech-refusal-report; keys: ; src: TextMouth/Models/SpeechRefusalReport.swift, TextMouth/ViewModels/ReaderViewModel+SpeechRefusal.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Services/SpeechService.swift, TextMouth/Views/Reader/SpeechRefusalReportSheet.swift, TextMouth/Platform/macOS/Views/LogsInFinder.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouthProductionTests/SpeechRefusalReportTests.swift, TextMouthProductionTests/SpeechRefusalReaderTests.swift, TextMouthProductionTests/SpeechRefusalSheetTests.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/App/BuildIdentity.swift, TextMouth/Views/Reader/ReaderSnapshot.swift, TextMouth/Platform/iOS/Views/VoiceOverFocus+iOS.swift, TextMouth/Platform/macOS/Views/VoiceOverFocus.swift -->
+<!-- id: speech-refusal-report; keys: speech engine refusal, skipped text, AVSpeechSynthesizer error, report sheet, refused passage, diagnostics log; src: TextMouth/Models/SpeechRefusalReport.swift, TextMouth/ViewModels/ReaderViewModel+SpeechRefusal.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Services/SpeechService.swift, TextMouth/Views/Reader/SpeechRefusalReportSheet.swift, TextMouth/Platform/macOS/Views/LogsInFinder.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouthProductionTests/SpeechRefusalReportTests.swift, TextMouthProductionTests/SpeechRefusalReaderTests.swift, TextMouthProductionTests/SpeechRefusalSheetTests.swift, TextMouth/App/BuildIdentity.swift, TextMouth/Views/Reader/ReaderSnapshot.swift, TextMouth/Platform/iOS/Views/VoiceOverFocus+iOS.swift, TextMouth/Platform/macOS/Views/VoiceOverFocus.swift -->
 
 The report of a speech refusal (B05): what a reader keeps of the speech engine's refusals while its window is open, and the sheet that shows it.
 

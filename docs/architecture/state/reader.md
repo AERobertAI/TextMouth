@@ -1,10 +1,10 @@
 # The reader
-<!-- id: reader; keys: ; src: -->
+<!-- id: reader; keys: reader overview, reader window; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Reader state
-<!-- id: reader-state; keys: ; src: TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Views/Reader/, TextMouth/Views/Reader/ReaderView.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Views/Reader/ReaderJumpPanels.swift, TextMouth/Models/PlaceClock.swift, TextMouth/Views/Reader/HeadingNavigatorView.swift -->
+<!-- id: reader-state; keys: view model, UI refresh throttle, published properties, accessibility label, Go to Percent, Go to Time, visible text window, SwiftUI redraw; src: TextMouth/Views/Reader/, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/ViewModels/ReaderShownState.swift, TextMouth/Views/Reader/ReaderSnapshot.swift, TextMouth/Views/Reader/ReaderJumpPanels.swift, TextMouth/Models/PlaceClock.swift, TextMouth/Models/ReaderTimeWording.swift, TextMouth/Views/Reader/HeadingNavigatorView.swift, TextMouth/Views/Reader/BookmarkPanelView.swift, TextMouth/Views/Reader/BookSearchView.swift, TextMouth/Views/Settings/DuplicateFinderView.swift, TextMouth/ViewModels/ReaderViewModel+BookMoves.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel+EditedText.swift, TextMouth/ViewModels/ReaderViewModel+EpisodeDownload.swift, TextMouth/ViewModels/ReaderViewModel+FolderNavigation.swift, TextMouth/ViewModels/ReaderViewModel+GoingOn.swift, TextMouth/ViewModels/ReaderViewModel+Jump.swift, TextMouth/ViewModels/ReaderViewModel+LibrarySearch.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, TextMouth/ViewModels/ReaderViewModel+ManifestEdit.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+NextBookWindow.swift, TextMouth/ViewModels/ReaderViewModel+OggConversion.swift, TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+Predownload.swift, TextMouth/ViewModels/ReaderViewModel+ReadingList.swift, TextMouth/ViewModels/ReaderViewModel+SavedPlaces.swift, TextMouth/ViewModels/ReaderViewModel+SleepTimerHandOver.swift, TextMouth/ViewModels/ReaderViewModel+SpeakInfo.swift, TextMouth/ViewModels/ReaderViewModel+SpeechRefusal.swift, TextMouth/ViewModels/ReaderViewModel+Transcript.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift -->
 
 A reader's state: its content, cursor (chapter and character offset), headings, bookmarks, playback flags, and errors.
 
@@ -39,7 +39,7 @@ A reader's state: its content, cursor (chapter and character offset), headings, 
 - Files: ViewModels/ReaderViewModel.swift and the ReaderViewModel+ extensions, Views/Reader/.
 
 ## A reader's copy of its book
-<!-- id: reader-copy-book; keys: ; src: TextMouth/ViewModels/LibraryBookUpdates.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/Models/Book.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Models/TextEncodingRecord.swift -->
+<!-- id: reader-copy-book; keys: Book copy, library row, LibraryFields, metadata edit, stale update, text encoding, Book Information; src: TextMouth/ViewModels/LibraryBookUpdates.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/Models/Book.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Models/TextEncodingRecord.swift -->
 
 A reader's copy of its book.
 
@@ -62,7 +62,7 @@ A reader's copy of its book.
 - Files: ViewModels/LibraryBookUpdates.swift, ViewModels/ReaderViewModel+LibraryUpdates.swift, ViewModels/LibraryViewModel.swift, ViewModels/LibraryViewModel+BookOperations.swift, ViewModels/LibraryViewModel+FolderManagement.swift, Models/Book.swift.
 
 ## Book pages
-<!-- id: book-pages; keys: ; src: TextMouth/Models/BookPages.swift, TextMouth/Models/ReaderPageWording.swift, TextMouth/Models/DocumentContent.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Reader/ReaderJumpPanels.swift, TextMouth/Views/Reader/PlaybackControlsView.swift, TextMouth/Views/Settings/SettingsView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/App/MenuCommands.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: book-pages; keys: page markers, PageBreak, Go to Page, Next Page, Previous Page, page label, page position; src: TextMouth/Models/BookPages.swift, TextMouth/Models/ReaderPageWording.swift, TextMouth/Models/DocumentContent.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Reader/ReaderJumpPanels.swift, TextMouth/Views/Reader/PlaybackControlsView.swift, TextMouth/Views/Settings/SettingsView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/App/MenuCommands.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
 
 A book's pages (PG01 to PG04): where each page of the book begins, and the reader's moves by page.
 
@@ -89,7 +89,7 @@ A book's pages (PG01 to PG04): where each page of the book begins, and the reade
 - Files: Models/BookPages.swift, Models/ReaderPageWording.swift, Models/DocumentContent.swift, Parsers/MarkdownParser.swift, ViewModels/ReaderViewModel+Pages.swift, ViewModels/ReaderViewModel+Navigation.swift, ViewModels/ReaderViewModel+WhereAmI.swift, ViewModels/SettingsViewModel.swift, Models/KeyboardShortcut.swift, Views/Reader/ReaderView.swift, Views/Reader/ReaderJumpPanels.swift, Views/Reader/PlaybackControlsView.swift, Views/Settings/SettingsView.swift, Views/Reader/BookReaderWindowView.swift, App/MenuCommands.swift.
 
 ## A closed reader
-<!-- id: closed-reader; keys: ; src: TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SpeechService.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouthProductionTests/ViewsAndWindowsClosedWindowTests.swift -->
+<!-- id: closed-reader; keys: close window, release memory, window lifetime, retained reader, leak; src: TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SpeechService.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouthProductionTests/ViewsAndWindowsClosedWindowTests.swift -->
 
 A closed reader: what a reader keeps after its window closes.
 
@@ -103,7 +103,7 @@ A closed reader: what a reader keeps after its window closes.
 - Files: ViewModels/ReaderViewModel.swift, ViewModels/ReaderViewModel+Playback.swift, Services/SpeechService.swift, Views/Reader/BookReaderWindowView.swift.
 
 ## Getting a book from the cloud
-<!-- id: getting-book-from-cloud; keys: ; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Services/ReaderWorkingCopy.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Models/CloudStorageContract.swift -->
+<!-- id: getting-book-from-cloud; keys: iCloud, dataless file, download progress, ReaderCloudPhase, sync wait, BookCloudStates; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Getting a book from the cloud: a reader's download, in a library in a cloud location.
 
@@ -120,7 +120,7 @@ Getting a book from the cloud: a reader's download, in a library in a cloud loca
 - Files: ViewModels/ReaderViewModel+CloudDownload.swift, ViewModels/ReaderViewModel.swift, ViewModels/ReaderViewModel+Playback.swift, Views/Reader/ReaderView.swift, Services/ReaderWorkingCopy.swift.
 
 ## The cloud working copy
-<!-- id: cloud-working-copy; keys: ; src: TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Models/CloudStorageContract.swift -->
+<!-- id: cloud-working-copy; keys: iCloud audiobook, APFS clone, local copy, playbackURL, package copy, MachineLocalPaths; src: TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 The working copy: the files an open audiobook in a library in a cloud location plays.
 
