@@ -625,11 +625,15 @@ targets:
       - TextMouthProductionTests/PhoneAudioEventPolicyTests.swift
       - TextMouthProductionTests/PhoneAudioPaceTests.swift
       - TextMouthProductionTests/PhoneAudioWordingTests.swift
+      - TextMouthProductionTests/PhoneLogExportTests.swift
+      - TextMouthProductionTests/PhoneSettingsDefaultsTests.swift
+      - TextMouthProductionTests/PhoneSettingsVocabularyTests.swift
       - TextMouthProductionTests/PlaceRelocatorBookTests.swift
       - TextMouthProductionTests/PlaceRelocatorTestSupport.swift
       - TextMouthProductionTests/PlaceRelocatorTests.swift
       - TextMouthProductionTests/PlaybackFuzzOperations.swift
       - TextMouthProductionTests/PlaybackFuzzOperationsTests.swift
+      - TextMouthProductionTests/PreferenceStoreTests.swift
       - TextMouthProductionTests/ReadingTextCacheTests.swift
       - TextMouthProductionTests/RemovalWordingTests.swift
       - TextMouthProductionTests/RunLoopWaiting.swift
