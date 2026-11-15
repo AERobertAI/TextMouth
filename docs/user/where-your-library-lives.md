@@ -1,5 +1,5 @@
 # Where TextMouth keeps your library
-<!-- id: where-textmouth-keeps-your-library; keys: ; src: -->
+<!-- id: where-textmouth-keeps-your-library; keys: storage directory, library folder, preferences, bookmark, .TextMouth, data directory location; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -8,30 +8,30 @@ Any folder can hold it, hidden or not: on this Mac, on an external or network dr
 That choice itself is kept in TextMouth's preferences, with a bookmark of the folder and the identity of the library in it, because config.json lives inside the directory it names.
 
 ## Choosing a location
-<!-- id: choosing-location; keys: ; src: -->
+<!-- id: choosing-location; keys: Storage tab, Settings, storage location, move the library; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Services/StorageDestinationAssessment.swift -->
 
 Choosing a location:
 
 ### Change Location
-<!-- id: change-location; keys: ; src: -->
+<!-- id: change-location; keys: folder chooser, open panel, Choose Location button, hidden folders; src: TextMouth/Views/Settings/StorageSettingsView.swift -->
 
 Change Location… in Storage settings opens a folder chooser that shows hidden folders and can make a new folder; its button says Choose Location.
 The folder you choose becomes the data directory itself, with nothing added to its name.
 
 ### What TextMouth offers for a folder
-<!-- id: what-textmouth-offers-folder; keys: ; src: -->
+<!-- id: what-textmouth-offers-folder; keys: folder check, destination assessment, status line, Checking; src: TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
 
 TextMouth first looks at the folder, reading only what the file system says about it and downloading nothing, while the status line says "Checking" and the folder's path.
 Then it offers what the folder can hold, and VoiceOver announces each status line as it appears:
 
 #### Move Library Here
-<!-- id: move-library-here; keys: ; src: -->
+<!-- id: move-library-here; keys: migrate library, empty folder, copy the library, recovery data; src: TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Services/DataDirectoryMigrator.swift -->
 
 Move Library Here, for an empty folder, such as one just made in the chooser.
 The confirmation says that the library is copied there, checked, and used, with the current folder kept as recovery data, and what the place means: in a cloud folder, that the library, with its size, uploads in the background, and that a book only in the cloud needs an internet connection to open; on another drive, that the drive must be connected to open the library.
 
 #### Use This Library
-<!-- id: where-your-library-lives-use-this-library; keys: ; src: -->
+<!-- id: user-use-this-library-folder; keys: switch library, restore from the cloud, second Mac, quit and reopen; src: TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Services/StorageGeneration.swift -->
 
 Use This Library, for a folder that holds a TextMouth library: its library-identity.json, or a library.json beside a Library folder.
 TextMouth switches to that library as it is, copying nothing, then quits and opens again on it.
@@ -41,27 +41,27 @@ Changes not yet saved are written first, and the switch is refused while some st
 It is refused too while a move, Rebuild Directory, or a change that moves books between folders is under way, saying which, and while it runs those are refused in turn: "TextMouth is switching to another library and opening again on it."
 
 #### The folder the library is in already
-<!-- id: folder-library-already; keys: ; src: -->
+<!-- id: folder-library-already; keys: same folder, current library, in use; src: TextMouth/Services/StorageDestinationAssessment.swift -->
 
 For the folder the library is in already, the status line says it is the library TextMouth is using.
 
 #### Folders TextMouth refuses
-<!-- id: folders-textmouth-refuses; keys: ; src: -->
+<!-- id: folders-textmouth-refuses; keys: refused folder, folder in the Trash, cloud folder not downloaded, not enough room; src: TextMouth/Services/StorageDestinationAssessment.swift -->
 
 Anything else is refused, with the reason: a file rather than a folder, a folder holding other items, which it names, a folder inside the library, a folder in the Trash, one TextMouth can't read or isn't allowed to change, a cloud folder that isn't on this Mac yet, a missing folder whose enclosing folder is missing too, or another drive without room for the library.
 
 ### Reset to Default
-<!-- id: reset-default; keys: ; src: -->
+<!-- id: reset-default; keys: default location, home folder, back to ~/.TextMouth; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 Reset to Default moves a library in another folder back to ~/.TextMouth, the same way.
 
 ## Moving the library
-<!-- id: moving-library; keys: ; src: -->
+<!-- id: moving-library; keys: data directory move, migration, relocate the library; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/DataDirectoryMoveProgress.swift -->
 
 Moving the library:
 
 ### When a move is refused
-<!-- id: when-move-refused; keys: ; src: -->
+<!-- id: when-move-refused; keys: migration refused, open books, books not downloaded, Rebuild Directory; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Services/StorageGeneration.swift -->
 
 A move is refused while any book is open, naming the open books, and while books in a library in the cloud aren't downloaded: "3 books aren't downloaded.
 Download them first: select them in the library, then choose Download Now."
@@ -70,7 +70,7 @@ Try again when that finishes."
 A move from a current data directory that is not there, or is a file, says "The current data directory does not exist."
 
 ### A book stored outside the data directory
-<!-- id: book-stored-outside-data-directory; keys: ; src: -->
+<!-- id: book-stored-outside-data-directory; keys: external file, linked book, copy is missing content; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 A book stored outside the data directory stops the move before anything is copied or published (0.4.3).
 The move cannot carry a file that is not in the data directory, and used to say the copy was missing the book's content.
@@ -82,13 +82,13 @@ Replace Existing puts the new copy, which is stored in the data directory, in pl
 Keep Both would leave the book outside the data directory, and the move would stop again.
 
 ### What a move waits for
-<!-- id: what-move-waits; keys: ; src: -->
+<!-- id: what-move-waits; keys: waits, imports, text extraction, feed rules; src: TextMouth/Services/StorageGeneration.swift, TextMouth/ViewModels/DataDirectoryMoveProgress.swift -->
 
 An import, text extraction, or book analysis under way finishes first, and the move's progress says which it waits for; any that start meanwhile wait until the move is over.
 A move also waits for the feed rules' deletion of downloads under way, saying "Waiting for feed downloads to be deleted...", and a rule's deletion waits while a move copies the library.
 
 ### How the copy is made
-<!-- id: how-copy-made; keys: ; src: -->
+<!-- id: how-copy-made; keys: staging copy, symbolic link, rename into place, empty destination; src: TextMouth/Services/DataDirectoryMigrator.swift -->
 
 Moving copies everything into a hidden folder beside the new location, a book at a time, checks the copy, then renames it into place in one step and switches to it.
 The new location must be an empty folder or one that does not exist yet.
@@ -97,7 +97,7 @@ A location that is a symbolic link counts as the folder it leads to, and message
 The old folder is left where it was.
 
 ### The hidden folder of a move
-<!-- id: hidden-folder-move; keys: ; src: -->
+<!-- id: hidden-folder-move; keys: migration staging, leftovers, UUID, cleanup at launch; src: TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 The hidden folder is gone when the move ends, however it ends: renamed into place when the move finishes, removed when it is cancelled or fails.
 When it can't be removed, because the new location's drive was unplugged during the copy or TextMouth was force-quit, it stays on that drive, and TextMouth removes it the next time it starts.
@@ -110,52 +110,52 @@ When it can't be removed, because the new location's drive was unplugged during 
 - The debug log records MIGRATION_STAGING_REMOVED for each folder removed, and MIGRATION_STAGING_LEFT for each that could not be removed.
 
 ### Progress while the library moves
-<!-- id: progress-while-library-moves; keys: ; src: -->
+<!-- id: progress-while-library-moves; keys: progress sheet, progress bar, VoiceOver announcements; src: TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/Views/Library/DataDirectoryMoveSheet.swift -->
 
 While the library moves, every Library window shows a sheet with its progress, as in "Moving the library… 40 percent", and Cancel, which Escape also presses; Storage settings show the same.
 VoiceOver moves to the progress bar, and announces what the move waits for, where the library is going as the copy starts, each quarter of the copy, and how the move ended.
 Books can't be opened or added meanwhile; a book opened from Finder is imported once the move is over.
 
 ### Cancelling a move
-<!-- id: cancelling-move; keys: ; src: -->
+<!-- id: cancelling-move; keys: Cancel button, Escape, partial copy; src: TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 Cancel deletes the partial copy and leaves the library where it was, with no setting changed, and the status then says so, as in "Move cancelled.
 The library is still at /Users/you/.TextMouth."
 Once every item is copied, the move can only finish.
 
 ### Quitting during a move
-<!-- id: quitting-during-move; keys: ; src: -->
+<!-- id: quitting-during-move; keys: quit, Command-Q, stop for quit; src: TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 
 Quitting during the copy stops the move first, as Cancel does, or lets it finish once every item is copied, and then quits.
 A move still waiting to start its copy doesn't hold up quitting.
 
 ## When the library isn't available
-<!-- id: when-library-isnt-available; keys: ; src: -->
+<!-- id: when-library-isnt-available; keys: unavailable library, missing library, unplugged drive; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift -->
 
 When the library isn't available:
 
 ### How TextMouth checks the data directory
-<!-- id: how-textmouth-checks-data-directory; keys: ; src: -->
+<!-- id: how-textmouth-checks-data-directory; keys: launch check, unmounted drive, metadata only; src: TextMouth/Services/DataDirectoryAvailability.swift -->
 
 TextMouth checks the data directory at launch, before it creates or loads anything, reading only metadata.
 It checks again when the drive holding it is unmounted, or when a save finds its folder gone.
 
 ### A missing folder you chose
-<!-- id: missing-folder-you-chose; keys: ; src: -->
+<!-- id: missing-folder-you-chose; keys: unplugged drive, signed-out cloud service, moved folder, default location; src: TextMouth/Services/DataDirectoryAvailability.swift -->
 
 The default location is always available: it is created when it is missing, as on a first launch.
 A folder you chose is never created, nor any folder above it: a missing one is an unplugged drive, a signed-out cloud service, or a folder that was moved or deleted, and creating it would start an empty library in its place.
 A folder that was renamed, or a drive that mounted under another name, is found again through its bookmark, unless that leads into the Trash or to another library.
 
 ### The Library Not Available window
-<!-- id: library-not-available-window; keys: ; src: -->
+<!-- id: library-not-available-window; keys: error screen, reason, copy path, Quit TextMouth; src: TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/Services/DataDirectoryAvailability.swift -->
 
 Otherwise every Library window shows Library Not Available in place of the library: the reason, such as "The drive “Backup” isn't connected." or "The folder is there, but it holds a different TextMouth library.", then where to choose another folder instead, "To use another folder, open Settings, Storage, and choose Choose Another Library or Use Default Location.", the folder's full path, which you can select and copy, and two buttons, Try Again, which Return presses, and Quit TextMouth.
 VoiceOver moves to the reason and announces it once.
 Meanwhile the library index isn't saved, and no book can be opened or added.
 
 ### Files that are only in the cloud
-<!-- id: files-that-are-only-cloud; keys: ; src: -->
+<!-- id: files-that-are-only-cloud; keys: placeholder files, sync service, Google Drive, iCloud Drive, waiting for files; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift -->
 
 When library.json, library-identity.json, the Feeds folder, a feed's folder, or a feed's index is only in the cloud, TextMouth gets it from the sync service itself and opens the library when it arrives, so you needn't do anything.
 Meanwhile every Library window shows Getting Your Library, with the reason "Some of the library's files are in Google Drive and aren't on this Mac yet.
@@ -169,13 +169,13 @@ If they still can't be had, the heading goes back to Library Not Available, the 
 Try Again starts over, and a file that turns up late still opens the library.
 
 ### Try Again
-<!-- id: try-again; keys: ; src: -->
+<!-- id: try-again; keys: retry, reopen the library, newer reading positions; src: TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift -->
 
 Try Again opens the library once it is back.
 When the library went missing while TextMouth was open, library.json is read afresh, and the session's newer reading positions are carried into it.
 
 ### Storage settings when the library is missing
-<!-- id: storage-settings-when-library-missing; keys: ; src: -->
+<!-- id: storage-settings-when-library-missing; keys: Choose Another Library, Use Default Location, switch library; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift -->
 
 Storage settings say Library Not Available, with the same reason, and offer the ways out: Choose Another Library…, for a folder that holds a TextMouth library, and Use Default Location…, which uses the library in ~/.TextMouth or starts a new, empty one there.
 Either quits and opens TextMouth again on that library, and the confirmation lists the changes that couldn't be saved, which switching loses.

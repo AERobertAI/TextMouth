@@ -1,25 +1,25 @@
 # What the data directory holds
-<!-- id: what-data-directory-holds; keys: ; src: -->
+<!-- id: what-data-directory-holds; keys: files in the library folder, folder layout, library folder contents; src: TextMouth/Services/TextMouthPaths.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 The data directory holds:
 
 ## library.json, the library index
-<!-- id: library-json-library-index; keys: ; src: -->
+<!-- id: library-json-library-index; keys: library index, book rows, bookmarks, folders, reading list, compact JSON; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Models/Library.swift -->
 
 library.json: the library index.
 It lists every book of the library's own (title, author, format, folder, file path, reading position, bookmarks, and per-book settings), every folder, each location's sort (that of Feeds, and of a view of your own, under a key that begins with "/views/", as "/views/Feeds"), and the reading list, with its order and options, as compact JSON, without line breaks.
 ### Feeds are not in library.json
-<!-- id: feeds-are-not-library-json; keys: ; src: -->
+<!-- id: feeds-are-not-library-json; keys: feed episodes, articles, feed index; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/Feeds/FeedIndex.swift -->
 
 Since October 10, 2026 it never holds a feed's downloaded episode or article, whose feed's own index lists it instead (see Feeds, below), and a row it holds is always a book of the library's own, whatever a hand edit of the file says.
 ### How reading positions reach the index
-<!-- id: how-reading-positions-reach-index; keys: ; src: -->
+<!-- id: how-reading-positions-reach-index; keys: saving position, five minutes, autosave, reader closes; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift -->
 
 While a book plays, its reading position reaches the index within five minutes, or sooner when anything else in the library changes, when the book's reader closes, or when TextMouth quits; meanwhile the book's record in its package holds it (below).
 ### The metadata reader and the Unknown author refresh
-<!-- id: metadata-reader-unknown-author-refresh; keys: ; src: -->
+<!-- id: metadata-reader-unknown-author-refresh; keys: metadata refresh, author, title, edited by hand, metadata reader version; src: TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/Models/Book.swift -->
 
 Each book's row also records which version of TextMouth's metadata reader last read its file for its title and author, and which of its details you edited by hand (see [The Library window](library-window.md), under [Finding your way around](../../README.md)).
 The first launch after an update that reads a format's metadata better reads every older row's file again, in the background before the text caches, and takes the author the file names where the row still says Unknown; an author you typed stays, and a file that still names no one leaves Unknown.
@@ -30,7 +30,7 @@ It never reads an episode or article its feed lists, whose title and author come
 A book whose files are only in the cloud waits for a launch that finds them on this Mac.
 The October 7, 2026 update does this once for every book. library.json is read one row at a time.
 ### Rows this TextMouth cannot read
-<!-- id: data-directory-files-rows-this-textmouth-cannot-read; keys: ; src: -->
+<!-- id: library-json-unreadable-rows; keys: unknown format, newer TextMouth, kept rows, unknown sort; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Models/Library.swift -->
 
 A row this TextMouth cannot read, as a book that a later TextMouth added in a format this one does not know, is kept exactly as the file held it, written back at every save, and never shown, counted, opened, or searched.
 Storage settings say how many there are (see [Settings](settings.md)).
@@ -40,20 +40,20 @@ A feed's index is read the same way.
 An index that is cut short or is not JSON at all, or whose folders, or whose list of books, are in a layout this TextMouth cannot read, is still unreadable as a whole (below).
 
 ## reading-checkpoints.json
-<!-- id: reading-checkpoints-json; keys: ; src: -->
+<!-- id: reading-checkpoints-json; keys: checkpoint journal, crash recovery, reading position; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/TextMouthPaths.swift -->
 
 reading-checkpoints.json: present only while some books' records hold reading positions that library.json doesn't have yet.
 It names those books, so that a launch after a crash takes their newer positions from their records.
 
 ## library.json.unreadable- copies and Rebuild Library Index
-<!-- id: library-json-unreadable-copies-rebuild; keys: ; src: -->
+<!-- id: library-json-unreadable-copies-rebuild; keys: Recovery Options, damaged index, corrupt library.json, quarantine; src: TextMouth/Services/LibraryIndexQuarantine.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Views/Library/LibraryIndexRecoveryViews.swift, TextMouth/Services/LibraryLoadResult.swift -->
 
 library.json.unreadable- followed by a date and time: a preserved copy of an index that could not be read.
 When library.json cannot be read, TextMouth never overwrites it, and the Library window's Recovery Options… offer Try Again and Rebuild Library Index, which rebuilds the index from the books on disk.
 Rebuild Library Index keeps your reading list and the sort settings of your folders and views: those TextMouth held when the index became unreadable, or else those it can still read in the unreadable file itself, each on its own.
 When neither gives one, as when the file was cut short, the Rebuild choice says so, and so does its result, as in "TextMouth could not read the reading list or the sort settings in the previous index.", as does Try Again when the unreadable file has gone and it saves the rebuilt library instead; the preserved copy keeps them.
 ### Older TextMouths find the index unreadable
-<!-- id: older-textmouths-find-index-unreadable; keys: ; src: -->
+<!-- id: older-textmouths-find-index-unreadable; keys: older version, downgrade, compatibility, new format names; src: TextMouth/Models/Library.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
 A TextMouth built before October 18, 2026 finds the index unreadable whenever it holds a book in a format added that day, and one built before October 20, 2026 whenever it holds a braille book, a format added on that day: 0.1.1, built October 17, 2026, does for all eight (braille, rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML).
 The index names each book's format, and a TextMouth built before October 18 does not know the names rtf, rtfd, doc, odt, wordml, webarchive, and ssml, and one built before October 20 does not know braille.
@@ -63,82 +63,82 @@ Nothing else is lost until someone chooses Rebuild Library Index there, which ma
 Never choose it.
 Open the library with a TextMouth built on or after the day its newest format was added instead.
 ### When Rebuild Library Index refuses
-<!-- id: when-rebuild-library-index-refuses; keys: ; src: -->
+<!-- id: when-rebuild-library-index-refuses; keys: Last attempt, index readable again, recovery sheet; src: TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Views/Library/LibraryIndexRecoveryViews.swift -->
 
 Rebuild Library Index refuses, and replaces nothing, when the index can be read again by the time you choose it, as when another Mac finished its save or you restored library.json from a backup: VoiceOver and the sheet's Last attempt row say "The library index was not rebuilt.
 It can be read again now.
 Choose Try Again to use it."
 ### Reading positions and folders after a failed read
-<!-- id: reading-positions-folders-after-failed; keys: ; src: -->
+<!-- id: reading-positions-folders-after-failed; keys: checkpoint journal, folder rows, launch repair; src: TextMouth/Services/LibraryPersistenceService.swift -->
 
 A reading position saved while the index can't be read reaches the book's record, and is named in the checkpoint journal too, so the launch after you restore library.json takes it from the record instead of opening the book at the index's older place.
 At launch TextMouth gives each folder a book lies in, and the folders above it, a row in the index when it has none, so a library opened without its index, or with a book in a folder that has no row, keeps those folders.
 
 ## library-identity.json
-<!-- id: library-identity-json; keys: ; src: -->
+<!-- id: library-identity-json; keys: library identifier, identity, UUID, wrong drive; src: TextMouth/Services/LibraryIdentity.swift, TextMouth/Services/DataDirectoryAvailability.swift -->
 
 library-identity.json: which library this is, an identifier and the date the library was given it.
 It is written once, when TextMouth creates the library or first opens one an earlier version made, and never overwritten, so the library keeps its identity wherever its folder goes.
 TextMouth remembers the identifier it expects, so a folder that only has the right name, such as another drive called Backup, is never taken for your library.
 
 ## config.json, your settings
-<!-- id: config-json-your-settings; keys: ; src: -->
+<!-- id: config-json-your-settings; keys: settings file, edit by hand, preferences; src: TextMouth/Services/ConfigService.swift -->
 
 config.json: your settings, which you can edit by hand (see [Editing settings in config.json](config-json.md)).
 
 ## substitutions.json
-<!-- id: substitutions-json; keys: ; src: -->
+<!-- id: substitutions-json; keys: text substitutions, pronunciation rules, Text tab; src: TextMouth/Services/TextSubstitutionService.swift -->
 
 substitutions.json: the text substitution rules from the Text tab of Settings.
 
 ## audio-filters.json
-<!-- id: audio-filters-json; keys: ; src: -->
+<!-- id: audio-filters-json; keys: filter presets, audio editor presets, premade presets; src: TextMouth/Services/AudioEditing/AudioFilterPresets.swift -->
 
 audio-filters.json: the audio editor's filter presets.
 Until one is changed, the premade presets stand in and nothing is written.
 In a library in the cloud it is read and written as substitutions.json is (see [Keeping your library in the cloud](cloud-library.md)).
 
 ## transcript-cleanup.json
-<!-- id: transcript-cleanup-json; keys: ; src: -->
+<!-- id: transcript-cleanup-json; keys: Edit Rules, cleanup rules, transcript rules; src: TextMouth/Services/TranscriptCleanupRuleFile.swift, TextMouth/Models/TranscriptCleanupRules.swift -->
 
 transcript-cleanup.json: your own rules for Clean Up Transcript (Experimental)…, once Edit Rules… has made it from TextMouth's own (see [Transcribing an audiobook](transcribing.md)).
 TextMouth writes it only then, never over a copy of yours.
 It is read as substitutions.json is: one only in the cloud is asked for and waits there, and a copy of one that can't be used is kept beside it, its name followed by .unreadable- and a date and time; TextMouth's own rules stand in for either.
 
 ## reading_stats.json
-<!-- id: reading-stats-json; keys: ; src: -->
+<!-- id: reading-stats-json; keys: listening statistics, Books Finished, daily totals; src: TextMouth/Services/ReadingStatsService.swift -->
 
 reading_stats.json: listening statistics, kept by day, and the books finished, each with its kind once TextMouth began to record kinds.
 
 ## Sessions, the Macs that have the library open
-<!-- id: sessions-macs-that-have-library; keys: ; src: -->
+<!-- id: sessions-macs-that-have-library; keys: session lease, computer name, which Mac has the library open, heartbeat; src: TextMouth/Services/LibrarySessionLease.swift -->
 
 Sessions: in a library on another drive or in a cloud folder, a small file for each Mac that has the library open, holding the computer's name, when TextMouth was last active there, and its version.
 TextMouth writes this Mac's when the library opens, refreshes it every minute, and removes it at quit, and it removes any left untouched for 30 days (see [Keeping your library in the cloud](cloud-library.md)).
 
 ## Feeds, a feed's file and folder
-<!-- id: feeds-feed-file-folder; keys: ; src: -->
+<!-- id: feeds-feed-file-folder; keys: Feeds folder, podcast, subscription, episodes, articles; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedIndex.swift, TextMouth/Services/Feeds/FeedItemPackage.swift -->
 
 Feeds: one file for each feed in the library, subscribed to or not, Feeds/ followed by the feed's identifier and .json, holding the feed's address, title, folder, and own settings, the date you unsubscribed, while you are, and the episodes and articles it keeps, with whether each is downloaded, in the library (Move to Library…), played, or deleted.
 It moves and syncs with the library.
 A file that can't be read is kept beside itself, its name followed by .unreadable- and a date and time, and its feed is left out until the file can be read; a file only in the cloud is read once it has arrived, at the next refresh of every feed; and a sync service's conflict copy is never read.
 ### A feed's own folder
-<!-- id: feed-own-folder; keys: ; src: -->
+<!-- id: feed-own-folder; keys: downloaded episode, feed package, deleted download; src: TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Services/Feeds/FeedIndex.swift -->
 
 Beside its file, a feed that has downloaded anything has a folder of its own, Feeds/ followed by the feed's identifier alone, holding a package for each episode or article it downloaded, laid out as a book's package is (Library, below), and the feed's own index of them, library.json, holding a row for each as the library's index holds a book's.
 A package whose download was deleted stays there without its file, holding its record, its content index, its content.md (an episode's transcript text, or an article's text unless Delete Download removed it), its transcript, and any copies Edit Text kept of an edited text, while it keeps your place, bookmarks, settings, details you edited by hand, transcript, or such a copy, and its row stays in the index, so downloading the item again restores the same book.
 ### Hidden folders in a feed's folder
-<!-- id: hidden-folders-feed-folder; keys: ; src: -->
+<!-- id: hidden-folders-feed-folder; keys: replaced package, removing folder, record absent, Delete Download; src: TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadReturn.swift -->
 
 A feed's folder can also hold, hidden, .replaced- followed by a package's name, a package a new download replaced, set aside when the two packages couldn't be swapped in one step, as on a drive that can't swap two folders, until the new one is in place, which the item's next download puts back or removes should TextMouth stop meanwhile; .removing- followed by the download's identifier and a name of its own, the folder an article's Delete Download moves its file and text into to remove them as one item, which, should a crash cut the deletion short, the next launch sends to the Trash under the article's own name, or deletes, as Removal Behavior says; should a refused Delete Download leave its files there, the next launch puts them back into the package; and, in a library in the cloud, empty .record-absent- files named after a Mac and one of its launches, each noting that the launch found the feed's record missing.
 ### Saving a feed's index
-<!-- id: saving-feed-index; keys: ; src: -->
+<!-- id: saving-feed-index; keys: save order, feed index, small index; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/Feeds/FeedIndex.swift -->
 
 Each save of the library writes a feed's index before the library's, and only when it changed or its file is gone, so listening to an episode rewrites its feed's small index and no other; a save stops before the library's index when a feed's can't be written.
 An index that can't be read is kept beside itself, its name followed by .unreadable- and a date and time, and its rows are read from its packages' records, as are those of a package its index doesn't list.
 An index only in the cloud, as when it went back to the cloud after the launch waited for it, or one a newer version of TextMouth wrote, is neither read nor written over while TextMouth runs: its rows are read from its packages' records meanwhile.
 ### Unsubscribing, Delete Feed, and Move to Library
-<!-- id: unsubscribing-delete-feed-move-library; keys: ; src: -->
+<!-- id: unsubscribing-delete-feed-move-library; keys: unsubscribe, remove feed, move episode to the library; src: TextMouth/Services/Feeds/FeedLifecycle.swift, TextMouth/ViewModels/LibraryViewModel+MoveToLibrary.swift, TextMouth/Services/Feeds/FeedStore.swift -->
 
 Unsubscribing keeps this folder and its downloads, deleting only the packages kept for downloads you removed.
 Delete Feed… deletes the feed's packages, then this folder, then the feed's file, so no launch finds the folder without the file while a package is in it.
@@ -146,7 +146,7 @@ Move to Library… moves an item's package out of it in one rename, and its row 
 A launch that finds this folder while the feed's record is gone returns its downloads to the library, then deletes the kept packages and, once nothing else is in it, the folder.
 
 ## Archive Extraction in the data directory
-<!-- id: archive-extraction-data-directory; keys: ; src: -->
+<!-- id: archive-extraction-data-directory; keys: ZIP import, unzip, working folder; src: TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/ImportScratchSpace.swift -->
 
 Archive Extraction: the working folder of ZIP imports while the data directory is on another drive than this Mac's own folders; otherwise ZIPs are extracted in this Mac's Archive Extraction folder (below).
 Each import removes its own folder when it ends.

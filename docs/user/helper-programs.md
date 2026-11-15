@@ -1,10 +1,10 @@
 # Helper programs TextMouth watches
-<!-- id: helper-programs-textmouth-watches; keys: ; src: -->
+<!-- id: helper-programs-textmouth-watches; keys: subprocess, watchdog, killed, limits, time and memory; src: TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Services/BrailleTranslator.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## Converting Ogg audio already in the library
-<!-- id: converting-ogg-audio-already-library; keys: ; src: -->
+<!-- id: converting-ogg-audio-already-library; keys: Vorbis, Opus, Converting audio progress, one-time conversion; src: TextMouth/ViewModels/LibraryViewModel+OggConversion.swift, TextMouth/ViewModels/OggConversionProgress.swift -->
 
 Once for each library, TextMouth converts the Ogg audio of the books already in it, one book at a time, while the Library window shows "Converting audio: 12 of 176 tracks of “Title”".
 Bookmarks and positions stay where they were.
@@ -13,7 +13,7 @@ A book whose files are only in the cloud waits until they are on this Mac.
 The debug log records OGG_CONVERTED for each book converted and OGG_CONVERSION_WAITS for each that waits.
 
 ## afconvert, the audio converter
-<!-- id: afconvert-audio-converter; keys: ; src: -->
+<!-- id: afconvert-audio-converter; keys: AAC, Apple Lossless, converter limits, AUDIO_CONVERSION_KILLED; src: TextMouth/Services/ImportAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
 TextMouth converts Ogg audio, and the other audio its import converts (see [What TextMouth reads](what-textmouth-reads.md)), to AAC, or to Apple Lossless when the source is lossless, with Apple's own afconvert tool, run as a separate process that TextMouth stops when it runs longer than a minute plus a tenth of the track's length, grows past 1 GB, stops writing for 20 seconds, or writes more than four times what the track should come to and 16 MB more, and that the Mac itself ends when it has used more than four times that many seconds of processor time or tries to write past that amount.
 An import that can't convert a track stops (see [Adding books](adding-books.md)).
@@ -21,28 +21,28 @@ A library book whose Ogg conversion fails is left exactly as it was and tried ag
 The debug log records AUDIO_CONVERSION_KILLED for each conversion stopped, as OGG_CONVERSION_KILLED did before October 18, 2026.
 
 ### When the converter ends
-<!-- id: when-converter-ends; keys: ; src: -->
+<!-- id: when-converter-ends; keys: orphan, force-quit, leftover converter; src: TextMouth/Platform/macOS/Services/OrphanedConversionSweep.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
 The converter ends with TextMouth: when TextMouth quits, when it is force-quit, and when it quits to protect your Mac.
 At each launch TextMouth also stops any converter an earlier run left behind, touching only one that is writing one of TextMouth's own hidden conversion files.
 The debug log records OGG_ORPHAN_SWEPT, with how many it stopped, when it stopped any.
 
 ## afinfo, which checks what an audio file holds
-<!-- id: afinfo-which-checks-what-audio; keys: ; src: -->
+<!-- id: afinfo-which-checks-what-audio; keys: audio file info, MPEG-4, QuickTime, implausible length; src: TextMouth/Services/AudioFileInfo.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
 Before it converts a file other than Ogg, and when a file's first bytes don't settle whether to convert it (an MPEG-4 or QuickTime file), TextMouth asks Apple's afinfo tool what the file holds, also as a separate process that TextMouth watches.
 TextMouth stops it when it runs longer than 30 seconds plus one more for each 20 MB of the file, holds more than 512 MB of memory, or prints more than 1 MB. afinfo prints into a hidden file in the Mac's temporary folder, named with a dot, an ID, and .watched-output, which is removed when afinfo ends.
 The debug log records AUDIO_INFO_KILLED, with the file's name and the reason, for each afinfo stopped, and AUDIO_INFO_IMPLAUSIBLE, with the file's name and the length it claimed, for a file whose header claims a length that its size cannot hold.
 
 ### When afinfo ends
-<!-- id: when-afinfo-ends; keys: ; src: -->
+<!-- id: when-afinfo-ends; keys: orphan, leftover process, temporary files; src: TextMouth/Platform/macOS/Services/OrphanedConversionSweep.swift -->
 
 afinfo ends with TextMouth in the same three cases as the Ogg converter.
 At each launch TextMouth also stops any afinfo an earlier run left behind, touching only one that is printing into one of those hidden files, and removes those files from the temporary folder when they are more than an hour old.
 The debug log records AFINFO_LEFTOVERS_SWEPT, with how many processes it stopped and how many files it removed, when it did either.
 
 ## textutil, for the oldest Word documents
-<!-- id: textutil-oldest-word-documents; keys: ; src: -->
+<!-- id: textutil-oldest-word-documents; keys: Word 97, .doc, antique documents, import refused; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
 
 TextMouth reads, on the Mac only, a Word document older than Word 6 with Apple's own textutil tool, run as a separate process that TextMouth watches (see [What TextMouth reads](what-textmouth-reads.md)).
 Every other kind of document, Word 6 and Word 95 documents since version 0.4.1 and OpenDocument text and Word 2003 XML since version 0.4.0 among them, is read inside TextMouth by its own code, which starts no process and is never stopped this way.
@@ -52,20 +52,20 @@ When textutil fails by itself, because it could not start, ended with an error, 
 Cancel in the import overlay stops it at once, and for any import that Cancel stops the debug log records IMPORT_CANCELLED, with the file's name and where the import stopped, as in "while reading its text", "after 3 of 10 books", or "before it started".
 
 ### Where textutil writes
-<!-- id: where-your-library-lives-where-textutil-writes; keys: ; src: -->
+<!-- id: textutil-output-location; keys: hidden output file, temporary folder, reread text; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift -->
 
 While an import runs, textutil writes its output as a hidden file in the package the import is building, which goes with that package should the import fail or be cancelled.
 When TextMouth reads again the text of a book already in the library, it writes it in a new folder named TextMouth-textutil- followed by an ID, in the Mac's temporary folder, and removes the folder when the conversion ends.
 
 ### When textutil ends
-<!-- id: when-textutil-ends; keys: ; src: -->
+<!-- id: when-textutil-ends; keys: orphan, leftover process, temporary folder; src: TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift -->
 
 textutil ends with TextMouth in the same three cases as the Ogg converter.
 At each launch TextMouth also stops any textutil an earlier run left behind, touching only one that is writing one of TextMouth's own hidden output files, and removes the TextMouth-textutil- folders in the temporary folder that are more than an hour old.
 The debug log records TEXTUTIL_LEFTOVERS_SWEPT, with how many processes it stopped and how many folders it removed, when it did either.
 
 ## TextMouthBraille, the braille helper
-<!-- id: textmouthbraille-braille-helper; keys: ; src: -->
+<!-- id: textmouthbraille-braille-helper; keys: liblouis, braille translation, print to braille, helper limits, Mac tables; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthBraille/main.c -->
 
 TextMouth translates between print and braille with liblouis, which runs in TextMouthBraille, a helper program of TextMouth's own inside the app, also as a separate process that TextMouth watches (see [What TextMouth reads](what-textmouth-reads.md)).
 TextMouth stops it when it runs longer than 10 seconds plus a quarter of a second for each million bytes of braille it is given to read, or 6 seconds for each million bytes of print it is given to write as braille; when its output does not grow for as long; when it holds more than 16 MB of memory; or when it writes more than 10 times its input, 32 times when it writes braille, and 1 MB more.
@@ -79,14 +79,14 @@ The debug log also records BRAILLE_MAC_TABLE_REFUSED when the check of one of th
 Cancel in the import overlay stops it at once.
 
 ### Where the braille helper writes
-<!-- id: where-braille-helper-writes; keys: ; src: -->
+<!-- id: where-braille-helper-writes; keys: braille-in, braille-out, scratch files, temporary folder; src: TextMouth/Services/BrailleTranslator.swift -->
 
 The helper reads a hidden file and writes another, named with a dot, an ID, and .braille-in.txt or .braille-out.txt, in the places textutil's output goes: in the package an import is building, and, when TextMouth reads again the text of a braille book already in the library, in a TextMouth-textutil- folder in the Mac's temporary folder.
 An export's are in its scratch folder, and the check of one of this Mac's tables chosen in Settings or in Export's braille options makes its files in a TextMouth-textutil- folder too.
 They are removed however the translation ends.
 
 ### When the braille helper ends
-<!-- id: when-braille-helper-ends; keys: ; src: -->
+<!-- id: when-braille-helper-ends; keys: orphan, force-quit, leftover helper; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
 The helper ends with TextMouth in the same three cases as the Ogg converter.
 Unlike textutil, the helper is not looked for at launch, but the removal of old TextMouth-textutil- folders, above, covers a braille folder too.
