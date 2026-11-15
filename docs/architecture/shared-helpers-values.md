@@ -75,7 +75,7 @@ ListNeighbors (Models/ListNeighbors.swift): the one search for the element besid
 <!-- id: endofbookrule; keys: end of book, after book, what happens at end, stop, behavior order; src: TextMouth/Models/EndOfBookRule.swift -->
 
 EndOfBookRule (Models/EndOfBookRule.swift): the one place the order of the settings that decide what a book does at its end is written, and what that gives: the behavior, the direction, and the two options that go with it.
-The reader's behavior and the settings sheet's picker come from it (see [The reader](state/reader.md)).
+The reader's behavior and the settings sheet's picker come from it (see [The reader](state/reader-navigation.md)).
 
 ## Wording types for sentences
 <!-- id: wording-types-sentences; keys: UI strings, localization, messages, user-facing text, tested wording; src: TextMouth/Models/RemovalWording.swift, TextMouth/Models/EndOfBookWording.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/Models/SpeechRefusalReport.swift, TextMouth/Models/OperationOutcome.swift, TextMouth/Models/ImportDecision.swift, TextMouth/Models/ReadingStatsTile.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Models/TranscriptCleanupWording.swift, TextMouth/Models/AudioEditWording.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/ReadingListReaderWording.swift, TextMouth/Models/ListeningOptionsWording.swift, TextMouth/Models/FolderSettingsWording.swift, TextMouth/Models/AddToLibraryWording.swift, TextMouth/Models/ReaderTimeWording.swift, TextMouth/Models/FeedDownloadProgressWording.swift -->
