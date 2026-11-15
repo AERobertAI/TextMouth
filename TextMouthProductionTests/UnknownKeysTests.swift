@@ -59,6 +59,28 @@ final class UnknownKeysTests: XCTestCase {
         return info
     }
 
+    /// A library of `books` with two folders, one inside the other, a sort
+    /// setting for one of them, and a reading list of the first book.
+    private static func library(of books: [Book]) -> Library {
+        Library(
+            books: books,
+            folders: [
+                BookFolder(name: "Fiction", dateCreated: date),
+                BookFolder(name: "Short", parentPath: "Fiction", dateCreated: date),
+            ],
+            folderSortSettings: ["Fiction": FolderSortSetting(sortField: .author, sortAscending: false)],
+            readingList: ReadingList(bookIDs: books.prefix(1).map(\.id), removesFinished: true)
+        )
+    }
+
+    /// Statistics with listening on two days by two books.
+    private static func statistics() -> ReadingStats {
+        var stats = ReadingStats()
+        stats.addListening(90, bookID: UUID(), dayKey: "2026-11-14")
+        stats.addListening(45.5, bookID: UUID(), dayKey: "2026-11-15")
+        return stats
+    }
+
     /// A member of every JSON kind, as a later TextMouth might add one: a
     /// null, a bool, a whole number, one above `Int64.max`, a fraction, a
     /// string, an array in an order that is not sorted, and nested objects.
@@ -221,27 +243,66 @@ final class UnknownKeysTests: XCTestCase {
         XCTAssertLessThan(added.lowerBound, last.lowerBound)
     }
 
-    /// library.json keeps the unknown members of its rows, and the
-    /// top-level sections it does not know, through the index's own decoder
-    /// and encoder.
+    /// library.json keeps the unknown members of its rows, of its folders,
+    /// and of its reading list, and the top-level sections it does not
+    /// know, through the index's own decoder and encoder.
     func testLibraryJSONKeepsItsRowsAndItsOwnUnknownKeys() throws {
         var book = Self.plainBook()
         // A feed item's row is never library.json's.
         book.feedLink = nil
-        let read = try XCTUnwrap(
-            try Self.tree(LibraryPersistenceService.encodedIndex(Library(books: [book]))) as? [String: Any]
-        )
+        let read = try XCTUnwrap(try Self.tree(LibraryPersistenceService.encodedIndex(Self.library(of: [book]))) as? [String: Any])
         var changed = read
-        changed["books"] = Self.addingUnknownMembers(to: try XCTUnwrap(read["books"]))
+        // Every object of the rows, of the two folders, and of the reading
+        // list. (A folder's sort setting keeps none, so none is added there.)
+        for section in ["books", "folders", "readingList"] {
+            changed[section] = Self.addingUnknownMembers(to: try XCTUnwrap(read[section]), at: section)
+        }
         changed[Self.addedKey] = Self.everyKind
+        XCTAssertEqual(Self.countOfAddedMembers(in: changed), 14 + 2 + 1 + 1, "the fixture's objects")
 
         let library = try LibraryPersistenceService.decodeIndex(from: Self.data(changed))
         XCTAssertEqual(library.books.count, 1)
+        XCTAssertEqual(library.folders.count, 2)
+        XCTAssertEqual(library.readingList.bookIDs, [book.id])
         XCTAssertEqual(Set(library.unknownKeys.members.keys), [Self.addedKey])
         XCTAssertTrue(library.unreadableRows.isEmpty, "a row with unknown keys is still a book")
         let written = try Self.tree(LibraryPersistenceService.encodedIndex(library))
 
         XCTAssertEqual(written, changed as NSDictionary)
+    }
+
+    /// reading_stats.json keeps its unknown top-level members through a
+    /// load and a save, and through the two ways the statistics change:
+    /// listening added in place, and this Mac's listening added to a file
+    /// that arrives from the cloud.
+    func testTheStatisticsFileKeepsUnknownKeys() throws {
+        var read = try XCTUnwrap(try Self.tree(Self.statistics().fileData()) as? [String: Any])
+        read[Self.addedKey] = Self.everyKind
+
+        var stats = try ReadingStats.decodeFile(Self.data(read))
+        XCTAssertEqual(try Self.tree(stats.fileData()), read as NSDictionary)
+
+        let kept = stats.unknownKeys
+        XCTAssertEqual(Set(kept.members.keys), [Self.addedKey])
+        stats.addListening(30, bookID: UUID(), dayKey: "2026-11-16")
+        XCTAssertEqual(stats.unknownKeys, kept)
+        // The file's statistics, with this Mac's added: the file's keys.
+        XCTAssertEqual(stats.adding(Self.statistics()).unknownKeys, kept)
+    }
+
+    /// A folder renamed or moved, and a reading list changed, keep their
+    /// unknown keys: each is changed in place.
+    func testAFolderAndTheReadingListChangedInPlaceKeepTheirUnknownKeys() {
+        var library = Self.library(of: [Self.plainBook()])
+        library.folders[0].unknownKeys = UnknownKeys(["colour": .string("amber")])
+        library.readingList.unknownKeys = UnknownKeys(["shuffles": .bool(true)])
+
+        library.folders[0].name = "Novels"
+        library.readingList.skipsFinished = false
+
+        XCTAssertEqual(library.folders[0].unknownKeys, UnknownKeys(["colour": .string("amber")]))
+        XCTAssertEqual(library.readingList.unknownKeys, UnknownKeys(["shuffles": .bool(true)]))
+        XCTAssertNotEqual(library, Self.library(of: library.books))
     }
 
     // MARK: - A Known Key Always Wins
@@ -321,12 +382,24 @@ final class UnknownKeysTests: XCTestCase {
             id: UUID(), title: "Bare", format: .txt, filePath: "/library/bare.txt", md5Hash: "bare",
             dateAdded: Self.date
         ))
-        let before = try LibraryPersistenceService.encodedIndex(Library(books: books))
+        let before = try LibraryPersistenceService.encodedIndex(Self.library(of: books))
 
         let loaded = try LibraryPersistenceService.decodeIndex(from: before)
 
         XCTAssertTrue(loaded.books.allSatisfy(\.unknownKeys.isEmpty))
+        XCTAssertTrue(loaded.folders.allSatisfy(\.unknownKeys.isEmpty))
+        XCTAssertTrue(loaded.readingList.unknownKeys.isEmpty && loaded.unknownKeys.isEmpty)
         XCTAssertEqual(try LibraryPersistenceService.encodedIndex(loaded), before)
+    }
+
+    /// reading_stats.json without unknown keys is the same bytes after a
+    /// load and a save, and holds no key for the property they are kept in.
+    func testTheStatisticsFileWithoutUnknownKeysIsWrittenByteForByteAsItWas() throws {
+        let before = try Self.statistics().fileData()
+        let loaded = try ReadingStats.decodeFile(before)
+        XCTAssertTrue(loaded.unknownKeys.isEmpty)
+        XCTAssertEqual(try loaded.fileData(), before)
+        XCTAssertFalse(String(decoding: before, as: UTF8.self).contains("unknownKeys"))
     }
 
     /// A package record without unknown keys is the same bytes after a load
