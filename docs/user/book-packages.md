@@ -74,23 +74,35 @@ Earlier versions of TextMouth kept the index inside bookInfo.json: TextMouth mov
 
 content.md: the text cache, the book's text as Markdown, so a text book opens without parsing its source again.
 TextMouth rebuilds it when the source file changes or when a newer version of TextMouth reads that format better, but these automatic rebuilds keep text you changed with Edit Text, and Redo Text Extraction, a button in the Storage tab of Settings, rebuilds it on request for every text book (see [Editing a book's text](editing-book-text.md) for what it does to that text), and a choice in a book's Text Encoding pop-up in Book Information rebuilds it for that book alone, in the encoding chosen (see [The Library window](library-window.md)).
+### Pages and page markers
+<!-- id: pages-page-markers; keys: ; src: -->
+
 A line such as `<!-- page: 12 -->` in it marks where a page begins (see [Editing a book's text](editing-book-text.md)).
 Books already in your library gain their pages at the next launch after an update gives their format pages: TextMouth reads each one's file again, once, and your places follow their words.
 Books open in a reader are read first, and each such reader then quietly shows the book's new text with its pages, its cursor on the same words; speech that was playing starts again from the cursor.
 An EPUB's page-break element keeps its words: its own text is skipped only when it is no more than its page's label, the page's number and perhaps a caption of up to 32 characters, and any longer or other text in it is read, after its page marker; an element with no aria-label or title that holds more than that begins no page.
 DAISY 2.02 follows the same rule for what a page entry points at.
 A Word 6 or Word 95 document, which textutil read until version 0.4.1, with a table of contents or a link got every page, with the words kept apart at each break, where it got only its first page before.
+### How the launch that adds pages treats your text
+<!-- id: how-launch-that-adds-pages; keys: ; src: -->
+
 First it compares the whole of the book's content.md with what the book's file gives.
 A book whose text you changed with Edit Text keeps that text, without pages, until Redo Text Extraction, and so does one whose content.md was changed in another editor since TextMouth last wrote it.
 Any other book whose content.md differs from what its file gives, even only in a heading, a heading's level, or a chapter's title, as an edit made before TextMouth began recording edits on October 21, 2026 may, or in a chapter that an EPUB lost by naming its file in another letter case than its ZIP spells it, is read again with its pages too, once TextMouth has kept a copy of its text beside it as content.md.edited- followed by a date and time (below); if no copy can be made, the book keeps its text, without pages, and every automatic rebuild keeps it, as it keeps text you changed with Edit Text.
 A book whose file is missing keeps its text without pages; one whose file can't be read is tried again at the next launch, then keeps its text without pages; and one whose files are only in the cloud gains its pages at a launch when they're on this Mac.
 A Word document older than Word 6, which textutil reads, whose pages textutil couldn't read is tried again at the next launch, then keeps its text without pages until Redo Text Extraction.
 The debug log records a PAGES_REPLACED_TEXT line naming each copy kept, a PAGES_SKIPPED_CHANGED_TEXT line for each book that keeps its text, and one PAGES_UPGRADE_SUMMARY line counting the books given pages, replaced keeping a copy, kept as changed, skipped, and failed.
+### Rich text and Word books read again
+<!-- id: rich-text-word-books-read; keys: ; src: -->
+
 A rich text, rich text with attachments, or Word 97-2003 book was read again once at the first launch of version 0.3.1, when TextMouth's own reader replaced textutil for it, and gained the headings and pages that reader finds.
 At the first launch of version 0.4.0, every rich text, rich text with attachments, Word 97-2003, Word, OpenDocument text, and Word 2003 XML book is read again once more, for what the readers now find: hidden text and tracked deletions left out, footnotes, endnotes, and text boxes read, and, for an OpenDocument or Word 2003 XML book, the document's own headings and its pages.
 Each is kept or replaced by the rules above, so your place follows its words and text you changed with Edit Text is kept.
 At the first launch of version 0.4.1, every .doc book is read again once more (its page reader line is 1.3.0), for Word 6 and Word 95 documents, which TextMouth now reads itself, and for the symbols of Word documents, and every .docx and .wordml book is read again once more (1.2.0), for the hidden text it now finds: a table style's and the document defaults' hiding in a .docx, and the words of a hidden row in Word 2003 XML.
 Each is kept or replaced by the same rules, so your place follows its words and text you changed with Edit Text is kept.
+### New books, Edit Text, and transcribed audiobooks
+<!-- id: new-books-edit-text-transcribed; keys: ; src: -->
+
 A book you add, or whose text is rebuilt for another reason, gains its pages as its text is read.
 Edit Text opens it in your own editor, and TextMouth takes what you save while it's open (see [Editing a book's text](editing-book-text.md)).
 A transcribed audiobook's content.md holds its transcript's text instead (see transcript.json, below).

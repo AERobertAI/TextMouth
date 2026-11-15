@@ -10,8 +10,17 @@ The data directory holds:
 
 library.json: the library index.
 It lists every book of the library's own (title, author, format, folder, file path, reading position, bookmarks, and per-book settings), every folder, each location's sort (that of Feeds, and of a view of your own, under a key that begins with "/views/", as "/views/Feeds"), and the reading list, with its order and options, as compact JSON, without line breaks.
+### Feeds are not in library.json
+<!-- id: feeds-are-not-library-json; keys: ; src: -->
+
 Since October 10, 2026 it never holds a feed's downloaded episode or article, whose feed's own index lists it instead (see Feeds, below), and a row it holds is always a book of the library's own, whatever a hand edit of the file says.
+### How reading positions reach the index
+<!-- id: how-reading-positions-reach-index; keys: ; src: -->
+
 While a book plays, its reading position reaches the index within five minutes, or sooner when anything else in the library changes, when the book's reader closes, or when TextMouth quits; meanwhile the book's record in its package holds it (below).
+### The metadata reader and the Unknown author refresh
+<!-- id: metadata-reader-unknown-author-refresh; keys: ; src: -->
+
 Each book's row also records which version of TextMouth's metadata reader last read its file for its title and author, and which of its details you edited by hand (see [The Library window](library-window.md), under [Finding your way around](../../README.md)).
 The first launch after an update that reads a format's metadata better reads every older row's file again, in the background before the text caches, and takes the author the file names where the row still says Unknown; an author you typed stays, and a file that still names no one leaves Unknown.
 It never replaces a field edited by hand.
@@ -20,6 +29,9 @@ For every other book, from before then, or made with New from Text, by a recordi
 It never reads an episode or article its feed lists, whose title and author come from the feed.
 A book whose files are only in the cloud waits for a launch that finds them on this Mac.
 The October 7, 2026 update does this once for every book. library.json is read one row at a time.
+### Rows this TextMouth cannot read
+<!-- id: data-directory-files-rows-this-textmouth-cannot-read; keys: ; src: -->
+
 A row this TextMouth cannot read, as a book that a later TextMouth added in a format this one does not know, is kept exactly as the file held it, written back at every save, and never shown, counted, opened, or searched.
 Storage settings say how many there are (see [Settings](settings.md)).
 The package such a row names is left alone by the library's repairs: no sweep for packages that no row lists adopts it as a second book, repairs it, or deletes it, though Delete Folder… still removes the packages of kept books filed in the folder it deletes, and Delete Feed… those of a feed's kept books.
@@ -40,6 +52,9 @@ library.json.unreadable- followed by a date and time: a preserved copy of an ind
 When library.json cannot be read, TextMouth never overwrites it, and the Library window's Recovery Options… offer Try Again and Rebuild Library Index, which rebuilds the index from the books on disk.
 Rebuild Library Index keeps your reading list and the sort settings of your folders and views: those TextMouth held when the index became unreadable, or else those it can still read in the unreadable file itself, each on its own.
 When neither gives one, as when the file was cut short, the Rebuild choice says so, and so does its result, as in "TextMouth could not read the reading list or the sort settings in the previous index.", as does Try Again when the unreadable file has gone and it saves the rebuilt library instead; the preserved copy keeps them.
+### Older TextMouths find the index unreadable
+<!-- id: older-textmouths-find-index-unreadable; keys: ; src: -->
+
 A TextMouth built before October 18, 2026 finds the index unreadable whenever it holds a book in a format added that day, and one built before October 20, 2026 whenever it holds a braille book, a format added on that day: 0.1.1, built October 17, 2026, does for all eight (braille, rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML).
 The index names each book's format, and a TextMouth built before October 18 does not know the names rtf, rtfd, doc, odt, wordml, webarchive, and ssml, and one built before October 20 does not know braille.
 It leaves library.json as it is, saves this copy beside it, and writes no index, but it still writes each book's package record, and those records lose the fields it does not know: the record of an edit of the book's text and of the page reader that wrote it.
@@ -47,9 +62,15 @@ A newer TextMouth then reads a book whose text you edited from its file again, k
 Nothing else is lost until someone chooses Rebuild Library Index there, which makes an index without the books in the formats it does not know, though their packages stay in the Library folder, and without the folders and the manual order that only the index held, which the preserved copy keeps.
 Never choose it.
 Open the library with a TextMouth built on or after the day its newest format was added instead.
+### When Rebuild Library Index refuses
+<!-- id: when-rebuild-library-index-refuses; keys: ; src: -->
+
 Rebuild Library Index refuses, and replaces nothing, when the index can be read again by the time you choose it, as when another Mac finished its save or you restored library.json from a backup: VoiceOver and the sheet's Last attempt row say "The library index was not rebuilt.
 It can be read again now.
 Choose Try Again to use it."
+### Reading positions and folders after a failed read
+<!-- id: reading-positions-folders-after-failed; keys: ; src: -->
+
 A reading position saved while the index can't be read reaches the book's record, and is named in the checkpoint journal too, so the launch after you restore library.json takes it from the record instead of opening the book at the index's older place.
 At launch TextMouth gives each folder a book lies in, and the folders above it, a row in the index when it has none, so a library opened without its index, or with a book in a folder that has no row, keeps those folders.
 
@@ -101,12 +122,24 @@ TextMouth writes this Mac's when the library opens, refreshes it every minute, a
 Feeds: one file for each feed in the library, subscribed to or not, Feeds/ followed by the feed's identifier and .json, holding the feed's address, title, folder, and own settings, the date you unsubscribed, while you are, and the episodes and articles it keeps, with whether each is downloaded, in the library (Move to Library…), played, or deleted.
 It moves and syncs with the library.
 A file that can't be read is kept beside itself, its name followed by .unreadable- and a date and time, and its feed is left out until the file can be read; a file only in the cloud is read once it has arrived, at the next refresh of every feed; and a sync service's conflict copy is never read.
+### A feed's own folder
+<!-- id: feed-own-folder; keys: ; src: -->
+
 Beside its file, a feed that has downloaded anything has a folder of its own, Feeds/ followed by the feed's identifier alone, holding a package for each episode or article it downloaded, laid out as a book's package is (Library, below), and the feed's own index of them, library.json, holding a row for each as the library's index holds a book's.
 A package whose download was deleted stays there without its file, holding its record, its content index, its content.md (an episode's transcript text, or an article's text unless Delete Download removed it), its transcript, and any copies Edit Text kept of an edited text, while it keeps your place, bookmarks, settings, details you edited by hand, transcript, or such a copy, and its row stays in the index, so downloading the item again restores the same book.
+### Hidden folders in a feed's folder
+<!-- id: hidden-folders-feed-folder; keys: ; src: -->
+
 A feed's folder can also hold, hidden, .replaced- followed by a package's name, a package a new download replaced, set aside when the two packages couldn't be swapped in one step, as on a drive that can't swap two folders, until the new one is in place, which the item's next download puts back or removes should TextMouth stop meanwhile; .removing- followed by the download's identifier and a name of its own, the folder an article's Delete Download moves its file and text into to remove them as one item, which, should a crash cut the deletion short, the next launch sends to the Trash under the article's own name, or deletes, as Removal Behavior says; should a refused Delete Download leave its files there, the next launch puts them back into the package; and, in a library in the cloud, empty .record-absent- files named after a Mac and one of its launches, each noting that the launch found the feed's record missing.
+### Saving a feed's index
+<!-- id: saving-feed-index; keys: ; src: -->
+
 Each save of the library writes a feed's index before the library's, and only when it changed or its file is gone, so listening to an episode rewrites its feed's small index and no other; a save stops before the library's index when a feed's can't be written.
 An index that can't be read is kept beside itself, its name followed by .unreadable- and a date and time, and its rows are read from its packages' records, as are those of a package its index doesn't list.
 An index only in the cloud, as when it went back to the cloud after the launch waited for it, or one a newer version of TextMouth wrote, is neither read nor written over while TextMouth runs: its rows are read from its packages' records meanwhile.
+### Unsubscribing, Delete Feed, and Move to Library
+<!-- id: unsubscribing-delete-feed-move-library; keys: ; src: -->
+
 Unsubscribing keeps this folder and its downloads, deleting only the packages kept for downloads you removed.
 Delete Feed… deletes the feed's packages, then this folder, then the feed's file, so no launch finds the folder without the file while a package is in it.
 Move to Library… moves an item's package out of it in one rename, and its row from this index into the library's.
