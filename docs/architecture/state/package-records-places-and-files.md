@@ -119,7 +119,8 @@ LoadedContent.movedPlaces is a list: the edit's moves, then a rebuild's, then th
 The check saves nothing on its own: the reader takes the moves into the row, and updateBook writes the row and the record, as any change is saved.
 The row takes a move only as far as the record took it (MovedPlaces.taken(by:) puts each move the record refused back to its original, so a place another Mac or the listener saved meanwhile wins).
 It also takes a move only where no reader is involved: the batch, the statistics pass, Edit Text's takes, and edits saved while closed.
-A reader re-dates its position at every open (savePosition()), so narrowing there would protect nothing.
+A place saved without moving keeps its date (ReaderViewModel.savePosition(), durablePosition()), so an open never makes an old place the later one.
+Which of two Macs' places stands is decided at the record's write and at the opening load (see [Package records](package-records.md)).
 
 - The cursor: PlaceRelocator.relocate(_:from:to:) carries an open reader's cursor into edited text, on the main actor, once for each edit taken; the reader's own cursor wins over the saved position's move.
 - Edit Text's copy: BookTextEditSessions.Session.oldText is the session's copy of the text as TextMouth last took or wrote it, with the book's places, in MachineLocalPaths.editTextSnapshots, a folder of its own because the recovery of placeSnapshots deletes any folder it cannot read.

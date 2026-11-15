@@ -131,6 +131,8 @@ And a move whose packages moved only in part is a failure worded by FeedWording.
 A stop before the rename leaves the item In Library with its download in its feed, which markFeedItemsDownloadedAgain(access:) heals at the next launch.
 A stop after it leaves the package under Library/, which the startup repair adopts under its own book ID (joinFeedItems(journaled:access:skips:)).
 And the launch's move of downloads passes over an item In Library, reading only FeedItemState.bookID (FeedMoveToLibraryOperationTests).
+It also passes over a book whose own record says Move to Library… made it the library's own (BookMetadata.movedToLibrary, through whatTheRecordSays(of:access:)), however another Mac's stale feed record names it.
+A book whose record is only in the cloud waits for a later launch.
 A feed whose record is truly gone, lost outside TextMouth or deleted by an Unsubscribe of a build before branch D, gets its downloads back as books at launch, a stopgap of REV10's item 3 (LibraryViewModel+FeedDownloadReturn.swift).
 It runs through returnDownloadsOfFeedsWithoutRecords(knownFeeds:absence:removingWith:) and returnDownloads(ofFeed:toFolderID:removingWith:), holding the storage work as the move does:
 - each package moves to the library's top level in one rename (moveIntoTheLibrary(_:folderPath:root:));

@@ -153,3 +153,29 @@ Hand edits (FR06): which of a book's metadata fields the user edited by hand.
   It does so in MetadataEditorView, which takes handEdits:, and in LibraryBookInfoSheet, which reads its book's.
   The Library window passes handEdits: to both of its editors, and so does the reader's Book Info, ReaderBookInfoSheet (Views/Reader/ReaderView.swift), which observes the reader and passes its copy's record, which every save of the row, the reader's own included, brings up to date.
   For an episode or article in its feed (Book.hasReadOnlyBookInfo) it shows the read-only FeedItemBookInfoSheet, and for any other plain text, Markdown, or HTML book LibraryBookInfoSheet, which reads the reader's copy.
+
+## The reading state of a record and its row
+<!-- id: reading-state-record-row; keys: stale row, cloud library, two Macs, later place, movedToLibrary, Replace Existing, positionClock, takeNewerRecordedState; src: TextMouth/Models/Book+ReadingState.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+SavedPlaces.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/ViewModels/LibraryViewModel+FeedItemMove.swift, TextMouthProductionTests/StaleRowGuardTests.swift -->
+
+A library in the cloud shared by two Macs can leave a Mac's library row behind its book's record, which the other Mac wrote.
+`Book.ReadingState` (Models/Book+ReadingState.swift) is a view of fields `Book` already keeps, so it adds nothing to a file: the place, the playback times, the bookmarks, the skipped headings (their three lists), and the book's own settings.
+`Book.readingState(standingAgainst:)` is the one rule that weighs a row against its record:
+- The record's state stands only when its place was saved later than the row's, compared to the second (`ReadingPosition.isSavedLater(than:)`, since both files keep the date to the second); a tie keeps the row's, and a place beats none.
+  Going back is a later place too.
+- The bookmarks, skipped headings, playback times, and settings go with the later place as one, not merged: a union of bookmarks would bring back each one deleted where the book was read last, since nothing marks a deletion yet.
+  A bookmark or setting changed, without moving, on the Mac whose place is the earlier gives way to the other Mac's.
+- The last-opened date is the later of the two.
+- On one Mac the record is written from the row, so the row's state stands, as it always did.
+
+It runs at every write of the record (`Book.bookInfo(replacing:contentIndex:revisionFloor:…)`), so a row that lags never writes its older state over the record's, and when a reader opens the book (`ReaderViewModel.takeNewerRecordedState(_:)`, from `LoadedContent.recordedState`).
+Only the first load of a reader, the opening (`hasOpened`), weighs the record: a later load, as after an edit of the text, keeps this reader's own saves.
+A place saved without moving keeps the date it was saved with, so opening a book never makes an old place the later one, and `close()` saves only a place that moved (`savePositionIfMoved()`), as a quit does.
+A moved place is dated by `positionClock`, but never earlier than a second after the place it moves on from, so a clock set back cannot date a move before the last save.
+A live place published while nothing plays and the cursor rests at the saved place is no move.
+
+`BookMetadata.movedToLibrary` is the time Move to Library… made a feed's download the library's own.
+It is record-only, like the transcript note: the move's write passes it, and every other write keeps the stored record's.
+The launch's move of downloads into their feeds refuses a book whose record holds it, whatever a feed's record says, and a book whose record is only in the cloud waits for a later launch (`FEED_DOWNLOAD_MOVE_REFUSED`, see [Feed items](library-index-reading-feeds.md)).
+Replace Existing reads the old record's note before the old package goes and writes it into the new record.
+A move made before the note existed carries none, and none is added.
+
