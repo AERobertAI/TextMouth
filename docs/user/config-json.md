@@ -55,20 +55,27 @@ Playback: skipForwardUnit, skipBackwardUnit, shiftSkipForwardUnit, shiftSkipBack
 ### Shortcuts settings
 <!-- id: shortcuts-settings; keys: keyboardShortcuts, worksIn, shortcutDoublePressSeconds, hotkeys, key names, twice; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/ShortcutEdits.swift -->
 
-Shortcuts: keyboardShortcuts, an object naming every action as Settings shows it, the audio editor's and the New Recording window's with their group's name first, as in "Audio Editor: Play / Pause" and "New Recording: Stop"; TextMouth reads a name in any letter case, and one ending in "…" with three periods or none, and still reads the names earlier versions wrote, as in "Recording Window: Stop" for the New Recording window's buttons and "Add Bookmark" for the bookmark command, now Toggle Bookmark in the menu, the Shortcuts tab, and config.json, writing only the new names.
+Shortcuts: keyboardShortcuts, an object naming every action as Settings shows it, the audio editor's and the New Recording window's with their group's name first, as in "Audio Editor: Play / Pause" and "New Recording: Stop".
+TextMouth reads a name in any letter case, and one ending in "…" with three periods or none, and still reads the names earlier versions wrote, as in "Recording Window: Stop" for the New Recording window's buttons and "Add Bookmark" for the bookmark command, now Toggle Bookmark in the menu, the Shortcuts tab, and config.json, writing only the new names.
 An action whose shortcuts you changed (see the Shortcuts tab, under [Finding your way around](../../README.md)) is a list of its shortcuts, written like `option+shift+command+b`, as in "Release Media Controls": ["shift+r"], and an empty list leaves it without a shortcut.
 An action you changed whose Works in differs from its default is an object, as in "New from Text…": {"keys": ["shift+command+t"], "worksIn": "Every window"}.
 TextMouth writes the Works in pop-up's words, and reads them, or "every", "app", "library", or "reader", in any letter case, as it reads "keys" and "worksIn"; "keys" may be one shortcut written as text, an object without "worksIn" counts as a list, and a list works where its action does by default.
 An object naming no kind of window TextMouth knows isn't read.
-One naming a kind its action can't work in, such as Add Feed… in reader windows, is left out, noted in the debug log, and the file is saved again; so is an entry giving an action a key one of macOS's own commands has, unless it is that action's default, or giving a menu command or a New Recording window button anything but one shortcut with Command or Control that a text field doesn't edit with.
+One naming a kind its action can't work in, such as Add Feed… in reader windows, is left out, noted in the debug log, and the file is saved again.
+So is an entry giving an action a key one of macOS's own commands has, unless it is that action's default, or giving a menu command or a New Recording window button anything but one shortcut with Command or Control that a text field doesn't edit with.
 A double press is written with "twice" after the shortcut, as in "w twice", and TextMouth also reads "W Twice", "wtwice", and "double w"; a named key is written by its name, as in "command+pageDown" or "f5", and a file holding the key's own character reads the same.
-Every other action is text: "default", a colon, and the shortcuts it has, as in "Where Am I?": "default: w", or "default: none"; an action that works in Library or reader windows by default names that kind of window after "default", as in "Show Sleep Timer": "default in reader windows: shift+command+t", and editing those words changes nothing.
+Every other action is text: "default", a colon, and the shortcuts it has, as in "Where Am I?": "default: w", or "default: none".
+An action that works in Library or reader windows by default names that kind of window after "default", as in "Show Sleep Timer": "default in reader windows: shift+command+t", and editing those words changes nothing.
 Write a list to make an action yours, even with its default keys (a file of only lists is the exception, described below), and text beginning with "default" to give it back to TextMouth's defaults; TextMouth never reads the words after "default", and reads any other text as one shortcut.
 A shortcut given to one action is taken from any other that works in any of the same windows (see Works in, under the Shortcuts tab), so one key can do one thing in an editor window or a Library window and another elsewhere.
-If an edit leaves one key on two actions you changed, the one whose entry you changed keeps it (when you changed both, the one the Shortcuts tab lists first), and the other goes without that key, keeping its others; TextMouth notes it in the debug log and saves the file again a moment later, to show the shortcuts in force.
-An action the file leaves out keeps its shortcuts. shortcutDoublePressSeconds is the double-press time (see the Shortcuts tab, under [Finding your way around](../../README.md)), 0.2 to 2 seconds: a value out of range, or between tenths, is read as the nearest allowed one and noted in the debug log, and a file without it leaves the time alone.
+If an edit leaves one key on two actions you changed, the one whose entry you changed keeps it (when you changed both, the one the Shortcuts tab lists first), and the other goes without that key, keeping its others.
+TextMouth notes it in the debug log and saves the file again a moment later, to show the shortcuts in force.
+An action the file leaves out keeps its shortcuts. shortcutDoublePressSeconds is the double-press time (see the Shortcuts tab, under [Finding your way around](../../README.md)), 0.2 to 2 seconds.
+A value out of range, or between tenths, is read as the nearest allowed one and noted in the debug log, and a file without it leaves the time alone.
 
-- A file in the form earlier versions wrote, a list for every action with no text beginning with "default" and no object, is read as the old form it is: a list that equals a default its action has or once had edits nothing, and so does one that equals a default without the keys other actions' lists in the file hold, so an action you changed in the app keeps your change, an action you didn't change keeps following TextMouth's defaults, and only a list that differs from every default makes its action yours.
+- A file in the form earlier versions wrote, a list for every action with no text beginning with "default" and no object, is read as the old form it is.
+  A list that equals a default its action has or once had edits nothing, and so does one that equals a default without the keys other actions' lists in the file hold.
+  So an action you changed in the app keeps your change, an action you didn't change keeps following TextMouth's defaults, and only a list that differs from every default makes its action yours.
   A file you write by hand holding only lists is read the same way, so in it a list of an action's default keys pins nothing; add one entry that is an object or text beginning with "default", and every list in the file makes its action yours, even with its default keys.
   When TextMouth leaves a list out for being a default, it saves the file again a moment later, in the new form, to show the shortcuts in force.
 
@@ -95,7 +102,8 @@ Braille: brailleTable, the table braille files are read and written with, by its
 TextMouth writes the table in use, "en-ueb-g2.ctb" until one is chosen.
 A missing, empty, or other value, such as a name that is not exactly one of these four or "mac:" and a bare file name (no slash or comma, and not starting with a dot), leaves the current table as it is.
 A "mac:" name is taken as it is, without reading this Mac's tables: TextMouth checks the table before its first use, and an import or an export that needs a table this Mac lacks or refuses fails by name (see [Adding books](adding-books.md)).
-It chooses the table for books imported and braille exported from then on; a book already in the library keeps the table it was imported with. brailleFileCode, the braille file characters a BRF or BRL file is read with, by id: "ascii-na", North American Braille ASCII, or "ascii-eurobraille", Eurobraille, six-dot (see the Braille tab, under [Settings](settings.md)).
+It chooses the table for books imported and braille exported from then on.
+A book already in the library keeps the table it was imported with. brailleFileCode, the braille file characters a BRF or BRL file is read with, by id: "ascii-na", North American Braille ASCII, or "ascii-eurobraille", Eurobraille, six-dot (see the Braille tab, under [Settings](settings.md)).
 TextMouth writes the one in use, "ascii-na" until one is chosen.
 A missing, empty, or other value, "unicode" included, since TextMouth recognizes Unicode braille patterns by a file's bytes and never takes them from the setting, leaves the current choice as it is.
 It chooses the characters for books imported from then on, and the Export dialog starts a BRF with them; a book already in the library keeps the characters it was imported with (see [Where TextMouth keeps your library](where-your-library-lives.md)).
@@ -135,7 +143,8 @@ recordingAnnouncesLevel, whether it announces the level while recording (false b
 
 Library: libraryViews, the Library window's views in the order its View pop-up offers them (see the Library tab, under [Settings](settings.md)).
 It is a list, and each entry is an object.
-A built-in view's entry names the view by "id", one of "Folders", "All Items", "Unopened", "Recently Opened", "Reading List", or "Feeds", and gives its "visibility", "always", "whenApplicable", or "hidden"; it holds "name" or "filter" only once you have changed them, so a later TextMouth can improve the views it ships.
+A built-in view's entry names the view by "id", one of "Folders", "All Items", "Unopened", "Recently Opened", "Reading List", or "Feeds", and gives its "visibility", "always", "whenApplicable", or "hidden".
+It holds "name" or "filter" only once you have changed them, so a later TextMouth can improve the views it ships.
 A view of your own holds "id", a UUID, "name", "visibility", and "filter", all four.
 ### The filter and its tests
 <!-- id: filter-tests; keys: filter, conditions, onePerFeed, readingState, titleOrAuthorContains, view limit, test names; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibraryViewFilterEvaluator.swift -->
@@ -167,7 +176,8 @@ For example:
 <!-- id: how-libraryviews-read; keys: libraryViews repair, unreadable view, unknown test, 206 entries, built-in view restored; src: TextMouth/Models/LibraryViewDefinitionList.swift, TextMouth/Models/LibraryViewDefinitionStore.swift, TextMouth/Services/ConfigService.swift -->
 
 How libraryViews is read: each entry on its own.
-An entry this TextMouth cannot read, with an id, test, format, state, or kind it does not know, a view of your own without a name or a filter, a filter that lists nothing, or an id an earlier entry has, is kept exactly as it is, in its place, written back, and never offered; the Library tab says how many there are.
+An entry this TextMouth cannot read, with an id, test, format, state, or kind it does not know, a view of your own without a name or a filter, a filter that lists nothing, or an id an earlier entry has, is kept exactly as it is, in its place, written back, and never offered.
+The Library tab says how many there are.
 A number out of range is moved to the nearest allowed value, a text is cut to its limit, and an unknown visibility reads as the view's own default, Always for a view of your own; Folders is always Always.
 These repairs are noted in the debug log, and, since they only make the entry fit for showing, the file keeps what it said until you change that member in Settings.
 Entries past 206 are dropped, with a note in the log.
@@ -217,7 +227,8 @@ Two fields describe this Mac rather than your preferences:
 
 - dataDirectoryPath: where the data directory is, empty for the default location.
   TextMouth always writes the folder in use.
-  Changing it asks TextMouth to move the library there, exactly as Storage settings do, and emptying or deleting it names the default location. config.json can come from another Mac with a library in the cloud, so a request is ignored, with one CONFIG_FILE line in the debug log, when the folder it names doesn't exist on this Mac or already holds a TextMouth library: emptying the field moves the library back only when ~/.TextMouth exists and holds no library.
+  Changing it asks TextMouth to move the library there, exactly as Storage settings do, and emptying or deleting it names the default location. config.json can come from another Mac with a library in the cloud, so a request is ignored, with one CONFIG_FILE line in the debug log, when the folder it names doesn't exist on this Mac or already holds a TextMouth library.
+  Emptying the field moves the library back only when ~/.TextMouth exists and holds no library.
   A move needs an empty destination; a value TextMouth cannot read keeps the folder in use.
 - lastOpenedBookID: the book opened most recently, which TextMouth records itself.
 
