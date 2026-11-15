@@ -50,15 +50,22 @@ Where textutil writes: withWorkingFolder(for:) puts the hidden .<UUID>.textutil.
 No library package and no folder of an imported file ever receives one.
 
 ### Cancel
-<!-- id: textutil-cancel; keys: Cancel button, cancel import, kill child process, ZIP batch, no alert, cancellation checks, Redo Text Extraction; src: TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Services/ImportFailure.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/RTFInterpreter.swift, TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/OfficeXMLReader.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/WordDocumentReader.swift -->
+<!-- id: textutil-cancel; keys: Cancel button, cancel import, kill child process, ZIP batch, no alert, cancellation checks, Redo Text Extraction; src: TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Services/ImportFailure.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/RTFInterpreter.swift, TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/OfficeXMLReader.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/WordDocumentProperties.swift, TextMouth/Parsers/DOCXParser+Converter.swift -->
 
 Cancel: SerialImportQueue.enqueue binds the queue's cancellation as ImportCancellation.current around each import.
 TextutilConverter.html reads it on the import's thread and waits through AsyncBridge.waitForResult(cancelledBy:), which cancels the detached task, and so kills the child, when ImportCancellation.cancel() runs the handlers that whileRunning(_:then:) registered.
 The import throws ImportCancelled, which ImportRun.perform passes on after an IMPORT_CANCELLED line, presentImportError ignores, so there is no alert, and a ZIP batch turns into a cancelled result (.afterBooks) with that book left out.
 A conversion outside an import (the reader, startup maintenance, Redo Text Extraction) finds no current cancellation, and no import's Cancel stops it.
 An own reader starts no child, so Cancel reaches it only through ImportCancellation.throwIfCancelled() (Services/ArchiveExtraction.swift), which throws ImportCancelled as a cancelled textutil conversion ends, and does nothing outside an import.
-The readers that ask it: RTF (before the read and every RTFInterpreter.tokensBetweenCancellationChecks, 4,096 tokens), DOCX (before each part and every 4,096 elements, ending the parse with abortParsing), OfficeXMLReader.stopIfCancelled() for the OpenDocument and Word 2003 XML readers (every 4,096 elements), MOBIParser (before each section), KFXWalk (with its counter of work), and TextutilDocumentReader between the steps after a document's own reading.
-The Word 97-2003 reader asks none, so it ends at the next step after it is read.
+The readers that ask it:
+
+- RTF (before the read and every RTFInterpreter.tokensBetweenCancellationChecks, 4,096 tokens),
+- DOCX (before each part and every 1,024 elements, ending the parse with abortParsing),
+- OfficeXMLReader.stopIfCancelled() for the OpenDocument and Word 2003 XML readers (at every start tag and every run of text),
+- the Word 97-2003 reader (WordDocumentReader, at the start, between the pages of formatting, and every 4,096 characters written; WordDocumentProperties between pages of runs),
+- MOBIParser (before each section),
+- KFXWalk (with its counter of work), and
+- TextutilDocumentReader between the steps after a document's own reading.
 
 ### Web archives, SSML, and DTBooks
 <!-- id: web-archives-ssml-dtbooks; keys: .webarchive, Safari web archive, .ssml, speech markup, DTBook, DAISY XML, dtbook.xml, text encoding; src: TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/SSMLReader.swift, TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+DTBookHeadParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/TextFileDecoder.swift -->
