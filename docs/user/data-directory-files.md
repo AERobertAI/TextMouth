@@ -9,7 +9,13 @@ The data directory holds:
 <!-- id: library-json-library-index; keys: library index, book rows, bookmarks, folders, reading list, compact JSON; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Models/Library.swift -->
 
 library.json: the library index.
-It lists every book of the library's own (title, author, format, folder, file path, reading position, bookmarks, and per-book settings), every folder, each location's sort (that of Feeds, and of a view of your own, under a key that begins with "/views/", as "/views/Feeds"), and the reading list, with its order and options, as compact JSON, without line breaks.
+It lists:
+
+- every book of the library's own (title, author, format, folder, file path, reading position, bookmarks, and per-book settings),
+- every folder,
+- each location's sort (that of Feeds, and of a view of your own, under a key that begins with "/views/", as "/views/Feeds"),
+- and the reading list, with its order and options, as compact JSON, without line breaks.
+
 ### Feeds are not in library.json
 <!-- id: feeds-are-not-library-json; keys: feed episodes, articles, feed index; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/Feeds/FeedIndex.swift -->
 
@@ -34,7 +40,11 @@ library.json is read one row at a time.
 
 A row this TextMouth cannot read, as a book that a later TextMouth added in a format this one does not know, is kept exactly as the file held it, written back at every save, and never shown, counted, opened, or searched.
 Storage settings say how many there are (see [Settings](settings.md)).
-The package such a row names is left alone by the library's repairs: no sweep for packages that no row lists adopts it as a second book, repairs it, or deletes it, though Delete Folder… still removes the packages of kept books filed in the folder it deletes, and Delete Feed… those of a feed's kept books.
+The package such a row names is left alone by the library's repairs:
+
+- no sweep for packages that no row lists adopts it as a second book, repairs it, or deletes it,
+- though Delete Folder… still removes the packages of kept books filed in the folder it deletes, and Delete Feed… those of a feed's kept books.
+
 A sort that a later TextMouth saved by a field this one does not know reads as the default sort and is written back as it was until you choose another.
 A feed's index is read the same way.
 An index that is cut short or is not JSON at all, or whose folders, or whose list of books, are in a layout this TextMouth cannot read, is still unreadable as a whole (below).
@@ -51,7 +61,8 @@ It names those books, so that a launch after a crash takes their newer positions
 library.json.unreadable- followed by a date and time: a preserved copy of an index that could not be read.
 When library.json cannot be read, TextMouth never overwrites it, and the Library window's Recovery Options… offer Try Again and Rebuild Library Index, which rebuilds the index from the books on disk.
 Rebuild Library Index keeps your reading list and the sort settings of your folders and views: those TextMouth held when the index became unreadable, or else those it can still read in the unreadable file itself, each on its own.
-When neither gives one, as when the file was cut short, the Rebuild choice says so, and so does its result, as in "TextMouth could not read the reading list or the sort settings in the previous index.", as does Try Again when the unreadable file has gone and it saves the rebuilt library instead; the preserved copy keeps them.
+When neither gives one, as when the file was cut short, the Rebuild choice says so, and so does its result, as in "TextMouth could not read the reading list or the sort settings in the previous index.", as does Try Again when the unreadable file has gone and it saves the rebuilt library instead.
+The preserved copy keeps them.
 ### Older TextMouths find the index unreadable
 <!-- id: older-textmouths-find-index-unreadable; keys: older version, downgrade, compatibility, new format names; src: TextMouth/Models/Library.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
@@ -119,18 +130,33 @@ TextMouth writes this Mac's when the library opens, refreshes it every minute, a
 ## Feeds, a feed's file and folder
 <!-- id: feeds-feed-file-folder; keys: Feeds folder, podcast, subscription, episodes, articles; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedIndex.swift, TextMouth/Services/Feeds/FeedItemPackage.swift -->
 
-Feeds: one file for each feed in the library, subscribed to or not, Feeds/ followed by the feed's identifier and .json, holding the feed's address, title, folder, and own settings, the date you unsubscribed, while you are, and the episodes and articles it keeps, with whether each is downloaded, in the library (Move to Library…), played, or deleted.
+Feeds: one file for each feed in the library, subscribed to or not, Feeds/ followed by the feed's identifier and .json, holding
+
+- the feed's address, title, folder, and own settings,
+- the date you unsubscribed, while you are,
+- and the episodes and articles it keeps, with whether each is downloaded, in the library (Move to Library…), played, or deleted.
+
 It moves and syncs with the library.
 A file that can't be read is kept beside itself, its name followed by .unreadable- and a date and time, and its feed is left out until the file can be read; a file only in the cloud is read once it has arrived, at the next refresh of every feed; and a sync service's conflict copy is never read.
 ### A feed's own folder
 <!-- id: feed-own-folder; keys: downloaded episode, feed package, deleted download; src: TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Services/Feeds/FeedIndex.swift -->
 
-Beside its file, a feed that has downloaded anything has a folder of its own, Feeds/ followed by the feed's identifier alone, holding a package for each episode or article it downloaded, laid out as a book's package is (Library, below), and the feed's own index of them, library.json, holding a row for each as the library's index holds a book's.
+Beside its file, a feed that has downloaded anything has a folder of its own, Feeds/ followed by the feed's identifier alone, holding
+
+- a package for each episode or article it downloaded, laid out as a book's package is (Library, below),
+- and the feed's own index of them, library.json, holding a row for each as the library's index holds a book's.
+
 A package whose download was deleted stays there without its file, holding its record, its content index, its content.md (an episode's transcript text, or an article's text unless Delete Download removed it), its transcript, and any copies Edit Text kept of an edited text, while it keeps your place, bookmarks, settings, details you edited by hand, transcript, or such a copy, and its row stays in the index, so downloading the item again restores the same book.
 ### Hidden folders in a feed's folder
 <!-- id: hidden-folders-feed-folder; keys: replaced package, removing folder, record absent, Delete Download; src: TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadReturn.swift -->
 
-A feed's folder can also hold, hidden, .replaced- followed by a package's name, a package a new download replaced, set aside when the two packages couldn't be swapped in one step, as on a drive that can't swap two folders, until the new one is in place, which the item's next download puts back or removes should TextMouth stop meanwhile; .removing- followed by the download's identifier and a name of its own, the folder an article's Delete Download moves its file and text into to remove them as one item, which, should a crash cut the deletion short, the next launch sends to the Trash under the article's own name, or deletes, as Removal Behavior says; should a refused Delete Download leave its files there, the next launch puts them back into the package; and, in a library in the cloud, empty .record-absent- files named after a Mac and one of its launches, each noting that the launch found the feed's record missing.
+A feed's folder can also hold, hidden,
+
+- .replaced- followed by a package's name, a package a new download replaced, set aside when the two packages couldn't be swapped in one step, as on a drive that can't swap two folders, until the new one is in place, which the item's next download puts back or removes should TextMouth stop meanwhile;
+- .removing- followed by the download's identifier and a name of its own, the folder an article's Delete Download moves its file and text into to remove them as one item, which, should a crash cut the deletion short, the next launch sends to the Trash under the article's own name, or deletes, as Removal Behavior says;
+- should a refused Delete Download leave its files there, the next launch puts them back into the package;
+- and, in a library in the cloud, empty .record-absent- files named after a Mac and one of its launches, each noting that the launch found the feed's record missing.
+
 ### Saving a feed's index
 <!-- id: saving-feed-index; keys: save order, feed index, small index; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/Feeds/FeedIndex.swift -->
 

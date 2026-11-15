@@ -31,7 +31,8 @@ The debug log records OGG_ORPHAN_SWEPT, with how many it stopped, when it stoppe
 <!-- id: afinfo-which-checks-what-audio; keys: audio file info, MPEG-4, QuickTime, implausible length; src: TextMouth/Services/AudioFileInfo.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
 Before it converts a file other than Ogg, and when a file's first bytes don't settle whether to convert it (an MPEG-4 or QuickTime file), TextMouth asks Apple's afinfo tool what the file holds, also as a separate process that TextMouth watches.
-TextMouth stops it when it runs longer than 30 seconds plus one more for each 20 MB of the file, holds more than 512 MB of memory, or prints more than 1 MB. afinfo prints into a hidden file in the Mac's temporary folder, named with a dot, an ID, and .watched-output, which is removed when afinfo ends.
+TextMouth stops it when it runs longer than 30 seconds plus one more for each 20 MB of the file, holds more than 512 MB of memory, or prints more than 1 MB.
+afinfo prints into a hidden file in the Mac's temporary folder, named with a dot, an ID, and .watched-output, which is removed when afinfo ends.
 The debug log records AUDIO_INFO_KILLED, with the file's name and the reason, for each afinfo stopped, and AUDIO_INFO_IMPLAUSIBLE, with the file's name and the length it claimed, for a file whose header claims a length that its size cannot hold.
 
 ### When afinfo ends
@@ -68,20 +69,31 @@ The debug log records TEXTUTIL_LEFTOVERS_SWEPT, with how many processes it stopp
 <!-- id: textmouthbraille-braille-helper; keys: liblouis, braille translation, print to braille, helper limits, Mac tables; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthBraille/main.c -->
 
 TextMouth translates between print and braille with liblouis, which runs in TextMouthBraille, a helper program of TextMouth's own inside the app, also as a separate process that TextMouth watches (see [What TextMouth reads](what-textmouth-reads.md)).
-TextMouth stops it when it runs longer than 10 seconds plus a quarter of a second for each million bytes of braille it is given to read, or 6 seconds for each million bytes of print it is given to write as braille; when its output does not grow for as long; when it holds more than 16 MB of memory; or when it writes more than 10 times its input, 32 times when it writes braille, and 1 MB more.
+TextMouth stops it:
+
+- when it runs longer than 10 seconds plus a quarter of a second for each million bytes of braille it is given to read, or 6 seconds for each million bytes of print it is given to write as braille;
+- when its output does not grow for as long;
+- when it holds more than 16 MB of memory;
+- or when it writes more than 10 times its input, 32 times when it writes braille, and 1 MB more.
+
 The Mac itself ends it when it has used more than four times the time allowed in processor time.
 For one of this Mac's tables that has passed its check (see [Settings](settings.md)), the limits on time and on memory are raised to four times the time and twice the memory its check measured, and a limit is never lowered.
 A book the helper stopped fails to import with "TextMouth stopped the braille translation because ...", and an export of braille fails the same way (see [Adding books](adding-books.md) and [Exporting books](exporting-books.md)).
 The debug log records BRAILLE_HELPER_KILLED, with what the helper was doing (back for braille to print, forward for print to braille), the table, and the reason.
 When the helper fails by itself, because it is missing, could not start, ended with an error, or wrote output that does not match its input, the debug log records BRAILLE_HELPER_FAILED, with the same and what happened.
 Neither line holds any text of a book.
-The debug log also records BRAILLE_MAC_TABLE_REFUSED when the check of one of this Mac's tables refuses it, with the table's name, as "mac:" and its file name, and the reason in the refusal's words (see [Settings](settings.md)); a check that could not run is not logged so, and the line holds no text of a book.
+The debug log also records BRAILLE_MAC_TABLE_REFUSED when the check of one of this Mac's tables refuses it, with the table's name, as "mac:" and its file name, and the reason in the refusal's words (see [Settings](settings.md)).
+A check that could not run is not logged so, and the line holds no text of a book.
 Cancel in the import overlay stops it at once.
 
 ### Where the braille helper writes
 <!-- id: where-braille-helper-writes; keys: braille-in, braille-out, scratch files, temporary folder; src: TextMouth/Services/BrailleTranslator.swift -->
 
-The helper reads a hidden file and writes another, named with a dot, an ID, and .braille-in.txt or .braille-out.txt, in the places textutil's output goes: in the package an import is building, and, when TextMouth reads again the text of a braille book already in the library, in a TextMouth-textutil- folder in the Mac's temporary folder.
+The helper reads a hidden file and writes another, named with a dot, an ID, and .braille-in.txt or .braille-out.txt, in the places textutil's output goes:
+
+- in the package an import is building,
+- and, when TextMouth reads again the text of a braille book already in the library, in a TextMouth-textutil- folder in the Mac's temporary folder.
+
 An export's are in its scratch folder, and the check of one of this Mac's tables chosen in Settings or in Export's braille options makes its files in a TextMouth-textutil- folder too.
 They are removed however the translation ends.
 

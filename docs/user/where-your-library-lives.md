@@ -28,7 +28,10 @@ Then it offers what the folder can hold, and VoiceOver announces each status lin
 <!-- id: move-library-here; keys: migrate library, empty folder, copy the library, recovery data; src: TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Services/DataDirectoryMigrator.swift -->
 
 Move Library Here, for an empty folder, such as one just made in the chooser.
-The confirmation says that the library is copied there, checked, and used, with the current folder kept as recovery data, and what the place means: in a cloud folder, that the library, with its size, uploads in the background, and that a book only in the cloud needs an internet connection to open; on another drive, that the drive must be connected to open the library.
+The confirmation says that the library is copied there, checked, and used, with the current folder kept as recovery data, and what the place means:
+
+- in a cloud folder, that the library, with its size, uploads in the background, and that a book only in the cloud needs an internet connection to open;
+- on another drive, that the drive must be connected to open the library.
 
 #### Use This Library
 <!-- id: user-use-this-library-folder; keys: switch library, restore from the cloud, second Mac, quit and reopen; src: TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Services/StorageGeneration.swift -->
@@ -48,7 +51,16 @@ For the folder the library is in already, the status line says it is the library
 #### Folders TextMouth refuses
 <!-- id: folders-textmouth-refuses; keys: refused folder, folder in the Trash, cloud folder not downloaded, not enough room; src: TextMouth/Services/StorageDestinationAssessment.swift -->
 
-Anything else is refused, with the reason: a file rather than a folder, a folder holding other items, which it names, a folder inside the library, a folder in the Trash, one TextMouth can't read or isn't allowed to change, a cloud folder that isn't on this Mac yet, a missing folder whose enclosing folder is missing too, or another drive without room for the library.
+Anything else is refused, with the reason:
+
+- a file rather than a folder,
+- a folder holding other items, which it names,
+- a folder inside the library,
+- a folder in the Trash,
+- one TextMouth can't read or isn't allowed to change,
+- a cloud folder that isn't on this Mac yet,
+- a missing folder whose enclosing folder is missing too,
+- or another drive without room for the library.
 
 ### Reset to Default
 <!-- id: reset-default; keys: default location, home folder, back to ~/.TextMouth; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
@@ -150,7 +162,13 @@ A folder that was renamed, or a drive that mounted under another name, is found 
 ### The Library Not Available window
 <!-- id: library-not-available-window; keys: error screen, reason, copy path, Quit TextMouth; src: TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/Services/DataDirectoryAvailability.swift -->
 
-Otherwise every Library window shows Library Not Available in place of the library: the reason, such as "The drive “Backup” isn't connected." or "The folder is there, but it holds a different TextMouth library.", then where to choose another folder instead, "To use another folder, open Settings, Storage, and choose Choose Another Library or Use Default Location.", the folder's full path, which you can select and copy, and two buttons, Try Again, which Return presses, and Quit TextMouth.
+Otherwise every Library window shows Library Not Available in place of the library:
+
+- the reason, such as "The drive “Backup” isn't connected." or "The folder is there, but it holds a different TextMouth library.",
+- then where to choose another folder instead, "To use another folder, open Settings, Storage, and choose Choose Another Library or Use Default Location.",
+- the folder's full path, which you can select and copy,
+- and two buttons, Try Again, which Return presses, and Quit TextMouth.
+
 VoiceOver moves to the reason and announces it once.
 Meanwhile the library index isn't saved, and no book can be opened or added.
 

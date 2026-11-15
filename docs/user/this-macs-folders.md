@@ -67,7 +67,12 @@ The file is there only while it lists a folder.
 ## Audio Edits cache
 <!-- id: audio-edits-cache; keys: audio editor, filtered stretches, preview, silence; src: TextMouth/Services/AudioEditing/AudioEditComposition.swift, TextMouth/Services/AudioEditing/AudioEditCaches.swift -->
 
-~/Library/Caches/com.textmouth.TextMouth/Audio Edits: one folder for each book being edited, with the filtered stretches and the silence its preview and saves read, removed when the edits are saved or the editing session ends, or, after TextMouth quit or crashed with an editor open, at its next launch. macOS may empty it, and everything in it can be made again from the book's package: a filtered stretch macOS removed is made again when the editor next needs it.
+~/Library/Caches/com.textmouth.TextMouth/Audio Edits:
+
+- one folder for each book being edited, with the filtered stretches and the silence its preview and saves read,
+- removed when the edits are saved or the editing session ends, or, after TextMouth quit or crashed with an editor open, at its next launch.
+
+macOS may empty it, and everything in it can be made again from the book's package: a filtered stretch macOS removed is made again when the editor next needs it.
 
 ## Audio Editor Clips cache
 <!-- id: audio-editor-clips-cache; keys: Copy, Cut, Paste, clipboard, audio editor window; src: TextMouth/Services/AudioEditing/AudioEditCaches.swift -->
@@ -77,14 +82,22 @@ The file is there only while it lists a folder.
 ## Feeds cache
 <!-- id: feeds-cache; keys: podcast refresh, Fetch State, Resume Data, Downloads at Quit; src: TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift -->
 
-~/Library/Caches/com.textmouth.TextMouth/Feeds: how this Mac last checked each feed (Fetch State), which lets a refresh skip a feed that hasn't changed, and the partial downloads a stopped download resumes from (Resume Data, kept a week), with the list of downloads under way or waiting when TextMouth last quit (Downloads at Quit.json), which the next launch asks for again and removes. macOS may empty it; the next refresh then reads each feed whole once.
+~/Library/Caches/com.textmouth.TextMouth/Feeds:
+
+- how this Mac last checked each feed (Fetch State), which lets a refresh skip a feed that hasn't changed,
+- and the partial downloads a stopped download resumes from (Resume Data, kept a week),
+- with the list of downloads under way or waiting when TextMouth last quit (Downloads at Quit.json), which the next launch asks for again and removes.
+
+macOS may empty it.
+The next refresh then reads each feed whole once.
 
 ## Search Text cache
 <!-- id: search-text-cache; keys: Search Library, search index, Time Machine, Preparing books; src: TextMouth/Services/TextSearch/LibrarySearchEngine.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 ~/Library/Caches/com.textmouth.TextMouth/Search Text: the text of each book, ready to search, one file for each book, so that Search Library (see [Search Library](search-library.md)) can search the whole library in a second or two.
 It holds about as much as the library's text, 650 MB for 676 MB of text on the library it was measured on.
-TextMouth makes it in the background after the first launch of each new installation, and again for a book whose text changes, and keeps it only while the disk keeps 1 GB free after it; when it is gone, because macOS emptied Caches, the next launch makes it again, and a search made before then makes what it needs and says "Preparing 120 of 737 books…".
+TextMouth makes it in the background after the first launch of each new installation, and again for a book whose text changes, and keeps it only while the disk keeps 1 GB free after it.
+When it is gone, because macOS emptied Caches, the next launch makes it again, and a search made before then makes what it needs and says "Preparing 120 of 737 books…".
 Searching never downloads a book that is only in the cloud.
 A finished search and a finished pass remove the files of books that have left the library.
 Time Machine leaves it out of backups.
