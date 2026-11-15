@@ -178,7 +178,7 @@ Part of [TextMouth's documentation](../../README.md).
 ### Braille not read yet
 <!-- id: braille-not-read-yet; keys: hyphenated words, divided words, lists, plain paragraphs; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader.swift -->
 
-- Running heads, Roman-numeral page numbers, and words divided at a line's end are not read yet.
+- Words divided at a line's end are not read yet.
 - A list laid out by another tool may read as plain paragraphs.
 
 ### The braille helper process
