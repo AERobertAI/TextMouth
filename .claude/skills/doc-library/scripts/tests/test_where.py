@@ -293,9 +293,18 @@ class NamesPathTests(WhereCase):
         self.assertFalse(citations.names_path(cited, "C/Book.swift", "x"))
 
     def test_a_folder_holding_the_target_and_a_folder_the_target_holds(self) -> None:
-        self.assertTrue(citations.names_path(self.cites("A/", "A/"), "A/B.swift", "x"))
+        self.assertTrue(citations.names_path(self.cites("A/B/", "A/B/"), "A/B/C.swift", "x"))
         self.assertTrue(citations.names_path(self.cites("A/B.swift", "A/B.swift"), "A/", "x"))
-        self.assertFalse(citations.names_path(self.cites("A/", "A/"), "AB/C.swift", "x"))
+        self.assertFalse(citations.names_path(self.cites("A/B/", "A/B/"), "A/BC/D.swift", "x"))
+
+    def test_a_top_folder_names_itself_and_not_each_file_in_it(self) -> None:
+        # testing.md names TextMouth/, which must not make it cite every app file.
+        top = self.cites("TextMouth/", "TextMouth/")
+        self.assertFalse(citations.names_path(top, "TextMouth/Models/Book.swift", "TextMouth/Models/Book.swift"))
+        self.assertTrue(citations.names_path(top, "TextMouth/", "TextMouth/"))
+        self.assertTrue(citations.is_top_folder("docs/"))
+        self.assertFalse(citations.is_top_folder("docs/user/"))
+        self.assertFalse(citations.is_top_folder("README.md"))
 
     def test_a_citation_naming_nothing_matches_by_its_spelling(self) -> None:
         gone = self.cites("Models/Gone.swift")

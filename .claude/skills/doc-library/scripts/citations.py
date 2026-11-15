@@ -166,18 +166,31 @@ def identifier_spans(blocks: Iterable[Tuple[int, str]]) -> List[Tuple[int, str]]
     return found
 
 
+def is_top_folder(path: str) -> bool:
+    """Whether ``path`` is a folder at the repository's top, such as ``TextMouth/`` or ``docs/``.
+
+    A page that names such a folder is speaking of the folder, not of each of its
+    files: ``docs/developer/testing.md`` names ``TextMouth/``, which would otherwise
+    make it cite every one of the app's files.
+    """
+    return path.endswith("/") and path.count("/") == 1
+
+
 def names_path(citation: Citation, target: str, written: str) -> bool:
     """Whether ``citation`` names ``target``, a file or a folder (ending in ``/``).
 
     ``written`` is the path as the caller wrote it (``where``'s NAME, or the changed
     file's path), for a citation that resolves to nothing. A citation names the
     target when the target is among its paths, one of its paths is a folder holding
-    the target, or the target is a folder holding one of its paths. A citation that
-    resolves to nothing (a file since removed) names it when its token, or
-    ``TextMouth/`` plus its token, is the target or ``written``.
+    the target (unless it is a top folder, see ``is_top_folder``), or the target is
+    a folder holding one of its paths. A citation that resolves to nothing (a file
+    since removed) names it when its token, or ``TextMouth/`` plus its token, is the
+    target or ``written``.
     """
     for path in citation.paths:
-        if RepoFiles.covers(path, target) or RepoFiles.covers(target, path):
+        if path == target or RepoFiles.covers(target, path):
+            return True
+        if RepoFiles.covers(path, target) and not is_top_folder(path):
             return True
     if citation.paths:
         return False
