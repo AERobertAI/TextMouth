@@ -798,4 +798,31 @@ final class FeedTestWorldTeardownTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: file.path), "the teardown went on before the write landed")
         XCTAssertEqual(world.failures.outstandingFailures().map(\.subject), [])
     }
+
+    /// Every feed engine a test makes besides its world's own comes from
+    /// `FeedTestWorld.engine(_:on:)`, whose teardown lands the engine's
+    /// writes before the world's folders go. An engine made by hand, whose
+    /// teardown only stopped it, left a Delete Download's record write to
+    /// fail once the sandbox was gone, and its failure was announced into
+    /// `LibraryFeedMoveToFolderTests` on GitHub's runner. The test files are
+    /// read, as the policy tests read the app's, so such an engine fails here
+    /// every time rather than in another test now and then.
+    func testEveryOtherEngineComesFromTheWorld() throws {
+        let testsFolder = AppSourceFile.folder.deletingLastPathComponent()
+            .appendingPathComponent("TextMouthProductionTests", isDirectory: true)
+        // Spelled in two parts, so this line is not one of the makings found.
+        let making = "FeedCenter" + "(environment:"
+        var madeByHand: [String] = []
+        for source in try AppSourceFile.all(in: testsFolder) where source.name != "FeedTestSupport.swift" {
+            for (index, line) in source.text.components(separatedBy: .newlines).enumerated()
+            where line.contains(making) && !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
+                madeByHand.append("\(source.path):\(index + 1)")
+            }
+        }
+        XCTAssertEqual(
+            madeByHand,
+            [],
+            "make each engine with FeedTestWorld.engine(_:on:), whose teardown lands its writes before the world's folders go"
+        )
+    }
 }
