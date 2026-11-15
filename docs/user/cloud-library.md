@@ -1,5 +1,5 @@
 # Keeping your library in the cloud
-<!-- id: keeping-your-library-cloud; keys: ; src: -->
+<!-- id: keeping-your-library-cloud; keys: iCloud Drive, Dropbox, Google Drive, CloudStorage, dataless file, offline; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/BookCloudStorageService.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -13,19 +13,19 @@ To put your library there, choose a folder in the drive with Change Location… 
 research/CLOUD-STORAGE-RESEARCH-2026-10-03.md and research/CLOUD-STORAGE-PLAN-2026-10-03.md, in the same folder as this file, explain the design.
 
 ## How each cloud drive keeps a book
-<!-- id: how-each-cloud-drive-keeps; keys: ; src: -->
+<!-- id: how-each-cloud-drive-keeps; keys: package sync flags, .tmb, per-file sync, BookCloudStorageService; src: TextMouth/Services/BookCloudStorageService.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 How each drive keeps a book: iCloud Drive syncs a book's package, its .tmb folder, as one item, while Google Drive and Dropbox sync each file in it.
 TextMouth tells which from the package's own sync flags and acts on what the drive syncs.
 On iCloud Drive it reads a book's state, and whether its changes have uploaded, from the package, and Download Now, opening a book, and Remove Download ask for the whole package, which comes to this Mac, or leaves it, all at once; on the other drives it does each of these file by file.
 
 ## The Library window
-<!-- id: library-window; keys: ; src: -->
+<!-- id: library-window; keys: Library window, cloud notes, downloads, refresh; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
 In the Library window:
 
 ### A book's state in its row
-<!-- id: book-state-row; keys: ; src: -->
+<!-- id: book-state-row; keys: Downloaded, In Cloud, Downloading 40%, Download Failed, Waiting for Sync, row badge; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Views/Library/BookCloudNote.swift -->
 
 Each book's row shows and speaks its state after the New or Now Reading badge: Downloaded, In Cloud, Downloading 40%, Download Failed, or Waiting for Sync, which means the book's package hasn't arrived on this Mac yet.
 While a row speaks a download's percentage, it speaks the reading progress as "42 percent read", so the two never sound alike.
@@ -33,18 +33,18 @@ A book kept on this Mac (below) shows and speaks "Kept on this Mac" after its st
 A library on this Mac or on another drive looks and reads as before.
 
 ### The summary line
-<!-- id: summary-line; keys: ; src: -->
+<!-- id: summary-line; keys: books in the cloud, kept on this Mac, status line; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
 The summary line adds how many of the books shown are in the cloud, as in "3 books in the cloud": those not wholly on this Mac; and how many are kept on this Mac, as in "2 books kept on this Mac".
 
 ### When the states are read
-<!-- id: when-states-are-read; keys: ; src: -->
+<!-- id: when-states-are-read; keys: refresh interval, 2 seconds, every minute, BookCloudStates; src: TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 The states are read again when a Library window opens, when TextMouth becomes the active app, after books are added, moved, or removed, and every minute while a Library window is open.
 While any book downloads, even one Finder started, the downloading books are read every 2 seconds; a download that starts meanwhile shows when every book is next read, within a minute.
 
 ### Commands for a book in the cloud
-<!-- id: commands-book-cloud; keys: ; src: -->
+<!-- id: commands-book-cloud; keys: Download Now, Remove Download, Show in Finder, Actions menu, Keep Downloaded, Offline Access; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
 A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), offer
 - Download Now for a book in the cloud or one whose download failed,
@@ -54,18 +54,18 @@ A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-S
 Each cloud service also has its own command for keeping a book on this Mac, in Finder: Keep Downloaded for iCloud Drive, Offline Access for Google Drive, and Make available offline for Dropbox.
 
 ### Commands on several books
-<!-- id: commands-several-books; keys: ; src: -->
+<!-- id: commands-several-books; keys: multiple selection, Download 3 Books, plural titles; src: TextMouth/Models/LibraryCloudWording.swift -->
 
 With several books selected, these commands act on the selection and count the books they act on: "Download 3 Books", "Remove Downloads of 3 Books", "Keep 3 Books on This Mac", "Show 3 Books in Finder".
 
 ### Download Now
-<!-- id: download-now; keys: ; src: -->
+<!-- id: download-now; keys: download queue, one at a time, download summary; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
 Download Now downloads the books one at a time, each showing Downloading 0% until its turn.
 It announces when it starts, and gives one summary when every book has ended, naming any book that wasn't downloaded and why.
 
 ### Remove Download
-<!-- id: remove-download; keys: ; src: -->
+<!-- id: remove-download; keys: evict, free space, refusal alert, unsaved changes; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
 Remove Download frees the space a downloaded book takes on this Mac, leaving it in the cloud.
 It deletes nothing from the cloud, so it doesn't ask first.
@@ -74,25 +74,25 @@ When it keeps any download, an alert says what was removed, what stayed, and why
 When every download is removed, one announcement says so.
 
 ### Book Info and a book in the cloud
-<!-- id: book-info-book-cloud; keys: ; src: -->
+<!-- id: book-info-book-cloud; keys: Book Information, metadata, EPUB write refused, details appear; src: TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Book Info never waits for a download.
 For a book only in the cloud, it shows the details the library keeps, with "Some details appear once the book is downloaded.", and refuses to write changes into the book's EPUB file until the book is downloaded.
 
 ## Keep on This Mac
-<!-- id: keep-this-mac; keys: ; src: -->
+<!-- id: keep-this-mac; keys: Keep Downloaded, pin, offline, KeptBooks; src: TextMouth/Services/KeptBooks.swift, TextMouth/Models/LibraryCloudWording.swift -->
 
 Keep on This Mac:
 
 ### Keep and Stop Keeping
-<!-- id: keep-stop-keeping; keys: ; src: -->
+<!-- id: keep-stop-keeping; keys: Stop Keeping, Library menu, No books are selected; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
 A book's context menu, and its VoiceOver actions, offer Keep on This Mac, or Stop Keeping on This Mac for a book kept already, for any book in a library in the cloud, even one whose package hasn't arrived yet.
 With several books selected, each counts the books it acts on, as in "Keep 3 Books on This Mac".
 The Library menu has both commands too, for the books selected in the Library window in front; when nothing would change, VoiceOver says why, as in "No books are selected."
 
 ### What a kept book does
-<!-- id: what-kept-book-does; keys: ; src: -->
+<!-- id: what-kept-book-does; keys: download at once, retry delay, five minutes, keptBookRetryDelay; src: TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Services/KeptBooks.swift -->
 
 A kept book stays downloaded.
 One only in the cloud, or whose download failed, downloads at once, as Download Now downloads it, and VoiceOver hears "Keeping Moby-Dick on this Mac.
@@ -100,20 +100,20 @@ Downloading it now", then the summary when the downloads end.
 One whose download the sync service removes, while TextMouth runs or before it started, downloads again, without an announcement, when the books' states are next read, and one whose download failed then waits five minutes before it is tried again.
 
 ### Remove Download and a kept book
-<!-- id: remove-download-kept-book; keys: ; src: -->
+<!-- id: remove-download-kept-book; keys: refusal, Stop Keeping first; src: TextMouth/Models/LibraryCloudWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
 Remove Download refuses a kept book: "The book is kept on this Mac, so its download can't be removed.
 Choose Stop Keeping on This Mac first."
 Stop Keeping on This Mac removes nothing: the download stays until the sync service or Remove Download removes it.
 
 ### Keeping is this Mac's own choice
-<!-- id: keeping-this-mac-own-choice; keys: ; src: -->
+<!-- id: keeping-this-mac-own-choice; keys: Kept Books.json, machine-local, MachineLocalPaths; src: TextMouth/Services/KeptBooks.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Keeping is this Mac's own choice, as Finder's Keep Downloaded is: another Mac that opens the same library keeps only the books chosen there.
 The choice is saved in this Mac's own Kept Books.json (see [Where TextMouth keeps your library](where-your-library-lives.md)), never in the library.
 
 ### The reading list's books
-<!-- id: reading-list-books; keys: ; src: -->
+<!-- id: reading-list-books; keys: Keep these books on this Mac, free space check, DOWNLOAD_SKIPPED_NO_ROOM, 1 GB reserve, options bar; src: TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Services/KeptBooks.swift -->
 
 The reading list's books are kept too, in a library in the cloud, while the checkbox "Keep these books on this Mac" in the Reading List's options bar is checked, which it is until you clear it.
 The checkbox is not there for a library on this Mac or another drive.
@@ -131,7 +131,7 @@ One huge book of unknown size can still fill the disk once it has started, since
 A book left out for room, a book you kept yourself included, is written once to the debug log as DOWNLOAD_SKIPPED_NO_ROOM; VoiceOver hears only of the reading list's books, so a book you kept yourself waits for a later refresh with no notice, and the log alone tells of it.
 
 ### Remove Download and the reading list
-<!-- id: remove-download-reading-list; keys: ; src: -->
+<!-- id: remove-download-reading-list; keys: refusal, Kept on this Mac for the reading list, both reasons; src: TextMouth/Models/ReadingListWording.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Services/KeptBooks.swift -->
 
 Remove Download refuses a book kept only for the reading list: "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed.
 Take it off the reading list, or clear Keep these books on this Mac in the Reading List's options first."
@@ -141,19 +141,19 @@ A book you kept stays kept after it leaves the list.
 Book Information says "Kept on this Mac for the reading list" for a book the list alone keeps.
 
 ### A book that leaves the list
-<!-- id: book-that-leaves-list; keys: ; src: -->
+<!-- id: book-that-leaves-list; keys: Keep Reading List Books.json, Remove books when finished, keeps nothing; src: TextMouth/Services/KeptBooks.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift -->
 
 A book that leaves the list (taken off it, finished with Remove books when finished checked, or removed from the library) stops being kept for it, and nothing is removed from this Mac: its download stays until the sync service or Remove Download removes it.
 Clearing the checkbox keeps none of the list's books for the list and removes nothing.
 The choice is this Mac's own, saved in its Keep Reading List Books.json beside Kept Books.json, never in the library or the list, so another Mac that opens the library decides for itself.
 
 ## Opening a book from the cloud
-<!-- id: opening-book-from-cloud; keys: ; src: -->
+<!-- id: opening-book-from-cloud; keys: download on open, reader window, progress bar, Downloading; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Opening a book:
 
 ### A book with files in the cloud
-<!-- id: book-files-cloud; keys: ; src: -->
+<!-- id: book-files-cloud; keys: 2 of 3 files, progress percentage, sync service name; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 A downloaded book opens at once.
 A book with files only in the cloud downloads first, in its reader window: "Downloading" and the book's title, the sync service's name, and a progress bar that VoiceOver moves to and reads as "2 of 3 files, 40 percent".
@@ -161,18 +161,18 @@ While a single file is left and nothing has been counted yet, the bar gives that
 Where the sync service reports how much of a file, or of a package iCloud Drive downloads whole, has arrived, the percentage counts that part too, never going back, so a book of one large file shows how far it has got.
 
 ### What VoiceOver hears during a download
-<!-- id: what-voiceover-hears-during-download; keys: ; src: -->
+<!-- id: what-voiceover-hears-during-download; keys: 25 50 75 percent, announcements, Downloaded. Loading.; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 VoiceOver hears the download start, then 25, 50, and 75 percent (or, while there is no percentage, the time waited, every 30 seconds), then "Downloaded.
 Loading."
 
 ### Cancel a download
-<!-- id: cancel-download; keys: ; src: -->
+<!-- id: cancel-download; keys: Escape, Download button, Close; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Cancel, which Escape also presses, stops waiting, and the window then says the book isn't downloaded, with two buttons: Download, which Return presses, and Close.
 
 ### When a download fails
-<!-- id: when-download-fails; keys: ; src: -->
+<!-- id: when-download-fails; keys: Try Again, offline, paused, signed out, 60 seconds; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift -->
 
 A failure shows the reason with Try Again, which Return presses, and Close.
 Offline, the download fails at once: "This Mac is offline, so the book can't be downloaded from Dropbox.
@@ -181,32 +181,32 @@ A sync service that downloads nothing for 60 seconds is reported as perhaps paus
 A book whose package hasn't arrived on this Mac yet says so.
 
 ### After the download
-<!-- id: after-download; keys: ; src: -->
+<!-- id: after-download; keys: read offline, part of the book isn't on this Mac; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift -->
 
 The book is then read without ever waiting on the network.
 A file that went back to the cloud meanwhile is downloaded once more; if it has gone again, the reader says that part of the book isn't on this Mac.
 
 ### A book that another book continues to
-<!-- id: book-that-another-book-continues; keys: ; src: -->
+<!-- id: book-that-another-book-continues; keys: Next in Folder, Reading List hand-over, autoplay, library moving; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift -->
 
 A book that another book continues to, from its folder or through the reading list, starts playing once it has downloaded and loaded, however long the download takes.
 If the download fails or you cancel it, the book doesn't start by itself later, and once you close its window, it starts by itself only if it opens again within about 30 seconds of the hand-over.
 While the library is moving or isn't available, opening such a book, or a book from the Reading List, is refused as before, and nothing of the refused open is left waiting: when the book is opened later, it is neither started nor read from the reading list.
 
 ## Playing an audiobook from the cloud
-<!-- id: playing-audiobook-from-cloud; keys: ; src: -->
+<!-- id: playing-audiobook-from-cloud; keys: working copy, offline playback, Working Copies; src: TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift -->
 
 Playing an audiobook:
 
 ### Playing from a working copy
-<!-- id: playing-from-working-copy; keys: ; src: -->
+<!-- id: playing-from-working-copy; keys: Working Copies folder, clone, same disk; src: TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 An open audiobook plays from a working copy: a copy of its package in this Mac's Working Copies folder, which on the same disk takes almost no extra space.
 So it keeps playing offline, or after the sync service removes the book's download.
 The copy is deleted when the reader window closes, and positions and bookmarks still save to the library.
 
 ### When no copy can be made
-<!-- id: when-no-copy-can-be; keys: ; src: -->
+<!-- id: when-no-copy-can-be; keys: Chapter Not Downloaded, Play/Pause, sleep timer, Try Again; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 When no copy can be made, a chapter whose file is only in the cloud downloads before it plays, in the same view, while the reader shows Playing.
 Pausing, with Play/Pause or when the sleep timer runs out, stops waiting, so the chapter doesn't start by itself later; it downloads again when you next play it, if it still has to.
@@ -214,12 +214,12 @@ A second Play while the audiobook waits for its chapter's download does nothing,
 A failure stops at that chapter with a Chapter Not Downloaded alert offering Try Again.
 
 ### A text book
-<!-- id: text-book; keys: ; src: -->
+<!-- id: text-book; keys: memory, no working copy; src: TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift -->
 
 A text book is read into memory when it opens, so it needs no copy.
 
 ## Background maintenance
-<!-- id: background-maintenance; keys: ; src: -->
+<!-- id: background-maintenance; keys: startup repair, metadata refresh, text cache, MAINTENANCE_SKIPPED_IN_CLOUD, Storage settings; src: TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Background maintenance never downloads a book.
 The startup repair, the metadata refresh, the text cache and statistics passes, and Redo Text Extraction
@@ -231,18 +231,18 @@ Each pass that skipped books writes one MAINTENANCE_SKIPPED_IN_CLOUD line in the
 12 books in the cloud were skipped."
 
 ## Logs in the cloud
-<!-- id: logs-cloud; keys: ; src: -->
+<!-- id: logs-cloud; keys: debug log, Logs folder, 2 MB, In this Mac's Logs folder; src: TextMouth/Services/DiagnosticLog.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Logs: they live in the library's Logs folder and sync with it, each kept to 2 MB with one older generation, so the uploads stay small, and TextMouth never downloads a log to write to it.
 To keep them off the cloud, choose In this Mac's Logs folder in Storage settings (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 
 ## Using several Macs
-<!-- id: using-several-macs; keys: ; src: -->
+<!-- id: using-several-macs; keys: two Macs, Sessions folder, TextMouth Is Open on Another Mac, lease; src: TextMouth/Services/LibrarySessionLease.swift -->
 
 Several Macs:
 
 ### One Mac at a time
-<!-- id: one-mac-at-time; keys: ; src: -->
+<!-- id: one-mac-at-time; keys: Continue, Quit TextMouth, three minutes, session file; src: TextMouth/Services/LibrarySessionLease.swift -->
 
 Use a library on one Mac at a time.
 While a library on another drive or in a cloud folder is open, TextMouth keeps a file for this Mac in its Sessions folder.
@@ -254,12 +254,12 @@ A sync service's conflict copy of this Mac's own file never counts as another Ma
 The file is written and read away from the main thread, so a Sessions folder that hasn't synced yet never stalls TextMouth; at quit, removing the file is given up to two seconds.
 
 ### Settings travel with the library
-<!-- id: settings-travel-library; keys: ; src: -->
+<!-- id: settings-travel-library; keys: dataDirectoryPath, config.json, ignored path; src: TextMouth/Services/ConfigService.swift -->
 
 config.json travels with the library, so a dataDirectoryPath that another Mac wrote is ignored when it names a folder this Mac doesn't have (see [Editing settings in config.json](config-json.md)).
 
 ### Update TextMouth on every Mac
-<!-- id: update-textmouth-every-mac; keys: ; src: -->
+<!-- id: update-textmouth-every-mac; keys: 0.1.1, Rebuild Library Index, library.json.unreadable, KFX, older version; src: TextMouth/Services/LibraryIndexQuarantine.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
 Update TextMouth on every Mac that opens the library.
 A TextMouth older than 0.2.0, such as 0.1.1, can't open a library that holds a book in a format 0.2.0 added: rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, web archive, SSML, or braille (BRF, BRL, or PEF).
@@ -268,7 +268,7 @@ It offers Rebuild Library Index; never choose it there (see library.json.unreada
 A TextMouth from 0.2.1 to 0.3.2 opens a library that holds a KFX book, a format added in 0.4.0, without that book (see the [changelog](changelog.md)).
 
 ### Conflict copies
-<!-- id: conflict-copies; keys: ; src: -->
+<!-- id: conflict-copies; keys: library 2.json, library (1).json, duplicate files, merge; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/Feeds/FeedStore.swift -->
 
 TextMouth leaves alone the conflict copies a sync service makes of library.json, library-identity.json, config.json, reading_stats.json, substitutions.json, a feed's record, and a book's package and record, such as "library 2.json" or "library (1).json":
 - it never reads one in place of the file it copies,
@@ -277,7 +277,7 @@ TextMouth leaves alone the conflict copies a sync service makes of library.json,
 It doesn't merge what two Macs wrote.
 
 ### Statistics and substitutions only in the cloud
-<!-- id: statistics-substitutions-only-cloud; keys: ; src: -->
+<!-- id: statistics-substitutions-only-cloud; keys: reading_stats.json, substitutions.json, Retry, standard rules; src: TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift -->
 
 While reading_stats.json or substitutions.json is only in the cloud, TextMouth neither waits for it nor saves over it, and asks the sync service for it.
 Meanwhile the statistics count only this session's listening, which is added to the file's totals once the file is on this Mac.
@@ -285,19 +285,19 @@ The standard substitution rules stand in, and a change to them is reported as un
 Where there is no substitutions.json at all, as on a Mac's first launch before the sync service has brought it down, the standard rules stand in without being written: the file is written only when a rule changes, so one that arrives later is adopted without a conflict copy.
 
 ### Small files fetched when the library opens
-<!-- id: small-files-fetched-when-library; keys: ; src: -->
+<!-- id: small-files-fetched-when-library; keys: config.json, feed records, background fetch, new value kept; src: TextMouth/Services/ConfigService.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 When a library in the cloud opens, TextMouth gets its other few small files in the background if they're only in the cloud: config.json, reading_stats.json, substitutions.json, and the feeds' records.
 Never a book or an episode, and the library doesn't wait for them.
 Until config.json arrives, the settings already on this Mac stand, nothing is saved over it, and a setting you change meanwhile keeps your new value when it arrives.
 
 ### A file that can't be read
-<!-- id: file-that-cant-be-read; keys: ; src: -->
+<!-- id: file-that-cant-be-read; keys: unreadable copy, truncated write, .unreadable-; src: TextMouth/Services/SavedFile.swift, TextMouth/Services/LibraryIndexQuarantine.swift -->
 
 Either file, when it can't be read, as a write cut short on another Mac can leave it, is kept beside itself before anything replaces it, its name followed by .unreadable- and the date and time, as an unreadable library.json is; the statistics then start afresh, and the standard rules stand in.
 
 ## Feeds in the cloud
-<!-- id: feeds-cloud; keys: ; src: -->
+<!-- id: feeds-cloud; keys: podcasts, episode downloads, Resubscribe, unsubscribed feed, feed index; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedPaths+Items.swift -->
 
 Feeds: their records, and their folders of downloads with their indexes, sync with the library, and each Mac refreshes them on its own.
 A played episode's download is deleted, and a download beyond a feed's newest is removed under its List and download choice, only by a Mac that holds the whole book, as its cloud state says.
@@ -308,7 +308,7 @@ A feed whose record is missing when TextMouth opens, as one an earlier version u
 Unsubscribing and Resubscribe live in the feed's record, which another Mac reads as it next opens the library.
 
 ## What was tested
-<!-- id: what-was-tested; keys: ; src: -->
+<!-- id: what-was-tested; keys: real cloud drives, manual tests, opt-in tests; src: docs/developer/testing.md -->
 
 What was tested:
 - the opt-in tests in [Testing on real cloud drives](../developer/testing.md#testing-on-real-cloud-drives), passed against Dropbox, Google Drive, and iCloud Drive,
