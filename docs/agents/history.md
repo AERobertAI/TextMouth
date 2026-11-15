@@ -673,6 +673,11 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **Four symbol tests:** Four were added from the November 8 check, which found that deleting a guard in the code left the first 18 tests green.
   The four tests are named on the Symbols of Word documents section of the goldens page.
 - **The real voice export:** A real voice (Samantha) was exported to an M4B, an M4A, and an MP3, each with three chapters, in the November 8 check.
+- **How the symbol tests were proved:** The tests were proved by 34 deliberate breaks of a throwaway SwiftPM copy of the sources, never of the branch.
+- **How the speech export tests were proved:**
+  The tests were proved by deliberate breaks of a throwaway SwiftPM copy of the sources (62 are listed in the brief's mutations.md); the clean copy passed and every break was caught after the laziness test was fixed.
+- **The real files compared:**
+  A real-file comparison of 312 old-layout and 340 Word 97 government documents, which the repository does not hold, was run once through the app's pipeline against textutil and against main; its main figures are in the Imports page of the architecture.
 
 ## From The audit and its accepted findings
 
@@ -748,6 +753,8 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
   It takes about 52 seconds in a full run; it took about 154 seconds before October 17, 2026.
 - **Opt-in sweeps, the textfmt team's run of the import fuzz:**
   The textfmt team's run over those 21 made 351 damaged copies, and no check broke.
+- **Mac braille table check tests, the first failure:**
+  The test passed in the 13 train runs before it first failed, in train 1104-0000, in code that no change had touched.
 
 ## From Tests of the markup guard, Kindle, and MOBI readers
 
