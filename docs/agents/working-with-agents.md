@@ -63,7 +63,9 @@ When git cannot tell, the script goes ahead, and TEXTMOUTH_BBS_ALLOW_UNMERGED=1 
 <!-- id: how-agent-checks-code; keys: typecheck-ios, typecheck-mac, typecheck-tests, mac-projection, heavy-work lock, train request; src: Makefile, Scripts/ios/mac-projection.py, Scripts/agents/heavy_lock.py, Scripts/agents/wait-for-result.py -->
 
 An agent checks its code in three ways, none of which builds with Xcode.
-It type-checks for iOS with `make typecheck-ios` (`CENSUS=1` while it still has AppKit uses to count) and for the Mac with `make typecheck-mac`, and the Mac's tests with `make typecheck-tests`, all under the machine-wide heavy-work lock, which the build train shares, so each waits its turn and says whom it waits for; and, when its change must leave the Mac as it was, it runs `make mac-projection BASE=main`.
+It type-checks for iOS with `make typecheck-ios` (`CENSUS=1` while it still has AppKit uses to count) and for the Mac with `make typecheck-mac`, and the Mac's tests with `make typecheck-tests`.
+All run under the machine-wide heavy-work lock, which the build train shares, so each waits its turn and says whom it waits for.
+And, when its change must leave the Mac as it was, it runs `make mac-projection BASE=main`.
 It tests through the build train (see the build train in [Testing TextMouth](../developer/testing-tools.md#the-build-train)), and waits for the train's result in the background with `python3 -I Scripts/agents/wait-for-result.py --agent SLUG`, which exits when the result is written.
 What the commands do is in [Building TextMouth](../developer/building.md), under The iOS app.
 
@@ -128,7 +130,9 @@ It fixes every failure in one round, reviews that round's diff, and asks once.
 When the orchestrator starts the loop with `--remote`, the train merges on the Mac but builds and tests on GitHub's macOS runners, so the Mac stays free and a train costs the Mac no heavy-work lock.
 The agent's part is the same: one request, one background `wait-for-result.py`.
 What differs is the result.
-Its file in `build/orchestrator/train/results/` carries a line "Run on GitHub" with the run's link, the log is in the train's folder as `run.log` (the whole `xcodebuild` output) beside `run-summary.txt` (what `summarize` reads), and the train does not run the iOS census on this Mac: the run builds the iPhone app and its UI tests for the iOS Simulator on GitHub instead, and your result lists "iOS errors in files your branch changes" from that build, with the errors themselves (a failed iPhone build is information; it does not change the train's verdict on the tests).
+Its file in `build/orchestrator/train/results/` carries a line "Run on GitHub" with the run's link, and the log is in the train's folder as `run.log` (the whole `xcodebuild` output) beside `run-summary.txt` (what `summarize` reads).
+The train does not run the iOS census on this Mac: the run builds the iPhone app and its UI tests for the iOS Simulator on GitHub instead.
+Your result lists "iOS errors in files your branch changes" from that build, with the errors themselves (a failed iPhone build is information; it does not change the train's verdict on the tests).
 A train leaves 5 minutes after the first waiting request, and a push waits for any run already on `TestBuild`, so a train's run is never cut off by another sender's.
 If the push or the run fails, the board says "the run on GitHub failed, so your request waits for the next train": the request is already back in the queue, so the agent does not ask again.
 A remote train's tests skip the 103 entries of `Scripts/agents/runner-skips.conf` (audio-playing tests among them), and your result has a "Not run on GitHub, no verdict: X (reason)" line for each one you asked for.
