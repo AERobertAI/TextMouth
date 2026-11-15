@@ -641,3 +641,28 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **CLAUDE.md's Start here:** it listed the project's documents (writing-docs.md, README.md, ARCHITECTURE.md, the TODO, AGENT-NOTES, `research/`), the message board with its build wrapper `build-slot-with-bbs.sh`, `merge-chain.sh` and `extract-report.py`.
   It also gave the `*.md` gitignore rule and the `humanQuestions/` rule.
   AGENTS.md's Start here holds them now, and the orchestrator's tools are in orchestrator.md.
+
+## From Tests on GitHub Actions
+
+The dates, run numbers, and measurements behind the rules in `docs/developer/testing-github.md`.
+
+- **The push lock:** The case that made it was a push whose idle check came in the gap and found nothing, pushed, and cancelled the first (November 11, 2026: run 43000459553, cancelled 3 seconds after it began).
+- **Three threads of the concurrency pool held by the voice listing:** Until November 10 `VoiceCatalog` listed the installed voices in a pool task.
+  The hung tests were `EpisodeDownloadContinuationTests`, `PreRenderedSpeechInvalidationTests`, `ReadingListReaderTests`, `AudioEngineBehaviorTests.testReportWhilePausedShortOfTheEndIsNotFinishedOnResume`, and the tests the audio hangs were blamed for before.
+  The test of the fix, `VoiceCatalogTests.testListingsThatNeverComeBackLeaveTheConcurrencyPoolFree`: it failed on the runner with the listing back in the pool, run 42877413127.
+- **Cancel heard late** (`OfficeXMLGuardTests.testCancelLandsInTheMiddleOfARead`, `OwnReaderCancellationTests.testCancelPartwayThroughALargeWordDocumentIsHeardAtOnce`, 2.2 to 4.1 seconds against 2.0 and 1.5): not the runner's speed alone.
+  `XMLInputGuard`'s attribute-count scan of the whole part, which runs before the parser, could not be cancelled, and took 1.3 seconds on this Mac for the 9 MB part in a Debug build and 2 to 4 on the runner.
+  The runner printed 12 and 15 milliseconds from Cancel to the throw.
+  With the change undone in a scratch copy on the runner the three tests failed (run 42873809903).
+- **The runner's skip list:** it was 114 entries on the morning of November 10.
+  The list was pruned on November 10 by a probe, a request that said `"no_skips": true`.
+  The probe's result: the 18 entries whose tests passed were dropped, among them the whole `PodcastChaptersHeadingsTests` class, `PublishedFileProgressTests`, `EndBehaviorMatrixTests`, `ImportProgressTests` and `RetainedPackageImportTests`, which had hung only on the starved concurrency pool.
+  Two of the tests dropped failed in the next full run (an audio book that did not finish loading) and were put back.
+  The probe did not reach `ReaderAudioFailureTests` (its shard was stopped at its limit) and did not run the Ogg and `Recording*` classes on purpose, so their entries stand.
+- **`SpeechBufferSynthesizerTests.testStopEndsAWriteAtOnce`** (run 42902376383, `writer.stops` 0 instead of 1) was a race in the test.
+  It pressed Stop 0.3 seconds after it began, but it looks up a stand-in voice first, which takes longer on a cold runner, so Stop came before the write started and the write ended at its first check with no synthesizer made.
+- **A run that failed with no failed test:** run 42911613586 had 11,849 tests and 0 failures and was judged FAILED for an NSError line cut at the front by interleaved output, which `testkit` no longer reads as an error.
+  Its page now says why a run failed with no failed test, where it said only "the tests did not pass".
+- **The 503 on downloads:** GitHub answered "503 Egress is over the account limit" to `gh run download` for a while (November 10, about 16:00 local).
+- **The workflow guard was off at first:** until `test-build.yml` was on origin's main, the page said "the guard is off until then: on November 10, 2026 origin's main has only `check.yml`, and pushing main after the branch that adds `tests.yml` merges switches it on".
+  Main has held `test-build.yml` since the first push at 0.4.10, so the guard is on.
