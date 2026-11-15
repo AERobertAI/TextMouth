@@ -661,3 +661,8 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - The three rules of layout (running heads, print-page change lines, chapter rows) came on November 13, 2026, with the user's Life of Pi BRF, a 2003 Australian EBAE transcription.
 - BrailleTitlePage (a BRF's title and author from its title page) came on November 13, 2026.
 - The braille page reader's version "1.1.0" dates from November 13, 2026 and shipped in 0.4.8; "1.1.1" dates from November 14, 2026.
+
+## From Imports: DAISY 3 books
+
+- DAISY 3 books of several DTBook files, and SMIL clocks, came on November 13, 2026.
+- DAISYParser.parseTime: "500ms" used to read as no time.
