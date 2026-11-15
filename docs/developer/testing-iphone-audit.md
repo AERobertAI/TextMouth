@@ -73,7 +73,7 @@ Part of [TextMouth's documentation](../../README.md).
   - Sleep Timer, for its stepper's label, a system control's;
   - Book Information, for the read-only rows at the bottom;
   - the Search in Book sheet with results (`testTheSearchSheetPassesTheAudit`), for the status line, the "Search results" heading, the regular-expression switch, and the field; `LargeTextUITests` measures that these grow (see SearchUITests, below).
-- `LargeTextUITests` does not use it any more: it fails on what it finds, except the accepted findings above.
+- `LargeTextUITests` does not use it: it fails on what it finds, except the accepted findings above.
 - A test that reports is not proof that the screen passes.
   `LargeTextUITests` audits the same screens at the largest size.
 - Every other kind of finding on those screens still fails.
@@ -86,7 +86,7 @@ Part of [TextMouth's documentation](../../README.md).
 - The size is set at launch with `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` (`TextMouthUITestCase.largestText`), as the Larger Text setting would.
   Nothing changes the simulator's own settings.
 - **Dynamic Type and clipped text fail** (0.4.3).
-  Now only the accepted findings above pass, and any other Dynamic Type finding, such as a fixed font on either screen, fails.
+  Only the accepted findings above pass, and any other Dynamic Type finding, such as a fixed font on either screen, fails.
 - Its four tests:
   - `testTheLibraryWithABookHoldsAtTheLargestText` audits the Library with a book, as it first appears and then scrolled once, since the summary row is below the first screen at this size.
     It accepts the system parts and `librarySummary`, and, scrolled, the three nameless findings.
@@ -95,9 +95,16 @@ Part of [TextMouth's documentation](../../README.md).
     `PhoneValueRow` stacks the value under the name at these sizes, and the screenshots show nothing cut or overlapped.
   - `testAddToLibraryHoldsAtTheLargestText` audits the Add to Library sheet.
     It accepts its title and Cancel, and nothing else.
-  - `testTheSearchSheetHoldsAtTheLargestText` types a search into the Search in Book sheet (so it runs only where sound is allowed) at the default size and then at the largest, in two launches of the same test, and measures the height in points of the four parts the sheet's audit named: the field, the status line, the switch, and the "Search results" heading.
+  - `testTheSearchSheetHoldsAtTheLargestText` types a search into the Search in Book sheet (so it runs only where sound is allowed) at the default size and then at the largest, in two launches of the same test, and measures the height in points of the four parts the sheet's audit named:
+    - the field,
+    - the status line,
+    - the switch, and
+    - the "Search results" heading.
+
     Each must have grown by at least its own bound (`minimumGrowth`: the field 2.4, the status line 1.55, the switch 2.5, the heading 1.75, as height at the largest size over height at the default).
-    Each bound lies about halfway between what the sheet measures with every part capped at Accessibility 2 and what it measures as it is (run 43374972739 on a proof branch that capped it, never merged, and run 43066870675), so a cap at Accessibility 2 or any smaller size fails, naming every part that fell short, and the sheet as it is passes; text in a fixed font would not grow at all.
+    Each bound lies about halfway between what the sheet measures with every part capped at Accessibility 2 and what it measures as it is (run 43374972739 on a proof branch that capped it, never merged, and run 43066870675).
+    So a cap at Accessibility 2 or any smaller size fails, naming every part that fell short, and the sheet as it is passes.
+    Text in a fixed font would not grow at all.
     Every run prints each part's heights and ratio on `SEARCH-GROWTH` lines of `ios-ui.log`.
     The sheet's elements come from `openSearchSheet`, `waitForStatus` and `waitForResults`, which moved from `SearchUITests` to `TextMouthUITestCase` for it.
     It then audits clipped text only at the largest size (Dynamic Type is the measurement's), accepting the title, Back to Book and `scrolledPastTheEdge`.
@@ -117,13 +124,16 @@ Part of [TextMouth's documentation](../../README.md).
   XCUITest reads a control's label, value, and type (button), and whether it is enabled; it does not read the hint or the other traits (adjustable, starts a media session), which `PhoneControlButtonTests` and the Mac's `PhoneReaderControlsTests` hold.
 - The six tests:
   - `testPlayBecomesPauseAndPauseBecomesPlay`: before, "Play", a button, enabled, with no value; after Play, "Pause" with no value, still there three seconds later (a failed speech would put an alert up or turn it back into Play); after Pause, "Play" with no value, since nothing was moved.
-    Then Play, three skips forward while playing, and Pause leave Book content past where it began; a second Play and Pause leave it at that place or later in the same passage (found inside the first, with white space made alike), never at the book's opening, so a Play that started the book over fails.
+    Then Play, three skips forward while playing, and Pause leave Book content past where it began.
+    A second Play and Pause leave it at that place or later in the same passage (found inside the first, with white space made alike), never at the book's opening, so a Play that started the book over fails.
   - `testSkippingForwardWhilePlayingMovesTheBookAndKeepsItPlaying`: the sentences are learned first, silently: paused, each of six Skip forward presses puts the sentence at its new place in Play's value, and six presses back return Book content to the opening.
     Then, playing, six presses forward leave Pause on screen, and after Pause Book content begins at the sixth sentence or later (the first 80 characters tell sentences apart), never at the opening or the first five.
     The new place is not searched for in the opening passage: that is a short title page, and the place is in a later chapter.
-  - `testSkippingBackwardAtTheStartSaysSoAndLeavesTheBookPlaying`: paused at the opening, Skip backward puts words in Play's value ("previous", "start" or "beginning" in them; the spec's are "No previous sentence.") and leaves Book content alone; with the book playing, the same press leaves Pause on screen.
+  - `testSkippingBackwardAtTheStartSaysSoAndLeavesTheBookPlaying`: paused at the opening, Skip backward puts words in Play's value ("previous", "start" or "beginning" in them; the spec's are "No previous sentence.") and leaves Book content alone.
+    With the book playing, the same press leaves Pause on screen.
   - `testASleepTimerCountsDownWhileTheBookPlaysAndStopsWhenItPauses`: the 10-minute preset starts the book (Pause), the Sleep Timer reads "M:SS remaining" between 9:00 and 10:00, a later reading is smaller while it plays, and two readings four seconds apart are equal once it is paused.
-  - `testAnEndOfBookTimerNamesItsStopAndCancelEndsIt`: "Stop at the end of the book and start playing" starts the book and the control reads "stops at the end of the book"; the sheet then lists Sleep Timer (its title), Reset Timer, Cancel Timer and New Timer, and after Cancel Timer the control reads "Off".
+  - `testAnEndOfBookTimerNamesItsStopAndCancelEndsIt`: "Stop at the end of the book and start playing" starts the book and the control reads "stops at the end of the book".
+    The sheet then lists Sleep Timer (its title), Reset Timer, Cancel Timer and New Timer, and after Cancel Timer the control reads "Off".
     The sheet's "Current Timer" heading and its status line are not in the tree once a timer is set, though Reset Timer after them is; a list scrolled to the last timer used would explain the heading but not that, so whether VoiceOver misses them is not settled and needs a device.
   - `testAnEndOfHeadingTimerSetAtTheCoverPlaysOnAndNamesItsStop`: at the book's opening, "Stop at the end of this heading and start playing" starts the book (Pause), the Sleep Timer reads "stops at the end of this heading" and not "Off", and Pause is still there three seconds later (`assertHolds`).
     It passed in run 43041108180 with the fix, in 23 seconds, and fails without it (see the proof, below).
@@ -138,8 +148,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: searchuitests; keys: find in book, search sheet, software keyboard, PhoneBookSearchVocabulary; src: TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Phone/PhoneBookSearch.swift -->
 
 - They drive the Search in Book sheet (0.4.4) in the simulator.
-  The searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see In the simulator, sound tests run on GitHub only, below).
-  The launch variable `TEXTMOUTH_SEARCH_IN_BOOK` that used to fill the field is gone.
+  The searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see [In the simulator, sound tests run on GitHub only](testing-iphone.md)).
   The word searched for is "Cheshire" in Alice's Adventures in Wonderland, which the book holds in several chapters, far below the 500-result limit.
   A result's jump is silent, since Auto-play after navigation is off in the launch's sandbox.
 - The sheet's search waits a second for typing to pause, so each test first waits for the status line to end in " matches", " match", or "No matches", for up to the usual patience.
@@ -153,8 +162,8 @@ Part of [TextMouth's documentation](../../README.md).
   - `testAResultTakesTheReaderToItsPlace`: choosing the first result closes the sheet, puts Search in Book back on the reader, leaves Play unpressed, and within the patience puts the word into Book content's text.
   - `testTheSearchSheetPassesTheAudit`: the audit of the sheet with results.
 - The audit's keyboard.
-  The field takes the keyboard, which the audit reads too: with it up, pass 1 found 7 contrast findings on result rows under the keyboard and 3 "TUIPredictionViewCell" element-description findings of the system keyboard's own.
-  A swipe of the whole app did not put the keyboard away in pass 2.
+  The field takes the keyboard, which the audit reads too: with it up, the audit finds contrast findings on result rows under the keyboard and "TUIPredictionViewCell" element-description findings of the system keyboard's own.
+  A swipe of the whole app does not put the keyboard away.
   So the test drags from the "Search results" heading to the navigation bar, a scroll of the list, which is silent and puts the keyboard away (`scrollDismissesKeyboard`).
   If the keyboard stays up, the audit runs all the same and a note says so.
 
@@ -162,10 +171,11 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: dynamic-type-accepted-finding-passes; keys: search sheet audit, pass history, CI runs, on-screen keyboard; src: TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LibraryUITests.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift -->
 
 - **Dynamic Type is reported, not failed.**
-  The sheet's text does grow: its code draws all of it in the system's styles with no fixed size (`Text`, `TextField`, `Toggle`, a section header), and `LargeTextUITests.testTheSearchSheetHoldsAtTheLargestText` measures each of the four parts at the largest size against the default and passed (run 43041108180).
+  The sheet's text does grow.
+  Its code draws all of it in the system's styles with no fixed size (`Text`, `TextField`, `Toggle`, a section header), and `LargeTextUITests.testTheSearchSheetHoldsAtTheLargestText` measures each of the four parts at the largest size against the default and passed (run 43041108180).
   So the findings are the audit's own, which come and go, like the Library's summary row and the other sheets' (see Audits that report without failing, above), and the audit reports Dynamic Type without failing it.
   Clipped text and every other kind still fail.
-  The audit's helpers (`openSearchSheet`, `waitForStatus`, `waitForResults`) now live in `TextMouthUITestCase`.
+  The audit's helpers (`openSearchSheet`, `waitForStatus`, `waitForResults`) live in `TextMouthUITestCase`.
 - Accepted: the system's title, Back to Book, the clipped text of a scroll, and one contrast finding that stays, on "CHAPTER VI.
   Pig and Pepper", the first result's heading at y 71 scrolled under the navigation bar's glass.
   It is matched by that exact label and the contrast kind, and every other contrast finding fails.
@@ -181,7 +191,6 @@ Part of [TextMouth's documentation](../../README.md).
 - The book is an EPUB.
   Its form uses the Mac's metadata editor's words, so its author field is "Author".
   A book with no more than a title and author has "Book author".
-  The test used to expect "Book author" and failed for that reason, which was not a missing Cancel.
 
 ## What is still open
 <!-- id: what-still-open; keys: known issues, unverified, audit flakiness, Dynamic Type caption; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouth/Platform/iOS/Views/Settings/PhoneSettingsView.swift, TextMouthiOSUITests/TextMouthUITestCase.swift -->

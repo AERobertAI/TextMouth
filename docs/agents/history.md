@@ -666,6 +666,13 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **The 503 on downloads:** GitHub answered "503 Egress is over the account limit" to `gh run download` for a while (November 10, about 16:00 local).
 - **The workflow guard was off at first:** until `test-build.yml` was on origin's main, the page said "the guard is off until then: on November 10, 2026 origin's main has only `check.yml`, and pushing main after the branch that adds `tests.yml` merges switches it on".
   Main has held `test-build.yml` since the first push at 0.4.10, so the guard is on.
+- **The full suite, first try:** Stopped at its 80-minute limit with 214 of 11,853 tests done.
+- **The full suite before the clean-up:** Four shards, the 2-minute limit, 114 skips: 14.5 to 23 minutes, with 2 to 6 failures in each run and the hangs of 2 minutes each.
+- **The runs before the three clean full suites:** The four runs before runs 42894995288, 42897206889, and 42899832768 took 12.6 to 16.3 minutes and each had 2 to 4 failures.
+- **The runs of the day before the fixes:** Several of the 4-to-6-failure runs of the day before were the hung voice listing and the late cancels, which are fixed.
+- **The decode check in the concurrency pool:**
+  Before the decode check left the pool, `AudioMediaProber.probeConcurrently` ran that call in the app's concurrency pool, so a few such hangs left no thread for the tasks after them.
+  That was why a test that decodes audio sometimes failed together with the one after it, and nothing in the app bounded the call.
 
 ## From Document goldens
 
@@ -700,6 +707,10 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
   - After the fix round, one pass passed 26 of 26, including all five and the Library test.
     A second pass was not run, so whether the audit is stable across launches is untested.
   - After that pass only a comment in the search sheet changed, to fix a train failure.
+- **The Search in Book launch variable:** The launch variable `TEXTMOUTH_SEARCH_IN_BOOK` that used to fill the field is gone.
+- **The Book Information test's field label:** The test used to expect "Book author" and failed for that reason, which was not a missing Cancel.
+- **The keyboard's first audits:** With the keyboard up, pass 1 found 7 contrast findings on result rows under the keyboard and 3 "TUIPredictionViewCell" element-description findings of the system keyboard's own.
+  A swipe of the whole app did not put the keyboard away in pass 2.
 
 ## From Testing TextMouth
 
@@ -736,6 +747,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **Compile errors in tests that every type-check had passed:**
   This happened.
   On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
+- **The first iPhone test of End of heading:** The first iPhone test to set End of heading at a book's opening found a bug that the Mac's unit tests never met.
 
 ## From Reusable test tools
 
@@ -767,6 +779,22 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
   Seed 2, 2,000 rounds over four books: 1,820 and 180.
   No trap, no slow or large round, and no SwiftSoup, `MarkupGuard`, or converter failure.
 
+- **The stack proof's first full run:**
+  In Release, 22 of 23 cases passed on the first full run.
+  The 23rd, a raw closed-span case 3,000 deep, was changed to 5,000 deep and run by hand: it overflows, which is the control's point.
+  The whole script was not run again after that edit.
+- **Gutenberg's KF8 book:**
+  It is no longer refused: `KF8RealBookTests` reads it.
+- **Tests changed by KF8:**
+  - The "KF8 is refused" tests of `MOBIReaderTests` and `MOBIBookStructureTests` now read a KF8 book or call a book without its tables damaged,
+  - `.azw3` is a Kindle extension in `testKindleBooksAreRecognizedByTheirExtensions` and the Finder test, and
+  - `PageReaderVersions.current(for: .mobi)` is "1.0.0" in `PagesUpgradeTests` and `OnDiskContractTests`.
+  (The page said "1.0.0" there; the code and those tests say "1.1.0".)
+- **The train that ran the KF8 classes:**
+  The branch's train (0.4.2) ran 19 classes with `--areas import,feeds` and passed 2,894 tests with 7 skipped.
+  The 19 classes were the KF8, MOBI, and KFX classes, `MarkupGuardTests`, `PagesUpgradeTests`, `OnDiskContractTests`, `DocumentTypeDeclarationTests`, `IOSInfoPlistTests`, `OwnReaderCancellationTests`, and `EPUBExportRealBooksTests`.
+- **The first NUL sweeps:**
+  The review found the first sweeps of `TextFileDecoderTests` could not fail.
 ## From The library index
 
 - **Formats an older build cannot read:** A build from before October 18, 2026 that meets rtf, rtfd, doc, odt, wordml, webarchive, or ssml in an index, or one from before October 20, 2026 that meets braille, fails to decode it.
