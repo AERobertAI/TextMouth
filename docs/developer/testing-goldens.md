@@ -1,5 +1,5 @@
 # Document goldens
-<!-- id: document-goldens; keys: ; src: TextMouthProductionTests/DocumentGoldenTests.swift -->
+<!-- id: document-goldens; keys: golden file, DocumentDump, regression, snapshot test, baseline output; src: TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/DocumentDump.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -8,7 +8,7 @@ A golden records the file's format, title, author, chapter and word counts, the 
 The test takes about 1 second.
 
 ## Recording new goldens
-<!-- id: recording-new-goldens; keys: ; src: TextMouthProductionTests/DocumentGoldenTests.swift, Scripts/test/run-area.py, Scripts/agents/heavy_lock.py -->
+<!-- id: recording-new-goldens; keys: re-record, update goldens, record goldens, heavy lock; src: Scripts/test/update-goldens.sh, Scripts/test/run-area.py, Scripts/agents/heavy_lock.py, TextMouthProductionTests/DocumentGoldenTests.swift -->
 
 `Scripts/test/update-goldens.sh` records new goldens after a deliberate change to what a parser, the text pipeline, or heading detection produces.
 It runs `DocumentGoldenTests` alone with `TEXTMOUTH_UPDATE_GOLDENS=1`, which writes the goldens into the source tree instead of comparing, and then lists the goldens that changed.
@@ -18,14 +18,14 @@ The script builds, through `run-area.py`, and neither takes the machine-wide hea
 So run it under the lock: import `heavy_lock.py` by path (`python3 -I` leaves a script's own folder out of `sys.path`) and run the script inside `with held(owner, wait_seconds):`, so that it does not build beside a train or another build.
 
 ## The PDF golden's macOS version
-<!-- id: pdf-golden-macos-version; keys: ; src: -->
+<!-- id: pdf-golden-macos-version; keys: XCTSkip, isMacOSDependentFormatSample, skipped test, macOS major version, Vision OCR; src: TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/TextPipelineFixtures.swift -->
 
 A PDF's golden notes the macOS version it was recorded on, and its test skips on a Mac of another major version, since PDFKit and Vision change what they read with macOS.
 So do the goldens of the format samples in the rtf, rtfd, doc, dot, odt, ott, and wordml folders (`macOSDependentFormatSampleFolders`), recorded on macOS 26.3; the other format samples are compared on every Mac.
 The list still names the rtf, rtfd, doc, dot, odt, ott, and wordml folders, though TextMouth's own readers now read nearly all of their samples.
 
 ## Format samples with goldens
-<!-- id: format-samples-goldens; keys: ; src: TextMouthProductionTests/TextPipelineFixtures.swift, TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/RTFTextutilComparisonTests.swift, TextMouthProductionTests/DOCXRealFileTests.swift, TextMouthProductionTests/WordDocumentReaderTests.swift -->
+<!-- id: format-samples-goldens; keys: formatSamplesPrefix, formatSampleGoldenName, samples folder, sample list; src: TextMouthProductionTests/TextPipelineFixtures.swift, TextMouthProductionTests/ODTTestSupport.swift, TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/RTFTextutilComparisonTests.swift, TextMouthProductionTests/DOCXRealFileTests.swift, TextMouthProductionTests/WordDocumentReaderTests.swift, TextMouthProductionTests/WordDocumentComparisonTests.swift, TextMouthProductionTests/ODTTextutilComparisonTests.swift, Scripts/test/update-goldens.sh -->
 
 The format samples in `TestData/format-samples` that TextMouth reads as text have goldens too: 46 of the 91 samples of the rich text, RTFD, Word, Word 97-2003, Word template, OpenDocument, Word 2003 XML, web archive, SSML, and DTBook folders (and the EPUB and PDF page samples), each named by its path inside that folder with every `/` written `__`, as in `rtf__headings.rtf.golden`.
 `TextPipelineFixtures.formatSampleNames` lists them, and `DocumentGoldenTests` fails when a sample of those folders is missing from it.
@@ -39,7 +39,7 @@ The other real .doc and .dot files from LibreOffice are not held back: they have
 Only the Word 95 file `doc/libreoffice-tdf150197_anlv2ListFormat.doc` adds a textutil run; every other format sample is read by TextMouth's own readers and starts no textutil (the odt, ott, and wordml samples among them since 0.4.0).
 
 ## Comparison tests for rich text and Word
-<!-- id: comparison-tests-rich-text-word; keys: ; src: TextMouthProductionTests/RTFTextutilComparisonTests.swift, TextMouthProductionTests/WordDocumentComparisonTests.swift, TextMouth/Services/Export/RTFExportWriter.swift, TextMouth/Services/NowPlayingService.swift, TextMouthProductionTests/WordDocumentLegacyComparisonTests.swift -->
+<!-- id: comparison-tests-rich-text-word; keys: RTFDocumentReader, reference reader, diff table, OwnDocumentReaders switch, textutil replacement; src: TextMouthProductionTests/RTFTextutilComparisonTests.swift, TextMouthProductionTests/WordDocumentComparisonTests.swift, TextMouthProductionTests/WordDocumentLegacyComparisonTests.swift, TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Services/Export/RTFExportWriter.swift -->
 
 `RTFTextutilComparisonTests` and `WordDocumentComparisonTests` (Mac only) are the check that let the Mac read rich text and Word 97-2003 with TextMouth's own readers in place of textutil.
 Each reads a sample both ways, textutil with `OwnDocumentReaders.$forcesTextutil` bound to true and the own reader directly, turns both into reading text with the converter an import uses, and compares them.
@@ -55,35 +55,35 @@ Every difference is named in a table in the test, with the reason a listener wou
   `listNumbersOnlyReaderReads` holds the numbers the reader would write with `WordDocumentReader.speaksListNumbers` on, which is off: the comparison of the words form takes each off the front of its paragraph, and the samples read as textutil's words by default.
 
 ## Word 6 and Word 95 tests
-<!-- id: word-6-word-95-tests; keys: ; src: TextMouthProductionTests/WordDocumentLegacyTests.swift, TextMouthProductionTests/WordDocumentLegacyFeatureTests.swift, TextMouthProductionTests/WordDocumentLegacyHostileTests.swift, TextMouthProductionTests/WordDocumentLegacyComparisonTests.swift, TextMouth/Services/NowPlayingService.swift -->
+<!-- id: word-6-word-95-tests; keys: legacy Word, Word for DOS, fuzz, OLE; src: TextMouthProductionTests/WordDocumentLegacyTests.swift, TextMouthProductionTests/WordDocumentLegacyFeatureTests.swift, TextMouthProductionTests/WordDocumentLegacyHostileTests.swift, TextMouthProductionTests/WordDocumentLegacyComparisonTests.swift, TextMouthProductionTests/WordDocumentSymbolTests.swift, TextMouthProductionTests/WordDocumentSymbolFontTests.swift, TextMouthProductionTests/WordLegacyTestSupport.swift -->
 
 Word 6 and Word 95 (0.4.1): `WordDocumentLegacyTests` and `WordDocumentLegacyFeatureTests` read documents built in code in the order Word writes them (`WordLegacyTestSupport`), `WordDocumentLegacyHostileTests` gives the old layout hostile files (every FIB field at its extremes, truncations, byte flips, and a loop of styles), and `WordDocumentLegacyComparisonTests` (Mac only) reads the samples of `TestData/format-samples/doc6` and the two old-layout files of `doc` with the reader and with textutil, and compares their words in order (the code-page rows of its table are the files textutil reads in the wrong code page), their brackets, their headings (the reader's must include textutil's), and their pages (a continuous section break begins none in the reader).
 `WordDocumentSymbolTests` and `WordDocumentSymbolFontTests` pin the reading of a symbol by its font in both layouts, each WordPerfect code, the picture fonts, the clones of Symbol, and text typed in a symbol font.
 A real-file comparison of 312 old-layout and 340 Word 97 government documents, which the repository does not hold, was run once through the app's pipeline against textutil and against main; its main figures are in the Imports page of the architecture.
 
 ## Reader tests for rich text and Word
-<!-- id: reader-tests-rich-text-word; keys: ; src: TextMouthProductionTests/RTFReaderTests.swift, TextMouthProductionTests/WordDocumentReaderTests.swift, TextMouthProductionTests/CompoundFileTestSupport.swift, TextMouthProductionTests/RTFHostileReaderTests.swift, TextMouthProductionTests/WordDocumentHostileTests.swift -->
+<!-- id: reader-tests-rich-text-word; keys: OLE, CFB, fuzz, performance, numbering; src: TextMouthProductionTests/RTFReaderTests.swift, TextMouthProductionTests/WordDocumentReaderTests.swift, TextMouthProductionTests/WordDocumentListTests.swift, TextMouthProductionTests/WordDocumentTestSupport.swift, TextMouthProductionTests/CompoundFileTestSupport.swift, TextMouthProductionTests/CompoundFileTests.swift, TextMouthProductionTests/RTFHostileReaderTests.swift, TextMouthProductionTests/WordDocumentHostileTests.swift -->
 
 `RTFReaderTests` (55 tests) and `WordDocumentReaderTests` (129) test the readers on the samples and on documents built in code (`WordDocumentTestSupport` writes a Word 97-2003 document from a description of its paragraphs, styles, and sections, on `CompoundFileBuilder`'s compound file) for the structures the samples lack.
 `RTFHostileReaderTests`, `WordDocumentHostileTests`, and `CompoundFileTests` give them hostile files, which must end with a document or a typed failure, never a crash, in well under a second.
 `WordDocumentListTests` (43) reads Word's list tables in both forms, the numbers silent and spoken, with hostile list inputs, and times the two hangs the review found (a style chain walked for every character, and every piece walked for every note).
 
 ## Where the real sample files come from
-<!-- id: where-real-sample-files-come; keys: ; src: -->
+<!-- id: where-real-sample-files-come; keys: provenance, attribution, third-party samples, downloaded samples, licensing; src: TestData/format-samples/samples.tsv -->
 
 The real files are from the LibreOffice core repository's test data, under MPL-2.0, and from Apache POI's test documents, under Apache-2.0 (the five `doc/poi-*.doc` files, the first POI files here).
 `TestData/format-samples/samples.tsv` lists each with its source, licence, size, SHA-256, and what it exercises: 12 RTF files, 9 DOCX files, 15 OpenDocument files, and the Word 97-2003 files (`libreoffice-*.doc` and `.dot`, of which `libreoffice-tdf150197_anlv2ListFormat.doc` is Word 6 or Word 95, and the five POI files, of which `poi-Bug51944.doc` is also a layout of Word 95 or older, and the 16 files of the `doc6` folder, from POI and LibreOffice, of Word 6 and Word 95), besides the files made on this Mac.
 Each downloaded file was fetched into a folder of its own and read by a script run with `python3 -I`.
 
 ## DOCX tests built in code
-<!-- id: docx-tests-built-code; keys: ; src: TextMouthProductionTests/DOCXHiddenTextTests.swift, TextMouthProductionTests/DOCXNotesTests.swift, TextMouthProductionTests/DOCXTextBoxTests.swift, TextMouthProductionTests/DOCXEmphasisTests.swift, TextMouthProductionTests/DOCXRealFileTests.swift -->
+<!-- id: docx-tests-built-code; keys: DOCXParser, w:vanish, endnotes, text frame; src: TextMouthProductionTests/DOCXTestPackages.swift, TextMouthProductionTests/DOCXHiddenTextTests.swift, TextMouthProductionTests/DOCXNotesTests.swift, TextMouthProductionTests/DOCXTextBoxTests.swift, TextMouthProductionTests/DOCXEmphasisTests.swift, TextMouthProductionTests/DOCXRealFileTests.swift -->
 
 The DOCX tests build packages in code (`DOCXTestPackages`) for the cases the samples lack.
 `DOCXHiddenTextTests` pins hidden text through a run, its character style, and the paragraph style by the toggle rule of ECMA-376 17.7.3, and the text hidden only on the web; `DOCXNotesTests` pins the notes parts (separators skipped, only the notes a read reference points to, a damaged notes part losing only its notes); `DOCXTextBoxTests` pins a text box written twice, read once and after its paragraph; `DOCXEmphasisTests` requires that no `*` or `~` is spoken, with a sweep of 2,128 paragraphs of runs in every emphasis; and `DOCXRealFileTests` reads the 9 real files by name.
 Against the repository's 1,472 Word files (the 9 above, the DOCX, DOCM, DOTX, and DOTM samples, and 1,447 LibreOffice test documents under 60 KB), seven refuse to open, as they did before, and none speaks a mark that is not a character of its text.
 
 ## Symbols of Word documents
-<!-- id: symbols-word-documents; keys: ; src: TextMouthProductionTests/DOCXSymbolTests.swift -->
+<!-- id: symbols-word-documents; keys: Wingdings, Webdings, mutation test, symbol character, charmap; src: TextMouthProductionTests/DOCXSymbolTests.swift, TextMouthProductionTests/DOCXTestPackages.swift -->
 
 The symbols of Word documents are pinned by `DOCXSymbolTests` and `WordMLSymbolTests` (TextMouthProductionTests/DOCXSymbolTests.swift), which build their packages in code (`makeDOCXPackage` takes `otherParts:` for `word/fontTable.xml`).
 
@@ -92,7 +92,7 @@ The symbols of Word documents are pinned by `DOCXSymbolTests` and `WordMLSymbolT
 - The tests were proved by 34 deliberate breaks of a throwaway SwiftPM copy of the sources, never of the branch.
 
 ## Speech export tests
-<!-- id: speech-export-tests; keys: ; src: TextMouthProductionTests/SpeechBufferSynthesizerTests.swift, TextMouthProductionTests/SpeechChapterRendererTests.swift, TextMouthProductionTests/SpeechExportDialogTests.swift, TextMouthProductionTests/SpeechExportEncoderTests.swift, TextMouthProductionTests/SpeechExportJobTests.swift -->
+<!-- id: speech-export-tests; keys: FMT43, audiobook export, test area, fake synthesizer; src: Scripts/test/areas.conf, Scripts/test/run-area.py, TextMouthProductionTests/SpeechBufferSynthesizerTests.swift, TextMouthProductionTests/SpeechChapterRendererTests.swift, TextMouthProductionTests/SpeechExportDialogTests.swift, TextMouthProductionTests/SpeechExportEncoderTests.swift, TextMouthProductionTests/SpeechExportJobTests.swift, TextMouthProductionTests/SpeechExportOptionsTests.swift, TextMouthProductionTests/SpeechExportServiceTests.swift, TextMouthProductionTests/SpeechExportSupportTests.swift, TextMouthProductionTests/SpeechExportTextTests.swift, TextMouthProductionTests/ConfigTestSupport.swift, TextMouth/Services/SpeechExport/SpeechBufferSynthesizer.swift -->
 
 The speech export has its own area, `[speech-export]` in Scripts/test/areas.conf, with nine classes: `SpeechBufferSynthesizerTests`, `SpeechChapterRendererTests`, `SpeechExportDialogTests`, `SpeechExportEncoderTests`, `SpeechExportJobTests`, `SpeechExportOptionsTests`, `SpeechExportServiceTests`, `SpeechExportSupportTests`, and `SpeechExportTextTests`.
 Run it with `python3 Scripts/test/run-area.py speech-export`.
@@ -107,13 +107,13 @@ Run it with `python3 Scripts/test/run-area.py speech-export`.
 - The shared helper `debugLogLines(writtenWhile:)` (ConfigTestSupport.swift) reads the bytes the debug log gained while an export ran, since a log line's time is to the second only and an older line could look the same.
 
 ## Rich text follow-up tests
-<!-- id: rich-text-follow-up-tests; keys: ; src: TextMouthProductionTests/RTFTrackedChangesTests.swift, TextMouthProductionTests/RTFNotesTests.swift, TextMouthProductionTests/RTFTableListTests.swift, TextMouthProductionTests/OwnReaderCancellationTests.swift, Scripts/test/kf8-fuzz/Stubs.swift -->
+<!-- id: rich-text-follow-up-tests; keys: tracked changes, cancel import, list number, undo plain; src: TextMouthProductionTests/RTFTrackedChangesTests.swift, TextMouthProductionTests/RTFNotesTests.swift, TextMouthProductionTests/RTFTableListTests.swift, TextMouthProductionTests/OwnReaderCancellationTests.swift, TextMouth/Services/ArchiveExtraction.swift -->
 
 `RTFTrackedChangesTests`, `RTFNotesTests`, and `RTFTableListTests` pin the rich text follow-ups (a deletion left out and `\plain` undoing it, notes after the body and only those whose reference is read, a list item's number in a table cell).
 `OwnReaderCancellationTests` pins the shared cancellation check, `ImportCancellation.throwIfCancelled()`, in the rich text, DOCX, OpenDocument, Word 2003 XML, and MOBI readers: it ends a read when an import is cancelled and does nothing outside an import.
 
 ## OpenDocument and Word 2003 XML readers
-<!-- id: opendocument-word-2003-xml-readers; keys: ; src: TextMouthProductionTests/WordMLReaderTests.swift, TextMouthProductionTests/ODTReaderTests.swift, TextMouthProductionTests/ODTHostileReaderTests.swift, TextMouthProductionTests/OfficeXMLGuardTests.swift, TextMouthProductionTests/XMLInputGuardTests.swift -->
+<!-- id: opendocument-word-2003-xml-readers; keys: ODF, XML bomb, entity expansion, OfficeXMLReader, sync-info-plist, Info.plist; src: TextMouthProductionTests/ODTReaderTests.swift, TextMouthProductionTests/WordMLReaderTests.swift, TextMouthProductionTests/ODTHostileReaderTests.swift, TextMouthProductionTests/OfficeXMLGuardTests.swift, TextMouthProductionTests/XMLInputGuardTests.swift, TextMouthProductionTests/ODTTextutilComparisonTests.swift, TextMouthProductionTests/DOCXHiddenTextTests.swift, TextMouthProductionTests/DOCXPictureAttributeTests.swift, TextMouthProductionTests/MarkdownPageMarkerTests.swift, TextMouthProductionTests/IOSInfoPlistTests.swift, TextMouth/Parsers/XMLInputGuard.swift, Scripts/ios/sync-info-plist.py -->
 
 The OpenDocument and Word 2003 XML readers have `ODTReaderTests`, `WordMLReaderTests`, `ODTHostileReaderTests`, and `OfficeXMLGuardTests` (the shared XML base: escaping and name scopes are linear in their input, a document type is found in every encoding, a tag of more than 1,024 attributes is refused and one with a very long attribute is not).
 `XMLInputGuardTests` pins the guard (see Shared helpers, in [Architecture](../../ARCHITECTURE.md)) on tags of 1,024 and 1,025 attributes, hostile shapes refused within 10 ms (an attribute flood, a subset, an encoding spelled with an alias or with a newline around the =), the encodings allowed, and the sentences; the readers that ask it (the feed, OPML, SMIL, PEF, and ODT manifest reads) have a test of their own that the guard is asked.
