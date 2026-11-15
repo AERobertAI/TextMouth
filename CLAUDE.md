@@ -47,7 +47,7 @@ This is a basic native Mac TTS and audio book player app called TextMouth.
 
 Whenever adding a new feature or fixing a bug, work on a local branch and make focused local commits.
 Do not merge to main or push without explicit instruction.
-(The orchestrator may merge into main with `git merge --no-ff` after a green full suite, recorded in the TODO, and push main and its tags at a version bump it judges a fairly stable release.
+(The user has authorized the orchestrator to merge into main with `git merge --no-ff` after a green full suite, recorded in the TODO, and push main and its tags at a version bump it judges a fairly stable release.
 Task agents push only to `TestBuild` by the train tools; installing is the user's.)
 Use unit tests heavily whenever writing a new feature.
 Add tests with new features, and verify old tests still describe the correct behavior when fixing bugs.

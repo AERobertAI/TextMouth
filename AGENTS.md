@@ -5,7 +5,7 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
 
 ## Start here
 
-- [`docs/agents/writing-docs.md`](docs/agents/writing-docs.md): how every page and memory file is written.
+- [`docs/agents/writing-docs.md`](docs/agents/writing-docs.md): how every page and memory file is written; follow it in any document you edit.
 - [`README.md`](README.md): the index of the documentation in `docs/`.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): the index of the code's parts; read only the pages your task touches.
 - [`.claude/skills/doc-library/SKILL.md`](.claude/skills/doc-library/SKILL.md): find and check a doc section; `doclib affected` for a branch.
@@ -41,7 +41,8 @@ The brief names the branch, a task slug, the regions to avoid, the numbered item
 The agent:
 
 1. Makes its branch from `main` (or the team branch its brief names), since a worktree can start on an older commit.
-   It reads this file and its brief, registers on the board as its slug with `python3 .claude/skills/agent-bbs/scripts/bbs.py register <slug> --role "<one line>" --branch <branch> --files <paths or 'quoted globs'>`, then runs `bbs claims` and `bbs read --last 10` for overlaps.
+   It reads this file, its brief, and the documents the brief names.
+   It registers on the board as its slug with `python3 .claude/skills/agent-bbs/scripts/bbs.py register <slug> --role "<one line>" --branch <branch> --files <paths or 'quoted globs'>`, then runs `bbs claims` and `bbs read --last 10` for overlaps.
    `bbs protocol` prints the full rules.
 2. Reads its inbox (`bbs inbox <slug> --unread`) before every commit, train request, and report.
    It posts a `commit` notice after each commit (`--topic "$(git log -1 --format='%h %s')"`), a `finding` with `--file <path>` for a problem in files it does not own (never fixing it), and a `question` when a decision touches another agent's work.
@@ -66,7 +67,7 @@ The agent:
 - Run a changed copy of `bbs.py` only with `TEXTMOUTH_BBS_DIR` set to a scratch folder, never against the live board.
 - Give every `rm` literal paths, never a shell variable: a tool call that waits on a permission prompt stops its agent until the user answers.
 - Before a revert, grep for each symbol the commit added: a revert also removes helpers that other code uses.
-- Host a SwiftUI view whose width follows its offer inside a fixed frame, or measure it with `NSHostingController.sizeThatFits(in:)` and no window, or the test host ends in a crash dialog.
+- Host a SwiftUI view whose width follows its offer and adds to it (a macOS form in the columns style did) inside a fixed frame, or measure it with `NSHostingController.sizeThatFits(in:)` and no window, or the test host ends in a crash dialog.
   Rebase an old branch before any hosted test run on this Mac, or the test host can take the user's AirPods.
   The mechanisms of both are in [The hosted-test sandbox](docs/architecture/state/hosted-test-sandbox.md).
 - Check a braille rule that an agent states against BANA, ICEB, or `lou_translate` on the repo's tables, and build test cells from liblouis forward, not by hand.
