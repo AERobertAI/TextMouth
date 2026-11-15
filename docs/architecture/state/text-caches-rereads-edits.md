@@ -80,7 +80,7 @@ Reading a book again in another encoding (encodingchoice): the one-book form of 
      BookTextEditor.pauseEditing(of:) lets a check running finish, takes an edit saved and not yet checked, and ends the session, since the session watches the content.md that is about to be replaced and would take the new reading for an edit.
      A re-read that is refused afterwards begins the session again from a fresh baseline (resumeEditing(of:)), so the listener's later saves are still taken; one that goes ahead leaves it ended, and the one announcement says so (BookTextEditWording.stoppedBookReadAgain).
   4. rereadText(of:as:access:isOpenInReader:) does the work off the main actor (OffMainWork), in one piece of storage work (StorageBoundary.shared.perform(.textExtraction)).
-     A folder edit or a data-directory move that begins meanwhile waits for it, and the book's package never moves between content.md's write and the record's commit.
+     So a folder edit or a data-directory move that begins meanwhile waits for it, and the book's package never moves between content.md's write and the record's commit.
      It rebases the book to the data directory in use now, refuses a book with a file only in the cloud (LibraryCloudWording.notDownloaded(titles:)) before it reads anything, and reads through the access, so nothing is downloaded.
   5. rereadFiles(of:as:access:isOpenInReader:) goes in this order:
      - (a) for a choice, validatedChoice(of:for:) reads the file strictly in each identifier of the option's name before anything is written, and gives the record of the first that reads every byte, as chosen, or the not-valid refusal naming the encoding, "Nothing was changed.";
@@ -166,7 +166,7 @@ The user edits it in an editor of their own (Edit Text in Default Editor and Edi
   It also ends when its transcript is replaced or deleted (BookTextEditor.pauseEditing(of:), which lets a check running finish, takes an edit saved but not yet checked through BookTextEditSessions.settlePendingEdit(of:), and ends the session).
   A change that fails calls resumeEditing(of:), which begins the session again from a fresh baseline.
   It also ends when the listener has its file read again in another encoding (LibraryViewModel.readTextAgain pauses the session the same way; see Reading a book again in another encoding, above).
-  A re-read that is refused begins it again and one that goes ahead leaves it ended, with BookTextEditWording.stoppedBookReadAgain in the announcement.
+  So a re-read that is refused begins it again and one that goes ahead leaves it ended, with BookTextEditWording.stoppedBookReadAgain in the announcement.
   It also ends when TextMouth quits.
   The record of an edit taken, for a text book, is Book.editedText (B12): an EditedText, the digest of the content.md the edit left and when it was taken.
   The check that takes the edit sets it (LibraryPersistenceService.saveContentAnalysis(…editedText:)).
