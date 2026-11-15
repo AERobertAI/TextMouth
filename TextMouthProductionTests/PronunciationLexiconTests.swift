@@ -412,7 +412,32 @@ final class PronunciationLexiconTests: XCTestCase {
         )
         XCTAssertEqual(W.exported(fileName: "a.pls", written: 2, leftOut: 0), "Exported 2 rules to “a.pls”.")
         XCTAssertEqual(W.exportWriteFailure(fileName: "a.pls"), "TextMouth could not save “a.pls”.")
+        XCTAssertEqual(W.nothingToExport, "There are no rules to export. Only plain text rules that are on can be written in a lexicon.")
+        XCTAssertEqual(W.importedTitle, "Rules Imported")
+        XCTAssertEqual(W.importFailedTitle, "Import Failed")
+        XCTAssertEqual(W.exportedTitle, "Rules Exported")
+        XCTAssertEqual(W.exportFailedTitle, "Export Failed")
+        XCTAssertEqual(W.exported(fileName: "a.pls", written: 1, leftOut: 1), "Exported 1 rule to “a.pls”. 1 rule was left out, because a regular expression, or a rule that is off, cannot be written in a lexicon.")
+    }
+
+    /// The two buttons' titles, labels and hints, the panels' messages, and
+    /// the file name the Save panel offers: each is spoken, so each is pinned.
+    func testTheButtonsAndPanelsWords() {
+        typealias W = PronunciationLexiconWording
         XCTAssertEqual(W.importButton, "Import Rules…")
+        XCTAssertEqual(W.importLabel, "Import substitution rules from a pronunciation lexicon file")
+        XCTAssertEqual(
+            W.importHint,
+            "Adds the lexicon's spelling-to-words entries after your rules. Entries that only give phonetic spellings are set aside."
+        )
         XCTAssertEqual(W.exportButton, "Export Rules…")
+        XCTAssertEqual(W.exportLabel, "Export substitution rules as a pronunciation lexicon file")
+        XCTAssertEqual(
+            W.exportHint,
+            "Saves your plain text rules that are on. Rules that use regular expressions, and rules that are off, are left out."
+        )
+        XCTAssertEqual(W.importPanelMessage, "Choose a pronunciation lexicon file to add its entries as substitution rules.")
+        XCTAssertEqual(W.exportPanelMessage, "Save your substitution rules as a pronunciation lexicon file.")
+        XCTAssertEqual(W.exportFileName, "Substitution Rules.pls")
     }
 }

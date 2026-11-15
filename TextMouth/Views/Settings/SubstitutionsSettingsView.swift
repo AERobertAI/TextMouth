@@ -170,7 +170,7 @@ struct SubstitutionsSettingsView: View {
         }
         let panel = NSSavePanel()
         panel.allowedContentTypes = Self.lexiconFileTypes.prefix(1).map { $0 }
-        panel.nameFieldStringValue = "Substitution Rules.pls"
+        panel.nameFieldStringValue = PronunciationLexiconWording.exportFileName
         panel.message = PronunciationLexiconWording.exportPanelMessage
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }

@@ -24,6 +24,8 @@ enum PronunciationLexiconWording {
     static let importPanelMessage = "Choose a pronunciation lexicon file to add its entries as substitution rules."
     /// The message of the Save panel Export names a file in.
     static let exportPanelMessage = "Save your substitution rules as a pronunciation lexicon file."
+    /// The name the Save panel offers.
+    static let exportFileName = "Substitution Rules.pls"
 
     // MARK: - Import
 
