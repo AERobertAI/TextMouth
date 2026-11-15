@@ -3,6 +3,9 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
+The import overlay, every refusal's sentence, and the Book Imported alert are in [Import progress and errors](import-progress-and-errors.md).
+The duplicate question, Replace Existing, and the questions that wait their turn are in [Duplicate books and Replace Existing](duplicate-books.md).
+
 ## The Add to Library sheet
 <!-- id: add-library-sheet; keys: plus button, toolbar, AddToLibraryChoice, ways to add, hints, Escape; src: TextMouth/Models/AddToLibraryWording.swift, TextMouth/Models/AddToLibraryChoice.swift, TextMouth/Views/Library/AddToLibrarySheet.swift -->
 
@@ -47,7 +50,7 @@ Part of [TextMouth's documentation](../../README.md).
   so Finder offers it in the Open With menu for them.
 - It declares them at Alternate rank, as it does for every format but its own .tmb packages, so it never asks to be the default app for any of them.
 - A .pef file is also a Pentax raw photo to macOS, so Open Book… accepts whatever type the system gives a .pef, and the import tells a braille file from a photo by reading it.
-- A photo is refused with the sentence for a PEF that cannot be read (below).
+- A photo is refused with the sentence for a PEF that cannot be read (see [Import progress and errors](import-progress-and-errors.md)).
 
 ## TextMouth packages
 <!-- id: textmouth-packages; keys: .tmb, package, Finder duplicate, Reading List, put back from Trash; src: TextMouth/Services/FileImportService+Packages.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
@@ -193,7 +196,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says.
   And an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
-- The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above).
+- The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, in [Import progress and errors](import-progress-and-errors.md)).
   TextMouth still finds the text files that SMIL file names, by reading it as plain text, so it does not take the archive for one with no text and offer it for deletion.
 - For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”."
   And, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."

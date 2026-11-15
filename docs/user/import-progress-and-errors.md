@@ -3,6 +3,8 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
+How books are added is in [Adding books](adding-books.md).
+
 ## The import overlay
 <!-- id: import-overlay; keys: progress overlay, Importing Books, ImportProgress, VoiceOver reads; src: TextMouth/ViewModels/ImportProgress.swift, TextMouth/Models/ImportProgressWording.swift -->
 
@@ -119,7 +121,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - An OpenDocument text document's title and author come from the document's own information.
 - Apple's textutil lost an .odt's author, so a book of that kind added before version 0.4.0 shows the author Unknown.
-- The library does not change an author it has, but importing the file again with Replace Existing gives the book the author the file names, where you edited neither (see below).
+- The library does not change an author it has, but importing the file again with Replace Existing gives the book the author the file names, where you edited neither (see [Duplicate books and Replace Existing](duplicate-books.md)).
 
 ### A document older than Word 6 that textutil was stopped on
 <!-- id: document-older-than-word-6; keys: textutil limit, watchdog, 31 seconds, 1024 MB, 121 seconds, Word 1, Word 2; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
@@ -301,7 +303,7 @@ Part of [TextMouth's documentation](../../README.md).
     - The other reasons are listed in [Settings](settings.md).
   - For a translation that TextMouth stopped on, for passing one of the helper's limits (see [Where TextMouth keeps your library](where-your-library-lives.md)): "TextMouth stopped the braille translation because it ran longer than 11 seconds."
     - The 11 seconds are the 10 allowed and the share of the book's size, rounded up, here for a small book.
-    - The reasons are the watchdog's, in the words listed under "Converting X was stopped because ...", below.
+    - The reasons are the watchdog's, in the words listed under "Converting X was stopped because ..." in [Adding books](adding-books.md).
   - For a translation that failed any other way, because the helper is missing, could not start, ended with an error, or wrote output that does not match what it was given: "TextMouth could not translate this braille."
 
 ### Playlists that can't be imported
@@ -311,7 +313,7 @@ Part of [TextMouth's documentation](../../README.md).
   Reading the file failed: It is a streaming playlist for audio on the web, which TextMouth does not import."
 - The other reasons are:
   - "It lists only web addresses, and TextMouth imports only files on this Mac."
-  - "It names no audio file in its own folder that TextMouth can import.", followed, when entries were skipped, by "It skipped 3 entries: " and the entries, named as the notice above names them.
+  - "It names no audio file in its own folder that TextMouth can import.", followed, when entries were skipped, by "It skipped 3 entries: " and the entries, named as the notice in [Adding books](adding-books.md) names them.
   - "The playlist “mix.m3u” is too large to read." for a playlist file of more than 4 MiB.
 
 ## The Book Imported alert

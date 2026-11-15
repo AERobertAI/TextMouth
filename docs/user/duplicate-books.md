@@ -3,6 +3,8 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
+How books are added is in [Adding books](adding-books.md).
+
 ## A book that is already in the library
 <!-- id: book-that-already-library; keys: Duplicate Book Found, Keep Both, Cancel, same content, hint; src: TextMouth/Models/ImportDecision.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift -->
 
