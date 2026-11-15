@@ -1,10 +1,10 @@
 # Transcription
-<!-- id: transcription; keys: ; src: -->
+<!-- id: transcription; keys: speech to text, audio to text, transcript, recognition; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Transcription in progress
-<!-- id: transcription-progress; keys: ; src: TextMouth/Services/TranscriptionService.swift, TextMouth/Services/TranscriptionEngine.swift, TextMouth/Services/TranscriptionAvailability.swift, TextMouth/Services/TranscriptSentenceBuilder.swift, TextMouth/Models/TranscriptionLanguage.swift, TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouthProductionTests/TranscriptionFixtureTests.swift -->
+<!-- id: transcription-progress; keys: speech to text, locale, language model, recognition engine, Transcribe Audio; src: TextMouth/Services/TranscriptionService.swift, TextMouth/Services/TranscriptionEngine.swift, TextMouth/Services/TranscriptionAvailability.swift, TextMouth/Services/TranscriptSentenceBuilder.swift, TextMouth/Models/TranscriptionLanguage.swift, TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouthProductionTests/TranscriptionFixtureTests.swift -->
 
 A transcription in progress (FR05).
 
@@ -23,7 +23,7 @@ A transcription in progress (FR05).
   The language is TranscriptionLanguage.preference (transcriptionLocale), mirrored in config.json.
 - Files: Services/TranscriptionService.swift, Services/TranscriptionEngine.swift, Services/TranscriptionAvailability.swift, Services/TranscriptSentenceBuilder.swift, Models/TranscriptionLanguage.swift.
 ## The app-wide transcription job
-<!-- id: app-wide-transcription-job; keys: ; src: TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Platform/iOS/Services/BookTextEditor+iOS.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Services/TranscriptionService.swift, TextMouth/Services/TranscriptStore.swift, TextMouth/Services/StorageDestinationAssessment.swift -->
+<!-- id: app-wide-transcription-job; keys: job, progress, cancel, VoiceOver announcement, Transcribing; src: TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Platform/iOS/Services/BookTextEditor+iOS.swift, TextMouth/Services/TranscriptionService.swift, TextMouth/Services/TranscriptStore.swift, TextMouth/ViewModels/TranscribedBooks.swift, TextMouth/ViewModels/LibraryBookUpdates.swift -->
 
 The transcription the app runs, for every window (FR05).
 
@@ -35,7 +35,7 @@ The transcription the app runs, for every window (FR05).
   Once the transcript is saved, TranscribedBooks records the book, and LibraryBookUpdates.transcriptReplaced brings the text to its readers.
 - Files: ViewModels/TranscriptionJobCenter.swift, Models/TranscriptionWording.swift, Platform/macOS/App/AppDelegate.swift.
 ## Transcribe Audio sheet and dialogs
-<!-- id: transcribe-audio-sheet-dialogs; keys: ; src: TextMouth/ViewModels/TranscriptionSheetModel.swift, TextMouth/Views/Transcription/TranscriptionSheet.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Services/TranscriptionModelInstaller.swift, TextMouth/Models/LibraryAudioCommand.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/App/MenuCommands.swift, TextMouth/Platform/iOS/Views/AudioEditor/AudioEditorLauncher+iOS.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorLauncher.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Reader/SpeechRefusalReportSheet.swift, TextMouth/Services/TranscriptionService.swift -->
+<!-- id: transcribe-audio-sheet-dialogs; keys: model download, language model, Transcribe command, context menu, sheet phases, focus; src: TextMouth/ViewModels/TranscriptionSheetModel.swift, TextMouth/Views/Transcription/TranscriptionSheet.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Services/TranscriptionModelInstaller.swift, TextMouth/Models/LibraryAudioCommand.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/App/MenuCommands.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorLauncher.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Reader/SpeechRefusalReportSheet.swift, TextMouth/Services/TranscriptionService.swift, TextMouth/Services/TranscriptDeletion.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/ViewModels/LibraryBookUpdates.swift, TextMouth/Views/Transcription/TranscriptCleanupCommands.swift -->
 
 The Transcribe Audio sheet, and each window's transcription dialogs.
 
@@ -52,7 +52,7 @@ The Transcribe Audio sheet, and each window's transcription dialogs.
   A deletion the user confirms pauses the book's Edit Text session (pauseEditing(of:)), runs TranscriptStore.delete(for:) on a global queue, begins the session again if the deletion fails (resumeEditing(of:)), then records the book as untranscribed and tells its readers (LibraryBookUpdates.transcriptReplaced, with no text); while the book is being transcribed, a notice says to cancel first.
 - Files: ViewModels/TranscriptionSheetModel.swift, Views/Transcription/TranscriptionSheet.swift, Views/Transcription/TranscriptionPresentation.swift, Services/TranscriptionModelInstaller.swift, Models/LibraryAudioCommand.swift, Models/TranscriptionWording.swift, Views/Reader/ReaderBookCommands.swift, Views/Library/LibraryView.swift, Views/Library/LibrarySubviews.swift, App/MenuCommands.swift.
 ## Which audiobooks are transcribed
-<!-- id: which-audiobooks-are-transcribed; keys: ; src: TextMouth/ViewModels/TranscribedBooks.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/BookCloudNote.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouth/Models/LibraryAudioCommand.swift, TextMouth/Platform/iOS/Services/BookTextEditor+iOS.swift -->
+<!-- id: which-audiobooks-are-transcribed; keys: Transcribed badge, row note, library row, transcript.json; src: TextMouth/ViewModels/TranscribedBooks.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/BookCloudNote.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Platform/iOS/Services/BookTextEditor+iOS.swift, TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouth/Models/LibraryAudioCommand.swift -->
 
 Which audiobooks are transcribed.
 
@@ -62,7 +62,7 @@ Which audiobooks are transcribed.
 - How others observe it: each row's note (TranscriptionRowNote, Transcribed or Transcribing, drawn after the cloud notes by RowNoteBadge and spoken in the row's label), its transcription commands (Retranscribe Audio… in place of Transcribe Audio… for a transcribed one: LibraryAudioCommand.commands(for:isTranscribed:)), and whether Edit Text is offered for an audiobook, a feed's episode included (BookTextEditor.canEditText(of:)), in its row and in the Book menu.
 - Files: ViewModels/TranscribedBooks.swift, Views/Transcription/TranscriptionPresentation.swift, Views/Library/LibrarySubviews.swift, Views/Library/BookCloudNote.swift, Platform/macOS/Services/BookTextEditor.swift.
 ## A transcript's cleanup
-<!-- id: transcript-cleanup; keys: ; src: TextMouth/ViewModels/TranscriptCleanupSheetModel.swift, TextMouth/Views/Transcription/TranscriptCleanupSheet.swift, TextMouth/Views/Transcription/TranscriptCleanupCommands.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Services/TranscriptCleanup.swift, TextMouth/Services/TranscriptCleanupStore.swift, TextMouth/Models/TranscriptCleanupWording.swift, TextMouth/Models/LibraryAudioCommand.swift, TextMouth/Services/TranscriptCleanupRuleFile.swift, TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouth/Platform/iOS/Services/BookTextEditor+iOS.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Services/TranscriptStore.swift -->
+<!-- id: transcript-cleanup; keys: Clean Up Transcript, preview, corrections, Apply, find and replace; src: TextMouth/ViewModels/TranscriptCleanupSheetModel.swift, TextMouth/Views/Transcription/TranscriptCleanupSheet.swift, TextMouth/Views/Transcription/TranscriptCleanupCommands.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Services/TranscriptCleanup.swift, TextMouth/Services/TranscriptCleanupStore.swift, TextMouth/Models/TranscriptCleanupWording.swift, TextMouth/Models/LibraryAudioCommand.swift, TextMouth/Services/TranscriptCleanupRuleFile.swift, TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Platform/iOS/Services/BookTextEditor+iOS.swift, TextMouth/Services/TranscriptStore.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/ViewModels/LibraryBookUpdates.swift -->
 
 A transcript's cleanup (FR05, experimental): the Clean Up sheet, and what it would change.
 
@@ -77,7 +77,7 @@ A transcript's cleanup (FR05, experimental): the Clean Up sheet, and what it wou
   A cleanup or an undo saved reaches the book's readers through LibraryBookUpdates.transcriptReplaced, and VoiceOver hears it from the sheet's window.
 - Files: ViewModels/TranscriptCleanupSheetModel.swift, Views/Transcription/TranscriptCleanupSheet.swift, Views/Transcription/TranscriptCleanupCommands.swift, Views/Transcription/TranscriptionPresentation.swift, Services/TranscriptCleanup.swift, Services/TranscriptCleanupStore.swift, Models/TranscriptCleanupWording.swift, Models/LibraryAudioCommand.swift.
 ## Transcript cleanup rules
-<!-- id: transcript-cleanup-rules; keys: ; src: TextMouth/Services/TranscriptCleanupRuleFile.swift, TextMouth/Models/TranscriptCleanupRules.swift, TextMouth/Resources/transcript-cleanup.json, TextMouth/Services/TranscriptAccuracy.swift, TextMouthProductionTests/TranscriptAccuracyMeasurementTests.swift, TextMouth/Services/SavedFile.swift, TextMouth/Services/TextMouthPaths.swift -->
+<!-- id: transcript-cleanup-rules; keys: rules file, custom rules, bundled rules, JSON format, accuracy measurement; src: TextMouth/Services/TranscriptCleanupRuleFile.swift, TextMouth/Models/TranscriptCleanupRules.swift, TextMouth/Resources/transcript-cleanup.json, TextMouth/Services/TranscriptAccuracy.swift, TextMouthProductionTests/TranscriptAccuracyMeasurementTests.swift, TextMouth/Services/SavedFile.swift, TextMouth/Services/TextMouthPaths.swift -->
 
 Transcript cleanup rules (FR05, experimental): TextMouth's own, and the user's copy.
 
@@ -93,13 +93,13 @@ Transcript cleanup rules (FR05, experimental): TextMouth's own, and the user's c
   TextMouth's own rules were derived with TranscriptAccuracy from speech whose text is known (research/TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md), which the opt-in TranscriptAccuracyMeasurementTests measure again.
 - Files: Services/TranscriptCleanupRuleFile.swift, Models/TranscriptCleanupRules.swift, Resources/transcript-cleanup.json, Services/TranscriptAccuracy.swift, TextMouthProductionTests/TranscriptAccuracyMeasurementTests.swift.
 ## A transcript that comes from a file
-<!-- id: transcript-that-comes-from-file; keys: ; src: TextMouth/Services/OutsideTranscript.swift, TextMouth/Services/TranscriptPairing.swift, TextMouth/Services/TranscriptInstallation.swift, TextMouth/Parsers/TimedTextReader.swift, TextMouth/Parsers/PodcastTranscriptReader.swift, TextMouth/Parsers/TimedTextMarkup.swift, TextMouth/Models/TimedText.swift, TextMouth/Models/Transcript.swift, TextMouth/ViewModels/TranscriptAttachments.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Services/TranscriptStore.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/Feeds/FeedEpisodeExtras.swift, Scripts/test/kf8-fuzz/Stubs.swift -->
+<!-- id: transcript-that-comes-from-file; keys: subtitles, captions, .vtt, .srt, timed text, Podcasting 2.0; src: TextMouth/Services/OutsideTranscript.swift, TextMouth/Services/TranscriptPairing.swift, TextMouth/Parsers/TimedTextReader.swift, TextMouth/Parsers/PodcastTranscriptReader.swift -->
 
 A transcript that comes from a file (FMT23, FMT25; 0.4.2): a WebVTT or SubRip file, or a podcast's own transcript, instead of recognition.
 
 
 ### Where a file transcript is kept
-<!-- id: where-file-transcript-kept; keys: ; src: TextMouth/Models/TimedText.swift, TextMouth/Services/OutsideTranscript.swift, TextMouth/Services/TranscriptStore.swift, TextMouth/Models/Transcript.swift, TextMouth/Parsers/TimedTextReader.swift -->
+<!-- id: where-file-transcript-kept; keys: cue limits, transcript.json, TranscriptSource, speaker voice, size caps; src: TextMouth/Models/TimedText.swift, TextMouth/Services/OutsideTranscript.swift, TextMouth/Services/TranscriptStore.swift, TextMouth/Models/Transcript.swift, TextMouth/Parsers/TimedTextReader.swift, TextMouth/Parsers/PodcastTranscriptReader.swift, TextMouth/Parsers/TimedTextMarkup.swift -->
 
 Owner: TranscriptStore keeps it as it keeps recognition's, in transcript.json, recording where it came from in a TranscriptSource (Models/Transcript.swift): an Origin of attached, imported, or podcast, the file's name, a TimedTextFormat, and, since 0.4.3, formats: the raw values of every format the files were of, each once, in the order they were read, when files of more than one format were read (01.vtt beside one track and 02.srt beside another), else nil, as in every transcript an earlier TextMouth wrote, which cannot read the field and keeps format as the first file's. knownFormats is nil when a later TextMouth wrote a format this one does not know, and an imported transcript is then worded "Attached from files when the book was imported, on …"; for imported files of several formats it says "Attached from WebVTT and SubRip files when the book was imported, on …".
 An origin or a format a later TextMouth wrote, which this one can't name, is read as unknown and worded "Attached on …".
@@ -120,7 +120,7 @@ Since 0.4.3 it also holds the limits on a cue:
   OutsideTranscript turns the cues into a Transcript.
 
 ### Who writes a file transcript
-<!-- id: who-writes-file-transcript; keys: ; src: TextMouth/ViewModels/TranscriptAttachments.swift, TextMouth/Services/TranscriptPairing.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Services/Feeds/FeedEpisodeExtras.swift -->
+<!-- id: who-writes-file-transcript; keys: import, Attach Transcript, podcast episode, named pipe; src: TextMouth/Services/TranscriptPairing.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/TranscriptAttachments.swift, TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Services/Feeds/FeedEpisodeExtras.swift -->
 
 Who may write it: TranscriptPairing at import, which finds a .vtt, else .srt, named as a track is (besideFile for a single file, inFolder for tracks, a ZIP, or a playlist), tried in lower and upper case, and never fails an import: a file that can't be used becomes ImportedBook.notice (TranscriptionWording.transcriptNotAttached, transcriptsNotAttached).
 Attach Transcript…, in ReaderBookCommands, through TranscriptAttachments (ViewModels/TranscriptAttachments.swift), a main-actor record of the books being attached to, with a deinit safety net, that both Attach and Transcribe Audio… ask (canAttach, canTranscribe).
@@ -128,7 +128,7 @@ It reads only a plain file, so a named pipe can't hang it.
 FeedEpisodeExtras, for a podcast (see Feeds).
 
 ### A transcript file chosen with its audio
-<!-- id: transcript-file-chosen-audio; keys: ; src: TextMouth/Services/TranscriptPairing.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/FileImportService.swift, TextMouth/Platform/iOS/Services/PhoneImportCopier.swift -->
+<!-- id: transcript-file-chosen-audio; keys: drag and drop, Open Book, Finder, Dock, unsupported format, iPhone import; src: TextMouth/Services/TranscriptPairing.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Services/FileImportService.swift, TextMouth/Platform/iOS/Services/PhoneImportCopier.swift -->
 
 A transcript file chosen with its audio (0.4.3): TranscriptPairing.droppingTranscriptsChosenWithTheirAudio(_:) takes out of the items to import each .vtt or .srt that a chosen audio file finds as its transcript (besideFile), since the audio's import attaches it.
 Both loops over user-chosen items call it, importAndOpenFiles (Finder, the Dock, and the router's openFiles) and importFiles (Open Book…).
@@ -139,13 +139,13 @@ A transcript chosen with an audio file whose import is then skipped is dropped s
 The iOS PhoneImportCopier calls the same filtered functions, and whether its copies sit beside each other for the lookup was not checked.
 
 ### Transcribe Audio waits while attaching
-<!-- id: transcribe-audio-waits-while-attaching; keys: ; src: TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/ViewModels/TranscriptAttachments.swift -->
+<!-- id: transcribe-audio-waits-while-attaching; keys: notice, one book at a time, Attach; src: TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/ViewModels/TranscriptAttachments.swift -->
 
 Transcribe Audio… waits (0.4.3): TranscriptionPresenter.transcribe shows the notice TranscriptionWording.transcribeWhileAttaching only for a request of one book that TranscriptAttachments.shared.bookIDs holds.
 A request for several books gets the sheet that says transcription works on one book at a time, whatever is being attached.
 
 ### Installing and replacing a transcript
-<!-- id: installing-replacing-transcript; keys: ; src: TextMouth/Services/TranscriptInstallation.swift, TextMouth/Services/DuplicateReplacement.swift, TextMouth/Services/TranscriptStore.swift, TextMouth/Models/ImportDecision.swift -->
+<!-- id: installing-replacing-transcript; keys: Replace Existing, duplicate, provenance, untouched, import question; src: TextMouth/Services/TranscriptInstallation.swift, TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/ImportDecision.swift -->
 
 Installing: TranscriptInstallation takes the transcript into the book's storage work.
 Its parameter givingWayToAnUntouchedPodcastTranscript is judged inside that work, by holdsUntouchedPodcastTranscript(in:), so an edit made between the check and the install is kept.
@@ -156,7 +156,7 @@ The old transcript gives way only when it has a source and isTouched is false, a
 The library row follows what the new package holds.
 
 ### How others observe a file transcript
-<!-- id: how-others-observe-file-transcript; keys: ; src: TextMouth/Services/OutsideTranscript.swift, TextMouth/Services/TranscriptPairing.swift, TextMouth/Services/TranscriptInstallation.swift, TextMouth/Parsers/TimedTextReader.swift, TextMouth/Parsers/PodcastTranscriptReader.swift, TextMouth/Parsers/TimedTextMarkup.swift, TextMouth/Models/TimedText.swift, TextMouth/Models/Transcript.swift, TextMouth/ViewModels/TranscriptAttachments.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Services/TranscriptTextLoader.swift, TextMouth/ViewModels/TranscribedBooks.swift -->
+<!-- id: how-others-observe-file-transcript; keys: Book Information, Transcript detail, content.md, existing line; src: TextMouth/Models/TranscriptionWording.swift, TextMouth/ViewModels/TranscriptBookInfoModel.swift, TextMouth/Services/TranscriptTextLoader.swift, TextMouth/ViewModels/TranscribedBooks.swift -->
 
 How others observe it: Book Information's Transcript detail (TranscriptionWording.bookInfoLine, bookInfoSpokenDetail) and the Transcribe Audio sheet's existing line (outsideTranscript).
 The book's text is written from the transcript the first time the book opens (TranscriptTextLoader), and TranscribedBooks lists it at once.
