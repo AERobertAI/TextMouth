@@ -151,7 +151,9 @@ extension FileImportService {
     ///
     /// An import's Cancel (`ImportCancellation.current`, read here on the
     /// import's own thread, since the task the wait runs in does not inherit
-    /// task-locals) kills the running conversions at once.
+    /// task-locals) kills the running conversions at once. The tool that
+    /// converts the files only ffmpeg reads (`FFmpegAudioConverter.tool`,
+    /// FMT31) is read here for the same reason, unless `tool` names its own.
     /// - Throws: the first conversion's error, every file already converted
     ///   being removed first; `ImportCancelled` when the reader cancelled.
     static func convertTracks(
@@ -162,6 +164,7 @@ extension FileImportService {
     ) throws -> [ImportAudioConverter.Conversion] {
         try run.begin(.convertingImportedAudio(done: 0, of: sources.count), in: directory)
         let cancellation = ImportCancellation.current
+        let tool = tool.resolvingFFmpeg()
         var conversions: [ImportAudioConverter.Conversion] = []
         do {
             let size = ImportAudioConverter.maximumConcurrentConversions
