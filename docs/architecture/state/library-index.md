@@ -161,7 +161,8 @@ Index-write suspension: what protects an index that cannot be read.
   The raw values are therefore never changed (see [Imports](imports-textutil.md)).
   A build with V03 keeps such a row as it was read, as it keeps any row it cannot decode, and the index stays readable (Rows this TextMouth cannot read, below).
 - How others observe it: LibraryViewModel.indexRecovery is set while recovering, and the Library window shows the recovery banner and its Recovery Options…. beginIndexRecovery gives the provisional library the arrangement recoveredArrangement(session:unreadableIndex:) finds (FR09): each LibraryIndexArrangement part, .readingList and .sortSettings, comes from the session when it holds one, as when the data directory came back with an unreadable index, and otherwise from SalvagedLibraryArrangement.read(from:) over the preserved bytes, or over the unreadable file itself when no copy could be made, each part read on its own and the sort settings entry by entry.
-  LibraryIndexRecovery.arrangementNotKept records what neither gave; the .rebuilt and .savedProvisionalLibrary outcomes carry it as notKept, and LibraryIndexArrangement.notReadSentence(in:) words it for them and for the recovery sheet's Rebuild choice (LibraryIndexRecoveryText.rebuild(savedCopy:notKept:)).
+  LibraryIndexRecovery.arrangementNotKept records what neither gave.
+  The .rebuilt and .savedProvisionalLibrary outcomes carry it as notKept, and LibraryIndexArrangement.notReadSentence(in:) words it for them and for the recovery sheet's Rebuild choice (LibraryIndexRecoveryText.rebuild(savedCopy:notKept:)).
   A reading list ID that names no book is kept, and dropped at the list's next change, as ever.
   Snapshots taken meanwhile are dropped, never kept for later, and no feed's index is written either, since each is written with library.json (see [Feed items](library-index-reading-feeds.md)). areIndexWritesSuspended makes data-directory moves refuse.
   Package records are still written, so reading positions are not lost.
@@ -171,17 +172,22 @@ Index-write suspension: what protects an index that cannot be read.
 
 Rows this TextMouth cannot read: the books a later TextMouth wrote, kept as they are (V03).
 
-- Owner: Library.unreadableRows, an array of UnreadableLibraryRow (Models/Library.swift): the JSON object of a row of library.json that does not decode as a Book, kept as a JSONValue (Models/JSONValue.swift, any JSON value, bounded in depth by JSONValue.maximumDepth), with its id, tmbDirectoryName, and folderPath when they read.
+- Owner: Library.unreadableRows, an array of UnreadableLibraryRow (Models/Library.swift).
+  The JSON object of a row of library.json that does not decode as a Book, kept as a JSONValue (Models/JSONValue.swift, any JSON value, bounded in depth by JSONValue.maximumDepth), with its id, tmbDirectoryName, and folderPath when they read.
   Library decodes its books one at a time (UnreadableLibraryRow.decodeRows(from:)): an element that decodes is a book and any other is kept, each in the file's order; an element that cannot be read even as a JSONValue still makes the library unreadable.
   FeedShelf.unreadableRows keeps the same for each feed's index, by feed ID, since FeedIndex reads its rows the same way (a feed with kept rows keeps its index: indexedFeedIDs), and Library.unreadableRowCount counts both.
   A FolderSortSetting whose sort field this version does not know keeps the name (unknownSortField), reads as the default field, and writes the name back until a field is chosen.
-  KeptRowPackages (Library.keptRowPackages) says which packages the kept rows own: by folderPath and tmbDirectoryName when both read, by tmbDirectoryName alone in any folder when only that reads, compared as the library compares folders on a volume that ignores case, and in precomposed form, so that it can only own more, never less.
+  KeptRowPackages (Library.keptRowPackages) says which packages the kept rows own.
+  By folderPath and tmbDirectoryName when both read, by tmbDirectoryName alone in any folder when only that reads, compared as the library compares folders on a volume that ignores case, and in precomposed form, so that it can only own more, never less.
 - Who may write it: the decoding of Library and FeedIndex, once, when an index is read; nothing changes a kept row.
   Every save writes the kept rows back after the books, unchanged, and a library that replaces the one loaded carries them over; Rebuild Library Index writes them back too (LibraryViewModel+IndexRecovery).
   A library without any is encoded exactly as before.
   Every walk of the packages asks keptRowPackages and leaves an owned package alone: orphan adoption and the startup repair (FileImportService, libraryFolderPath(ofPackageAt:libraryDirectory:)), Rebuild Directory, and the scan of a feed's folder (FeedIndex's rowsFromPackages(of:in:excluding:keptRows:)).
   A part of the index that is not a list of books, or whose folders are in a layout this version cannot read, still makes the whole index unreadable (index-write suspension, above).
-  The gaps, open in the TODO: Delete Folder (removeFolderAndEverything) and Delete Feed (FeedCenter+DeleteFeed) still remove a kept row's package; renaming or moving a folder leaves a kept row's folderPath and filePath stale, and a data-directory move does not rebase its filePath (StorageGeneration); if library.json cannot be parsed at all, the kept rows are unknown, so orphan adoption could adopt their packages, as it could before V03.
+  The gaps, open in the TODO:
+  - Delete Folder (removeFolderAndEverything) and Delete Feed (FeedCenter+DeleteFeed) still remove a kept row's package;
+  - renaming or moving a folder leaves a kept row's folderPath and filePath stale, and a data-directory move does not rebase its filePath (StorageGeneration);
+  - if library.json cannot be parsed at all, the kept rows are unknown, so orphan adoption could adopt their packages, as it could before V03.
 - How others observe it: LibraryPersistenceService logs LIBRARY_ROWS_KEPT once when library.json is read with kept rows, naming none; LibraryViewModel.booksNeedingNewerTextMouth gives Storage settings its sentence (StorageLocationWording.booksNeedingNewerTextMouth(_:)).
   A kept row is never shown, counted as a book, opened, or searched.
 
@@ -207,29 +213,45 @@ Retirement markers: books removed with Remove from Library Only.
   The marker also carries a braille book's table (RemovedFromLibraryMarker.brailleTable, nil for any other book and absent from a marker written before braille books) and, for a Mac table, the version of this Mac's tables it was read with (RemovedFromLibraryMarker.brailleTableVersion), and who chose the table (RemovedFromLibraryMarker.brailleTableOrigin, brfguess, an @LenientOptional that never makes the marker unreadable, nil and absent for every other book), so a book added back is still said to be guessed and is not guessed again, because the removal deletes bookInfo.json, which holds it, and a book rebuilt from the marker (FileImportService.reconstructedBook(inPackage:marker:folderPath:dateAdded:)) would otherwise be read again with the default table.
   It also carries a text book's guessed or chosen encoding (RemovedFromLibraryMarker.textEncoding, FMT16) and who decided it (textEncodingSource, an @LenientOptional, encodingchoice), nil for a book with none and absent from a marker written before them, which reconstructedBook gives back to a book of a format that reads text files, since the book would otherwise be read by the Windows-1252 fallback and its text would change.
   The marker keeps no source path, so a book added back from it has the Text Encoding pop-up only when the marker recorded an encoding or a decision (Book.offersTextEncodingChoice; Text files in other encodings, in [Imports](imports-text-encodings.md)).
-- How others observe it: every package record write checks the set and drops writes into a retired package; orphan adoption skips a package whose marker names its record's book; launch's repair and Rebuild Directory remove retired books from an index saved before their removal, through RemovedFromLibraryMarker.removeRetiredBooks(from:sparing:), which takes each out through Library.removeBook(id:), so it leaves the reading list too (FR09); the repair spares, unread, a book whose marker is only in the cloud, which a read would download.
+- How others observe it:
+  - every package record write checks the set and drops writes into a retired package;
+  - orphan adoption skips a package whose marker names its record's book;
+  - launch's repair and Rebuild Directory remove retired books from an index saved before their removal, through RemovedFromLibraryMarker.removeRetiredBooks(from:sparing:), which takes each out through Library.removeBook(id:), so it leaves the reading list too (FR09);
+  - the repair spares, unread, a book whose marker is only in the cloud, which a read would download.
 
 ## Duplicate books
 <!-- id: duplicate-books; keys: duplicate finder, Scan for Duplicates, pagination, VoiceOver announcement; src: TextMouth/Views/Settings/DuplicateFinderView.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Models/CountWording.swift, TextMouth/Models/RemovalWording.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Services/VoiceOverAnnouncer.swift -->
 
 Duplicate books: what Find Duplicate Books, in Storage settings, groups and removes.
 
-- Owner: DuplicateFinderView's @State, for as long as the sheet is open: the criteria checked (DuplicateFilter: md5Hash, isbn, title, and author; Identical File (MD5) is checked at each opening, and nothing persists the choice), the groups the last scan found (DuplicateGroup), the page of them shown (pageIndex), the books checked for removal, on every page, and the ISBNs read from EPUB records when Same ISBN is first scanned.
-  The criteria combine: DuplicateFinderEngine.findDuplicates puts a book in a group only when every checked criterion has a value for it, and books share a group only when every value matches, so the former titleAndAuthor case is gone, and a book without an author is left out while author is checked.
+- Owner: DuplicateFinderView's @State, for as long as the sheet is open:
+  - the criteria checked (DuplicateFilter: md5Hash, isbn, title, and author; Identical File (MD5) is checked at each opening, and nothing persists the choice),
+  - the groups the last scan found (DuplicateGroup),
+  - the page of them shown (pageIndex),
+  - the books checked for removal, on every page,
+  - and the ISBNs read from EPUB records when Same ISBN is first scanned.
+
+  The criteria combine: DuplicateFinderEngine.findDuplicates puts a book in a group only when every checked criterion has a value for it, and books share a group only when every value matches.
+  So the former titleAndAuthor case is gone, and a book without an author is left out while author is checked.
   DuplicateGroup.matchDescription names the criteria with ListFormatter, and its matchKey gives the values shared, a title and author matched together as "Title by Author"; the two make one heading.
 - Who may write it: the sheet's checkboxes and its Scan for Duplicates, which runs the engine over the library's own books, never a feed's items (LibraryViewModel.booksForDuplicateScan, FR11).
   DuplicateRemoval.firstStep(removing:preferences:) decides from RemovalPreferences whether DuplicateRemovalButton asks first, and DuplicateRemoval.remove(_:from:) deletes the checked books through LibraryViewModel.removeBooksAndDeleteReturningOutcome, to the Trash or not as the preference says.
 - How others observe it: DuplicateFinderWording makes each row's label (title, author, format, folder, and the date added) and the scan-result phrase (scanResult(groupCount:), through CountWording), which the results carry as their accessibility label and VoiceOverAnnouncer announces after a scan the user asks for (runScan()), not after the rescan that follows a removal (runScan(afterRemoval: true)), whose outcome is announced instead, and which keeps the page now holding the group that headed the page shown (DuplicateGroupPages.page(keeping:of:orElse:)).
   The groups are shown a page at a time (DuplicateGroupPages, REV13): whole groups in the scan's order, listing at most rowsPerPage (40) books, or one larger group alone.
-  While there is more than one page, DuplicateGroupPager shows DuplicateFinderWording.pageLine(groups:of:), with Previous Groups and Next Groups, which announce it as they turn the page; the list is made anew for each page, so it opens at its top.
+  While there is more than one page, DuplicateGroupPager shows DuplicateFinderWording.pageLine(groups:of:), with Previous Groups and Next Groups, which announce it as they turn the page.
+  The list is made anew for each page, so it opens at its top.
 
 ## Quit and recovery saves
 <!-- id: quit-recovery-saves; keys: quit, terminate, flush, shared library, iCloud, Rebuild Library Index, merge, save on exit; src: TextMouth/App/UnsavedChangesTermination.swift, TextMouth/Services/PlaybackMemoryGuard.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Models/Library.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/LibraryLoadResult.swift -->
 
 Quit and recovery saves: what is saved at a quit, and what a recovery keeps.
 
-- Owner: UnsavedChangesTerminationGuard.flushPendingWrites (App/UnsavedChangesTermination.swift), which first calls PlaybackMemoryGuard.saveEveryOpenReaderPosition(), every open reader being reported to the guard as it opens, whether or not the guard watches memory, and the library's flush that follows writes those places with the rest.
-  Each reader answers savePositionIfMoved() (ReaderViewModel), which keeps its last saved chapter and offset and writes only when the cursor moved or playback published a live place since, so a reader at rest dates nothing and writes no library index over a newer one saved by another Mac on a shared library; a reader without that knowledge saves as before (the protocol's default).
+- Owner: UnsavedChangesTerminationGuard.flushPendingWrites (App/UnsavedChangesTermination.swift), which first calls PlaybackMemoryGuard.saveEveryOpenReaderPosition(), every open reader being reported to the guard as it opens, whether or not the guard watches memory.
+  And the library's flush that follows writes those places with the rest.
+  Each reader answers savePositionIfMoved() (ReaderViewModel), which keeps its last saved chapter and offset and writes only when the cursor moved or playback published a live place since.
+  So a reader at rest dates nothing and writes no library index over a newer one saved by another Mac on a shared library.
+  A reader without that knowledge saves as before (the protocol's default).
 - Who may write it: Library is Equatable, its synthesized == comparing every stored field, and library(after:current:) and library(afterMoving:from:current:) take the library a folder edit or a data-directory move made off the main actor whole only when the library is unchanged since its snapshot, and otherwise merge into the library as it is now, so a Reading List change, a feed shelf change, or a kept row made meanwhile is kept. saveReadingCheckpoint journals the book while an unreadable index is protected, as with a readable one, and none is journaled while the data directory is unavailable.
   Rebuild Library Index decodes the index a load would read now, library.json or the legacy index, first, and when it decodes, writes and preserves nothing and fails with LibraryIndexRecoveryError.indexReadableAgain.
-  FileImportService.adoptLibraryFolders(library:libraryDirectory:includingFoldersOnDisk:) makes rows for every folder books name, and with includingFoldersOnDisk false, as the startup repair of a library whose index records the folders asks, only for the folders books lie in and their ancestors, the disk unwalked.
+  FileImportService.adoptLibraryFolders(library:libraryDirectory:includingFoldersOnDisk:) makes rows for every folder books name.
+  And with includingFoldersOnDisk false, as the startup repair of a library whose index records the folders asks, only for the folders books lie in and their ancestors, the disk unwalked.
