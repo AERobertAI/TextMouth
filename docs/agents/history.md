@@ -641,3 +641,10 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **CLAUDE.md's Start here:** it listed the project's documents (writing-docs.md, README.md, ARCHITECTURE.md, the TODO, AGENT-NOTES, `research/`), the message board with its build wrapper `build-slot-with-bbs.sh`, `merge-chain.sh` and `extract-report.py`.
   It also gave the `*.md` gitignore rule and the `humanQuestions/` rule.
   AGENTS.md's Start here holds them now, and the orchestrator's tools are in orchestrator.md.
+
+## From Document goldens
+
+- **The RTF real-file comparison:** The comparison of 2026-11-06 counted the notes of 14 and the text boxes of 5 of the 525 LibreOffice RTF test files, and that 363 of the 411 that both read have the same words, 16 differ in spacing only, and textutil refuses 114 that the reader reads.
+- **Four symbol tests:** Four were added from the November 8 check, which found that deleting a guard in the code left the first 18 tests green.
+  The four tests are named on the Symbols of Word documents section of the goldens page.
+- **The real voice export:** A real voice (Samantha) was exported to an M4B, an M4A, and an MP3, each with three chapters, in the November 8 check.
