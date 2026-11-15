@@ -33,7 +33,13 @@ TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and
   - the sources and headers in liblouis/ that its Makefile.am builds the library from (liblouis.h.in among them);
   - and in tables/ the four English tables built into TextMouth, with the 13 files they include, 17 in all.
 
-  The four are Unified English uncontracted (en-ueb-g1.ctb) and contracted (en-ueb-g2.ctb) braille, and English uncontracted (en-us-g1.ctb) and contracted (en_US.tbl) braille as used in the U.S. It also holds, unchanged from that tarball, three display tables that only the tests read: en-us-brf.dis (North American Braille ASCII), de-eurobrl6.dis (Eurobraille, six-dot, lowercase, SBS Zürich 2009), and de-eurobrl6u.dis (the same code in capitals), 20 files in all; BrailleFileCodeTests compares TextMouth's own tables with them, 64 cells of 64.
+  The four are Unified English uncontracted (en-ueb-g1.ctb) and contracted (en-ueb-g2.ctb) braille, and English uncontracted (en-us-g1.ctb) and contracted (en_US.tbl) braille as used in the U.S.
+  It also holds, unchanged from that tarball, three display tables that only the tests read, 20 files in all:
+  - en-us-brf.dis (North American Braille ASCII);
+  - de-eurobrl6.dis (Eurobraille, six-dot, lowercase, SBS Zürich 2009);
+  - and de-eurobrl6u.dis (the same code in capitals).
+
+  BrailleFileCodeTests compares TextMouth's own tables with them, 64 cells of 64.
   No translation table includes them, so the helper never loads them; they are bundled with the tables folder (Vendor/liblouis/tables, into Contents/Resources/liblouis/tables), 6,793 bytes.
 - TextMouth adds two files of its own: config.h, in place of the one liblouis's configure script writes, and include/liblouis.h, the release's liblouis.h.in with its one substitution made, 32-bit wide characters (UCS-4), so every Unicode character and braille cell fits.
   Nothing of the release was run (not configure, make, or any script), and nothing from liblouis's tools/ folder, which is GPL 3, is used.
@@ -48,7 +54,8 @@ TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and
 ## foliate-js's mobi.js, the Kindle reader it follows
 <!-- id: foliate-js-mobi-js-kindle; keys: mobi.js, foliate-js, Kindle reader, PalmDOC, HUFF/CDIC, NCX, KF8; src: Vendor/foliate-js/LICENSE, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIPalmDatabase.swift -->
 
-foliate-js's mobi.js, the Kindle reader of the book renderer behind the Foliate e-book reader, by John Factotum (https://github.com/johnfactotum/foliate-js), under the MIT License, whose text is Vendor/foliate-js/LICENSE ("Copyright (c) 2022 John Factotum"; SHA-256 b621ffc351fe263bc9b09dd0bc1c9332fda9c462a3904c1e4f0b4d3236b9c28c, the file as of foliate-js commit c986ba68, unchanged).
+foliate-js's mobi.js, the Kindle reader of the book renderer behind the Foliate e-book reader, by John Factotum (https://github.com/johnfactotum/foliate-js), under the MIT License.
+The licence's text is Vendor/foliate-js/LICENSE ("Copyright (c) 2022 John Factotum"; SHA-256 b621ffc351fe263bc9b09dd0bc1c9332fda9c462a3904c1e4f0b4d3236b9c28c, the file as of foliate-js commit c986ba68, unchanged).
 TextMouth's Kindle reader (see [What TextMouth reads: Kindle books](../user/reads-kindle-books.md)) is Swift of its own, but four of its files follow mobi.js closely (mobi.js last changed in commit 9a676796), and each says so:
 - MOBIText.swift (PalmDOC decompression and the records' trailing entries);
 - MOBIIndex.swift (the NCX index);
