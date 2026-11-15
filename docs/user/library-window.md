@@ -45,8 +45,8 @@ Of the shipped views, only Recently Opened lists them, and the Reading List hold
 
 All Items, as shipped, lists every book and every feed, sorted by title until you choose another sort.
 Unopened, as shipped, lists every book you have never opened, from every folder, and a book leaves it once you open it, and a feed only while it has a new episode or article among those it lists, one published, or, undated, first seen, since you subscribed and neither played nor opened, so a podcast's back catalog never keeps it there.
-It took the place of No Folder on October 7, 2026: the books in no folder, which No Folder listed, are at the top of the library in Folders.
-Recently Opened, as shipped, lists the ten books, episodes, and articles you opened last, and of each feed's episodes and articles only the one you opened last, which takes one of the ten places; it was called Recent until October 10, 2026, and keeps the sort you chose for it then.
+It replaces No Folder: the books in no folder, which No Folder listed, are at the top of the library in Folders.
+Recently Opened, as shipped, lists the ten books, episodes, and articles you opened last, and of each feed's episodes and articles only the one you opened last, which takes one of the ten places; it keeps the sort you chose for it under its old name, Recent.
 The Reading List lists the books you add to it, in the order you arrange (below).
 
 ### The Feeds view
@@ -90,8 +90,7 @@ Whether a title's leading article counts when the Title sort orders books, and w
 <!-- id: where-book-author-comes-from; keys: creator, Unknown author, EPUB metadata, contributor, Book Info; src: TextMouth/Parsers/EPUBParser.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/BookInfo.swift -->
 
 A book's author comes from its file.
-An EPUB names its author in a creator element, or, in files some converters write, only in a dcterms:creator meta element or in a contributor marked as the author; TextMouth reads them all, since October 7, 2026, preferring a creator marked as the author to one listed before it, such as an illustrator, and reading a creator that says only Unknown as naming no one.
-On that day, 150 of a library's 729 EPUBs named their author in a meta element alone, and every one was listed under Unknown.
+An EPUB names its author in a creator element, or, in files some converters write, only in a dcterms:creator meta element or in a contributor marked as the author; TextMouth reads them all, preferring a creator marked as the author to one listed before it, such as an illustrator, and reading a creator that says only Unknown as naming no one.
 A book whose file names no one is listed under Unknown, and Book Info, or an EPUB's metadata editor, lets you type an author in, which is kept whatever the file says.
 
 ## Moving books in manual order
@@ -264,7 +263,7 @@ It shows that book's time left as a row does, as in "16:00 left", and VoiceOver 
 The toolbar's buttons for adding and for settings:
 
 - Add to Library, a plus button between Up One Level, where that shows, and the edit mode button, opens the sheet of ways to add to the library (see [Adding books](adding-books.md)).
-  On October 17, 2026 it took the place of the Import, New from Text, and Add Feed buttons.
+  It replaces the old Import, New from Text, and Add Feed buttons.
 - Feed Settings or Folder Settings, between New Folder and the Sort menu, shows only in a folder of the Folders view: never at the top of the library, and in no other view.
   A feed's folder, the folder that lists the feed's episodes or articles, gets Feed Settings, even when it also holds books of your own; any other folder gets Folder Settings.
   - Feed Settings opens the feed's Feed Info, the sheet that Command-I opens on the feed's row (see [Podcasts and article feeds](feeds.md)).

@@ -595,6 +595,12 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Podcasts and article feeds can be subscribed to by address or by searching Apple's podcast directory, each feed lists its episodes and articles in a folder of its own, and the newest are downloaded as you choose.
 - A Reading List holds books from any folder in an order you choose and carries on from one to the next, and the Unopened and Recently Opened categories take the place of No Folder and Recent.
 - A library can live in iCloud Drive, Dropbox, or Google Drive, and each book can be downloaded when you need it, removed from this Mac to free space, or kept on it.
+- Unopened took the place of No Folder on October 7, 2026, and the books in no folder are at the top of the library in Folders.
+- Recently Opened was called Recent until October 10, 2026, and keeps the sort you chose for it then.
+- An EPUB's author is read from a creator element, a dcterms:creator meta element, or a contributor marked as the author, since October 7, 2026.
+- A creator marked as the author is preferred to one listed before it, such as an illustrator, and a creator that says only Unknown is read as naming no one.
+- On October 7, 2026, 150 of a library's 729 EPUBs named their author in a meta element alone, and every one was listed under Unknown.
+- The Add to Library button took the place of the Import, New from Text, and Add Feed buttons on October 17, 2026.
 
 ## 0.1.1
 - The first beta version of TextMouth. Its changes are not listed here.
