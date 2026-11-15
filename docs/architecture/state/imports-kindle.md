@@ -6,7 +6,7 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 ## Kindle KFX books
 <!-- id: kindle-kfx-books; keys: Amazon Kindle, Amazon Ion, DRM, Kindle Previewer, print replica, comic, KPF, calibre; src: TextMouth/Parsers/KFXParser.swift, TextMouth/Parsers/KFXSignature.swift, TextMouth/Parsers/KFXPackage.swift, TextMouth/Parsers/KFXSidecar.swift, TextMouth/Parsers/KFXContainer.swift, TextMouth/Parsers/KFXView.swift, TextMouth/Parsers/KFXIon.swift, TextMouth/Parsers/KFXSymbol.swift, TextMouth/Parsers/KFXSymbols.swift, TextMouth/Parsers/KFXFragments.swift, TextMouth/Parsers/KFXMetadata.swift, TextMouth/Parsers/KFXNavigation.swift, TextMouth/Parsers/KFXTargets.swift, TextMouth/Parsers/KFXBook.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/KFXInlineText.swift, TextMouth/Parsers/KFXStyles.swift, TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/Book.swift, TextMouth/Models/Library.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Resources/Info.plist, TextMouth/Services/ArchiveExtraction.swift -->
 
-Kindle KFX books (FMT52, November 5 and 6, 2026): DRM-free KFX books, read by TextMouth's own reader, the same in both apps, with no helper process.
+Kindle KFX books (FMT52): DRM-free KFX books, read by TextMouth's own reader, the same in both apps, with no helper process.
 
 - The format: BookFormat.kfx (raw value "kfx", displayName "Kindle Book (KFX)", extensions kfx, kfx-zip, azw8, and kpf, the last taken only to be refused) is written into library.json and bookInfo.json and never changed.
   A build from 0.2.1 on keeps a library that holds one and leaves that book out (UnreadableLibraryRow, V03); an older build cannot decode the index.
@@ -31,12 +31,12 @@ Kindle KFX books (FMT52, November 5 and 6, 2026): DRM-free KFX books, read by Te
 - The refusals: protected (MOBIError.copyProtected: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."), damaged or not a Kindle book (MOBIError, the MOBI sentences), no flowing text (KFXError.noFlowingText: "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."), a Kindle Create package (KFXError.kindleCreatePackage: "This file is a Kindle Create package, which TextMouth can't read yet."), and a partial container (KFXError.partOfABook: "This file holds only part of a Kindle book.
   Open the book's main .kfx file.").
 - Cancellation: KFXWalk asks ImportCancellation.throwIfCancelled() as it works.
-  The sample books and their tests are in [Testing](../../developer/testing.md).
+  The sample books and their tests are in [Testing](../../developer/testing-formats.md).
 
 ## Kindle MOBI 6 and KF8 books
 <!-- id: kindle-mobi-6-kf8-books; keys: Mobipocket, AZW3, PRC, PalmDOC, Amazon Kindle, kindlegen, e-book, DRM; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/BookParser.swift -->
 
-Kindle books (FMT42, November 4, 2026): DRM-free MOBI 6 books, read by TextMouth's own reader, the same in both apps, with no helper process and no textutil.
+Kindle books (FMT42): DRM-free MOBI 6 books, read by TextMouth's own reader, the same in both apps, with no helper process and no textutil.
 
 ### The format
 <!-- id: mobi-format; keys: BookFormat, UTType, UTI, Open Book, Mobipocket, file extension, page reader version, version stamp; src: TextMouth/Models/Book.swift, TextMouth/Models/Library.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Resources/Info.plist -->
@@ -78,7 +78,7 @@ Reading: BookParser and MarkdownCacheService.extractFromMOBI call MOBIParser, wh
 ### KF8 books and hybrids
 <!-- id: kf8-books-hybrids; keys: combo file, dual format, kindlegen, AZW3, fallback, upgrade, MOBI 6 half, KF8 half; src: TextMouth/Parsers/MOBIBook.swift, TextMouth/Services/MarkdownCacheService.swift -->
 
-KF8 (FMT48, November 8, 2026): MOBIBook also reads a KF8 book (an .azw3, or a KF8 file named .mobi or .azw; the MOBI header's version, 8 or more, decides, never the name).
+KF8 (FMT48): MOBIBook also reads a KF8 book (an .azw3, or a KF8 file named .mobi or .azw; the MOBI header's version, 8 or more, decides, never the name).
 It is read by TextMouth's own code, written from the format's published description with foliate-js's mobi.js as a map (see [Third-party code](../../developer/third-party-code.md)), with no helper process.
 
 1. Hybrids: a file that holds a MOBI 6 book first and the same book in KF8 after the boundary EXTH 121 names (MOBIBook.secondHalf) is read from its KF8 half (MOBIBook.hybridChoice is .kf8).
@@ -123,7 +123,7 @@ It is read by TextMouth's own code, written from the format's published descript
      It is the opening of the next piece's section, so the next piece goes on with it (previousOpensThisSection).
      Where the two pieces are not in one element, the piece goes on with the chapter before, as before.
      A section element is found by Container.names and its id, and openingContainer passes over anchors and comments to find it.
-   - Measured on the real books (November 9, 2026): Pride and Prejudice's last chapter went from 1,461 to 1,248 words and its licence from 2,694 to 2,907; Moby Dick's Epilogue from 482 to 267 and its licence from 2,693 to 2,908; The Yellow Wallpaper's last chapter from 6,295 to 6,082 and its licence from 2,693 to 2,906.
+   - Measured on the real books: Pride and Prejudice's last chapter went from 1,461 to 1,248 words and its licence from 2,694 to 2,907; Moby Dick's Epilogue from 482 to 267 and its licence from 2,693 to 2,908; The Yellow Wallpaper's last chapter from 6,295 to 6,082 and its licence from 2,693 to 2,906.
      Every book's words are the same, and the edge samples and The Time Machine read as before.
    - Not settled: a wrapper such as main with an id around several chapters would move the end of one chapter into the next, no sample has one, and boilerplate written as a section with the id pg-footer, not a footer, would make the back page a chapter of one word.
 

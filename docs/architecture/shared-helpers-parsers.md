@@ -83,7 +83,7 @@ All three entry points use it.
 ## MarkupGuard's four limits
 <!-- id: markupguard-four-limits; keys: thresholds, hostile markup, memory limit, 128 levels; src: TextMouth/Parsers/MarkupGuard.swift -->
 
-, set on November 7, 2026 from 3,236 documents of 327 real files and from how deep a tree each reading path survives on the 512 KiB stack of an import.
+The four limits are set from 3,236 documents of 327 real files and from how deep a tree each reading path survives on the 512 KiB stack of an import.
 A test binds others with `MarkupGuard.$limits.withValue(_:operation:)`, a task-local that changes only the reading that operation does:
 
 - Nesting, 128 (`deepestNesting`).

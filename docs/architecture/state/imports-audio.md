@@ -59,7 +59,7 @@ ConvertedOriginalWording holds the setting's words.
 
 Package track scans: AudioBookParser.audioFiles(in:scan:) takes a TrackScan.
 The import's scans (.importing) take every audio format (BookFormat.audio.fileExtensions, which ends with coreAudioExtensions), since they run before the conversion.
-A package's scans (.package: loading the reader, re-analysis, a manifest edit, the library's checks) take BookFormat.packageTrackExtensions, which leaves out the formats added on October 18, 2026, so a stray .aifc, .au, or .ac3 left in a package is neither played nor counted as a chapter; Ogg stays, since the library converts the Ogg books it holds and that conversion needs their tracks found, and TextMouth's own CAF is taken by its name and place (isOwnCAF(atPath:)).
+A package's scans (.package: loading the reader, re-analysis, a manifest edit, the library's checks) take BookFormat.packageTrackExtensions, which leaves out the formats the import converts (coreAudioExtensions), so a stray .aifc, .au, or .ac3 left in a package is neither played nor counted as a chapter; Ogg stays, since the library converts the Ogg books it holds and that conversion needs their tracks found, and TextMouth's own CAF is taken by its name and place (isOwnCAF(atPath:)).
 
 ## Chapters in audio files
 <!-- id: chapters-audio-files; keys: Nero chapters, chpl, M4B, audiobook chapters, moov udta, MP4 box, chapter list; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Parsers/NeroChapterReader.swift -->

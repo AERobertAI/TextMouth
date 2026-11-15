@@ -817,3 +817,105 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Feed options, interface, and arrivals
 
 - **The rotor outside the Folders category:** Outside the Folders category there are neither; until October 7, 2026, the rotor listed folders there that the list didn't show.
+
+## From Imports: audio
+
+- Package track scans: the formats a package's scans leave out (the page's coreAudioExtensions) are the formats added on October 18, 2026.
+
+## From Imports: braille tables and the translator
+
+- The helper's protocol 2 (header line, emphasis codes) came on October 21, 2026.
+- The reading passes (read_braille through the pass of the code the table writes its emphasis in) came on October 24, 2026.
+- Review E1 of October 21, 2026 found that read_ueb's liblouis read the cells just before a terminator as if they could not end a word.
+- The EBAE fix pass (`fix_ebae_cells`) came on November 13, 2026, after the user's Life of Pi BRF showed what contracted EBAE's table misreads.
+- The measurement in the comment above the guess's constants was made on November 14, 2026.
+- BrailleEbaeFixesTests was new with the EBAE fix pass.
+- BrailleEmphasisReadingTests changed its seeded BANA test to treat µ and m alike and to leave out the sentences liblouis alone misreads with "±", and its symbol sentences no longer glue µ to a letter.
+
+## From Imports: braille files
+
+- The three rules of layout (running heads, print-page change lines, chapter rows) came on November 13, 2026, with the user's Life of Pi BRF, a 2003 Australian EBAE transcription.
+- BrailleTitlePage (a BRF's title and author from its title page) came on November 13, 2026.
+- The braille page reader's version "1.1.0" dates from November 13, 2026 and shipped in 0.4.8; "1.1.1" dates from November 14, 2026.
+
+## From Imports: DAISY 3 books
+
+- DAISY 3 books of several DTBook files, and SMIL clocks, came on November 13, 2026.
+- DAISYParser.parseTime: "500ms" used to read as no time.
+
+## From Imports: duplicates
+
+- The unanswered-duplicate marker (DuplicateQuestionMarker) came on October 31, 2026.
+- Answering off the main actor (answerImportDecisionOffMain, replaceExistingOffMain) came on November 13, 2026.
+
+## From Imports: Kindle books
+
+- Kindle KFX books (FMT52) came on November 5 and 6, 2026.
+- Kindle MOBI 6 books (FMT42) came on November 4, 2026.
+- KF8 (FMT48) came on November 8, 2026.
+- The continuation rule's measurement on the real books (the last chapters and licences of Pride and Prejudice, Moby Dick, and The Yellow Wallpaper) was made on November 9, 2026.
+
+## From Imports: DOCX, OpenDocument, and Word 2003 XML
+
+- The own readers of OpenDocument text and Word 2003 XML (FMT27 and FMT53) came on November 5 and 6, 2026.
+
+## From Imports: rich text and Word documents
+
+- The own readers of rich text, Word 97-2003, OpenDocument text, and Word 2003 XML (FMT47, FMT27, FMT53) came from November 4 to 6, 2026.
+
+## From Imports: choosing the encoding
+
+- The measurement of Foundation's readers of several encodings, on macOS 26.3, was made on October 24, 2026.
+
+## From Imports: text in other encodings
+
+- CP437, CP850, and Mac Central European joined the catalog on November 13, 2026.
+
+## From Imports: documents textutil reads
+
+- V03, which keeps a row this TextMouth cannot read as it was read, dates from October 23, 2026.
+- ImportedBook.originalKeptNotice was named rtfdOriginalKeptNotice until October 31, 2026.
+- docx (with .dotx, .docm, and .dotm) joined formatsRefusedWhenBlank on November 13, 2026.
+
+## From Imports
+
+- The announcement rule for a ZIP batch that found no new book (the library's alert instead) dates from October 13, 2026.
+- Packages and originals (isBookPackage, the package handling of importFiles and importZip) dates from October 31, 2026.
+- Limits of what a file claims (EPUBParser.readingXML, withNCX) dates from October 31, 2026.
+- The Word documents joined formatsRefusedWhenBlank on November 13, 2026.
+
+## From Known duplication
+
+- TimeRemainingTally's duplicate, the Library bar's own computeTimeRemaining, went in the audit's C7 on November 13, 2026.
+- The performance tests' frozen oracles are the code that the changes of October 3, 2026 replaced.
+- The feed, OPML, and SSML code began to use XMLEscaping on November 13, 2026.
+- BrailleFileWriter.escaped, the one copy left, came from team export on October 19, 2026, and the PEF writer of October 20, 2026 joined it.
+
+## From The two apps and the platform folders
+
+- Phase 0 of the iOS port, which made the iOS app compile from the same code, finished on November 4, 2026, the day of the projection of 105 changed Swift files.
+- The iPhone interface first ran in the iOS simulator on November 8, 2026.
+- The page's account of the iPhone app described the code main held since November 8, 2026.
+- A third launch variable, `TEXTMOUTH_SEARCH_IN_BOOK`, filled the Search in Book field at launch so that a UI test did not type.
+- It was removed on November 10, 2026: the interface tests type on GitHub's runners now.
+
+## From The iPhone interface: announcements, text, sheets, and search
+
+- The two remaining contrast findings were proven to be false positives from the screenshots on November 9, 2026.
+- The probe test that put the sheet buttons back in `.cancellationAction` and read the sheet's tree was run on November 8, 2026.
+
+## From Shared helpers
+
+- The soft hyphen's effects (Search in Book, braille, speech) were measured on November 9, 2026.
+- XMLEscaping.markup(_:) dates from November 13, 2026.
+- MarkdownNesting, the first layer of the guard on Markdown's nesting, dates from November 13, 2026.
+
+## From Shared helpers: readers and markup guards
+
+- MarkupGuard's four limits were set on November 7, 2026.
+
+## From The parts of the app
+
+- The audio editor's level measurement moved to a Thread of its own after a few cancelled measurements blocked on October 6 and starved the cooperative pool.
+- The Release app measured 11 MB on October 3, 2026, once `make build` stopped compiling with code coverage and the symbols were stripped into a dSYM that `make install` keeps for the last five installs.
+- It measured 15.4 MB on October 4, with that day's features and LAME's encoder.

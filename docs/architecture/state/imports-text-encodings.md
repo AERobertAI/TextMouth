@@ -162,7 +162,7 @@ Neither holds any of the book's text, and LogContentPolicyTests pins both tags (
 Limits, as the reviewers measured them on thousands of windows of real prose in 30 languages converted to the encodings each is written in, and on tens of thousands of Windows-1252 texts built to look odd:
 
 - Left as Windows-1252: texts too short for the oddities to be more than a few; Hungarian, whose ő and ű Windows-1252 reads as õ and û, and French in ISO 8859-15, whose œ and € it reads as ½ and ¤, which differ from the right reading in a few letters that Windows-1252 text could hold (TextEncodingFixtures.Paragraph.leftToTheDefault pins both); Croatian, Slovenian, and Latvian; short Mac Roman sentences in Spanish, Portuguese, Italian, Dutch, Danish, and German; and any encoding the catalog lacks.
-  CP437, CP850, and Mac Central European joined the catalog on November 13, 2026, as entries not always tried (row(_:_:tried:) without tried), so they are taken only when Foundation's own guess names them, and no stored book is read differently.
+  CP437, CP850, and Mac Central European joined the catalog as entries not always tried (row(_:_:tried:) without tried), so they are taken only when Foundation's own guess names them, and no stored book is read differently.
 - Short Hebrew and Cyrillic texts: of 24 short Hebrew excerpts 16 are guessed right and 8 left alone, since Hebrew is called only when Foundation names it.
   Of 92 one-line notes and two-cue subtitles in Windows-1251 and Mac Cyrillic, 22 that an earlier round read right are left garbled: all lack ы, ь, and я, the bytes Windows-1255 cannot read, so its reading is as clean as the Cyrillic one and Foundation's pick is not Hebrew.
   A full paragraph still reads right.

@@ -148,7 +148,7 @@ The memory guard keeps its direct call, since the delegate answers it at once.
 A source scan keeps it so.
 Any line that calls terminate(, names terminate in a #selector, or calls exit( or _exit( fails the scan unless that same line contains quit-ok: and a reason after it, in a comment, as the helper's own call does.
 The mark exempts that line only, never a whole file, and a mark anywhere on the line counts.
-The scan runs in QuitWhileHeldTests.testNoSourceAsksAppKitToQuitExceptTheHelperAndTheMemoryGuard and in Scripts/test/quit-while-held.py (see [Testing TextMouth](../developer/testing.md)).
+The scan runs in QuitWhileHeldTests.testNoSourceAsksAppKitToQuitExceptTheHelperAndTheMemoryGuard and in Scripts/test/quit-while-held.py (see [Testing TextMouth](../developer/testing-tools.md)).
 Only TextMouth/ is scanned, and it does not find forceTerminate(), a Selector("terminate:") built from a string, abort(), or kill(.
 
 ### Two AppKit facts behind the design

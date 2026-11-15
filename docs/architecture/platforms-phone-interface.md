@@ -153,9 +153,9 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   Button words stay at full contrast, since `primary` is a separate line.
 - The contrast result: the audit's findings of contrast fell from about 50 to 2 on the sheets tested.
   Both remaining ones are on the first section header under the bar ("Voice" in Settings, "New Timer" in Sleep Timer).
-  They are false positives, proven on November 9, 2026 from the screenshots: the pixels over each header's frame are black (0, 0, 0) on (235 to 242, 235 to 242, 240 to 247), about 17 to 1.
+  They are false positives, proven from the screenshots: the pixels over each header's frame are black (0, 0, 0) on (235 to 242, 235 to 242, 240 to 247), about 17 to 1.
   Nothing switched off cleared them (the header trait, sliders, switches, steppers, the field).
-  The audit accepts them by the header's label and the contrast kind only (see [Testing TextMouth](../developer/testing.md)).
+  The audit accepts them by the header's label and the contrast kind only (see [Testing TextMouth](../developer/testing-iphone-audit.md)).
 
 ## PhoneSheetButton: where a sheet's buttons go
 <!-- id: phone-sheet-button; keys: toolbar, topBarTrailing, cancellationAction, confirmationAction, ToolbarContent, button order; src: TextMouth/Platform/iOS/Views/PhoneSheetButton.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderSheetContent.swift, TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouth/Platform/iOS/Views/PhoneChoiceSheet.swift, TextMouth/Platform/iOS/Views/Library/PhoneBookInfoSheet.swift, TextMouth/Platform/iOS/Views/Library/PhoneFolderSheetForm.swift, TextMouth/Platform/iOS/Views/Library/PhoneFolderDeleteSheet.swift, TextMouth/Platform/iOS/Views/Import/PhoneAddToLibrarySheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSpeechRefusalSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneGoToSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneHeadingsSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSleepTimerSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneVoiceSheet.swift, TextMouth/Platform/iOS/Views/Reader/PhoneBookmarksSheet.swift -->
@@ -180,7 +180,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
     They follow the spec now.
 - Why not the system's places, `.cancellationAction` and `.confirmationAction`:
   - In the simulator's tests (iPhone 17, iOS 26), Book Information's and the choice sheet's Cancel were reported missing, though Go To's, in `.topBarTrailing`, was found.
-  - A probe test put the buttons back in `.cancellationAction` and read the sheet's tree on November 8, 2026.
+  - A probe test put the buttons back in `.cancellationAction` and read the sheet's tree.
     The probe was removed in 0.4.3, with its test and its launch variable.
     `PhoneSheetButton.swift`'s comment keeps the history, and it is accurate.
     The buttons were never missing.
@@ -290,13 +290,13 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - `PhoneSessionTests` pin four cases: the book behind, the book on screen, the only book, and a book not open.
   - The on-screen case also checks which reader Now Playing follows, but with only two readers it passes with or without the hand-over, so it does not prove it.
     A third reader would.
-- The tests are in [Testing TextMouth](../developer/testing.md).
+- The tests are in [Testing TextMouth](../developer/testing-iphone.md).
 
 ## What is left
 <!-- id: what-left; keys: phase 1, typecheck-ios, hand check, bundle identifier, open items; src: TextMouth/Platform/PlatformApplication.swift, Makefile, Scripts/ios/typecheck.py, Scripts/ios/mac-projection.py, project.yml -->
 
 - These are not done: the rotors on Play, Book content's language, the Files drop folder, and sounds.
-  [Testing TextMouth](../developer/testing.md) lists the audit findings that are still open.
+  [Testing TextMouth](../developer/testing-iphone-audit.md) lists the audit findings that are still open.
 - Phase 1 left these places empty or approximate, and the first run has not settled them:
   - the Shortcuts recorder, hardware keys, and menus, which compile but are untested on iOS;
   - a recording backend, if recording comes to iOS;
@@ -306,5 +306,5 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 - Everything that sounds or needs VoiceOver can be checked only on a phone, with the spec's hand-check list.
 - A change to shared code has a second check.
   Compile it for iOS with `make typecheck-ios`, and show it leaves the Mac as it was with `make mac-projection`, besides the hosted test suite, which tests the Mac only.
-  The type-checks do not compile tests (see [Testing TextMouth](../developer/testing.md)).
+  The type-checks do not compile tests (see [Testing TextMouth](../developer/testing-iphone.md)).
   Count the AppKit uses left by compiling, not by searching for `import AppKit`: SwiftUI brings AppKit's names in, and a file that imports it without using it shows no census error, so check strict mode or list the bare imports before calling the census done.

@@ -70,7 +70,7 @@ A publisher puts soft hyphens inside words to say where a line may break.
     The number's value is judged, capped while its digits are read, and not its length.
 - The spellings it leaves alone, since the parser keeps them as text: `&SHY;` and `&Shy;` (HTML has no such entity), `&shy1` and `&shyx` (a letter or digit follows), and any other number.
 - A text with no soft hyphen costs one scan and no copy.
-- Measured on November 9, 2026, a soft hyphen left in a word:
+- Measured, a soft hyphen left in a word:
   - hid the word from Search in Book: `hyphenation` did not find `hy\u{AD}phenation`, literal or as a regular expression (`SoftHyphenEffectTests`);
   - became a visible hyphen in braille, dots 3-6, with the rest of the word unchanged where no contraction spans the cut, in UEB grades 1 and 2 (`SoftHyphenEffectTests`); a cut inside a contraction was not measured;
   - was spoken as the hyphen it is taken for: the speech engine rendered exactly the frames a hyphen-minus gives, 2.2% and 5.8% more than the same words whole, in two sentences with compact Samantha (`Scripts/agents/probes/speech-soft-hyphen-probe.swift`, with its results at the end of the file).
@@ -261,14 +261,14 @@ BuildIdentity.cacheProducer (App/BuildIdentity.swift) is the description of the 
 ## XMLEscaping
 <!-- id: xmlescaping; keys: ampersand, EPUB export, entity, markup injection; src: TextMouth/Services/Export/XMLEscaping.swift -->
 
-XMLEscaping (Services/Export/XMLEscaping.swift): the one escaper of XML text. text(_:) is for an element's content, attribute(_:) for a double-quoted attribute whose line breaks must read back (tab, line feed, and carriage return as character references), and markup(_:), since November 13, 2026, for markup that an HTML or XML parser reads, in content or in a double-quoted attribute where a tab or line break may stay: what text(_:) does, and " as &quot;.
+XMLEscaping (Services/Export/XMLEscaping.swift): the one escaper of XML text. text(_:) is for an element's content, attribute(_:) for a double-quoted attribute whose line breaks must read back (tab, line feed, and carriage return as character references), and markup(_:) for markup that an HTML or XML parser reads, in content or in a double-quoted attribute where a tab or line break may stay: what text(_:) does, and " as &quot;.
 Every character XML 1.0 forbids is left out, but a vertical tab and a form feed, which are white space and each become a space, so the words they kept apart stay apart; it walks scalars, as a parser reads.
 The feed, OPML, SSML, and export writers use it (see [Known duplication](known-duplication.md) for the one copy left).
 
 ## MarkdownNesting
 <!-- id: markdownnesting; keys: block quote depth, list depth, stack overflow, nested lists; src: TextMouth/Parsers/MarkdownNesting.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/Export/ExportDocumentWalker.swift -->
 
-MarkdownNesting (Parsers/MarkdownNesting.swift) is the first layer of the guard on Markdown's nesting, since November 13, 2026: one linear pass over a Markdown text's bytes that finds how deep its block quotes and lists can nest (a `>` opens a quote, a list marker a list item, a marker after another on the line a list inside it, each two columns of white space before a quote or marker one more level, a tab four; the white space after a `>` or a marker is not counted; a thematic break such as `* * *` opens nothing; lines in code fences count like any other).
+MarkdownNesting (Parsers/MarkdownNesting.swift) is the first layer of the guard on Markdown's nesting: one linear pass over a Markdown text's bytes that finds how deep its block quotes and lists can nest (a `>` opens a quote, a list marker a list item, a marker after another on the line a list inside it, each two columns of white space before a quote or marker one more level, a tab four; the white space after a `>` or a marker is not counted; a thematic break such as `* * *` opens nothing; lines in code fences count like any other).
 The count is never less than the tree's real depth in block containers and stops as soon as it passes the limit.
 MarkdownDocParser.parseChapter refuses past MarkupGuard.limits.deepestNesting (128) with MarkupRefusal.nestedTooDeeply, the sentence the HTML guard gives, before anything is built, and then parses, walks, and releases the tree on MarkupGuard.onLargeStack, the walk stopping at the limit on the tree (PlainTextExtractor.deepestTree: Limits.deepestTree when set, else twice deepestNesting and 16, 272 levels).
 A marker line's rest, which is parsed again, is counted first.
