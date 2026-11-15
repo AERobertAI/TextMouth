@@ -56,7 +56,7 @@
     "docs/developer/testing-formats.md": {"date": 2, "line-length": 17},
     "docs/developer/testing-github.md": {"date": 15, "line-length": 37, "stale": 1},
     "docs/developer/testing-goldens.md": {"line-length": 19},
-    "docs/developer/testing-iphone-audit.md": {"date": 9, "line-length": 8},
+    "docs/developer/testing-iphone-audit.md": {"line-length": 6},
     "docs/developer/testing-iphone.md": {"date": 6, "line-length": 7, "stale": 1, "user-quote": 2},
     "docs/developer/testing-tools.md": {"date": 8, "line-length": 20, "user-quote": 1},
     "docs/developer/testing.md": {"date": 8, "line-length": 20},
