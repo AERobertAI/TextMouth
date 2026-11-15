@@ -105,7 +105,7 @@ Part of [TextMouth's documentation](../../README.md).
 ### KFX pages
 <!-- id: kfx-pages; keys: page list, print pages, APNX, machine pages, approximate pages; src: TextMouth/Parsers/KFXNavigation.swift, TextMouth/Parsers/KFXTargets.swift -->
 
-- Pages are the book's print page list, when it has one, as an EPUB's are, so Page works as it does there (see Pages, below).
+- Pages are the book's print page list, when it has one, as an EPUB's are, so Page works as it does there (see [Pages](reads-pages-and-limits.md)).
 - A page list that a machine made to approximate pages, which the book marks as such, is not read as pages.
 - A KFX book that is an .azw file is read without pages.
 

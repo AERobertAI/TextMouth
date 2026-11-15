@@ -80,7 +80,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - A BRF or BRL file holds one character for each braille cell, in the braille file characters above, in upper or lower case for braille ASCII, with each line ended by CR LF, LF, or CR.
 - A tab counts as one blank cell.
-- A BRF ends each page with a form feed, and a BRF with none is cut into pieces of 25 lines to read its layout (see Pages, below).
+- A BRF ends each page with a form feed, and a BRF with none is cut into pieces of 25 lines to read its layout (see [Pages](reads-pages-and-limits.md)).
 - A BRL has no layout, so each of its lines that is not blank is a paragraph and it has no headings.
 - A PEF file must be six-dot braille: eight-dot PEF is refused.
 

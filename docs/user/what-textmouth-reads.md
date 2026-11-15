@@ -18,13 +18,15 @@ Part of [TextMouth's documentation](../../README.md).
 ## Rich text, Word 6 to Word 2003, OpenDocument text, and Word 2003 XML
 <!-- id: rich-text-word-6-word; keys: RTF, RTFD, .doc, .odt, WordML, TXT.rtf, re-read, launch; src: TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift, TextMouth/Models/PageReaderVersions.swift -->
 
-- Rich text (.rtf), rich text with attachments (.rtfd), Word 6 to Word 2003 documents and templates (.doc, .dot), OpenDocument text and its templates (.odt, .ott), and Word 2003 XML (.xml, below), which TextMouth reads with code of its own, the same on the Mac as on iOS, where Apple's textutil tool does not exist.
+- Rich text (.rtf), rich text with attachments (.rtfd), Word 6 to Word 2003 documents and templates (.doc, .dot), OpenDocument text and its templates (.odt, .ott), and Word 2003 XML (.xml, see [XML files](reads-daisy-and-braille.md)), which TextMouth reads with code of its own.
+  TextMouth reads them the same on the Mac as on iOS, where Apple's textutil tool does not exist.
 - Word 6 and Word 95 documents, which textutil read on the Mac until version 0.4.1, are described below.
 - Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
 - An .rtfd is a package that the Finder shows as one file, and it imports as one book: TextMouth reads the text file in it, TXT.rtf, and leaves its attachments alone.
 - No helper process runs.
 - A rich text or Word 97-2003 book already in your library was read again once, at the first launch of version 0.3.1, so that it gained its headings and pages.
-- Every rich text, rich text with attachments, Word 97-2003, Word, OpenDocument text, and Word 2003 XML book is read again once more, at the first launch of version 0.4.0, for what the readers now find (see What every document reader reads, below, Pages, below, and [Where TextMouth keeps your library](where-your-library-lives.md)).
+- Every rich text, rich text with attachments, Word 97-2003, Word, OpenDocument text, and Word 2003 XML book is read again once more, at the first launch of version 0.4.0, for what the readers now find.
+  See What every document reader reads, below, [Pages](reads-pages-and-limits.md), and [Where TextMouth keeps your library](where-your-library-lives.md).
   Your place follows its words, and text you changed with Edit Text is kept as it is.
 - At the first launch of version 0.4.1 every .doc book is read again once more, for Word 6 and Word 95 documents and for symbols, and every .docx and .wordml book once more, for hidden text, in the same way.
 - At the first launch of version 0.4.2 every .docx and .wordml book is read again once more, for the symbols they now read (see Other limits of each, below), in the same way.
@@ -64,7 +66,7 @@ Part of [TextMouth's documentation](../../README.md).
   A paragraph that Word numbers or bullets through its own list definitions is a real list item too, numbered or bulleted as the list says, with its number in the book's stored text, so an export shows it.
 - As in every format, the number is not read aloud, and a numbered heading reads its words alone.
 - Whether Word 97-2003 numbers should be read aloud is a question for you that is still open.
-- A table is a table, read a row at a time (below).
+- A table is a table, read a row at a time (see [Tables](reads-pages-and-limits.md)).
   In a nested table, the words stay in the cell around it.
 - Pictures and embedded objects are silent, except in OpenDocument text, where a picture, formula, or chart is read as its description (see What every document reader reads, below).
 - A field is read for its result, as Word shows it, and never for its instruction: the result of a table of contents or a link is read, and its code (TOC, HYPERLINK, PAGE, MERGEFORMAT) is not.
@@ -85,7 +87,8 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A paragraph whose every word is hidden is no paragraph and no heading, and a page break inside hidden text begins no page.
 - A tracked deletion is not read, and a tracked insertion is.
   Text a tracked change moved is read once, in its new place.
-- Footnotes and endnotes follow the main text, in the order the file keeps them, with no invented heading and without their reference marks, a custom mark included, except in a Word 97-2003 document, where the symbol an author typed in place of a number is read, since the file does not say how long it is.
+- Footnotes and endnotes follow the main text, in the order the file keeps them, with no invented heading and without their reference marks, a custom mark included.
+- In a Word 97-2003 document the symbol an author typed in place of a number is read, since the file does not say how long it is.
 - A note is read only if a person would see its reference: a note whose reference is hidden or deleted is left out.
 - Comments, headers, and footers are not read.
 - A text box, or a shape that holds text, is read.
@@ -217,7 +220,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - textutil runs in a separate process that TextMouth watches, never inside TextMouth, so a hang or a crash in Apple's readers costs that process and never TextMouth or the import.
 - It loads nothing that the document links to and fetches nothing from the network.
 - It converts the document once for each import, and the book's title and author come from that same run.
-  A second run reads the page breaks (see Pages, below).
+  A second run reads the page breaks (see [Pages](reads-pages-and-limits.md)).
 - Cancel in the import overlay stops it at once (see [Adding books](adding-books.md)).
 - [Where TextMouth keeps your library](where-your-library-lives.md) gives the limits of time, memory, and processor time at which TextMouth stops it, where it writes, and what stops one that a crash left behind.
 
