@@ -44,7 +44,13 @@ struct LibraryIdentity: Codable, Equatable, Sendable {
         } catch CocoaError.fileReadNoSuchFile {
             return nil
         }
-        return try decoder.decode(LibraryIdentity.self, from: data)
+        return try decode(data)
+    }
+
+    /// The identity a marker's bytes hold, for a caller that read the file
+    /// itself, as Compare Libraries reads another copy's marker.
+    static func decode(_ data: Data) throws -> LibraryIdentity {
+        try decoder.decode(LibraryIdentity.self, from: data)
     }
 
     // MARK: - Adopting

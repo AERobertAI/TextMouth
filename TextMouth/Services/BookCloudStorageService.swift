@@ -398,8 +398,8 @@ final class BookCloudStorageService: BookCloudStorage {
         let name = Self.logName(of: package)
         do {
             let survey = try self.survey(of: package)
-            guard survey.isUploaded else {
-                throw BookCloudError.notUploaded
+            if let refusal = survey.removalRefusal {
+                throw refusal
             }
             let removing = survey.itemsToRemove
             for item in removing {
@@ -484,12 +484,24 @@ final class BookCloudStorageService: BookCloudStorage {
             syncedItems.contains { $0.status.state == .downloading }
         }
 
-        /// Whether every item the sync service syncs has uploaded its
-        /// changes, by that item's own flag: the package's, when the service
-        /// syncs the package as one item, and never an upload flag its files
-        /// leave out, which counts as uploaded.
-        var isUploaded: Bool {
-            syncedItems.allSatisfy(\.status.isUploaded)
+        /// Why the download can't be removed, or nil when it can: changes
+        /// still to upload (`.notUploaded`), or the sync service's word not
+        /// proving the cloud's copy (`.cloudCopyNotProven`). Upload is asked
+        /// of every item the service syncs, as `isUploaded` does; the rest
+        /// only of the items a removal would remove, those whose content is
+        /// on this Mac, since nothing else of the book is lost by it. An
+        /// upload state the service didn't give counts as not proven, never
+        /// as uploaded.
+        var removalRefusal: BookCloudError? {
+            if syncedItems.contains(where: { $0.status.isUploadReported && !$0.status.isUploaded }) {
+                return .notUploaded
+            }
+            for item in syncedItems where item.status.state == .downloaded {
+                if let doubt = item.status.cloudCopyDoubt {
+                    return .cloudCopyNotProven(doubt)
+                }
+            }
+            return nil
         }
 
         /// What to ask the sync service for. A package it syncs as one item
@@ -793,6 +805,7 @@ private extension BookCloudError {
         case .stalled(let seconds): return "nothing arrived for \(seconds) seconds"
         case .provider(let message), .removalFailed(let message): return "the sync service said: \(message)"
         case .notUploaded: return "changes are waiting to upload"
+        case .cloudCopyNotProven(let doubt): return BookCloudWording.logReason(doubt)
         case .bookIsOpen: return "the book is open"
         case .keptOnThisMac: return "the book is kept on this Mac"
         case .keptForReadingList: return "the book is kept on this Mac for the reading list"

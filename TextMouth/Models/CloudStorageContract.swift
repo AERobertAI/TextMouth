@@ -77,6 +77,26 @@ enum CloudItemState: Equatable, Sendable {
     case missing
 }
 
+/// Why a file's copy in the cloud can't be taken as proven, so Remove
+/// Download refuses to remove the copy on this Mac (Phase 0 of the
+/// local-first design: the cloud copy is the only one once the download is
+/// gone, so the sync service's silence is not enough).
+enum CloudCopyDoubt: Equatable, Sendable {
+    /// The sync service gave no upload state for the file, which counts as
+    /// not uploaded.
+    case uploadNotReported
+    /// The sync service reported an error uploading the file, in its words.
+    case uploadFailed(String)
+    /// The sync service holds conflicting versions of the file.
+    case inConflict
+    /// The sync service reported that the copy on this Mac is not the
+    /// current version (a newer one exists): waiting can change that.
+    case notCurrent
+    /// The sync service reports no downloading status for the file at all,
+    /// so it never says the copy here is current: waiting changes nothing.
+    case currentNotReported
+}
+
 /// One file's cloud state, with the sync details the commands need.
 struct CloudItemStatus: Equatable, Sendable {
     /// Where the file's content is.
@@ -90,6 +110,39 @@ struct CloudItemStatus: Equatable, Sendable {
     var hasUnresolvedConflicts: Bool
     /// The sync service's last download error in words, when it reported one.
     var downloadError: String?
+    /// Whether the sync service said anything at all about the file's
+    /// upload. False when it gave no upload flag for a file whose content is
+    /// on this Mac: `isUploaded` is then false too, since an unknown upload
+    /// state counts as not uploaded (Phase 0 of the local-first design), and
+    /// this tells that apart from changes that really wait to upload.
+    var isUploadReported: Bool = true
+    /// The sync service's last upload error in words, when it reported one.
+    var uploadError: String?
+    /// Whether the content on this Mac is the sync service's current
+    /// version, by its downloading status. False when the status is any
+    /// other, or none, for a file whose content is on this Mac.
+    var isCurrent: Bool = true
+    /// Whether the sync service reported any downloading status for the
+    /// file. False when it gave none, which no wait changes, and which
+    /// `isCurrent` then counts as not current.
+    var isCurrentReported: Bool = true
+
+    /// Why the cloud's copy of this file can't be taken as proven, or nil
+    /// when the sync service says it is uploaded, free of error and
+    /// conflict, and that the copy on this Mac is the current one. Only a
+    /// file whose content is on this Mac is asked: a download is never
+    /// removed on less (`BookCloudStorageService.removeDownload(of:)`).
+    ///
+    /// A file with changes still to upload is not a doubt but a plain
+    /// "not uploaded yet" (`BookCloudError.notUploaded`), which the caller
+    /// asks `isUploaded` and `isUploadReported` for first.
+    var cloudCopyDoubt: CloudCopyDoubt? {
+        if let uploadError { return .uploadFailed(uploadError) }
+        if hasUnresolvedConflicts { return .inConflict }
+        if !isUploadReported { return .uploadNotReported }
+        if !isCurrent { return isCurrentReported ? .notCurrent : .currentNotReported }
+        return nil
+    }
 
     /// The status of a file that no sync service manages.
     static func local(byteCount: Int64?) -> CloudItemStatus {
@@ -277,6 +330,11 @@ enum BookCloudError: Error, Equatable, Sendable {
     case provider(String)
     /// Remove Download refused: some of the book's changes are not uploaded yet.
     case notUploaded
+    /// Remove Download refused: the sync service's own word doesn't prove that
+    /// the cloud holds the book's current files, for this reason (no upload
+    /// state given, an upload error, a conflict, or a copy here that isn't
+    /// said to be current).
+    case cloudCopyNotProven(CloudCopyDoubt)
     /// Remove Download refused: the book is open in a reader.
     case bookIsOpen
     /// Remove Download refused: the book is kept on this Mac (Keep on This
@@ -313,6 +371,13 @@ enum BookCloudError: Error, Equatable, Sendable {
         case .notUploaded:
             return "Some changes to this book haven't been uploaded to \(service) yet, "
                 + "so its download can't be removed. Try again in a moment."
+        case .cloudCopyNotProven(let doubt):
+            return BookCloudWording.removalRefusal(
+                doubt,
+                service: service,
+                serviceStartingSentence: serviceStartingSentence,
+                provider: provider
+            )
         case .bookIsOpen:
             return "The book is open, so its download can't be removed. Close it first."
         case .keptOnThisMac:
@@ -329,6 +394,66 @@ enum BookCloudError: Error, Equatable, Sendable {
             return "\(serviceStartingSentence) couldn't remove the book's download: \(message)"
         case .packageMissing:
             return "The book's files aren't on this Mac yet. \(serviceStartingSentence) may still be syncing them."
+        }
+    }
+}
+
+/// The words of a Remove Download that the cloud's copy doesn't prove safe,
+/// built in one place for the alert, VoiceOver, and a braille display alike.
+enum BookCloudWording {
+    /// Why a download can't be removed, for `doubt`, naming the service
+    /// (`service`, and `serviceStartingSentence` where it begins a
+    /// sentence). Each says what to do next, since the only copy of the
+    /// book may be the one on this Mac.
+    static func removalRefusal(
+        _ doubt: CloudCopyDoubt,
+        service: String,
+        serviceStartingSentence: String,
+        provider: CloudProvider? = nil
+    ) -> String {
+        switch doubt {
+        case .uploadNotReported:
+            return "\(serviceStartingSentence) hasn't said that every file of this book is uploaded, "
+                + "so its download can't be removed: the only copy might be on this Mac. Try again in a moment."
+        case .uploadFailed(let message):
+            // The drive's own words end a sentence, whether or not they end in a period.
+            let reason = message.hasSuffix(".") || message.hasSuffix("!") || message.hasSuffix("?") ? message : message + "."
+            return "\(serviceStartingSentence) couldn't upload this book: \(reason) "
+                + "Its download can't be removed until it has uploaded."
+        case .inConflict:
+            return "\(serviceStartingSentence) holds two versions of a file of this book, "
+                + "so its download can't be removed. Settle the conflict in \(service) first."
+        case .notCurrent:
+            return "\(serviceStartingSentence) hasn't said that the copy of this book on this Mac is the latest, "
+                + "so its download can't be removed. Try again in a moment."
+        case .currentNotReported:
+            return "\(serviceStartingSentence) doesn't say whether the copy of this book on this Mac is the latest, "
+                + "so its download can't be removed, and waiting won't change that. "
+                + "To free the space anyway, choose Show in Finder, then \(onlineOnlyCommand(of: provider)). "
+                + "That keeps the book's copy in the cloud."
+        }
+    }
+
+    /// The drive's own command that keeps a book only online, in a clause
+    /// that follows "then": each drive names it differently, and one that
+    /// is not known is told in general words. It never deletes anything.
+    static func onlineOnlyCommand(of provider: CloudProvider?) -> String {
+        switch provider {
+        case .googleDrive: return "use Google Drive's Offline Access menu"
+        case .dropbox: return "choose Make online-only"
+        case .iCloudDrive: return "choose Remove Download"
+        case .other, nil: return "use the drive's own command to keep the book only online"
+        }
+    }
+
+    /// The same reason in a log line's words.
+    static func logReason(_ doubt: CloudCopyDoubt) -> String {
+        switch doubt {
+        case .uploadNotReported: return "the sync service gave no upload state"
+        case .uploadFailed(let message): return "the upload failed: \(message)"
+        case .inConflict: return "the sync service holds conflicting versions"
+        case .notCurrent: return "the copy here is not said to be current"
+        case .currentNotReported: return "the sync service reports no downloading status at all"
         }
     }
 }
@@ -667,6 +792,13 @@ enum MachineLocalPaths {
     /// decides for itself.
     static var keepReadingListBooks: URL {
         root.appendingPathComponent("Keep Reading List Books.json", isDirectory: false)
+    }
+
+    /// The conflict copies this Mac has told the listener about
+    /// (`ConflictCopyMemory`), each once: a choice of this Mac's own, since
+    /// another Mac sharing the library reports for itself.
+    static var conflictCopiesReported: URL {
+        root.appendingPathComponent("Conflict Copies Reported.json", isDirectory: false)
     }
 
     /// The hidden staging folders data-directory moves have begun and not yet

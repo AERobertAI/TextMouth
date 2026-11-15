@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 /// A data-directory operation started from Storage settings.
 enum StorageOperation: Equatable {
@@ -150,11 +151,16 @@ struct StorageSettingsView: View {
     @State private var pendingConfirmation: PendingConfirmation?
     /// Whether a chosen folder is being looked at.
     @State private var isAssessing = false
+    /// While Use This Library compares the two copies, the switch Stop Comparing sets.
+    @State private var comparisonStop: OSAllocatedUnfairLock<Bool>?
     /// What the last data-directory operation is doing or did.
     @State private var status: StorageStatus?
     /// The data-directory operation in progress, if any.
     @State private var runningOperation: StorageOperation?
     @State private var showDuplicateFinder = false
+    /// The copy of the library a listener chose to compare with this one
+    /// (Compare Libraries), whose sheet is showing.
+    @State private var compareRequest: CompareRequest?
     @State private var showRedoExtractionConfirmation = false
     /// What the last Redo Text Extraction did, once it is done.
     @State private var extractionStatus: StorageStatus?
@@ -187,6 +193,13 @@ struct StorageSettingsView: View {
         let isAvailable: Bool
         /// How many data-directory operations have ended.
         let request: Int
+    }
+
+    /// A folder chosen to compare with the library in use. Each choice is its
+    /// own, so choosing the same folder again opens the sheet again.
+    private struct CompareRequest: Identifiable {
+        let id = UUID()
+        let folder: URL
     }
 
     /// A choice offered for a chosen folder: an alert titled `title`,
@@ -298,6 +311,14 @@ struct StorageSettingsView: View {
                         .font(.caption)
                         .foregroundColor(status.isFailure ? .red : .secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+                // The comparison that says which copy is newer can last up to
+                // a minute: it can be stopped.
+                if let comparisonStop {
+                    Button(LibraryComparisonWording.stopForUseLabel) {
+                        comparisonStop.withLock { $0 = true }
+                    }
+                    .accessibilityHint(LibraryComparisonWording.stopHint)
                 }
             } header: {
                 Text("Storage Directory")
@@ -490,6 +511,14 @@ struct StorageSettingsView: View {
         .sheet(isPresented: $showDuplicateFinder) {
             DuplicateFinderView(libraryViewModel: libraryViewModel)
         }
+        .sheet(item: $compareRequest) { request in
+            CompareLibrariesSheet(model: LibraryComparisonModel(
+                otherFolder: request.folder,
+                thisFolder: TextMouthPaths.root,
+                thisLibrary: libraryViewModel.library,
+                reader: .app()
+            ))
+        }
     }
 
     /// The buttons that choose where the library is (FR02). While the
@@ -515,13 +544,23 @@ struct StorageSettingsView: View {
                 }
                 .accessibilityLabel(StorageLocationWording.useDefaultLabel)
                 .accessibilityHint(StorageLocationWording.useDefaultHint)
-            } else if TextMouthPaths.isCustomPath {
-                Button("Reset to Default") {
-                    showResetToDefaultConfirmation = true
+            } else {
+                // Beside the buttons that choose another library, whose
+                // confirmation points here: a read-only look at what another
+                // copy of this library holds that this one doesn't.
+                Button(LibraryComparisonWording.buttonTitle) {
+                    chooseFolderToCompare()
                 }
-                .disabled(maintenanceUnavailable)
-                .accessibilityLabel("Reset to default location")
-                .accessibilityHint("Moves data back to the default location at ~/.TextMouth")
+                .accessibilityLabel(LibraryComparisonWording.title)
+                .accessibilityHint(LibraryComparisonWording.buttonHint)
+                if TextMouthPaths.isCustomPath {
+                    Button("Reset to Default") {
+                        showResetToDefaultConfirmation = true
+                    }
+                    .disabled(maintenanceUnavailable)
+                    .accessibilityLabel("Reset to default location")
+                    .accessibilityHint("Moves data back to the default location at ~/.TextMouth")
+                }
             }
         }
         .disabled(chooserUnavailable)
@@ -660,6 +699,49 @@ struct StorageSettingsView: View {
     }
     #endif
 
+    /// The folder chooser Compare Libraries opens: one folder, hidden ones
+    /// shown, with a prompt that names the action. It chooses nothing to
+    /// change: both copies are only read.
+    #if os(macOS)
+    @MainActor
+    static func makeCompareFolderPanel() -> NSOpenPanel {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = false
+        panel.showsHiddenFiles = true
+        panel.treatsFilePackagesAsDirectories = false
+        panel.title = LibraryComparisonWording.panelTitle
+        panel.message = LibraryComparisonWording.panelMessage
+        panel.prompt = LibraryComparisonWording.panelPrompt
+        let holder = TextMouthPaths.root.deletingLastPathComponent()
+        if FileManager.default.fileExists(atPath: holder.path) {
+            panel.directoryURL = holder
+        }
+        return panel
+    }
+    #endif
+
+    /// Opens the folder chooser, as a sheet on the Settings window, and
+    /// shows the Compare Libraries sheet for the folder chosen.
+    private func chooseFolderToCompare() {
+        #if os(macOS)
+        let panel = Self.makeCompareFolderPanel()
+        let compareChosenFolder: (NSApplication.ModalResponse) -> Void = { response in
+            guard response == .OK, let folder = panel.url else { return }
+            compareRequest = CompareRequest(folder: folder)
+        }
+        if let window = NSApp.keyWindow {
+            panel.beginSheetModal(for: window, completionHandler: compareChosenFolder)
+        } else {
+            panel.begin(completionHandler: compareChosenFolder)
+        }
+        #else
+        // Phase 0: iOS has no folder panel yet, as for choosing a library.
+        #endif
+    }
+
     /// Opens the folder chooser, as a sheet on the Settings window, and
     /// looks at the folder chosen.
     private func chooseFolder() {
@@ -689,8 +771,40 @@ struct StorageSettingsView: View {
         status = StorageStatus.checking(folder).announced()
         Task { @MainActor in
             let assessment = await StorageDestinationAssessment.assess(folder, for: libraryViewModel)
+            let comparison = await compareWithLibraryInUse(assessment)
             isAssessing = false
-            offer(StorageChoice(for: assessment, current: currentLibrary))
+            offer(StorageChoice(for: assessment, current: currentLibrary, comparison: comparison))
+        }
+    }
+
+    /// For a folder holding another copy of the library in use, compares the
+    /// two off the main thread, so the confirmation can say which is newer.
+    /// The reading waits at most a minute in all, and changes neither copy.
+    /// Nil for any other folder, or while the library isn't available.
+    private func compareWithLibraryInUse(_ assessment: StorageDestinationAssessment) async -> LibraryComparisonOutcome? {
+        guard case .useLibrary(let found) = assessment.verdict, found.isCopyOfCurrentLibrary, unavailability == nil else {
+            return nil
+        }
+        status = StorageStatus(message: LibraryComparisonWording.comparingForUseSentence, isFailure: false).announced()
+        // A minute in all: this is a question put to the listener, who is waiting.
+        let reader = { () -> LibraryCopyReader in
+            var reader = LibraryCopyReader.app()
+            reader.overallLimit = 60
+            return reader
+        }()
+        let thisLibrary = libraryViewModel.library
+        let thisFolder = TextMouthPaths.root
+        let otherFolder = assessment.folder
+        let stop = OSAllocatedUnfairLock(initialState: false)
+        comparisonStop = stop
+        defer { comparisonStop = nil }
+        return await OffMainWork.run {
+            reader.compare(
+                thisFolder: thisFolder,
+                thisLibrary: thisLibrary,
+                otherFolder: otherFolder,
+                isCancelled: { stop.withLock { $0 } }
+            )
         }
     }
 

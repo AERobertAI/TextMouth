@@ -562,7 +562,14 @@ extension BookInfo {
     /// if any. Throws when it is missing or cannot be read.
     fileprivate static func loadRecordFile(from tmbDir: URL) throws -> BookInfo {
         let data = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: tmbDir))
-        return try decoder.decode(BookInfo.self, from: data)
+        return try decodeRecordFile(data)
+    }
+
+    /// Decodes the bytes of a bookInfo.json as every read of one does, which
+    /// Compare Libraries uses for the records of another copy, read
+    /// without touching the package.
+    static func decodeRecordFile(_ data: Data) throws -> BookInfo {
+        try decoder.decode(BookInfo.self, from: data)
     }
 
     /// The package's contentIndex.json: nil when there is none, or when it
