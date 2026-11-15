@@ -197,17 +197,24 @@ final class UnsavedChangesTerminationGuard {
     /// first every open reader's place, saved now, since a playing reader
     /// saves it only every thirty seconds and no reader window closes as
     /// TextMouth quits (`PlaybackMemoryGuard.saveEveryOpenReaderPosition()`);
-    /// then the library index and every queued book record, those places
-    /// among them; then the statistics, whose open listening session is
-    /// credited so far but stays open in case the user stays; then the
-    /// settings changed in the last moment, whose config.json save waits for
-    /// changes to pause (PERF17). Substitution rules are written as they
-    /// change, so nothing of theirs is pending. Each write's failure reaches
-    /// the failure center before this returns. A quit then cancelled has
-    /// only saved the places sooner than their next checkpoints would have.
+    /// then each retry an operation holding the storage work made wait, when
+    /// that operation has ended but the retry's turn has not come yet
+    /// (`PersistenceFailureCenter.runRetriesKeptForStorageWork()`); then the
+    /// library index and every queued book record, those places among them;
+    /// then the statistics, whose open listening session is credited so far
+    /// but stays open in case the user stays; then the settings changed in
+    /// the last moment, whose config.json save waits for changes to pause
+    /// (PERF17). Substitution rules are written as they change, so nothing
+    /// of theirs is pending. Each write's failure reaches the failure center
+    /// before this returns. A quit then cancelled has only saved the places
+    /// sooner than their next checkpoints would have. Feed records are
+    /// written on a queue of their own, which a quit waits for once it goes
+    /// ahead (`FeedStore.quitWork()`), since a write there can be waiting
+    /// for an operation only the main actor ends.
     static func flushPendingWrites() {
         // Before the library's flush, so that flush writes the places.
         PlaybackMemoryGuard.shared.saveEveryOpenReaderPosition()
+        PersistenceFailureCenter.shared.runRetriesKeptForStorageWork()
         LibraryPersistenceService.flushPendingSave()
         ReadingStatsService.shared.flushPendingSaves()
         ConfigService.shared.flushScheduledSave()
