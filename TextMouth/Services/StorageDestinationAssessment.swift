@@ -523,7 +523,9 @@ enum StorageWording {
         case .notComparable(let unread):
             let reason = unread.first.map { LibraryComparisonWording.shortReason(for: $0) }
             return LibraryComparisonWording.newerCopySentence(nil, reason: reason)
-        case .differentLibraries, .cancelled, nil:
+        case .cancelled:
+            return LibraryComparisonWording.newerCopySentence(nil, reason: "you stopped the comparison")
+        case .differentLibraries, nil:
             return LibraryComparisonWording.newerCopySentence(nil, reason: nil)
         }
     }

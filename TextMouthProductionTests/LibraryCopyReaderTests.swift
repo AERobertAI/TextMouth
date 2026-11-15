@@ -262,6 +262,20 @@ final class LibraryCopyReaderTests: XCTestCase {
         XCTAssertTrue(unread.allSatisfy { if case .cannotBeRead = $0.reason { return true } else { return false } })
     }
 
+    /// Stopping a comparison while it reads ends it as stopped, whatever it
+    /// had read, and changes nothing.
+    func testStoppingWhileReadingEndsTheComparisonAsStopped() throws {
+        let (this, other) = try makeDivergedCopies()
+        let before = try snapshot(of: [this, other])
+        let asked = OSAllocatedUnfairLock<Int>(initialState: 0)
+
+        // True from the third question on: after the identities, during the reading.
+        let outcome = reader().compare(thisFolder: this, otherFolder: other, isCancelled: { asked.withLock { $0 += 1; return $0 > 2 } })
+
+        XCTAssertEqual(outcome, .cancelled)
+        XCTAssertEqual(try snapshot(of: [this, other]), before)
+    }
+
     /// Stopping the comparison before it starts reads nothing.
     func testACancelledComparisonSaysSo() throws {
         let (this, other) = try makeDivergedCopies()

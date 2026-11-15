@@ -204,7 +204,10 @@ enum LibraryComparisonWording {
 
     /// What Storage settings says while it compares the copy in a chosen
     /// folder with the library in use, to say which is newer.
-    static let comparingForUseSentence = "Comparing the library in use with the copy in the folder you chose, to say which is newer."
+    static let comparingForUseSentence = "Comparing the library in use with the copy in the folder you chose, to say which is newer. "
+        + "This can take up to a minute. Choose Stop Comparing to skip it."
+    /// The button that stops that comparison.
+    static let stopForUseLabel = "Stop Comparing"
 
     // MARK: Pieces
 

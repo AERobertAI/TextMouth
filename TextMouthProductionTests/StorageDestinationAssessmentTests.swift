@@ -127,6 +127,13 @@ final class StorageDestinationAssessmentTests: XCTestCase {
         }
         XCTAssertTrue(compared.contains("The copy in this folder is the newer. It has 1 book the other lacks."), compared)
         XCTAssertFalse(compared.contains("may not have its latest changes"), compared)
+
+        // A comparison the listener stopped says so, and still offers the choice.
+        guard case .confirm(_, let stopped, _, _) = StorageChoice(for: assessment, current: world.summary, comparison: .cancelled) else {
+            return XCTFail("Expected a confirmation")
+        }
+        XCTAssertTrue(stopped.contains("couldn't tell which copy is newer (you stopped the comparison)"), stopped)
+        XCTAssertTrue(LibraryComparisonWording.comparingForUseSentence.contains("up to a minute"))
     }
 
     /// The folder in use, under its own name or through a link to it, is

@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 /// A data-directory operation started from Storage settings.
 enum StorageOperation: Equatable {
@@ -150,6 +151,8 @@ struct StorageSettingsView: View {
     @State private var pendingConfirmation: PendingConfirmation?
     /// Whether a chosen folder is being looked at.
     @State private var isAssessing = false
+    /// While Use This Library compares the two copies, the switch Stop Comparing sets.
+    @State private var comparisonStop: OSAllocatedUnfairLock<Bool>?
     /// What the last data-directory operation is doing or did.
     @State private var status: StorageStatus?
     /// The data-directory operation in progress, if any.
@@ -308,6 +311,14 @@ struct StorageSettingsView: View {
                         .font(.caption)
                         .foregroundColor(status.isFailure ? .red : .secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+                // The comparison that says which copy is newer can last up to
+                // a minute: it can be stopped.
+                if let comparisonStop {
+                    Button(LibraryComparisonWording.stopForUseLabel) {
+                        comparisonStop.withLock { $0 = true }
+                    }
+                    .accessibilityHint(LibraryComparisonWording.stopHint)
                 }
             } header: {
                 Text("Storage Directory")
@@ -784,8 +795,16 @@ struct StorageSettingsView: View {
         let thisLibrary = libraryViewModel.library
         let thisFolder = TextMouthPaths.root
         let otherFolder = assessment.folder
+        let stop = OSAllocatedUnfairLock(initialState: false)
+        comparisonStop = stop
+        defer { comparisonStop = nil }
         return await OffMainWork.run {
-            reader.compare(thisFolder: thisFolder, thisLibrary: thisLibrary, otherFolder: otherFolder)
+            reader.compare(
+                thisFolder: thisFolder,
+                thisLibrary: thisLibrary,
+                otherFolder: otherFolder,
+                isCancelled: { stop.withLock { $0 } }
+            )
         }
     }
 
