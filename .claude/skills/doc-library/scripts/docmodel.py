@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
 from output import UsageError
+from sentences import split_sentences
 
 # ---------------------------------------------------------------------------
 # Scopes: which Markdown files a command reads.
@@ -645,3 +646,82 @@ def prose_blocks(page: Page, section: Section) -> List[Tuple[int, str]]:
         if block.kind not in _NON_PROSE:
             pairs.append((block.start, page.text(block.start, block.end)))
     return pairs
+
+
+# ---------------------------------------------------------------------------
+# Units: the pieces a text search matches and prints.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Unit:
+    """One searchable piece of a section: a heading, a marker, a sentence, or a code, table, or HTML line.
+
+    ``kind`` is heading, marker, sentence, code, table, or html; ``start`` and
+    ``end`` are the 1-based lines the text is on (inclusive); ``text`` is the text
+    as written, with its line breaks (a sentence's own list marker is not part of it).
+    """
+
+    kind: str
+    start: int
+    end: int
+    text: str
+
+
+# The block kinds whose text is split into sentences.
+_SENTENCE_BLOCKS = frozenset({"paragraph", "list-item", "list-para", "quote"})
+# The block kinds searched a line at a time, and the unit kind each gives.
+_LINE_UNIT_KINDS = {"code": "code", "table": "table", "html": "html", "marker": "marker"}
+# What leads a list item's first line, and what leads a line of a quote.
+_LIST_MARKER = re.compile(r"^\s*(?:[-*+]|\d{1,9}[.)])[ \t]*")
+_QUOTE_LEAD = re.compile(r"^\s*(?:>[ \t]?)+")
+
+
+def _clean_line(block: Block, number: int, line: str) -> str:
+    """One line of a prose block without its list marker, quote marks, and indentation."""
+    if block.kind == "quote":
+        line = _QUOTE_LEAD.sub("", line)
+    elif block.kind == "list-item" and number == block.start:
+        line = _LIST_MARKER.sub("", line)
+    return line.strip()
+
+
+def _sentence_units(page: Page, block: Block) -> List[Unit]:
+    """The sentences of a paragraph, list item, list paragraph, or quote, each with its lines."""
+    cleaned = [_clean_line(block, number, page.lines[number - 1])
+               for number in range(block.start, block.end + 1)]
+    text = "\n".join(cleaned)
+    # The offset at which each cleaned line starts in ``text``.
+    offsets: List[int] = []
+    position = 0
+    for line in cleaned:
+        offsets.append(position)
+        position += len(line) + 1
+    found = []
+    for start, end in split_sentences(text):
+        first = bisect.bisect_right(offsets, start) - 1
+        last = bisect.bisect_right(offsets, end - 1) - 1
+        found.append(Unit("sentence", block.start + first, block.start + last, text[start:end]))
+    return found
+
+
+def units(page: Page, section: Section) -> List[Unit]:
+    """The section's searchable units in line order.
+
+    The heading (its title); then, for each block, either its sentences (a
+    paragraph, list item, list paragraph, or quote, found with the list markers,
+    ``>``, and indentation removed) or one unit for each non-blank line (code, table,
+    HTML, and marker blocks, a stray marker too). Rules and front matter give none.
+    """
+    found: List[Unit] = []
+    if section.level > 0:
+        found.append(Unit("heading", section.start, section.start, section.title))
+    for block in section.blocks:
+        if block.kind in _SENTENCE_BLOCKS:
+            found.extend(_sentence_units(page, block))
+        elif block.kind in _LINE_UNIT_KINDS:
+            kind = _LINE_UNIT_KINDS[block.kind]
+            for number in range(block.start, block.end + 1):
+                line = page.lines[number - 1]
+                if line.strip():
+                    found.append(Unit(kind, number, number, line))
+    return found
