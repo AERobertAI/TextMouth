@@ -301,6 +301,82 @@ final class StaleRowGuardTests: CloudMaintenanceTestCase {
         XCTAssertEqual(reader.currentCharacterOffset, 40, "the reload took the cursor back to the last save")
     }
 
+    // MARK: - Two Readers and a Clock Set Back
+
+    /// Two readers of one book: the one that moved saved a place; the other,
+    /// never moved, closes. Its close writes nothing, so the row and the
+    /// record keep the later place, and a bookmark made afterwards in the
+    /// first reader survives a flush and a reopening.
+    @MainActor
+    func testAnUnmovedReaderClosingKeepsAnotherReadersLaterPlace() throws {
+        let row = try rowReadHere()
+        try row.saveBookInfoThrowing()
+        let model = makeModel(with: [row])
+        let first = try openReader(of: row, in: model)
+        let second = try openReader(of: row, in: model)
+
+        first.navigateTo(chapterIndex: 0, characterOffset: 30)
+        first.savePosition()
+        second.close()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(model.bookByID(row.id)?.readingPosition?.characterOffset, 30, "the unmoved reader's close put its opening place back")
+        XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.readingPosition?.characterOffset, 30)
+
+        // A bookmark made afterwards reaches the record, and a reader
+        // opening the book again finds it.
+        let made = try XCTUnwrap(first.addBookmarkAtCurrentPosition(label: "After the close"))
+        LibraryPersistenceService.flushPendingSave()
+        let record = try BookInfo.load(from: row.tmbDirectory)
+        XCTAssertTrue(record.bookmarks.contains { $0.id == made.id }, "the bookmark did not reach the record")
+        let reopened = try openReader(of: try XCTUnwrap(model.bookByID(row.id)), in: model)
+        XCTAssertEqual(reopened.currentCharacterOffset, 30)
+        XCTAssertTrue(reopened.bookmarks.contains { $0.id == made.id }, "the bookmark was lost at the reopening")
+    }
+
+    /// A reader that moved still saves its place when it closes.
+    @MainActor
+    func testAMovedReaderClosingSavesItsPlace() throws {
+        let row = try rowReadHere()
+        try row.saveBookInfoThrowing()
+        let model = makeModel(with: [row])
+        let reader = try openReader(of: row, in: model)
+
+        reader.navigateTo(chapterIndex: 0, characterOffset: 40)
+        reader.close()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(model.bookByID(row.id)?.readingPosition?.characterOffset, 40)
+        XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.readingPosition?.characterOffset, 40)
+    }
+
+    /// The clock set back an hour: a move still wins over the place saved
+    /// before it, in the row and the record, and the next opening keeps it.
+    @MainActor
+    func testAMoveWithTheClockSetBackStillWinsOverTheLastSave() throws {
+        let row = try rowReadHere()
+        try row.saveBookInfoThrowing()
+        let model = makeModel(with: [row])
+        let reader = try openReader(of: row, in: model)
+        reader.positionClock = { Self.readHere.addingTimeInterval(-3600) }
+
+        reader.navigateTo(chapterIndex: 0, characterOffset: 30)
+        reader.savePosition()
+        let firstMove = try XCTUnwrap(model.bookByID(row.id)?.readingPosition?.lastUpdated)
+        XCTAssertGreaterThanOrEqual(firstMove, Self.readHere.addingTimeInterval(1), "the move was dated before the save it moves on from")
+        // A second move, the clock still back, is later again.
+        reader.navigateTo(chapterIndex: 0, characterOffset: 35)
+        reader.savePosition()
+        LibraryPersistenceService.flushPendingSave()
+
+        let saved = try XCTUnwrap(model.bookByID(row.id)?.readingPosition)
+        XCTAssertGreaterThanOrEqual(saved.lastUpdated, firstMove.addingTimeInterval(1))
+        let record = try BookInfo.load(from: row.tmbDirectory)
+        XCTAssertEqual(record.state.readingPosition?.characterOffset, 35)
+        let reopened = try openReader(of: try XCTUnwrap(model.bookByID(row.id)), in: model)
+        XCTAssertEqual(reopened.currentCharacterOffset, 35, "the next opening took the older place back")
+    }
+
     // MARK: - Fixtures
 
     /// A packaged book as this Mac last read it: at offset 5, an hour

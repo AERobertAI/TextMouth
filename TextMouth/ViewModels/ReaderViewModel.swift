@@ -712,6 +712,9 @@ final class ReaderViewModel: ObservableObject {
     /// a place. A save of the same place, the cursor unmoved, keeps it
     /// (`durablePosition()`, risk 2 of the local-first research).
     private var lastSavedPlaceDate: Date?
+    /// The clock a moved place is dated by: the system's, unless a test
+    /// sets its own (to set the clock back, as a user can).
+    var positionClock: () -> Date = { Date() }
     /// Whether the book's text has been shown once in this reader
     /// (`showLoadedContent`). The first load is the book's opening: it weighs
     /// the place, bookmarks, and settings the book's record holds against the
@@ -2393,6 +2396,15 @@ final class ReaderViewModel: ObservableObject {
            let savedDate = lastSavedPlaceDate,
            lastSavedPlace == TextPlace(chapter: position.chapterIndex, offset: position.characterOffset) {
             position.lastUpdated = savedDate
+        } else {
+            // A moved place is dated by the clock, but never earlier than a
+            // second after the place it moves on from: the files keep dates
+            // to the second, and a clock set back would otherwise date this
+            // move before the last save, so that the record's older state
+            // would stand over it at the next opening
+            // (`Book.readingState(standingAgainst:)`).
+            let now = positionClock()
+            position.lastUpdated = lastSavedPlaceDate.map { max(now, $0.addingTimeInterval(1)) } ?? now
         }
         return position
     }
@@ -2486,10 +2498,13 @@ final class ReaderViewModel: ObservableObject {
         livePositionWorkItem?.cancel()
         livePositionWorkItem = nil
         // stop() records the stopped timestamp and persists when playback was
-        // active or paused. The explicit save also captures navigation made
+        // active or paused. The save below also captures navigation made
         // while stopped, and is a no-op until content has loaded.
         stop()
-        savePosition()
+        // Only a place that moved is saved, as a quit saves it: a reader
+        // that never moved, closing, would put the place it opened at over
+        // a later place another reader of the same book has saved since.
+        savePositionIfMoved()
         stopWhereAmISynthesizer()
         nowPlayingService.clearNowPlaying()
         nowPlayingService.close()
