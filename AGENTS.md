@@ -4,6 +4,7 @@ This file is for a coding-agent session that starts cold: an orchestrator that r
 
 ## Start here
 
+- `docs/agents/writing-docs.md`: how every page and memory file is written. Follow it in any document you edit.
 - `README.md`: the index of the documentation in `docs/`. `docs/user/` holds a page for each part of the app, for the person using it. `docs/developer/building.md` holds what you need, the make targets, and the make check gate; `docs/developer/testing.md` the hosted suite, the performance baselines, and the cloud-drive tests. `docs/agents/working-with-agents.md` introduces the message board, and `docs/agents/history.md` keeps the status of earlier campaigns.
 - `ARCHITECTURE.md`: the index of `docs/architecture/`: the parts of the app, launch, who owns each kind of state (a page for each, in `docs/architecture/state/`), the reading walkthrough, the shared helpers, and the duplication left in place. Read only the pages your task touches, and keep them true after every merge.
 - `TODO-2026-09-04.md`: the record. Every merge gets a `- [x]` entry before the paragraph that begins `**Open follow-ups noted by the September 28 agents**`, a sentence with the suite's exact counts appended to the long verification paragraph (search for the latest "After the … merge: **N tests, S skipped, 0 failures**"), and open items go into the paragraph that begins `**Open follow-ups noted on October 3 afternoon and evening**`. Its "Feature requests (October 3)" section holds FR01 to FR05; its "Performance review (October 3)" section holds PERF01 to PERF33.

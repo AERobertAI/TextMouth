@@ -38,6 +38,7 @@ When generating any creative text (game descriptions, placeholder copy, flavor t
 
 ## Start here (for any new session)
 
+- Docs and memory files follow `docs/agents/writing-docs.md`: short, true now, one home for each fact, a marker under each heading.
 - Read `AGENTS.md` first: where the project's state lives, the user's standing rules, how a task agent works, how the orchestrator merges and records, and where things stood at the end of the last campaign.
 - `README.md` is the index of the documentation in `docs/` (`docs/user` for the app's user, `docs/developer` for building and testing, `docs/agents` for agents), `ARCHITECTURE.md` the index of `docs/architecture` (the code's ownership and walkthroughs, a page per part, so read only the pages a task touches), `TODO-2026-09-04.md` the record of every merge and the open items, and `AGENT-NOTES-2026-10-04.md` what agents left unverified. The research documents (`*-RESEARCH-*.md`) hold each feature's design and the user's answered questions.
 - Agents coordinate through the message board in `.claude/skills/agent-bbs/` and build only through its `scripts/build-slot-with-bbs.sh` wrapper; the orchestrator merges with `Scripts/agents/merge-chain.sh` and reads agent reports with `Scripts/agents/extract-report.py`.
