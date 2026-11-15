@@ -98,7 +98,7 @@ The alert names the book and where it is, as in "The book Harbour Pilots is stor
 Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again."
 The title and path are the book's own.
 
-Replace Existing puts the new copy, which is stored in the data directory, in place of the existing one, under the same ID, keeping its reading position, bookmarks, and settings (see [Adding books](adding-books.md)).
+Replace Existing puts the new copy, which is stored in the data directory, in place of the existing one, under the same ID, keeping its reading position, bookmarks, and settings (see [Adding books](duplicate-books.md)).
 Keep Both would leave the book outside the data directory, and the move would stop again.
 
 ### What a move waits for

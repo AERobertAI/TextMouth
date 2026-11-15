@@ -20,7 +20,7 @@ Starting to listen:
   When the chapter is ready while Where Am I? is speaking, speech begins once the announcement ends, and Play/Pause pressed during the announcement leaves the book paused.
   A shorter chapter is prepared at once, as before.
 - Opening a large book again, one whose text is a megabyte or more, reads the text TextMouth kept from the last open instead of reading the book's Markdown again.
-  So the largest books open in about a tenth of the time with far less memory (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+  So the largest books open in about a tenth of the time with far less memory (see [Where TextMouth keeps your library](book-packages.md)).
 - Speech starts with a short passage, so the first word follows Play, a seek, or a skip sooner, and each next passage is handed to the voice while the one before it speaks, so speech runs on without waiting for TextMouth between passages.
 - A reader makes its speech engine only when speech first needs one, so it opens sooner, and an audiobook's reader never makes one.
 - The installed voices are listed once, in the background, after the first window opens, and again only when the system's voices change, as when a voice finishes downloading; only the very first launch, which must choose a default voice, lists them before that.
@@ -79,7 +79,7 @@ The library list:
 
 Searching the library's text:
 
-- Search Library finds a word in every book of a 750-book library in about a second, because TextMouth keeps each book's text, ready to search, in its own folder on this Mac (see [Search Library](search-library.md) and [Where TextMouth keeps your library](where-your-library-lives.md)).
+- Search Library finds a word in every book of a 750-book library in about a second, because TextMouth keeps each book's text, ready to search, in its own folder on this Mac (see [Search Library](search-library.md) and [Where TextMouth keeps your library](this-macs-folders.md)).
   A search holds about 100 MB of memory while it runs.
 - The first time, after each new installation, TextMouth makes those texts in the background after launch.
   That takes about 51 seconds of processor time and writes about 650 MB for the library it was measured on, spread over low-priority work on two books at a time.
@@ -94,7 +94,7 @@ Saving your place:
 
 - While a book plays, its position is saved every 30 seconds into the book's own small record in its package, as before, but library.json, the index of the whole library, takes it within five minutes, or as the reader closes or TextMouth quits, rather than every 30 seconds.
   A feed's episode or article goes to its feed's own index the same way.
-  A crash loses no more than before: the next launch takes the newer positions from the records (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+  A crash loses no more than before: the next launch takes the newer positions from the records (see [Where TextMouth keeps your library](data-directory-files.md)).
 - Saving a book's place no longer rewrites its index of chapters and headings, which has a file of its own, and library.json is written without line breaks, so listening writes a small fraction of what it did, which matters most in a library in the cloud, where every write is uploaded.
   Both library.json and each feed's index are also written only when what they hold differs from what TextMouth last read or wrote of them, so a save that changes nothing in one writes nothing to it.
   Listening to a feed's episode, whose place is in its feed's index, usually leaves library.json alone.

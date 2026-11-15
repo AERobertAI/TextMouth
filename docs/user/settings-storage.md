@@ -52,8 +52,8 @@ Before the first scan, the sheet says "Check the criteria above, then Scan for D
 <!-- id: redo-text-extraction; keys: re-read text, reextract, Library Maintenance, text encoding, edited text; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
 
 The Storage tab's Redo Text Extraction…, in its Library Maintenance group, reads every text book's file again after asking first.
-It also shows its progress (see [Where TextMouth keeps your library](where-your-library-lives.md), under content.md, and [Editing a book's text](editing-book-text.md) for what it does to text you edited).
-It waits while TextMouth reads any book's file again in another encoding, with the Text Encoding pop-up in Book Information (see [The Library window](library-window.md)).
+It also shows its progress (see [Where TextMouth keeps your library](book-packages.md), under content.md, and [Editing a book's text](editing-book-text.md) for what it does to text you edited).
+It waits while TextMouth reads any book's file again in another encoding, with the Text Encoding pop-up in Book Information (see [The Library window](book-information.md)).
 It starts nothing, and the status line under its button says, and VoiceOver announces once, "TextMouth is reading “Moby-Dick” again in another encoding.
 Try again when that finishes.", naming that book.
 Choose it again once the re-read has ended.

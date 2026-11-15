@@ -8,7 +8,7 @@ The reader window itself, its menus, and search are in [Reader windows](reader-w
 ## Pages
 <!-- id: reader-pages; keys: page labels, roman numerals, printed page numbers, PageBreak, page list; src: TextMouth/Models/BookPages.swift, TextMouth/Models/PageReaderVersions.swift -->
 
-Pages: a book can have pages, numbered as its source numbers them, such as 12, xii, or A-3 ([What TextMouth reads](what-textmouth-reads.md) says which books have them).
+Pages: a book can have pages, numbered as its source numbers them, such as 12, xii, or A-3 ([What TextMouth reads](reads-pages-and-limits.md) says which books have them).
 A page is a place in the book's text and adds no words: nothing is read aloud for a page, and moving by page moves no saved place.
 A page begins at its first whole word.
 

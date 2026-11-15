@@ -101,7 +101,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: library-search-search-texts; keys: Search Text folder, Caches, background pass, LIBRARY_SEARCH_PREPARATION, Low Power Mode, free space reserve, Time Machine; src: TextMouth/Services/TextSearch/LibrarySearchPreparer.swift, TextMouth/Services/TextSearch/LibrarySearchText.swift, TextMouth/Services/TextCacheUpdateQueue.swift, TextMouth/Models/LibrarySearchWording.swift -->
 
 - Searching a library of 750 books in a second or two is possible because TextMouth keeps the text of each book, ready to search, in a store of this Mac's own, outside the library.
-  The store is the folder Search Text in ~/Library/Caches/com.textmouth.TextMouth (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+  The store is the folder Search Text in ~/Library/Caches/com.textmouth.TextMouth (see [Where TextMouth keeps your library](this-macs-folders.md)).
   The store holds about as much as the library's text: on the library it was measured on, 676 MB of text made 650 MB.
 - TextMouth makes the store in the background after the first launch of a new installation, once the launch's other work has ended, at the lowest priority, two books at a time.
   It never downloads a book, it is not done in Low Power Mode, and it stops while the data directory moves or the disk has no room.
@@ -116,7 +116,7 @@ Part of [TextMouth's documentation](../../README.md).
   Making the store again takes about 51 seconds of processor time, spread over the background pass, and writes about as much as the library's text.
 - The store keeps the free space reserve that imports keep, 1 GB: when a text would leave the disk with less, it is not kept, and the search works from the parse it made.
   A search or a pass that finishes removes the texts of books no longer in the library, and of another data directory's books.
-- The debug log has one line for each background pass, LIBRARY_SEARCH_PREPARATION, with counts only (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- The debug log has one line for each background pass, LIBRARY_SEARCH_PREPARATION, with counts only (see [Where TextMouth keeps your library](this-macs-folders.md)).
 
 ## What Search Library does not do
 <!-- id: library-search-limits; keys: not searched, iPhone, folder search, transcribed audiobook, limitations; src: TextMouth/ViewModels/LibrarySearchModel.swift, TextMouth/ViewModels/ReaderViewModel+LibrarySearch.swift -->

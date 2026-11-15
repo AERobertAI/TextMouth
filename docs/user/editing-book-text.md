@@ -20,7 +20,7 @@ The book's own file is never changed.
 ## Page markers
 <!-- id: book-text-page-markers; keys: <!-- page:, page label, Go to Page, Page navigation unit, roman numerals; src: TextMouth/Parsers/MarkdownPageMarker.swift, TextMouth/Parsers/MarkdownParser.swift -->
 
-A line such as `<!-- page: 12 -->` marks where page 12 of a book with pages begins (see [Reader windows](reader-windows.md)).
+A line such as `<!-- page: 12 -->` marks where page 12 of a book with pages begins (see [Reader windows](reader-pages.md)).
 The label is the page's name as the book gives it, such as 12, xii, or A-3, without a leading word "Page" (a label written "Page 12" names page 12), and the line adds no words and is never spoken.
 It stands on a line of its own between two blocks, or, where a page begins in the middle of a paragraph, inside the paragraph, between two words.
 A marker that comes to start a line that holds words, as when you delete the text before it or join two lines, still begins its page, and the words after it on the line are still read; so are the words after a chapter line on its line, which are the chapter's first line.
@@ -40,13 +40,13 @@ For an episode in its feed, the first edit of a session also says where the tran
 
 Edit Text stops for a book that leaves the library meanwhile, as when it is removed or a feed episode's download is deleted.
 VoiceOver says, once, "Text not updated: Moby-Dick was removed, or its download deleted, so Edit Text has stopped for it.", so that you are not left saving into an editor nothing listens to.
-A save made after that isn't taken; for an episode, see [Podcasts and article feeds](feeds.md).
-Edit Text stops for a book that Replace Existing replaced too, in words of its own (see [Adding books](adding-books.md)).
+A save made after that isn't taken; for an episode, see [Podcasts and article feeds](feed-commands.md).
+Edit Text stops for a book that Replace Existing replaced too, in words of its own (see [Adding books](duplicate-books.md)).
 
 ## When a re-read in another encoding stops Edit Text
 <!-- id: book-text-stops-reread; keys: Text Encoding pop-up, Book Information, content.md.edited, encoding re-read; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEdits.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
 
-Edit Text stops for a book whose file TextMouth reads again in another encoding, from the Text Encoding pop-up in Book Information (see [The Library window](library-window.md)), since the new reading replaces the text being edited.
+Edit Text stops for a book whose file TextMouth reads again in another encoding, from the Text Encoding pop-up in Book Information (see [The Library window](book-information.md)), since the new reading replaces the text being edited.
 Your edit is kept beside it as a copy, in the book's package as content.md.edited- followed by the date and time.
 The confirmation says so beforehand, in "Edit Text stops for this book; choose Edit Text again to edit the new reading.", and once the book is read again VoiceOver says where the copy was kept, then "Edit Text has stopped for Moby-Dick, since its file was read again.
 Choose Edit Text again to edit the new text."
@@ -58,7 +58,7 @@ A re-read that is refused changes nothing, and your session goes on, so your lat
 
 While TextMouth reads a book again in another encoding, Edit Text in Default Editor and Edit Text With… open nothing and begin no session, and VoiceOver says "TextMouth is reading “Moby-Dick” again in another encoding.
 Try again when that finishes."
-Redo Text Extraction waits in the same words while any book is read again, and Replace Existing while its book is (see [Settings](settings.md) and [Adding books](adding-books.md)).
+Redo Text Extraction waits in the same words while any book is read again, and Replace Existing while its book is (see [Settings](settings-storage.md) and [Adding books](duplicate-books.md)).
 
 ## A save TextMouth can't take
 <!-- id: book-text-save-refused; keys: not UTF-8, no chapter, kept copy, edit not taken; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift -->

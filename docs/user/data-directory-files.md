@@ -29,7 +29,7 @@ While a book plays, its reading position reaches the index within five minutes, 
 ### The metadata reader and the Unknown author refresh
 <!-- id: metadata-reader-unknown-author-refresh; keys: metadata refresh, author, title, edited by hand, metadata reader version; src: TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/Models/Book.swift -->
 
-Each book's row also records which version of TextMouth's metadata reader last read its file for its title and author, and which of its details you edited by hand (see [The Library window](library-window.md), under [Finding your way around](../../README.md)).
+Each book's row also records which version of TextMouth's metadata reader last read its file for its title and author, and which of its details you edited by hand (see [The Library window](book-information.md), under [Finding your way around](../../README.md)).
 The first launch after an update that reads a format's metadata better reads every older row's file again, in the background before the text caches, and takes the author the file names where the row still says Unknown; an author you typed stays, and a file that still names no one leaves Unknown.
 It never replaces a field edited by hand.
 For a book imported from its own file by Open Book, from Finder, in a ZIP of books, or with Import Folder…, whose record of hand edits begins at its import, it also brings up to date the title, author, publisher, and publication date the file names.
@@ -43,7 +43,7 @@ library.json is read one row at a time.
 <!-- id: library-json-unreadable-rows; keys: unknown format, newer TextMouth, kept rows, unknown sort; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Models/Library.swift -->
 
 A row this TextMouth cannot read, as a book that a later TextMouth added in a format this one does not know, is kept exactly as the file held it, written back at every save, and never shown, counted, opened, or searched.
-Storage settings say how many there are (see [Settings](settings.md)).
+Storage settings say how many there are (see [Settings](settings-storage.md)).
 The package such a row names is left alone by the library's repairs:
 
 - no sweep for packages that no row lists adopts it as a second book, repairs it, or deletes it,

@@ -10,7 +10,7 @@ The Export dialog lists what the books hold: a checkbox for each kind, labelled 
 The kinds are
 - Audio, an audiobook's file or its tracks;
 - Original file, a text book's own file (an .rtfd, which is a folder, is copied whole, and its size is that of the files inside it) or,
-  - for an audiobook whose import kept the originals of the audio it converted (Keep originals of converted audio, under [Settings](settings.md)), those files as they were before:
+  - for an audiobook whose import kept the originals of the audio it converted (Keep originals of converted audio, under [Settings](settings-storage.md)), those files as they were before:
     - one file under its own name, or, for a book of tracks, a folder named like "Moby-Dick - Original Files", each original under its path inside the book's folder of tracks;
 - Text as Markdown, the book's text with its headings, lists, and emphasis (the Convert to menu, below, can make it HTML, RTF, a Word document, or braille instead);
 - Text as plain text, each chapter's words under its title, before any substitution rules;
@@ -103,7 +103,7 @@ Stop ends a braille export at once, even while its translation runs.
 A book that cannot be converted is named in the sentence VoiceOver says at the end, with why, and the other books still export.
 When Word's writer cannot make a book, the sentence is "Couldn't export Moby-Dick - Text.doc: The book's text could not be made into a Word 97-2003 document."
 When the braille translation fails, the sentence is the translator's, as in "Couldn't export Moby-Dick - Text.brf: TextMouth could not translate this braille."
-(see [Adding books](adding-books.md) for its other sentences).
+(see [Adding books](import-progress-and-errors.md) for its other sentences).
 
 ## What a converted file holds
 <!-- id: what-converted-file-holds; keys: content.md, walk of content.md, converted text; src: TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/TextExportWriter.swift -->

@@ -45,20 +45,20 @@ Part of [TextMouth's documentation](../../README.md).
 - TextMouth can subscribe to a feed by its address, by a feed:, pcast:, or itpc: link, by a web page that names its feed, or by searching Apple's podcast directory, and lists the feed's episodes and articles in a library folder of its own, named after it (see [Podcasts and article feeds](feeds.md)).
 - An episode downloads as an audiobook, a video episode as an audiobook that plays its sound, and an article as an HTML book.
 - An article is read from its web page when the feed gives only a short summary that links one, though an article TextMouth downloads by itself reads its page only on a network without data limits, and otherwise holds the feed's own text.
-- Each download is kept in the feed's own folder in the data directory, apart from the library's books (see Feeds, under [Where TextMouth keeps your library](where-your-library-lives.md)).
+- Each download is kept in the feed's own folder in the data directory, apart from the library's books (see Feeds, under [Where TextMouth keeps your library](data-directory-files.md)).
 
 ### Refreshing feeds
 <!-- id: refreshing-feeds; keys: Low Power Mode, Low Data Mode, newest 5, Waiting to Download, Resubscribe, Books Finished; src: TextMouth/Services/Feeds/FeedRefresher.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Models/FeedItemPolicy.swift, TextMouth/Services/Feeds/FeedLifecycle.swift, TextMouth/Views/Feeds/FeedLibraryWording.swift -->
 
 - Feeds refresh when TextMouth opens and every hour while it runs, unless the Feeds tab of Settings says otherwise, skipping an hour in Low Power Mode.
-- A feed you unsubscribed from is never refreshed, at launch, every hour, or by Refresh All Feeds, until you choose Resubscribe (see Commands, under [Podcasts and article feeds](feeds.md)).
+- A feed you unsubscribed from is never refreshed, at launch, every hour, or by Refresh All Feeds, until you choose Resubscribe (see Commands, under [Podcasts and article feeds](feed-commands.md)).
 - Each feed's List and download choice decides which of its episodes and articles are listed and which download by themselves.
-  Unless you choose otherwise, every one the feed lists is listed, and those of the newest 5 not yet played are kept downloaded (see Listing and downloading, under [Podcasts and article feeds](feeds.md)).
+  Unless you choose otherwise, every one the feed lists is listed, and those of the newest 5 not yet played are kept downloaded (see Listing and downloading, under [Podcasts and article feeds](feed-downloads.md)).
 - Those refreshes, and the episodes TextMouth downloads by itself, never use a network with data limits, such as Low Data Mode or a phone's hotspot.
   Such an episode waits, its row saying "Waiting to Download, it downloads once this Mac is on a network without data limits", and is asked for again after the next refresh TextMouth makes by itself on a network without them.
 - A finished episode or article counts among Books Finished.
 - Its download's file is deleted for good a day after it finished, or as the Feeds tab of Settings says, unless it is open in a reader, being transcribed, or being exported, when it goes at a later pass.
-- Its place and bookmarks are kept should you download it again (see Commands, under [Podcasts and article feeds](feeds.md)).
+- Its place and bookmarks are kept should you download it again (see Commands, under [Podcasts and article feeds](feed-commands.md)).
 
 ### What reaches the network
 <!-- id: what-reaches-network; keys: ephemeral session, cookies, cache, http, speech model download; src: TextMouth/Services/Feeds/FeedNetwork.swift -->

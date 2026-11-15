@@ -6,8 +6,8 @@ Part of [TextMouth's documentation](../../README.md).
 ## Pages
 <!-- id: pages; keys: Page unit, Go to Page, page labels, re-read, page reader version; src: TextMouth/Models/BookPages.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Models/ReaderPageWording.swift -->
 
-- Pages, which the Page navigation unit and Go to Page… move by (see [Reader windows](reader-windows.md)), are numbered as each format numbers them.
-- A book already in your library gains pages when its text is read again (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- Pages, which the Page navigation unit and Go to Page… move by (see [Reader windows](reader-pages.md)), are numbered as each format numbers them.
+- A book already in your library gains pages when its text is read again (see [Where TextMouth keeps your library](book-packages.md)).
 
 ### Pages in EPUB books
 <!-- id: pages-epub-books; keys: page-list, pagebreak, doc-pagebreak, pagenum, aria-label, epub:type; src: TextMouth/Parsers/EPUBParser+Navigation.swift, TextMouth/Parsers/EPUBParser.swift, TextMouth/Parsers/PublicationSemantics.swift -->
@@ -23,7 +23,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: pages-html-files-web-archives; keys: pagebreak role, heading page number, page marker; src: TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/MarkdownPageMarker.swift -->
 
 - In HTML files, and in Safari web archives read as HTML files, pages are the page-break marks.
-- In an EPUB and in an HTML book alike, a page break's number inside a heading is left out of the heading's name too (see [Reader windows](reader-windows.md)).
+- In an EPUB and in an HTML book alike, a page break's number inside a heading is left out of the heading's name too (see [Reader windows](reader-pages.md)).
 
 ### Pages in PDF files
 <!-- id: pages-pdf-files; keys: PDF page label, PDFPage, blank page, roman page; src: TextMouth/Parsers/PDFTextParser.swift -->

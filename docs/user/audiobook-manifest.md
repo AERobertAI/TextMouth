@@ -187,5 +187,5 @@ The import checks:
   A manifest that can't be read at all is a mistake, which VoiceOver says once each time TextMouth runs.
   The manifest TextMouth writes for a book that had none changes nothing and is not announced.
   A manifest saved while any track is only in the cloud waits, reading and downloading nothing, and is taken once every track is on this Mac; nothing is said while it waits.
-- A manifest naming tracks that the import converts (Ogg, AC-3, and the other formats in [What TextMouth reads](what-textmouth-reads.md)) keeps working.
+- A manifest naming tracks that the import converts (Ogg, AC-3, and the other formats in [What TextMouth reads](reads-audiobooks.md)) keeps working.
   As the tracks become .m4a files, TextMouth renames them in the manifest inside the book's package (tracks, order, chapters, and sections), and leaves the manifest you imported from as it was.

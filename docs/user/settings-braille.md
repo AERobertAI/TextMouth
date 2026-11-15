@@ -6,7 +6,7 @@ Part of [TextMouth's documentation](../../README.md).
 ## Braille tab
 <!-- id: braille-tab; keys: brailleTable, brailleFileCode, UEB, English Braille American Edition, grade 2, contracted; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift -->
 
-The Braille tab, between Text and Sounds, chooses the braille code TextMouth reads braille files with and writes braille in (see [What TextMouth reads](what-textmouth-reads.md) and [Exporting books](exporting-books.md)).
+The Braille tab, between Text and Sounds, chooses the braille code TextMouth reads braille files with and writes braille in (see [What TextMouth reads](reads-daisy-and-braille.md) and [Exporting books](exporting-braille.md)).
 Its one group is headed "Braille", and holds three pop-up buttons, a sentence, and a caption.
 Export's braille options draw the same three pop-ups.
 
@@ -68,7 +68,7 @@ Export's braille options draw the same three pop-ups.
   - It acts only when the code above is a contracted Unified English Braille table, which it is until you choose another.
     With any other code, or uncontracted Unified English Braille, your choice stands.
   - It applies to a BRF or BRL file; a PEF file is never guessed.
-    See [What TextMouth reads](what-textmouth-reads.md) for what counts as clearly.
+    See [What TextMouth reads](reads-daisy-and-braille.md) for what counts as clearly.
   - config.json does not hold this switch.
 
 ### Built-in tables and where the choice is kept
@@ -94,7 +94,7 @@ This Mac's braille tables, in the Braille tab and in Export's braille options, a
 - The check: TextMouth checks a Mac table the first time it is chosen in a session, off the main thread, so nothing waits; the pop-ups show the table chosen until the check ends.
   TextMouth's braille helper loads the table, translates a sample of letters, digits, and typographic punctuation to braille and back, and measures its memory and speed.
   A table is refused when it does not load, when it needs more than 64 MB of memory, or when it translates more slowly than 50 KB a second (20 seconds for each MB), and a table that does not state that it is six-dot is refused when its braille for the sample holds eight-dot cells.
-  A table that passes runs with limits made for it (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+  A table that passes runs with limits made for it (see [Where TextMouth keeps your library](helper-programs.md)).
   TextMouth also checks a Mac table before its first use at an import or an export, so a table named in config.json, or one a macOS update changed or removed, is refused by name.
   TextMouth keeps a verdict until it quits, except a "too slow" refusal and a check that could not run, which the next choice or import measures again.
 - A refusal is spoken once the pop-up's menu has closed, and the pop-ups go back to the table in use: "TextMouth can't use this Mac's table “Greek braille”: it does not load in TextMouth's liblouis 3.39.0."

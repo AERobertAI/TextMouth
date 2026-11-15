@@ -15,7 +15,7 @@ Four settings can decide, the first that applies winning:
 - Second, each book can override that choice in its own settings (see [A book's own settings](reader-windows.md#a-books-own-settings)).
   The settings sheet's picker, When this book ends, which VoiceOver calls "End of book behavior for this book", names the choice in force, and names Continue to Next Book whether the book's feed or folder plays the book below or the one above.
   Use Global Default, which VoiceOver calls "Reset to global end-of-book setting" and which shows only while the book has a choice of its own, removes the book's own choice, so that the choice of its feed or folder applies, or the global setting where it has none.
-- Third, a feed and a plain folder each choose for their own books with a pop-up button, "When an episode ends" in Feed Info and "When a book ends" in Folder Settings (see [Podcasts and article feeds](feeds.md) and [The Library window](library-window.md)).
+- Third, a feed and a plain folder each choose for their own books with a pop-up button, "When an episode ends" in Feed Info and "When a book ends" in Folder Settings (see [Podcasts and article feeds](feed-listening-and-settings.md) and [The Library window](library-window.md)).
   Its choices are Play the book below, which is Continue to Next Book; Play the book above, which is Continue to Next Book going up the list or folder instead of down; Stop; and Use the global setting, which leaves the choice to the Playback tab.
   A feed says episode in place of book, or article or item when its items are those.
   A folder's choice applies to the books directly in it, never to those in the folders inside it, and the top of the library has none.
@@ -36,7 +36,7 @@ A feed's episodes and articles say the same words.
 ## The next episode of a feed
 <!-- id: reader-next-episode-feed; keys: podcast, article, next episode download, newest first, download cancelled, Downloading the next episode; src: TextMouth/ViewModels/ReaderViewModel+EpisodeDownload.swift, TextMouth/ViewModels/ReaderViewModel+Predownload.swift, TextMouth/Models/EndOfBookWording.swift -->
 
-For a feed's episode or article, the next one is the next one its feed lists that way, newest first, downloaded or not (see Listening on to the next episode, in [Podcasts and article feeds](feeds.md)).
+For a feed's episode or article, the next one is the next one its feed lists that way, newest first, downloaded or not (see Listening on to the next episode, in [Podcasts and article feeds](feed-listening-and-settings.md)).
 One that is not on this Mac is downloaded first, and that download goes first in the queue.
 VoiceOver says "Finished: Episode 368.
 Downloading the next episode: Episode 367."
@@ -63,7 +63,7 @@ A timer counting minutes does not: it goes on with the next book (see The sleep 
 <!-- id: reader-where-next-book-opens; keys: NextBookWindow, This Window, A New Window, same window, new window, next book window; src: TextMouth/Models/NextBookWindow.swift, TextMouth/ViewModels/ReaderViewModel+NextBookWindow.swift, TextMouth/Views/NextBookWindowPicker.swift -->
 
 Where the next book opens, whenever listening goes on from one book to another, is the Playback tab's "Open the next book in" (see [Settings](settings.md)).
-For a feed or a plain folder, it is that feed's or folder's own choice in Feed Info and Folder Settings (see [Podcasts and article feeds](feeds.md) and [The Library window](library-window.md)):
+For a feed or a plain folder, it is that feed's or folder's own choice in Feed Info and Folder Settings (see [Podcasts and article feeds](feed-listening-and-settings.md) and [The Library window](library-window.md)):
 
 - This Window, the default, shows the next book in this window in place of the book here.
   No new window opens, and the window, which keeps its place and size on the screen, becomes the next book's.
@@ -212,11 +212,11 @@ Nothing is spoken or shown; an audiobook's places count time and need none.
 
 Your places follow their words when a book's text changes.
 When TextMouth reads a book's text again, after an update changes how it reads books, your reading position, bookmarks, and skipped sections stay with their words.
-An update that gives books pages makes it read them again at the next launch (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+An update that gives books pages makes it read them again at the next launch (see [Where TextMouth keeps your library](book-packages.md)).
 They stay with their words after Redo Text Extraction too.
 When a book's text changes in any other way, they still do: each time you open a book, TextMouth checks every saved place, and finds one whose words have moved.
 When you edit a book's text with Edit Text, your places follow each edit too, and an open reader's cursor stays on the words it was at.
-When Replace Existing puts a new copy in a text book's place, your reading position, bookmarks, and skipped sections follow their words into it as well (see [Adding books](adding-books.md)).
+When Replace Existing puts a new copy in a text book's place, your reading position, bookmarks, and skipped sections follow their words into it as well (see [Adding books](duplicate-books.md)).
 All of this is silent.
 A skipped section the new text no longer has is kept aside and skips nothing, until a later text brings it back.
 A place whose words can't be found anywhere stays where it was saved, with its words, so a later version of the text that has them again can still find it.

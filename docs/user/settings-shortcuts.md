@@ -67,7 +67,7 @@ Choosing makes the action yours and takes its keys from any other action that wo
 Taken from Show Sleep Timer."
 Reset to Default gives back where it works too, as in "New from Text… reset to default: Shift + Command + T. Works in Library windows."
 A menu command set to work elsewhere is dimmed, and shows no key, in other kinds of window, so there its key reaches the window's own shortcut.
-In a Library window, whatever Works in says, no shortcut that is a letter pressed alone runs, once or twice: the list takes the letter and moves to the first book or folder whose name starts with it (see [The Library window](library-window.md)).
+In a Library window, whatever Works in says, no shortcut that is a letter pressed alone runs, once or twice: the list takes the letter and moves to the first book or folder whose name starts with it (see [The Library window](library-typing-and-speak-info.md)).
 So W, J, K, L, F, and B, the defaults that are a letter alone, work in reader windows only, while a letter with Shift, Option, Command, or Control still runs its shortcut in a Library window.
 
 ### How the record of your changes began
@@ -140,7 +140,7 @@ Go to View reaches 6 views."
 ### Next in Folder and Previous in Folder
 <!-- id: next-folder-previous-folder; keys: Next in Reading List, Previous in Reading List, Navigate menu, folder navigation; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/FolderNavigationWording.swift -->
 
-Next in Folder and Previous in Folder, under Navigation, go to the next or the previous item of the reader's folder or feed (see [Reader windows](reader-windows.md)).
+Next in Folder and Previous in Folder, under Navigation, go to the next or the previous item of the reader's folder or feed (see [Reader windows](reader-book-end.md)).
 Like Next in Reading List and Previous in Reading List, they have no keys until you give them some, and they work in every window but an audio editor's by default, though the Navigate menu offers them in a reader window alone.
 
 ## Keys a text field keeps

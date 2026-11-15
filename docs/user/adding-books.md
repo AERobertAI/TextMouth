@@ -130,7 +130,7 @@ The duplicate question, Replace Existing, and the questions that wait their turn
 
 - An M3U or M3U8 playlist (.m3u, .m3u8), chosen with Open Book…, imports as one audiobook of the files it lists, as a folder of the same tracks imports.
 - The book is named by the playlist's #PLAYLIST line, else by the playlist's file name without its extension, and has a heading for each entry, in the playlist's order, titled by its #EXTINF line, else by the file's name.
-- The tracks are copied into the book's package, and those that need converting are converted (see [What TextMouth reads](what-textmouth-reads.md)).
+- The tracks are copied into the book's package, and those that need converting are converted (see [What TextMouth reads](reads-audiobooks.md)).
 - Importing the same playlist again finds a duplicate.
 - Only ordinary files inside the playlist's own folder, or in folders beneath it, are used:
   - Each other entry is skipped and named with its reason: "a web address", "outside the playlist's folder", "not found", "a folder", "not an audio file", "hidden", "not an ordinary file", or "listed before".
@@ -161,14 +161,14 @@ The duplicate question, Replace Existing, and the questions that wait their turn
 ## Importing audio that TextMouth converts
 <!-- id: importing-audio-that-textmouth-converts; keys: Ogg, AC-3, afconvert, ImportAudioConverter, watchdog, mix to stereo, Converting its audio; src: TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Services/ImportFailure.swift -->
 
-- Importing audio that TextMouth converts (Ogg, AC-3, and the other formats listed in [What TextMouth reads](what-textmouth-reads.md)) adds a step, Converting its audio, after the archive is extracted and its manifest checked.
+- Importing audio that TextMouth converts (Ogg, AC-3, and the other formats listed in [What TextMouth reads](reads-audiobooks.md)) adds a step, Converting its audio, after the archive is extracted and its manifest checked.
 - The overlay counts the tracks, as in "converting its audio: 12 of 176 tracks".
 - The archive, folder, or file you import from is never changed.
 - A track that can't be converted stops the import, and nothing is added.
 - The alert says which track and why, as in "Could not import “My Tracks.zip”.
   Converting its audio failed: Converting 01.ogg was stopped because it used more than 960 seconds of processor time."
 - That number is four times the converter's time limit, a minute plus a tenth of the track's length, here for a track of 30 minutes.
-  [Where TextMouth keeps your library](where-your-library-lives.md) lists what else stops the converter.
+  [Where TextMouth keeps your library](helper-programs.md) lists what else stops the converter.
 - Cancel kills the conversions at once, and the import ends as a cancelled one.
 - The reasons, with X the track's file name:
   - "The audio file X could not be read for converting."
