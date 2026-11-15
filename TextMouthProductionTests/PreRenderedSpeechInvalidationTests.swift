@@ -708,6 +708,24 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    /// A speed or pitch step in Settings reaches every playing reader
+    /// (`applyLocalSpeechOverrides()`); one whose render still waits for the
+    /// lead chooses nothing again, as one whose render is made does not.
+    func testASpeedStepWhileTheRenderWaitsChoosesNothingAgain() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            _ = try startSpeakingLongChapterSilently(reader)
+            let wait = try XCTUnwrap(reader.lookAheadWait)
+            let choices = reader._lookAheadChoiceCountForTesting
+
+            reader.applyLocalSpeechOverrides()
+            reader.applyLocalSpeechOverrides()
+
+            XCTAssertEqual(reader._lookAheadChoiceCountForTesting, choices)
+            XCTAssertEqual(reader.lookAheadWait, wait)
+            XCTAssertEqual(renders.requested.count, 0)
+        }
+    }
+
     /// A setting changed while the render waits asks for nothing either; the
     /// render asked for at the lead is of the speech as it is then.
     func testAChangeWhileTheRenderWaitsIsRenderedAtTheLead() throws {

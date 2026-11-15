@@ -1419,6 +1419,7 @@ extension ReaderViewModel {
         // speakable chapter changes when sections are skipped, so an old
         // engine must never stay paired with a newly chosen chapter.
         discardLookAhead()
+        _lookAheadChoiceCountForTesting += 1
 
         // Render exactly the text playback will speak for that chapter.
         let search = searchForSpeakableChapter(from: currentChapterIndex + 1, preparingLongChapters: .inBackground)

@@ -772,6 +772,10 @@ final class ReaderViewModel: ObservableObject {
     /// is asked for, and when nothing is looked ahead to.
     /// Accessed from the Playback extension.
     var lookAheadWait: LookAheadWait?
+    /// How many times the look-ahead's chapter was chosen
+    /// (`preRenderNextChapter()`), so a test can show that a change which
+    /// leaves the next chapter's audio alone chose nothing again.
+    var _lookAheadChoiceCountForTesting = 0
     /// Whether a look-ahead render may start now, asked as each render
     /// falls due: the system's answer (`systemMayRenderAhead()`), or a
     /// test's. Accessed from the Playback extension.
