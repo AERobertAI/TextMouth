@@ -12,6 +12,13 @@ Voice, Playback, Shortcuts, Text (substitution rules and repeated symbols), Brai
 Every tab but Text and Library scrolls when it is taller than the window, its groups in boxes, and Tab, and VoiceOver as it moves, bring each control into view; the Text tab's rule list and the Library tab's list of views scroll by themselves.
 A slider is labelled by its setting alone, as "Speed" or "Bluetooth disconnect delay", since VoiceOver names the kind of control itself, and the value shown beside a slider is read once, as the slider's value, with its unit.
 
+Four tabs have pages of their own, and this page holds the rest:
+
+- [Settings: the Shortcuts tab](settings-shortcuts.md), with the keys a text field keeps.
+- [Settings: the Braille tab](settings-braille.md), with this Mac's braille tables.
+- [Settings: the Library tab](settings-library.md), with its views, titles, and the view editor.
+- [Settings: the Storage tab](settings-storage.md), with the library folder, imports, duplicates, and maintenance.
+
 ## Open the next book in
 <!-- id: open-next-book; keys: ; src: -->
 
