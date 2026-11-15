@@ -12,7 +12,7 @@ Part of [TextMouth's documentation](../../README.md).
   Install it with `brew install xcodegen`; the development Mac and CI use version 2.45.3.
 - `make check` reads the package pins with jq, which macOS 15 and later include as /usr/bin/jq.
 - Xcode builds the iOS app, TextMouthiOS, only once its iOS platform is downloaded: about 10 GB, from Xcode > Settings > Components, or with `xcodebuild -downloadPlatform iOS`.
-  Until then `make typecheck-ios` compiles and links the iOS app without it (see The iOS app, below).
+  Until then `make typecheck-ios` compiles and links the iOS app without it (see [The iOS app](building-ios.md)).
   Nothing else on this page needs the iOS platform.
 - Recording needs macOS's microphone permission, which macOS keeps from one build to the next only while the builds are signed with the same certificate: run `make signing-identity` once on each Mac you build on (see Make targets).
 
@@ -24,9 +24,9 @@ Run these from the repository root:
 ### Building, installing, and signing
 <!-- id: building-installing-signing; keys: make build, make install, make uninstall, SMALL_CODE, Release, dSYM, atos, codesign; src: Makefile, project.yml, Scripts/keep-installed-dsym.sh, Scripts/make-signing-identity.sh, TextMouthBraille/main.c -->
 
-- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 19 MB (see The Mac app's size, below): without the code coverage Xcode's scheme gathers for tests, with code nothing reaches left out, and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces.
+- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 18 MB (see The Mac app's size, below): without the code coverage Xcode's scheme gathers for tests, with code nothing reaches left out, and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces.
   The Release build is compiled for size.
-  The app's own code takes `-Osize` from project.yml's Release settings, and the three Swift packages take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages; the build does not ask for whole-module mode, which would make the app 1.15 MB larger.
+  The app's own code takes `-Osize` from project.yml's Release settings, and the three Swift packages (ZIPFoundation, swift-markdown, and the swift-cmark it builds on) and the vendored SwiftSoup library take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages (the SwiftSoupLibrary template in project.yml leaves it to the Makefile); the build does not ask for whole-module mode, which would make the app 1.15 MB larger.
   The executable is linked without an export trie (`LD_EXPORT_SYMBOLS: NO`, Release only), because nothing links against the app.
   A build made from Xcode's own window gives the packages no `-Osize`, as it drops no coverage either, since only the Makefile's command line does either.
   `make check` and `make install` build through `make build`, so both get it.
@@ -52,19 +52,19 @@ Run these from the repository root:
 ### Tests, lints, and the gate
 <!-- id: tests-lints-gate; keys: make test, make test-area, lint-tests, lint-a11y, lint-ogg, make check, check-selftest, perf-baselines; src: Makefile, Scripts/test/run-area.py, Scripts/test/trap-lint.py, Scripts/test/test-diff.py, Scripts/test/a11y-lint.py, Scripts/test/ogg-lint.py, Scripts/check.sh, Scripts/check-selftest.sh, Scripts/perf-baselines.sh, Scripts/test/release-goldens.sh, .claude/skills/doc-library/scripts/doclib.py -->
 
-- `make test` runs the hosted test suite, described below.
-  `make test-area AREAS="feeds bookmarks"` runs only the hosted tests of some areas or classes, in one build, and `make lint-tests`, `make lint-a11y`, and `make lint-ogg` check the lines a branch adds, without building; [Testing TextMouth](testing-tools.md) describes them under Reusable test tools.
+- `make test` runs the hosted test suite (see [The hosted test suite](testing.md)).
+  `make test-area AREAS="feeds bookmarks"` runs only the hosted tests of some areas or classes, in one build, and `make lint-tests`, `make lint-a11y`, and `make lint-ogg` check the lines a branch adds, without building; [Reusable test tools](testing-tools.md) describes them.
 - `make lint-docs` checks that no doc page has more violations of the rules in docs/agents/writing-docs.md than `.claude/skills/doc-library/lint-baseline.json` records for it, without building; `.claude/skills/doc-library/SKILL.md` describes the tool.
-- `make check` runs the reproducibility gate, which also reports the Release app's size, and `make check-selftest` tests the gate, the baseline-recording script, `make install`'s dSYM keeping, and the signing script, all described below, and also the storage drill script, the version script (see Versions, below), and the Python tools in `Scripts/test` (see Reusable test tools in [Testing TextMouth](testing-tools.md)).
+- `make check` runs the reproducibility gate, which also reports the Release app's size, and `make check-selftest` tests the gate, the baseline-recording script, `make install`'s dSYM keeping, and the signing script, all described below, and also the storage drill script, the version script (see Versions, below), and the Python tools in `Scripts/test` (see [Reusable test tools](testing-tools.md)).
 - `make release-goldens` runs the golden tests against a Release build (see The Release golden tests, below), once before a release.
-- `make perf-baselines` records new performance baselines after a deliberate change, as The performance baselines describes below.
+- `make perf-baselines` records new performance baselines after a deliberate change, as [The performance baselines](testing.md) describes.
 
 ### The project, versions, and packages
 <!-- id: project-versions-packages; keys: make generate, xcodegen, project.pbxproj, copy-files phases, bump-patch, bump-minor, Package.resolved, update-packages; src: Makefile, project.yml, Scripts/agents/regenerate-project.py, Scripts/agents/copy_phases.py, Scripts/set-version.sh -->
 
 - `make generate` regenerates TextMouth.xcodeproj from project.yml.
   Run it after adding or removing a source or test file, and commit the changed project file with that file.
-  XcodeGen 2.45.3 writes the app target's three copy-files phases (liblouis's tables and the two folders of licence files) in a different order on each run, though the order changes nothing in the build.
+  XcodeGen 2.45.3 writes the app target's five copy-files phases (liblouis's tables and the licence folders of liblouis, LAME, foliate-js, and SwiftSoup) in a different order on each run, though the order changes nothing in the build.
   So `make generate` runs `Scripts/agents/regenerate-project.py`, which runs xcodegen and then puts the phases back in the order the git index has, when they mean the same thing.
   Only real changes stay: files added, moved, or removed.
   If the phases changed in meaning, or git has no copy of the project to compare with (as in a source archive), it keeps xcodegen's whole project and says so on the console.
@@ -73,6 +73,8 @@ Run these from the repository root:
 - `make bump-patch` raises the app's PATCH version by one (0.2.0 to 0.2.1), and `make bump-minor` raises its MINOR version by one and sets PATCH to 0 (0.2.3 to 0.3.0); each changes the version in project.yml, regenerates the project, and commits nothing (see Versions, below).
 - `make set-version VERSION=0.2.0` sets a version you name, in the same way (see Versions, below).
 - `make resolve-packages` resolves the Swift packages exactly as Package.resolved pins them, and `make update-packages` resolves them again after a deliberate version change.
+- SwiftSoup 2.13.9 is not a Swift package: it is vendored in `Vendor/SwiftSoup`, and the static library targets SwiftSoup and SwiftSoup_iOS of project.yml compile it for each app.
+  `Scripts/vendor/swiftsoup/make_vendor.py` writes its sources from the release with attribute edits only (see `Vendor/SwiftSoup/README.md`, which also says how to upgrade it), and `Scripts/vendor/swiftsoup/test_make_vendor.py` runs in `make check-selftest`.
 
 ### Type-checks and the other targets
 <!-- id: type-checks-other-targets; keys: typecheck-ios, typecheck-mac, typecheck-tests, mac-projection, check-ios-plist, make xcode, make clean; src: Makefile, Scripts/ios/typecheck.py, Scripts/ios/mac-projection.py, Scripts/ios/sync-info-plist.py -->
@@ -80,7 +82,7 @@ Run these from the repository root:
 - `make typecheck-ios` compiles and links the app's committed sources for iOS, as the iOS app compiles them, with SwiftPM and the iOS SDK Xcode includes, and `make typecheck-ios CENSUS=1` counts every AppKit use left in them.
   `make typecheck-mac` does the same for the Mac, and `make typecheck-tests` adds the Mac's hosted tests.
   `make mac-projection BASE=main` shows what a branch changes in the code the Mac compiles, and with `DIFF=1` prints every line it changes.
-  Each is described under The iOS app, below.
+  Each is described under [The iOS app](building-ios.md).
 - `make check-ios-plist` fails when the iOS app's `TextMouth/Platform/iOS/Info.plist` is not what `Scripts/ios/sync-info-plist.py` writes from the Mac's `TextMouth/Resources/Info.plist`: run `python3 -I Scripts/ios/sync-info-plist.py` after changing the Mac's plist, then commit both (see [The two apps and the platform folders](../architecture/platforms.md)).
 - `make xcode` regenerates the project and opens it in Xcode.
 - `make clean` removes the build products.
@@ -92,7 +94,10 @@ Run these from the repository root:
 The user wants the Mac app under 20 MB, and under 15 MB if that costs nothing they use.
 `make check` fails the app above its hard limit of 20 MB (see The make check gate, below).
 Compiling the app and its packages for size (`-Osize`, and no export trie; see Make targets, above) brought the Release app from 23,545,276 bytes to 18,983,332 bytes, 19.0 MB, its executable from 22,820,048 to 18,258,016 bytes, in 35 files, measured by `make check`.
-The price is slower HTML parsing at import, about 4 ms more for each megabyte of EPUB, since SwiftSoup parses 43% slower; ten benchmarks (HTML to Markdown, Markdown parsing, speech preparation, sorting, JSON, the offset map, and an EPUB read) gave identical results with `-O` and `-Osize` and ran 2% to 10% slower.
+Vendoring SwiftSoup then brought the Release app to 17,888,466 bytes.
+The price was slower HTML parsing at import, about 4 ms more for each megabyte of EPUB, since the SwiftSoup package parsed 43% slower at `-Osize`.
+The vendored copy, compiled as one module at `-Osize`, is smaller and faster than the package was (`Vendor/SwiftSoup/README.md`).
+Ten benchmarks (HTML to Markdown, Markdown parsing, speech preparation, sorting, JSON, the offset map, and an EPUB read) gave identical results with `-O` and `-Osize` and ran 2% to 10% slower.
 Under 15 MB is out of reach of build settings; the size audit names the code changes that remain.
 Two more settings would save 82,736 bytes (mergeable traps, which would make crash reports lose line detail within a function) and 95,472 bytes (`-no_function_starts`, which would make `sample` and Activity Monitor lose function boundaries without the dSYM); both wait for the user's yes.
 The pieces below are what a measurement of the Release build showed at commit e0ea3b9d, before that work.
@@ -111,7 +116,7 @@ The pieces below are what a measurement of the Release build showed at commit e0
     So it is not left out.
 - **How the sizes were found.**
   - The linker's own map lists every object and its bytes.
-    Ask for it with `LD_GENERATE_MAP_FILE=YES` alone, with `xcodebuild` and its own derived-data folder, under `run_locked.py` (see Building TextMouthiOS for the simulator, below).
+    Ask for it with `LD_GENERATE_MAP_FILE=YES` alone, with `xcodebuild` and its own derived-data folder, under `run_locked.py` (see [Building TextMouthiOS for the simulator](building-ios.md)).
   - Do not set `LD_MAP_FILE_PATH` on the command line.
     Every target's link shares that one path, and Xcode stops with "Multiple commands produce" the one map file.
     With `LD_GENERATE_MAP_FILE=YES` alone, Xcode writes one map for each target, in the build's `Intermediates.noindex` folder.
@@ -203,9 +208,10 @@ The script, Scripts/set-version.sh:
 
 **Reproducible builds and `make check`.**
 TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark.
+SwiftSoup is vendored and has no pin (see Make targets, above).
 Run `make check` before merging.
 It regenerates the project, resolves packages strictly from `Package.resolved` (failing if anything would change), builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac, and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
-It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 19.0 MB (18,983,332 bytes), within the 20 MB limit", and fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh.
+It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 20 MB limit", and fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh.
 Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
 In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
 It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.
@@ -213,7 +219,7 @@ Both builds start from scratch: the gate first removes `build/DerivedData/Build`
 It prints one line per step and ends with PASSED or FAILED, with full logs in `build/check/` and the Release build's in `build/xcodebuild-Release.log`.
 A run takes about seven minutes on the development Mac (2 minutes for the Release build, 5 for the tests).
 To upgrade a package, change its version in `project.yml`, run `make update-packages`, review the `Package.resolved` diff, run `make check`, and commit both files.
-`make check-selftest` and `make check CHECK_ARGS=--dry-run` test the gate itself in seconds, and `make check-selftest` also tests the baseline-recording script, the storage drill script's verdicts (see Reusable test tools in [Testing TextMouth](testing-tools.md)), the version script (see Versions, above), that `make build` builds without code coverage and with `-Osize` while `make debug` does not, that `make release-goldens` names its settings and golden classes, that `make install` keeps the dSYMs, running install and uninstall in a sandbox folder, never /Applications; and the signing script, Scripts/make-signing-identity.sh, once for real, run twice against a throwaway keychain it creates unlocked, and otherwise with stand-ins for security and codesign, so it never asks for a password or touches the login keychain.
+`make check-selftest` and `make check CHECK_ARGS=--dry-run` test the gate itself in seconds, and `make check-selftest` also tests the baseline-recording script, the storage drill script's verdicts (see [Reusable test tools](testing-tools.md)), the version script (see Versions, above), that `make build` builds without code coverage and with `-Osize` while `make debug` does not, that `make release-goldens` names its settings and golden classes, that `make install` keeps the dSYMs, running install and uninstall in a sandbox folder, never /Applications; and the signing script, Scripts/make-signing-identity.sh, once for real, run twice against a throwaway keychain it creates unlocked, and otherwise with stand-ins for security and codesign, so it never asks for a password or touches the login keychain.
 GitHub Actions runs the gate's checks in two sets of jobs side by side (`.github/workflows/check.yml`, on macOS 26 with Xcode 26.0.1, for every push to main and every pull request).
 The `gate` job runs `make check CHECK_ARGS=--without-tests` (`Scripts/check.sh --without-tests`: steps 1 to 3, the project, the pins, and the Release build with its warnings and size).
 The `suite` job runs the hosted suite through `.github/workflows/tests.yml`, the shared jobs a push to `TestBuild` uses, dealt out among 4 parallel shards.
