@@ -964,6 +964,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - The audio editor's level measurement moved to a Thread of its own after a few cancelled measurements blocked on October 6 and starved the cooperative pool.
 - The Release app measured 11 MB on October 3, 2026, once `make build` stopped compiling with code coverage and the symbols were stripped into a dSYM that `make install` keeps for the last five installs.
 - It measured 15.4 MB on October 4, with that day's features and LAME's encoder.
+- In the columns style, the Shortcuts tab was 4,113 points tall in the 540-point window, and 223 points wider than any width it was given (TODO A10).
 
 ## From Orchestrating TextMouth's agents
 
