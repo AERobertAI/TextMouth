@@ -129,7 +129,11 @@ Replace Existing makes the new copy the same book as the existing one, under the
 ## When Replace Existing waits
 <!-- id: when-replace-existing-waits; keys: open in a reader, being transcribed, being exported, audio editor, cloud, Error; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/FeedBookUse.swift -->
 
-- Replace Existing waits while the existing copy is in use, while its text is being read again in another encoding or with another braille code (see [The Library window](library-window.md)), while something it would keep is only in the cloud, where nothing is downloaded for it, and while TextMouth moves books between folders or rebuilds its data directory.
+- Replace Existing waits
+  - while the existing copy is in use,
+  - while its text is being read again in another encoding or with another braille code (see [The Library window](library-window.md)),
+  - while something it would keep is only in the cloud, where nothing is downloaded for it,
+  - and while TextMouth moves books between folders or rebuilds its data directory.
 - The question stays open, nothing has changed, and the reason appears above its buttons, which VoiceOver reads as "Error: " and the sentence, and speaks once as it appears.
 - Once the cause is gone, choose Replace Existing again.
 - With X the title of the existing copy, the sentences are:
