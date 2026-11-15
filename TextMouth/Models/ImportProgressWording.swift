@@ -155,6 +155,18 @@ enum ImportProgressWording {
         afterBook ? "Cancelling after this book..." : cancellingLine
     }
 
+    /// What VoiceOver calls the import overlay's Cancel button, on the Mac
+    /// and the iPhone: the name says what it cancels.
+    static let cancelButtonLabel = "Cancel Import"
+
+    /// What VoiceOver says the import overlay's Cancel button does
+    /// (`LibraryViewModel.cancelImports()`): the import under way stops at
+    /// its next step (a ZIP batch before its next book, a conversion by a
+    /// helper at once, a book of pictures before its next page, FMT34), the
+    /// imports waiting behind it never start, and every book already
+    /// imported stays.
+    static let cancelButtonHint = "Stops the import under way and those waiting. Books already imported stay in the library."
+
     /// What a progress display says once Cancel is pressed while what it
     /// shows stops at its next step: the import overlay before any book,
     /// and the feed downloads section while a download already being added
