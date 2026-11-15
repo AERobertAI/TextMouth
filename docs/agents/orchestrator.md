@@ -70,6 +70,7 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 
 - When branches conflict, make one shared base early (`build-train.py loop --base <branch>`) and have each agent request its real branch: a private train copy of a branch tangles with other agents' commits.
 - An agent that writes that it is waiting on a train, and has no background `wait-for-result.py` running, has ended its turn and is never woken: message it to start one (`AGENTS.md`, How a task agent works), or read `build/orchestrator/train/results/<agent>.md` yourself when it appears.
+- When a sender of a remote run dies on the API's 403, the run goes on: its results are still there to download afterward (`gh run download <run id> -R AERobertAI/TextMouth -n test-build-results`, as `download` in `Scripts/agents/github_run.py` does).
 - Never assign `status` in a zsh script that waits on a suite: it is read-only there, so the script dies after the suite and reports a failure; use another name.
 
 ### Reviews and merges
