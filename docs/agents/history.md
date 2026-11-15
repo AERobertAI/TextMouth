@@ -694,3 +694,9 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Imports: text in other encodings
 
 - CP437, CP850, and Mac Central European joined the catalog on November 13, 2026.
+
+## From Imports: documents textutil reads
+
+- V03, which keeps a row this TextMouth cannot read as it was read, dates from October 23, 2026.
+- ImportedBook.originalKeptNotice was named rtfdOriginalKeptNotice until October 31, 2026.
+- docx (with .dotx, .docm, and .dotm) joined formatsRefusedWhenBlank on November 13, 2026.

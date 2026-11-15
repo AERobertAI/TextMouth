@@ -31,7 +31,7 @@
     "docs/architecture/state/imports-rtf-and-word.md": {"line-length": 29},
     "docs/architecture/state/imports-text-encoding-choice.md": {"line-length": 10},
     "docs/architecture/state/imports-text-encodings.md": {"line-length": 35},
-    "docs/architecture/state/imports-textutil.md": {"date": 3, "line-length": 18},
+    "docs/architecture/state/imports-textutil.md": {"line-length": 17},
     "docs/architecture/state/imports.md": {"date": 4, "line-length": 34},
     "docs/architecture/state/library-index-reading-feeds.md": {"date": 2, "line-length": 35},
     "docs/architecture/state/library-index.md": {"date": 8, "line-length": 39},
