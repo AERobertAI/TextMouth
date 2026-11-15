@@ -26,8 +26,33 @@ Read only the unscoped windows ("5-hour session", "Weekly (all models)"), watch 
 ## After an agent reports
 <!-- id: after-agent-reports; keys: merge message, worktree remove, unregister, DerivedData-main, flaky test, rerun, AGENT-NOTES; src: Scripts/agents/merge-chain.sh, Scripts/agents/record-merge.py, TextMouthProductionTests/BookmarkKeyboardAccessTests.swift, TextMouthProductionTests/StorageGenerationMoveTests.swift, TextMouthProductionTests/BookSearchModelTests.swift, TextMouthProductionTests/DataDirectoryMoveTests.swift, TextMouthProductionTests/ViewsAndWindowsReaderSheetTests.swift, TextMouthProductionTests/FeedDownloadTests.swift, TextMouthProductionTests/MacBrailleTableCheckTests.swift -->
 
-After an agent reports: write the merge message to a file, note the agent's unverified items and its documentation wording where the next documentation pass will find them (`AGENT-NOTES-2026-10-04.md` is the current such file), then `Scripts/agents/merge-chain.sh <branch>:<message-file>` in the background; on a green suite, record the merge in the TODO with `Scripts/agents/record-merge.py` (it puts the merge's `- [x]` entry before the paragraph that begins `**Open follow-ups noted by the September 28 agents**`, appends a sentence with the suite's exact counts to the long verification paragraph, after the latest "After the … merge: **N tests, S skipped, 0 failures**", and appends open items to the paragraph that begins `**Open follow-ups noted on October 3 afternoon and evening**`; `--note` in place of `--counts` for a merge that ran no suite, `--tick FR09 --hash <merge>` to tick an entry), commit the TODO, remove the agent's worktree (`git worktree remove --force --force` and `git worktree prune`), unregister and delete `build/DerivedData-main` when the disk is tight, and post `merged: <branch>` on the board with the new counts so the other agents rebase.
-A suite that fails only in a load-sensitive test (the sleep-timer integration tests, `BookmarkKeyboardAccessTests`, `StorageGenerationMoveTests`, `BookSearchModelTests.testCancelledSearchPublishesNothing`, `DataDirectoryMoveTests.testAMoveShowsItsProgressWhileItCopies`, the reader-sheet redraw count in `ViewsAndWindowsReaderSheetTests`, the resume-data test `FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped`, the audiobook-open benchmark, `MacBrailleTableCheckTests.testFrenchGermanAndSpanishPassAndRoundTrip` (its reading of the braille helper's memory can miss three short runs), and the performance baselines, which skip while the Mac is busy) is rerun on that class alone before the merge stands.
+After an agent reports:
+- write the merge message to a file;
+- note the agent's unverified items and its documentation wording where the next documentation pass will find them (`AGENT-NOTES-2026-10-04.md` is the current such file);
+- then run `Scripts/agents/merge-chain.sh <branch>:<message-file>` in the background;
+- on a green suite, record the merge in the TODO with `Scripts/agents/record-merge.py`:
+  - it puts the merge's `- [x]` entry before the paragraph that begins `**Open follow-ups noted by the September 28 agents**`;
+  - it appends a sentence with the suite's exact counts to the long verification paragraph, after the latest "After the … merge: **N tests, S skipped, 0 failures**";
+  - it appends open items to the paragraph that begins `**Open follow-ups noted on October 3 afternoon and evening**`;
+  - `--note` in place of `--counts` is for a merge that ran no suite, and `--tick FR09 --hash <merge>` ticks an entry;
+- commit the TODO;
+- remove the agent's worktree (`git worktree remove --force --force` and `git worktree prune`);
+- unregister and delete `build/DerivedData-main` when the disk is tight;
+- and post `merged: <branch>` on the board with the new counts so the other agents rebase.
+
+A suite that fails only in a load-sensitive test is rerun on that class alone before the merge stands.
+The load-sensitive tests are:
+- the sleep-timer integration tests;
+- `BookmarkKeyboardAccessTests`;
+- `StorageGenerationMoveTests`;
+- `BookSearchModelTests.testCancelledSearchPublishesNothing`;
+- `DataDirectoryMoveTests.testAMoveShowsItsProgressWhileItCopies`;
+- the reader-sheet redraw count in `ViewsAndWindowsReaderSheetTests`;
+- the resume-data test `FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped`;
+- the audiobook-open benchmark;
+- `MacBrailleTableCheckTests.testFrenchGermanAndSpanishPassAndRoundTrip` (its reading of the braille helper's memory can miss three short runs);
+- and the performance baselines, which skip while the Mac is busy.
+
 
 ## Questions for the user
 <!-- id: questions-user; keys: humanQuestions, Answer line, recommended answer, numbered questions; src: -->
@@ -146,14 +171,19 @@ When the agents are done, stop the loop and `touch` the release flag.
 **Builds on GitHub.**
 The testing and compiling can run on GitHub Actions instead of this Mac's CPU.
 `.github/workflows/test-build.yml` runs only for a push to the branch `TestBuild` of the public repository (`AERobertAI/TextMouth`), with a read-only token, no secrets, and GitHub's own pinned actions.
-A remote train (`build-train.py run --remote`, or `loop --remote`) merges the requests here as always, then pushes the merged tree plus `.github/test-request.json` to `TestBuild` with `--force`, and nothing else is ever pushed (`Scripts/agents/github_run.py` builds the refspec itself and refuses a tree holding a path under `build/`, `humanQuestions/`, or `humanReports/`).
+A remote train (`build-train.py run --remote`, or `loop --remote`) merges the requests here as always, then pushes the merged tree plus `.github/test-request.json` to `TestBuild` with `--force`.
+Nothing else is ever pushed (`Scripts/agents/github_run.py` builds the refspec itself and refuses a tree holding a path under `build/`, `humanQuestions/`, or `humanReports/`).
 It waits for that commit's run, found by its SHA, for up to 125 minutes, downloads the run's artifact into the train's folder (`run.log`, `run-summary.txt`, `remote-N/`), and reports from it exactly as a local train does.
 The test command is made in one place, `Scripts/agents/test_command.py`, which the local train, `run_suite.py`, and the runner script (`Scripts/agents/run-on-runner.py`) all call.
 A remote train takes no heavy-work lock, skips the disk check and the iOS census, and shares the train's own lock with a remote suite, since a newer push to `TestBuild` cancels the older run.
 If its push or run fails, it puts every request back in the queue, tells each agent and the orchestrator, and the loop waits 15 minutes before the next try.
-A long request runs as up to four parallel jobs (`Scripts/agents/shard.py` deals the classes out; `merge_shards.py` joins the results into the one artifact the Mac reads), build products are cached between runs (`restore_mtimes.py`), and the full suite took 13 to 16 minutes (three clean runs in a row) against 80 without finishing before the tuning.
-The runner cannot play or read audio, so `Scripts/agents/runner-skips.conf` lists the 103 entries (103 of about 11,960 tests) it does not run, each with its reason, and each remote result says which of an agent's requested tests were among them ("Not run on GitHub, no verdict"); a remote suite is therefore not the last check before a release: run those on this Mac too, with a local `build-train.py run`, which takes the heavy-work lock.
-A push to `TestBuild` also refuses a tree whose `.github/workflows/` or `.github/actions/` differs from origin's main, once origin's main holds `test-build.yml`, which it does (origin's main has held it since 0.4.10, a1214dc0): **the guard is on**, so a workflow or action change runs on `TestBuild` only after it is on GitHub's main.
+A long request runs as up to four parallel jobs (`Scripts/agents/shard.py` deals the classes out; `merge_shards.py` joins the results into the one artifact the Mac reads), and build products are cached between runs (`restore_mtimes.py`).
+The full suite took 13 to 16 minutes (three clean runs in a row) against 80 without finishing before the tuning.
+The runner cannot play or read audio, so `Scripts/agents/runner-skips.conf` lists the 103 entries (103 of about 11,960 tests) it does not run, each with its reason.
+Each remote result says which of an agent's requested tests were among them ("Not run on GitHub, no verdict").
+A remote suite is therefore not the last check before a release: run those on this Mac too, with a local `build-train.py run`, which takes the heavy-work lock.
+A push to `TestBuild` also refuses a tree whose `.github/workflows/` or `.github/actions/` differs from origin's main, once origin's main holds `test-build.yml`.
+Origin's main has held it since 0.4.10 (a1214dc0): **the guard is on**, so a workflow or action change runs on `TestBuild` only after it is on GitHub's main.
 A push waits, up to 125 minutes, while another run is queued or going on `TestBuild` (a newer push cancels the older run), and fails, pushing nothing, if the branch stays busy; so a train, a remote suite, and a hand-sent run take turns, and a train leaves 5 minutes after a request.
 The jobs are in `.github/workflows/tests.yml`, which `test-build.yml` (a push to `TestBuild`) and `check.yml` (main and pull requests) both call, and each run also builds the iPhone app and its UI-test bundle for the iOS Simulator (`Scripts/agents/run-ios-build.py`).
 A train's result and `run_suite.py --remote` list its errors by file, and they never change the tests' verdict.
