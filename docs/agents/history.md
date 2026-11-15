@@ -682,3 +682,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Imports: DOCX, OpenDocument, and Word 2003 XML
 
 - The own readers of OpenDocument text and Word 2003 XML (FMT27 and FMT53) came on November 5 and 6, 2026.
+
+## From Imports: rich text and Word documents
+
+- The own readers of rich text, Word 97-2003, OpenDocument text, and Word 2003 XML (FMT47, FMT27, FMT53) came from November 4 to 6, 2026.

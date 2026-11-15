@@ -6,7 +6,7 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 ## Own readers of rich text and Word documents
 <!-- id: own-readers-rich-text-word; keys: Microsoft Word, OpenDocument Text, WordprocessingML 2003, kill switch, textutil fallback, no helper process, OwnDocumentReaders, comparison test; src: TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
 
-Own readers of rich text, Word 97-2003, OpenDocument text, and Word 2003 XML (FMT47 and FMT27, FMT53; November 4 to 6, 2026): TextMouth's own code reads rtf, rtfd, doc, odt, and wordml documents, the same in both apps, with no helper process and no textutil.
+Own readers of rich text, Word 97-2003, OpenDocument text, and Word 2003 XML (FMT47 and FMT27, FMT53): TextMouth's own code reads rtf, rtfd, doc, odt, and wordml documents, the same in both apps, with no helper process and no textutil.
 The rich text and Word 97-2003 readers replaced textutil in 0.3.1, and the OpenDocument and Word 2003 XML readers in 0.4.0, each after its comparison test (RTFTextutilComparisonTests, WordDocumentComparisonTests, ODTTextutilComparisonTests, WordMLReaderTests) found the same words as textutil's in every sample and at least its headings and pages (see [Testing](../../developer/testing-goldens.md)).
 
 ### The route and the switches

@@ -28,7 +28,7 @@
     "docs/architecture/state/imports-duplicates.md": {"line-length": 17},
     "docs/architecture/state/imports-kindle.md": {"line-length": 15},
     "docs/architecture/state/imports-office-xml.md": {"line-length": 11},
-    "docs/architecture/state/imports-rtf-and-word.md": {"date": 1, "line-length": 29},
+    "docs/architecture/state/imports-rtf-and-word.md": {"line-length": 29},
     "docs/architecture/state/imports-text-encoding-choice.md": {"date": 1, "line-length": 10},
     "docs/architecture/state/imports-text-encodings.md": {"date": 1, "line-length": 35},
     "docs/architecture/state/imports-textutil.md": {"date": 3, "line-length": 18},
