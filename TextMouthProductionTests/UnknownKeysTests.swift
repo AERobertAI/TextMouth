@@ -466,6 +466,70 @@ final class UnknownKeysTests: XCTestCase {
         }
     }
 
+    // MARK: - The Files 0.4.11 Wrote
+
+    /// `TestData/stored-v0.4.11`: one library.json, bookInfo.json,
+    /// config.json, and reading_stats.json as TextMouth 0.4.11 wrote them,
+    /// found from this file's own location, as the other fixtures are.
+    /// They were made by the code at the tag v0.4.11, in a test run there
+    /// on GitHub Actions that printed each file's bytes: library.json by
+    /// `LibraryPersistenceService.encodedIndex`, bookInfo.json by
+    /// `BookInfo.saveRecord(to:)`, config.json by `ConfigService.fileData`,
+    /// and reading_stats.json by an encoder set as that version's private
+    /// write sets its own (ISO 8601 dates, pretty printed, sorted keys).
+    private static var filesFrom0411: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("TestData", isDirectory: true)
+            .appendingPathComponent("stored-v0.4.11", isDirectory: true)
+    }
+
+    /// The settings config.json gained after 0.4.11, each of which a save
+    /// writes with its default into a file that lacks it. None yet: a
+    /// setting added later is named here, and is then left out of the
+    /// comparison with the 0.4.11 file, which becomes one of values.
+    private static let settingsAddedSince0411: Set<String> = []
+
+    /// Each file TextMouth 0.4.11 wrote is, after a load and a save by this
+    /// version, the same bytes, and is found to hold no unknown key. The
+    /// files were written by the old encoders, so an encoder and a decoder
+    /// changed the same way cannot pass, as they can in a round trip
+    /// through the new code alone (review6, finding 4).
+    func testTheFiles0411WroteAreWrittenBackByteForByte() throws {
+        let folder = Self.filesFrom0411
+
+        let index = try Data(contentsOf: folder.appendingPathComponent("library.json"))
+        let library = try LibraryPersistenceService.decodeIndex(from: index)
+        XCTAssertEqual(library.books.count, 2)
+        XCTAssertTrue(library.unreadableRows.isEmpty)
+        XCTAssertEqual(try LibraryPersistenceService.encodedIndex(library), index)
+        XCTAssertFalse(StoredKeyScan.mayHoldUnknownKeys(index, schema: Library.keySchema))
+
+        let record = try Data(contentsOf: folder.appendingPathComponent("bookInfo.json"))
+        let package = try makeSandboxDirectory("Stored by 0.4.11")
+        let file = TextMouthPaths.bookInfoPath(in: package)
+        try record.write(to: file)
+        try BookInfo.load(from: package).saveRecord(to: package)
+        XCTAssertEqual(try Data(contentsOf: file), record)
+        XCTAssertFalse(StoredKeyScan.mayHoldUnknownKeys(record, schema: BookInfo.keySchema))
+
+        let config = try Data(contentsOf: folder.appendingPathComponent("config.json"))
+        let written = try ConfigService.fileData(for: ConfigService.decode(config))
+        if Self.settingsAddedSince0411.isEmpty {
+            XCTAssertEqual(written, config)
+        } else {
+            var fields = try XCTUnwrap(try Self.tree(written) as? [String: Any])
+            for added in Self.settingsAddedSince0411 {
+                fields[added] = nil
+            }
+            XCTAssertEqual(fields as NSDictionary, try Self.tree(config))
+        }
+
+        let statistics = try Data(contentsOf: folder.appendingPathComponent("reading_stats.json"))
+        XCTAssertEqual(try ReadingStats.decodeFile(statistics).fileData(), statistics)
+    }
+
     // MARK: - The Hand-Written Encoders Write What the Synthesized Ones Wrote
 
     /// Each record that now writes itself by hand, to put its unknown keys
