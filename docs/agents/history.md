@@ -1015,3 +1015,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Third-party code
 
 - **The mobi.js that was read:** Four of the Kindle reader's files follow mobi.js closely, as read on November 4, 2026 (mobi.js last changed in commit 9a676796, April 3, 2026).
+
+## From Shared helpers: values, ordering, and wording
+
+- **TimeEntry's move:** It moved from the audio editor, where it was AudioEditorTimeEntry, with P08.
