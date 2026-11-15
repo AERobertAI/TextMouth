@@ -23,7 +23,7 @@ description: Find, show, and check the sections of TextMouth's docs and memory f
 - `doclib outline PAGE`: each section's lines, id, size, and number of cited paths.
 - `doclib code TARGET`: the files and Swift declarations a section names, each with its line.
 - `doclib stale`: cited paths and backticked Swift names that no longer exist; `stale-allowlist.txt` holds framework names.
-- `doclib suggest-src TARGET`: the paths a section's marker `src` should hold.
+- `doclib suggest-src TARGET [--strings]`: the paths a section's marker `src` should hold; with `--strings`, the Swift files whose string literals hold the section's heading and its quoted or bold names and menu paths (a `…Wording` file first, with the files that use it), for a user page that names no code.
 - `doclib lint [--report] [--rule R,..] [--skip R,..] [--page PAGE] [--against REF]`: the docs, AGENTS.md, and CLAUDE.md against docs/agents/writing-docs.md; it fails only when a page has more violations than `lint-baseline.json` records.
 - `doclib lint --update-baseline`: lowers the baseline after a fix, and never raises it.
 - `doclib split-check OLD NEW... [--files-to-src] [--update-baseline]`: whether the NEW pages hold OLD's words in order (OLD may be `REF:PATH`, or several joined by commas); the last option hands the OLD pages' counts to the new ones.
