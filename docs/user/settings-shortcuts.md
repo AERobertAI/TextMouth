@@ -7,11 +7,18 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: shortcuts-tab-changing-keys; keys: keyboardShortcuts, customKeyboardBindings, hotkeys, reserved keys, macOS menu keys, one press; src: TextMouth/Views/Settings/KeyboardShortcutsSettingsView.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/ShortcutEdits.swift, TextMouth/Services/KeyboardShortcutManager.swift -->
 
 The Shortcuts tab changes the shortcuts for reading, navigation, bookmarks, the sleep timer, information (Where Am I?, Where Am I?
-Full Summary, Speak Info, Speak Full Info, Speak Import Progress, and Speak Download Progress), the library's actions, the File menu's Open Book…, New from Text…, and New Recording…, the New Recording window's buttons, under New Recording, the window's name, and the audio editor, whose group, Audio Editor, works only in an editor window (see [Editing audio](editing-audio.md)).
+Full Summary, Speak Info, Speak Full Info, Speak Import Progress, and Speak Download Progress).
+It also changes the shortcuts for the library's actions, the File menu's Open Book…, New from Text…, and New Recording…, the New Recording window's buttons, under New Recording, the window's name.
+It changes those of the audio editor too, whose group, Audio Editor, works only in an editor window (see [Editing audio](editing-audio.md)).
 A key set there acts before the menus see it, except a menu command's.
-Open Book…, New from Text…, and New Recording… (under File), Import Folder…, Add Feed…, and Search Library… (under Library), Copy Reading Position and Search in Book (under Playback), and the New Recording window's Record, Pause or Resume, and Stop (under New Recording) keep their keys in their menu items, which show the key in force, as VoiceOver reads it, and in that window's buttons, whose hints name the key in force.
-Each holds one key, one press of a key with Command or Control that a text field doesn't edit with, and any other is refused, saying why, as in "W not recorded for Open Book…: a menu command's shortcut is one press of a key with Command or Control." or "Control + A not recorded for Open Book…: a text field edits with it, and a menu command's shortcut would take it from the field."
-No shortcut may take a key one of macOS's own commands has in the menus, unless it is that action's own default, as Select All's Command-A is: Quit (Command-Q), Close (Command-W), Close All (Option-Command-W), Settings (Command-Comma), Hide (Command-H), Hide Others (Option-Command-H), Minimize (Command-M), Minimize All (Option-Command-M), and the Edit menu's Undo (Command-Z), Redo (Shift-Command-Z), Cut (Command-X), Copy (Command-C), Paste (Command-V), Paste and Match Style (Option-Shift-Command-V), and Select All (Command-A), as in "Command + Q not recorded for Where Am I?: Quit TextMouth has it in the menus, and no shortcut may take it."
+Open Book…, New from Text…, and New Recording… (under File), Import Folder…, Add Feed…, and Search Library… (under Library), and Copy Reading Position and Search in Book (under Playback) keep their keys in their menu items, which show the key in force, as VoiceOver reads it.
+The New Recording window's Record, Pause or Resume, and Stop (under New Recording) keep theirs in their menu items too, and in that window's buttons, whose hints name the key in force.
+Each holds one key, one press of a key with Command or Control that a text field doesn't edit with.
+Any other is refused, saying why, as in "W not recorded for Open Book…: a menu command's shortcut is one press of a key with Command or Control." or "Control + A not recorded for Open Book…: a text field edits with it, and a menu command's shortcut would take it from the field."
+No shortcut may take a key one of macOS's own commands has in the menus, unless it is that action's own default, as Select All's Command-A is.
+Those commands are Quit (Command-Q), Close (Command-W), Close All (Option-Command-W), Settings (Command-Comma), Hide (Command-H), Hide Others (Option-Command-H), Minimize (Command-M), and Minimize All (Option-Command-M).
+The Edit menu's commands are Undo (Command-Z), Redo (Shift-Command-Z), Cut (Command-X), Copy (Command-C), Paste (Command-V), Paste and Match Style (Option-Shift-Command-V), and Select All (Command-A).
+A refusal says so, as in "Command + Q not recorded for Where Am I?: Quit TextMouth has it in the menus, and no shortcut may take it."
 TextMouth keeps a record of the shortcuts you change, and only those, and a shortcut can be one key pressed twice:
 
 ### How VoiceOver reads a row
@@ -25,7 +32,8 @@ A key pressed twice is said and shown with "twice" after it, as in "W twice".
 <!-- id: edited-shortcuts-reset-default; keys: Edited, Reset to Default, Actions menu, VO-Command-Space, changed shortcut; src: TextMouth/Views/Settings/KeyboardShortcutsSettingsView.swift, TextMouth/Models/ShortcutEdits.swift -->
 
 A shortcut you change is marked Edited, after its keys on screen and at the end of its row's label, as in "Release Media Controls: Shift + R. Edited.", and stays yours, even set back to its default keys, until you give it back.
-Reset to Default, a button on each edited row and one of the row's actions in VoiceOver's Actions menu (VO-Command-Space), gives the action back TextMouth's default keys, less any that an action you changed holds, and says the keys it has then, as in "Next Bookmark reset to default: Option + Shift + Command + B."
+Reset to Default, a button on each edited row and one of the row's actions in VoiceOver's Actions menu (VO-Command-Space), gives the action back TextMouth's default keys, less any that an action you changed holds.
+It says the keys it has then, as in "Next Bookmark reset to default: Option + Shift + Command + B."
 Reset to Defaults, at the end of the tab, asks first, then gives every action back its default keys and where it works by default.
 
 ### Defaults, and taking a key from another action
@@ -65,8 +73,10 @@ So W, J, K, L, F, and B, the defaults that are a letter alone, work in reader wi
 ### How the record of your changes began
 <!-- id: how-record-your-changes-began; keys: customKeyboardBindings, upgrade, migration, saved before, old preferences; src: TextMouth/Models/ShortcutEdits.swift, TextMouth/Services/ConfigService.swift -->
 
-The first time TextMouth keeps this record on a Mac, it makes it from every action's keys as saved before, in its preferences and in config.json, taking the file's keys for an action you changed in the file while TextMouth was closed, and then saves config.json in its new form (see [Editing settings in config.json](config-json.md)).
-An action whose saved keys were its default, today's or an earlier one, or that default less a key you gave another action, counts as never changed and follows today's defaults: a Next Bookmark saved with Shift-Command-B, its default until March 24, 2026, takes today's Option-Shift-Command-B and leaves Shift-Command-B to Show Bookmarks.
+The first time TextMouth keeps this record on a Mac, it makes it from every action's keys as saved before, in its preferences and in config.json, taking the file's keys for an action you changed in the file while TextMouth was closed.
+It then saves config.json in its new form (see [Editing settings in config.json](config-json.md)).
+An action whose saved keys were its default, today's or an earlier one, or that default less a key you gave another action, counts as never changed and follows today's defaults.
+A Next Bookmark saved with Shift-Command-B, its earlier default, takes today's Option-Shift-Command-B and leaves Shift-Command-B to Show Bookmarks.
 The old copy in the preferences stays as it was, and TextMouth never writes it again.
 When config.json is already in the new form, as another Mac sharing the library writes it, the record is made from the file instead.
 
@@ -104,7 +114,8 @@ Try a Double Press, under the time, says "Press a key twice.", takes your next t
 Set the time above 0.7 seconds to count them as one.", or, 2 seconds apart or more, that the time goes up to 2 seconds; "Two different keys.
 A double press is one key pressed twice."; or, when five seconds pass first, "No key was pressed twice."
 The text under the button keeps the last result, as in "Last try: Double press.", for a braille display to read again, until TextMouth quits; while a try waits for its presses, it reads "Press a key twice."
-A line of text under the button and its result, which VoiceOver and a braille display read, says why a letter shortcut does nothing in a Library window: "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, so a shortcut that is a letter alone, such as W, works only in other windows."
+A line of text under the button and its result, which VoiceOver and a braille display read, says why a letter shortcut does nothing in a Library window.
+It reads "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, so a shortcut that is a letter alone, such as W, works only in other windows."
 
 ### Shift with a shortcut's key
 <!-- id: shift-shortcut-key; keys: Shift-J, Shift-L, Shift skip units, Increase Speed, Command-Plus; src: TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Models/KeyboardShortcut.swift -->
@@ -135,6 +146,11 @@ Like Next in Reading List and Previous in Reading List, they have no keys until 
 ## Keys a text field keeps
 <!-- id: keys-text-field-keeps; keys: search field, Command-Delete, text editing keys, Control-A, field focus; src: TextMouth/Models/TextEditingKeys.swift, TextMouth/Services/KeyboardShortcutManager.swift -->
 
-While a text field or text area has the keyboard, the Library's search field and every sheet's fields included, the keys that edit text are the field's and never act as shortcuts: Delete and Forward Delete, the arrows, Home, End, Page Up, and Page Down, with any modifiers; Command-A, Command-C, Command-V, Command-X, Command-Z, and Shift-Command-Z; and Control with A, B, D, E, F, H, K, L, N, O, P, T, V, or Y. So in the search field Command-Delete deletes to the start of the line rather than removing the selected books, Command-A selects the field's text rather than every book, and Command-Left Arrow and Command-Right Arrow move to the ends of the line rather than skipping.
+While a text field or text area has the keyboard, the Library's search field and every sheet's fields included, the keys that edit text are the field's and never act as shortcuts.
+They are Delete and Forward Delete, the arrows, Home, End, Page Up, and Page Down, with any modifiers.
+They are also Command-A, Command-C, Command-V, Command-X, Command-Z, and Shift-Command-Z.
+And they are Control with A, B, D, E, F, H, K, L, N, O, P, T, V, or Y. So in the search field Command-Delete deletes to the start of the line rather than removing the selected books.
+Command-A selects the field's text rather than every book.
+Command-Left Arrow and Command-Right Arrow move to the ends of the line rather than skipping.
 Every other shortcut with Command or Control works from a field, such as Command-I for Book Info, and a key with neither types in the field, as it always has.
 Leave the field, with Tab, to use those keys as shortcuts.
