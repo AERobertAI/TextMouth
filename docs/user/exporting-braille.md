@@ -1,10 +1,10 @@
 # Exporting braille files
-<!-- id: exporting-books-braille-files; keys: ; src: -->
+<!-- id: export-braille-files; keys: BRF, PEF, liblouis, embosser, braille display; src: TextMouth/Services/Export/BrailleExportWriters.swift, TextMouth/Views/Export/BrailleExportOptionsView.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## BRF and PEF
-<!-- id: brf-pef; keys: ; src: -->
+<!-- id: export-brf-pef; keys: BANA Braille Formats 2016, six-dot, North American Braille ASCII, form feed, Unicode braille; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
 
 BRF and PEF translate the book's text to braille with liblouis, in the language, code, and contraction of the options below, and lay it out in pages as BANA's Braille Formats (2016) says.
 Both hold six-dot cells only.
@@ -12,7 +12,7 @@ A BRF writes each cell as a character, North American Braille ASCII unless you c
 A PEF is XML that holds the same pages as Unicode braille, for embossers; its head names the book's title, its author when the library has one, its language (English when the book names none), a unique identifier, and the date it was made.
 
 ## The braille options
-<!-- id: braille-options; keys: ; src: -->
+<!-- id: export-braille-options; keys: Cells per line, Lines per page, Line ends, Braille file characters, CR LF, stepper; src: TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/Models/BookExportWording.swift -->
 
 While BRF or PEF is chosen, options sit under the Convert to pop-up, in the order below.
 They start from the Braille setting (see [Settings](settings.md)), at 40 cells by 25 lines with page numbers on and, for a BRF, CR LF line ends and the braille file characters of the Braille tab.
@@ -45,12 +45,12 @@ Each is read as its label, its value, and its hint:
   A PEF always holds Unicode braille, so it has no such choice.
 
 ## Pop-ups from the Braille tab
-<!-- id: pop-ups-from-braille-tab; keys: ; src: -->
+<!-- id: export-braille-tab-pop-ups; keys: Mac tables, table check, refusal; src: TextMouth/Views/Export/BrailleExportOptionsView.swift -->
 
 The three pop-ups are the Braille tab's own, so they offer this Mac's tables too, check a Mac table the first time it is chosen, and speak a refusal as the Braille tab does (see [Settings](settings.md)).
 
 ## When the Settings table can't be used
-<!-- id: when-settings-table-cant-be; keys: ; src: -->
+<!-- id: export-braille-table-unusable; keys: Unified English Braille, Grade 2, fallback table, display name; src: TextMouth/Views/Export/BrailleExportOptionsView.swift -->
 
 When the table chosen in Settings cannot be used here, the options start from Unified English Braille, contracted (Grade 2), and say so under the pop-ups until you choose another table:
 
@@ -59,14 +59,14 @@ The table cannot be used when this Mac no longer has it, when it is this Mac's c
 The sentence names the table by its display name, or by its file name when this Mac does not offer it.
 
 ## Export while a table is being checked
-<!-- id: export-while-table-being-checked; keys: ; src: -->
+<!-- id: export-while-table-being-checked; keys: Export hint, table check wait, Stop; src: TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/ViewModels/BookExportModel.swift -->
 
 An export started while a table just chosen here is being checked waits for the check, and Stop is offered meanwhile: Stop, or closing the dialog, ends the export before it writes anything.
 While the check runs, the Export button's hint is "Exports the checked items to the folder once the braille table just chosen has been checked."
 The export then writes with the table the pop-ups show once the check has passed, or the one they went back to.
 
 ## Eight-dot braille characters
-<!-- id: eight-dot-braille-characters; keys: ; src: -->
+<!-- id: export-eight-dot-braille; keys: eight-dot cell, six-dot, @ sign, email address; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
 
 Eight-dot braille characters already in a book's text are written as their six-dot part.
 A table that writes an ordinary character as an eight-dot cell fails that book's export, naming the character, as in "Couldn't export Moby-Dick - Text.brf: The braille table writes “«” as an eight-dot cell, and TextMouth writes BRF and PEF files in six-dot braille only."
@@ -74,7 +74,7 @@ When no one character is to blame, the sentence names the cell's dots.
 Some tables write @ in eight-dot computer braille, so a book holding an e-mail address fails to export with them; the other books export.
 
 ## The braille layout
-<!-- id: braille-layout; keys: ; src: -->
+<!-- id: export-braille-layout; keys: heading cells, paragraph indent, list indent, page number, blank lines; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
 
 The layout:
 
@@ -89,7 +89,7 @@ The layout:
 - When "Braille page numbers" is checked, a page's last line carries its braille page number at the right, so a page holds one line of text fewer than "Lines per page" says.
 
 ## Quotes, code, tables, and links in braille
-<!-- id: quotes-code-tables-links-braille; keys: ; src: -->
+<!-- id: export-braille-blocks; keys: quote, code block, table rows, thematic break, link text; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
 
 A quote is written as the text of its blocks, a code block as a paragraph for each of its lines that has text, and a table as a paragraph for each row, its cells apart by semicolons.
 A thematic break writes nothing.
@@ -97,7 +97,7 @@ The address of a link is not written, only its text.
 Italic and bold are written as emphasis, as the next bullet says, except in a table's cells, a code block, a numbered item's number, and the book's title, which are plain.
 
 ## Italic and bold in braille
-<!-- id: italic-bold-braille; keys: ; src: -->
+<!-- id: export-braille-emphasis; keys: emphasis signs, UEB, EBAE, sample test, byte for byte; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
 
 Italic and bold in the book's text are written as the braille code's emphasis signs, where the table carries them.
 TextMouth's braille helper tests each table it uses, by writing a sample with each kind of emphasis and reading it back, and a table whose signs do not read back exactly as written writes plain braille.
@@ -106,22 +106,22 @@ English Braille, American Edition, and most of this Mac's tables do not, since l
 TextMouth reads UEB braille back with its emphasis, as italic and bold in the book's text, and a word before an emphasis end sign comes back whole (see [What TextMouth reads](what-textmouth-reads.md), which also says how EBAE braille is read).
 
 ## A character the table lacks
-<!-- id: character-table-lacks; keys: ; src: -->
+<!-- id: export-braille-missing-characters; keys: Chinese, Cyrillic, emoji, escape notation; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
 
 A character the table lacks, such as Chinese, Cyrillic, or an emoji, is written in liblouis's escape notation, and TextMouth reads it back as that notation.
 
 ## A word longer than a line
-<!-- id: word-longer-than-line; keys: ; src: -->
+<!-- id: export-braille-long-words; keys: hyphen, slash, line break; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
 
 A word longer than a line is cut after a hyphen or slash where it can be, and never inside a number.
 The cut adds no hyphen or continuation indicator yet.
 
 ## Reading TextMouth's braille back
-<!-- id: reading-textmouth-braille-back; keys: ; src: -->
+<!-- id: export-braille-read-back; keys: heading levels, import of braille, levels 1 and 2; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
 
 TextMouth reads its own braille back with fewer heading levels than it wrote: levels 1 and 2 are both centered, so they read back as level 1; level 3, at cell 5, as level 2; and levels 4 to 6, at cell 7, as level 3 (see [What TextMouth reads](what-textmouth-reads.md)).
 
 ## Stop during a braille translation
-<!-- id: stop-during-braille-translation; keys: ; src: -->
+<!-- id: export-braille-stop; keys: helper time limit, translation, Stop; src: TextMouth/Services/Export/BrailleExportWriters.swift, TextMouth/ViewModels/BookExportModel.swift -->
 
 Stop is read before a book's translation begins and after it ends, not during it, so a Stop pressed while a long book is translated takes effect when the translation ends, at the latest at the helper's time limit (see [Where TextMouth keeps your library](where-your-library-lives.md)).
