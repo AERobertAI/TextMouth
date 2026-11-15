@@ -141,11 +141,11 @@ struct ContentAnalysisSummary: Sendable {
         let recorded = record.relocatablePlaces
         var moved = original
 
-        // The position: the record's, unless the row's is newer or the
-        // record has none.
+        // The position: the record's, unless the row's is newer, to the
+        // second (`ReadingPosition.isSavedLater(than:)`), or the record has
+        // none.
         if let recordedPosition = recorded.position {
-            let rowDate = original.position.map { storedSecond(of: $0.lastUpdated) }
-            if rowDate.map({ storedSecond(of: recordedPosition.lastUpdated) >= $0 }) ?? true {
+            if original.position.map({ !$0.isSavedLater(than: recordedPosition) }) ?? true {
                 moved.position = recordedPosition
             }
         }
@@ -168,12 +168,6 @@ struct ContentAnalysisSummary: Sendable {
 
         guard !Book.isAsStored(moved, original) else { return nil }
         return MovedPlaces(bookID: row.id, original: original, moved: moved, snapshot: nil)
-    }
-
-    /// `date` as the library's files store it: to the second (ISO 8601),
-    /// so two dates compare as the files would show them.
-    private static func storedSecond(of date: Date) -> TimeInterval {
-        date.timeIntervalSince1970.rounded(.down)
     }
 
     /// Gives `book`, the library row, the committed analysis fields and

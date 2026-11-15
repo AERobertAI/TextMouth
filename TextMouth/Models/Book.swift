@@ -1518,6 +1518,50 @@ struct Book: Identifiable, Codable, Hashable {
         }
     }
 
+    /// This book's reading state (`ReadingState`, in Book+ReadingState.swift,
+    /// risk 2 of the local-first research). Setting it changes exactly those
+    /// fields, as `libraryFields` changes its own, so everything else stays.
+    /// It lives here, beside the fields, because the skipped headings are
+    /// set together: their IDs first, which the headings follow, then the
+    /// headings exactly as the state holds them, so the two lists stay the
+    /// pair the state's copy of the book kept.
+    var readingState: ReadingState {
+        get {
+            ReadingState(
+                readingPosition: readingPosition,
+                lastOpened: lastOpened,
+                lastPlaybackStarted: lastPlaybackStarted,
+                lastPlaybackStopped: lastPlaybackStopped,
+                bookmarks: bookmarks,
+                skippedHeadingIDs: skippedHeadingIDs,
+                skippedHeadings: skippedHeadings,
+                waitingSkippedHeadings: waitingSkippedHeadings,
+                localVoiceID: localVoiceID,
+                localWPM: localWPM,
+                localPitch: localPitch,
+                localEndOfBookBehavior: localEndOfBookBehavior,
+                localSkipForwardUnit: localSkipForwardUnit,
+                localSkipBackwardUnit: localSkipBackwardUnit
+            )
+        }
+        set {
+            readingPosition = newValue.readingPosition
+            lastOpened = newValue.lastOpened
+            lastPlaybackStarted = newValue.lastPlaybackStarted
+            lastPlaybackStopped = newValue.lastPlaybackStopped
+            bookmarks = newValue.bookmarks
+            skippedHeadingIDs = newValue.skippedHeadingIDs
+            skippedHeadings = newValue.skippedHeadings
+            waitingSkippedHeadings = newValue.waitingSkippedHeadings
+            localVoiceID = newValue.localVoiceID
+            localWPM = newValue.localWPM
+            localPitch = newValue.localPitch
+            localEndOfBookBehavior = newValue.localEndOfBookBehavior
+            localSkipForwardUnit = newValue.localSkipForwardUnit
+            localSkipBackwardUnit = newValue.localSkipBackwardUnit
+        }
+    }
+
     /// Overlay metadata kept by TextMouth onto values extracted from the EPUB.
     /// Optional fields distinguish an unedited legacy book from an intentional
     /// empty-string edit that clears publisher or publication date.
@@ -1783,6 +1827,17 @@ struct Book: Identifiable, Codable, Hashable {
     /// (`TextEncodingRecord.standing(row:recorded:)`), which a recovered
     /// analysis and every reading of the book's file follow too.
     ///
+    /// The listener's reading state (`ReadingState`: the place, the playback
+    /// times, the bookmarks, the skipped headings, and the book's own
+    /// settings) is the one that stands between the row's and the stored
+    /// record's (`readingState(standingAgainst:)`, risk 2 of the local-first
+    /// research): the row's, unless the stored record, this book's own, holds
+    /// a place saved later, as another Mac sharing the library writes one
+    /// while this Mac's row lags behind. So a row that lags never writes its
+    /// older place, bookmarks, or settings over the record's. On one Mac the
+    /// record is written from the row, and the row's state is written as it
+    /// always was.
+    ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
@@ -1804,6 +1859,11 @@ struct Book: Identifiable, Codable, Hashable {
         decidingBrailleFileCode: Bool = false
     ) -> BookInfo {
         var recorded = self
+        // The reading state that stands between the row and the stored
+        // record: the record's only when it holds the later place (risk 2).
+        if let stored {
+            recorded.takeStandingReadingState(of: stored.info)
+        }
         var index = contentIndex
         if index == nil, let stored, stored.keepsContentIndex {
             index = stored.info.contentIndex

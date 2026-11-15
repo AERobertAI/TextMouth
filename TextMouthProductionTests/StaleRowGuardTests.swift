@@ -1,0 +1,206 @@
+import XCTest
+@testable import TextMouth
+
+/// Risk 2 of LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md, the first of Phase
+/// 0's guards: reopening a book on a Mac that is behind must not put the
+/// book's old place back, newly dated. Another Mac sharing the library in
+/// the cloud writes its later place, bookmarks, and settings into the
+/// book's record (bookInfo.json) while this Mac's row lags behind; these
+/// tests stand for that Mac with a record written as it writes one, never
+/// with a real drive.
+///
+/// - The rule (`Book.readingState(standingAgainst:)`): the record's state
+///   stands only when its place was saved later, to the second.
+/// - The record's rebuild from the row (`Book.bookInfo(replacing:...)`)
+///   never writes a row's older place, bookmarks, or settings over it.
+/// - A reader opening the book opens at the later place, with its
+///   bookmarks and settings, and a place saved without moving keeps its
+///   date (`ReaderViewModel.savePosition()`).
+///
+/// Beside each guard, the case of one Mac and one library: the row's state
+/// is written and kept exactly as before.
+final class StaleRowGuardTests: CloudMaintenanceTestCase {
+    /// When this Mac last read the book: a whole second, as the files keep
+    /// a place's date.
+    private static let readHere = Date(timeIntervalSince1970: 1_790_000_000)
+    /// When the other Mac read it, an hour later.
+    private static let readThere = readHere.addingTimeInterval(3600)
+    /// The text of every book here: long enough for every place the tests
+    /// save to stand inside its first chapter.
+    private static let text = "# Opening\n\nSome words, and then a good many more words, so a cursor has room to move."
+
+    // MARK: - The Rule
+
+    /// The record's later place stands, and with it, as one, its bookmarks
+    /// and the book's settings and playback times; the later opening is
+    /// kept.
+    func testTheRecordsLaterPlaceStandsWithItsBookmarksAndSettings() throws {
+        let row = try rowReadHere()
+        let other = readOnTheOtherMac(row)
+
+        let standing = row.readingState(standingAgainst: other.readingState)
+
+        XCTAssertEqual(standing, other.readingState, "the other Mac's whole reading state should stand")
+    }
+
+    /// On one Mac the row is at least as new as its record: its own state
+    /// stands, so a bookmark it deleted and a setting it changed are kept.
+    func testTheRowsStateStandsWhenItsPlaceIsLater() throws {
+        let stored = try rowReadHere()
+        var row = stored
+        row.readingPosition = Self.position(at: 30, savedAt: Self.readThere)
+        row.bookmarks = []
+        row.localVoiceID = "com.textmouth.test.voice"
+
+        let standing = row.readingState(standingAgainst: stored.readingState)
+
+        XCTAssertEqual(standing, row.readingState, "the row's later state should stand, its deletion and its voice too")
+    }
+
+    /// The two copies of one save tie, whatever fraction of a second the
+    /// row's copy still holds, and the row's state stands.
+    func testTwoCopiesOfOneSaveTieAndTheRowStands() throws {
+        var row = try rowReadHere()
+        row.readingPosition = Self.position(at: 12, savedAt: Self.readHere.addingTimeInterval(0.7))
+        var stored = row
+        stored.readingPosition = Self.position(at: 12, savedAt: Self.readHere)
+        stored.bookmarks = [Bookmark(number: 9, chapterIndex: 0, characterOffset: 3, label: "Stored only")]
+
+        let standing = row.readingState(standingAgainst: stored.readingState)
+
+        XCTAssertEqual(standing, row.readingState, "a tie to the second should keep the row's state")
+    }
+
+    /// A place saved later stands even when it is earlier in the book: the
+    /// listener went back to reread on the other Mac.
+    func testALaterPlaceEarlierInTheBookStands() throws {
+        var row = try rowReadHere()
+        row.readingPosition = Self.position(at: 40, savedAt: Self.readHere)
+        var other = row
+        other.readingPosition = Self.position(at: 4, savedAt: Self.readThere)
+
+        let standing = row.readingState(standingAgainst: other.readingState)
+
+        XCTAssertEqual(standing.readingPosition?.characterOffset, 4, "the place saved later should stand, back in the book")
+    }
+
+    /// The later opening is kept when the record's state stands, and the
+    /// row's own opening when its state does.
+    func testTheLaterOpeningIsKept() throws {
+        var row = try rowReadHere()
+        var other = readOnTheOtherMac(row)
+        // This Mac opened the book after the other Mac read it, without
+        // moving its place.
+        row.lastOpened = Self.readThere.addingTimeInterval(60)
+        other.lastOpened = Self.readThere
+
+        XCTAssertEqual(row.readingState(standingAgainst: other.readingState).lastOpened, row.lastOpened)
+        XCTAssertEqual(row.readingState(standingAgainst: other.readingState).readingPosition, other.readingPosition)
+        XCTAssertEqual(other.readingState(standingAgainst: row.readingState).lastOpened, other.lastOpened,
+                       "a row whose state stands keeps its own opening, as before")
+    }
+
+    /// Another book's record, as an old shared package may hold, gives the
+    /// row nothing.
+    func testAnotherBooksRecordChangesNothing() throws {
+        var row = try rowReadHere()
+        let before = row
+        var stranger = readOnTheOtherMac(row).makeBookInfo()
+        stranger.metadata.bookID = UUID()
+
+        XCTAssertFalse(row.takeStandingReadingState(of: stranger))
+        XCTAssertEqual(row, before)
+    }
+
+    // MARK: - The Record's Rebuild From the Row
+
+    /// A row that lags never writes its older place, bookmarks, or settings
+    /// over the record another Mac wrote, while what it changed itself, its
+    /// title here, is written.
+    func testAStaleRowNeverWritesItsOlderStateOverTheRecord() throws {
+        var row = try rowReadHere()
+        let other = readOnTheOtherMac(row)
+        try writeRecord(of: other)
+        row.title = "Retitled Here"
+
+        try row.saveBookInfoThrowing()
+
+        let record = try BookInfo.load(from: row.tmbDirectory)
+        XCTAssertEqual(Book.ReadingState(record: record), other.readingState, "the record should keep the other Mac's state")
+        XCTAssertEqual(record.metadata.title, "Retitled Here", "the row's own change should be written")
+    }
+
+    /// One Mac: the record is written from the row, and a bookmark deleted
+    /// and a voice chosen without moving the place are written as before.
+    func testOnOneMacTheRowsChangesAreWritten() throws {
+        var row = try rowReadHere()
+        try row.saveBookInfoThrowing()
+        row.bookmarks = []
+        row.localVoiceID = "com.textmouth.test.voice"
+
+        try row.saveBookInfoThrowing()
+
+        let record = try BookInfo.load(from: row.tmbDirectory)
+        XCTAssertEqual(Book.ReadingState(record: record), row.readingState, "the row's state should be written whole")
+    }
+
+    // MARK: - Fixtures
+
+    /// A packaged book as this Mac last read it: at offset 5, an hour
+    /// before the other Mac read it, with one bookmark and none of its own
+    /// settings.
+    private func rowReadHere() throws -> Book {
+        var book = try makePackagedBook(title: "Stale Row", text: Self.text)
+        book.readingPosition = Self.position(at: 5, savedAt: Self.readHere)
+        book.lastOpened = Self.readHere
+        book.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: 8, label: "Both Macs", dateCreated: Self.readHere)]
+        return book
+    }
+
+    /// `book` as the other Mac left it, an hour later: further on, with a
+    /// second bookmark, a voice, a speed, an end of its own, and the times
+    /// it played.
+    private func readOnTheOtherMac(_ book: Book) -> Book {
+        var other = book
+        other.readingPosition = Self.position(at: 20, savedAt: Self.readThere)
+        other.lastOpened = Self.readThere
+        other.lastPlaybackStarted = Self.readThere.addingTimeInterval(-600)
+        other.lastPlaybackStopped = Self.readThere
+        other.bookmarks.append(Bookmark(number: 2, chapterIndex: 0, characterOffset: 18, label: "Other Mac", dateCreated: Self.readThere))
+        other.localVoiceID = "com.textmouth.test.other-voice"
+        other.localWPM = 240
+        other.localEndOfBookBehavior = "stop"
+        other.localSkipForwardUnit = SkipUnit.paragraph.rawValue
+        return other
+    }
+
+    /// Writes `book`'s record into its package as another Mac writes one:
+    /// from its own row, over whatever is there.
+    private func writeRecord(of book: Book) throws {
+        var info = book.makeBookInfo()
+        info.state.revision = 7
+        try info.saveRecord(to: book.tmbDirectory)
+    }
+
+    /// A place in the first chapter at `offset`, saved at `date`.
+    private static func position(at offset: Int, savedAt date: Date) -> ReadingPosition {
+        var position = ReadingPosition(chapterIndex: 0, characterOffset: offset)
+        position.lastUpdated = date
+        return position
+    }
+
+    /// A reader of `book`, opened in `model` with settings of its own, once
+    /// its text has loaded; closed when the test ends.
+    @MainActor
+    private func openReader(of book: Book, in model: LibraryViewModel) throws -> ReaderViewModel {
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: model,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        )
+        addTeardownBlock { @MainActor in reader.close() }
+        XCTAssertTrue(waitUntil(timeout: 20) { !reader.isLoading }, "the book should load within 20 seconds")
+        XCTAssertNotNil(reader.content, "the book's text should have loaded")
+        return reader
+    }
+}
