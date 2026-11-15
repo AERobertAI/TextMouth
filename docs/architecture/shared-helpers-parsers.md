@@ -106,7 +106,7 @@ What still calls itself for each level is SwiftSoup's own recursion, which reads
 ## MarkupRefusal cases
 <!-- id: markuprefusal-cases; keys: refusal message, damaged file, error sentence, LocalizedError, import error; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/XMLInputGuard.swift -->
 
-MarkupRefusal has four cases, each a sentence a listener can act on that never calls the file damaged: `nestedTooDeeply(limit:)`, `tooMuchMarkup`, `tooManyAttributes(limit:)`, and `tooMuchWork` (the sentences are in [Adding books](../user/adding-books.md)).
+MarkupRefusal has four cases, each a sentence a listener can act on that never calls the file damaged: `nestedTooDeeply(limit:)`, `tooMuchMarkup`, `tooManyAttributes(limit:)`, and `tooMuchWork` (the sentences are in [Adding books](../user/import-progress-and-errors.md)).
 The pass costs 13% of an HTML parse and under 2% of an XML one, and 0.133 seconds on Webster's 32 MB against the parse's 0.944.
 
 ## DOCX list counting and number formats
