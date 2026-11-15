@@ -1006,6 +1006,28 @@ struct LibraryTransitionMove: Sendable {
     let destination: URL
     /// False when the package already sits in its destination directory.
     let needsDiskMove: Bool
+
+    /// This move with its books' paths and its package's places under the
+    /// data directory in use now (`StorageBoundary.rebasedToCurrent`): a
+    /// move captured before a data-directory move published, as a stranded
+    /// package's retry keeps it, then acts where the moved library is, not
+    /// in the folder it was copied from. Unchanged until a move publishes.
+    func rebasedToCurrent(_ boundary: StorageBoundary = .shared) -> LibraryTransitionMove {
+        LibraryTransitionMove(
+            original: boundary.rebasedToCurrent(original),
+            updated: boundary.rebasedToCurrent(updated),
+            source: Self.rebased(source, boundary),
+            destination: Self.rebased(destination, boundary),
+            needsDiskMove: needsDiskMove
+        )
+    }
+
+    /// The package directory `url` under the data directory in use now, or
+    /// `url` itself when its path does not change.
+    private static func rebased(_ url: URL, _ boundary: StorageBoundary) -> URL {
+        let path = boundary.rebasedToCurrent(url.path)
+        return path == url.path ? url : URL(fileURLWithPath: path, isDirectory: true)
+    }
 }
 
 /// A library transition worked out on the main actor before anything on
@@ -1133,7 +1155,11 @@ enum LibraryTransitionDiskWork {
     /// returns whether it is back. One that cannot be moved back is reported
     /// to the failure center with where it is and where it belongs; its
     /// retry, on the main actor, moves it back and then restores its record
-    /// as the library holds the book then.
+    /// as the library holds the book then. The retry moves a package from
+    /// the main thread, so it waits while an operation holds the storage
+    /// work (`PersistenceFailure.waitsForStorageWork`): a folder edit moving
+    /// packages, or a data-directory move copying them. It then acts where
+    /// the package is now, in the data directory a move published since.
     @discardableResult
     static func moveBack(_ move: LibraryTransitionMove, disk: LibraryTransitionDisk, model: LibraryViewModel?) -> Bool {
         do {
@@ -1148,9 +1174,10 @@ enum LibraryTransitionDiskWork {
                     home: move.source.path
                 ),
                 path: move.destination.path,
-                error: error
+                error: error,
+                waitsForStorageWork: true
             ) { [weak model] _ in
-                guard moveBack(move, disk: disk, model: model) else { return }
+                guard moveBack(move.rebasedToCurrent(), disk: disk, model: model) else { return }
                 model?.retryRecordRestore(ofBookID: move.original.id, disk: disk)
             }
             return false
@@ -1160,7 +1187,9 @@ enum LibraryTransitionDiskWork {
     /// Writes `book`'s record into its package. Success settles the book's
     /// failure; a failure is reported as the book's unsaved record, whose
     /// retry, on the main actor, writes the record of the book as the
-    /// library holds it then (`LibraryViewModel.retryRecordRestore`).
+    /// library holds it then (`LibraryViewModel.retryRecordRestore`). That
+    /// retry writes into a package from the main thread, so it waits while
+    /// an operation holds the storage work, as a stranded package's does.
     static func restoreRecord(of book: Book, disk: LibraryTransitionDisk, restoringThrough model: LibraryViewModel?) {
         do {
             try disk.writeRecord(book)
@@ -1169,7 +1198,8 @@ enum LibraryTransitionDiskWork {
             PersistenceFailureCenter.shared.recordFailure(
                 .bookRecord(bookID: book.id, title: book.title),
                 path: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path,
-                error: error
+                error: error,
+                waitsForStorageWork: true
             ) { [weak model] _ in
                 model?.retryRecordRestore(ofBookID: book.id, disk: disk)
             }
