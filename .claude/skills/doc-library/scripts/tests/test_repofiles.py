@@ -108,8 +108,15 @@ class IsRepoPathTests(DocLibCase):
             with self.subTest(extension=extension):
                 self.assertTrue(self.repo.is_repo_path(f"Thing.{extension}"))
 
-    def test_bare_names_that_are_not_source_files(self) -> None:
-        for token in ("README.md", "project.yml", "Makefile", ".swift", "swift", "Thing.swift.bak", "Services"):
+    def test_bare_names_of_root_files(self) -> None:
+        # The architecture pages' Files: lists name project.yml among the paths.
+        for token in ("README.md", "project.yml", "Makefile"):
+            with self.subTest(token=token):
+                self.assertTrue(self.repo.is_repo_path(token))
+
+    def test_bare_names_that_are_neither_root_files_nor_source_files(self) -> None:
+        for token in ("CHANGELOG.md", "config.json", "writing-docs.md", ".swift", "swift", "Thing.swift.bak",
+                      "Services"):
             with self.subTest(token=token):
                 self.assertFalse(self.repo.is_repo_path(token))
 
@@ -163,6 +170,11 @@ class ResolveTests(DocLibCase):
             self.repo.resolve("Helper.swift"),
             ["TextMouth/Parsers/Helper.swift", "TextMouth/Services/SpeechExport/Helper.swift"],
         )
+
+    def test_a_bare_root_file_resolves_to_itself_alone(self) -> None:
+        repo = RepoFiles(self.root, ["project.yml", "Package.swift", "Vendor/kit/Package.swift"])
+        self.assertEqual(repo.resolve("project.yml"), ["project.yml"])
+        self.assertEqual(repo.resolve("Package.swift"), ["Package.swift"])
 
     def test_a_missing_path_resolves_to_nothing(self) -> None:
         self.assertEqual(self.repo.resolve("Services/Old.swift"), [])

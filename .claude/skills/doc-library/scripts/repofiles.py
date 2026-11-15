@@ -132,7 +132,8 @@ class RepoFiles:
         This is only a syntactic test; ``resolve`` finds what it names. A glob, a
         placeholder, an absolute or home or ``../`` path, a URL, and a path whose
         first folder is not one of the repository's (a data-directory path such as
-        ``Logs/textmouth.log``) are not. A bare name must be a source file's.
+        ``Logs/textmouth.log``) are not. A bare name must be a file at the root or
+        a source file's name.
         """
         if not token or _NOT_A_PATH.search(token):
             return False
@@ -142,6 +143,11 @@ class RepoFiles:
             return False
         if "/" in token:
             return token.split("/", 1)[0] in self.tops
+        # A bare name: a file at the root (``project.yml``, ``Makefile``), which the
+        # architecture pages' Files: lists name, or a source file's name, which may
+        # live anywhere (``DOCXParser+Numbering.swift``).
+        if self.is_file(token):
+            return True
         stem, dot, extension = token.rpartition(".")
         return bool(stem) and bool(dot) and extension in SOURCE_EXTENSIONS
 
@@ -149,13 +155,14 @@ class RepoFiles:
         """The existing paths ``token`` names, sorted; empty when it names nothing.
 
         A path is looked for from the root, then under ``TextMouth/``. One that
-        names a folder resolves to the folder with a trailing slash. A bare file
-        name resolves to every file with that name.
+        names a folder resolves to the folder with a trailing slash. A bare name
+        is the root's file of that name when there is one, else every file with
+        that name.
         """
         if not self.is_repo_path(token):
             return []
         if "/" not in token:
-            return self.by_name(token)
+            return [token] if self.is_file(token) else self.by_name(token)
         wants_folder = token.endswith("/")
         stripped = token.rstrip("/")
         for candidate in (stripped, f"{APP_FOLDER}/{stripped}"):
