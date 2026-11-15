@@ -1369,6 +1369,21 @@ extension ReaderViewModel {
         /// The UTF-16 length of the next chapter's speech, which sets how
         /// long its render takes, and so the lead.
         let nextSpeechLength: Int
+        /// Whether the render, once due, was held off by the phone's memory
+        /// or heat (`mayRenderAhead`), so that it is logged once, not at
+        /// every word spoken until the phone recovers.
+        var wasHeldOff = false
+    }
+
+    /// Whether the system allows a look-ahead render now: on the iPhone,
+    /// what its life cycle says of the memory left and the heat
+    /// (`SpeechRenderCoordinator.mayRenderAhead`); always on the Mac.
+    nonisolated static func systemMayRenderAhead() -> Bool {
+        #if os(iOS)
+        return SpeechRenderCoordinator.shared.mayRenderAhead()
+        #else
+        return true
+        #endif
     }
 
     /// What rendering `speech` asks of the synthesizer now: its exact text,
@@ -1402,15 +1417,6 @@ extension ReaderViewModel {
         // speakable chapter changes when sections are skipped, so an old
         // engine must never stay paired with a newly chosen chapter.
         discardLookAhead()
-
-        #if os(iOS)
-        // The iPhone's life cycle holds look-ahead renders off when memory is
-        // short or the phone is hot (`SpeechRenderCoordinator.mayRenderAhead`).
-        guard SpeechRenderCoordinator.shared.mayRenderAhead() else {
-            DiagnosticLog.trace(.playback, "preRender: held off by the phone's memory or thermal state")
-            return
-        }
-        #endif
 
         // Render exactly the text playback will speak for that chapter.
         let search = searchForSpeakableChapter(from: currentChapterIndex + 1, preparingLongChapters: .inBackground)
@@ -1451,7 +1457,8 @@ extension ReaderViewModel {
     /// seek back out of it leaves a render made or under way alone. The
     /// speed is read as it is asked, so a faster speed reaches the lead
     /// sooner. Nothing starts while a pause has grown long (`longPause`):
-    /// the resume asks again.
+    /// the resume asks again. Nor while the iPhone is hot or short of memory
+    /// (`mayRenderAhead`): the render waits, and each later word asks again.
     func startLookAheadRenderIfDue() {
         // Asked at every spoken word: with no render waiting, nothing more.
         guard let wait = lookAheadWait else { return }
@@ -1465,6 +1472,17 @@ extension ReaderViewModel {
                 wordsPerMinute: speechService.wordsPerMinute,
                 nextChapterLength: wait.nextSpeechLength
             ) else { return }
+        }
+        // Asked now, as the render is about to start, and not when the wait
+        // began minutes earlier: a phone that has grown hot or short of
+        // memory since renders nothing, and one that has recovered renders
+        // at the next word. Refused, the render goes on waiting.
+        guard mayRenderAhead() else {
+            if !wait.wasHeldOff {
+                lookAheadWait?.wasHeldOff = true
+                DiagnosticLog.trace(.playback, "preRender: chapter \(speech.chapterIndex) is due, held off by the phone's memory or thermal state")
+            }
+            return
         }
         lookAheadWait = nil
         DiagnosticLog.trace(.playback, "preRender: chapter \(speech.chapterIndex) is due; rendering it ahead")

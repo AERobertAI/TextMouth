@@ -742,6 +742,46 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    /// A phone that grows hot or short of memory after the wait began starts
+    /// no render at the lead; the render goes on waiting, and starts at the
+    /// first word after the phone has recovered.
+    func testARenderRefusedAtTheLeadWaitsUntilItIsAllowed() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            let edge = try startSpeakingLongChapterSilently(reader)
+            var mayRender = false
+            reader.mayRenderAhead = { mayRender }
+
+            reader.currentCharacterOffset = edge + 1
+            reader.currentCharacterOffset = edge + 50
+            XCTAssertEqual(renders.requested.count, 0)
+            XCTAssertNil(reader.lookAhead)
+            XCTAssertEqual(reader.lookAheadWait?.wasHeldOff, true)
+            XCTAssertEqual(reader.chapterSpeechCache.lookAheadSpeech?.chapterIndex, 1)
+
+            mayRender = true
+            reader.currentCharacterOffset = edge + 60
+
+            XCTAssertEqual(renders.requested.count, 1)
+            XCTAssertEqual(reader.lookAhead?.chapterIndex, 1)
+        }
+    }
+
+    /// A phone hot as the chapter starts still chooses and prepares the
+    /// next chapter, so that the lead finds it waiting.
+    func testARefusalAsTheChapterStartsStillPreparesTheNextChapter() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            reader.mayRenderAhead = { false }
+            let edge = try startSpeakingLongChapterSilently(reader)
+            XCTAssertNotNil(reader.lookAheadWait)
+            XCTAssertEqual(reader.chapterSpeechCache.lookAheadSpeech?.chapterIndex, 1)
+
+            reader.mayRenderAhead = { true }
+            reader.currentCharacterOffset = edge + 1
+
+            XCTAssertEqual(renders.requested.count, 1)
+        }
+    }
+
     // MARK: - A long pause (audit C11)
 
     // A pause that lasts past `LongPauseWatch.delay` lets go of the

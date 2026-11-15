@@ -772,6 +772,10 @@ final class ReaderViewModel: ObservableObject {
     /// is asked for, and when nothing is looked ahead to.
     /// Accessed from the Playback extension.
     var lookAheadWait: LookAheadWait?
+    /// Whether a look-ahead render may start now, asked as each render
+    /// falls due: the system's answer (`systemMayRenderAhead()`), or a
+    /// test's. Accessed from the Playback extension.
+    var mayRenderAhead: () -> Bool = ReaderViewModel.systemMayRenderAhead
     /// Watches a text book's pause for growing long, when the reader lets go
     /// of the look-ahead's audio (audit C11). Accessed from the Playback
     /// extension.
