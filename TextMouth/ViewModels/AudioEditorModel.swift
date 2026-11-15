@@ -82,6 +82,11 @@ final class AudioEditorModel: ObservableObject {
     @Published var markers: [AudioEditMarker] = [] {
         didSet { session.keepMarkers(markers) }
     }
+    /// Whether Export also writes the chapter markers and the markers
+    /// beside the exported audio as an Audacity label file (FMT06,
+    /// `exportLabels(beside:)`): off until it is checked in Export Audio,
+    /// for the window's life.
+    @Published var exportsLabels = false
     /// Whether an edit, a save, or an export is under way: every other
     /// command that would change the audio waits for it, saying so.
     @Published var isWorking = false

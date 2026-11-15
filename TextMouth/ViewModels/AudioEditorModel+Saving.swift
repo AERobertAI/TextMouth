@@ -125,7 +125,9 @@ extension AudioEditorModel {
     // MARK: Exporting
 
     /// Exports the edited audio, saved or not, to a new file at `url` in
-    /// `format`, the book's own file left as it is; says the result.
+    /// `format`, the book's own file left as it is; says the result. With
+    /// `exportsLabels`, the chapter markers and the markers go beside it as
+    /// an Audacity label file (FMT06, `exportLabels(beside:)`).
     func export(as format: AudioExportFormat, to url: URL) async {
         guard beginWork() else { return }
         defer { isWorking = false }
@@ -142,12 +144,64 @@ extension AudioEditorModel {
         do {
             try await session.export(to: url, as: format, progress: progressReporter())
             endProgress()
-            announce(AudioEditorWording.exported(file: url.lastPathComponent))
+            announce(exportLabelsIfAsked(beside: url))
         } catch {
             DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(bookTitle): the audio couldn't be exported (\(AudioEditorLauncher.describe(error)))")
             endProgress()
             announce(AudioEditorWording.exportFailed(error.localizedDescription))
         }
+    }
+
+    // MARK: Labels Beside an Export (FMT06)
+
+    /// What an export says once its audio at `url` is written: that alone,
+    /// or, with `exportsLabels` and any marker to write, with the label file
+    /// written beside it, or why it could not be.
+    private func exportLabelsIfAsked(beside url: URL) -> String {
+        let exported = url.lastPathComponent
+        guard exportsLabels, !labelEntries.isEmpty else { return AudioEditorWording.exported(file: exported) }
+        do {
+            let labels = try exportLabels(beside: url)
+            return AudioEditorWording.exported(file: exported, labels: labels.lastPathComponent)
+        } catch {
+            DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(bookTitle): the labels couldn't be exported (\(AudioEditorLauncher.describe(error)))")
+            return AudioEditorWording.exported(file: exported, labelsFailed: error.localizedDescription)
+        }
+    }
+
+    /// The labels the editor's places make, in time order: each chapter
+    /// marker titled by its title, and each marker by its name, or "Marker
+    /// N" without one, as the list numbers it; each a point.
+    var labelEntries: [AudacityLabels.Label] {
+        let chapterLabels = chapters.map { AudacityLabels.Label(start: $0.start, end: $0.start, text: $0.title) }
+        let markerLabels = orderedMarkers.map { marker in
+            AudacityLabels.Label(
+                start: marker.time,
+                end: marker.time,
+                text: marker.name.nonBlank ?? AudioEditorWording.markerName(number(of: marker), named: "")
+            )
+        }
+        return (chapterLabels + markerLabels).sortedStably { $0.start < $1.start }
+    }
+
+    /// Writes `labelEntries` as an Audacity label file beside the exported
+    /// audio at `url`, under its stem with .txt, or, when a file has that
+    /// name, "<stem> 2.txt" and on, so no file is ever replaced; Audacity
+    /// imports it as a label track beside the audio (File, Import, Labels).
+    /// - Returns: the label file.
+    /// - Throws: the file system's error.
+    @discardableResult
+    func exportLabels(beside url: URL) throws -> URL {
+        let folder = url.deletingLastPathComponent()
+        let stem = url.deletingPathExtension().lastPathComponent
+        var number = 1
+        var labels = folder.appendingPathComponent("\(stem).\(AudacityLabels.fileExtension)")
+        while FileManager.default.fileExists(atPath: labels.path) {
+            number += 1
+            labels = folder.appendingPathComponent("\(stem) \(number).\(AudacityLabels.fileExtension)")
+        }
+        try Data(AudacityLabels.text(of: labelEntries).utf8).write(to: labels, options: .withoutOverwriting)
+        return labels
     }
 
     /// The name an export offers its file: the book's title, and the

@@ -706,6 +706,24 @@ enum AudioEditorWording {
         "Exported “\(file)”."
     }
 
+    /// Said as an export ends that wrote its label file beside the audio
+    /// (FMT06).
+    static func exported(file: String, labels: String) -> String {
+        "Exported “\(file)” and its labels, “\(labels)”."
+    }
+
+    /// Said as an export ends whose audio was written but whose label file
+    /// could not be, for `reason`.
+    static func exported(file: String, labelsFailed reason: String) -> String {
+        "Exported “\(file)”, but its labels couldn't be written. \(reason)"
+    }
+
+    /// The Export Audio checkbox that writes the markers as labels too, and
+    /// its hint (FMT06).
+    static let exportLabelsToggle = "Also write the markers as Audacity labels"
+    static let exportLabelsHint = "Writes the chapter markers and the markers beside the audio, "
+        + "in an Audacity label file of the same name, which Audacity imports as a label track."
+
     /// Said when an export fails.
     static func exportFailed(_ reason: String) -> String {
         "The audio couldn't be exported. \(reason)"

@@ -179,6 +179,46 @@ final class AudioEditorSavingTests: XCTestCase {
         }
     }
 
+    // MARK: - Labels Beside an Export (FMT06)
+
+    /// With its checkbox on, an export writes the chapter markers and the
+    /// markers beside the audio as an Audacity label file of its stem, in
+    /// time order, a marker without a name named by its number; a second
+    /// export of the same name never replaces the first's labels. With the
+    /// checkbox off, as the window opens, none is written.
+    func testAnExportWritesTheMarkersAsLabelsWhenAsked() async throws {
+        let harness = try await openRamp(seconds: 4)
+        let model = harness.model
+        await model.insertChapter(titled: "Quay")
+        model.move(to: 2.5)
+        model.addMarker()
+        let lock = try XCTUnwrap(model.orderedMarkers.last?.id)
+        model.renameMarker(lock, to: "Lock")
+        model.move(to: 1.5)
+        model.addMarker()
+        let folder = try makeSandboxDirectory("editor-labels")
+
+        XCTAssertFalse(model.exportsLabels)
+        await model.export(as: .wav, to: folder.appendingPathComponent("Plain.wav"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("Plain.txt").path))
+
+        model.exportsLabels = true
+        let ferry = folder.appendingPathComponent("Ferry.wav")
+        await model.export(as: .wav, to: ferry)
+        await model.export(as: .wav, to: ferry)
+
+        let expected = "0.000000\t0.000000\tQuay\n1.500000\t1.500000\tMarker 1\n2.500000\t2.500000\tLock\n"
+        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("Ferry.txt"), encoding: .utf8), expected)
+        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("Ferry 2.txt"), encoding: .utf8), expected)
+        XCTAssertTrue(harness.announcements.sentences.contains("Exported “Ferry.wav” and its labels, “Ferry 2.txt”."),
+                      "\(harness.announcements.sentences)")
+        XCTAssertEqual(AudioEditorWording.exportLabelsToggle, "Also write the markers as Audacity labels")
+        XCTAssertEqual(
+            AudioEditorWording.exported(file: "a.wav", labelsFailed: "The disk is full."),
+            "Exported “a.wav”, but its labels couldn't be written. The disk is full."
+        )
+    }
+
     // MARK: - Exporting
 
     /// Export writes the edited audio, unsaved edits and all, to another
