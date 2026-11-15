@@ -184,7 +184,18 @@ Speak Info (FR07): the selected row's information, spoken in a Library window, b
 - How others observe it: LibraryInfoRow.selected (Views/Library/LibraryInfoRow.swift) resolves the row both commands act on.
   The first selected row in the list's order, a folder's, of the folders the Folders section shows (LibraryFeedFolders.folderRows, the feed reader's interface, below), then a feed's, then a book's, since the List selects a folder's or a feed's row by its ID as it does a book's.
   Or else the edit selection's first book.
-  LibraryInfoSubject's initializer, in the same file, gathers that row's facts at the press, as the list shows them then: a book's (BookInfoFacts) with its reader's live position where that is newer, its cloud note and kept state as its row has them, the encoding its file was guessed to be in, or the listener chose, in words, when its record names one (BookInfoFacts.textEncoding, from Book.textEncodingDescription, which only the full summary says, from the row alone; Text files in other encodings, in [Imports](imports-text-encodings.md)), and its file size, measured as the File Size sort measures it, only for the full summary and never for a book in the cloud; for an episode or article in its feed, its feed's title (BookInfoFacts.feedTitle, from LibraryViewModel.feedTitle(of:)), which LibraryInfoWording.placeNote(of:) says in place of a folder, "In The Digital Antiquarian, a feed"; for a book in the reading list, its place there (BookInfoFacts.readingListPlace, said after the place note: the reading list, above); a folder's (FolderInfoFacts) with the books and unopened books of its whole tree, the feeds the Feeds section lists inside it, its own subfolders, and the time left in all its books; a feed's (FeedInfoFacts) with its counts and last check as its row shows them, its folder, and its address; and a feed's folder as its feed.
+  LibraryInfoSubject's initializer, in the same file, gathers that row's facts at the press, as the list shows them then:
+  - a book's (BookInfoFacts) with
+    - its reader's live position where that is newer,
+    - its cloud note and kept state as its row has them,
+    - the encoding its file was guessed to be in, or the listener chose, in words, when its record names one (BookInfoFacts.textEncoding, from Book.textEncodingDescription, which only the full summary says, from the row alone; Text files in other encodings, in [Imports](imports-text-encodings.md)),
+    - and its file size, measured as the File Size sort measures it, only for the full summary and never for a book in the cloud;
+  - for an episode or article in its feed, its feed's title (BookInfoFacts.feedTitle, from LibraryViewModel.feedTitle(of:)), which LibraryInfoWording.placeNote(of:) says in place of a folder, "In The Digital Antiquarian, a feed";
+  - for a book in the reading list, its place there (BookInfoFacts.readingListPlace, said after the place note: the reading list, above);
+  - a folder's (FolderInfoFacts) with the books and unopened books of its whole tree, the feeds the Feeds section lists inside it, its own subfolders, and the time left in all its books;
+  - a feed's (FeedInfoFacts) with its counts and last check as its row shows them, its folder, and its address;
+  - and a feed's folder as its feed.
+
   LibraryInfoWording (Models/LibraryInfoWording.swift) makes every sentence from those facts (shared helpers, below).
 
 ## Which audiobooks play a folder of tracks
