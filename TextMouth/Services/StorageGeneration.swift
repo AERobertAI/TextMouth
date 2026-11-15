@@ -173,6 +173,9 @@ final class StorageBoundary: @unchecked Sendable {
     /// What the operation holding new work back is doing; nil while no
     /// operation holds it.
     private var holdReason: StorageHoldReason?
+    /// Callers waiting for the operation holding new work back to release
+    /// it (`waitForRelease()`), such as a retry kept until the hold ends.
+    private var releaseWaiters: [CheckedContinuation<Void, Never>] = []
     /// The key of this boundary's work depth in each thread's dictionary:
     /// how deep that thread is inside work it is performing here.
     private let workDepthKey = "com.textmouth.storageWorkDepth.\(UUID().uuidString)"
@@ -394,12 +397,37 @@ final class StorageBoundary: @unchecked Sendable {
         return holdReason
     }
 
-    /// Lets the held work go on, under the generation current now.
+    /// Returns once the operation holding new work back, if any, has
+    /// released it: at once while none holds it. A hold taken after the
+    /// release is not waited for, so a caller that must find the work free,
+    /// as a retry kept until an operation ends does
+    /// (`PersistenceFailureCenter`), asks `heldFor` again on the main actor,
+    /// where every hold is taken, and waits again while one is.
+    func waitForRelease() async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            condition.lock()
+            guard holdReason != nil else {
+                condition.unlock()
+                continuation.resume()
+                return
+            }
+            releaseWaiters.append(continuation)
+            condition.unlock()
+        }
+    }
+
+    /// Lets the held work go on, under the generation current now, and
+    /// resumes every caller waiting for the release, outside the lock.
     fileprivate func releaseWork() {
         condition.lock()
         holdReason = nil
+        let waiters = releaseWaiters
+        releaseWaiters.removeAll()
         condition.broadcast()
         condition.unlock()
+        for waiter in waiters {
+            waiter.resume()
+        }
     }
 
     /// The first kind of work under way, in the order of

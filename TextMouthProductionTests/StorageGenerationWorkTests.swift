@@ -190,6 +190,36 @@ final class StorageGenerationWorkTests: XCTestCase {
         }
     }
 
+    /// A wait for the release returns at once while nothing holds the work,
+    /// and otherwise only once the operation holding it lets it go: each
+    /// caller waiting then goes on, however many wait.
+    func testAWaitForTheReleaseEndsOnlyWhenTheHoldIsReleased() async throws {
+        let boundary = try makeBoundary()
+        await boundary.waitForRelease()
+
+        let hold = try makeHold(on: boundary, for: .movingBooksBetweenFolders)
+        let released = Tally()
+        let waiters = (0..<3).map { _ in
+            Task { @MainActor in
+                await boundary.waitForRelease()
+                released.count += 1
+            }
+        }
+        // Only the release resumes a waiter, so however many turns pass,
+        // none has gone on before it.
+        for _ in 0..<20 {
+            await Task.yield()
+        }
+        XCTAssertEqual(released.count, 0, "a wait for the release ended while the work was held")
+
+        hold.release()
+        for waiter in waiters {
+            await waiter.value
+        }
+        XCTAssertEqual(released.count, 3, "a waiter never went on after the release")
+        XCTAssertNil(boundary.heldFor)
+    }
+
     // MARK: - The Import Queue
 
     /// A move waits for the import under way to finish and holds the import
@@ -251,5 +281,11 @@ final class StorageGenerationWorkTests: XCTestCase {
         let gate = DispatchSemaphore(value: 0)
         addTeardownBlock { gate.signal() }
         return gate
+    }
+
+    /// A count kept on the main actor, which tasks there add to.
+    @MainActor
+    private final class Tally {
+        var count = 0
     }
 }
