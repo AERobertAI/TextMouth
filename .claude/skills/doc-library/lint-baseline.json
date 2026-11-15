@@ -31,7 +31,7 @@
     "docs/architecture/state/imports-text-encoding-choice.md": {"line-length": 10},
     "docs/architecture/state/imports-text-encodings.md": {"line-length": 35},
     "docs/architecture/state/imports-textutil.md": {"line-length": 16},
-    "docs/architecture/state/imports.md": {"line-length": 34},
+    "docs/architecture/state/imports.md": {"line-length": 22},
     "docs/architecture/state/library-index-reading-feeds.md": {"line-length": 35},
     "docs/architecture/state/library-index.md": {"line-length": 39},
     "docs/architecture/state/logs.md": {"line-length": 15},
