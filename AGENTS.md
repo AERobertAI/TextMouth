@@ -86,8 +86,12 @@ The agent:
   - the Mac's tests shared with the iPhone unit bundle (1,960 tests);
   - faster GitHub runs, with the iPhone job as a matrix;
   - the doc-library skill, and the docs reworked into marked sections (`make lint-docs` gates at 0 violations).
-- Waiting for the user (`humanQuestions/2026-11-14.md`): the audit's C11 and C12, Markdown from cmark's tree, PDFs read by two workers, the local-first store's drive, ffmpeg, and V04.
-  Their hand checks: Remove Download on one Google Drive and one Dropbox book, and the new cloud alerts and Compare Libraries with VoiceOver.
+- The user answered `humanQuestions/2026-11-14.md`:
+  - yes to C11, to Markdown from cmark's tree, and to V04;
+  - C12 only as a throttle that keeps the stream open, not the full stop;
+  - research into decoders smaller than ffmpeg;
+  - PDFs read by two workers, and the local-first store's Phase 1 (on iCloud Drive), are low priority.
+- Waiting for the user's hand checks: Remove Download on one Google Drive and one Dropbox book, and the new cloud alerts and Compare Libraries with VoiceOver.
 - Open:
   - the iPhone app bundles no Licenses folder, though LAME is linked;
   - `AudioExportTests.testAnMP3BookIsSavedAsMP3` failed once in a full suite and passed alone;
