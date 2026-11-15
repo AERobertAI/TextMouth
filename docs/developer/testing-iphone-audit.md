@@ -1,6 +1,8 @@
 # The audit and its accepted findings
 <!-- id: audit-accepted-findings; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 - Each UI test that audits runs Apple's accessibility audit on the screen showing, `performAccessibilityAudit`, and fails once with every finding that is not accepted.
   Each finding is listed with its type, its element, and Apple's words, so one run shows them all.
   A screenshot of the audited screen is kept with the results.
