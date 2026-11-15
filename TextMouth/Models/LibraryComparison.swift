@@ -54,6 +54,9 @@ struct LibraryUnreadFile: Equatable, Sendable {
         /// The whole comparison had used its time, this many seconds, before
         /// this file was read.
         case timeRanOut(seconds: Int)
+        /// An earlier read of it is still waiting on the drive, or the drive
+        /// has not answered the reads it has, so it was not asked again.
+        case stillBeingFetched
     }
 
     var subject: Subject

@@ -31,6 +31,40 @@ enum LibraryComparisonOutcome: Equatable, Sendable {
 /// Both ways of asking the system are passed in, so tests need no real
 /// drive: `itemStatus` says where a file's content is, and `fetch` brings
 /// one here.
+/// Which files have a fetch out and how many fetches are out in all, so a
+/// drive that never answers can't pile up stuck reads: a fetch is a blocking
+/// read that cannot be cancelled, and each holds a thread. A file whose last
+/// fetch has not returned is never fetched again, and no more than `limit`
+/// fetches are out at once, as the library's own fetch bounds its reads
+/// (`libraryFilesBeingRead`, `libraryFetchReadSlots`).
+final class FetchGuard: Sendable {
+    /// The one the app shares, across comparisons.
+    static let shared = FetchGuard()
+
+    /// How many fetches may be out at once.
+    let limit: Int
+    private let outstanding = OSAllocatedUnfairLock<Set<String>>(initialState: [])
+
+    init(limit: Int = 8) {
+        self.limit = limit
+    }
+
+    /// Notes a fetch of `path` as out; false, noting nothing, when its last
+    /// fetch has not returned or `limit` fetches are out.
+    func begin(_ path: String) -> Bool {
+        outstanding.withLock { paths in
+            guard !paths.contains(path), paths.count < limit else { return false }
+            paths.insert(path)
+            return true
+        }
+    }
+
+    /// Notes the fetch of `path` as returned.
+    func end(_ path: String) {
+        outstanding.withLock { _ = $0.remove(path) }
+    }
+}
+
 struct LibraryCopyReader: Sendable {
     /// Says where each file's content is, without downloading anything.
     var itemStatus: any CloudItemStatusProviding
@@ -46,6 +80,8 @@ struct LibraryCopyReader: Sendable {
     /// When the comparison under way ends, set by `compare`; none for a
     /// copy read on its own.
     private var deadline: Date?
+    /// Bounds the fetches out, across comparisons.
+    var fetchGuard: FetchGuard = .shared
 
     /// A reader asking `itemStatus` where files are and bringing files with
     /// `fetch`, with the limits given.
@@ -54,8 +90,10 @@ struct LibraryCopyReader: Sendable {
         fetch: @escaping LibraryFileFetch,
         waitLimit: Int = 30,
         overallLimit: Int = 300,
-        readSlots: Int = 8
+        readSlots: Int = 8,
+        fetchGuard: FetchGuard = .shared
     ) {
+        self.fetchGuard = fetchGuard
         self.itemStatus = itemStatus
         self.fetch = fetch
         self.waitLimit = waitLimit
@@ -274,15 +312,22 @@ struct LibraryCopyReader: Sendable {
     /// The fetch runs on a queue of its own, so a wait that gives up leaves
     /// it running without holding anything.
     private func bringHere(_ url: URL, waiting seconds: Int) -> LibraryUnreadFile.Reason? {
+        // A file whose last fetch is still out, or a drive with every slot
+        // taken by fetches it never answered, is not asked again: it is
+        // unread at once.
+        let path = url.standardizedFileURL.path
+        guard fetchGuard.begin(path) else { return .stillBeingFetched }
         let failure = OSAllocatedUnfairLock<String?>(initialState: nil)
         let done = DispatchSemaphore(value: 0)
         let fetch = self.fetch
+        let fetchGuard = self.fetchGuard
         DispatchQueue.global(qos: .utility).async {
             do {
                 try fetch(url)
             } catch {
                 failure.withLock { $0 = Self.words(for: error) }
             }
+            fetchGuard.end(path)
             done.signal()
         }
         guard done.wait(timeout: .now() + .seconds(seconds)) == .success else {

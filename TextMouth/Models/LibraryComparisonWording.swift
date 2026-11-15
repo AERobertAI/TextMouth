@@ -174,6 +174,8 @@ enum LibraryComparisonWording {
         case .timeRanOut(let seconds):
             return "Unread: \(what) wasn't read, because TextMouth stopped waiting after \(CountWording.seconds(seconds)) "
                 + "in all, \(consequence)"
+        case .stillBeingFetched:
+            return "Unread: \(what) wasn't asked for again, because the drive hasn't answered an earlier read, \(consequence)"
         }
     }
 
@@ -195,6 +197,8 @@ enum LibraryComparisonWording {
             return "\(what) couldn't be read: \(reason)"
         case .timeRanOut(let seconds):
             return "\(what) wasn't read within \(CountWording.seconds(seconds))"
+        case .stillBeingFetched:
+            return "\(what) wasn't asked for again, because the drive hasn't answered an earlier read"
         }
     }
 

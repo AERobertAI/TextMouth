@@ -147,7 +147,7 @@ final class LibraryCopyReaderTests: XCTestCase {
         let cloud = FakeCloud(onlyInCloud: ["bookInfo.json"])
         let release = DispatchSemaphore(value: 0)
         addTeardownBlock { for _ in 0..<8 { release.signal() } }
-        let reader = LibraryCopyReader(itemStatus: cloud, fetch: { _ in _ = release.wait(timeout: .now() + 30) }, waitLimit: 1)
+        let reader = LibraryCopyReader(itemStatus: cloud, fetch: { _ in _ = release.wait(timeout: .now() + 30) }, waitLimit: 1, fetchGuard: FetchGuard())
         let started = Date()
 
         let outcome = reader.compare(thisFolder: this, otherFolder: other)
@@ -170,7 +170,8 @@ final class LibraryCopyReaderTests: XCTestCase {
             fetch: { _ in _ = release.wait(timeout: .now() + 30) },
             waitLimit: 30,
             overallLimit: 1,
-            readSlots: 1
+            readSlots: 1,
+            fetchGuard: FetchGuard()
         )
 
         let outcome = reader.compare(thisFolder: this, otherFolder: other)
@@ -203,6 +204,48 @@ final class LibraryCopyReaderTests: XCTestCase {
         XCTAssertEqual(model.rows.count, 5)
         XCTAssertTrue(model.copyableText.hasPrefix("5 differences between this library and the copy in "))
         XCTAssertEqual(try snapshot(of: [this, other]), before)
+    }
+
+    /// A drive that never answers is not asked again for a file whose last
+    /// fetch has not returned: the second comparison lists it as unread at once
+    /// and starts no new fetch, so stuck reads never pile up.
+    func testAFileWhoseLastFetchHasNotReturnedIsNotFetchedAgain() throws {
+        let (this, other) = try makeDivergedCopies()
+        let cloud = FakeCloud(onlyInCloud: ["bookInfo.json"])
+        let release = DispatchSemaphore(value: 0)
+        addTeardownBlock { for _ in 0..<16 { release.signal() } }
+        let calls = OSAllocatedUnfairLock<Int>(initialState: 0)
+        let reader = LibraryCopyReader(
+            itemStatus: cloud,
+            fetch: { _ in calls.withLock { $0 += 1 }; _ = release.wait(timeout: .now() + 30) },
+            waitLimit: 1,
+            fetchGuard: FetchGuard()
+        )
+
+        _ = reader.compare(thisFolder: this, otherFolder: other)
+        let first = calls.withLock { $0 }
+        let started = Date()
+        let outcome = reader.compare(thisFolder: this, otherFolder: other)
+
+        guard case .compared(let comparison) = outcome else { return XCTFail("compared: \(outcome)") }
+        XCTAssertEqual(first, 3, "each stuck record was asked for once")
+        XCTAssertEqual(calls.withLock { $0 }, 3, "none was asked for again")
+        XCTAssertEqual(comparison.unread.count, 3)
+        XCTAssertTrue(comparison.unread.allSatisfy { $0.reason == .stillBeingFetched }, "\(comparison.unread)")
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.9, "listed at once, with no wait")
+    }
+
+    /// No more fetches are out at once than the guard allows, however many
+    /// files are only in the cloud.
+    func testNoMoreFetchesAreOutThanTheGuardAllows() {
+        let guardOfTwo = FetchGuard(limit: 2)
+
+        XCTAssertTrue(guardOfTwo.begin("/a"))
+        XCTAssertFalse(guardOfTwo.begin("/a"), "its last fetch is still out")
+        XCTAssertTrue(guardOfTwo.begin("/b"))
+        XCTAssertFalse(guardOfTwo.begin("/c"), "two are out")
+        guardOfTwo.end("/a")
+        XCTAssertTrue(guardOfTwo.begin("/c"))
     }
 
     /// A fetch the sync service fails is unread with its reason, never
