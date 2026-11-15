@@ -108,7 +108,8 @@ Read Again reads the file again, in the encoding chosen or as Automatic reads it
 
 When it is done, the pop-up shows the new encoding, and VoiceOver says what the book is read in now, as in "“Moby-Dick” is now read as KOI8-R (Russian), chosen." or "“Moby-Dick” is now read as UTF-8."
 When TextMouth can't work out what that is, because the book's file went to the cloud as it was read, it says "“Moby-Dick” was read again." instead.
-When text TextMouth did not write was kept, VoiceOver adds "Its earlier text was kept as content.md.edited-…, in the book's package.", with the dots standing for the date and time in the copy's name, and when Edit Text was open on the book it adds, after that, "Edit Text has stopped for Moby-Dick, since its file was read again.
+When text TextMouth did not write was kept, VoiceOver adds "Its earlier text was kept as content.md.edited-…, in the book's package.", with the dots standing for the date and time in the copy's name.
+And when Edit Text was open on the book it adds, after that, "Edit Text has stopped for Moby-Dick, since its file was read again.
 Choose Edit Text again to edit the new text."
 
 ### When a text book can't be read again
