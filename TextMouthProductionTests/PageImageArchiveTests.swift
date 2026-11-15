@@ -91,7 +91,13 @@ final class PageImageArchiveTests: XCTestCase {
             TestZIPEntry("1.png", page),
         ], for: self)
 
+        let cdata = try PageImageFixtures.comicArchive([
+            TestZIPEntry("ComicInfo.xml", PageImageFixtures.comicInfo("<Title><![CDATA[Ferries & Tides]]></Title>")),
+            TestZIPEntry("1.png", page),
+        ], for: self)
+
         XCTAssertEqual(try PageImageArchive(url: series).comicInfo?.bookTitle, "Harbour Notices 2")
+        XCTAssertEqual(try PageImageArchive(url: cdata).comicInfo?.bookTitle, "Ferries & Tides", "a CDATA title is read")
         XCTAssertNil(try PageImageArchive(url: broken).comicInfo)
         XCTAssertNil(try PageImageArchive(url: entities).comicInfo, "entities of its own are never read")
         XCTAssertEqual(try PageImageArchive(url: broken).pageCount, 1)
