@@ -6,7 +6,8 @@ Part of [TextMouth's documentation](../../README.md).
 ## Opening a book's text in your editor
 <!-- id: opening-book-text-your-editor; keys: ; src: -->
 
-Edit Text in Default Editor, in a reader's Book menu or the context menu of a text book or a transcribed audiobook, a feed's episode included but not a feed's article, opens the book's text in the app this Mac opens Markdown files with, or in TextEdit when there is none; Edit Text With… asks which app.
+Edit Text in Default Editor, in a reader's Book menu or the context menu of a text book or a transcribed audiobook, a feed's episode included but not a feed's article, opens the book's text in the app this Mac opens Markdown files with, or in TextEdit when there is none.
+Edit Text With… asks which app.
 The first time, TextMouth explains what happens, with Continue and Cancel; it explains once on each Mac.
 
 ## The text is Markdown
