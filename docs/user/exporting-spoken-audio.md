@@ -1,6 +1,8 @@
 # Exporting text as spoken audio
 <!-- id: text-as-spoken-audio; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 Part of version 0.4.2.
 A text book can be spoken by its voice into one audio file, with a chapter for each heading.
 

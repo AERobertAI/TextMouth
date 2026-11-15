@@ -1,6 +1,8 @@
 # Exporting braille files
 <!-- id: exporting-books-braille-files; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## BRF and PEF
 <!-- id: brf-pef; keys: ; src: -->
 

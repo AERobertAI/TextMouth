@@ -1,6 +1,8 @@
 # Exporting a transcript as captions
 <!-- id: transcript-as-captions; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 Part of version 0.4.2.
 
 ## The Convert transcript to pop-up
