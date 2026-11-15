@@ -278,8 +278,15 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
         }
     }
 
-    func parser(_ parser: XMLParser, foundCharacters string: String) {
+    func parser(_ parser: XMLParser, foundCharacters foundString: String) {
         guard skipDepth == 0 else { return }
+        // The parser's strings are bridged from NSString. Appended to a Swift
+        // string as they are, text beyond ASCII goes in a scalar at a time
+        // (10% of a DAISY import before the November 14, 2026 speed-up, H10);
+        // made native UTF-8 once, it is appended in one step. The text is
+        // the same.
+        var string = foundString
+        string.makeContiguousUTF8()
         if pageLabelDepth > 0 {
             pageLabel += string
             return
