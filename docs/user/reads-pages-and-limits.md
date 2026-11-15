@@ -44,7 +44,8 @@ Part of [TextMouth's documentation](../../README.md).
 
 - In a DAISY book, pages are the page numbers the book gives, which are no longer read aloud as "[Page 12]".
 - A DAISY 3 book of several DTBook files numbers a page that holds no words by its place in the whole book: 1, 2, then 3, 4, where each file used to begin again at 1.
-- The first launch after the update of November 13, 2026 reads every DAISY book again, once, as the DAISY page reader changed (version 1.0.1), and your place follows its words. Only a DAISY 3 book of several DTBook files, with a page that holds no words after an earlier page or with files that were read out of order, ends with another text; every other DAISY book reads byte for byte as before.
+- The first launch after the update of November 13, 2026 reads every DAISY book again, once, as the DAISY page reader changed (version 1.0.1), and your place follows its words.
+  Only a DAISY 3 book of several DTBook files, with a page that holds no words after an earlier page or with files that were read out of order, ends with another text; every other DAISY book reads byte for byte as before.
 - A DAISY 2.02 page entry's own number or caption, as "12" under the label "Page 12", is not read either.
 - Any longer or other text a DAISY 2.02 page entry points at is read.
 
@@ -60,7 +61,8 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: pages-word-97-2003-documents; keys: ; src: -->
 
 - In Word 97-2003 documents and templates, pages are the page breaks the author wrote, a paragraph set to start a page ("Page break before"), directly or by its style, outside a table, and a section that starts a page.
-- A section starts a page if its break is of the kind that starts a new, even, or odd page, which a section that says nothing is. A continuous section break or a new column does not.
+- A section starts a page if its break is of the kind that starts a new, even, or odd page, which a section that says nothing is.
+  A continuous section break or a new column does not.
 - Pages are numbered from 1, and a page begins at its first letter or digit.
 - TextMouth reads no layout of Word's own, so a .doc shows fewer pages than Word would.
 
@@ -109,7 +111,8 @@ Part of [TextMouth's documentation](../../README.md).
 - In plain text, each form feed between the words begins a page, numbered from 1, at the first line after it that is read.
 - A form feed before the first words or after the last begins none, so a text without one between words has no pages.
 - Two form feeds in a row make a blank page, which counts in the numbering and begins where the page after it does.
-- A text has at most 100,000 pages, the most a book may have. A form feed past them begins none, and the text is read as before.
+- A text has at most 100,000 pages, the most a book may have.
+  A form feed past them begins none, and the text is read as before.
 - A Safari web archive whose page is plain text has no pages.
 
 ### Pages in SSML and Markdown
@@ -146,7 +149,8 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: 64-mb-limit; keys: ; src: -->
 
 - A rich text, Word 97-2003, OpenDocument, or Word 2003 XML document, a web archive, an SSML file, a DTBook on its own, or a Kindle book that holds more than 64 MB is refused, since that is the most TextMouth reads from one document.
-- For a Kindle book the limit is on its text. A hybrid file that holds its pictures twice can be larger than 64 MB, and is read, up to 512 MB in all.
+- For a Kindle book the limit is on its text.
+  A hybrid file that holds its pictures twice can be larger than 64 MB, and is read, up to 512 MB in all.
 - For an .rtfd the limit is on its text file, TXT.rtf, alone: the attachments are not read, and do not count toward it.
 
 ## How the Library window names a format

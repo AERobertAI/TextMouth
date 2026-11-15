@@ -8,8 +8,11 @@ Part of [TextMouth's documentation](../../README.md).
 
 - TextMouth reads DAISY books, versions 2.02 and 3: a book's folder, its navigation or package file (ncc.html or a .opf file), or a ZIP holding the book.
 - A DTBook file on its own (.xml) imports as a book too, and so does a NIMAS package, which is a DTBook with its package file.
-- A DAISY 3 book that holds several DTBook files is read in one order every time (since November 13, 2026): the package's reading order, else the order its SMIL files point at the files, else the order the package lists them. A file that none of these places comes last.
-- A DAISY book's audio times may be written as clock values, as 0:02:43.650, as seconds, or, as SMIL allows, with a unit: "500ms", "38.228s", "2min", or "1h". Each unit reads as the time it names; "500ms" used to read as no time. A book's audio times are measured when it is imported, so a DAISY book gains them when it is imported again.
+- A DAISY 3 book that holds several DTBook files is read in one order every time (since November 13, 2026): the package's reading order, else the order its SMIL files point at the files, else the order the package lists them.
+  A file that none of these places comes last.
+- A DAISY book's audio times may be written as clock values, as 0:02:43.650, as seconds, or, as SMIL allows, with a unit: "500ms", "38.228s", "2min", or "1h".
+  Each unit reads as the time it names; "500ms" used to read as no time.
+  A book's audio times are measured when it is imported, so a DAISY book gains them when it is imported again.
 
 ## XML files
 <!-- id: xml-files; keys: ; src: -->
@@ -34,17 +37,23 @@ Part of [TextMouth's documentation](../../README.md).
 ### Guessing the braille code when a book is added
 <!-- id: guessing-braille-code-when-book; keys: ; src: -->
 
-- Many BRF files are old transcriptions in English Braille, American Edition, the code before Unified English Braille. Read as Unified English Braille, such a book reads wrongly with no error, as "to the sea" reading "!the sea".
-- When you add a BRF or BRL file and the Braille tab's code is contracted Unified English Braille, TextMouth checks the braille for the signs of English Braille, American Edition. If the book clearly shows them, it is read with TextMouth's own contracted table for that code, English Braille, American Edition, contracted (Grade 2), in place of the Braille tab's code.
+- Many BRF files are old transcriptions in English Braille, American Edition, the code before Unified English Braille.
+  Read as Unified English Braille, such a book reads wrongly with no error, as "to the sea" reading "!the sea".
+- When you add a BRF or BRL file and the Braille tab's code is contracted Unified English Braille, TextMouth checks the braille for the signs of English Braille, American Edition.
+  If the book clearly shows them, it is read with TextMouth's own contracted table for that code, English Braille, American Edition, contracted (Grade 2), in place of the Braille tab's code.
   - TextMouth counts only signs that Unified English Braille dropped: "to" or "by" joined to the next word, and "ation" or "ally" inside a word.
   - Clearly means at least 40 words with those signs, at least one in 50 of all the book's words, and, of those, at least 5 words joined with "to" and at least 5 joined with "by".
   - When TextMouth is unsure, nothing changes: the book is read with the Braille tab's code, and Book Information may still suggest English Braille, American Edition (see [The Library window](library-window.md)).
-- The switch "Guess the braille code of new books" in the Braille tab turns the guess off (see [Settings](settings.md)). It is on by default.
-- Only a book being added is guessed. A book already in the library keeps its code, and the launch's reading again of braille books never guesses.
+- The switch "Guess the braille code of new books" in the Braille tab turns the guess off (see [Settings](settings.md)).
+  It is on by default.
+- Only a book being added is guessed.
+  A book already in the library keeps its code, and the launch's reading again of braille books never guesses.
 - A PEF file is never guessed, and neither is a book read with a code other than contracted Unified English Braille.
 - A guessed book's title and author, read from its title page, are read with the guessed code too.
-- Book Info, Speak Info, and Book Information say the code was guessed: "English Braille, American Edition, contracted (Grade 2), guessed". Book Information can keep the guess or correct it (see [The Library window](library-window.md)).
-- A guessed book that you remove with Remove from Library Only and add back keeps its code and the word "guessed", without a new guess. A book you chose a code for, in Book Information, is never said to be guessed.
+- Book Info, Speak Info, and Book Information say the code was guessed: "English Braille, American Edition, contracted (Grade 2), guessed".
+  Book Information can keep the guess or correct it (see [The Library window](library-window.md)).
+- A guessed book that you remove with Remove from Library Only and add back keeps its code and the word "guessed", without a new guess.
+  A book you chose a code for, in Book Information, is never said to be guessed.
 
 ### Braille file characters
 <!-- id: braille-file-characters; keys: ; src: -->
@@ -62,7 +71,8 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: books-that-record-no-braille; keys: ; src: -->
 
 - A book that records no code, as every book added before TextMouth recorded them, is read as North American Braille ASCII, unless its first character is a braille pattern, which can only be Unicode braille patterns: such a book is read as them.
-- A BRF or BRL file of Unicode braille patterns that uses dot 7 or 8 is eight-dot braille, which TextMouth refuses. So is a file of eight-bit computer braille, and so is a file in UTF-16, each refused by name (see [Adding books](adding-books.md) for the sentences).
+- A BRF or BRL file of Unicode braille patterns that uses dot 7 or 8 is eight-dot braille, which TextMouth refuses.
+  So is a file of eight-bit computer braille, and so is a file in UTF-16, each refused by name (see [Adding books](adding-books.md) for the sentences).
 
 ### What a BRF or BRL file holds
 <!-- id: what-brf-brl-file-holds; keys: ; src: -->
@@ -81,10 +91,15 @@ Part of [TextMouth's documentation](../../README.md).
 - A line at cell 5 is a level-2 heading, and a line at cell 7 is level 3.
 - Paragraphs and list items are found from their indents, and each list item is read as a paragraph.
 - Page numbers are left out of the text, so they are never spoken.
-- A running head is left out of the text too. A running head is the line at the top of each page that repeats the book's title or the chapter's, with a page number at one end of it. TextMouth takes it for one only when its words repeat on three or more pages, so a line of the book's own text is never left out for looking like one. A head that changes from page to page only by a part or volume number, such as "life of pi. part1" and "life of pi. part2", counts as one head, and a line with no page number at either end is never taken for one.
+- A running head is left out of the text too.
+  A running head is the line at the top of each page that repeats the book's title or the chapter's, with a page number at one end of it.
+  TextMouth takes it for one only when its words repeat on three or more pages, so a line of the book's own text is never left out for looking like one.
+  A head that changes from page to page only by a part or volume number, such as "life of pi. part1" and "life of pi. part2", counts as one head, and a line with no page number at either end is never taken for one.
 - A page number at the left of the top line becomes the braille page number when the page's last line has none.
 - A line that marks where a print page changes, a row of dashes with a number after it, is left out of the text, whether the number is Arabic or Roman, as in ";IX" for the print page ix.
-- A chapter heading that stands on the line above its text is a heading. When one to three centered lines run straight into a line indented to cell 3, with no blank line between, they are a level-1 heading, as "Chapter 1" on the line above a paragraph. A row of dashes or other rule marks that sets the heading off is never part of its words.
+- A chapter heading that stands on the line above its text is a heading.
+  When one to three centered lines run straight into a line indented to cell 3, with no blank line between, they are a level-1 heading, as "Chapter 1" on the line above a paragraph.
+  A row of dashes or other rule marks that sets the heading off is never part of its words.
 
 ### Braille emphasis
 <!-- id: braille-emphasis; keys: ; src: -->
@@ -97,11 +112,13 @@ Part of [TextMouth's documentation](../../README.md).
 - In EBAE, italic and bold are read where the sign is certain: words that start with l or with n to z, capitals, numbers, and most contractions.
 - In EBAE, a passage of several words ends where its last sign says.
 - The signs liblouis writes for bold italic, which BANA's EBAE has not got, are not read as bold italic.
-- Emphasis changes no word of an EBAE book: the emphasis is what is new. The fixes below do change words, in contracted EBAE only.
+- Emphasis changes no word of an EBAE book: the emphasis is what is new.
+  The fixes below do change words, in contracted EBAE only.
 - Where a sign cannot be told from print, it is left as it was:
   - An emphasized word that starts with a to j still reads with a stray period, as in ".cat" for an italic "cat".
   - One that starts with k reads with an equals sign, as in "=ite" for "kite".
-  - One that starts with m reads with µ, as in "µe" for "me", in uncontracted EBAE. In contracted EBAE an italic word that begins with m is read as italic, so "mama" is italic "mama" (see English Braille, American Edition words, below).
+  - One that starts with m reads with µ, as in "µe" for "me", in uncontracted EBAE.
+    In contracted EBAE an italic word that begins with m is read as italic, so "mama" is italic "mama" (see English Braille, American Edition words, below).
   - The emphasis on those words is lost.
 - TextMouth checks each paragraph against liblouis's own reading, and a paragraph whose words would differ in any character is read without emphasis.
 - Most of this Mac's tables are read as plain braille, since liblouis cannot read their emphasis back exactly.
@@ -116,13 +133,21 @@ Part of [TextMouth's documentation](../../README.md).
 ### English Braille, American Edition words
 <!-- id: english-braille-american-edition-words; keys: ; src: -->
 
-- A book in contracted (Grade 2) English Braille, American Edition, read with a table that writes it, such as an English EBAE table of this Mac's, is read with fixes for what liblouis's own EBAE table misreads. Uncontracted EBAE, Unified English Braille, and every other table are read as they were.
-- Words that EBAE writes joined are read as separate words: "of the", "and the", "of a", "with a", "for the", and "with the", where they read run together as "ofthe". A name such as Thea, which is the signs for "the" and "a" with a capital, stays one word.
+- A book in contracted (Grade 2) English Braille, American Edition, read with a table that writes it, such as an English EBAE table of this Mac's, is read with fixes for what liblouis's own EBAE table misreads.
+  Uncontracted EBAE, Unified English Braille, and every other table are read as they were.
+- Words that EBAE writes joined are read as separate words: "of the", "and the", "of a", "with a", "for the", and "with the", where they read run together as "ofthe".
+  A name such as Thea, which is the signs for "the" and "a" with a capital, stays one word.
 - "ing" before a hyphen or dash is read as "ing": "moving-in", where it read "mov±in".
-- Initials with periods between single letters are read as letters and periods: "p.b.u.h." reads "p. b. u. h.", where the table read each period between letters as "dd". Each letter and its period are now a word apart, so the book's text holds "e. g." with a space, and a search in the book or the library for "e.g." won't find it: search for "e. g." instead.
-- "St." and "Still." are told apart. "St." is read only where it stands before a capitalized word ("St. Paul") or after a capitalized word that does not end a sentence ("Main St."). Any other such sign is "still."
-- The sign for "before" at the start of a longer word is read as "bef", as in "befuddled", where it read "beforeuddled". "Beforehand", "beforetime", and "beforetimes" keep "before".
-- A micro sign before a unit stays µ: "5 µm", "10 µmol", and units written with it, as µg, µs, µL, and µHz. An italic word of two or more letters that begins with m, and does not follow a number, is read as italic: "mama", and not "µama". A micro unit with no number before it cannot be told from such a word, so it reads as italic.
+- Initials with periods between single letters are read as letters and periods: "p.b.u.h." reads "p. b. u. h.", where the table read each period between letters as "dd".
+  Each letter and its period are now a word apart, so the book's text holds "e. g." with a space, and a search in the book or the library for "e.g." won't find it: search for "e. g." instead.
+- "St." and "Still." are told apart.
+  "St." is read only where it stands before a capitalized word ("St. Paul") or after a capitalized word that does not end a sentence ("Main St.").
+  Any other such sign is "still."
+- The sign for "before" at the start of a longer word is read as "bef", as in "befuddled", where it read "beforeuddled".
+  "Beforehand", "beforetime", and "beforetimes" keep "before".
+- A micro sign before a unit stays µ: "5 µm", "10 µmol", and units written with it, as µg, µs, µL, and µHz.
+  An italic word of two or more letters that begins with m, and does not follow a number, is read as italic: "mama", and not "µama".
+  A micro unit with no number before it cannot be told from such a word, so it reads as italic.
 - Computer braille, between its begin and end signs, is left as it was.
 - A braille book is read again once for these, with the page and title changes above, at the first launch after the update that added them (0.4.8).
 
@@ -133,12 +158,16 @@ Part of [TextMouth's documentation](../../README.md).
 - A BRL names neither, so its book is titled by its file's name without the extension, and its author is Unknown.
 - A BRF names them on its title page, if it has one, and the import and the launch read them there:
   - The title page is the first page with anything on it, and TextMouth reads its centered lines.
-  - A line that holds the word "by" divides the title from the author: "Life of Pi" above "by Yann Martel", or "Life of Pi by Yann Martel" on one line. "By" is read as a braille word, spelled in both codes and as its own sign in English Braille, American Edition.
-  - A title page with no "by" names a title only when it has three or more centered lines and a rule line that sets the title off. A page that is only a part title, a chapter heading, and an epigraph names nothing, so a chapter saved alone keeps its file's name.
+  - A line that holds the word "by" divides the title from the author: "Life of Pi" above "by Yann Martel", or "Life of Pi by Yann Martel" on one line.
+    "By" is read as a braille word, spelled in both codes and as its own sign in English Braille, American Edition.
+  - A title page with no "by" names a title only when it has three or more centered lines and a rule line that sets the title off.
+    A page that is only a part title, a chapter heading, and an epigraph names nothing, so a chapter saved alone keeps its file's name.
   - What the page names, with no title or no author, leaves that one as it was: the file's name or Unknown.
   - The title and author are read with the book's own braille code, and they are never longer than a title could be: anything over 200 characters is a paragraph, not a name.
-  - A title or author you changed yourself is never replaced. For a book added before TextMouth kept a record of your edits, the launch fills in only an author that says Unknown, and leaves the title alone.
-- Every braille book is read again once for this, at the first launch after the update that added it (0.4.8), so a BRF added before it gets its title and author, and its text loses its running heads and change lines. Every braille book is read again once more at the first launch of 0.4.9 (braille page reader 1.1.1), for the running heads that differ only by a number.
+  - A title or author you changed yourself is never replaced.
+    For a book added before TextMouth kept a record of your edits, the launch fills in only an author that says Unknown, and leaves the title alone.
+- Every braille book is read again once for this, at the first launch after the update that added it (0.4.8), so a BRF added before it gets its title and author, and its text loses its running heads and change lines.
+  Every braille book is read again once more at the first launch of 0.4.9 (braille page reader 1.1.1), for the running heads that differ only by a number.
 
 ### Braille file limits
 <!-- id: braille-file-limits; keys: ; src: -->

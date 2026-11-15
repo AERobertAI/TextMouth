@@ -31,15 +31,22 @@ Part of [TextMouth's documentation](../../README.md).
   - UTF-32, in either byte order;
   - UTF-16 in Greek, Cyrillic, Armenian, Hebrew, or Arabic, from 16 bytes up;
   - UTF-16 in other scripts, such as Chinese, Japanese, or Korean, when the text also holds at least 8 ordinary characters (spaces, digits, or line ends).
-- A reading counts only if the result is plain text. A few stray zero bytes in a UTF-8 or 8-bit file do not make it UTF-16.
+- A reading counts only if the result is plain text.
+  A few stray zero bytes in a UTF-8 or 8-bit file do not make it UTF-16.
 - What it does not find:
   - UTF-16 in the scripts of India (Devanagari, Bengali, and the others near them).
-  - Short Chinese, Japanese, or Korean UTF-16 with few spaces, digits, or line ends. In testing, a Chinese file needed about 46 characters and a Korean one about 28, and a Japanese file with only 5 spaces, digits, or line ends was not found.
+  - Short Chinese, Japanese, or Korean UTF-16 with few spaces, digits, or line ends.
+    In testing, a Chinese file needed about 46 characters and a Korean one about 28, and a Japanese file with only 5 spaces, digits, or line ends was not found.
   - Chinese, Japanese, or Korean UTF-16 with no such characters at all, whose bytes look the same as Shift JIS, GBK, or EUC text.
   - A file that is not found is read as one of the other encodings, with the wrong letters, or as Windows-1252.
-- UTF-16 and UTF-32 have no item in the Text Encoding pop-up (see [The Library window](library-window.md)), so a file that is not found cannot be set right there. Save it as UTF-8, or in UTF-16 with a byte-order mark, and add it again.
-- A book that recorded its encoding when you added it is read again in that encoding, and only UTF-16 in Latin letters can overrule it. A web archive's page that names no encoding is read as it was before. Your own choice in Text Encoding overrules all of this.
-- The first time 0.4.3 opens, every plain text and HTML book is read again once, and your place follows its words. A book whose file reads as it did before has the same text. A Markdown book is read the new way when it is added, or when its text is built again, as Redo Text Extraction does.
+- UTF-16 and UTF-32 have no item in the Text Encoding pop-up (see [The Library window](library-window.md)), so a file that is not found cannot be set right there.
+  Save it as UTF-8, or in UTF-16 with a byte-order mark, and add it again.
+- A book that recorded its encoding when you added it is read again in that encoding, and only UTF-16 in Latin letters can overrule it.
+  A web archive's page that names no encoding is read as it was before.
+  Your own choice in Text Encoding overrules all of this.
+- The first time 0.4.3 opens, every plain text and HTML book is read again once, and your place follows its words.
+  A book whose file reads as it did before has the same text.
+  A Markdown book is read the new way when it is added, or when its text is built again, as Redo Text Extraction does.
 
 ### A file that none of these settles
 <!-- id: file-that-none-these-settles; keys: ; src: -->
@@ -54,7 +61,8 @@ Part of [TextMouth's documentation](../../README.md).
 - TextMouth guesses among the encodings below.
 - Book Information and Speak Full Info name the one it chose as written here, then "guessed", and one you chose the same way, then "chosen" (see [The Library window](library-window.md)).
 - Windows-1252 is not among them: a file is read as Windows-1252 when no guess can be trusted, though you can choose it.
-- The two DOS code pages and Mac Central European, added on November 13, 2026, are taken only when macOS's own guess names one of them. TextMouth does not try them itself, so a book already in the library is not read differently; the Text Encoding pop-up in Book Information offers all three for you to choose.
+- The two DOS code pages and Mac Central European, added on November 13, 2026, are taken only when macOS's own guess names one of them.
+  TextMouth does not try them itself, so a book already in the library is not read differently; the Text Encoding pop-up in Book Information offers all three for you to choose.
 - The encodings, by script:
   - Western European: "Mac Roman (Western European)", "ISO 8859-15 (Western European)", "CP437 (US DOS)", and "CP850 (Western European DOS)".
   - Central European: "Windows-1250 (Central European)", "ISO 8859-2 (Central European)", and "Mac Central European".
@@ -81,7 +89,8 @@ Part of [TextMouth's documentation](../../README.md).
     - It holds at least three characters that real writing almost never holds (symbols inside words, control characters, and the like), not all the same character.
     - Or it holds at least five capitals inside lowercase words.
     - Or a fifth or more of its letters beyond plain ASCII lie outside the alphabet of the one language that fits them best, where the other reading's letters fit one language.
-  - Another encoding reads them clearly better, with almost nothing odd left. When other encodings read them as well but differently, the file stays Windows-1252, unless macOS's own guess names one of exactly two of them.
+  - Another encoding reads them clearly better, with almost nothing odd left.
+    When other encodings read them as well but differently, the file stays Windows-1252, unless macOS's own guess names one of exactly two of them.
   - The whole file, not only the lines examined, reads in that encoding with no byte dropped or replaced, and writes back to exactly the same bytes.
 
 ### The same bytes give the same guess
@@ -93,7 +102,8 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: files-that-stay-windows-1252; keys: ; src: -->
 
 - Some files stay Windows-1252, as they were read before, until you choose their encoding (see Choosing the encoding, below):
-  - Short texts, which show too little to guess from. A Cyrillic note of a line or two may stay garbled, though a paragraph of Cyrillic is read right.
+  - Short texts, which show too little to guess from.
+    A Cyrillic note of a line or two may stay garbled, though a paragraph of Cyrillic is read right.
   - Text in some languages: Hungarian, Croatian, Slovenian, and Latvian, and French saved in ISO 8859-15.
   - Short sentences in Mac Roman, in Spanish, Portuguese, Italian, Dutch, Danish, or German.
   - A file whose only accented letters are capitals inside program names, such as "zeigeÜbersicht", when it is not in Windows-1252: read right, those capitals look as odd as they do read wrong.
@@ -119,17 +129,22 @@ Part of [TextMouth's documentation](../../README.md).
 - The Text Encoding pop-up in Book Information reads a book's file again in the encoding you choose, or, with Automatic, as TextMouth reads a file you add.
 - Use it for a book whose letters read oddly, whether the guess was wrong or missed.
 - Its items, and every sentence it says, are under Text Encoding in [The Library window](library-window.md).
-- A book you added from a file has it. Text you typed in with New from Text, a feed's article, and a book of another format do not.
+- A book you added from a file has it.
+  Text you typed in with New from Text, a feed's article, and a book of another format do not.
 - A chosen encoding is read whatever the file's bytes say of themselves: a byte-order mark, bytes that are valid UTF-8, and an HTML file's own declaration do not overrule it, since you choose it for a file that read wrong.
-- It is read strictly: every byte must belong to a character of the encoding, and none is dropped or replaced. UTF-8 refuses a file that is not valid UTF-8, and an encoding of one byte to a character refuses a byte it leaves undefined, such as 0x98 in Windows-1251. Windows-1252 gives every byte a character, so it refuses nothing.
-- A file that is not valid in the encoding chosen is refused, and nothing changes: not the book's text, its saved places, nor its record. The sentence names the book and the encoding (see Text Encoding in [The Library window](library-window.md)).
+- It is read strictly: every byte must belong to a character of the encoding, and none is dropped or replaced.
+  UTF-8 refuses a file that is not valid UTF-8, and an encoding of one byte to a character refuses a byte it leaves undefined, such as 0x98 in Windows-1251.
+  Windows-1252 gives every byte a character, so it refuses nothing.
+- A file that is not valid in the encoding chosen is refused, and nothing changes: not the book's text, its saved places, nor its record.
+  The sentence names the book and the encoding (see Text Encoding in [The Library window](library-window.md)).
 - Limits, since macOS's own readers decide which characters an encoding defines:
   - Characters of JIS X 0212 in EUC-JP, which it writes with the byte 0x8F before two bytes, are refused, because macOS reads them as other characters.
   - The euro sign in Big5 and in EUC-KR is refused.
   - Big5-HKSCS characters, the Hong Kong additions to Big5, are refused.
   - A GB 18030 file that holds the replacement character itself, U+FFFD, is refused.
   - In Big5 as Windows writes it, the two bytes 0xA2 0xCC are read as 十 followed by a character from a private-use area, which a braille display shows.
-- A book recorded as read in an encoding this TextMouth does not know, as a choice made on a Mac that knows more encodings, or in a later TextMouth, can be, is refused when its text is read: "The file “Moby-Dick.txt” is set to be read as “x-cp1999”, a text encoding this version of TextMouth can't read. Choose another in Book Information."
+- A book recorded as read in an encoding this TextMouth does not know, as a choice made on a Mac that knows more encodings, or in a later TextMouth, can be, is refused when its text is read: "The file “Moby-Dick.txt” is set to be read as “x-cp1999”, a text encoding this version of TextMouth can't read.
+  Choose another in Book Information."
 
 ## Safari web archives
 <!-- id: safari-web-archives; keys: ; src: -->

@@ -24,7 +24,8 @@ Part of [TextMouth's documentation](../../README.md).
 - An .rtfd is a package that the Finder shows as one file, and it imports as one book: TextMouth reads the text file in it, TXT.rtf, and leaves its attachments alone.
 - No helper process runs.
 - A rich text or Word 97-2003 book already in your library was read again once, at the first launch of version 0.3.1, so that it gained its headings and pages.
-- Every rich text, rich text with attachments, Word 97-2003, Word, OpenDocument text, and Word 2003 XML book is read again once more, at the first launch of version 0.4.0, for what the readers now find (see What every document reader reads, below, Pages, below, and [Where TextMouth keeps your library](where-your-library-lives.md)). Your place follows its words, and text you changed with Edit Text is kept as it is.
+- Every rich text, rich text with attachments, Word 97-2003, Word, OpenDocument text, and Word 2003 XML book is read again once more, at the first launch of version 0.4.0, for what the readers now find (see What every document reader reads, below, Pages, below, and [Where TextMouth keeps your library](where-your-library-lives.md)).
+  Your place follows its words, and text you changed with Edit Text is kept as it is.
 - At the first launch of version 0.4.1 every .doc book is read again once more, for Word 6 and Word 95 documents and for symbols, and every .docx and .wordml book once more, for hidden text, in the same way.
 - At the first launch of version 0.4.2 every .docx and .wordml book is read again once more, for the symbols they now read (see Other limits of each, below), in the same way.
 
@@ -40,7 +41,8 @@ Part of [TextMouth's documentation](../../README.md).
 - An outline level that says body text makes the paragraph none, even in a style based on a heading.
 - Levels deeper than 6 are level 6.
 - A heading carries no emphasis, since its style makes the whole line bold.
-- The document's own headings are all you hear as headings. A heading that a document gives only by direct formatting, such as a bold line of large letters in the normal style, is a heading only in a document that names none.
+- The document's own headings are all you hear as headings.
+  A heading that a document gives only by direct formatting, such as a bold line of large letters in the normal style, is a heading only in a document that names none.
 
 ### Headings guessed from font size and bold
 <!-- id: headings-guessed-from-font-size; keys: ; src: -->
@@ -58,10 +60,12 @@ Part of [TextMouth's documentation](../../README.md).
 - Bold and italic text keeps its emphasis, as in the other text formats, and the marks that show it are never spoken.
 - A list is a list, and the number or bullet it shows is not read as one of its words.
 - In rich text, a paragraph in a list, or one that begins with a bullet and a tab, is an item, numbered or bulleted as the list says.
-- In a Word 97-2003 document, a paragraph that begins with a bullet character and a space is a bulleted item (a dash or an asterisk counts only before a tab). A paragraph that Word numbers or bullets through its own list definitions is a real list item too, numbered or bulleted as the list says, with its number in the book's stored text, so an export shows it.
+- In a Word 97-2003 document, a paragraph that begins with a bullet character and a space is a bulleted item (a dash or an asterisk counts only before a tab).
+  A paragraph that Word numbers or bullets through its own list definitions is a real list item too, numbered or bulleted as the list says, with its number in the book's stored text, so an export shows it.
 - As in every format, the number is not read aloud, and a numbered heading reads its words alone.
 - Whether Word 97-2003 numbers should be read aloud is a question for you that is still open.
-- A table is a table, read a row at a time (below). In a nested table, the words stay in the cell around it.
+- A table is a table, read a row at a time (below).
+  In a nested table, the words stay in the cell around it.
 - Pictures and embedded objects are silent, except in OpenDocument text, where a picture, formula, or chart is read as its description (see What every document reader reads, below).
 - A field is read for its result, as Word shows it, and never for its instruction: the result of a table of contents or a link is read, and its code (TOC, HYPERLINK, PAGE, MERGEFORMAT) is not.
 
@@ -73,11 +77,14 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - Hidden text is not read.
 - Text that is hidden only on the web is read, since it shows in print and in the normal view.
 - A hidden paragraph mark alone joins nothing: the paragraphs stay separate, so a heading run into its paragraph stays a heading.
-- In a Word document (.docx), whether text is hidden follows Word's rule for a property that styles toggle, from Microsoft's and ECMA's documents and not from trying Word. The run's own setting decides alone. Otherwise the document defaults, a table style, a paragraph style, and a character style are settled together, a table style and a paragraph style resetting the state to what they say and a character style toggling it, so a hiding character style inside a hiding paragraph style shows its text.
+- In a Word document (.docx), whether text is hidden follows Word's rule for a property that styles toggle, from Microsoft's and ECMA's documents and not from trying Word.
+  The run's own setting decides alone.
+  Otherwise the document defaults, a table style, a paragraph style, and a character style are settled together, a table style and a paragraph style resetting the state to what they say and a character style toggling it, so a hiding character style inside a hiding paragraph style shows its text.
 - A table style's conditional formatting (its first row, say) is not applied.
 - A row marked hidden hides nothing of its own, in a .docx or in Word 2003 XML: Word shows a row that has any visible part, so the words in it are read unless their own formatting hides them.
 - A paragraph whose every word is hidden is no paragraph and no heading, and a page break inside hidden text begins no page.
-- A tracked deletion is not read, and a tracked insertion is. Text a tracked change moved is read once, in its new place.
+- A tracked deletion is not read, and a tracked insertion is.
+  Text a tracked change moved is read once, in its new place.
 - Footnotes and endnotes follow the main text, in the order the file keeps them, with no invented heading and without their reference marks, a custom mark included, except in a Word 97-2003 document, where the symbol an author typed in place of a number is read, since the file does not say how long it is.
 - A note is read only if a person would see its reference: a note whose reference is hidden or deleted is left out.
 - Comments, headers, and footers are not read.
@@ -86,14 +93,17 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A Word 97-2003 document keeps its text boxes in a story of their own, and they are read after the notes.
 - A Word text box that the file writes twice, once for newer programs and once for older, is read once.
 - A field's instruction, such as TOC, HYPERLINK, PAGE, or MERGEFORMAT, is never read, and a field's result is.
-- Pictures are silent in Word and rich text documents. In OpenDocument text, a picture, formula, or chart is read as its description (its title, if it has no description), as a paragraph right after the paragraph that holds it, and nothing if it has neither.
+- Pictures are silent in Word and rich text documents.
+  In OpenDocument text, a picture, formula, or chart is read as its description (its title, if it has no description), as a paragraph right after the paragraph that holds it, and nothing if it has neither.
 - The marks that show bold, italic, and strikethrough are never spoken.
 
 ### Other limits of each
 <!-- id: other-limits-each; keys: ; src: -->
 
 - In rich text, the title and author come from the document's own information group.
-- In Word 97-2003, a document whose main text holds no words at all, such as one whose text is all in a text box or a header, is read from every part of it after the main text, in the order the file keeps them, so it is not an empty book. Its title and author come from the document's summary information. Word's fast-saved formatting, which a document that was saved quickly keeps in its pieces, is read.
+- In Word 97-2003, a document whose main text holds no words at all, such as one whose text is all in a text box or a header, is read from every part of it after the main text, in the order the file keeps them, so it is not an empty book.
+  Its title and author come from the document's summary information.
+  Word's fast-saved formatting, which a document that was saved quickly keeps in its pieces, is read.
 - Symbols, in Word 6, Word 95, and Word 97-2003 documents, are read by their font, since the file stores a symbol as an opening parenthesis with the font and the code of the character it shows:
   - In the font Symbol (and MT Symbol and SymbolPS) the code is the Adobe Symbol encoding, so Greek letters, mathematical signs, and bullets read as themselves.
   - In WordPerfect's WP TypographicSymbols the codes read as the curly quotation marks, bullet, section sign, inverted question mark, and em dash.
@@ -101,15 +111,21 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
   - Real documents settled these codes one by one.
   - In a picture font (Wingdings, Webdings, Zapf Dingbats, Monotype Sorts, any other WordPerfect font, or any font of the symbol character set), or for a code no table settles, a symbol reads as a space, so the words on either side do not run together.
   - In an ordinary text font, a symbol reads as the character of its code page.
-- Text typed in a symbol font, which Word 97 stores as a private-use character, is read the same way. In an ordinary text font it is read through the Symbol table as textutil read it, so a letter that stands for mu or pi reads as one, and a checkbox set in Arial reads as a Greek theta.
+- Text typed in a symbol font, which Word 97 stores as a private-use character, is read the same way.
+  In an ordinary text font it is read through the Symbol table as textutil read it, so a letter that stands for mu or pi reads as one, and a checkbox set in Arial reads as a Greek theta.
 - A bullet made by a symbol, at a paragraph's start, makes the paragraph a list item, and a paragraph of only a picture symbol, such as a checkbox, is not written.
 - Before version 0.4.1 a Word 97-2003 document's symbol read as "(".
 - Symbols in Word documents (.docx) and Word 2003 XML are read from version 0.4.2, by the same rules:
-  - A symbol is a w:sym element, which names a font and a character code. It reads as the character that font shows for the code.
-  - The font of a run is the run's own, else its character style's, else its paragraph style's, else the document defaults'. Each style is followed through the style it is based on.
-  - A .docx also reads word/fontTable.xml, which says which fonts hold pictures. If that part is missing or damaged, only that knowledge is lost and the book is still read.
-  - Text typed in a symbol font, stored as a private-use character, is read through the font in the same way. When no font is named anywhere, such characters stay as they are.
-  - A symbol in a hidden run, or in a deleted or moved-from run, is not read. A symbol in a footnote is read, except in a note's custom mark.
+  - A symbol is a w:sym element, which names a font and a character code.
+    It reads as the character that font shows for the code.
+  - The font of a run is the run's own, else its character style's, else its paragraph style's, else the document defaults'.
+    Each style is followed through the style it is based on.
+  - A .docx also reads word/fontTable.xml, which says which fonts hold pictures.
+    If that part is missing or damaged, only that knowledge is lost and the book is still read.
+  - Text typed in a symbol font, stored as a private-use character, is read through the font in the same way.
+    When no font is named anywhere, such characters stay as they are.
+  - A symbol in a hidden run, or in a deleted or moved-from run, is not read.
+    A symbol in a footnote is read, except in a note's custom mark.
   - A code that is not four hexadecimal digits, or that no table settles, reads as a space.
   - Not read: a font a table style names, a font a theme names alone, and the complex-script and East Asian fonts of a run.
   - Before version 0.4.2 these symbols were lost: a check box in Wingdings made the words either side run together, and a bullet typed in Symbol was a private-use character.
@@ -117,7 +133,8 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - In OpenDocument text, hyperlink addresses are not read, only the links' words.
 - In OpenDocument text, a merged table cell leaves no cell of its own.
 - In OpenDocument text, the title and author come from the document's own information, so an .odt's author is read.
-- A damaged styles or information part loses only itself, and the body is read. Only the content part, or the ZIP, makes the document unreadable.
+- A damaged styles or information part loses only itself, and the body is read.
+  Only the content part, or the ZIP, makes the document unreadable.
 
 ### Code pages of rich text
 <!-- id: code-pages-rich-text; keys: ; src: -->
@@ -201,7 +218,8 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 - textutil runs in a separate process that TextMouth watches, never inside TextMouth, so a hang or a crash in Apple's readers costs that process and never TextMouth or the import.
 - It loads nothing that the document links to and fetches nothing from the network.
-- It converts the document once for each import, and the book's title and author come from that same run. A second run reads the page breaks (see Pages, below).
+- It converts the document once for each import, and the book's title and author come from that same run.
+  A second run reads the page breaks (see Pages, below).
 - Cancel in the import overlay stops it at once (see [Adding books](adding-books.md)).
 - [Where TextMouth keeps your library](where-your-library-lives.md) gives the limits of time, memory, and processor time at which TextMouth stops it, where it writes, and what stops one that a crash left behind.
 
