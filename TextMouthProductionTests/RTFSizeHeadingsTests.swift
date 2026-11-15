@@ -20,10 +20,10 @@ final class RTFSizeHeadingsTests: XCTestCase {
         RTFParagraph(inlines: [.text(text, bold: bold, italic: false, size: size)])
     }
 
-    /// A body paragraph at size 24 with 400 letters, so the body size is 24
+    /// A body paragraph at size 24 with 3,200 letters, so the body size is 24
     /// whatever the paragraphs under test hold.
     private var bodyBlock: RTFBlock {
-        .paragraph(paragraph(String(repeating: "body ", count: 80), size: 24))
+        .paragraph(paragraph(String(repeating: "body ", count: 800), size: 24))
     }
 
     /// Text whose white-space-collapsed length is exactly `length`
@@ -172,6 +172,97 @@ final class RTFSizeHeadingsTests: XCTestCase {
             .paragraph(paragraph("ab c\u{00E9} d", size: 20)),
         ]
         XCTAssertEqual(levels(blocks), [1, 0])
+    }
+
+    // MARK: - Against the way it was counted
+
+    /// The characters of `text` that are not white space, counted as the
+    /// census once counted them: Character by Character.
+    private func referenceCount(_ text: String) -> Int {
+        text.reduce(0) { $0 + ($1.isWhitespace ? 0 : 1) }
+    }
+
+    /// Whether `paragraph` is short enough to be a heading, as it was once
+    /// decided: the whole text split at white space, joined, and counted.
+    private func referenceIsHeadingLength(_ paragraph: RTFParagraph) -> Bool {
+        let label = paragraph.plainText.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        guard !label.isEmpty, label.count <= 120 else { return false }
+        return !(label.count == 1 && label.first?.isLetter == true)
+    }
+
+    /// A fixed list of the pieces random text is made of: ASCII letters,
+    /// every kind of white space, marks that join a letter, letters of other
+    /// scripts, and a character that takes four bytes.
+    private let pieces: [String] = [
+        "a", "b", "word", " ", " ", "  ", "\t", "\n", "\r\n", "\r", "\u{0B}", "\u{0C}", "\u{85}", "\u{A0}", "\u{2003}",
+        "\u{2028}", "\u{3000}", "\u{0301}", "\u{E9}", "e\u{0301}", "\u{6F22}", "\u{1F600}", "\u{200D}", "\u{FEFF}", "\u{0}", "1",
+    ]
+
+    /// A text of `count` pieces, chosen by `generator` (a fixed sequence, so
+    /// a failure repeats).
+    private func randomText(pieces count: Int, _ generator: inout KFXSeededGenerator) -> String {
+        (0..<count).map { _ in pieces.randomElement(using: &generator)! }.joined()
+    }
+
+    /// The count is what counting Characters gives for every ASCII byte
+    /// alone, and for thousands of mixed texts.
+    func testTheCensusMatchesCountingCharacters() {
+        for value in 0..<128 {
+            let text = String(UnicodeScalar(UInt8(value)))
+            XCTAssertEqual(RTFSizeHeadings.nonWhitespaceCharacterCount(of: text), referenceCount(text), "byte \(value)")
+        }
+        var generator = KFXSeededGenerator(seed: 14)
+        for _ in 0..<5_000 {
+            let text = randomText(pieces: Int.random(in: 0...40, using: &generator), &generator)
+            XCTAssertEqual(RTFSizeHeadings.nonWhitespaceCharacterCount(of: text), referenceCount(text), "\(Array(text.unicodeScalars))")
+            // The same text held by Foundation, not as contiguous UTF-8.
+            let bridged = (text as NSString) as String
+            XCTAssertEqual(RTFSizeHeadings.nonWhitespaceCharacterCount(of: bridged), referenceCount(text))
+        }
+    }
+
+    /// The length test is what splitting the whole text gives, for thousands
+    /// of paragraphs of several runs, from empty to long enough that only
+    /// their beginning is read.
+    func testTheLengthTestMatchesSplittingTheWholeText() {
+        var generator = KFXSeededGenerator(seed: 2026)
+        for round in 0..<6_000 {
+            var inlines: [RTFInline] = []
+            // Every few paragraphs are far longer than a heading, with white
+            // space run through them, so that the beginning decides.
+            let runs = Int.random(in: 0...6, using: &generator)
+            let size = round % 4 == 0 ? 200 : 25
+            for _ in 0..<runs {
+                if Int.random(in: 0..<8, using: &generator) == 0 {
+                    inlines.append(Bool.random(using: &generator) ? .lineBreak : .pageBreak(2))
+                } else {
+                    let text = randomText(pieces: Int.random(in: 0...size, using: &generator), &generator)
+                    inlines.append(.text(text, bold: false, italic: false, size: 24))
+                }
+            }
+            let paragraph = RTFParagraph(inlines: inlines)
+            XCTAssertEqual(
+                RTFSizeHeadings.isHeadingLength(paragraph), referenceIsHeadingLength(paragraph),
+                "\(inlines)"
+            )
+        }
+    }
+
+    /// The beginning is always the first part of the whole text, whole
+    /// pieces of it, and the whole text when it stays short.
+    func testTheBeginningOfAParagraphsTextIsItsFirstPart() {
+        let paragraph = RTFParagraph(inlines: [
+            .text("one ", bold: false, italic: false, size: 24), .lineBreak,
+            .text("two", bold: true, italic: false, size: 24), .pageBreak(2),
+            .text(" three", bold: false, italic: true, size: 24),
+        ])
+        XCTAssertEqual(paragraph.plainText, "one  two three")
+        XCTAssertEqual(paragraph.plainText(stoppingAfter: 0), "one ")
+        XCTAssertEqual(paragraph.plainText(stoppingAfter: 5), "one  ")
+        XCTAssertEqual(paragraph.plainText(stoppingAfter: 6), "one  two")
+        XCTAssertEqual(paragraph.plainText(stoppingAfter: 8), "one  two")
+        XCTAssertEqual(paragraph.plainText(stoppingAfter: 100), paragraph.plainText)
+        XCTAssertEqual(RTFParagraph().plainText(stoppingAfter: 0), "")
     }
 
     /// Bold is counted with the same census: bold text at the body size is a

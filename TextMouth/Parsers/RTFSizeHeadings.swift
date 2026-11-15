@@ -40,7 +40,7 @@ enum RTFSizeHeadings {
             for paragraph in paragraphs {
                 for inline in paragraph.inlines {
                     guard case .text(let words, let bold, _, let size) = inline else { continue }
-                    let count = words.reduce(0) { $0 + ($1.isWhitespace ? 0 : 1) }
+                    let count = nonWhitespaceCharacterCount(of: words)
                     guard count > 0 else { continue }
                     charactersBySize[size, default: 0] += count
                     if bold { boldBySize[size, default: 0] += count }
@@ -109,12 +109,64 @@ enum RTFSizeHeadings {
         return result
     }
 
+    /// How many Characters of `text` are not white space, as
+    /// `text.reduce(0) { $0 + ($1.isWhitespace ? 0 : 1) }` counts them, which
+    /// looked up the Unicode properties of every character of the book (49%
+    /// of an RTF import before the November 14, 2026 speed-up, H1).
+    ///
+    /// Text of ASCII alone, nearly every run, is counted over its bytes: each
+    /// ASCII byte is a Character by itself, apart from a carriage return and
+    /// line feed together, which are one Character and white space like each
+    /// of their halves; and an ASCII Character is white space exactly when
+    /// it is the space or one of tab, line feed, vertical tab, form feed, and
+    /// carriage return, the ASCII scalars with the Unicode White_Space
+    /// property (`Chapter.wordCount` relies on the same). Text with any other
+    /// byte is counted Character by Character, as before.
+    static func nonWhitespaceCharacterCount(of text: String) -> Int {
+        let asciiCount: Int? = text.utf8.withContiguousStorageIfAvailable { bytes in
+            var count = 0
+            for byte in bytes {
+                // A byte beyond ASCII: this run is counted the long way.
+                if byte >= 0x80 { return -1 }
+                if byte != 0x20 && !(0x09...0x0D).contains(byte) { count += 1 }
+            }
+            return count
+        }
+        if let asciiCount, asciiCount >= 0 { return asciiCount }
+        return text.reduce(0) { $0 + ($1.isWhitespace ? 0 : 1) }
+    }
+
+    /// The bytes of a paragraph's beginning that can settle it is too long to
+    /// be a heading: a paragraph whose first `beginningBytes` bytes already
+    /// hold more than `longestHeading` characters (once white space is
+    /// collapsed) is too long, since a longer text never has fewer
+    /// characters than its first part. Four bytes a character is the most
+    /// any script takes, so the beginning is ample for every script's text.
+    private static let beginningBytes = 4 * longestHeading
+
     /// Whether `paragraph`'s words are short enough to be a heading and are
     /// not a decorative initial: not empty, at most `longestHeading`
     /// characters, and not a single letter (a single digit may be).
-    private static func isHeadingLength(_ paragraph: RTFParagraph) -> Bool {
-        let label = paragraph.plainText.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    ///
+    /// A long paragraph is judged by its beginning when that alone is too
+    /// long, which is nearly every paragraph that is not a heading; building
+    /// and splitting the whole text of each cost 4% of an RTF import. When
+    /// the beginning is not too long (most of it is white space, which counts
+    /// for nothing) the whole text decides, as it always did.
+    static func isHeadingLength(_ paragraph: RTFParagraph) -> Bool {
+        let beginning = paragraph.plainText(stoppingAfter: beginningBytes)
+        // The beginning stops only once it has `beginningBytes` bytes: any
+        // shorter is the whole text already.
+        let isWhole = beginning.utf8.count < beginningBytes
+        let beginningLabel = collapsedLabel(of: beginning)
+        if !isWhole, beginningLabel.count > longestHeading { return false }
+        let label = isWhole ? beginningLabel : collapsedLabel(of: paragraph.plainText)
         guard !label.isEmpty, label.count <= longestHeading else { return false }
         return !(label.count == 1 && label.first?.isLetter == true)
+    }
+
+    /// `text`'s words, split at white space and joined by single spaces.
+    private static func collapsedLabel(of text: String) -> String {
+        text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 }
