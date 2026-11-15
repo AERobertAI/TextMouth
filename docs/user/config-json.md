@@ -28,7 +28,10 @@ How values are checked:
 - If the whole file is not valid JSON, TextMouth leaves it alone at launch and notes why in the debug log.
   The next settings change saves a fresh file over it.
 - An empty text field, an empty or unknown choice, and a speed or pitch of 0 all leave the current setting as it is.
-- A missing field also leaves its setting as it is, except for these, which are read as their defaults, so applying the file sets the default: rewindSmartMode, rewindSmartThreshold, sleepFadeOutDuration, sleepTimerAutoClose, punctuationPauseLevel, autoPlayOnNavigate, bluetoothMonitoringEnabled, bluetoothDisconnectDelay, restartTimerGestureEnabled, restartTimerGesturePattern, restartTimerGestureWindow, importDeleteBehavior, confirmBeforeDelete, moveToTrashInsteadOfDeleting, and keepsOriginalOfConvertedAudio.
+- A missing field also leaves its setting as it is, except for these, which are read as their defaults, so applying the file sets the default:
+  - rewindSmartMode, rewindSmartThreshold, sleepFadeOutDuration, sleepTimerAutoClose, punctuationPauseLevel, autoPlayOnNavigate,
+  - bluetoothMonitoringEnabled, bluetoothDisconnectDelay, restartTimerGestureEnabled, restartTimerGesturePattern, restartTimerGestureWindow,
+  - importDeleteBehavior, confirmBeforeDelete, moveToTrashInsteadOfDeleting, and keepsOriginalOfConvertedAudio.
 
 ## Which settings it carries
 <!-- id: which-settings-it-carries; keys: setting names, keys by tab, Settings tabs, defaults; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/SettingsPolicy.swift -->
@@ -43,7 +46,11 @@ Voice: selectedVoiceID, wordsPerMinute (50 to 650), pitchMultiplier (0.5 to 2), 
 ### Playback settings
 <!-- id: playback-settings; keys: skipForwardUnit, rewindSmartMode, endOfBookBehavior, nextBookWindow, sleepFadeOutDuration, showsPageInReader; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/SettingsPolicy.swift, TextMouth/Models/NextBookWindow.swift -->
 
-Playback: skipForwardUnit, skipBackwardUnit, shiftSkipForwardUnit, shiftSkipBackwardUnit, rewindOnResumeUnit, rewindSmartMode, rewindSmartThreshold, punctuationPauseLevel, autoPlayOnNavigate, endOfBookBehavior, nextBookWindow ("This Window", the default, or "A New Window", the choice's name as Settings shows it, like endOfBookBehavior; see [Settings](settings.md)), sleepFadeOutDuration, sleepTimerAutoClose, playbackNavigationUnitControlMode, showBookmarkInPlaybackControls, showSpeedInPlaybackControls, showExportInReaderToolbar, includeSpeedWithTimes, showsPageInReader, and saysPageInWhereAmI (the Pages group's two checkboxes, true by default; see [Settings](settings.md)).
+Playback: skipForwardUnit, skipBackwardUnit, shiftSkipForwardUnit, shiftSkipBackwardUnit, rewindOnResumeUnit, rewindSmartMode, rewindSmartThreshold, punctuationPauseLevel, autoPlayOnNavigate, endOfBookBehavior,
+
+- nextBookWindow ("This Window", the default, or "A New Window", the choice's name as Settings shows it, like endOfBookBehavior; see [Settings](settings.md)),
+- sleepFadeOutDuration, sleepTimerAutoClose, playbackNavigationUnitControlMode, showBookmarkInPlaybackControls, showSpeedInPlaybackControls, showExportInReaderToolbar, includeSpeedWithTimes, showsPageInReader,
+- and saysPageInWhereAmI (the Pages group's two checkboxes, true by default; see [Settings](settings.md)).
 
 ### Shortcuts settings
 <!-- id: shortcuts-settings; keys: keyboardShortcuts, worksIn, shortcutDoublePressSeconds, hotkeys, key names, twice; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/ShortcutEdits.swift -->
@@ -68,13 +75,23 @@ An action the file leaves out keeps its shortcuts. shortcutDoublePressSeconds is
 ### Text settings
 <!-- id: text-settings; keys: substitutionsEnabled, repeatedSymbolStyle, repeatedSymbolThreshold, repeatedSymbolSet, substitutions.json; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/SettingsPolicy.swift, TextMouth/Services/RepeatedSymbolRule.swift -->
 
-Text: substitutionsEnabled, the switch for the substitution rules, and the repeated-symbol settings: repeatedSymbolStyle ("repeat", "count", or "omit"), repeatedSymbolThreshold (2 to 99, or -1 to read every symbol; any negative number reads as -1, and 0 or 1 as 2), and repeatedSymbolSet (the symbols written together, such as "*-=_~#", each counted once, with letters, digits, and spaces ignored; empty keeps the current ones).
+Text: substitutionsEnabled, the switch for the substitution rules, and the repeated-symbol settings:
+
+- repeatedSymbolStyle ("repeat", "count", or "omit"),
+- repeatedSymbolThreshold (2 to 99, or -1 to read every symbol; any negative number reads as -1, and 0 or 1 as 2),
+- and repeatedSymbolSet (the symbols written together, such as "*-=_~#", each counted once, with letters, digits, and spaces ignored; empty keeps the current ones).
+
 The rules themselves are in substitutions.json.
 
 ### Braille settings
 <!-- id: braille-settings; keys: brailleTable, brailleFileCode, mac: tables, ascii-na, ascii-eurobraille, en-ueb-g2.ctb; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Parsers/BrailleFileCode.swift -->
 
-Braille: brailleTable, the table braille files are read and written with, by its file name: "en-ueb-g1.ctb" or "en-ueb-g2.ctb" for Unified English Braille, uncontracted or contracted, and "en-us-g1.ctb" or "en_US.tbl" for English Braille, American Edition, uncontracted or contracted, or "mac:" and the file name of one of this Mac's VoiceOver tables, such as "mac:fr-bfu-g2.ctb" (see the Braille tab, under [Settings](settings.md)).
+Braille: brailleTable, the table braille files are read and written with, by its file name:
+
+- "en-ueb-g1.ctb" or "en-ueb-g2.ctb" for Unified English Braille, uncontracted or contracted,
+- and "en-us-g1.ctb" or "en_US.tbl" for English Braille, American Edition, uncontracted or contracted,
+- or "mac:" and the file name of one of this Mac's VoiceOver tables, such as "mac:fr-bfu-g2.ctb" (see the Braille tab, under [Settings](settings.md)).
+
 TextMouth writes the table in use, "en-ueb-g2.ctb" until one is chosen.
 A missing, empty, or other value, such as a name that is not exactly one of these four or "mac:" and a bare file name (no slash or comma, and not starting with a dot), leaves the current table as it is.
 A "mac:" name is taken as it is, without reading this Mac's tables: TextMouth checks the table before its first use, and an import or an export that needs a table this Mac lacks or refuses fails by name (see [Adding books](adding-books.md)).
@@ -92,7 +109,13 @@ An event the file leaves out keeps its sound.
 ### Storage settings
 <!-- id: storage-settings; keys: logLocation, recordingOriginalPolicy, recordingOriginalDays, useInstalledFFmpeg, importDeleteBehavior, keepsOriginalOfConvertedAudio; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/SettingsPolicy.swift, TextMouth/Models/AudioOriginalPolicy.swift -->
 
-Storage: logLocation, where the diagnostic logs are written ("dataDirectory", the default, or "machine"); recordingOriginalPolicy, what happens to the original audio of recordings and edited audiobooks ("keep", "delete", or "deleteAfterDays", the default; the name is from when only recordings kept an original), and recordingOriginalDays, the days "deleteAfterDays" keeps it (1 to 365); useInstalledFFmpeg, whether an installed ffmpeg runs the audio editor's filters (true by default); audioEditorPreviewsFilters and audioEditorPlaysAfterMoves, whether the editor's Apply Filter previews a filter before applying it, and whether the editor plays half a second at the cursor after each move (both true by default); and importDeleteBehavior ("Keep Original", "Delete After Import", or "Ask Each Time"), confirmBeforeDelete, moveToTrashInsteadOfDeleting, and keepsOriginalOfConvertedAudio (false by default), whether an import keeps the original of the audio it converts, which config.json alone keeps.
+Storage: logLocation, where the diagnostic logs are written ("dataDirectory", the default, or "machine");
+
+- recordingOriginalPolicy, what happens to the original audio of recordings and edited audiobooks ("keep", "delete", or "deleteAfterDays", the default; the name is from when only recordings kept an original),
+- and recordingOriginalDays, the days "deleteAfterDays" keeps it (1 to 365);
+- useInstalledFFmpeg, whether an installed ffmpeg runs the audio editor's filters (true by default);
+- audioEditorPreviewsFilters and audioEditorPlaysAfterMoves, whether the editor's Apply Filter previews a filter before applying it, and whether the editor plays half a second at the cursor after each move (both true by default);
+- and importDeleteBehavior ("Keep Original", "Delete After Import", or "Ask Each Time"), confirmBeforeDelete, moveToTrashInsteadOfDeleting, and keepsOriginalOfConvertedAudio (false by default), whether an import keeps the original of the audio it converts, which config.json alone keeps.
 
 ### Miscellaneous settings
 <!-- id: miscellaneous-settings; keys: bluetoothMonitoringEnabled, bluetoothDisconnectDelay, restartTimerGestureEnabled, restartTimerGesturePattern, restartTimerGestureWindow; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/SettingsPolicy.swift -->
@@ -103,7 +126,9 @@ Miscellaneous: bluetoothMonitoringEnabled, bluetoothDisconnectDelay (1 to 10 sec
 <!-- id: new-recording-window-settings; keys: recordingInputDeviceID, recordingAnnouncesLevel, recordingLevelAnnouncementSeconds, microphone, input device; src: TextMouth/Services/ConfigService.swift, TextMouth/Services/RecordingPreferences.swift -->
 
 The New Recording window, which isn't a Settings tab: recordingInputDeviceID, the macOS identifier of the microphone it records from, which TextMouth writes empty until one is chosen.
-An empty value keeps the current choice, and a microphone this Mac doesn't have, such as one chosen on another Mac sharing the library, gives way to the system's input. recordingAnnouncesLevel, whether it announces the level while recording (false by default), and recordingLevelAnnouncementSeconds, how many seconds apart (5 to 60, 10 by default).
+An empty value keeps the current choice, and a microphone this Mac doesn't have, such as one chosen on another Mac sharing the library, gives way to the system's input.
+
+recordingAnnouncesLevel, whether it announces the level while recording (false by default), and recordingLevelAnnouncementSeconds, how many seconds apart (5 to 60, 10 by default).
 
 ### Library views setting
 <!-- id: library-views-setting; keys: libraryViews, custom views, view filter, conditions, onePerFeed, UUID; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibraryViewDefinitionStore.swift -->
@@ -112,9 +137,27 @@ Library: libraryViews, the Library window's views in the order its View pop-up o
 It is a list, and each entry is an object.
 A built-in view's entry names the view by "id", one of "Folders", "All Items", "Unopened", "Recently Opened", "Reading List", or "Feeds", and gives its "visibility", "always", "whenApplicable", or "hidden"; it holds "name" or "filter" only once you have changed them, so a later TextMouth can improve the views it ships.
 A view of your own holds "id", a UUID, "name", "visibility", and "filter", all four.
-A filter is an object with "lists", any of "books", "episodes", "articles", and "feeds", at least one; "match", "all" or "any"; "conditions", a list; "onePerFeed", written only when true; and "limit", written only when set, an object with "count", 1 to 9,999, and "chosenBy", "lastOpened", "dateAdded", or "viewSort".
+### The filter and its tests
+<!-- id: filter-tests; keys: filter, conditions, onePerFeed, readingState, titleOrAuthorContains, view limit, test names; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibraryViewFilterEvaluator.swift -->
+
+A filter is an object with "lists", any of "books", "episodes", "articles", and "feeds", at least one;
+
+- "match", "all" or "any";
+- "conditions", a list;
+- "onePerFeed", written only when true;
+- and "limit", written only when set, an object with "count", 1 to 9,999, and "chosenBy", "lastOpened", "dateAdded", or "viewSort".
+
 A condition is an object with "test" and, by the test, "value", "folderID" and "includingSubfolders", "days", or "text"; and "not": true when the condition is negated.
-The tests are "format" (with "value", a format's name such as "epub"), "folder" ("folderID", a folder's UUID, or null for the top of the library, and "includingSubfolders", true or false), "readingState" ("value", "unopened", "inProgress", or "finished"), "inReadingList", "addedWithin" and "openedWithin" ("days", 1 to 3,650), "titleOrAuthorContains" ("text", up to 200 characters), "hasNewItems", and "subscribed".
+The tests are
+
+- "format" (with "value", a format's name such as "epub"),
+- "folder" ("folderID", a folder's UUID, or null for the top of the library, and "includingSubfolders", true or false),
+- "readingState" ("value", "unopened", "inProgress", or "finished"),
+- "inReadingList",
+- "addedWithin" and "openedWithin" ("days", 1 to 3,650),
+- "titleOrAuthorContains" ("text", up to 200 characters),
+- "hasNewItems", and "subscribed".
+
 A view holds at most 20 conditions, a name is at most 60 characters, and the list holds at most 200 views in all, the built-in views among them.
 For example:
 
@@ -150,7 +193,15 @@ A missing or empty value, or a name that is not exactly one of these, leaves the
 ### Feeds settings
 <!-- id: feeds-settings; keys: feedRefreshAtLaunch, feedRefreshIntervalHours, feedItems, feedNewestCount, feedDeleteDownloadsDaysAfterPlayed, feedNotifications; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/SettingsPolicy.swift, TextMouth/Models/FeedSettings.swift -->
 
-Feeds: feedRefreshAtLaunch (true by default); feedRefreshIntervalHours (1 to 168, the default 1, or 0 to refresh only at launch and when asked; any number below 1 reads as 0); feedItems, the List and download choice (see Listing and downloading, under [Podcasts and article feeds](feeds.md)): "everyListedNewestDownloaded", the default, "everyListedDownloadsByHand", or "onlyNewestListed", a name TextMouth doesn't know, or none, leaving the choice as it is; feedNewestCount, the number that goes with it (1 to 2,000, the default 5; a number outside reads as the nearer of the two); feedDeleteDownloadsDaysAfterPlayed (0, at once, to 365, the default 1, or -1 never; any negative number reads as -1); and feedRefreshAlert and feedNotifications (false by default), whether a refresh TextMouth makes by itself that brings new items shows an alert, and posts a notification for each feed. feedKeepEntries and feedAutoDownload, which feedItems and feedNewestCount replaced on October 10, 2026, are no longer read from config.json or written to it: the first launch of that version moved them to the choice, once, and left them in the preferences as they were.
+Feeds: feedRefreshAtLaunch (true by default);
+
+- feedRefreshIntervalHours (1 to 168, the default 1, or 0 to refresh only at launch and when asked; any number below 1 reads as 0);
+- feedItems, the List and download choice (see Listing and downloading, under [Podcasts and article feeds](feeds.md)): "everyListedNewestDownloaded", the default, "everyListedDownloadsByHand", or "onlyNewestListed", a name TextMouth doesn't know, or none, leaving the choice as it is;
+- feedNewestCount, the number that goes with it (1 to 2,000, the default 5; a number outside reads as the nearer of the two);
+- feedDeleteDownloadsDaysAfterPlayed (0, at once, to 365, the default 1, or -1 never; any negative number reads as -1);
+- and feedRefreshAlert and feedNotifications (false by default), whether a refresh TextMouth makes by itself that brings new items shows an alert, and posts a notification for each feed.
+
+feedKeepEntries and feedAutoDownload, which feedItems and feedNewestCount replaced on October 10, 2026, are no longer read from config.json or written to it: the first launch of that version moved them to the choice, once, and left them in the preferences as they were.
 
 ### Transcription settings
 <!-- id: transcription-settings; keys: transcriptionLocale, offerTranscriptionAfterImport, transcription language, en-US; src: TextMouth/Services/ConfigService.swift -->
@@ -173,5 +224,17 @@ Two fields describe this Mac rather than your preferences:
 ## What stays out of config.json
 <!-- id: what-stays-out-config-json; keys: window positions, editTextExplained, customKeyboardBindings, finishedBooksAtEndVersion, trace logging, preferences; src: TextMouth/Services/ConfigService.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+ManifestEdits.swift -->
 
-What stays out of config.json: window positions, the last sleep timer you used, a feed's and a folder's own listening choices, among them its Open the next book in, which a feed keeps in its own record and a folder in library.json (see [Podcasts and article feeds](feeds.md), [The Library window](library-window.md), and [Where TextMouth keeps your library](where-your-library-lives.md)), the preferences that record where the data directory is (its path, a bookmark of its folder, and the identity of the library expected there), this Mac's identifier for the Sessions folder, whether Edit Text has explained itself on this Mac (editTextExplained), whether this Mac has made the one-time move of finished books to their ends (library.finishedBooksAtEndVersion), the copy of every action's shortcuts that earlier versions saved, which TextMouth reads once to make the record of the ones you changed (customKeyboardBindings), and the hidden switch for trace logging.
+What stays out of config.json:
+
+- window positions,
+- the last sleep timer you used,
+- a feed's and a folder's own listening choices, among them its Open the next book in,
+  - which a feed keeps in its own record and a folder in library.json (see [Podcasts and article feeds](feeds.md), [The Library window](library-window.md), and [Where TextMouth keeps your library](where-your-library-lives.md)),
+- the preferences that record where the data directory is (its path, a bookmark of its folder, and the identity of the library expected there),
+- this Mac's identifier for the Sessions folder,
+- whether Edit Text has explained itself on this Mac (editTextExplained),
+- whether this Mac has made the one-time move of finished books to their ends (library.finishedBooksAtEndVersion),
+- the copy of every action's shortcuts that earlier versions saved, which TextMouth reads once to make the record of the ones you changed (customKeyboardBindings),
+- and the hidden switch for trace logging.
+
 It also keeps out whether this Mac has written each library's hand-edited titles and authors into their manifests (library.manifestHandEditsKeptVersion).
