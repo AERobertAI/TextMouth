@@ -663,6 +663,22 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>CUE Sheet</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>cue</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.cue-sheet</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>TextMouth Book</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -923,6 +939,23 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/oebps-package+xml</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.cue-sheet</string>
+			<key>UTTypeDescription</key>
+			<string>CUE Sheet</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>cue</string>
 				</array>
 			</dict>
 		</dict>

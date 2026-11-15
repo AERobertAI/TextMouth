@@ -200,6 +200,7 @@
 		10C9642D54CEDA23B5D767D0 /* OggHeaderReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C3CCB2B139EF2CDF09FAD7 /* OggHeaderReader.swift */; };
 		10EB2C873FB848A4A156FE20 /* LibraryWindowRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1C09C606D22D05E1580BE5 /* LibraryWindowRouter.swift */; };
 		1145634B376C6E1061511B79 /* XMLInputGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E225DB859CD60D50130223CD /* XMLInputGuardTests.swift */; };
+		1145E51D83C7D753463BF1EE /* FileImportService+CueSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 004F74509B377A4F4C588F7B /* FileImportService+CueSheets.swift */; };
 		114E75DE926A2EC57C47C062 /* BookMetadataUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C433436ED0C07B7E10290BB /* BookMetadataUpdateTests.swift */; };
 		115B161C818D3772271C5649 /* AudioEditorCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1BB85C47D53A75A2D4C4F4 /* AudioEditorCommands.swift */; };
 		11662530E413C6AD731ACD1E /* BrailleDocumentWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4224777594D5334B7BEEB49E /* BrailleDocumentWriterTests.swift */; };
@@ -563,6 +564,7 @@
 		31EB09A6FCB3521FEEB21F67 /* FeedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25FD7AC0C980264B867F1A4 /* FeedStore.swift */; };
 		31F0A7617FBA6FDDC95ADCCD /* WordDocumentReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C9AAE2AE9FFBF96E2E5A0B /* WordDocumentReaderTests.swift */; };
 		324ACB2198DD703130EFA666 /* LibraryViewModel+FolderManagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969830FA3CFFC902338D9B57 /* LibraryViewModel+FolderManagement.swift */; };
+		324DC9065800316352BE50E1 /* CueSheetImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 567BD9711EF3142860100425 /* CueSheetImportTests.swift */; };
 		325583A1EA265E13643C099A /* KFXBook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87656B2C55ECAF765813846D /* KFXBook.swift */; };
 		32815E8229E32A1DB3224D2B /* ImportAndShortcutPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36A34A32605717C5AED65E8E /* ImportAndShortcutPolicyTests.swift */; };
 		3291E62E7F11F31F6D3847DC /* ReaderViewModel+Pages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 488324529D7FA968AFB24216 /* ReaderViewModel+Pages.swift */; };
@@ -1258,6 +1260,7 @@
 		718B41AA95AB18966D11B924 /* OggAudioConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82EF6AA631C0D72D6F54B9CA /* OggAudioConverterTests.swift */; };
 		7194A79A6B1233E7EA591AE8 /* TextutilImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B55383E37C678036C9E2DBC /* TextutilImportTests.swift */; };
 		719BEFAD5477AC611D808E5B /* StorageGenerationTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2A1DFF3A46CB9BB33FF88E5 /* StorageGenerationTestSupport.swift */; };
+		719D3998D371F129DCFEC8B9 /* FileImportService+CueSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 004F74509B377A4F4C588F7B /* FileImportService+CueSheets.swift */; };
 		71A2DFEBE0FFC9D9FC06E326 /* Transcript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FA86068E04276BA1A18BAE3 /* Transcript.swift */; };
 		71BE6A0DFF088481BB04F49E /* BookCloudNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1682700B895E5340D83F81B4 /* BookCloudNote.swift */; };
 		71C23EB37E4AAC42238C433F /* LibraryPersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4250ABAFA28C08D022062F4 /* LibraryPersistenceService.swift */; };
@@ -3101,6 +3104,7 @@
 /* Begin PBXFileReference section */
 		000D0127EF5FCB48E259EB84 /* MOBIPalmDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOBIPalmDatabase.swift; sourceTree = "<group>"; };
 		0038F8ADE58370FD0C93F3C0 /* AudioEditorWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorWaveform.swift; sourceTree = "<group>"; };
+		004F74509B377A4F4C588F7B /* FileImportService+CueSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileImportService+CueSheets.swift"; sourceTree = "<group>"; };
 		007E2A7CC75DF7AF3DCF1AB5 /* TitleTypingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleTypingTests.swift; sourceTree = "<group>"; };
 		00A550C4C75A229A5492582B /* LibraryCloudRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryCloudRefreshTests.swift; sourceTree = "<group>"; };
 		00C9AAE2AE9FFBF96E2E5A0B /* WordDocumentReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordDocumentReaderTests.swift; sourceTree = "<group>"; };
@@ -3780,6 +3784,7 @@
 		559615B9DA38FB533DB723D1 /* DAISYParser+NCXParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+NCXParser.swift"; sourceTree = "<group>"; };
 		55ADD1944118B17B6DB9369B /* KFXIon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KFXIon.swift; sourceTree = "<group>"; };
 		564212261FC2DB90D970B129 /* LogLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogLocation.swift; sourceTree = "<group>"; };
+		567BD9711EF3142860100425 /* CueSheetImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueSheetImportTests.swift; sourceTree = "<group>"; };
 		56870A0267CF461F00B4389E /* AudioEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorModel.swift; sourceTree = "<group>"; };
 		56A0AE39D456D8BB57808123 /* FeedLibraryPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedLibraryPresentation.swift; sourceTree = "<group>"; };
 		56A899A6F2D1A67759CCAEA3 /* TextutilConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextutilConverterTests.swift; sourceTree = "<group>"; };
@@ -5209,6 +5214,7 @@
 				F651303C38D0B60903811A1E /* DuplicateReplacement.swift */,
 				44477438F518186462243E0D /* FileImportService.swift */,
 				A34CB1A312D4FB3052BA521D /* FileImportService+AudioConversion.swift */,
+				004F74509B377A4F4C588F7B /* FileImportService+CueSheets.swift */,
 				118BEA78B35B7A8F2A0B25EC /* FileImportService+Packages.swift */,
 				14948AD1F716E5F7987F32DA /* FileImportService+Recording.swift */,
 				6CA8AE308E7426DA9B1E6F84 /* ImportAudioConverter.swift */,
@@ -6353,6 +6359,7 @@
 				73454F30DF3502D0CD5370B4 /* CorpusRunner.swift */,
 				A6A3E0B35F8C458F2AF8B529 /* CountWordingTests.swift */,
 				1961EF54F4C8E29FD4191700 /* CueSheetArrangementTests.swift */,
+				567BD9711EF3142860100425 /* CueSheetImportTests.swift */,
 				6E4A9E3849C67A353D16C3D3 /* CueSheetTests.swift */,
 				227F574014D03DC249DB87A8 /* DAISYAudioFixtureTests.swift */,
 				0AF5D78231C95D456E935D64 /* DAISYInlineFragmentTests.swift */,
@@ -8164,6 +8171,7 @@
 				91DB205663EFA579473FE01F /* CorpusRunner.swift in Sources */,
 				0AAAAA1C46478903DEE62310 /* CountWordingTests.swift in Sources */,
 				7BD9940AFEF6B0AD8E5D4932 /* CueSheetArrangementTests.swift in Sources */,
+				324DC9065800316352BE50E1 /* CueSheetImportTests.swift in Sources */,
 				B18D8C3952788FB7CBE5395E /* CueSheetTests.swift in Sources */,
 				1B66717BFCB0AA6DCF64A06F /* DAISYAudioFixtureTests.swift in Sources */,
 				185140C01557F55CB53651D7 /* DAISYAudioTests.swift in Sources */,
@@ -9228,6 +9236,7 @@
 				C0581F4CE205102E4349AB00 /* FeedTransfer.swift in Sources */,
 				7F0A11B42FF9E96D2C55FF7E /* FeedWording.swift in Sources */,
 				522C9666CBD3926AA0D7675D /* FileImportService+AudioConversion.swift in Sources */,
+				1145E51D83C7D753463BF1EE /* FileImportService+CueSheets.swift in Sources */,
 				8983DC35BF893EADFE050B61 /* FileImportService+Packages.swift in Sources */,
 				C049F604F037B9636EF708D4 /* FileImportService+Recording.swift in Sources */,
 				BFCE7F944988F0053C41993F /* FileImportService.swift in Sources */,
@@ -10153,6 +10162,7 @@
 				DB4264299FA863CA3D286650 /* FeedTransfer.swift in Sources */,
 				11F5C8F1B8A4D22D228477C2 /* FeedWording.swift in Sources */,
 				669FC48B049323C17EFEE961 /* FileImportService+AudioConversion.swift in Sources */,
+				719D3998D371F129DCFEC8B9 /* FileImportService+CueSheets.swift in Sources */,
 				25751A6D58FB2744FCA7B257 /* FileImportService+Packages.swift in Sources */,
 				FE701B52BFCEBDAF5DFCF48D /* FileImportService+Recording.swift in Sources */,
 				C4D7180A74F2F0239F7322F6 /* FileImportService.swift in Sources */,

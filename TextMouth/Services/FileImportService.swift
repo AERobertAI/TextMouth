@@ -1049,6 +1049,11 @@ enum FileImportService {
         if isPlaylistFile(sourceURL) {
             return try importPlaylistWithReport(from: sourceURL, toFolder: folderPath, observer: observer)
         }
+        // A cue sheet imports as one audiobook of the files it names, with a
+        // heading per track (FMT24).
+        if isCueSheetFile(sourceURL) {
+            return try importCueSheetWithReport(from: sourceURL, toFolder: folderPath, observer: observer)
+        }
         // A folder of audio tracks that is no DAISY book imports as one
         // audiobook, as a ZIP of the same tracks does (FR17, Part B).
         if isFolderOfTracks(sourceURL) {
@@ -1242,8 +1247,9 @@ enum FileImportService {
     }
 
     /// Whether the item at `url` is a folder (a package such as an .rtfd
-    /// included).
-    private static func isFolder(_ url: URL) -> Bool {
+    /// included). Internal so the cue sheet import tells a sheet's file from
+    /// a folder named like one (`isCueSheetFile(_:)`).
+    static func isFolder(_ url: URL) -> Bool {
         (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
     }
 
@@ -1503,6 +1509,11 @@ enum FileImportService {
             var paths = try AudioBookParser.trackPaths(in: folder, scan: .importing)
             if let location = AudioManifestLocation.find(in: folder) {
                 paths.append(location.prefix + AudioManifest.fileName)
+            } else {
+                // Without a manifest, the folder's cue sheets travel with
+                // its tracks, to arrange them (FMT24, `arrangeByCueSheets`),
+                // and count in its checksum as a manifest does.
+                paths += CueSheetArrangement.sheets(in: folder).map { AudioBookParser.relativeName(of: $0, in: folder) }
             }
             let hash = try folderHash(of: paths, in: folder)
             let bookID = UUID()
@@ -1700,7 +1711,9 @@ enum FileImportService {
     /// The checksum a folder of tracks is known by: the MD5 of each file's
     /// path in the folder, `paths`, sorted, with the MD5 of its bytes, so a
     /// folder holding the same files under the same names has the same one.
-    private static func folderHash(of paths: [String], in folder: URL) throws -> String {
+    /// Internal so a cue sheet's import knows its book the same way
+    /// (`importCueSheetWithReport`).
+    static func folderHash(of paths: [String], in folder: URL) throws -> String {
         var listing = ""
         for path in paths.sortedStably() {
             listing += "\(path)\n\(try md5Hash(of: folder.appendingPathComponent(path)))\n"
@@ -2976,8 +2989,12 @@ enum FileImportService {
     /// `transcriptFolder`, the folder the tracks' paths lead from (the
     /// archive's extraction, the folder chosen, or the playlist's own
     /// folder), becomes the book's transcript (`TranscriptPairing.inFolder`,
-    /// FMT23).
-    private static func publishTracks(
+    /// FMT23). Without a manifest, the cue sheets among the tracks arrange
+    /// them, through a manifest written here (`arrangeByCueSheets(in:)`,
+    /// FMT24), and the book returned carries the notice of what they left
+    /// out. Internal so a cue sheet's import ends as every other does
+    /// (`importCueSheetWithReport`).
+    static func publishTracks(
         titled title: String,
         in audioDirectory: URL,
         of staging: ImportStaging,
@@ -2991,6 +3008,7 @@ enum FileImportService {
     ) throws -> ImportedBook {
         var title = title
         var author = Book.unknownAuthor
+        let sheetNotice = try arrangeByCueSheets(in: audioDirectory)
         if let location = AudioManifestLocation.find(in: audioDirectory) {
             try run.begin(.readingManifest, in: staging.directory)
             let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory, scan: .importing)
@@ -3009,11 +3027,13 @@ enum FileImportService {
             staging: staging,
             source: source
         )
-        return try publishReadableBook(staged, from: staging, run: &run, pairingTranscripts: .inFolder(transcriptFolder))
+        var imported = try publishReadableBook(staged, from: staging, run: &run, pairingTranscripts: .inFolder(transcriptFolder))
+        imported.notice = joinedNotices(imported.notice, sheetNotice)
+        return imported
     }
 
     /// Creates the folder an audio archive's tracks go in, inside `staging`.
-    private static func makeAudioDirectory(in staging: ImportStaging) throws -> URL {
+    static func makeAudioDirectory(in staging: ImportStaging) throws -> URL {
         let audioDirectory = staging.directory.appendingPathComponent("audio", isDirectory: true)
         try FileManager.default.createDirectory(at: audioDirectory, withIntermediateDirectories: false)
         return audioDirectory
@@ -3161,6 +3181,11 @@ enum FileImportService {
         }
         // PLS and XSPF playlists, read the same way (FMT12).
         types.append(contentsOf: ["pls", "xspf"].compactMap { UTType(filenameExtension: $0) })
+        // Cue sheets, imported as an audiobook of the files they name with
+        // a heading per track (FMT24). macOS declares no type for .cue; the
+        // app imports one in Info.plist, and `importedAs` returns it whether
+        // or not the system has registered it yet.
+        types.append(UTType(importedAs: "com.textmouth.cue-sheet", conformingTo: .plainText))
         return types
     }
 
