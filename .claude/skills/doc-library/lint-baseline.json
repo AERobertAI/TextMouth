@@ -31,7 +31,6 @@
     "docs/architecture/state/imports-textutil.md": {"line-length": 17},
     "docs/architecture/state/imports.md": {"line-length": 34},
     "docs/architecture/state/library-index-reading-feeds.md": {"line-length": 35},
-    "docs/architecture/state/library-index.md": {"line-length": 13},
     "docs/architecture/state/logs.md": {"line-length": 15},
     "docs/architecture/state/media-playback.md": {"line-length": 46},
     "docs/architecture/state/package-records-places-and-files.md": {"line-length": 35},

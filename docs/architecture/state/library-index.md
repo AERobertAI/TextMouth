@@ -13,7 +13,9 @@ The library: every book's row, the folders, each location's sort, and the readin
 
 Owner: LibraryViewModel.library, published on the main actor.
 It is the live copy; library.json, with each feed's own index (see [Feed items](library-index-reading-feeds.md)), is its saved form.
-Each location's sort is kept in folderSortSettings under the location's key (LibraryLocation.sortSettingsKey): a folder's path in Folders, and in every other category a reserved key (LibraryCategory.sortSettingsKey: __allItems__, __unopened__, __recent__, and __readingList__, under which nothing is saved), which no folder may take as its name (BookFolder.reservedNames, made from those keys and the former No Folder category's __noFolder__).
+Each location's sort is kept in folderSortSettings under the location's key (LibraryLocation.sortSettingsKey).
+The key is a folder's path in Folders, and in every other category a reserved key (LibraryCategory.sortSettingsKey: __allItems__, __unopened__, __recent__, and __readingList__, under which nothing is saved).
+No folder may take a reserved key as its name (BookFolder.reservedNames, made from those keys and the former No Folder category's __noFolder__).
 The Feeds view and each view the listener made (LibraryViewDefinition.sortSettingsKey) keep their sorts under "/views/" and the view's stored identity (LibraryViewDefinition.sortSettingsKeyPrefix), as "/views/Feeds" or "/views/" and a UUID.
 A folder path never begins with "/", so no folder can take such a key and BookFolder.reservedNames needs no more names.
 And renaming, moving, deleting, and repairing folders never touch these keys, which are not valid library paths.
@@ -46,7 +48,8 @@ A library.json that cannot be read or decoded is forgotten, so the next save wri
 <!-- id: how-others-observe-library; keys: ObservableObject, Published, sort setting, sort order, FolderSortSetting, Sort menu, manual order; src: TextMouth/Models/Library.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryBookUpdates.swift -->
 
 How others observe it: SwiftUI views observe LibraryViewModel.
-A reader takes a copy of its book when it opens and reports back through LibraryViewModel: updateLiveReadingPosition (live reading positions, below, which change nothing in the library), persistReadingPosition (the row and the package record at once, library.json within five minutes), and updateContentIndex.
+A reader takes a copy of its book when it opens and reports back through LibraryViewModel.
+It calls updateLiveReadingPosition (live reading positions, below, which change nothing in the library), persistReadingPosition (the row and the package record at once, library.json within five minutes), and updateContentIndex.
 Every change of library is offered first to LibraryViewModel.listCache (the lists Library windows show, below), then to LibraryViewModel.bookUpdates, which keeps the copies of open readers current (a reader's copy of its book, below).
 No timer republishes the library: nothing a Library window shows depends on the clock, and a value that ever does should use a TimelineView rather than a tick that redraws every window.
 Every window, menu, and list reads a location's sort through Library.sortState(at:), from Library.sortSetting(at:) (Models/LibrarySortState.swift).
@@ -87,7 +90,9 @@ Live reading positions: where readers are in their books between checkpoints, fo
   When openBookIDs changes, a book no reader has open drops its entry (keepOnly), its reader having saved its position to the library as it closed.
 - How others observe it: a book's row (BookRow) observes its own book's entry, so a live position redraws that row alone, and the summary bar (TimeRemainingBar) observes the store; the library model publishes nothing.
   The store keeps liveBookIDs, the books whose entries hold a live position, which entries a reader's report adds to and keepOnly removes from, and estimatedTimeRemaining(of:wpm:) answers a book with none from the book itself, without copying it.
-  The bar adds the list up through a TimeRemainingTally (ViewModels/TimeRemainingTally.swift, the audit's C7), a @State of the bar: sum(of:wpm:livePositions:) estimates every book once, at the positions the list shows, and keeps each book's time left, in the list's order, then a redraw takes the kept figures and estimates again only the books in liveBookIDs, so the total is the one a full addition gives, to the last bit.
+  The bar adds the list up through a TimeRemainingTally (ViewModels/TimeRemainingTally.swift, the audit's C7), a @State of the bar.
+  Its sum(of:wpm:livePositions:) estimates every book once, at the positions the list shows, and keeps each book's time left, in the list's order.
+  A redraw then takes the kept figures and estimates again only the books in liveBookIDs, so the total is the one a full addition gives, to the last bit.
   What is kept is good for the same array of books, told by its storage (which the tally holds, so it is never another array's), at the same speed; a library change makes a list anew and the next addition is made afresh.
   The static sum(of:wpm:livePositions:) adds a list from nothing, for a folder's facts and the phone's spoken summary.
   A live position carries no anchor, the words around the place, which only a checkpoint takes (makeCurrentReadingPosition(withAnchor:)).
@@ -101,7 +106,9 @@ The lists Library windows show: each location's books in its sort, narrowed by a
 - Owner: LibraryViewModel.listCache, a LibraryListCache on the main actor, which derives each list once and keeps it, at most LibraryListCache.entryLimit lists, until a change it depends on.
   It publishes nothing, so a window may derive and store a list while SwiftUI draws.
 - Who may write it: the library itself, which offers every change of library to listCache.libraryDidChange(from:to:) before anything reads it.
-  A change of membership (which books there are, their order in the library, their folders, and their feed links), of the reading list's books or their order (LibraryListCache.readingListMayDiffer, which its options never change), or of a field a sort or a search reads (the title, the author, the metadata language whose articles a title may be read without, epubLanguage, the dates added and last opened, the manual order, and the book's file) drops every list; any other change, such as a word count or a voice setting, keeps every list's order and refreshes only its books' values.
+  A change of membership (which books there are, their order in the library, their folders, and their feed links), or of the reading list's books or their order (LibraryListCache.readingListMayDiffer, which its options never change) drops every list.
+  So does a change of a field a sort or a search reads (the title, the author, the metadata language whose articles a title may be read without, epubLanguage, the dates added and last opened, the manual order, and the book's file).
+  Any other change, such as a word count or a voice setting, keeps every list's order and refreshes only its books' values.
   A reading checkpoint stamps the book's last-opened date, so it sorts the lists again.
   Folder trees are counted in one pass whenever the lists are dropped, from the library's own books, and the sizes a File Size sort reads are measured once per book, until its file changes.
   A list's key (LibraryListCache.Key) holds, for a feed's folder in Folders, the feed whose items it lists, so the list is derived again when that changes although no book did.
@@ -131,7 +138,7 @@ The lists Library windows show: each location's books in its sort, narrowed by a
 Titles as the lists read them (the Leading articles setting): what a leading article does to a list's sort, rows, search, and letter navigation.
 
 - Owner: LeadingArticles (Models/LeadingArticles.swift), the choice and what each choice does with a title: sortKey(of:language:), shownTitle(_:language:), and rowTitle(of:), which is nil for a list that shows titles as written.
-  FilingTitle reads a title as a library files it (MARC 21's nonfiling characters: its opening punctuation, its leading article, and the rest, and its key, filing, and inverted forms).
+  FilingTitle reads a title as a library files it (MARC 21's nonfiling characters).
   And ArticleLanguage lists the articles of English and of ten other languages (MARC 21 Appendix F), finds the language a book's metadata names, and gives a book English's articles, or its language's with English's "the" alone.
   LibraryBookSorter.SortKeys reads each book's titleKey once, and LibraryBookSorter.titleOrder compares by it for the Title sort and for every tie broken by title, and by the titles as written when two keys are the same, so "Hobbit" and "The Hobbit" never tie.
   LibraryListCache keeps each title's inverted form (rowTitle(of:articles:), by the title and the book's language, at most invertedTitleLimit), and the rows letter navigation compares typed letters with (typedRows(of:)), each title folded once.
@@ -142,7 +149,9 @@ Titles as the lists read them (the Leading articles setting): what a leading art
   A list's titles are read with the articles of English and of the book's epubLanguage, a feed's with English's alone (a feed names no language), and a folder's name with none.
   A search finds a book by its title as written, its author, or, while the setting shows titles inverted, its title as the row shows it (LibraryViewModel.book(_:isFoundBy:shownTitle:)).
   The Reading List is never sorted; a folder's manual order breaks the tie of books it has not numbered by title, so ManualBookOrder.orderedBooks, which Move Book Up and Down, a drag, and Continue to Next Book all follow, takes the setting too.
-  TitleFolding folds typed letters and titles for comparison (case, accents, width, and apostrophes), counting its folds (foldCount) for the test that a key folds no title; a title's forms are folded once, when its row is made (TypedForms), and a key folds only the letters typed. typedRows(of:) keeps the rows of the last list asked for while the list revision and the books' IDs and order are the same, so a key typed in a Library of thousands of titles scans rows made before; a new list revision, which a renamed book or a change of its language causes, drops them (typedRowBuildCount counts the books' rows made).
+  TitleFolding folds typed letters and titles for comparison (case, accents, width, and apostrophes), counting its folds (foldCount) for the test that a key folds no title; a title's forms are folded once, when its row is made (TypedForms), and a key folds only the letters typed.
+  LibraryListCache.typedRows(of:) keeps the rows of the last list asked for while the list revision and the books' IDs and order are the same, so a key typed in a Library of thousands of titles scans rows made before.
+  A new list revision, which a renamed book or a change of its language causes, drops them (typedRowBuildCount counts the books' rows made).
   The rows follow no setting, so changing it makes none again.
 
 ## Index-write suspension
@@ -155,12 +164,17 @@ Index-write suspension: what protects an index that cannot be read.
 - Who may write it: load() suspends index writes when library.json exists but cannot be read, after LibraryIndexQuarantine has preserved its bytes as library.json.unreadable- followed by the date and time.
   Only resumeIndexWrites() (Try Again, once the index reads) and replaceUnreadableIndex(with:) (Rebuild Library Index, which first preserves whatever is there) end it.
   LibraryViewModel+IndexRecovery drives both.
-  A library.json that names a format this build does not know cannot be read either, since BookFormat decodes by raw value: a build that predates rtf, rtfd, doc, odt, wordml, webarchive, or ssml and meets one in an index, or one that predates braille and meets it, fails to decode it, preserves it, and suspends writes as for any damage, and its repair adopts no package whose bookInfo.json names such a format (orphanedBook gives nil when BookInfo.load fails), so its Rebuild Library Index leaves those books out, with the folder rows and manual order that only the index held (the preserved copy keeps them).
+  A library.json that names a format this build does not know cannot be read either, since BookFormat decodes by raw value.
+  A build that predates rtf, rtfd, doc, odt, wordml, webarchive, or ssml and meets one in an index, or one that predates braille and meets it, fails to decode it, preserves it, and suspends writes as for any damage.
+  Its repair adopts no package whose bookInfo.json names such a format (orphanedBook gives nil when BookInfo.load fails), so its Rebuild Library Index leaves those books out, with the folder rows and manual order that only the index held (the preserved copy keeps them).
   Its package record writes go on, as the service's own comment says, and drop the fields it does not know (editedText and pageReaderVersion among them), which a newer build reads back as an edit not recorded and a book not yet given pages.
   The same holds for the formats added since: mobi (0.3.0) and kfx (0.4.0), whose rows a build from 0.2.1 on keeps and leaves out of its lists, and an older build cannot decode.
   The raw values are therefore never changed (see [Imports](imports-textutil.md)).
   A build with V03 keeps such a row as it was read, as it keeps any row it cannot decode, and the index stays readable (Rows this TextMouth cannot read, below).
-- How others observe it: LibraryViewModel.indexRecovery is set while recovering, and the Library window shows the recovery banner and its Recovery Options…. beginIndexRecovery gives the provisional library the arrangement recoveredArrangement(session:unreadableIndex:) finds (FR09): each LibraryIndexArrangement part, .readingList and .sortSettings, comes from the session when it holds one, as when the data directory came back with an unreadable index, and otherwise from SalvagedLibraryArrangement.read(from:) over the preserved bytes, or over the unreadable file itself when no copy could be made, each part read on its own and the sort settings entry by entry.
+- How others observe it: LibraryViewModel.indexRecovery is set while recovering, and the Library window shows the recovery banner and its Recovery Options….
+  LibraryViewModel.beginIndexRecovery gives the provisional library the arrangement recoveredArrangement(session:unreadableIndex:) finds (FR09).
+  Each LibraryIndexArrangement part, .readingList and .sortSettings, comes from the session when it holds one, as when the data directory came back with an unreadable index.
+  Otherwise it comes from SalvagedLibraryArrangement.read(from:) over the preserved bytes, or over the unreadable file itself when no copy could be made, each part read on its own and the sort settings entry by entry.
   LibraryIndexRecovery.arrangementNotKept records what neither gave.
   The .rebuilt and .savedProvisionalLibrary outcomes carry it as notKept, and LibraryIndexArrangement.notReadSentence(in:) words it for them and for the recovery sheet's Rebuild choice (LibraryIndexRecoveryText.rebuild(savedCopy:notKept:)).
   A reading list ID that names no book is kept, and dropped at the list's next change, as ever.
@@ -182,7 +196,8 @@ Rows this TextMouth cannot read: the books a later TextMouth wrote, kept as they
 - Who may write it: the decoding of Library and FeedIndex, once, when an index is read; nothing changes a kept row.
   Every save writes the kept rows back after the books, unchanged, and a library that replaces the one loaded carries them over; Rebuild Library Index writes them back too (LibraryViewModel+IndexRecovery).
   A library without any is encoded exactly as before.
-  Every walk of the packages asks keptRowPackages and leaves an owned package alone: orphan adoption and the startup repair (FileImportService, libraryFolderPath(ofPackageAt:libraryDirectory:)), Rebuild Directory, and the scan of a feed's folder (FeedIndex's rowsFromPackages(of:in:excluding:keptRows:)).
+  Every walk of the packages asks keptRowPackages and leaves an owned package alone.
+  The walks are orphan adoption and the startup repair (FileImportService, libraryFolderPath(ofPackageAt:libraryDirectory:)), Rebuild Directory, and the scan of a feed's folder (FeedIndex's rowsFromPackages(of:in:excluding:keptRows:)).
   A part of the index that is not a list of books, or whose folders are in a layout this version cannot read, still makes the whole index unreadable (index-write suspension, above).
   The gaps, open in the TODO:
   - Delete Folder (removeFolderAndEverything) and Delete Feed (FeedCenter+DeleteFeed) still remove a kept row's package;
@@ -198,7 +213,14 @@ The on-disk contract (V02): what 0.2.0 writes, pinned so that a change is a deli
 
 - Owner: OnDiskContractTests (TextMouthProductionTests/OnDiskContractTests.swift, in the analysis area of Scripts/test/areas.conf).
   It compares each value against a literal, never against the code's own constant, so a rename fails even when every other test passes.
-  It pins every BookFormat, SkipUnit, LibrarySortField, and LibraryCategory raw value; the shortcut action names, with their former names; the keys of config.json, of a fully populated library row and package record (textEncodingSource among them, the optional note of who decided a text book's encoding, which an older TextMouth drops, and brailleTableOrigin, the optional note of whether a braille book's table was guessed, in the row, the record, and the removal marker alike), and of the records of a user's places; the file and folder names a package and the data directory keep; and the versions that say how a file was written (the content index, the page readers, and the layouts of the reading-text cache and of the other files a newer TextMouth could write).
+  It pins:
+  - every BookFormat, SkipUnit, LibrarySortField, and LibraryCategory raw value;
+  - the shortcut action names, with their former names;
+  - the keys of config.json, of a fully populated library row and package record, and of the records of a user's places;
+  - the file and folder names a package and the data directory keep;
+  - and the versions that say how a file was written.
+
+  Among the keys of the row and the record are textEncodingSource, the optional note of who decided a text book's encoding, which an older TextMouth drops, and brailleTableOrigin, the optional note of whether a braille book's table was guessed, in the row, the record, and the removal marker alike.
   Each assertion's message says what a change forces: an older build's refusal, a re-read of the library, or a re-index.
   What other tests pin already, as the text cache format and the metadata reader's version, is not pinned again.
 
@@ -210,8 +232,15 @@ Retirement markers: books removed with Remove from Library Only.
 - Owner: the marker file in the package, removedFromLibrary.json (RemovedFromLibraryMarker), together with LibraryPersistenceService's set of retired packages on its metadata queue.
 - Who may write it: LibraryPersistenceService.retirePackage(of:) writes the marker first.
   Only once it is on disk does it cancel the writes queued for the book, remember the package, and delete bookInfo.json, a courtesy to older versions of TextMouth. reinstatePackage(of:) deletes the marker when the package is deliberately taken back, by importing it again or adopting it.
-  The marker also carries a braille book's table (RemovedFromLibraryMarker.brailleTable, nil for any other book and absent from a marker written before braille books) and, for a Mac table, the version of this Mac's tables it was read with (RemovedFromLibraryMarker.brailleTableVersion), and who chose the table (RemovedFromLibraryMarker.brailleTableOrigin, brfguess, an @LenientOptional that never makes the marker unreadable, nil and absent for every other book), so a book added back is still said to be guessed and is not guessed again, because the removal deletes bookInfo.json, which holds it, and a book rebuilt from the marker (FileImportService.reconstructedBook(inPackage:marker:folderPath:dateAdded:)) would otherwise be read again with the default table.
-  It also carries a text book's guessed or chosen encoding (RemovedFromLibraryMarker.textEncoding, FMT16) and who decided it (textEncodingSource, an @LenientOptional, encodingchoice), nil for a book with none and absent from a marker written before them, which reconstructedBook gives back to a book of a format that reads text files, since the book would otherwise be read by the Windows-1252 fallback and its text would change.
+  The marker also carries:
+  - a braille book's table (RemovedFromLibraryMarker.brailleTable, nil for any other book and absent from a marker written before braille books),
+  - and, for a Mac table, the version of this Mac's tables it was read with (RemovedFromLibraryMarker.brailleTableVersion),
+  - and who chose the table (RemovedFromLibraryMarker.brailleTableOrigin, brfguess, an @LenientOptional that never makes the marker unreadable, nil and absent for every other book).
+
+  A book added back is therefore still said to be guessed and is not guessed again.
+  That is because the removal deletes bookInfo.json, which holds it, and a book rebuilt from the marker (FileImportService.reconstructedBook(inPackage:marker:folderPath:dateAdded:)) would otherwise be read again with the default table.
+  It also carries a text book's guessed or chosen encoding (RemovedFromLibraryMarker.textEncoding, FMT16) and who decided it (textEncodingSource, an @LenientOptional, encodingchoice), nil for a book with none and absent from a marker written before them.
+  FileImportService.reconstructedBook gives them back to a book of a format that reads text files, since the book would otherwise be read by the Windows-1252 fallback and its text would change.
   The marker keeps no source path, so a book added back from it has the Text Encoding pop-up only when the marker recorded an encoding or a decision (Book.offersTextEncodingChoice; Text files in other encodings, in [Imports](imports-text-encodings.md)).
 - How others observe it:
   - every package record write checks the set and drops writes into a retired package;
@@ -236,7 +265,9 @@ Duplicate books: what Find Duplicate Books, in Storage settings, groups and remo
   DuplicateGroup.matchDescription names the criteria with ListFormatter, and its matchKey gives the values shared, a title and author matched together as "Title by Author"; the two make one heading.
 - Who may write it: the sheet's checkboxes and its Scan for Duplicates, which runs the engine over the library's own books, never a feed's items (LibraryViewModel.booksForDuplicateScan, FR11).
   DuplicateRemoval.firstStep(removing:preferences:) decides from RemovalPreferences whether DuplicateRemovalButton asks first, and DuplicateRemoval.remove(_:from:) deletes the checked books through LibraryViewModel.removeBooksAndDeleteReturningOutcome, to the Trash or not as the preference says.
-- How others observe it: DuplicateFinderWording makes each row's label (title, author, format, folder, and the date added) and the scan-result phrase (scanResult(groupCount:), through CountWording), which the results carry as their accessibility label and VoiceOverAnnouncer announces after a scan the user asks for (runScan()), not after the rescan that follows a removal (runScan(afterRemoval: true)), whose outcome is announced instead, and which keeps the page now holding the group that headed the page shown (DuplicateGroupPages.page(keeping:of:orElse:)).
+- How others observe it: DuplicateFinderWording makes each row's label and the scan-result phrase (scanResult(groupCount:), through CountWording).
+  The results carry the phrase as their accessibility label, and VoiceOverAnnouncer announces it after a scan the user asks for (runScan()), not after the rescan that follows a removal (runScan(afterRemoval: true)), whose outcome is announced instead.
+  That rescan keeps the page now holding the group that headed the page shown (DuplicateGroupPages.page(keeping:of:orElse:)).
   The groups are shown a page at a time (DuplicateGroupPages, REV13): whole groups in the scan's order, listing at most rowsPerPage (40) books, or one larger group alone.
   While there is more than one page, DuplicateGroupPager shows DuplicateFinderWording.pageLine(groups:of:), with Previous Groups and Next Groups, which announce it as they turn the page.
   The list is made anew for each page, so it opens at its top.
@@ -251,7 +282,10 @@ Quit and recovery saves: what is saved at a quit, and what a recovery keeps.
   Each reader answers savePositionIfMoved() (ReaderViewModel), which keeps its last saved chapter and offset and writes only when the cursor moved or playback published a live place since.
   So a reader at rest dates nothing and writes no library index over a newer one saved by another Mac on a shared library.
   A reader without that knowledge saves as before (the protocol's default).
-- Who may write it: Library is Equatable, its synthesized == comparing every stored field, and library(after:current:) and library(afterMoving:from:current:) take the library a folder edit or a data-directory move made off the main actor whole only when the library is unchanged since its snapshot, and otherwise merge into the library as it is now, so a Reading List change, a feed shelf change, or a kept row made meanwhile is kept. saveReadingCheckpoint journals the book while an unreadable index is protected, as with a readable one, and none is journaled while the data directory is unavailable.
+- Who may write it: Library is Equatable, its synthesized == comparing every stored field.
+  And library(after:current:) and library(afterMoving:from:current:) take the library a folder edit or a data-directory move made off the main actor whole only when the library is unchanged since its snapshot.
+  Otherwise they merge into the library as it is now, so a Reading List change, a feed shelf change, or a kept row made meanwhile is kept.
+  LibraryViewModel.saveReadingCheckpoint journals the book while an unreadable index is protected, as with a readable one, and none is journaled while the data directory is unavailable.
   Rebuild Library Index decodes the index a load would read now, library.json or the legacy index, first, and when it decodes, writes and preserves nothing and fails with LibraryIndexRecoveryError.indexReadableAgain.
   FileImportService.adoptLibraryFolders(library:libraryDirectory:includingFoldersOnDisk:) makes rows for every folder books name.
   And with includingFoldersOnDisk false, as the startup repair of a library whose index records the folders asks, only for the folders books lie in and their ancestors, the disk unwalked.
