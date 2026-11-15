@@ -645,3 +645,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From The reader
 
 - **Next Page and Previous Page commands:** The separate Next Page and Previous Page commands were removed at the user's request on November 5, 2026.
+
+## From Windows
+
+- **The Library's category picker:** Until October 30, 2026 the picker was a segmented control of the five categories, read as "Library category"; it is now a pop-up button, the View pop-up.
