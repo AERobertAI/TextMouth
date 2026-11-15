@@ -40,7 +40,12 @@ App-wide objects, created once by TextMouthApp and given to every window as envi
 ## AppDelegate and quitting
 <!-- id: appdelegate-quitting; keys: applicationShouldTerminate, terminateLater, quit hold, Finder open file, unsaved prompt; src: TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Platform/macOS/Services/MenuVisibilityManager.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorWindowController.swift, TextMouth/App/UnsavedChangesTermination.swift, TextMouth/App/QuitFinisher.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift -->
 
-AppDelegate (Platform/macOS/App/AppDelegate.swift) starts the router before Finder can hand over a file, owns MenuVisibilityManager, turns off window restoration, and holds a quit until nothing would be lost: it stops a data-directory move that is copying, has the Record window ask about a take it holds (RecordingWindowController.holdQuit) and then each audio editor window about its unsaved edits (AudioEditorWindowController.holdQuit), asks when changes are unsaved (UnsavedChangesTerminationGuard), and then finishes the work a quit must not cut off, the feed downloads keeping their place (three seconds at most, FeedQuitHold), a book's text read again (ten), and a speech export (five), saying what it finishes (QuitFinisher; see [Launch](launch.md)).
+AppDelegate (Platform/macOS/App/AppDelegate.swift) starts the router before Finder can hand over a file, owns MenuVisibilityManager, turns off window restoration, and holds a quit until nothing would be lost:
+- it stops a data-directory move that is copying;
+- has the Record window ask about a take it holds (RecordingWindowController.holdQuit) and then each audio editor window about its unsaved edits (AudioEditorWindowController.holdQuit);
+- asks when changes are unsaved (UnsavedChangesTerminationGuard);
+- and then finishes the work a quit must not cut off, the feed downloads keeping their place (three seconds at most, FeedQuitHold), a book's text read again (ten), and a speech export (five), saying what it finishes (QuitFinisher; see [Launch](launch.md)).
+
 At quit it cancels a transcription under way, asking nothing, and ends the session lease.
 
 ## A reader window's own objects
@@ -81,24 +86,33 @@ The app target copies it into Contents/MacOS, and only BrailleTranslator starts 
 
 Concurrency: the view models, the window router, the settings mirror, the sleep timer, the statistics, the books' cloud states, the books kept on this Mac, the list cache, the live reading positions, and the voice list run on the main actor.
 Disk work runs on queues that each own their work: serial queues for the library index and for package records (LibraryPersistenceService), for imports (SerialImportQueue), and for logs (LogWriter), and at most two workers for cache updates (TextCacheUpdateQueue).
-Each import, text extraction, and book analysis on those queues runs through StorageBoundary.perform, which a data-directory move holds back and waits for, so none runs across the move's publication; the move then copies the data directory off the main actor, while every Library window's sheet keeps the library from changing.
+Each import, text extraction, and book analysis on those queues runs through StorageBoundary.perform, which a data-directory move holds back and waits for, so none runs across the move's publication.
+The move then copies the data directory off the main actor, while every Library window's sheet keeps the library from changing.
 Rebuild Directory and the folder edits made from the library's sheets hold storage work the same way; a folder edit moves its packages and rewrites their records off the main actor, then publishes the new rows on it, keeping any change made to the library meanwhile (performLibraryTransition).
 Work that can wait on a drive or the network never runs on the main thread.
-The list's cloud refreshes and commands call the cloud services from detached tasks, and work that holds its thread for as long as it takes runs on a global dispatch queue (ReaderViewModel.offMain, OffMainWork) rather than on one of Swift's cooperative threads: the reader's requests to the book storage and its reads of a book, the check of a folder chosen for the library, the count of books only in the cloud before a move, a move's copy, and a folder edit's moves.
+The list's cloud refreshes and commands call the cloud services from detached tasks, and work that holds its thread for as long as it takes runs on a global dispatch queue (ReaderViewModel.offMain, OffMainWork) rather than on one of Swift's cooperative threads:
+- the reader's requests to the book storage and its reads of a book;
+- the check of a folder chosen for the library;
+- the count of books only in the cloud before a move;
+- a move's copy;
+- and a folder edit's moves.
+
 The audio editor's level measurement reads its composition on a Thread of its own for the same reason: a reader may block for as long as CoreMedia takes, and a few cancelled measurements blocked there starve the cooperative pool.
 A read that must never download runs inside DatalessFiles.withoutDownloading, which leaves dataless files in the cloud for its own thread only.
 Other work leaves the main thread too.
 The look-ahead prepares the speech of a chapter too long to render ahead on a global queue, which ChapterSpeechInputs allows by being values and prepare() by being pure, and the main actor keeps the result only while the chapter's inputs are unchanged.
 Rendered speech is fed to the engine's player node from RenderedSpeechFeeder's own serial queue, which every call on the node goes through, so a busy main thread never leaves the node without audio, and a completion handler of the node never waits on the feeder.
 The installed voices are listed on a queue of VoiceCatalog's own (`listingQueue`), which waits at most `listingDeadline`, ten seconds, for each listing, launch finds the books its cache batch must rebuild on a utility queue, where its metadata refresh reads the files of the rows an older reader read too, and Storage settings ask whether the data directory exists off the main thread.
-Transcription runs on an actor of its own (TranscriptionService), one book at a time, with its blocking reads on a global queue (OffMainWork); the main actor's TranscriptionJobCenter saves each transcript on a global queue too, a window's TranscriptionPresenter deletes one there, and its Clean Up sheet reads the cleanup's rules, cleans a transcript up, and undoes a cleanup there.
+Transcription runs on an actor of its own (TranscriptionService), one book at a time, with its blocking reads on a global queue (OffMainWork).
+The main actor's TranscriptionJobCenter saves each transcript on a global queue too, a window's TranscriptionPresenter deletes one there, and its Clean Up sheet reads the cleanup's rules, cleans a transcript up, and undoes a cleanup there.
 The Record window's capture backend (CaptureSessionRecordingBackend) is an actor running on a serial queue of its own, since a capture session blocks while it starts and stops.
 The feed engine runs on the main actor; a feed's fetch, its parse, and a first merge run off it, its records, this Mac's fetch details, and its imports are written on queues of their own, and the files its after-playing sweep and newest-N rule remove go on the imports' queue (FeedDownloadManager.runBesideImports(_:)), once the records and the feeds' indexes are written on the main actor.
 Audio editing reads, renders (LAME encoding an MP3 within a render), and deletes originals off the main thread, as storage work (StorageWork.audioEditing), each change of a book's edit history under one lock (AudioEditHistoryStore), and an installed ffmpeg runs as a child process, never on the main thread; the editor window's model runs on the main actor, measuring the edited audio's levels off it, and plays through an AVPlayer.
 Every target builds in the Swift 6 language mode, set once in project.yml (TextMouthTests/Package.swift matches it), so concurrency diagnostics are errors, and `make check` fails on any Swift warning and on a Release app larger than 20 MB (`make build` does not compile with code coverage, and the symbols are stripped into a dSYM that `make install` keeps for the last five installs).
 The mode adds runtime isolation checks to `@objc` methods of main-actor classes and to main-actor closures handed to Objective-C APIs; each of the app's checks runs on the main thread, and VoiceWarmUp's buffer callback relies on AVSpeechSynthesizer calling back on the thread that called write().
 SpeechService handles every callback of its direct synthesizer on the main queue, so its announcement of a text the speech engine refused, made only when no reader listens, asserts the main actor there (endDirectSpeechRefused(at:refusing:spanning:)).
-A render's RenderCancellationObserver, called on whatever thread the synthesizer uses, only sets a flag in an OSAllocatedUnfairLock and signals the semaphore the render queue waits on; it is Sendable, as the SDK makes every synthesizer delegate (AVSpeechSynthesizerDelegate is NS_SWIFT_SENDABLE), and the compiler checks it, with no `@unchecked`.
+A render's RenderCancellationObserver, called on whatever thread the synthesizer uses, only sets a flag in an OSAllocatedUnfairLock and signals the semaphore the render queue waits on.
+It is Sendable, as the SDK makes every synthesizer delegate (AVSpeechSynthesizerDelegate is NS_SWIFT_SENDABLE), and the compiler checks it, with no `@unchecked`.
 Speak Info's LibraryInfoSpeechDelegate ends an announcement at once when called on the main thread, and otherwise on the next turn of the main queue, and the reader's WhereAmIDelegateHelper hands each finish and cancel of an announcement to the main queue.
 UncheckedConcurrencyPolicyTests requires a comment naming a lock, queue, actor, or thread on the three lines above each `@unchecked Sendable` or `nonisolated(unsafe)` declaration and pins their counts (30 and 16).
 One `@unchecked Sendable` is ManifestOwedFields, the record of the title and author a manifest is owed, whose one stored property is a constant and UserDefaults is documented thread-safe.
