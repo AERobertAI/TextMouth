@@ -1,10 +1,12 @@
 # Writing docs and memory files
+<!-- id: writing-docs-memory-files; keys: documentation rules, style guide, readers, VoiceOver, token cost; src: .claude/skills/doc-library/scripts/lintrules.py -->
 
 TextMouth's docs have two kinds of reader: the user, who reads alone with VoiceOver and a braille display, and coding agents, who pay for every token they read.
 So a page is short, says what is true now, and can be found by a search.
 The user does not review docs: a second agent or a script checks every line an agent writes.
 
 ## Every page
+<!-- id: docs-rules-every-page; keys: page rules, sales words, one home, dates in logs, stale sentence; src: .claude/skills/doc-library/scripts/lintrules.py, .claude/skills/doc-library/sales-words.txt -->
 
 1. Say what is true now.
    Dates, quotes, and the stories behind rules go in the logs (see Where documents live, below).
@@ -19,6 +21,7 @@ The user does not review docs: a second agent or a script checks every line an a
    Delete a sentence the moment it is false.
 
 ## Memory files
+<!-- id: docs-rules-memory-files; keys: CLAUDE.md, AGENTS.md, briefs, prune, universal rules; src: CLAUDE.md, AGENTS.md -->
 
 These are the files agents load to work: `CLAUDE.md`, `AGENTS.md`, briefs, and notes.
 
@@ -30,6 +33,7 @@ These are the files agents load to work: `CLAUDE.md`, `AGENTS.md`, briefs, and n
 6. Delete a stale entry when you notice it.
 
 ## Layout
+<!-- id: docs-rules-layout; keys: sentence per line, line length, section length, page size, 40 kB, index line; src: .claude/skills/doc-library/scripts/lintrules.py, AGENTS.md, CLAUDE.md -->
 
 - One topic per heading, and no two headings alike in a page.
 - One sentence per line.
@@ -40,6 +44,7 @@ These are the files agents load to work: `CLAUDE.md`, `AGENTS.md`, briefs, and n
 - Code identifiers go in backticks.
 
 ## Section markers
+<!-- id: docs-rules-section-markers; keys: marker, id, keys, src, HTML comment, marker line; src: .claude/skills/doc-library/scripts/cmd_mark.py, .claude/skills/doc-library/scripts/docmodel.py -->
 
 Each section of a reference page starts with one marker line under its heading:
 
@@ -51,17 +56,21 @@ Each section of a reference page starts with one marker line under its heading:
   Every path must exist.
 
 ## Where documents live
+<!-- id: docs-rules-where-documents-live; keys: logs, research, humanQuestions, reference pages, changelog, history; src: README.md, ARCHITECTURE.md, TODO-2026-09-04.md, AGENT-NOTES-2026-10-04.md, docs/agents/history.md, docs/user/changelog.md -->
 
 - `docs/user`, `docs/developer`, `docs/architecture`, `docs/agents`: the reference pages, indexed by `README.md` and `ARCHITECTURE.md`.
-- `research/`: research, plans, designs, and specs, each dated and kept as written. They are a record, not a reference.
+- `research/`: research, plans, designs, and specs, each dated and kept as written.
+  They are a record, not a reference.
 - The logs, where dates belong:
   - `TODO-2026-09-04.md`: every merge, and the open items;
   - `AGENT-NOTES-2026-10-04.md`: what agents left unverified;
   - `docs/agents/history.md`;
   - `docs/user/changelog.md`.
-- `humanQuestions/`: questions for the user, and their answers. It is not in git.
+- `humanQuestions/`: questions for the user, and their answers.
+  It is not in git.
 
 ## Tools
+<!-- id: docs-rules-tools; keys: doclib, make lint-docs, reflow, mark, suggest-src, stale; src: .claude/skills/doc-library/SKILL.md, .claude/skills/doc-library/scripts/doclib.py, Makefile, Scripts/agents/merge-chain.sh -->
 
 The `doc-library` skill does this page's mechanical work, and `.claude/skills/doc-library/SKILL.md` lists its commands.
 

@@ -2,9 +2,8 @@
   "version": 1,
   "pages": {
     "docs/agents/history.md": {"line-length": 18},
-    "docs/agents/orchestrator.md": {"date": 14, "line-length": 21, "sentences-per-line": 18, "user-quote": 6},
-    "docs/agents/working-with-agents.md": {"date": 4, "line-length": 12, "marker-missing": 1, "sentences-per-line": 16, "user-quote": 1},
-    "docs/agents/writing-docs.md": {"marker-missing": 7, "sentences-per-line": 2},
+    "docs/agents/orchestrator.md": {"line-length": 14},
+    "docs/agents/working-with-agents.md": {"line-length": 4},
     "docs/architecture/known-duplication.md": {"line-length": 6},
     "docs/architecture/launch.md": {"line-length": 10},
     "docs/architecture/parts-of-the-app.md": {"line-length": 18},

@@ -3,47 +3,183 @@
 
 Part of [working on TextMouth with coding agents](../../AGENTS.md).
 
-## How the orchestrator works
-<!-- id: how-orchestrator-works; keys: no-ff, merge train, heavy lock, set-version, extract-report, version bump, cisuite; src: Scripts/agents/merge-chain.sh, Scripts/agents/record-merge.py, Scripts/agents/build-train.py, Scripts/agents/hold-build-slots.sh, Scripts/agents/run_locked.py, Scripts/agents/run_suite.py, Scripts/agents/heavy_lock.py, Scripts/agents/usage-watch-unscoped.py, Scripts/agents/wait-for-result.py, Scripts/set-version.sh, Makefile -->
+## Every launch names its model
+<!-- id: every-launch-names-model; keys: model override, Sonnet, Opus, Fable, effort high, weekly window, launch message, worktree isolation; src: Scripts/agents/usage-watch-unscoped.py -->
 
-- **Every launch names its model, Sonnet by default.** Since October 31, 2026, workers, verifiers, documentation passes, and narrow fixes run on Sonnet at high effort (`model: "sonnet"`, `effort: "high"`), and Opus (`model: "opus"`) is kept for the lead of a large design and the first outside review of a big or risky branch. After a night of 76 Opus agents the user asked: "Are the subagents teams running as sonnet agents? just checking given how fast they used usage last night." Every launch also passes `subagent_type: "general-purpose"` and `isolation: "worktree"`; an agent launched without a model override inherits the orchestrator's model, which on October 6 and 7, 2026 put thirteen task agents on Fable and spent the weekly Fable window (only the four read-only sheet sweeps of October 6 ran on Opus). The orchestrator, on Fable, writes the briefs, reads each report and diff, decides, merges, and records; it uses a Fable agent only when the user asks for one. Briefs are kept in `Scripts/agents/briefs/<date>/` (stage with `git add -f`), never only in the session's scratch folder, so the next session can launch from them. The orchestrator itself may run on Opus too (it did on the evening of October 7, 2026); the launches still name the model. The usage script's `binding` window can then be a weekly cap scoped to one model, such as "Weekly (Fable)", which Opus work does not count: read only the unscoped windows ("5-hour session", "Weekly (all models)"), watch them with `Scripts/agents/usage-watch-unscoped.py <left%>` as a background task, and say in every launch message that the scoped window does not apply, or an agent following the usage rule stops at once.
-- One brief per task, written to `Scripts/agents/briefs/<date>/` and pointed at from the launch message; it names the branch the agent makes its own from (local main or the team branch, by name), since a worktree starts at origin/main, which can be far behind local main; the user's decisions quoted in the brief in their own words; waves of three to five agents whose file regions do not overlap, with a shared contract or a first "core" branch when they must share types.
-- After an agent reports: write the merge message to a file, note the agent's unverified items and its documentation wording where the next documentation pass will find them (`AGENT-NOTES-2026-10-04.md` is the current such file), then `Scripts/agents/merge-chain.sh <branch>:<message-file>` in the background; on a green suite, record the merge in the TODO with `Scripts/agents/record-merge.py` (it puts the merge's `- [x]` entry before the paragraph that begins `**Open follow-ups noted by the September 28 agents**`, appends a sentence with the suite's exact counts to the long verification paragraph, after the latest "After the … merge: **N tests, S skipped, 0 failures**", and appends open items to the paragraph that begins `**Open follow-ups noted on October 3 afternoon and evening**`; `--note` in place of `--counts` for a merge that ran no suite, `--tick FR09 --hash <merge>` to tick an entry), commit the TODO, remove the agent's worktree (`git worktree remove --force --force` and `git worktree prune`), unregister and delete `build/DerivedData-main` when the disk is tight, and post `merged: <branch>` on the board with the new counts so the other agents rebase. A suite that fails only in a load-sensitive test (the sleep-timer integration tests, `BookmarkKeyboardAccessTests`, `StorageGenerationMoveTests`, `BookSearchModelTests.testCancelledSearchPublishesNothing`, `DataDirectoryMoveTests.testAMoveShowsItsProgressWhileItCopies`, the reader-sheet redraw count in `ViewsAndWindowsReaderSheetTests`, the resume-data test `FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped`, the audiobook-open benchmark, `MacBrailleTableCheckTests.testFrenchGermanAndSpanishPassAndRoundTrip` (its reading of the braille helper's memory can miss three short runs), and the performance baselines, which skip while the Mac is busy) is rerun on that class alone before the merge stands.
-- Questions for the user go into a new file in `humanQuestions/` for each session or batch, so the user can answer while away and the answers are kept: each question numbered, with its context in a sentence or two, a recommended answer, and an `Answer:` line for the user; an optional "Answer for the whole section:" line; and an "Answered this session" section quoting the answers already given in chat. Say in chat which file holds new questions. When acting on an answer, record the decision in the TODO with the user's words, as before.
-- A documentation pass is its own agent (no build) that edits only the documentation (README.md, ARCHITECTURE.md, and the pages under docs/) from the merged code and the agents' wording, one commit per documented branch; it is merged without a suite as a Markdown-only merge and recorded in the TODO with a sentence.
-- **The docs' checks:** before each fast-forward of main, run `make lint-docs` on the merged tree.
-  After each docs merge, run `python3 -I .claude/skills/doc-library/scripts/doclib.py lint --update-baseline`.
-  When main's docs changed under a branch, run it with `--rebuild-baseline` instead, which only the orchestrator runs because it can raise a count.
-- **The end of a campaign:** move `AGENTS.md`'s `Where things stand` to the top of `docs/agents/history.md` as `## Where things stood on <date>`.
-  Then write a new `Where things stand` of at most 1,400 bytes, without dates.
-- **Reading an agent's report:** `Scripts/agents/extract-report.py <transcript> [max_chars]` prints a subagent transcript's last message.
-- **The version.** The user's rule (October 23, 2026) is one bump for each day on which main gains bug fixes or small backward-compatible features. After the day's last merge, and before the user's next install, run `make bump-patch`; run `make bump-minor` instead when that day holds a change that is not backward compatible (an older TextMouth cannot open the library, every book is read again, a stored format changes, or a setting, shortcut, or file is removed or renamed). Commit the bump on its own, add the day's dated section to the top of `docs/user/changelog.md` with one plain sentence per change (a MINOR section first says what an older TextMouth can no longer do with the library), tag the commit the user is to install as `vX.Y.Z` with an annotated tag (the orchestrator pushes tags only at a stable release, with main, as AGENTS.md says), and record the bump in the TODO. MAJOR stays 0 until the user calls TextMouth released. Versions in `docs/developer/building.md` has the rules and the cases they leave open.
-- **Builds go through the build train** (since October 31, 2026). That day the Mac, with 8 GB of memory, froze under the agents' builds and was force-restarted, and the user asked for "1 build at a time maybe on a schedule or something every 30 minutes and have the agents pool there work into each build". On November 8, 2026, finding that the builds took a lot of CPU, they asked for "the builds every hour and putting them one after the other", and for the agents "to use the wait time to review there patches and fix any obvius issues so its less likely a hour cycle would be waisted, or to improve tests so each indiviusal build would give more information".
-  - **Start it.** While agents work, the orchestrator runs two background tasks. `Scripts/agents/hold-build-slots.sh <release flag>` holds every build slot, so no agent builds on its own. `python3 -I Scripts/agents/build-train.py loop --hours <N>` runs a train every hour, on the hour; with `--remote` the trains build and test on GitHub Actions instead of this Mac (see **Builds on GitHub** below), and `--remote --soon <minutes>` sends one that many minutes after a request comes. Every heavy job takes the heavy-work lock (`Scripts/agents/heavy_lock.py`), so one runs at a time: the trains, the type-checks, `run_suite.py`, and anything run through `run_locked.py`, simulator runs included.
-  - **The helpers** are in `Scripts/agents/`, each found from its own location, so they work from any checkout. `python3 -I Scripts/agents/run_locked.py NAME COMMAND...` runs one command under the lock and exits with its status. `python3 -I Scripts/agents/run_suite.py NAME LOG` runs the full hosted suite under the lock from the checkout to test (as a background task), ends an xcodebuild that outlives its tests, prints the log's Executed line, and exits 0 only when every test passed; `run_suite.py --remote COMMIT NAME LOG` runs the same suite on GitHub for COMMIT's tree, takes no heavy-work lock, writes the run's log to LOG, and judges it the same way (exit 4: the push or the run failed, not the tests; exit 3: a train held TestBuild throughout). `python3 -I Scripts/agents/copy_phases.py A.pbxproj B.pbxproj` says whether two projects copy the same files to the same places. `Scripts/agents/regenerate-project.py` is what `make generate` runs. Their tests are in `Scripts/agents/tests`.
-  - **An agent's part.** It commits, then queues `build-train.py request --agent <name> --branch <branch> --classes <A,B> --areas <x,y>`. It waits for its board message or for `build/orchestrator/train/results/<name>.md`. The train tests the commit the branch was at when the agent asked, so an agent that commits a fix before the train leaves asks again; the newest request for a branch wins. Every brief points the agent at Making each train count, in `docs/agents/working-with-agents.md`.
-  - **Each train:**
-    - it waits for the heavy-work lock first in line, so no other job takes the lock before it, for up to 50 minutes, and never runs without it; a train that waited in vain leaves its requests queued for the next one and tells the orchestrator who held the lock;
-    - it then takes every waiting request, those made while it waited included, and merges the commit each one names onto `train/base` in `.claude/worktrees/train`, leaving out a branch that conflicts anywhere but project.pbxproj and telling its agent;
-    - it builds once, with two jobs. If the build fails to compile only in files some merged branches change, it builds again without those branches, and merges again, in the order of the requests, every branch it had left out for a conflict: one that now merges cleanly is taken back, and the summary says so;
-    - it runs the union of the tests asked for, dropping and reporting any name `Scripts/test/run-area.py` does not know;
-    - it writes `build/orchestrator/train/trains/<id>/summary.md`;
-    - it waits for the next hour while under 3 GB is free.
-  - **An integration's full suite.** Point `train/base` at the integration branch, then queue `--agent orchestrator --branch <integration> --areas all`. The loop does not exit when a train ends, so wait for that summary with a background task that exits when the file appears.
-  - **Look and finish.** `build-train.py status` shows the next train, what a running train is doing (waiting for the lock and for whom, or which branches it builds), and the queue. When the agents are done, stop the loop and `touch` the release flag.
-  - **Builds on GitHub** (since November 9, 2026). The user, finding the builds hard on this Mac's CPU, asked to move the testing and compiling to GitHub Actions. `.github/workflows/test-build.yml` runs only for a push to the branch `TestBuild` of the public repository (`AERobertAI/TextMouth`), with a read-only token, no secrets, and GitHub's own pinned actions. A remote train (`build-train.py run --remote`, or `loop --remote`) merges the requests here as always, then pushes the merged tree plus `.github/test-request.json` to `TestBuild` with `--force`, and nothing else is ever pushed (`Scripts/agents/github_run.py` builds the refspec itself and refuses a tree holding a path under `build/`, `humanQuestions/`, or `humanReports/`). It waits for that commit's run, found by its SHA, for up to 125 minutes, downloads the run's artifact into the train's folder (`run.log`, `run-summary.txt`, `remote-N/`), and reports from it exactly as a local train does. The test command is made in one place, `Scripts/agents/test_command.py`, which the local train, `run_suite.py`, and the runner script (`Scripts/agents/run-on-runner.py`) all call. A remote train takes no heavy-work lock, skips the disk check and the iOS census, and shares the train's own lock with a remote suite, since a newer push to `TestBuild` cancels the older run. If its push or run fails, it puts every request back in the queue, tells each agent and the orchestrator, and the loop waits 15 minutes before the next try. A long request runs as up to four parallel jobs (`Scripts/agents/shard.py` deals the classes out; `merge_shards.py` joins the results into the one artifact the Mac reads), build products are cached between runs (`restore_mtimes.py`), and the full suite took 13 to 16 minutes on November 10, 2026 (three clean runs in a row at the end of the day) against 80 without finishing before the tuning. The runner cannot play or read audio, so `Scripts/agents/runner-skips.conf` lists the 103 entries (103 of about 11,960 tests) it does not run, each with its reason, and each remote result says which of an agent's requested tests were among them ("Not run on GitHub, no verdict"); a remote suite is therefore not the last check before a release: run those on this Mac too, with a local `build-train.py run`, which takes the heavy-work lock. A push to `TestBuild` also refuses a tree whose `.github/workflows/` or `.github/actions/` differs from origin's main, once origin's main holds `test-build.yml`, which it has since November 14, 2026 (main pushed at 0.4.10, a1214dc0): **the guard is on**, so a workflow or action change runs on `TestBuild` only after it is on GitHub's main. A push waits, up to 125 minutes, while another run is queued or going on `TestBuild` (a newer push cancels the older run), and fails, pushing nothing, if the branch stays busy; so a train, a remote suite, and a hand-sent run take turns, and a train leaves 5 minutes after a request. The jobs are in `.github/workflows/tests.yml`, which `test-build.yml` (a push to `TestBuild`) and `check.yml` (main and pull requests) both call, and each run also builds the iPhone app and its UI-test bundle for the iOS Simulator (`Scripts/agents/run-ios-build.py`); a train's result and `run_suite.py --remote` list its errors by file, and they never change the tests' verdict. A test that fails on the runner with a timing, and passes here, is flaky there, not a reason to raise its limit or add it to the list. Testing TextMouth (Tests on GitHub Actions) has how to read a run, what differs from the Mac, and the flaky tests.
-  - **Type-checks between trains** (since November 3, 2026). `make typecheck-mac` compiles and links the committed Mac app with SwiftPM in about 96 seconds, without xcodebuild, and `make typecheck-ios` does the same for the iOS target (`CENSUS=1` counts every AppKit use left). `make typecheck-tests [REF=<commit>]` adds the Mac's hosted test target (`TextMouthProductionTests`), so a test file that does not compile is found before a train does; an agent runs it before every train request. All take `Scripts/agents/heavy_lock.py`'s lock, as each train does around its build and tests, so no two heavy jobs run at once on the 8 GB Mac. Each train result also counts the iOS errors in the agent's own files. An agent waits for its result with `Scripts/agents/wait-for-result.py --agent <slug>` in the background.
-- Two branches that each pass can fail together; the suite after each merge on the merged tree is what counts. A branch started before another merged must rebase before its final suite.
-- The orchestrator keeps its own memory of the campaign (the harness's memory directory) and tells the user, in plain words, what landed, what is unverified, and what decisions are theirs.
+**Every launch names its model, Sonnet by default.**
+Workers, verifiers, documentation passes, and narrow fixes run on Sonnet at high effort (`model: "sonnet"`, `effort: "high"`), and Opus (`model: "opus"`) is kept for the lead of a large design and the first outside review of a big or risky branch.
+Every launch also passes `subagent_type: "general-purpose"` and `isolation: "worktree"`; an agent launched without a model override inherits the orchestrator's model and spends that model's weekly window.
+The orchestrator, on Fable, writes the briefs, reads each report and diff, decides, merges, and records; it uses a Fable agent only when the user asks for one.
+Briefs are kept in `Scripts/agents/briefs/<date>/` (stage with `git add -f`), never only in the session's scratch folder, so the next session can launch from them.
+The orchestrator itself may run on Opus too; the launches still name the model.
+The usage script's `binding` window can then be a weekly cap scoped to one model, such as "Weekly (Fable)", which Opus work does not count: read only the unscoped windows ("5-hour session", "Weekly (all models)"), watch them with `Scripts/agents/usage-watch-unscoped.py <left%>` as a background task, and say in every launch message that the scoped window does not apply, or an agent following the usage rule stops at once.
 
-## Teams (since October 12, 2026)
-<!-- id: teams-since-october-12-2026; keys: sub-orchestrator, delegation, hierarchy, team lead; src: Scripts/agents/agent-cost.py, Scripts/agents/briefs/2026-10-12/teams-common.md, .claude/skills/agent-bbs/SKILL.md -->
+## One brief per task
+<!-- id: one-brief-per-task; keys: brief, wave, launch message, origin/main, shared contract, core branch; src: -->
 
-For a wave of small tasks, the orchestrator can launch team leads in place of task agents. The user asked for it on October 12 ("a sub sub orcistrater pattern where tasks are broken down even smaller... the subsubagents could be high Sonnet agents to see if that can save some cost").
-- **How a team works.** A lead (Sonnet for a wave of small tasks, Opus for a large design) owns a team branch `team/<team>`. It breaks its charter into tasks of one or two commits, writes a brief for each, and launches a worker per task with the Agent tool (`model: "sonnet"`, `effort: "high"`, `isolation: "worktree"`): agents can launch agents. It reviews every diff, integrates the accepted work in a straight line, runs the full suite once, and reports. The orchestrator merges the team branch like any other.
-- **The briefs.** The pattern, the rules, and the report format are in `Scripts/agents/briefs/2026-10-12/teams-common.md`; each team has a charter beside it (`team-board.md`, `team-polish.md`, `team-t6d.md`).
-- **The board.** It has teams, channels addressed `team:NAME`, and task lists (`SKILL.md`).
-- **What it cost** on October 12, by `Scripts/agents/agent-cost.py`, which prices each call by its model (Sonnet 5.5 at half Opus 5.5's prices):
+One brief per task, written to `Scripts/agents/briefs/<date>/` and pointed at from the launch message; it names the branch the agent makes its own from (local main or the team branch, by name), since a worktree starts at origin/main, which can be far behind local main; the user's decisions quoted in the brief in their own words; waves of three to five agents whose file regions do not overlap, with a shared contract or a first "core" branch when they must share types.
+
+## After an agent reports
+<!-- id: after-agent-reports; keys: merge message, worktree remove, unregister, DerivedData-main, flaky test, rerun, AGENT-NOTES; src: Scripts/agents/merge-chain.sh, Scripts/agents/record-merge.py, TextMouthProductionTests/BookmarkKeyboardAccessTests.swift, TextMouthProductionTests/StorageGenerationMoveTests.swift, TextMouthProductionTests/BookSearchModelTests.swift, TextMouthProductionTests/DataDirectoryMoveTests.swift, TextMouthProductionTests/ViewsAndWindowsReaderSheetTests.swift, TextMouthProductionTests/FeedDownloadTests.swift, TextMouthProductionTests/MacBrailleTableCheckTests.swift -->
+
+After an agent reports: write the merge message to a file, note the agent's unverified items and its documentation wording where the next documentation pass will find them (`AGENT-NOTES-2026-10-04.md` is the current such file), then `Scripts/agents/merge-chain.sh <branch>:<message-file>` in the background; on a green suite, record the merge in the TODO with `Scripts/agents/record-merge.py` (it puts the merge's `- [x]` entry before the paragraph that begins `**Open follow-ups noted by the September 28 agents**`, appends a sentence with the suite's exact counts to the long verification paragraph, after the latest "After the … merge: **N tests, S skipped, 0 failures**", and appends open items to the paragraph that begins `**Open follow-ups noted on October 3 afternoon and evening**`; `--note` in place of `--counts` for a merge that ran no suite, `--tick FR09 --hash <merge>` to tick an entry), commit the TODO, remove the agent's worktree (`git worktree remove --force --force` and `git worktree prune`), unregister and delete `build/DerivedData-main` when the disk is tight, and post `merged: <branch>` on the board with the new counts so the other agents rebase.
+A suite that fails only in a load-sensitive test (the sleep-timer integration tests, `BookmarkKeyboardAccessTests`, `StorageGenerationMoveTests`, `BookSearchModelTests.testCancelledSearchPublishesNothing`, `DataDirectoryMoveTests.testAMoveShowsItsProgressWhileItCopies`, the reader-sheet redraw count in `ViewsAndWindowsReaderSheetTests`, the resume-data test `FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped`, the audiobook-open benchmark, `MacBrailleTableCheckTests.testFrenchGermanAndSpanishPassAndRoundTrip` (its reading of the braille helper's memory can miss three short runs), and the performance baselines, which skip while the Mac is busy) is rerun on that class alone before the merge stands.
+
+## Questions for the user
+<!-- id: questions-user; keys: humanQuestions, Answer line, recommended answer, numbered questions; src: -->
+
+Questions for the user go into a new file in `humanQuestions/` for each session or batch, so the user can answer while away and the answers are kept: each question numbered, with its context in a sentence or two, a recommended answer, and an `Answer:` line for the user; an optional "Answer for the whole section:" line; and an "Answered this session" section quoting the answers already given in chat.
+Say in chat which file holds new questions.
+When acting on an answer, record the decision in the TODO with the user's words, as before.
+
+## A documentation pass
+<!-- id: documentation-pass; keys: docs agent, Markdown-only merge, no build, doc-library; src: -->
+
+A documentation pass is its own agent (no build) that edits only the documentation (README.md, ARCHITECTURE.md, and the pages under docs/) from the merged code and the agents' wording, one commit per documented branch; it is merged without a suite as a Markdown-only merge and recorded in the TODO with a sentence.
+
+## The docs' checks
+<!-- id: docs-checks; keys: make lint-docs, lint baseline, rebuild-baseline, ratchet, doclib; src: Makefile, Scripts/agents/merge-chain.sh, .claude/skills/doc-library/scripts/doclib.py -->
+
+**The docs' checks:** before each fast-forward of main, run `make lint-docs` on the merged tree.
+After each docs merge, run `python3 -I .claude/skills/doc-library/scripts/doclib.py lint --update-baseline`.
+When main's docs changed under a branch, run it with `--rebuild-baseline` instead, which only the orchestrator runs because it can raise a count.
+
+## The end of a campaign
+<!-- id: end-campaign; keys: Where things stand, hand-over, campaign, history.md; src: AGENTS.md, docs/agents/history.md -->
+
+**The end of a campaign:** move `AGENTS.md`'s `Where things stand` to the top of `docs/agents/history.md` as `## Where things stood on <date>`.
+Then write a new `Where things stand` of at most 1,400 bytes, without dates.
+
+## Reading an agent's report
+<!-- id: reading-agent-report; keys: transcript, subagent, last message, extract-report; src: Scripts/agents/extract-report.py -->
+
+**Reading an agent's report:** `Scripts/agents/extract-report.py <transcript> [max_chars]` prints a subagent transcript's last message.
+
+## The version
+<!-- id: orchestrator-version; keys: bump-patch, bump-minor, set-version, changelog, annotated tag, MAJOR MINOR PATCH; src: Scripts/set-version.sh, Makefile, docs/user/changelog.md -->
+
+**The version.**
+The user's rule is one bump for each day on which main gains bug fixes or small backward-compatible features.
+After the day's last merge, and before the user's next install, run `make bump-patch`; run `make bump-minor` instead when that day holds a change that is not backward compatible (an older TextMouth cannot open the library, every book is read again, a stored format changes, or a setting, shortcut, or file is removed or renamed).
+Commit the bump on its own, add the day's dated section to the top of `docs/user/changelog.md` with one plain sentence per change (a MINOR section first says what an older TextMouth can no longer do with the library), tag the commit the user is to install as `vX.Y.Z` with an annotated tag (the orchestrator pushes tags only at a stable release, with main, as AGENTS.md says), and record the bump in the TODO.
+MAJOR stays 0 until the user calls TextMouth released.
+Versions in `docs/developer/building.md` has the rules and the cases they leave open.
+
+## Builds go through the build train
+<!-- id: builds-go-through-build-train; keys: freeze, 8 GB, hourly build, pooled builds, CPU; src: Scripts/agents/build-train.py -->
+
+**Builds go through the build train.**
+The Mac has 8 GB of memory and froze under the agents' own builds, so agents do not build on their own: builds go one at a time, on a schedule, with the agents' work pooled into each.
+
+### Start the train
+<!-- id: start-train; keys: loop, release flag, hold slots, --remote, --soon, heavy-work lock; src: Scripts/agents/hold-build-slots.sh, Scripts/agents/build-train.py, Scripts/agents/heavy_lock.py, Scripts/agents/run_locked.py, Scripts/agents/run_suite.py -->
+
+**Start it.**
+While agents work, the orchestrator runs two background tasks.
+`Scripts/agents/hold-build-slots.sh <release flag>` holds every build slot, so no agent builds on its own.
+`python3 -I Scripts/agents/build-train.py loop --hours <N>` runs a train every hour, on the hour; with `--remote` the trains build and test on GitHub Actions instead of this Mac (see **Builds on GitHub** below), and `--remote --soon <minutes>` sends one that many minutes after a request comes.
+Every heavy job takes the heavy-work lock (`Scripts/agents/heavy_lock.py`), so one runs at a time: the trains, the type-checks, `run_suite.py`, and anything run through `run_locked.py`, simulator runs included.
+
+### The helper scripts
+<!-- id: helper-scripts; keys: heavy lock, exit status, xcodebuild, pbxproj, make generate; src: Scripts/agents/run_locked.py, Scripts/agents/run_suite.py, Scripts/agents/copy_phases.py, Scripts/agents/regenerate-project.py -->
+
+**The helpers** are in `Scripts/agents/`, each found from its own location, so they work from any checkout.
+`python3 -I Scripts/agents/run_locked.py NAME COMMAND...` runs one command under the lock and exits with its status.
+`python3 -I Scripts/agents/run_suite.py NAME LOG` runs the full hosted suite under the lock from the checkout to test (as a background task), ends an xcodebuild that outlives its tests, prints the log's Executed line, and exits 0 only when every test passed; `run_suite.py --remote COMMIT NAME LOG` runs the same suite on GitHub for COMMIT's tree, takes no heavy-work lock, writes the run's log to LOG, and judges it the same way (exit 4: the push or the run failed, not the tests; exit 3: a train held TestBuild throughout).
+`python3 -I Scripts/agents/copy_phases.py A.pbxproj B.pbxproj` says whether two projects copy the same files to the same places.
+`Scripts/agents/regenerate-project.py` is what `make generate` runs.
+Their tests are in `Scripts/agents/tests`.
+
+### An agent's part in a train
+<!-- id: agent-part-train; keys: request, classes, areas, results file, wait-for-result; src: Scripts/agents/build-train.py, Scripts/agents/wait-for-result.py -->
+
+**An agent's part.**
+It commits, then queues `build-train.py request --agent <name> --branch <branch> --classes <A,B> --areas <x,y>`.
+It waits for its board message or for `build/orchestrator/train/results/<name>.md`.
+The train tests the commit the branch was at when the agent asked, so an agent that commits a fix before the train leaves asks again; the newest request for a branch wins.
+Every brief points the agent at Making each train count, in `docs/agents/working-with-agents.md`.
+
+### What each train does
+<!-- id: what-each-train-does; keys: train/base, lock queue, conflict, summary.md, free disk, run-area; src: Scripts/agents/build-train.py, Scripts/agents/heavy_lock.py, Scripts/test/run-area.py -->
+
+**Each train:**
+- it waits for the heavy-work lock first in line, so no other job takes the lock before it, for up to 50 minutes, and never runs without it; a train that waited in vain leaves its requests queued for the next one and tells the orchestrator who held the lock;
+- it then takes every waiting request, those made while it waited included, and merges the commit each one names onto `train/base` in `.claude/worktrees/train`, leaving out a branch that conflicts anywhere but project.pbxproj and telling its agent;
+- it builds once, with two jobs.
+  If the build fails to compile only in files some merged branches change, it builds again without those branches, and merges again, in the order of the requests, every branch it had left out for a conflict: one that now merges cleanly is taken back, and the summary says so;
+- it runs the union of the tests asked for, dropping and reporting any name `Scripts/test/run-area.py` does not know;
+- it writes `build/orchestrator/train/trains/<id>/summary.md`;
+- it waits for the next hour while under 3 GB is free.
+
+### An integration's full suite
+<!-- id: integration-full-suite; keys: integration branch, train/base, --areas all, summary file; src: Scripts/agents/build-train.py -->
+
+**An integration's full suite.**
+Point `train/base` at the integration branch, then queue `--agent orchestrator --branch <integration> --areas all`.
+The loop does not exit when a train ends, so wait for that summary with a background task that exits when the file appears.
+
+### Look at the train and finish
+<!-- id: look-at-train-finish; keys: status, release flag, stop the loop, queue; src: Scripts/agents/build-train.py, Scripts/agents/hold-build-slots.sh -->
+
+**Look and finish.**
+`build-train.py status` shows the next train, what a running train is doing (waiting for the lock and for whom, or which branches it builds), and the queue.
+When the agents are done, stop the loop and `touch` the release flag.
+
+### Builds on GitHub
+<!-- id: builds-github; keys: TestBuild, GitHub Actions, runner, shard, force push, runner skips, workflow guard; src: .github/workflows/test-build.yml, .github/workflows/tests.yml, .github/workflows/check.yml, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/github_run.py, Scripts/agents/test_command.py, Scripts/agents/run-on-runner.py, Scripts/agents/shard.py, Scripts/agents/merge_shards.py, Scripts/agents/restore_mtimes.py, Scripts/agents/runner-skips.conf, Scripts/agents/run-ios-build.py -->
+
+**Builds on GitHub.**
+The testing and compiling can run on GitHub Actions instead of this Mac's CPU.
+`.github/workflows/test-build.yml` runs only for a push to the branch `TestBuild` of the public repository (`AERobertAI/TextMouth`), with a read-only token, no secrets, and GitHub's own pinned actions.
+A remote train (`build-train.py run --remote`, or `loop --remote`) merges the requests here as always, then pushes the merged tree plus `.github/test-request.json` to `TestBuild` with `--force`, and nothing else is ever pushed (`Scripts/agents/github_run.py` builds the refspec itself and refuses a tree holding a path under `build/`, `humanQuestions/`, or `humanReports/`).
+It waits for that commit's run, found by its SHA, for up to 125 minutes, downloads the run's artifact into the train's folder (`run.log`, `run-summary.txt`, `remote-N/`), and reports from it exactly as a local train does.
+The test command is made in one place, `Scripts/agents/test_command.py`, which the local train, `run_suite.py`, and the runner script (`Scripts/agents/run-on-runner.py`) all call.
+A remote train takes no heavy-work lock, skips the disk check and the iOS census, and shares the train's own lock with a remote suite, since a newer push to `TestBuild` cancels the older run.
+If its push or run fails, it puts every request back in the queue, tells each agent and the orchestrator, and the loop waits 15 minutes before the next try.
+A long request runs as up to four parallel jobs (`Scripts/agents/shard.py` deals the classes out; `merge_shards.py` joins the results into the one artifact the Mac reads), build products are cached between runs (`restore_mtimes.py`), and the full suite took 13 to 16 minutes (three clean runs in a row) against 80 without finishing before the tuning.
+The runner cannot play or read audio, so `Scripts/agents/runner-skips.conf` lists the 103 entries (103 of about 11,960 tests) it does not run, each with its reason, and each remote result says which of an agent's requested tests were among them ("Not run on GitHub, no verdict"); a remote suite is therefore not the last check before a release: run those on this Mac too, with a local `build-train.py run`, which takes the heavy-work lock.
+A push to `TestBuild` also refuses a tree whose `.github/workflows/` or `.github/actions/` differs from origin's main, once origin's main holds `test-build.yml`, which it does (origin's main has held it since 0.4.10, a1214dc0): **the guard is on**, so a workflow or action change runs on `TestBuild` only after it is on GitHub's main.
+A push waits, up to 125 minutes, while another run is queued or going on `TestBuild` (a newer push cancels the older run), and fails, pushing nothing, if the branch stays busy; so a train, a remote suite, and a hand-sent run take turns, and a train leaves 5 minutes after a request.
+The jobs are in `.github/workflows/tests.yml`, which `test-build.yml` (a push to `TestBuild`) and `check.yml` (main and pull requests) both call, and each run also builds the iPhone app and its UI-test bundle for the iOS Simulator (`Scripts/agents/run-ios-build.py`); a train's result and `run_suite.py --remote` list its errors by file, and they never change the tests' verdict.
+A test that fails on the runner with a timing, and passes here, is flaky there, not a reason to raise its limit or add it to the list.
+Testing TextMouth (Tests on GitHub Actions) has how to read a run, what differs from the Mac, and the flaky tests.
+
+### Type-checks between trains
+<!-- id: type-checks-between-trains; keys: typecheck-mac, typecheck-ios, typecheck-tests, SwiftPM, CENSUS, iOS errors; src: Makefile, Scripts/agents/heavy_lock.py, Scripts/agents/wait-for-result.py -->
+
+**Type-checks between trains.**
+`make typecheck-mac` compiles and links the committed Mac app with SwiftPM in about 96 seconds, without xcodebuild, and `make typecheck-ios` does the same for the iOS target (`CENSUS=1` counts every AppKit use left).
+`make typecheck-tests [REF=<commit>]` adds the Mac's hosted test target (`TextMouthProductionTests`), so a test file that does not compile is found before a train does; an agent runs it before every train request.
+All take `Scripts/agents/heavy_lock.py`'s lock, as each train does around its build and tests, so no two heavy jobs run at once on the 8 GB Mac.
+Each train result also counts the iOS errors in the agent's own files.
+An agent waits for its result with `Scripts/agents/wait-for-result.py --agent <slug>` in the background.
+
+
+## Two branches can fail together
+<!-- id: two-branches-can-fail-together; keys: rebase, merged tree, final suite, combined failure; src: -->
+
+Two branches that each pass can fail together; the suite after each merge on the merged tree is what counts.
+A branch started before another merged must rebase before its final suite.
+
+## The orchestrator's own memory
+<!-- id: orchestrator-own-memory; keys: memory directory, report to the user, decisions, unverified; src: -->
+
+The orchestrator keeps its own memory of the campaign (the harness's memory directory) and tells the user, in plain words, what landed, what is unverified, and what decisions are theirs.
+
+## Team leads and their workers
+<!-- id: orchestrator-teams; keys: sub-orchestrator, delegation, hierarchy, team lead; src: Scripts/agents/agent-cost.py, Scripts/agents/briefs/2026-10-12/teams-common.md, .claude/skills/agent-bbs/SKILL.md -->
+
+For a wave of small tasks, the orchestrator can launch team leads in place of task agents.
+- **How a team works.**
+  A lead (Sonnet for a wave of small tasks, Opus for a large design) owns a team branch `team/<team>`.
+  It breaks its charter into tasks of one or two commits, writes a brief for each, and launches a worker per task with the Agent tool (`model: "sonnet"`, `effort: "high"`, `isolation: "worktree"`): agents can launch agents.
+  It reviews every diff, integrates the accepted work in a straight line, runs the full suite once, and reports.
+  The orchestrator merges the team branch like any other.
+- **The briefs.**
+  The pattern, the rules, and the report format are in `Scripts/agents/briefs/2026-10-12/teams-common.md`; each team has a charter beside it (`team-board.md`, `team-polish.md`, `team-t6d.md`).
+- **The board.**
+  It has teams, channels addressed `team:NAME`, and task lists (`SKILL.md`).
+- **What it cost** on the first day of teams, by `Scripts/agents/agent-cost.py`, which prices each call by its model (Sonnet 5.5 at half Opus 5.5's prices):
   - The board team (24 commits) and the polish team (eight fixes) cost about 0.7 and 0.6 weekly points.
   - Each lead cost about 0.5; each Sonnet worker cost 0.01 to 0.03, its context staying under 100,000 tokens.
   - A single Opus fix agent that day cost 1.56.
