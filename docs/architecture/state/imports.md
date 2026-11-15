@@ -13,7 +13,7 @@ An import in progress.
   - ImportCancellation, which the queued imports share and the progress overlay's Cancel button sets.
 - Who may write it: FileImportService does the work.
   Open Book offers the types it reads (FileImportService.supportedTypes), video among them, since an audiobook may be an MPEG-4, M4V, or QuickTime file whose sound alone plays (BookFormat.audio's mp4, m4v, and mov).
-  A video episode's package imports again too, as does the audio the import converts (BookFormat.audio's ogg, oga, and opus, and ImportAudioConverter.coreAudioExtensions) and an M3U playlist.
+  So a video episode's package imports again too, as does the audio the import converts (BookFormat.audio's ogg, oga, and opus, and ImportAudioConverter.coreAudioExtensions) and an M3U playlist.
   ArchiveEntryLimits.audioExtensions is the same list.
   A feed still tells a video enclosure from audio for itself (FeedMediaKind, whose audioExtensions leave video's out).
   It identifies the source and builds the package under a hidden staging name (ImportStaging, .import- followed by a UUID and .tmb).

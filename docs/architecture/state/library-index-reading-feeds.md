@@ -140,9 +140,9 @@ It runs through returnDownloadsOfFeedsWithoutRecords(knownFeeds:absence:removing
 LibraryViewModel.feedsTakenForGone(knownFeeds:absence:) chooses those feeds, never one the listener unsubscribed from, which keeps its record.
 They are each feed whose folder was read while no record of it is loaded, only in the cloud, or in the Feeds folder, a sync service's placeholder of one counting as one (feedsWithoutRecords(knownFeeds:), FeedRecordAbsence.placeholderName(of:)).
 It chooses them at once in a data directory outside a cloud location, and in a cloud one only when a note this Mac left at an earlier launch that found the record missing is in the feed's folder (FeedRecordAbsence).
+That is because a feed subscribed on another Mac can arrive before its record.
 The note is named .record-absent- followed by this Mac's ID, LibrarySessionLease's, and the launch's.
 FEED_RECORD_ABSENT, as one is left, and FEED_RECORD_BACK, as the record's return takes this Mac's notes away, are both storage events.
-That is because a feed subscribed on another Mac can arrive before its record.
 LibraryViewModel.returnDownloads(ofFeed:toFolderID:removingWith:) does nothing, holding no storage work and saving nothing, for a feed that left nothing (leftSomething(feedID:)).
 ### Removing and restoring a feed item's file
 <!-- id: removing-restoring-feed-item-file; keys: Delete Download, Delete Episode, newest-N rule, kept row, set aside, RENAME_SWAP; src: TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Services/Feeds/FeedEpisodeImporter.swift, TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/Services/FileImportService.swift -->
