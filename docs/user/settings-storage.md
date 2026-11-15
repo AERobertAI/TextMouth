@@ -6,7 +6,8 @@ Part of [TextMouth's documentation](../../README.md).
 ## Storage Directory
 <!-- id: storage-directory; keys: data directory, library location, dataDirectoryPath, Status, newer version of TextMouth, library.json, feed index; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
 
-The Storage tab's Storage Directory group shows where the library is (see [Where TextMouth keeps your library](where-your-library-lives.md)) and its Status, and, under the Status, when any are kept, how many books this TextMouth cannot read because a newer one wrote them, as in "1 book in this library needs a newer version of TextMouth.
+The Storage tab's Storage Directory group shows where the library is (see [Where TextMouth keeps your library](where-your-library-lives.md)) and its Status.
+Under the Status, when any are kept, it shows how many books this TextMouth cannot read because a newer one wrote them, as in "1 book in this library needs a newer version of TextMouth.
 It is kept as it is, but not shown." or "3 books in this library need a newer version of TextMouth.
 They are kept as they are, but not shown."
 The count joins the books of library.json to those of the feeds' indexes, and the group says nothing when there are none.
@@ -14,12 +15,14 @@ The count joins the books of library.json to those of the feeds' indexes, and th
 ## Audio Editing storage
 <!-- id: audio-editing-storage; keys: original audio, recordingOriginalPolicy, recordingOriginalDays, useInstalledFFmpeg, filter presets, Filter Presets; src: TextMouth/Views/Settings/AudioEditingSettingsSection.swift, TextMouth/Views/Settings/AudioFilterPresetsView.swift, TextMouth/Models/AudioEditWording.swift -->
 
-The Storage tab's Audio Editing group sets how long the original audio of recordings and edited audiobooks is kept, whether an installed ffmpeg runs the audio editor's filters, whether the editor previews a filter before applying it and plays half a second after each move, and, through Filter Presets…, the editor's filter presets (see [Editing audio](editing-audio.md)).
+The Storage tab's Audio Editing group sets how long the original audio of recordings and edited audiobooks is kept, whether an installed ffmpeg runs the audio editor's filters.
+It also sets whether the editor previews a filter before applying it and plays half a second after each move, and, through Filter Presets…, the editor's filter presets (see [Editing audio](editing-audio.md)).
 
 ## Import Behavior
 <!-- id: import-behavior; keys: importDeleteBehavior, keepsOriginalOfConvertedAudio, .convertedOriginals, Keep Original, Delete After Import, Ask Each Time, Ogg; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Models/ConvertedOriginalWording.swift, TextMouth/Models/OriginalFileDeletionWording.swift, TextMouth/Models/ImportDecision.swift -->
 
-The Storage tab's Import Behavior group sets what happens to the original file after an import (After Importing a Book: Keep Original, the default, Delete After Import, or Ask Each Time; see [Adding books](adding-books.md)), and has Keep originals of converted audio, off by default, a switch whose hint VoiceOver reads as "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package."
+The Storage tab's Import Behavior group sets what happens to the original file after an import (After Importing a Book: Keep Original, the default, Delete After Import, or Ask Each Time; see [Adding books](adding-books.md)).
+It also has Keep originals of converted audio, off by default, a switch whose hint VoiceOver reads as "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package."
 Its caption under the switch changes with it.
 Off, it says "Audio that TextMouth converts at import keeps only the converted file."
 On, it says "When TextMouth converts audio at import, it keeps the original file too.
@@ -48,7 +51,8 @@ Before the first scan, the sheet says "Check the criteria above, then Scan for D
 ## Redo Text Extraction
 <!-- id: redo-text-extraction; keys: re-read text, reextract, Library Maintenance, text encoding, edited text; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
 
-The Storage tab's Redo Text Extraction…, in its Library Maintenance group, reads every text book's file again after asking first, and shows its progress (see [Where TextMouth keeps your library](where-your-library-lives.md), under content.md, and [Editing a book's text](editing-book-text.md) for what it does to text you edited).
+The Storage tab's Redo Text Extraction…, in its Library Maintenance group, reads every text book's file again after asking first.
+It also shows its progress (see [Where TextMouth keeps your library](where-your-library-lives.md), under content.md, and [Editing a book's text](editing-book-text.md) for what it does to text you edited).
 It waits while TextMouth reads any book's file again in another encoding, with the Text Encoding pop-up in Book Information (see [The Library window](library-window.md)).
 It starts nothing, and the status line under its button says, and VoiceOver announces once, "TextMouth is reading “Moby-Dick” again in another encoding.
 Try again when that finishes.", naming that book.
