@@ -24,7 +24,11 @@ Run these from the repository root:
 ### Building, installing, and signing
 <!-- id: building-installing-signing; keys: make build, make install, make uninstall, SMALL_CODE, Release, dSYM, atos, codesign; src: Makefile, project.yml, Scripts/keep-installed-dsym.sh, Scripts/make-signing-identity.sh, TextMouthBraille/main.c -->
 
-- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 18 MB (see The Mac app's size, below): without the code coverage Xcode's scheme gathers for tests, with code nothing reaches left out, and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces.
+- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 18 MB (see The Mac app's size, below):
+  - without the code coverage Xcode's scheme gathers for tests;
+  - with code nothing reaches left out;
+  - and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces.
+
   The Release build is compiled for size.
   The app's own code takes `-Osize` from project.yml's Release settings, and the three Swift packages (ZIPFoundation, swift-markdown, and the swift-cmark it builds on) and the vendored SwiftSoup library take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages (the SwiftSoupLibrary template in project.yml leaves it to the Makefile); the build does not ask for whole-module mode, which would make the app 1.15 MB larger.
   The executable is linked without an export trie (`LD_EXPORT_SYMBOLS: NO`, Release only), because nothing links against the app.
@@ -35,14 +39,16 @@ Run these from the repository root:
   The app copies the helper into Contents/MacOS, about 0.15 MB, liblouis's four braille tables into Contents/Resources/liblouis/tables, about 0.29 MB, and the licence files of LAME and liblouis into Contents/Resources/Licenses, about 0.07 MB.
   Xcode's header map is off (USE_HEADERMAP: NO) for LAME, liblouis, and the helper: it lists every header of the project under its bare name, and it handed liblouis LAME's config.h, so each of them finds its own through its search paths.
   The full build log is build/xcodebuild-Release.log.
-  It then signs build/TextMouth.app with this Mac's TextMouth Developer identity, when it has one, so that macOS keeps the app's microphone permission from one build to the next, and prints the app's designated requirement; without one, the app keeps the ad hoc signature Xcode gave it, and a note says so.
+  It then signs build/TextMouth.app with this Mac's TextMouth Developer identity, when it has one, so that macOS keeps the app's microphone permission from one build to the next, and prints the app's designated requirement.
+  Without one, the app keeps the ad hoc signature Xcode gave it, and a note says so.
   The build products in build/DerivedData stay as Xcode made them.
 - `make debug` builds the Debug configuration instead.
 - `make run` and `make open` build the app and open it.
 - `make install` builds the app, copies it to /Applications, registers it so it appears in Open With menus, and keeps the build's dSYM in build/installed-dSYMs as TextMouth-<build number>-<UUID>.app.dSYM, keeping those of the last five installs only.
   `make uninstall` removes the app and leaves the dSYMs; `make clean` removes them with the rest of build/.
 - A crash report from the installed app gives TextMouth's own frames as offsets, such as TextMouth + 0x372e00, because the Release app's symbols are stripped.
-  The build number (CFBundleVersion) and TextMouth's UUID in the report name the dSYM `make install` kept for that build in build/installed-dSYMs, which turns the offsets back into functions, files, and lines: `atos -o build/installed-dSYMs/TextMouth-<build number>-<UUID>.app.dSYM/Contents/Resources/DWARF/TextMouth -arch arm64 -l <TextMouth's load address in the report> <address>`.
+  The build number (CFBundleVersion) and TextMouth's UUID in the report name the dSYM `make install` kept for that build in build/installed-dSYMs, which turns the offsets back into functions, files, and lines.
+  `atos -o build/installed-dSYMs/TextMouth-<build number>-<UUID>.app.dSYM/Contents/Resources/DWARF/TextMouth -arch arm64 -l <TextMouth's load address in the report> <address>`.
 - `make signing-identity`, once on each Mac, makes that identity: a self-signed code-signing certificate named TextMouth Developer, valid for 20 years, with its key in the login keychain, where codesign may use it without asking.
   Run again, it says the identity is there and changes nothing.
   It asks for no password and sets no trust, so Keychain Access lists the certificate as not trusted, which signing doesn't need.
@@ -83,7 +89,8 @@ Run these from the repository root:
   `make typecheck-mac` does the same for the Mac, and `make typecheck-tests` adds the Mac's hosted tests.
   `make mac-projection BASE=main` shows what a branch changes in the code the Mac compiles, and with `DIFF=1` prints every line it changes.
   Each is described under [The iOS app](building-ios.md).
-- `make check-ios-plist` fails when the iOS app's `TextMouth/Platform/iOS/Info.plist` is not what `Scripts/ios/sync-info-plist.py` writes from the Mac's `TextMouth/Resources/Info.plist`: run `python3 -I Scripts/ios/sync-info-plist.py` after changing the Mac's plist, then commit both (see [The two apps and the platform folders](../architecture/platforms.md)).
+- `make check-ios-plist` fails when the iOS app's `TextMouth/Platform/iOS/Info.plist` is not what `Scripts/ios/sync-info-plist.py` writes from the Mac's `TextMouth/Resources/Info.plist`.
+  Run `python3 -I Scripts/ios/sync-info-plist.py` after changing the Mac's plist, then commit both (see [The two apps and the platform folders](../architecture/platforms.md)).
 - `make xcode` regenerates the project and opens it in Xcode.
 - `make clean` removes the build products.
 - `make help` lists these targets.
@@ -132,7 +139,11 @@ Run it once before a release, and after any change to the build settings in proj
 - **What it runs.**
   Five classes, through `Scripts/test/run-area.py`: `TextPipelineGoldenTests`, `DocumentGoldenTests` (the 57 files of `TestData/golden`), `MarkupGuardTests`, `PortableXMLDifferentialTests`, and `ParserContentFidelityTests`.
 - **What it builds.**
-  The shipped configuration, Release with `-Osize` for the app and the packages, with only what a test host needs changed: `ENABLE_TESTABILITY=YES`, `LD_EXPORT_SYMBOLS=YES` (the shipped app has no export trie, and the test bundle links against the app's exports), and `DEAD_CODE_STRIPPING=NO`, `DEPLOYMENT_POSTPROCESSING=NO`, and `STRIP_INSTALLED_PRODUCT=NO` (so the symbols the tests call stay).
+  The shipped configuration, Release with `-Osize` for the app and the packages, with only what a test host needs changed:
+  - `ENABLE_TESTABILITY=YES`;
+  - `LD_EXPORT_SYMBOLS=YES` (the shipped app has no export trie, and the test bundle links against the app's exports);
+  - and `DEAD_CODE_STRIPPING=NO`, `DEPLOYMENT_POSTPROCESSING=NO`, and `STRIP_INSTALLED_PRODUCT=NO` (so the symbols the tests call stay).
+
   The compiled Swift code is the shipped code.
   What the tested binary lacks is the export trie, dead stripping, and stripping, which change no code.
 - **What it costs.**
@@ -210,7 +221,11 @@ The script, Scripts/set-version.sh:
 TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark.
 SwiftSoup is vendored and has no pin (see Make targets, above).
 Run `make check` before merging.
-It regenerates the project, resolves packages strictly from `Package.resolved` (failing if anything would change), builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac, and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
+- It regenerates the project;
+- resolves packages strictly from `Package.resolved` (failing if anything would change);
+- builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac;
+- and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
+
 It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 20 MB limit", and fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh.
 Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
 In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
@@ -235,7 +250,8 @@ It is weaker in four ways, and only `make check` here is the full gate:
 - The 103 tests of `Scripts/agents/runner-skips.conf` are left out, as on `TestBuild`, so no job on GitHub runs them.
 - The limits of `KF8HostileFileTests` and `MOBIHostileFileTests` are multiplied by 2.5 (`TestMachine.timeScale`, which only `run-on-runner.py` sets).
 - The performance baselines run on no GitHub machine.
-  The request says `"strict_performance": true`, which hands `TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1` to the test host as `make test PERFORMANCE_STRICT=1` does, but the baselines tests run only on the Mac model they were recorded on (`PerformanceBaselineSupport`) and skip on any other, so on a runner they check nothing.
+  The request says `"strict_performance": true`, which hands `TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1` to the test host as `make test PERFORMANCE_STRICT=1` does.
+  But the baselines tests run only on the Mac model they were recorded on (`PerformanceBaselineSupport`) and skip on any other, so on a runner they check nothing.
   The old single job behaved the same way.
 - xcodebuild in the shards is not given `-onlyUsePackageVersionsFromResolvedFile` (only `make test` is), so the pin check at the end of the gate covers the gate's machine only.
 
