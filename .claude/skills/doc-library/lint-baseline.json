@@ -45,7 +45,7 @@
     "docs/architecture/state/text-caches-rereads-edits.md": {"line-length": 37},
     "docs/architecture/state/text-caches.md": {"line-length": 38},
     "docs/architecture/state/timers-and-statistics.md": {"date": 1, "line-length": 37},
-    "docs/architecture/state/transcription.md": {"date": 2, "line-length": 20},
+    "docs/architecture/state/transcription.md": {"date": 2},
     "docs/architecture/state/windows-sheets.md": {"line-length": 34},
     "docs/architecture/state/windows.md": {"line-length": 39},
     "docs/developer/building-ios.md": {"line-length": 8},

@@ -1031,3 +1031,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **An announcement's end after a stop (REV11):** The announcement's end neither resumes the stopped book nor tells Now Playing that it plays, which once took back the AirPods Release Media Controls had let go (REV11).
 - **A cancel nobody asked for (REV12, REV13):** A cancel the reader did not ask for starts a held Play, a held chapter, and a play waiting for its chapter's speech, where a cancel once dropped a held Play (REV12) and paused a waiting play (REV13).
 - **Auto-play on navigate and the sleep timer's start:** playUnlessUnderWay() serves Auto-play on navigate and a sleep timer set to start playback, both of which once went through Play/Pause, pausing a play waiting for its chapter and ending an announcement in place of playing.
+
+## From Transcription
+
+- **isTranscriptCleanable:** Retranscribe Audio…, Clean Up Transcript (Experimental)…, and Delete Transcript… are offered for a feed's episode too, since a transcript is the listener's own work (isTranscriptCleanable is gone).
