@@ -98,6 +98,9 @@ final class ConfigService: ObservableObject {
 
     /// The save waiting for `saveDelay` to pass, if any.
     private var scheduledSave: Task<Void, Never>?
+    /// Whether the waiting save may make a missing config.json: true when
+    /// any save merged into it may (`scheduleSave(creatingAwaitedFile:)`).
+    private var scheduledSaveMayCreateFile = true
 
     /// Hears when the data directory is available again.
     private var availabilitySubscription: AnyCancellable?
@@ -853,13 +856,23 @@ final class ConfigService: ObservableObject {
     /// every change at once; only the file waits. A save made meanwhile with
     /// `saveToDisk()` writes it at once instead, and `flushScheduledSave()`
     /// does when TextMouth quits or the data directory moves.
-    func scheduleSave() {
+    ///
+    /// - Parameter creatingAwaitedFile: Whether the save may make a missing
+    ///   config.json (`saveToDisk(creatingAwaitedFile:)`). A changed
+    ///   setting's save may; one that only notes a book was opened passes
+    ///   false, so that in a cloud location it never writes this Mac's
+    ///   settings into a file that has not arrived yet (risk 5). Saves
+    ///   merged into one write may if any of them may.
+    func scheduleSave(creatingAwaitedFile: Bool = true) {
+        // The saves waiting merge: one that may make the file lets the
+        // write make it. A save with none waiting starts afresh.
+        scheduledSaveMayCreateFile = (scheduledSave != nil && scheduledSaveMayCreateFile) || creatingAwaitedFile
         scheduledSave?.cancel()
         scheduledSave = Task { [weak self, saveDelay] in
             try? await Task.sleep(for: saveDelay)
             guard !Task.isCancelled, let self else { return }
             self.scheduledSave = nil
-            self.saveToDisk()
+            self.saveToDisk(creatingAwaitedFile: self.scheduledSaveMayCreateFile)
         }
     }
 
@@ -868,7 +881,7 @@ final class ConfigService: ObservableObject {
     /// latest settings. Does nothing when no save waits.
     func flushScheduledSave() {
         guard hasScheduledSave else { return }
-        saveToDisk()
+        saveToDisk(creatingAwaitedFile: scheduledSaveMayCreateFile)
     }
 
     /// Whether a save asked for with `scheduleSave()` is waiting.

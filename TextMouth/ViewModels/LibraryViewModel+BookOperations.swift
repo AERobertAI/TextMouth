@@ -954,14 +954,18 @@ extension LibraryViewModel {
 
     /// Notes that a reader opened the book `id`: the book is open until its
     /// last reader closes (`openReaderCounts`).
-    func registerOpenBook(_ id: UUID) {
+    ///
+    /// - Parameter config: The settings that note it as the last book opened;
+    ///   the app's own, unless a test gives one of its own.
+    func registerOpenBook(_ id: UUID, config: ConfigService = .shared) {
         openReaderCounts[id, default: 0] += 1
         openBookIDs.insert(id)
         // Track last opened book for quick-resume. config.json takes it once
-        // changes pause (PERF17), not as the reader window opens.
-        let config = ConfigService.shared
+        // changes pause (PERF17), not as the reader window opens. Opening a
+        // book changes no setting the listener chose, so its save never makes
+        // a config.json that has not arrived in a cloud location (risk 5).
         config.config.lastOpenedBookID = id.uuidString
-        config.scheduleSave()
+        config.scheduleSave(creatingAwaitedFile: false)
     }
 
     /// Notes that a reader of the book `id` closed: the book leaves

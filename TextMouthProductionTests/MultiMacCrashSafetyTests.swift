@@ -936,6 +936,38 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertEqual(try ConfigService.decode(Data(contentsOf: file)).wordsPerMinute, 300)
     }
 
+    /// A reader opening a book, a window restored at launch included, notes
+    /// it as the last book opened, but never makes a config.json that has
+    /// not arrived in a cloud location: the guard lasts past the first
+    /// book. A setting changed afterwards, which a save merged with it, does
+    /// write the file.
+    func testOpeningABookNeverMakesTheSettingsFileThatHasNotArrived() async throws {
+        let folder = try makeSandboxDirectory("ConfigOpenBook")
+        let file = folder.appendingPathComponent("config.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: folder)
+        installItemStatus(provider)
+        let service = ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+            write: { data, url in try data.write(to: url, options: .atomic) },
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ), saveDelay: .milliseconds(20))
+        service.saveToDisk(creatingAwaitedFile: false)
+        let model = LibraryViewModel(initializeServices: false)
+
+        model.registerOpenBook(UUID(), config: service)
+        // Well past the save's delay.
+        try await Task.sleep(for: .milliseconds(400))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "opening a book wrote this Mac's settings in the file's place")
+
+        // A changed setting's save, merged with the open's, makes the file.
+        model.registerOpenBook(UUID(), config: service)
+        service.config.wordsPerMinute = 310
+        service.scheduleSave()
+        try await Task.sleep(for: .milliseconds(400))
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: file)).wordsPerMinute, 310, "a changed setting was not written")
+    }
+
     /// One Mac, a folder elsewhere: the launch's save writes a missing
     /// config.json from the settings, as before.
     func testSettingsWithNoFileElsewhereAreWrittenAtLaunchAsBefore() throws {
