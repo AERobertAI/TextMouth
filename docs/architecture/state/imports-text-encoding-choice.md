@@ -1,10 +1,10 @@
 # Imports: choosing the encoding
-<!-- id: imports-choosing-encoding; keys: ; src: -->
+<!-- id: imports-choosing-encoding; keys: charset, code page, mojibake, wrong encoding, TextEncodingChoices, strict decoding; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Choosing the encoding
-<!-- id: choosing-encoding; keys: ; src: TextMouth/Models/TextEncodingChoice.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouthProductionTests/TextEncodingChoiceDecoderTests.swift -->
+<!-- id: choosing-encoding; keys: mojibake, charset, code page, re-read, TextEncodingOption, Shift JIS, Big5, strict decoding; src: TextMouth/Models/TextEncodingChoice.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouthProductionTests/TextEncodingChoiceDecoderTests.swift, TextMouthProductionTests/TextEncodingChoiceTests.swift -->
 
 Choosing the encoding (encodingchoice): the listener's way to mend a wrong or missed guess, from Book Information's Text Encoding pop-up (the sheet and its model, in [Windows](windows.md); the re-read, in [Text caches](text-caches.md)).
 What is here is what the options and the decoder do with a choice.
