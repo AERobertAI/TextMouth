@@ -1,6 +1,8 @@
 # Building the iOS app
 <!-- id: building-ios-app; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## The iOS app
 <!-- id: ios-app; keys: ; src: -->
 
