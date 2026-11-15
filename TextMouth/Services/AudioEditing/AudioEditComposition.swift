@@ -124,24 +124,29 @@ struct AudioEditComposition {
     ///   `.invalidEdit` for a stretch reaching past the end of its source;
     ///   `.renderFailed` when AVFoundation refuses a stretch.
     static func make(_ timeline: AudioEditTimeline, sources: Sources) async throws -> sending AudioEditComposition {
+        let pieces = try await AudioEditStretchSound.pieces(of: timeline, sources: sources)
+        return try make(pieces, sampleRate: timeline.sampleRate)
+    }
+
+    /// The composition of `pieces`, every stretch of a timeline at
+    /// `sampleRate` in order, their files already opened
+    /// (`AudioEditStretchSound.pieces(of:sources:)`).
+    /// - Throws: `AudioEditError.renderFailed` when AVFoundation refuses a
+    ///   stretch.
+    static func make(_ pieces: [AudioEditStretchSound.Piece], sampleRate: Double) throws -> AudioEditComposition {
         let composition = AVMutableComposition()
         guard let track = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
             throw AudioEditError.renderFailed("the composition took no audio track")
         }
-        var sound = AudioEditStretchSound(sampleRate: timeline.sampleRate, sources: sources)
         var position: Int64 = 0
-        for segment in timeline.segments {
-            for piece in try await sound.pieces(of: segment) {
-                try insert(piece.range, of: piece.track, at: sound.time(position), into: track)
-                position += piece.length
-            }
+        for piece in pieces {
+            try insert(piece.range, of: piece.track, at: AudioEditStretchSound.time(position, at: sampleRate), into: track)
+            position += piece.length
         }
-        return AudioEditComposition(
-            composition: composition,
-            sources: sound.assets,
-            frames: position,
-            sampleRate: timeline.sampleRate
-        )
+        // Each file once, kept alive with the composition.
+        var seen: Set<ObjectIdentifier> = []
+        let assets = pieces.map(\.asset).filter { seen.insert(ObjectIdentifier($0)).inserted }
+        return AudioEditComposition(composition: composition, sources: assets, frames: position, sampleRate: sampleRate)
     }
 
     /// Inserts `range` of `source` at `at` in `track`, naming AVFoundation's
@@ -160,10 +165,10 @@ struct AudioEditComposition {
 
 /// Where the stretches of a timeline find their sound (FR04): each file
 /// opened once, with its first audio track, and each stretch as the pieces
-/// of those files it plays, in order. A composition is made of them
-/// (`AudioEditComposition.make`), and a render that decodes reads them one
-/// by one (`AudioEditRenderer.readStretches`). The assets opened are kept
-/// here, so they live as long as it is used.
+/// of those files it plays, in order (`pieces(of:sources:)`). A composition
+/// is made of them (`AudioEditComposition.make`), and a render that decodes
+/// reads them one by one (`AudioEditRenderer.readStretches`). Each piece
+/// keeps its file's asset, so it lives as long as the piece is used.
 struct AudioEditStretchSound {
     /// One piece of a stretch: `range` of `track`, the first audio track of
     /// the file `asset` opened, in that file's own time, lasting `length`
@@ -185,32 +190,45 @@ struct AudioEditStretchSound {
     /// ends.
     private var opened: [URL: (asset: AVURLAsset, track: AVAssetTrack, end: CMTime)] = [:]
 
+    /// Every piece of the stretches of `timeline`, whose stretches come from
+    /// `sources`, in order: each file opened once, and each stretch checked
+    /// against it, before any sound is read.
+    /// - Throws: `AudioEditError.missingAudio`, `.audioInCloud`, or
+    ///   `.unreadableAudio` for a source that can't be read; `.invalidEdit`
+    ///   for a stretch reaching past the end of its source;
+    ///   `.fileOutsidePackage` for a source named outside the book.
+    static func pieces(of timeline: AudioEditTimeline, sources: AudioEditComposition.Sources) async throws -> [Piece] {
+        var sound = AudioEditStretchSound(sampleRate: timeline.sampleRate, sources: sources)
+        var pieces: [Piece] = []
+        for segment in timeline.segments {
+            pieces += try await sound.pieces(of: segment)
+        }
+        return pieces
+    }
+
+    /// `frames` frames as a time at `sampleRate`.
+    static func time(_ frames: Int64, at sampleRate: Double) -> CMTime {
+        CMTime(value: frames, timescale: CMTimeScale(sampleRate.rounded()))
+    }
+
     /// The sound of the stretches of a timeline at `sampleRate` whose
     /// stretches come from `sources`, no file opened yet.
-    init(sampleRate: Double, sources: AudioEditComposition.Sources) {
+    private init(sampleRate: Double, sources: AudioEditComposition.Sources) {
         self.sampleRate = sampleRate
         self.sources = sources
     }
 
-    /// Every file opened so far, to keep alive with what reads them.
-    var assets: [AVURLAsset] {
-        opened.values.map(\.asset)
-    }
-
     /// `frames` frames as a time at the timeline's rate.
-    func time(_ frames: Int64) -> CMTime {
-        CMTime(value: frames, timescale: CMTimeScale(sampleRate.rounded()))
+    private func time(_ frames: Int64) -> CMTime {
+        Self.time(frames, at: sampleRate)
     }
 
     /// The pieces `segment` plays, in order: one range of its source, or,
     /// for silence, pieces of the silent file of at most
     /// `AudioEditComposition.silenceSeconds` each, as long as the silence
     /// lasts.
-    /// - Throws: `AudioEditError.missingAudio`, `.audioInCloud`, or
-    ///   `.unreadableAudio` for a source that can't be read; `.invalidEdit`
-    ///   for a stretch reaching past the end of its source;
-    ///   `.fileOutsidePackage` for a source named outside the book.
-    mutating func pieces(of segment: AudioEditTimeline.Segment) async throws -> [Piece] {
+    /// - Throws: as `pieces(of:sources:)` does.
+    private mutating func pieces(of segment: AudioEditTimeline.Segment) async throws -> [Piece] {
         guard case .silence = segment.source else {
             let (url, name) = try Self.location(of: segment.source, in: sources)
             let source = try await open(url, name: name)

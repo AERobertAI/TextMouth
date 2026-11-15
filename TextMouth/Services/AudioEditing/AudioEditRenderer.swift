@@ -454,10 +454,12 @@ enum AudioEditRenderer {
     /// format's own. A file already at `destination` is replaced. MP3 is
     /// written with the LAME built into TextMouth, or, should that be
     /// unavailable, with `ffmpeg` (`renderMP3(_:sources:to:metadata:route:progress:)`).
-    /// - Throws: the composition's errors, `AudioEditError.renderFailed`,
-    ///   `.mp3NeedsFFmpeg` for MP3 with neither encoder, or
-    ///   `CancellationError` when the task is cancelled; nothing is left at
-    ///   `destination` after a failure.
+    /// - Throws: the sources' errors (`AudioEditStretchSound.pieces(of:sources:)`),
+    ///   `AudioEditError.renderFailed`, `.mp3NeedsFFmpeg` for MP3 with
+    ///   neither encoder, or `CancellationError` when the task is
+    ///   cancelled. A file already at `destination` stays as it was until
+    ///   every source has been opened; a failure after that leaves nothing
+    ///   there.
     static func render(
         _ timeline: AudioEditTimeline,
         sources: AudioEditComposition.Sources,
@@ -482,12 +484,17 @@ enum AudioEditRenderer {
         let settings = requested ?? standard
         let chapters = format.isMPEG4 ? chapterList(of: timeline, leadingTitle: metadata.title) : []
         let tags = format.isMPEG4 ? await metadataItems(from: sources.base.url, overriding: metadata) : []
+        // Every source is opened, and every stretch checked against it,
+        // before the file a render replaces is removed, so a render that
+        // can't read its sources leaves that file as it was. Samples copied
+        // as stored are read through the timeline's composition, whole
+        // packets, never decoded.
+        let pieces = try await AudioEditStretchSound.pieces(of: timeline, sources: sources)
+        let copied = settings == standard && canCopySamples(of: timeline, base: sources.base, into: format)
+        let composition: AudioEditComposition? = try copied ? AudioEditComposition.make(pieces, sampleRate: timeline.sampleRate) : nil
         try? FileManager.default.removeItem(at: destination)
 
-        if settings == standard, canCopySamples(of: timeline, base: sources.base, into: format) {
-            // Samples copied as stored are read through the timeline's
-            // composition, whole packets, never decoded.
-            let made = try await AudioEditComposition.make(timeline, sources: sources)
+        if let made = composition {
             do {
                 let (reader, output, storedFormat) = try await copyReader(of: made)
                 try await write(.stored(storedFormat), to: destination, settings: settings, chapters: chapters, tags: tags) { consume in
@@ -503,7 +510,7 @@ enum AudioEditRenderer {
             }
         }
         try await write(.decoded, to: destination, settings: settings, chapters: chapters, tags: tags) { consume in
-            try await readStretches(of: timeline, sources: sources, settings: settings, progress: progress, consume: consume)
+            try await readStretches(pieces, timelineRate: timeline.sampleRate, settings: settings, progress: progress, consume: consume)
         }
         return Outcome(frames: timeline.length, copiedSamples: false)
     }
@@ -792,16 +799,16 @@ enum AudioEditRenderer {
     /// short.
     static let readRunPast: TimeInterval = 0.25
 
-    /// Reads `timeline`'s sound, whose stretches come from `sources`, stretch
-    /// by stretch: each piece of each stretch (`AudioEditStretchSound`) from
-    /// its own file, by an asset reader of its own over that piece and a
-    /// little either side of it (`readRunUp`, `readRunPast`), decoded to
-    /// `settings.readerSettings`, cut to the piece's own frames, and handed
-    /// to `consume` buffer by buffer, timed at its place in the edits;
-    /// telling `progress` how far it is. Every source is opened, and every
-    /// stretch checked against it, before any sound is read; memory stays
-    /// flat however many pieces there are (`read`'s autorelease pools, and a
-    /// pause after each piece).
+    /// Reads the sound of `pieces`, every piece of the stretches of a
+    /// timeline at `timelineRate`, their files opened and their ranges
+    /// checked (`AudioEditStretchSound.pieces(of:sources:)`), piece by
+    /// piece: each from its own file, by an asset reader of its own over
+    /// that piece and a little either side of it (`readRunUp`,
+    /// `readRunPast`), decoded to `settings.readerSettings`, cut to the
+    /// piece's own frames, and handed to `consume` buffer by buffer, timed
+    /// at its place in the edits; telling `progress` how far it is. Memory
+    /// stays flat however many pieces there are (`read`'s autorelease
+    /// pools, and a pause after each piece).
     ///
     /// Every render that decodes reads so, not through the timeline's
     /// composition (`AudioEditComposition`): AVFoundation decodes an MP3
@@ -815,27 +822,19 @@ enum AudioEditRenderer {
     /// of MP3s at seven encodings, AAC, AIFF, FLAC, and Apple Lossless
     /// decoded as its file does whole; read over just its range, as at
     /// first, a piece of an MP3 at 22.05 or 44.1 kHz began wrong.
-    /// - Throws: the sources' errors (`AudioEditStretchSound.pieces(of:)`),
-    ///   `CancellationError`, what `consume` throws, or
+    /// - Throws: `CancellationError`, what `consume` throws, or
     ///   `AudioEditError.renderFailed` when a reader fails or a piece
     ///   decodes short by more than `fillableShortfall`.
     static func readStretches(
-        of timeline: AudioEditTimeline,
-        sources: AudioEditComposition.Sources,
+        _ pieces: [AudioEditStretchSound.Piece],
+        timelineRate: Double,
         settings: AudioRenderSettings,
         progress: (@Sendable (Double) -> Void)?,
         consume: (CMSampleBuffer) async throws -> Void
     ) async throws {
-        // Every piece, its file opened and its range checked; the pieces keep
-        // their files' assets alive while they are read.
-        var sound = AudioEditStretchSound(sampleRate: timeline.sampleRate, sources: sources)
-        var pieces: [AudioEditStretchSound.Piece] = []
-        for segment in timeline.segments {
-            pieces += try await sound.pieces(of: segment)
-        }
         // Frames at the render's rate for each frame of the edits.
-        let ratio = settings.sampleRate / timeline.sampleRate
-        let total = Int((Double(timeline.length) * ratio).rounded())
+        let ratio = settings.sampleRate / timelineRate
+        let total = Int((Double(pieces.reduce(0) { $0 + $1.length }) * ratio).rounded())
         var position: Int64 = 0
         var written = 0
         // The format the readers decode to, as the last buffer read was:
@@ -905,8 +904,8 @@ enum AudioEditRenderer {
         let readStart = CMTimeSubtract(piece.range.start, CMTime(value: runUp, timescale: scale))
         let runPastEnd = CMTimeAdd(piece.range.end, CMTime(seconds: readRunPast, preferredTimescale: scale))
         // A piece ends at most a frame past its file's end
-        // (`AudioEditStretchSound.pieces(of:)`), so the read ends after it
-        // starts; the bound only keeps the range well formed.
+        // (`AudioEditStretchSound.pieces(of:sources:)`), so the read ends
+        // after it starts; the bound only keeps the range well formed.
         let readEnd = CMTimeMaximum(CMTimeMinimum(runPastEnd, piece.sourceEnd), piece.range.start)
         // The reader is made, and each buffer copied, in an autorelease pool
         // of its own, so what AVFoundation autoreleases for them goes with

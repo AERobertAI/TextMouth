@@ -233,6 +233,41 @@ final class AudioEditRenderingTests: XCTestCase {
         XCTAssertLessThan(grown, 40, "the render's footprint grew \(grown) MB over its 400 stretches")
     }
 
+    // MARK: - Replacing a File
+
+    /// A render that can't read its sources leaves the file it would have
+    /// replaced as it was, CAF and MP3 alike: a take gone from the package
+    /// is found missing before anything at the destination is touched.
+    /// Until the review of November 15, 2026, the file went first.
+    func testARenderMissingATakeLeavesTheFileItWouldReplace() async throws {
+        let (sources, folder) = try await makeRampSources(seconds: 3)
+        var timeline = sources.base.timeline
+        try timeline.applyRearranging(.replace(
+            AudioTimeRange(start: 1, end: 2),
+            with: AudioEditTake(file: "audioEdits/takes/gone.caf", range: AudioTimeRange(start: 0, end: 1))
+        ))
+        let earlier = Data("an earlier export".utf8)
+        for format in [AudioRenderFormat.pcmCAF, .mp3] {
+            let destination = folder.appendingPathComponent("Earlier Export.\(format.fileExtension)")
+            try earlier.write(to: destination)
+
+            do {
+                _ = try await AudioEditRenderer.render(
+                    timeline,
+                    sources: sources,
+                    to: destination,
+                    format: format,
+                    metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
+                )
+                XCTFail("\(format): a render missing its take succeeded")
+            } catch AudioEditError.missingAudio(let name) {
+                XCTAssertEqual(name, "audioEdits/takes/gone.caf", "\(format)")
+            }
+
+            XCTAssertEqual(try? Data(contentsOf: destination), earlier, "\(format): the file the render would replace changed")
+        }
+    }
+
     // MARK: - Chapters
 
     /// Chapter markers written into an M4A file read back through the app's

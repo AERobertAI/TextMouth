@@ -31,7 +31,8 @@ extension AudioEditRenderer {
     /// chapter markers, telling `progress` how far it is.
     /// - Throws: `AudioEditError.mp3NeedsFFmpeg` when `route` is nil, there
     ///   being no encoder; the render's errors; or `CancellationError`.
-    ///   Nothing is left at `destination` after a failure.
+    ///   A file already at `destination` stays as it was until every source
+    ///   has been opened; a failure after that leaves nothing there.
     static func renderMP3(
         _ timeline: AudioEditTimeline,
         sources: AudioEditComposition.Sources,
@@ -90,6 +91,9 @@ extension AudioEditRenderer {
             artist: metadata.author,
             chapters: chapterList(of: timeline, leadingTitle: metadata.title)
         )
+        // Every source is opened before the file the render replaces is
+        // removed, as `render` does.
+        let pieces = try await AudioEditStretchSound.pieces(of: timeline, sources: sources)
         try? FileManager.default.removeItem(at: destination)
         let encoder: MP3Encoder
         do {
@@ -100,7 +104,7 @@ extension AudioEditRenderer {
         // The floats of one buffer, reused for the next.
         var samples: [Float] = []
         do {
-            try await readStretches(of: timeline, sources: sources, settings: settings, progress: progress) {
+            try await readStretches(pieces, timelineRate: timeline.sampleRate, settings: settings, progress: progress) {
                 try encode($0, channels: settings.channels, with: encoder, through: &samples)
             }
             try encoder.finish()
