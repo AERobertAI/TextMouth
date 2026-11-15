@@ -87,11 +87,10 @@ Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `mak
   One `xcodebuild` runs them all, through the build-slot wrapper, so no registration on the agents' message board is needed (an agent sets `BBS_AGENT=<name>` to report to the board).
   Each launch of the test host leaves about 23 MB in a system cache only you can purge, so never run the areas one after another.
 - While it runs nothing is printed; afterwards it prints one fact per line, ending with PASSED or FAILED and the time taken.
-  `-h` lists the facts and the exit statuses.
 - `--changed` picks the classes whose file mentions a type declared in a file changed since the merge-base with `--base REF` (default `main`), and runs them; it is a heuristic, so run the area or `all` before a merge.
 - `--repeat N` builds once, runs the classes N times, and ends with a report of the tests that changed outcome, for a suspected flaky test.
 - `--clean` unregisters the build folder's app and deletes the folder.
-- `-h` lists the rest.
+- `-h` lists the facts it prints, the exit statuses, and the other options.
 - A small area takes a few seconds of tests.
   The whole suite, `all`, took about 16 minutes of test time when it was last measured.
 
