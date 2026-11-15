@@ -1,10 +1,10 @@
 # Timers and statistics
-<!-- id: timers-statistics; keys: ; src: -->
+<!-- id: timers-statistics; keys: sleep timer, reading stats, listening statistics, timer tolerance, Stats tab; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## The sleep timer
-<!-- id: sleep-timer; keys: ; src: TextMouth/Services/SleepTimerService.swift, TextMouth/Services/SleepTimerRegistry.swift, TextMouth/Models/DocumentContent.swift, TextMouth/Views/Reader/SleepTimerView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Services/AudioPlaybackService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouthProductionTests/WindowSleepTimerTests.swift, TextMouth/Views/Reader/SleepTimerStatusLabel.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Views/Reader/PlaybackControlsView.swift -->
+<!-- id: sleep-timer; keys: per-window sleep timer, End of heading, End of book, Restart Sleep Timer, Show Sleep Timer, fade out, countdown, textmouth_timer.log; src: TextMouth/Services/SleepTimerService.swift, TextMouth/Services/SleepTimerRegistry.swift, TextMouth/Models/DocumentContent.swift, TextMouth/Views/Reader/SleepTimerView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Reader/SleepTimerStatusLabel.swift, TextMouth/Views/Reader/PlaybackControlsView.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderShownState.swift, TextMouth/Services/AudioPlaybackService.swift, TextMouth/Views/Library/LibraryView.swift, TextMouthProductionTests/WindowSleepTimerTests.swift, TextMouthProductionTests/SleepTimerServiceTests.swift -->
 
 The sleep timer.
 
@@ -43,7 +43,7 @@ The sleep timer.
 - Tests: WindowSleepTimerTests (two windows each counting, pausing, and running out their own timer; a book opened beside a paused timer; the timer going on in place between text and audio books four ways; the new window taking it; closing a window; the routing of the menu command, the key, and the gesture; two sheets open together), SleepTimerRegistryTests, and the hand-over tests listed in the next entry.
 
 ## The sleep timer held for the next book
-<!-- id: sleep-timer-held-next-book; keys: ; src: TextMouth/Services/SleepTimerService.swift, TextMouth/Services/SleepTimerRegistry.swift, TextMouth/Models/SleepTimerHandOverWording.swift, TextMouth/ViewModels/ReaderViewModel+SleepTimerHandOver.swift, TextMouth/ViewModels/ReaderViewModel+BookMoves.swift, TextMouth/ViewModels/ReaderViewModel+NextBookWindow.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Services/ReaderRequestStore.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
+<!-- id: sleep-timer-held-next-book; keys: sleep timer hand over, next book, held timer, timer follows book, timer log, Next in Folder; src: TextMouth/Services/SleepTimerService.swift, TextMouth/Services/SleepTimerRegistry.swift, TextMouth/Models/SleepTimerHandOverWording.swift, TextMouth/ViewModels/ReaderViewModel+SleepTimerHandOver.swift, TextMouth/ViewModels/ReaderViewModel+BookMoves.swift, TextMouth/ViewModels/ReaderViewModel+NextBookWindow.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/ReaderRequestStore.swift, TextMouth/Views/Reader/BookReaderWindowView.swift -->
 
 The sleep timer held for the next book (0.2.5): a running timer goes on with listening to another book, in the same window or another.
 
@@ -71,7 +71,7 @@ The sleep timer held for the next book (0.2.5): a running timer goes on with lis
 - Files: Services/SleepTimerService.swift, Services/SleepTimerRegistry.swift, Models/SleepTimerHandOverWording.swift, ViewModels/ReaderViewModel+SleepTimerHandOver.swift, ViewModels/ReaderViewModel+BookMoves.swift, ViewModels/ReaderViewModel+NextBookWindow.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel+CloudDownload.swift, ViewModels/ReaderViewModel.swift, ViewModels/LibraryViewModel+BookOperations.swift, Services/ReaderRequestStore.swift, Views/Reader/BookReaderWindowView.swift.
 
 ## Listening checkpoints
-<!-- id: listening-checkpoints; keys: ; src: TextMouth/Services/ReadingStatsService.swift, TextMouth/Models/ReadingStatsTile.swift, TextMouth/Views/Settings/ReadingStatsView.swift, TextMouth/Services/Feeds/FeedLifecycle.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
+<!-- id: listening-checkpoints; keys: reading_stats.json, Stats tab, Books Finished, listening session, streak, Recently Finished, sleep and wake, FinishedBookKind; src: TextMouth/Services/ReadingStatsService.swift, TextMouth/Models/ReadingStatsTile.swift, TextMouth/Views/Settings/ReadingStatsView.swift, TextMouth/Services/Feeds/FeedLifecycle.swift -->
 
 Listening checkpoints.
 
@@ -87,7 +87,7 @@ Listening checkpoints.
 - Files: Services/ReadingStatsService.swift, Models/ReadingStatsTile.swift, Views/Settings/ReadingStatsView.swift, Services/Feeds/FeedLifecycle.swift.
 
 ## Day keys
-<!-- id: day-keys; keys: ; src: TextMouth/Services/ListeningDays.swift, TextMouth/Services/ListeningDayKeyMigration.swift, TextMouth/Services/ReadingStatsService.swift -->
+<!-- id: day-keys; keys: day key, Gregorian calendar, time zone, reading_stats.json, dayKeyVersion, Today, This Week; src: TextMouth/Services/ListeningDays.swift, TextMouth/Services/ListeningDayKeyMigration.swift, TextMouth/Services/ReadingStatsService.swift -->
 
 Day keys.
 
@@ -98,7 +98,7 @@ Day keys.
 - Files: Services/ListeningDays.swift, Services/ListeningDayKeyMigration.swift, Services/ReadingStatsService.swift.
 
 ## How the app's timers wake the Mac
-<!-- id: how-app-timers-wake-mac; keys: ; src: TextMouth/Services/TimerCoalescing.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/LibrarySessionLease.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Views/Settings/ReadingStatsView.swift, TextMouthProductionTests/TimerCoalescingTests.swift -->
+<!-- id: how-app-timers-wake-mac; keys: timer tolerance, energy, wake-ups, power use, coalescing, watchdog, audit C16; src: TextMouth/Services/TimerCoalescing.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/LibrarySessionLease.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Views/Settings/ReadingStatsView.swift, TextMouthProductionTests/TimerCoalescingTests.swift -->
 
 How the app's timers wake the Mac (the audit's C16, November 13, 2026).
 

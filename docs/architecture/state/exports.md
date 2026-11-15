@@ -1,10 +1,10 @@
 # Exports
-<!-- id: exports; keys: ; src: -->
+<!-- id: exports; keys: export, Export dialog, File > Export, BRF, EPUB, speech export, captions; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## An export and its dialog
-<!-- id: export-dialog; keys: ; src: TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/Views/Export/BookExportPresentation.swift, TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/App/MenuCommands.swift, Scripts/test/quit-while-held/Stubs.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Parsers/DAISYParser+PackageInventory.swift, TextMouth/Services/AudioEditing/AudioEditPackage.swift -->
+<!-- id: export-dialog; keys: Export command, Export button, overwrite, atomic rename, scratch folder, Stop button, unique names, export log; src: TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/Views/Export/BookExportPresentation.swift, TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/App/MenuCommands.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Parsers/DAISYParser+PackageInventory.swift, TextMouth/Services/AudioEditing/AudioEditPackage.swift -->
 
 An export (FR05): what the Export dialog offers, what is checked, where it goes, and how far it has got.
 
@@ -31,7 +31,7 @@ An export (FR05): what the Export dialog offers, what is checked, where it goes,
 - Files: Services/BookExportService.swift, ViewModels/BookExportModel.swift, Models/BookExportWording.swift, Models/LibraryCloudWording.swift, Views/Export/BookExportSheet.swift, Views/Export/BookExportPresentation.swift, Views/Reader/ReaderBookCommands.swift, Views/Library/LibraryView.swift, Views/Library/LibrarySubviews.swift, App/MenuCommands.swift.
 
 ## Text export and its writers
-<!-- id: text-export-writers; keys: ; src: TextMouth/Services/Export/ExportDocument.swift, TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Services/Export/HTMLExportWriter.swift, TextMouth/Services/Export/EPUBExportWriter.swift, TextMouth/Services/Export/EPUBPackageBuilder.swift, TextMouth/Services/Export/EPUBLinkAddress.swift, TextMouth/Services/Export/XHTMLMarkup.swift, TextMouth/Parsers/MarkdownMarker.swift, TextMouth/Services/Export/XMLEscaping.swift, TextMouth/Services/Export/MarkdownExportWriter.swift, TextMouth/Parsers/MarkdownLiteral.swift, TextMouth/Parsers/MarkdownEmphasis.swift, TextMouth/Services/Export/RTFExportWriter.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, TextMouth/Services/Export/BrailleExportWriters.swift, TextMouth/Services/BrailleDocumentWriter.swift, TextMouth/Parsers/BrailleEmphasis.swift, TextMouth/Services/BrailleLayout.swift, TextMouth/Services/BrailleFileWriter.swift, TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/Parsers/BrailleFileCode.swift, TextMouthProductionTests/SpeechExportDialogTests.swift, TextMouthProductionTests/EPUBCheckRunner.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/ArchiveExtraction.swift -->
+<!-- id: text-export-writers; keys: Convert to picker, text writers, conversion, writer options, export formats, iOS Word writer; src: TextMouth/ViewModels/BookExportModel.swift, TextMouth/Services/BookExportService.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Views/Export/BookExportSheet.swift -->
 
 Text export (FMT18, FMT19, FMT22): what the Convert to picker, beside Text as Markdown, makes of a text book's content.md in place of its Markdown (T3, October 23, 2026: Markdown is written too, and no export copies content.md).
 What each format keeps and leaves out is in [Exporting books](../../user/exporting-books.md).
@@ -40,7 +40,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   TextMouth/Services/Export/ holds the writers and what they read:
 
 ### The document, the walker, and the first writers
-<!-- id: document-walker-first-writers; keys: ; src: TextMouth/Services/Export/ExportDocument.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Services/Export/XHTMLMarkup.swift, TextMouthProductionTests/SpeechExportDialogTests.swift, TextMouth/Services/Export/ExportDocumentWalker.swift -->
+<!-- id: document-walker-first-writers; keys: ExportDocument, swift-markdown, chapter markers, HTML export, RTF export, Word export, page breaks, BCP 47; src: TextMouth/Services/Export/ExportDocument.swift, TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Services/Export/HTMLExportWriter.swift, TextMouth/Services/Export/RTFExportWriter.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, TextMouth/Services/Export/XHTMLMarkup.swift, TextMouth/Services/Export/XMLEscaping.swift, TextMouth/Parsers/MarkdownMarker.swift -->
 
 - ExportDocument, the model every writer reads.
   For a writer that asks (EPUB, since 0.4.1) it also says where each chapter begins (chapterStarts, ExportChapterStart), where each page begins (ExportPageBreak: the block case .pageBreak between blocks, ExportRun.pageBreak inside text, and ExportTable.cellPages for a page that starts in a table cell, ExportCellPage), and the places the book's contents point at (ExportNavigationTarget: .navigationTarget between blocks and ExportRun.navigationTarget inside text, a heading annotation of content.md that a converted book carries for a contents entry naming a styled paragraph, an anchor, or a deeper entry of a Kindle book; ExportContentsItem is one entry of the contents, a heading or a target), all read where the reader reads them.
@@ -55,7 +55,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   ExportBookDetails.languageTag accepts a language only if it is a well-formed BCP 47 tag, for HTML, PEF, and EPUB.
 
 ### The EPUB package
-<!-- id: epub-package; keys: ; src: TextMouth/Services/Export/EPUBPackageBuilder.swift, TextMouth/Services/Export/EPUBExportWriter.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, TextMouth/Services/Export/BrailleExportWriters.swift, TextMouth/Services/Export/TextExportWriter.swift -->
+<!-- id: epub-package; keys: EPUB export, OPF, nav document, EPUB 3, ZIP, right to left, accessibility metadata, file splitting; src: TextMouth/Services/Export/EPUBExportWriter.swift, TextMouth/Services/Export/EPUBPackageBuilder.swift, TextMouth/Services/Export/XHTMLMarkup.swift, TextMouth/Services/Export/TextExportWriter.swift -->
 
 - EPUBExportWriter (FMT28, 0.4.1), registered after WordDocExportWriter and before BRFExportWriter in TextExportWriters.all.
   An existing test pins the first choices.
@@ -75,7 +75,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
     - page-progression-direction="rtl" with dir="rtl" for a right-to-left language or script (EPUBPackageBuilder.isWrittenRightToLeft: the script subtag when there is one, else the language, ku, sd, ks, and ug being assumed neither way).
 
 ### EPUB links and targets
-<!-- id: epub-links-targets; keys: ; src: TextMouth/Services/Export/EPUBExportWriter.swift, TextMouth/Services/Export/EPUBLinkAddress.swift, TextMouthProductionTests/EPUBCheckRunner.swift -->
+<!-- id: epub-links-targets; keys: EPUBCheck, RSC-020, URL escaping, navigation target, Untitled, contents entry, anchor; src: TextMouth/Services/Export/EPUBExportWriter.swift, TextMouth/Services/Export/EPUBLinkAddress.swift -->
 
 - EPUBExportWriter, links and targets:
   - EPUBLinkAddress.url(from:) percent-encodes a link's address for EPUBCheck's RSC-020: ASCII hexadecimal digits only, a port up to 65535, a host of letters, digits, dots, and hyphens.
@@ -86,7 +86,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   - A heading of only forbidden or zero-width characters is a target, named "Untitled".
 
 ### EPUB writing and checking
-<!-- id: epub-writing-checking; keys: ; src: TextMouth/Services/Export/EPUBExportWriter.swift, TextMouthProductionTests/EPUBCheckRunner.swift -->
+<!-- id: epub-writing-checking; keys: ZIPFoundation, checksum, verify, write failure, disk full, read-only volume, EPUBCheck; src: TextMouth/Services/Export/EPUBExportWriter.swift, TextMouthProductionTests/EPUBCheckRunner.swift -->
 
 - EPUBExportWriter, writing and checking:
   - write(_:options:to:cancellation:) refuses a file already there, writes the package, and opens it again in verify(_:holds:).
@@ -98,7 +98,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
     EPUBCheck 5.2.1 reports nothing on the exports of the test books.
 
 ### The Markdown writer, and adding a writer
-<!-- id: markdown-writer-adding-writer; keys: ; src: TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Parsers/MarkdownLiteral.swift, TextMouth/Services/Export/MarkdownExportWriter.swift, TextMouth/Parsers/MarkdownEmphasis.swift -->
+<!-- id: markdown-writer-adding-writer; keys: Markdown export, md, escaping, backslash, content.md, new writer, picker order; src: TextMouth/Services/Export/MarkdownExportWriter.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Parsers/MarkdownLiteral.swift, TextMouth/Parsers/MarkdownEmphasis.swift -->
 
 - MarkdownExportWriter, the Markdown choice, listed first by TextExportWriters.markdownID and not in TextExportWriters.all (its id is "md"): headings, paragraphs, lists, quotes, code, breaks, and tables, with emphasis (MarkdownEmphasis.markdown(_:styles:literal:), given MarkdownLiteral.minimallyEscaped as its literal writer) and web and mail links, and no title heading, so the file is the book's text as content.md holds it, without its marker lines.
   It writes only the backslashes Markdown needs (MarkdownLiteral.minimallyEscaped, and guardingLineStart for each line's start, which also guards a line that would read as a table's delimiter row, and an exclamation mark that ends the words before a link is escaped). content.md, TextMouth's own cache, escapes every ASCII punctuation character so that its reader reads exactly a book's characters, and stays as it is: no export copies it.
@@ -106,7 +106,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   Scripts/agents/briefs/2026-10-19/export/interface-for-braille.md describes the interface.
 
 ### Braille writers
-<!-- id: braille-writers; keys: ; src: TextMouth/Services/BrailleDocumentWriter.swift, TextMouth/Services/Export/BrailleExportWriters.swift, TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Services/BrailleLayout.swift -->
+<!-- id: braille-writers; keys: BRF, PEF, braille export, BANA, six-dot cells, liblouis, embosser, braille pages; src: TextMouth/Services/Export/BrailleExportWriters.swift, TextMouth/Services/BrailleDocumentWriter.swift, TextMouth/Services/BrailleLayout.swift, TextMouth/Services/BrailleFileWriter.swift, TextMouth/Parsers/BrailleEmphasis.swift, TextMouth/Parsers/BrailleFileCode.swift, TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/Services/Export/TextExportWriter.swift -->
 
 - Braille (FMT22): BRFExportWriter and PEFExportWriter (Services/Export/BrailleExportWriters.swift), last in TextExportWriters.all, write a book as braille.
   What the files hold and the layout's rules are in [Exporting books](../../user/exporting-books.md); the translator, its helper, and the table catalog are under Braille files in [Imports](imports.md).
@@ -126,7 +126,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
     A Mac table chosen there is checked off the main thread (The check of this Mac's tables, in [Imports](imports.md)) through BrailleTableChoiceChecks.shared, which BookExportModel.export waits on in its exporting phase (finished(unless:), ended at once by Stop or the dialog closing), so the export writes with the table the pop-ups show; BookExportSheet gives the Export button BookExportWording.exportWaitsHint meanwhile.
 
 ### How the dialog and the job use the writers
-<!-- id: how-dialog-job-use-writers; keys: ; src: TextMouth/Services/Export/ExportDocument.swift, TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Services/Export/HTMLExportWriter.swift, TextMouth/Services/Export/EPUBExportWriter.swift, TextMouth/Services/Export/EPUBPackageBuilder.swift, TextMouth/Services/Export/EPUBLinkAddress.swift, TextMouth/Services/Export/XHTMLMarkup.swift, TextMouth/Parsers/MarkdownMarker.swift, TextMouth/Services/Export/XMLEscaping.swift, TextMouth/Services/Export/MarkdownExportWriter.swift, TextMouth/Parsers/MarkdownLiteral.swift, TextMouth/Parsers/MarkdownEmphasis.swift, TextMouth/Services/Export/RTFExportWriter.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, TextMouth/Services/Export/BrailleExportWriters.swift, TextMouth/Services/BrailleDocumentWriter.swift, TextMouth/Parsers/BrailleEmphasis.swift, TextMouth/Services/BrailleLayout.swift, TextMouth/Services/BrailleFileWriter.swift, TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouthProductionTests/MarkdownExportWriterTests.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouthProductionTests/EPUBExportWriterTests.swift, TextMouthProductionTests/EPUBLinkAddressTests.swift, TextMouthProductionTests/ExportContentsListTests.swift -->
+<!-- id: how-dialog-job-use-writers; keys: BookExportConversion, converted files, failure sentence, picker choices, export tests, EPUBCheck tests, Word export failure; src: TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, Scripts/test/areas.conf, TextMouthProductionTests/EPUBExportWriterTests.swift, TextMouthProductionTests/EPUBExportWriterNavigationTests.swift, TextMouthProductionTests/EPUBLinkAddressTests.swift, TextMouthProductionTests/ExportContentsListTests.swift, TextMouthProductionTests/ExportDocumentWalkerStructureTests.swift, TextMouthProductionTests/EPUBExportRoundTripTests.swift, TextMouthProductionTests/EPUBExportRealBooksTests.swift, TextMouthProductionTests/EPUBCheckTests.swift, TextMouthProductionTests/MarkdownExportWriterTests.swift -->
 
 - Who may write it: BookExportService, as above, off the main thread and one book at a time. plan(_:kinds:conversions:in:fileExists:) plans a converted kind's files as .converted sources (BookExportFile.Source), each named with the writer's extension in place of the Markdown's and made unique like any other name.
   BookExportConversion is the job runner's conversion, text now and audio later: it gives the extension, the kinds it applies to, and the name the picker says; BookExportConversion.markdown, the Markdown writer with no options, is what the offer's Markdown files are converted by, and files(of:for:conversions:) converts a copied or an already converted file, so that choosing another writer replaces the Markdown the offer lists. writeConverted reads content.md as the reader does (MarkdownCacheService.cacheText), walks it, and has the writer write it to a scratch file, which is moved into place as above.
@@ -139,7 +139,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   MarkdownMinimalEscapingTests reads every string of one or two characters over a, 1, é, a space, and the 32 ASCII punctuation characters, and every three-character string over the punctuation, a, and a space, back through swift-markdown as a paragraph, a heading, and a list item, in the plain form and with smart punctuation; MarkdownExportWriterTests writes each kind of block and run, and walks the file back to the blocks it was written from.
 
 ## Transcripts as captions
-<!-- id: transcripts-as-captions; keys: ; src: TextMouth/Services/Export/TimedTextWriters.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Parsers/TimedTextMarkup.swift -->
+<!-- id: transcripts-as-captions; keys: WebVTT, SubRip, SRT, captions, subtitles, timed text, transcript.json; src: TextMouth/Services/Export/TimedTextWriters.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Parsers/TimedTextMarkup.swift -->
 
 Transcripts as captions (FMT23; 0.4.2).
 
@@ -154,7 +154,7 @@ Transcripts as captions (FMT23; 0.4.2).
 - Files: Services/Export/TimedTextWriters.swift, ViewModels/BookExportModel.swift, Models/BookExportWording.swift.
 
 ## Spoken audio export
-<!-- id: spoken-audio-export; keys: ; src: TextMouth/Services/SpeechExport/, TextMouth/Models/SpeechExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/Services/SpeechExport/SpeechBufferSynthesizer.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Services/SpeechExport/SpeechExportStore.swift, TextMouth/Services/SpeechExport/SpeechExportsUnderWay.swift, TextMouth/Services/BookExportService.swift -->
+<!-- id: spoken-audio-export; keys: Text as spoken audio, M4B, M4A, MP3, text to speech export, AVSpeechSynthesizer, quit hold, Caches; src: TextMouth/Services/SpeechExport/, TextMouth/Models/SpeechExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Services/BookExportService.swift, TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 
 Spoken audio (FMT43; 0.4.2): a text book, or a range of its headings, spoken by its voice into one M4B, M4A, or MP3 with a chapter for each heading.
 
