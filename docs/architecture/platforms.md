@@ -13,6 +13,7 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
 <!-- id: one-source-folder-two-apps; keys: targets, XcodeGen, excludes, Swift 6, strict concurrency, shared code; src: project.yml, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
 
 - Both apps compile the TextMouth source folder. project.yml defines `TextMouth`, the Mac app, and `TextMouthiOS`, the iOS app (how they build is in [Building TextMouth](../developer/building.md)).
+  It also defines the static library targets SwiftSoup and SwiftSoup_iOS, one for each app, which compile the vendored HTML and XML parser in `Vendor/SwiftSoup` (see [Third-party code](../developer/third-party-code.md)).
   The iOS app has the module name TextMouth too, so shared code and shared tests read the same on both.
 - Each app leaves out the other's platform folder:
   - the Mac app leaves out `TextMouth/Platform/iOS/`;
@@ -30,7 +31,10 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
   It holds:
   - `App`: TextMouthApp, AppDelegate, and FrontWindowKind (split out of MenuCommands, which stays in `App`);
   - `Services`: WatchedProcess, OrphanedConversionSweep (and its Textutil extension), PackageFileEditing, BookTextEditor, BookManifestEditor, MenuVisibilityManager, and `Export/WordDocExportWriter`;
-  - `Views`: the window controllers of the Record window and the audio editor, the audio editor's Edit menu and launcher, VoiceOverFocus, ReadOnlyTextArea, SilentKeyEquivalent, SwitchedWindowFocus, LogsInFinder, and `Reader/WindowAccessor`.
+  - `Views`:
+    - the window controllers of the Record window and the audio editor, and the audio editor's Edit menu and launcher;
+    - the Search Library window (`LibrarySearch/LibrarySearchWindowController` and `LibrarySearchWindowView`);
+    - and QuitNotice, VoiceOverFocus, ReadOnlyTextArea, SilentKeyEquivalent, SwitchedWindowFocus, LogsInFinder, and `Reader/WindowAccessor`.
 - `TextMouth/Platform/iOS/` holds what only the iOS app compiles: the iPhone app's own code (its app and scene delegates, views, and services), IOSUnavailable, and a stand-in for each Mac-only type that shared code still names, in folders that mirror the Mac's.
   The iPhone's plain types, the ones that import no UIKit, are in the shared folder `TextMouth/Phone/` instead, so the Mac's tests reach them.
   A stand-in's file name ends `+iOS` and starts with the comment `// Phase 0 stand-in:`, which says what the Mac version does and what iOS does instead.
@@ -107,7 +111,7 @@ Each of the four closures is a one-line default or argument made into a closure 
     OpenDocument text and Word 2003 XML read the same on the Mac since 0.4.0, and Word 6 and Word 95 documents since 0.4.1.
   - Editing in another app: PackageFileEditing's workspace opener throws, and BookTextEditor and BookManifestEditor start no session (`canEditText` is false).
   - Windows and keys: WindowAccessor reports no window; SilentKeyEquivalent takes no key; SwitchedWindowFocus does nothing; FrontWindowKind is always nil; LogsInFinder says showing the logs in Finder is not available on iPhone yet; `FunctionKeyConstants+iOS` gives the 72 function-key constants NSEvent.h defines, with its values, so config.json's key names (pageDown, f5, and the rest) read the same.
-  - VoiceOver: VoiceOverFocus and StandardVoiceOverFocus are hidden views; VoiceOverAnnouncer posts `AccessibilityNotification.Announcement`, mapping the shared high and medium priorities to iOS's default and low to iOS's low (see "The announcement priorities on iOS", below); `NSAccessibilityPriorityLevel` exists on iOS as an enum.
+  - VoiceOver: VoiceOverFocus and StandardVoiceOverFocus are hidden views; VoiceOverAnnouncer posts `AccessibilityNotification.Announcement`, mapping the shared high and medium priorities to iOS's default and low to iOS's low (see [The announcement priorities on iOS](platforms-phone-interface.md)); `NSAccessibilityPriorityLevel` exists on iOS as an enum.
   - Text: ReadOnlyTextArea is a read-only, selectable `UITextView` with the Mac's label.
   - Recording and editing audio: the Record window and audio editor controllers and the audio editor launcher do nothing; the capture backend's `start` throws `IOSUnavailable` for "Recording"; FFmpeg's `run` throws that ffmpeg is missing.
   - Now Playing: audio-device queries answer "no device", and the device listeners are never installed.
@@ -140,9 +144,9 @@ So phase 0 added a portable tree that has the part of the interface those reader
 - `Platform/iOS/Parsers/XMLTree+iOS.swift` is the iOS-only file that makes `XMLDocument`, `XMLElement`, and `XMLNode` the portable classes.
   The Mac compiles the portable tree too, but only `PortableXMLDifferentialTests` uses it: no Mac code reads through it, so the Mac's own EPUB and feed reading is unchanged.
 - `PortableXMLDifferentialTests` is what makes the tree trustworthy.
-  It reads 104 documents with Foundation's `XMLDocument` and with the portable tree, strictly and tidied: the 16 XML documents of the five test EPUBs, 27 feed, OPML, and OPF fixtures, and 61 small documents in `PortableXMLCorpus`.
+  It reads with Foundation's `XMLDocument` and with the portable tree, strictly and tidied, every XML document of every `.epub` under TestData (17 are tracked), the feed, OPML, and OPF fixtures there, and the small documents in `PortableXMLCorpus`.
   It compares every node's kind, level, name, local name, prefix, namespace, and string value, every attribute, and the answers to the XPath expressions the four reader files use (a scan test confirms every XPath string in them is one the comparison makes).
-  The trees agree except where `knownDifferences` lists a difference, 14 in all, each with its reason and an evidence fragment the reported difference must contain; a listed difference that goes away fails the test.
+  The trees agree except where `knownDifferences` lists a difference, 16 in all, each with its reason and an evidence fragment the reported difference must contain; a listed difference that goes away fails the test.
   Some differences are accepted and hidden on purpose: attribute order within an element, `*` selecting a processing instruction in Foundation, the DTD node and XML declaration not being nodes, and the depth bound.
 - `EPUBParser.updateOPFMetadata`, which writes a book's details into its EPUB, is wrapped in `#if os(macOS)`: its output must match what Foundation's pretty printer writes, and the portable tree does not write.
   On iOS it throws `IOSUnavailable` for "Saving a book's details into its EPUB file".
@@ -152,8 +156,9 @@ So phase 0 added a portable tree that has the part of the interface those reader
 
 The iPhone interface is built from research/IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list.
 This section says how the code is put together.
-It describes the code main holds: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below).
-The Search in Book of branch `ios/search-1109` (below) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
+It describes the code main holds: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108`.
+The fixes are the sheet buttons ([PhoneSheetButton: where a sheet's buttons go](platforms-phone-interface.md)) and the full-contrast text ([PhoneTextStyle: the phone's text at full contrast](platforms-phone-interface.md)).
+The Search in Book of branch `ios/search-1109` (see [Search in Book](platforms-phone-interface.md)) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
 
 ### The frame
 <!-- id: iphone-frame; keys: UIApplicationDelegate, scene delegate, magic tap, @main, life cycle, two readers; src: TextMouth/Platform/iOS/App/TextMouthAppDelegate.swift, TextMouth/Platform/iOS/App/TextMouthSceneDelegate.swift, TextMouth/Platform/iOS/App/MagicTapWindow.swift, TextMouth/Phone/PhoneAppModel.swift, TextMouth/Phone/PhoneSession.swift, TextMouth/Phone/PhoneLifeCycle.swift, TextMouth/Phone/ReaderPhoneHooks.swift -->
