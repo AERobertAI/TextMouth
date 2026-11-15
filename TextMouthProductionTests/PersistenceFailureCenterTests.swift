@@ -186,7 +186,7 @@ final class PersistenceFailureCenterTests: XCTestCase {
         let kept = try XCTUnwrap(center.outstandingFailures().first?.id)
 
         hold.release()
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         XCTAssertEqual(attempts.calls, [kept], "the retry did not run once the move ended, for the failure outstanding then")
         XCTAssertFalse(center.hasUnsavedChanges)
@@ -218,7 +218,7 @@ final class PersistenceFailureCenterTests: XCTestCase {
 
         hold.release()
         let ran = recordingAnnouncements { center.runRetriesKeptForStorageWork() }
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         XCTAssertEqual(attempts.calls, [.statistics, .configuration], "the kept retries did not each run once")
         XCTAssertEqual(ran.announcements.map(\.message), [
@@ -263,7 +263,7 @@ final class PersistenceFailureCenterTests: XCTestCase {
 
         hold.release()
         let ran = recordingAnnouncements { center.runRetriesKeptForStorageWork() }
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         XCTAssertEqual(retried.calls, [.libraryIndex, .statistics, .configuration, .substitutions])
         XCTAssertEqual(ran.announcements.map(\.message), [
@@ -314,7 +314,7 @@ final class PersistenceFailureCenterTests: XCTestCase {
         // ran, so VoiceOver is told nothing: no "Retry did not succeed." for
         // a Retry nobody pressed. A hosted test's announcements are recorded.
         let heardBefore = VoiceOverAnnouncer.recordedAnnouncements.count
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         XCTAssertEqual(attempts.calls, [], "the kept retry ran while the second operation held the work")
         XCTAssertEqual(center.bannerRows.map(\.text), [
@@ -328,7 +328,7 @@ final class PersistenceFailureCenterTests: XCTestCase {
         )
 
         second.release()
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         XCTAssertEqual(attempts.calls.count, 1, "the kept retry did not run once the second operation ended")
         XCTAssertFalse(center.hasUnsavedChanges)
@@ -348,7 +348,7 @@ final class PersistenceFailureCenterTests: XCTestCase {
 
         center.reset()
         hold.release()
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
         recordingAnnouncements { center.runRetriesKeptForStorageWork() }
 
         XCTAssertEqual(attempts.calls, [], "a retry ran after the center was reset")

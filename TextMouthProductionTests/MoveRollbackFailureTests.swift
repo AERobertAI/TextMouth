@@ -61,7 +61,7 @@ final class MoveRollbackFailureTests: XCTestCase {
         ])
 
         hold.release()
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: stranded.home.path), "the package was not moved back once the edit ended")
         XCTAssertFalse(FileManager.default.fileExists(atPath: stranded.location.path))
@@ -99,7 +99,7 @@ final class MoveRollbackFailureTests: XCTestCase {
         StorageBoundary.shared.publish(root: new)
         StorageBoundary.shared.rebaseToCurrent(&stranded.model.library)
         hold.release()
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         let movedHome = URL(fileURLWithPath: StorageBoundary.shared.rebasedToCurrent(stranded.home.path), isDirectory: true)
         let movedLocation = URL(fileURLWithPath: StorageBoundary.shared.rebasedToCurrent(stranded.location.path), isDirectory: true)

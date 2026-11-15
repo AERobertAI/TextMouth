@@ -149,6 +149,26 @@ extension XCTestCase {
         try body()
     }
 
+    /// Waits until `center`'s retries kept for storage work have acted
+    /// (`PersistenceFailureCenter.waitForRetriesKeptForStorageWork()`), for
+    /// at most `timeout` seconds, and fails the test when they never do,
+    /// rather than hanging it. Call it once the test has let a hold go.
+    @MainActor
+    func waitForKeptRetries(
+        of center: PersistenceFailureCenter,
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        let acted = CallLog<Void>()
+        Task { @MainActor in
+            await center.waitForRetriesKeptForStorageWork()
+            acted.record(())
+        }
+        let ended = await eventually(timeout: timeout) { !acted.calls.isEmpty }
+        XCTAssertTrue(ended, "the retries kept for storage work never acted", file: file, line: line)
+    }
+
     /// The shared failure center that the app's services report to, cleared
     /// now and again when the test ends, so no test sees another's failures.
     @MainActor

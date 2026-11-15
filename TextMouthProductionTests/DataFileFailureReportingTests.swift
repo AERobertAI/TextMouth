@@ -160,7 +160,7 @@ final class DataFileFailureReportingTests: XCTestCase {
         ], "the statistics were called saved, or the wait was not said")
 
         hold.release()
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         XCTAssertFalse(center.hasUnsavedChanges)
         let relaunched = ReadingStatsService(fileURL: service.fileURL)
@@ -201,7 +201,7 @@ final class DataFileFailureReportingTests: XCTestCase {
         ])
 
         hold.release()
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         XCTAssertFalse(center.hasUnsavedChanges)
         XCTAssertEqual(try ConfigService.decode(Data(contentsOf: url)).wordsPerMinute, 425)
@@ -238,7 +238,7 @@ final class DataFileFailureReportingTests: XCTestCase {
 
         StorageBoundary.shared.publish(root: new)
         hold.release()
-        await center.waitForRetriesKeptForStorageWork()
+        await waitForKeptRetries(of: center)
 
         let movedFile = TextMouthPaths.substitutionsFile
         XCTAssertTrue(movedFile.path.hasPrefix(new.path + "/"), "the move did not publish: \(movedFile.path)")
