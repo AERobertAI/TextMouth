@@ -497,8 +497,20 @@ struct CueSheetArrangement: Equatable, Sendable {
         var tracks: [M3UPlaylist.Track?] = []
         var skipped: [M3UPlaylist.Skipped] = []
         var seen = Set<String>()
+        // The names at the top of the sheet's folder, listed once for the
+        // whole sheet, when a name first falls back to one of them.
+        var listed: [String]?
+        func namesBeside() -> [String] {
+            if let listed { return listed }
+            let names = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
+            listed = names
+            return names
+        }
         for name in sheet.files {
-            switch find(name, beside: sheetURL, inFolder: folder, sheetNamesOneFile: sheet.files.count == 1) {
+            let found = find(
+                name, beside: sheetURL, inFolder: folder, sheetNamesOneFile: sheet.files.count == 1, namesBeside: namesBeside
+            )
+            switch found {
             case .track(let track):
                 if seen.insert(track.path.precomposedStringWithCanonicalMapping.lowercased()).inserted {
                     tracks.append(track)
@@ -515,8 +527,15 @@ struct CueSheetArrangement: Equatable, Sendable {
     }
 
     /// The file `name` names for the sheet at `sheetURL` in `folder`, or why
-    /// none is used, with the fallbacks the type describes.
-    private static func find(_ name: String, beside sheetURL: URL, inFolder folder: URL, sheetNamesOneFile: Bool) -> Found {
+    /// none is used, with the fallbacks the type describes, looked for among
+    /// `namesBeside()`, the names at the folder's top.
+    private static func find(
+        _ name: String,
+        beside sheetURL: URL,
+        inFolder folder: URL,
+        sheetNamesOneFile: Bool,
+        namesBeside: () -> [String]
+    ) -> Found {
         let direct = resolve(name, inFolder: folder)
         guard case .skipped(let reason) = direct, fallbackReasons.contains(reason) else { return direct }
         // The name's own stem, from its last path part, a Windows path's too.
@@ -526,7 +545,7 @@ struct CueSheetArrangement: Equatable, Sendable {
             stems.append(sheetURL.deletingPathExtension().lastPathComponent)
         }
         for stem in stems where !stem.isEmpty {
-            if let track = firstAudioFile(withStem: stem, inFolder: folder) {
+            if let track = firstAudioFile(withStem: stem, among: namesBeside(), inFolder: folder) {
                 return .track(track)
             }
         }
@@ -541,13 +560,12 @@ struct CueSheetArrangement: Equatable, Sendable {
         return .skipped(resolution.skipped.first?.reason ?? .missing)
     }
 
-    /// The first audio file in `folder` (by its top level only, in Finder's
-    /// order) whose name without its extension is `stem`, in any letter case,
-    /// that the playlist rules take; nil when there is none.
-    private static func firstAudioFile(withStem stem: String, inFolder folder: URL) -> M3UPlaylist.Track? {
+    /// The first audio file of `names`, the names at the top of `folder`,
+    /// in Finder's order, whose name without its extension is `stem`, in any
+    /// letter case, that the playlist rules take; nil when there is none.
+    private static func firstAudioFile(withStem stem: String, among names: [String], inFolder folder: URL) -> M3UPlaylist.Track? {
         let wanted = stem.precomposedStringWithCanonicalMapping
         let audio = Set(BookFormat.audio.fileExtensions)
-        guard let names = try? FileManager.default.contentsOfDirectory(atPath: folder.path) else { return nil }
         let candidates = names
             .filter { name in
                 let file = name as NSString
