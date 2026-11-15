@@ -457,11 +457,11 @@ final class ReadingStatsService: ObservableObject {
         return true
     }
 
-    /// Decodes reading_stats.json's bytes, as `write` encodes them.
+    /// Decodes reading_stats.json's bytes, as `write` encodes them, with the
+    /// top-level keys this TextMouth does not know (`ReadingStats.unknownKeys`,
+    /// V04).
     private static func decodeStats(_ data: Data) throws -> ReadingStats {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(ReadingStats.self, from: data)
+        try ReadingStats.decodeFile(data)
     }
 
     /// Stops the checkpoint timer. At termination this follows
@@ -828,10 +828,7 @@ final class ReadingStatsService: ObservableObject {
     ) {
         do {
             try TextMouthPaths.ensureDirectoryStructure()
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data = try encoder.encode(snapshot)
+            let data = try snapshot.fileData()
             try data.write(to: url, options: .atomic)
             PersistenceFailureCenter.shared.recordSuccess(.statistics)
         } catch {
@@ -886,7 +883,7 @@ final class ReadingStatsService: ObservableObject {
 
 // MARK: - Data Model
 
-struct ReadingStats: Codable {
+struct ReadingStats: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     /// Daily listening time in seconds, keyed by local day as
     /// `ListeningDays` writes keys: "yyyy-MM-dd", Gregorian, ASCII digits.
     /// A key from an earlier version that names no day is kept under
@@ -909,6 +906,39 @@ struct ReadingStats: Codable {
     /// decodes with none, since its keys followed the system's calendar;
     /// the service migrates them once when it loads the file.
     var dayKeyVersion: Int? = ListeningDays.keyVersion
+    /// The top-level keys of reading_stats.json that this TextMouth does
+    /// not know (V04, `UnknownKeys`), as a total a later TextMouth keeps
+    /// is, written back as they were; none in statistics begun here.
+    /// Listening is added to the statistics in place, and the statistics
+    /// of a file that arrives from the cloud are the file's with this
+    /// Mac's added (`adding(_:)`), so both keep them. The synthesized
+    /// coding passes them over: `decodeFile(_:)` and `fileData()` read and
+    /// write them beside the fields (`WithUnknownKeys`).
+    var unknownKeys = UnknownKeys()
+
+    /// Whether `name` is a key of reading_stats.json that this version
+    /// knows (`KeepsUnknownKeysBesideSynthesizedCoding`).
+    static func isCodingKey(_ name: String) -> Bool {
+        CodingKeys(stringValue: name) != nil
+    }
+
+    /// The statistics reading_stats.json's bytes hold, with the keys this
+    /// TextMouth does not know.
+    static func decodeFile(_ data: Data) throws -> ReadingStats {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(WithUnknownKeys<ReadingStats>.self, from: data).value
+    }
+
+    /// The bytes reading_stats.json holds for these statistics: readable,
+    /// with sorted keys and ISO 8601 dates, the unknown keys among its own.
+    /// Statistics without any are the same bytes as before V04.
+    func fileData() throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(WithUnknownKeys(self))
+    }
 
     /// Adds `seconds` of listening to `bookID` on the day `dayKey` names,
     /// keeping the grand, per-book, and daily totals in step.
