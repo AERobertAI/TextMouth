@@ -181,6 +181,8 @@ final class ConflictCopyTests: XCTestCase {
 
         model.reportConflictCopiesInBackground(finder: ConflictCopyFinder(itemStatus: FakeDrive()), memory: memory, present: present)
         await fulfillment(of: [first], timeout: 10)
+        // The report is remembered just after it shows.
+        try await Task.sleep(nanoseconds: 500_000_000)
         model.reportConflictCopiesInBackground(finder: ConflictCopyFinder(itemStatus: FakeDrive()), memory: memory, present: present)
         try await Task.sleep(nanoseconds: 500_000_000)
 
