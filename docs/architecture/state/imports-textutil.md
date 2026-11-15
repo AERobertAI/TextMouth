@@ -15,7 +15,12 @@ Since 0.4.1 textutil reads only a compound-file Word document older than Word 6,
 The formats: BookFormat gained rtf, rtfd, doc, odt, wordml, webarchive, and ssml.
 Their raw values are written into library.json and bookInfo.json and never changed, and a build that does not know one cannot decode the index (Index-write suspension, in [The library index](library-index.md)), unless it has V03, which keeps such a row as it was read (Rows this TextMouth cannot read, there).
 A Word template or macro document (.dotx, .docm, .dotm) is a docx, which DOCXParser reads by opening only the XML parts it needs, so word/vbaProject.bin is never opened; a .dot is a doc, an .ott an odt, and a DTBook a daisy.
-BookFormat.detect(from:) names an .xml file by XMLDocumentSniffer.bookFormat(ofFileAt:), which parses the first 64 KB (scanLength) only as far as the root element: dtbook, in any namespace, gives daisy; wordDocument in Word 2003's namespace gives wordml; pef in PEF 2008-1's namespace gives braille (FMT20); anything else gives nil.
+BookFormat.detect(from:) names an .xml file by XMLDocumentSniffer.bookFormat(ofFileAt:), which parses the first 64 KB (scanLength) only as far as the root element:
+- dtbook, in any namespace, gives daisy;
+- wordDocument in Word 2003's namespace gives wordml;
+- pef in PEF 2008-1's namespace gives braille (FMT20);
+- anything else gives nil.
+
 FileImportService.supportedTypes offers the matching types in Open Book, and Info.plist makes each a document type at Alternate rank (org.w3.ssml is imported there).
 
 ### The path through textutil
@@ -73,21 +78,38 @@ The readers that ask it:
 Web archives, SSML, and DTBooks: WebArchiveReader.mainPage(of:) reads the property list's WebMainResource alone (WebResourceData, WebResourceMIMEType, WebResourceTextEncodingName). text/html, application/xhtml+xml, or no type is a page for the HTML path, text/plain a text page for the plain-text path (MainPage.parsed(title:) and markdown(), in BookParser.swift), and any other type throws Failure.notAPage.
 WebSubresources, WebSubframeArchives, and every address are never read, and WebKit is not used.
 The archive's encoding name wins when the bytes read in it, ISO Latin 1 and ASCII as Windows-1252, by the one rule TextFileDecoder.decodedText(_:in:) gives every labelled encoding.
-SSMLReader.html(from:) is a PackageSAXParser that wants the root speak, writes a paragraph for each p or paragraph, keeps words apart at break, voice, audio, s, and sentence, writes emphasis as em, speaks a sub's alias in place of its text, drops desc, meta, metadata, and lexicon, and never reads an audio's src.
+SSMLReader.html(from:) is a PackageSAXParser that
+- wants the root speak,
+- writes a paragraph for each p or paragraph,
+- keeps words apart at break, voice, audio, s, and sentence,
+- writes emphasis as em,
+- speaks a sub's alias in place of its text,
+- drops desc, meta, metadata, and lexicon, and
+- never reads an audio's src.
+
 The file is never handed to the speech engine as SSML, since AVSpeechUtterance(ssmlRepresentation:) ignores the book's rate and crashed on an emphasis element.
-A DTBook on its own goes to DAISYParser through SingleFileProvider, which lists that file alone, held to the byte limit; DAISYDTBookHeadParser takes its title and author (the dc:Title and dc:Creator metas, else doctitle and docauthor) when no OPF is there; and findDTBookXML finds a DTBook inside a package by the same sniffer, whatever its encoding, prolog, or name.
+- A DTBook on its own goes to DAISYParser through SingleFileProvider, which lists that file alone, held to the byte limit;
+- DAISYDTBookHeadParser takes its title and author (the dc:Title and dc:Creator metas, else doctitle and docauthor) when no OPF is there; and
+- findDTBookXML finds a DTBook inside a package by the same sniffer, whatever its encoding, prolog, or name.
 
 ### The byte limit
 <!-- id: textutil-byte-limit; keys: 64 MB, size limit, too large, empty file, symbolic link, text file limit, No Text to Read; src: TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/ArchiveEntryReader.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/SSMLReader.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/DAISYParser.swift -->
 
 The byte limit: DocumentByteLimit is 64 MB (ArchiveEntryLimits.standard.text, narrowed by tests through its task-local current).
-TextutilConverter holds the source and the HTML to it, and DocumentByteLimit.contents(of:) serves WebArchiveReader, SSMLReader, the web-page branch of TextutilDocumentReader, and SingleFileProvider: a symbolic link is sized by its target, an empty file is FileImportError.noTextToRead, and DocumentTooLargeError names the limit.
+TextutilConverter holds the source and the HTML to it, and DocumentByteLimit.contents(of:) serves WebArchiveReader, SSMLReader, the web-page branch of TextutilDocumentReader, and SingleFileProvider:
+- a symbolic link is sized by its target,
+- an empty file is FileImportError.noTextToRead, and
+- DocumentTooLargeError names the limit.
 
 ### An RTFD is a folder
 <!-- id: rtfd-folder; keys: .rtfd, RTFD bundle, content checksum, attachment, original kept, keep original, DAISY ZIP with audio, duplicate check; src: TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Models/TextCacheFingerprint.swift, TextMouth/Models/ImportDecision.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 An RTFD is the one text book whose file is a folder. isRTFDFolder(_:) names it. contentChecksum(of:format:) is its checksum, the MD5 of its regular files' sorted relative paths and their MD5s (regularFilePaths(in:) passes over hidden items and symbolic links), and FileStamp(of:) and FingerprintHasher.md5 use the same walk, so a text cache's fingerprints notice a changed attachment (see [Text caches and content indexes](text-caches.md)).
-The package checks (inspectContent, holdsSameContent, reconstructedBook, and contentHash(of:bookID:)) treat it as a document, not a folder of tracks; stageContent(of:format:package:in:) copies a text document that is a symbolic link as its target and removes every link inside a staged RTFD; importCandidates lists an .rtfd folder in a ZIP as one book; and md5Hash(of:) refuses a folder rather than crash.
+- The package checks (inspectContent, holdsSameContent, reconstructedBook, and contentHash(of:bookID:)) treat it as a document, not a folder of tracks;
+- stageContent(of:format:package:in:) copies a text document that is a symbolic link as its target and removes every link inside a staged RTFD;
+- importCandidates lists an .rtfd folder in a ZIP as one book; and
+- md5Hash(of:) refuses a folder rather than crash.
+
 ImportedBook.isFromFolder is set, so mayDeleteOriginal is false, and when importDeleteBehavior is not keepOriginal, importWarning(for:) tells the reader ImportedBook.originalKeptNotice once, which also keeps the book from opening after the import.
 ImportedBook.tookOnlyPartOfOriginal, set by importDAISYAudioZipWithReport, is the other cause mayDeleteOriginal honors: a ZIP's DAISY book with audio imports as its audio alone, and the archive is scanned without extracting anything (DAISYArchiveLeftovers: holdsText, for a DTBook or a text document a SMIL file names other than the navigation file, and otherBookCount, for books outside the DAISY folder) so that the original is kept only when something is left, and the notice is DAISYArchiveWording.originalKept(bookTitle:leftovers:).
 
