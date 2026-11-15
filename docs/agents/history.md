@@ -876,6 +876,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - The measurement in the comment above the guess's constants was made on November 14, 2026.
 - BrailleEbaeFixesTests was new with the EBAE fix pass.
 - BrailleEmphasisReadingTests changed its seeded BANA test to treat µ and m alike and to leave out the sentences liblouis alone misreads with "±", and its symbol sentences no longer glue µ to a letter.
+- Protocol 1 was one line for each paragraph, with no header and no emphasis.
 
 ## From Imports: braille files
 

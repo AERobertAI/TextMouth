@@ -46,7 +46,6 @@ Then comes a record for each paragraph, in the same order in both files, of two 
 - its emphasis codes, one printable ASCII byte for each Unicode scalar ("@" for none, "A" for italic, "B" for bold, "C" for both, up to "_" for every flag: BrailleEmphasis.code), or an empty line when no scalar has any.
 
 The helper refuses an input without the header (exit status 7), and the app an output without it, so a helper and an app built from different sources fail by name, never by misreading.
-Protocol 1 was one line for each paragraph, with no header and no emphasis.
 
 ### Outcomes of a translation
 <!-- id: braille-helper-outcomes; keys: error handling, exit status, log tags, import events, killed process, unknown table; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthBraille/main.c, TextMouthProductionTests/BrailleTranslatorTests.swift, TextMouthProductionTests/MacBrailleTableCheckTests.swift -->
@@ -54,7 +53,7 @@ Protocol 1 was one line for each paragraph, with no header and no emphasis.
 Outcomes: exit 0 is success, and exit 2 is Failure.unknownTable.
 Any other status (7 is an input without the protocol's header), a failure to start, a missing helper, or output whose records do not match is Failure.failed, logged as BRAILLE_HELPER_FAILED; a kill is Failure.stopped, logged as BRAILLE_HELPER_KILLED with the mode, the table, and the reason.
 Both are import events, and neither holds any book text.
-Failure.uncheckedTable is a Mac table whose check could not be made, not kept, so the next use checks again, and Failure.changedTable is above; each has its sentence in errorDescription.
+Failure.uncheckedTable is a Mac table whose check could not be made, not kept, so the next use checks again, and Failure.changedTable is in [The version](imports-braille.md); each has its sentence in errorDescription.
 A check that refuses a table logs BRAILLE_MAC_TABLE_REFUSED, an import event beside those, with the stored value and the reason.
 
 ### The helper's three modes
@@ -91,7 +90,7 @@ So "can" in "can't", which contracted EBAE reads as one rule from ⠉⠄⠞, is 
   - lets a passage run to the end of the paragraph.
   Its own EBAE writes a period before a word, "=", ">", and "µ" with those same cells, so the braille cannot tell them from a sign. strip_ebae_signs finds the signs as BANA writes them (the NLS Instruction Manual for Braille Transcribing, lesson 15): ⠨ before a word, ⠨⠨ before a passage with ⠨ before its last word, bold's ⠸⠨ and ⠸⠨⠨, the signs after opening punctuation, a dash, a slash, or a joined "to", "into", or "by", the termination sign ⠠⠄, and liblouis's own end signs. may_strip leaves a sign out only where liblouis drops it anyway (find_strippable_signs: liblouis reads the sign and the cell after it, standing alone, exactly as it reads that cell alone), so the words stay those liblouis read before the pass and only emphasis is added: a sign before a to j, k, or m is left, and is the period, the "=", or the "µ" it always was, though a passage's last sign there still ends the passage.
   BANA's EBAE has no sign for bold italic, and liblouis's, bold's sign before italic's, is not read: more ⠨ after a word's sign than a passage's is left to liblouis.
-  A bold passage is counted in print's words (print_words_in), since contracted EBAE joins "to", "into", and "by" to the word after them, and "and", "for", "of", "the", "with", and "a" to one another.
+  A bold passage is counted in print's words, since contracted EBAE joins "to", "into", and "by" to the word after them (joined_word in TextMouthBraille/main.c), and "and", "for", "of", "the", "with", and "a" to one another.
   It leaves to liblouis a ⠨ inside a number (the decimal point) or a contraction, ⠨⠅ or ⠨⠂ standing alone (liblouis's "=" and ">"; but in contracted EBAE ⠨⠅ ends an open italic passage as its last word, "knowledge"), and computer braille between ⠸⠬ and ⠸⠱ (a web or mail address, whose ⠨ is a period).
   It runs only for a table that reads ⠨ alone as punctuation (reads_cell_as_punctuation, in detect_codes): the Bharati tables, which also write italic as ⠨ before a word but read it as a letter, are read as before.
 - The safety net (keep_liblouis_words): leaving a sign out can still change how liblouis reads the cells around it, as "(" ⠶ and "be" ⠆ read together as "}" once the sign between them was gone ("(before" came back "}from").
@@ -192,7 +191,7 @@ At an import, a BRF or BRL book whose braille is clearly EBAE is read with the b
   When unsure the setting's table stands.
 - The record: Book.brailleTableOrigin, an optional BrailleTableOrigin (Models/BrailleTableOrigin.swift), a String enum with one case, guessed.
   Nil is every other book: every book added before the field, every book whose table the listener chose, and a value this TextMouth cannot read.
-  It is kept in the row, in BookMetadata.brailleTableOrigin (@LenientOptional, so an unreadable value decodes as none without failing the record), and in RemovedFromLibraryMarker.brailleTableOrigin (@LenientOptional), and it travels with brailleTable everywhere the table does: Book.bookInfo(replacing:) takes the row's origin when the row holds a table and the stored record's only when it holds none, so a choice in Book Information, which clears it, replaces a guess the record holds; Book.LibraryFields, ContentAnalysisSummary (taken with the table and applied with it, an own record's only), and LibraryPersistenceService's re-read result (its WrittenTable.origin, nil, since a re-read with a table is the listener's choice).
+  It is kept in the row, in BookMetadata.brailleTableOrigin (@LenientOptional, so an unreadable value decodes as none without failing the record), and in RemovedFromLibraryMarker.brailleTableOrigin (@LenientOptional), and it travels with brailleTable everywhere the table does: Book.bookInfo(replacing:) takes the row's origin when the row holds a table and the stored record's only when it holds none, so a choice in Book Information, which clears it, replaces a guess the record holds; Book.LibraryFields, ContentAnalysisSummary (taken with the table and applied with it, an own record's only), and LibraryPersistenceService's re-read result (its BrailleTableDecision.origin, nil, since a re-read with a table is the listener's choice).
   A nil origin is left out of every file, so every existing book's row, record, and marker are byte for byte as before (OnDiskContractTests pins the key in all three; an older TextMouth drops it at its next save, and the table then reads as the listener's own).
 - Replace Existing: DuplicateReplacement.carriedBook(replacing:with:places:location:) gives the new copy brailleTableOrigin(replacing:with:).
   When both are braille books of the same bytes (the same md5Hash) and the table the copy ends with, after any re-read in the old copy's table, is the old copy's, the copy takes the old copy's origin, nil included.
