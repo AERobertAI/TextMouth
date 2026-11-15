@@ -14,11 +14,13 @@ Starting to listen:
 - A session's first Play no longer waits while the system loads the voice: a text book's reader loads its voice silently, in the background, when it opens and whenever the voice changes.
 - When a text book opens, TextMouth prepares the speech of the chapter you are in (or, after a cover page, the first chapter with words) in the background, with your rules and settings, so Play starts without first preparing it.
   A setting changed before Play is applied as always.
-  If you press Play on a long chapter before that is done, Play waits for it instead of preparing the chapter again, and TextMouth stays responsive meanwhile: the button reads Pause at once, and speech begins when the chapter is ready (for a 20 MB book of one chapter, about 4 seconds after it opens).
+  If you press Play on a long chapter before that is done, Play waits for it instead of preparing the chapter again, and TextMouth stays responsive meanwhile.
+  The button reads Pause at once, and speech begins when the chapter is ready (for a 20 MB book of one chapter, about 4 seconds after it opens).
   Pressing Play/Pause while it waits stops it.
   When the chapter is ready while Where Am I? is speaking, speech begins once the announcement ends, and Play/Pause pressed during the announcement leaves the book paused.
   A shorter chapter is prepared at once, as before.
-- Opening a large book again, one whose text is a megabyte or more, reads the text TextMouth kept from the last open instead of reading the book's Markdown again, so the largest books open in about a tenth of the time with far less memory (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- Opening a large book again, one whose text is a megabyte or more, reads the text TextMouth kept from the last open instead of reading the book's Markdown again.
+  So the largest books open in about a tenth of the time with far less memory (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 - Speech starts with a short passage, so the first word follows Play, a seek, or a skip sooner, and each next passage is handed to the voice while the one before it speaks, so speech runs on without waiting for TextMouth between passages.
 - A reader makes its speech engine only when speech first needs one, so it opens sooner, and an audiobook's reader never makes one.
 - The installed voices are listed once, in the background, after the first window opens, and again only when the system's voices change, as when a voice finishes downloading; only the very first launch, which must choose a default voice, lists them before that.
@@ -88,7 +90,8 @@ Saving your place:
 - While a book plays, its position is saved every 30 seconds into the book's own small record in its package, as before, but library.json, the index of the whole library, takes it within five minutes, or as the reader closes or TextMouth quits, rather than every 30 seconds.
   A feed's episode or article goes to its feed's own index the same way.
   A crash loses no more than before: the next launch takes the newer positions from the records (see [Where TextMouth keeps your library](where-your-library-lives.md)).
-- Saving a book's place no longer rewrites its index of chapters and headings, which has a file of its own, and library.json is written without line breaks, so listening writes a small fraction of what it did, which matters most in a library in the cloud, where every write is uploaded. library.json and each feed's index are also written only when what they hold differs from what TextMouth last read or wrote of them, so a save that changes nothing in one writes nothing to it; listening to a feed's episode, whose place is in its feed's index, usually leaves library.json alone.
+- Saving a book's place no longer rewrites its index of chapters and headings, which has a file of its own, and library.json is written without line breaks, so listening writes a small fraction of what it did, which matters most in a library in the cloud, where every write is uploaded.
+  library.json and each feed's index are also written only when what they hold differs from what TextMouth last read or wrote of them, so a save that changes nothing in one writes nothing to it; listening to a feed's episode, whose place is in its feed's index, usually leaves library.json alone.
 - A change in Settings is saved to config.json a moment after the last one, so dragging a slider writes the file once.
 
 ## Quitting while work is under way
@@ -100,7 +103,8 @@ Quitting while work is under way (0.4.4):
   - feed episodes downloading or waiting to download keep their place, for up to 3 seconds;
   - a book's text being read again in another encoding finishes, for up to 10 seconds;
   - a speech export stops with the chapters it finished kept, for up to 5 seconds.
-- When you press Command-Q, choose Quit from the TextMouth menu, or choose Quit in the Dock while any of that runs, a small window titled "Quitting TextMouth" appears and VoiceOver says the same words: "TextMouth is finishing up before it quits: " and what it is doing, then "It will quit as soon as that is done."
+- When you press Command-Q, choose Quit from the TextMouth menu, or choose Quit in the Dock while any of that runs, a small window titled "Quitting TextMouth" appears.
+  And VoiceOver says the same words: "TextMouth is finishing up before it quits: " and what it is doing, then "It will quit as soon as that is done."
   TextMouth quits by itself when the work has ended.
 - What it says for each kind of work:
   - Downloads: "keeping the place of your feed downloads for next time".
@@ -125,7 +129,8 @@ Opening and importing books:
 - Opening an EPUB no longer reads the book's package metadata from its file.
   The library keeps it for books imported since it began to, and for an older book the reader reads it in the background once the book shows, so Book Info has it a moment later, and keeps it on the book's row and in its record, so the book's later opens read nothing.
   Reopening a 1,447-chapter anthology from its kept text went from 112 to 65 milliseconds.
-- Importing a book, and rebuilding the text of the library's books, take far less time for large EPUB, HTML, Word, DAISY, and plain-text books: each EPUB document is parsed once, each file inside a book's archive is found without searching the whole archive, and HTML's emphasis and links, word counts, white space, and plain-text headings take time that grows only with the text.
+- Importing a book, and rebuilding the text of the library's books, take far less time for large EPUB, HTML, Word, DAISY, and plain-text books.
+  Each EPUB document is parsed once, each file inside a book's archive is found without searching the whole archive, and HTML's emphasis and links, word counts, white space, and plain-text headings take time that grows only with the text.
   The text TextMouth makes is unchanged, byte for byte.
 - Opening a book whose text is cached copies far less of that text while splitting it into chapters.
 - Launch checks each book's package with fewer file-system calls, and works out in the background which text caches need rebuilding.
