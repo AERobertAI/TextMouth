@@ -424,27 +424,9 @@ enum AudioTestFixtures {
 // MARK: - Waiting for Playback
 
 /// Waiting on the main run loop, where AVFoundation's observations and the
-/// audio service's callbacks arrive.
+/// audio service's callbacks arrive. (`spinMainRunLoop` and `eventually` are in
+/// RunLoopWaiting.swift, which the iPhone's unit tests share.)
 extension XCTestCase {
-    /// Let queued main-queue work, such as AVFoundation observations, run
-    /// for `interval` seconds.
-    @MainActor
-    func spinMainRunLoop(for interval: TimeInterval) {
-        RunLoop.main.run(until: Date().addingTimeInterval(interval))
-    }
-
-    /// Run the main run loop until `condition` holds or `timeout` passes.
-    ///
-    /// - Returns: Whether `condition` came to hold.
-    @MainActor
-    func eventually(within timeout: TimeInterval = 5, _ condition: () -> Bool) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while !condition(), Date() < deadline {
-            spinMainRunLoop(for: 0.01)
-        }
-        return condition()
-    }
-
     /// Wait until `item` is ready to play, and a little longer, so that the
     /// audio service has handled the status change: its observation reaches
     /// the main queue just after the status itself changes.
