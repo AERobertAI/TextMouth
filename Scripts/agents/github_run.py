@@ -54,8 +54,8 @@ ARTIFACT = "test-build-results"
 PUSH_REMOTE = "origin"
 ORIGIN_URLS = ("git@github.com:AERobertAI/TextMouth.git", "ssh://git@github.com/AERobertAI/TextMouth.git",
                "https://github.com/AERobertAI/TextMouth.git", "https://github.com/AERobertAI/TextMouth")
-# Origin's main, whose workflow files a pushed tree must not change once test-build.yml is on it (the guard is off
-# until then: see check_workflows).
+# Origin's main, whose workflow files a pushed tree must not change, since origin's main holds test-build.yml
+# (see check_workflows).
 MAIN_REF = "origin/main"
 WORKFLOW_FOLDER = ".github/workflows"
 # What a pushed tree may not change either: the repository's own actions, which the workflows run (setup-xcode).
@@ -189,11 +189,10 @@ def check_workflows(cwd, commit):
     of the pushed tree, so a branch that widened `permissions:` or added a step would run it on the public repository;
     once the guard is on, only a change that is already on origin's main may run.
 
-    THE GUARD IS OFF until then. On November 10, 2026 origin's main (05327665) holds only check.yml, so this returns at
-    once and every push to TestBuild runs its own tree's workflows with no comparison. Pushing main after the branch that
-    adds tests.yml and the action is merged switches the guard on, with workflows that match the local main's; after
-    that, a change to a workflow or an action runs on TestBuild only once it has been pushed to main. (A change the
-    orchestrator merged into the local main is refused until origin's main has it: the safe way round.)"""
+    The guard is on: origin's main has held test-build.yml since the push of main at 0.4.10 (a1214dc0). So a change to
+    a workflow or an action runs on TestBuild only once it has been pushed to main, and a change the orchestrator merged
+    into the local main is refused until origin's main has it, the safe way round. A main without test-build.yml (a
+    fork, or a history before it) turns the guard off, and this returns at once."""
     main = workflow_listing(cwd, MAIN_REF)
     if main is None or not any(entry.endswith("\t" + WORKFLOW_FILE) for entry in main):
         return
