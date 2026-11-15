@@ -25,7 +25,7 @@ LibraryBookUpdates (ViewModels/LibraryBookUpdates.swift): how open readers learn
 <!-- id: readerrequeststore; keys: pending request, claim once, expiry, search jump; src: TextMouth/Services/ReaderRequestStore.swift, TextMouth/Services/ReaderAutoplayRequests.swift, TextMouth/Services/ReadingListOpenRequests.swift -->
 
 ReaderRequestStore (Services/ReaderRequestStore.swift): the one store of requests that wait for a book's reader: Continue to Next Book's (ReaderAutoplayRequests) and the reading list's (ReadingListOpenRequests).
-Each is one a book, claimed once, thrown away after 30 seconds unless the book's reader holds it while the book downloads, and dropped when the open it waits for is refused (ReaderOpenRefusal).
+Each is one for a book, claimed once, thrown away after 30 seconds unless the book's reader holds it while the book downloads, and dropped when the open it waits for is refused (ReaderOpenRefusal).
 
 ## LiveReadingPositions
 <!-- id: livereadingpositions; keys: playback position, save position, cursor, library write; src: TextMouth/ViewModels/LiveReadingPositions.swift -->
