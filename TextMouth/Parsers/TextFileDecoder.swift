@@ -411,7 +411,7 @@ enum TextFileDecoder {
     /// Nil for any other file, and for a declaration whose bytes are not
     /// well formed, which is left to UTF-8 as it always was.
     private static func declaredSevenBitText(_ data: Data) -> DecodedText? {
-        guard data.contains(0x1B), let label = declaredEncodingLabel(in: data),
+        guard data.containsByte(0x1B), let label = declaredEncodingLabel(in: data),
               encoding(forLabel: label) == .iso2022JP,
               let guess = TextEncodingGuesser.guessSevenBit(data) else { return nil }
         return DecodedText(text: guess.text, encoding: guess.encoding, basis: .declaration(label: label))
@@ -988,7 +988,7 @@ enum TextFileDecoder {
     /// and PS) are left as they are.
     static func normalizingLineEndings(_ text: String) -> String {
         // Most files end their lines with LF alone and are returned as is.
-        guard text.utf8.contains(0x0D) else { return text }
+        guard text.containsUTF8Byte(0x0D) else { return text }
         var bytes: [UInt8] = []
         bytes.reserveCapacity(text.utf8.count)
         // Whether the previous byte was a CR, already written as an LF, so

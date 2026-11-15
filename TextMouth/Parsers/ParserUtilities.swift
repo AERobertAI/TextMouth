@@ -24,8 +24,27 @@ enum ParserUtilities {
 
     /// Strip the namespace prefix from an XML element name.
     /// e.g. "dc:title" → "title", "opf:item" → "item"
+    ///
+    /// The name after the last colon (the whole name when it has none), which
+    /// is what `components(separatedBy: ":").last` gives, without building an
+    /// array of strings for every start and end tag of a document (6% of a
+    /// DOCX import before the November 14, 2026 speed-up, H2). A name of ASCII
+    /// alone, which every element name of these formats is, is cut at its
+    /// last colon byte; a name with any other byte is given to Foundation as
+    /// before, so a colon that a combining mark follows is never judged here.
     static func stripNamespacePrefix(_ elementName: String) -> String {
-        elementName.components(separatedBy: ":").last ?? elementName
+        // The XML parser's names are bridged strings; a copy made contiguous
+        // is read in place.
+        var name = elementName
+        name.makeContiguousUTF8()
+        let cut: String?? = name.utf8.withContiguousStorageIfAvailable { bytes in
+            // Beyond ASCII: the answer is Foundation's.
+            guard !bytes.contains(where: { $0 >= 0x80 }) else { return nil }
+            guard let colon = bytes.lastIndex(of: UInt8(ascii: ":")) else { return elementName }
+            return String(decoding: bytes[(colon + 1)...], as: UTF8.self)
+        }
+        if let cut, let local = cut { return local }
+        return elementName.components(separatedBy: ":").last ?? elementName
     }
 
     /// Split an archive/package reference into path and fragment parts.

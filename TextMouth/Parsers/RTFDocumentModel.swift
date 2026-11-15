@@ -36,13 +36,26 @@ struct RTFParagraph: Equatable {
 
     /// The paragraph's words with no markup: what a listener hears.
     var plainText: String {
-        inlines.reduce(into: "") { text, inline in
+        plainText(stoppingAfter: .max)
+    }
+
+    /// The beginning of `plainText`: its pieces in order, up to and including
+    /// the one that brings the text to `byteCount` bytes of UTF-8, or all of
+    /// it when it stays shorter. Whole pieces are taken, so the result is
+    /// always the first part of `plainText`, never a different text.
+    /// `RTFSizeHeadings` judges a long paragraph by this beginning, so it
+    /// need not build the whole.
+    func plainText(stoppingAfter byteCount: Int) -> String {
+        var text = ""
+        for inline in inlines {
             switch inline {
             case .text(let words, _, _, _): text += words
             case .lineBreak: text += " "
             case .pageBreak: break
             }
+            if text.utf8.count >= byteCount { break }
         }
+        return text
     }
 
     /// Whether the paragraph holds a character other than white space.

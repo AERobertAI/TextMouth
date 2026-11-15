@@ -26,8 +26,8 @@ struct MarkdownPageMarker: Equatable, Sendable {
 
     /// The comment's fixed opening and closing text. A complete marker is
     /// exactly `prefix + escaped label + suffix`.
-    private static let prefix = "<!-- page: "
-    private static let suffix = " -->"
+    static let prefix = "<!-- page: "
+    static let suffix = " -->"
 
     /// Make a marker for a page the source calls `label`.
     ///

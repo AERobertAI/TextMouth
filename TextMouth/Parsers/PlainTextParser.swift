@@ -198,9 +198,7 @@ enum PlainTextParser {
         // A file's text arrives normalized already; text from anywhere else
         // is normalized the same way, so CR LF never ends two lines.
         let normalized = TextFileDecoder.normalizingLineEndings(text)
-        let lines = normalized
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
+        let lines = PlainTextLines.trimmedLines(of: normalized)
         let underlines = Set(lines.indices.filter { isSetextUnderline(lines[$0]) })
         // The lines a form feed begins, in order, when pages are asked for,
         // and the next of them to meet.
@@ -276,7 +274,7 @@ enum PlainTextParser {
     /// cut makes it. Empty for a text without a form feed, found without
     /// counting its lines.
     private static func linesAfterFormFeeds(in text: String) -> [Int] {
-        guard text.utf8.contains(0x0C) else { return [] }
+        guard text.containsUTF8Byte(0x0C) else { return [] }
         var lines: [Int] = []
         var lineIndex = 0
         for unit in text.utf16 where isLineEnding(unit) {
