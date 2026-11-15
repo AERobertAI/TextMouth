@@ -51,7 +51,7 @@ Recently Opened, as shipped, lists the ten books, episodes, and articles you ope
 The Reading List lists the books you add to it, in the order you arrange (below).
 
 ### The Feeds view
-<!-- id: feeds-view; keys: feed list, Sort feeds by Title, feedsSortMenuLabel, subscribed feeds; src: TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift -->
+<!-- id: choosing-feeds-view; keys: feed list, Sort feeds by Title, feedsSortMenuLabel, subscribed feeds; src: TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift -->
 
 Feeds, the sixth view, lists the feeds alone, each by title, as the Feeds section lists them.
 It has no Books section, so no "Books (0)" appears.
