@@ -18,6 +18,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 
 - [The library index](docs/architecture/state/library-index.md)
 - [Package records](docs/architecture/state/package-records.md)
+  - [Package records: places, transcripts, origin, manifests](docs/architecture/state/package-records-places-and-files.md)
 - [Audio edits](docs/architecture/state/audio-edits.md)
 - [Text caches and content indexes](docs/architecture/state/text-caches.md)
 - [The data directory](docs/architecture/state/data-directory.md)
