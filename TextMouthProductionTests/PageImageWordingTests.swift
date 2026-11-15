@@ -60,13 +60,15 @@ final class PageImageWordingTests: XCTestCase {
         )
         XCTAssertEqual(PageImageWording.cannotDecode, "This picture could not be decoded. It may be damaged.")
         XCTAssertEqual(
-            PageImageWording.tooManyPages(3_000, in: .picture),
+            PageImageWording.tooManyPages(3_000),
             "This picture holds 3,000 pages, more than the 2,000 TextMouth reads in one book."
         )
+        // An archive is refused at its first picture past the limit, so its pictures are never counted.
         XCTAssertEqual(
-            PageImageWording.tooManyPages(3_000, in: .archive),
-            "This comic book archive holds 3,000 pictures, more than the 2,000 TextMouth reads in one book."
+            PageImageWording.tooManyPictures,
+            "This comic book archive holds more than the 2,000 pictures TextMouth reads in one book."
         )
+        XCTAssertEqual(PageImageError.tooManyPictures.errorDescription, PageImageWording.tooManyPictures)
     }
 
     /// The refusals of a comic book archive that is no archive of pictures.

@@ -103,15 +103,19 @@ enum PageImageWording {
     /// be decoded. It may be damaged."
     static let cannotDecode = "This picture could not be decoded. It may be damaged."
 
-    /// A book of more pages than TextMouth reads: "This picture holds 3,000
-    /// pages, more than the 2,000 TextMouth reads in one book.", or "This
-    /// comic book archive holds 3,000 pictures, …".
-    static func tooManyPages(_ count: Int, in subject: Subject) -> String {
-        let held = subject == .archive ? "pictures" : "pages"
-        let opening = subject == .archive ? "This comic book archive" : "This picture"
-        return "\(opening) holds \(ArchiveFigures.count(count)) \(held), more than the "
+    /// A TIFF of more pages than TextMouth reads, by its count: "This picture
+    /// holds 3,000 pages, more than the 2,000 TextMouth reads in one book."
+    static func tooManyPages(_ count: Int) -> String {
+        "This picture holds \(ArchiveFigures.count(count)) pages, more than the "
             + "\(ArchiveFigures.count(maximumPages)) TextMouth reads in one book."
     }
+
+    /// A comic book archive of more pictures than TextMouth reads, refused at
+    /// the first picture past the limit, so never counted in full: "This
+    /// comic book archive holds more than the 2,000 pictures TextMouth reads
+    /// in one book."
+    static let tooManyPictures = "This comic book archive holds more than the "
+        + "\(ArchiveFigures.count(maximumPages)) pictures TextMouth reads in one book."
 
     /// A comic book archive that is no ZIP archive, in the words the other
     /// formats use: "This file could not be read as a comic book archive. It

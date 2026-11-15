@@ -173,16 +173,22 @@ final class PageImageArchiveTests: XCTestCase {
     }
 
     /// An archive of more pictures than TextMouth reads in one book is
-    /// refused before any is read (here with a limit of 3, the book's being
-    /// 2,000), and one of exactly the limit is not.
+    /// refused at its first picture past the limit, as its entries are
+    /// listed, before any is sorted or read (here with a limit of 3, the
+    /// book's being 2,000), whatever follows it; one of exactly the limit is
+    /// not, and its description is still the shallowest.
     func testAnArchiveOfTooManyPicturesIsRefused() throws {
         let entries = (1...4).map { TestZIPEntry("\($0).png", Data([0])) }
+            + [TestZIPEntry("Extra/ComicInfo.xml", PageImageFixtures.comicInfo("<Title>Deeper</Title>")),
+               TestZIPEntry("ComicInfo.xml", PageImageFixtures.comicInfo("<Title>Top</Title>"))]
         let url = try PageImageFixtures.comicArchive(entries, for: self)
 
         XCTAssertThrowsError(try PageImageArchive(url: url, maximumPages: 3)) { error in
-            XCTAssertEqual(error as? PageImageError, .tooManyPages(4, .archive))
+            XCTAssertEqual(error as? PageImageError, .tooManyPictures)
         }
-        XCTAssertEqual(try PageImageArchive(url: url, maximumPages: 4).pageCount, 4)
+        let atTheLimit = try PageImageArchive(url: url, maximumPages: 4)
+        XCTAssertEqual(atTheLimit.pageCount, 4)
+        XCTAssertEqual(atTheLimit.comicInfo?.title, "Top")
         XCTAssertEqual(PageImageWording.maximumPages, 2_000)
     }
 

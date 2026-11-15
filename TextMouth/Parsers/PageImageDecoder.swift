@@ -26,8 +26,11 @@ enum PageImageError: LocalizedError, Equatable, Sendable {
     /// entry's own reason (`ArchiveEntryReader`), or a checksum that does not
     /// match.
     case damagedPage(file: String, reason: String)
-    /// A book of more pages than TextMouth reads in one book.
-    case tooManyPages(Int, PageImageWording.Subject)
+    /// A TIFF of more pages than TextMouth reads in one book, by its count.
+    case tooManyPages(Int)
+    /// A comic book archive of more pictures than TextMouth reads in one
+    /// book, refused at the first picture past the limit, uncounted.
+    case tooManyPictures
     /// A comic book archive that is no ZIP archive.
     case notAnArchive
     /// A comic book archive that holds no picture TextMouth reads.
@@ -51,7 +54,8 @@ enum PageImageError: LocalizedError, Equatable, Sendable {
                 file: file, reason: reason, container: PageImageWording.Subject.archive.phrase,
                 original: PageImageWording.archiveToGetAgain
             )
-        case let .tooManyPages(count, subject): return PageImageWording.tooManyPages(count, in: subject)
+        case .tooManyPages(let count): return PageImageWording.tooManyPages(count)
+        case .tooManyPictures: return PageImageWording.tooManyPictures
         case .notAnArchive: return PageImageWording.notAnArchive
         case .noPictures: return PageImageWording.noPictures
         case let .noText(subject, pageCount): return PageImageWording.noText(in: subject, pageCount: pageCount)
@@ -72,7 +76,7 @@ enum PageImageError: LocalizedError, Equatable, Sendable {
         case let .tooLarge(width, height): return PageImageWording.pageTooLarge(width: width, height: height)
         case .cannotDecode: return PageImageWording.pageCannotDecode
         case .damagedPage(_, let reason): return PageImageWording.pageFileDamaged(reason)
-        case .tooManyPages, .notAnArchive, .noPictures, .noText, .recognitionUnavailable, .noPageReadable:
+        case .tooManyPages, .tooManyPictures, .notAnArchive, .noPictures, .noText, .recognitionUnavailable, .noPageReadable:
             return errorDescription ?? ""
         }
     }
@@ -204,7 +208,7 @@ struct PageImageSource {
         let count = CGImageSourceGetCount(source)
         if readingEveryPage, type == UTType.tiff.identifier {
             // A TIFF's pictures are its pages, each read in turn.
-            guard count <= maximumPages else { throw PageImageError.tooManyPages(count, .picture) }
+            guard count <= maximumPages else { throw PageImageError.tooManyPages(count) }
             pageIndexes = Array(0..<count)
         } else {
             pageIndexes = [CGImageSourceGetPrimaryImageIndex(source)]

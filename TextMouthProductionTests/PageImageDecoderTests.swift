@@ -187,7 +187,7 @@ final class PageImageDecoderTests: XCTestCase {
         let url = try PageImageFixtures.write(try PageImageFixtures.encoded(pages, as: .tiff), named: "many.tiff", for: self)
 
         XCTAssertThrowsError(try PageImageSource(url: url, maximumPages: 3)) { error in
-            XCTAssertEqual(error as? PageImageError, .tooManyPages(4, .picture))
+            XCTAssertEqual(error as? PageImageError, .tooManyPages(4))
         }
         XCTAssertEqual(try PageImageSource(url: url, maximumPages: 4).pageIndexes, [0, 1, 2, 3])
     }

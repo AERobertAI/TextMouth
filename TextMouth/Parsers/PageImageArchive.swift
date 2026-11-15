@@ -62,14 +62,11 @@ struct PageImageArchive: PageImageBook {
     /// - Parameter maximumPages: the most pictures it may hold (tests give a
     ///   smaller limit than the book's).
     /// - Throws: `PageImageError.notAnArchive` when it is no ZIP archive,
-    ///   `.tooManyPages` when it holds more pictures than TextMouth reads in
-    ///   one book, and `.noPictures` when it holds none.
+    ///   `.tooManyPictures` when it holds more pictures than TextMouth reads
+    ///   in one book, and `.noPictures` when it holds none.
     init(url: URL, maximumPages: Int = PageImageWording.maximumPages) throws {
         guard let archive = Archive.openedForReading(at: url) else { throw PageImageError.notAnArchive }
-        let contents = Self.contents(of: archive)
-        guard contents.pictures.count <= maximumPages else {
-            throw PageImageError.tooManyPages(contents.pictures.count, .archive)
-        }
+        let contents = try Self.contents(of: archive, maximumPages: maximumPages)
         let comicInfo = contents.comicInfo.flatMap { Self.comicInfo(in: $0, of: archive) }
         let pages = contents.pictures.enumerated().compactMap { index, entry -> (entry: Entry, listing: PageImageComicInfo.Page?)? in
             let listing = comicInfo?.pages[index]
@@ -123,29 +120,35 @@ struct PageImageArchive: PageImageBook {
     /// The archive's pictures in natural order, and its ComicInfo.xml: the
     /// one nearest the archive's top, first in natural order among those as
     /// near. Folders, hidden files, and what lies in `__MACOSX` are passed
-    /// over.
-    private static func contents(of archive: Archive) -> (pictures: [Entry], comicInfo: Entry?) {
+    /// over. A hostile archive can list millions of entries, so the pictures
+    /// are counted against `maximumPages` as they are listed, before any is
+    /// sorted, and only the best description so far is kept.
+    /// - Throws: `PageImageError.tooManyPictures` at the first picture past
+    ///   `maximumPages`.
+    private static func contents(of archive: Archive, maximumPages: Int) throws -> (pictures: [Entry], comicInfo: Entry?) {
+        let inNaturalOrder: (Entry, Entry) -> Bool = {
+            $0.path.localizedStandardCompare($1.path) == .orderedAscending
+        }
+        let depth = { (entry: Entry) in entry.path.split(separator: "/").count }
         var pictures: [Entry] = []
-        var descriptions: [Entry] = []
+        var description: Entry?
         for entry in archive where entry.type == .file {
             let parts = entry.path.split(separator: "/")
             guard let name = parts.last, !parts.contains(where: { $0.hasPrefix(".") || $0 == "__MACOSX" }) else {
                 continue
             }
             if name.lowercased() == comicInfoName {
-                descriptions.append(entry)
+                // Nearer the top wins, then the first in natural order.
+                if let best = description, depth(best) < depth(entry)
+                    || (depth(best) == depth(entry) && !inNaturalOrder(entry, best)) { continue }
+                description = entry
             } else if pageExtensions.contains((String(name) as NSString).pathExtension.lowercased()) {
+                guard pictures.count < maximumPages else { throw PageImageError.tooManyPictures }
                 pictures.append(entry)
             }
         }
-        let inNaturalOrder: (Entry, Entry) -> Bool = {
-            $0.path.localizedStandardCompare($1.path) == .orderedAscending
-        }
         pictures.sortStably(by: inNaturalOrder)
-        descriptions.sortStably(by: inNaturalOrder)
-        let depth = { (entry: Entry) in entry.path.split(separator: "/").count }
-        let shallowest = descriptions.map(depth).min()
-        return (pictures, descriptions.first { depth($0) == shallowest })
+        return (pictures, description)
     }
 
     /// What `entry`, a ComicInfo.xml, says, or nil when it is too large or
