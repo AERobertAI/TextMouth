@@ -53,7 +53,7 @@ The three rebuild paths of MarkdownCacheService and BookContentAnalysisService u
    The label is nil for a word with a second number, a cell outside these, an indicator with no letter after it, or no digit, and the page is then labelled by its place among the pages kept.
    BraillePageNumbers.hasText says whether the page holds text.
    The print page numbers are kept for a later move by print page, and a page is a braille page whatever print pages it holds.
-   It reads centered runs of rows first, so a title of several lines is one level-1 heading, then rows at cell 5 and cell 7 as level-2 and level-3 headings, and the rest as paragraphs, with the runovers of paragraphs and list items.
+   The analyzer reads centered runs of rows first, so a title of several lines is one level-1 heading, then rows at cell 5 and cell 7 as level-2 and level-3 headings, and the rest as paragraphs, with the runovers of paragraphs and list items.
    It drops the blank rows at a page's top, except in a book of block-style paragraphs.
    It also applies three rules of layout.
    (a) Running heads (see Running heads, below): extractNumbers(fromPage:width:dropsTopBlankRows:runningHeads:) takes the head's row out of the page's text, and takes its left number word as the braille page number when the page's last row held none.
@@ -68,7 +68,7 @@ The three rebuild paths of MarkdownCacheService and BookContentAnalysisService u
    BrailleBookReader.markdown(of:table:recordedVersion:) then trims each translation, writes a heading as an ATX heading of its level and every other block as a paragraph, each as a Markdown literal (MarkdownLiteral.escaped) so text that looks like Markdown reads as written.
    It joins the blocks with a blank line.
    It writes the emphasis the helper read from the braille's indicators as Markdown's own (markdownLine(of:)).
-   BrailleEmphasis.markdownStyle maps each style to Markdown's italic, bold, or both, through MarkdownEmphasis.markdown, whose delimiters CommonMark always pairs, so none is spoken.
+   BrailleEmphasis.markdownStyle maps italic, underline, script, and the transcriber typefaces to Markdown's italic, bold to its bold, and both to both, through MarkdownEmphasis.markdown, whose delimiters CommonMark always pairs, so none is spoken.
    Keeping emphasis changes no word by itself, since Markdown's delimiters are never text (BrailleImportTests pins it), and the helper's pass for EBAE's signs ([The EBAE fix pass](imports-braille-tables.md)) keeps every word liblouis reads alone.
    Only its pass for UEB's emphasis terminators changes words, where liblouis misread them, so a book's text can change with the better reading, by its emphasis or, in contracted UEB, by a word.
    No cache version was raised: a braille book imported before keeps its content.md until something rebuilds it, which braille's page reader line does once at the next launch (V07, in [Text caches](text-caches.md)).
@@ -86,7 +86,7 @@ The three rebuild paths of MarkdownCacheService and BookContentAnalysisService u
    Every block is still translated whole, so pages change no word.
    Each paragraph a page begins inside is also sent in pieces cut at those pages' first cells, in the same run of the helper.
    BrailleBookReader.places(ofCutsIn:pieces:) finds each page in the whole paragraph's print, from the start and then from the end, or else places it at the last place found before it, never after its first word.
-   That happens when an indicator's passage goes on over the page and only the piece that holds the indicator reads it.
+   That happens, for example, when an indicator's passage goes on over the page and only the piece that holds the indicator reads it.
    Nothing is logged then.
    A BRL has no pages, and its book is read again with the other braille books when braille gains its page reader (PageReaderVersions, in [Text caches](text-caches.md)).
 
@@ -174,7 +174,7 @@ So a BRF of an old transcription reads "to the sea" as "!the sea" with no error.
 It counts the words (runs of cells between blanks) that show EBAE's signs:
 - ⠖ (dots 2-3-5, "to") or ⠴ (dots 3-5-6, "by") joined to a letter or a capital sign after it, counted at each place; and
 - a capital sign after a letter in the middle of a word, then n or y, EBAE's "ation" and "ally", which UEB dropped (BANA's Overview of Changes from EBAE to UEB), counted once for each distinct word (at most maxDistinctInsideWords, 5,000).
-  Since a name with a capital inside it, "McNeil", repeats and EBAE's words are many.
+  That is because a name with a capital inside it, "McNeil", repeats and EBAE's words are many.
 
 Count.looksLikeEBAE is true at minimumWords (10) of them and one in wordsPerHit (100) words.
 BrailleCodeChoiceModel.load() asks it off the main actor (looksLikeEBAE(_:), through OffMainWork, for a book read with a UEB table, whose file is on this Mac, never downloading it), and keeps showsEBAESigns.
