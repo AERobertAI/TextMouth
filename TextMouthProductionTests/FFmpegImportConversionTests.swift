@@ -33,13 +33,16 @@ extension XCTestCase {
     /// child, as the real ffmpeg would write it; `command`, when given, runs
     /// instead (a `sleep` that hangs, a `false` that fails). Each plan it is
     /// given is recorded in `log`. Its limits are `seconds` for everything.
+    /// The volume has `available` bytes free, or says nothing of its space
+    /// when nil, so no test depends on the disk it runs on.
     func ffmpegStandIn(
         located: FFmpegAudioConverter.Located? = nil,
         report: String?,
         finished: URL? = nil,
         command: (@Sendable (_ output: URL) -> (executable: URL, arguments: [String]))? = nil,
         log: FFmpegPlanLog? = nil,
-        seconds: TimeInterval = 60
+        seconds: TimeInterval = 60,
+        available: Int64? = nil
     ) throws -> FFmpegAudioConverter.Tool {
         let located = located ?? .found(standInPrograms)
         let finished = try finished ?? formatSampleURL("m4b-chapters/three-tones.m4b")
@@ -54,7 +57,8 @@ extension XCTestCase {
             limits: { _ in
                 WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
             },
-            residentMemory: { WatchedProcess.residentMemory(of: $0) }
+            residentMemory: { WatchedProcess.residentMemory(of: $0) },
+            availableBytes: { _ in available }
         )
     }
 
@@ -236,6 +240,32 @@ final class FFmpegImportConversionTests: XCTestCase {
         let conversion = try await FFmpegAudioConverter.convert(wma, using: try ffmpegStandIn(report: unknown))
 
         XCTAssertEqual(conversion.duration, 4.04, accuracy: 0.1)
+    }
+
+    /// A source that says no length is refused before ffmpeg runs when the
+    /// volume has no room for what it may write (64 MB for a file this
+    /// small) and the 512 MB reserve, with nothing left behind; with room,
+    /// it converts.
+    func testASourceOfNoLengthIsRefusedWhenItsCapWouldNotFit() async throws {
+        let unknown = standInWMAReport.replacingOccurrences(of: #""duration": "3.999000", "#, with: "")
+        let wma = try source()
+        let needed = FFmpegAudioConverter.unknownLengthOutputCap(ofBytes: ImportAudioConverter.fileSize(of: wma))
+            + ImportAudioConverter.downmixReserveBytes
+        XCTAssertEqual(needed, 576 * 1_048_576)
+        let log = FFmpegPlanLog()
+
+        do {
+            _ = try await FFmpegAudioConverter.convert(wma, using: try ffmpegStandIn(report: unknown, log: log, available: needed - 1))
+            XCTFail("A source of no length must be refused when its cap would not fit")
+        } catch let ImportAudioConverter.Failure.notEnoughSpace(fileName, bytesNeeded) {
+            XCTAssertEqual(fileName, "tones.wma")
+            XCTAssertEqual(bytesNeeded, needed)
+        }
+        XCTAssertTrue(log.all.isEmpty, "ffmpeg must not run")
+        XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
+
+        let conversion = try await FFmpegAudioConverter.convert(wma, using: try ffmpegStandIn(report: unknown, available: needed))
+        XCTAssertEqual(conversion.converted.lastPathComponent, "tones.m4a")
     }
 
     /// A header that claims more than its file can hold (a day in 20 KB) is

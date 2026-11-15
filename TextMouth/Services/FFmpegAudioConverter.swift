@@ -104,6 +104,11 @@ enum FFmpegAudioConverter {
         var limits: @Sendable (_ duration: TimeInterval) -> WatchedProcess.Limits
         /// How the watchdog reads a child's resident memory.
         var residentMemory: @Sendable (pid_t) -> Int64?
+        /// The bytes free on the volume that holds the given folder, or nil
+        /// when unknown (the conversion then goes on): the real reading
+        /// (`ImportAudioConverter.availableBytes(on:)`) unless a test fills
+        /// the volume.
+        var availableBytes: @Sendable (_ folder: URL) -> Int64? = { ImportAudioConverter.availableBytes(on: $0) }
 
         /// The installed ffmpeg and ffprobe. A conversion has the limits of
         /// afconvert's (`ImportAudioConverter.Tool.afconvert`), but for the
@@ -419,6 +424,28 @@ enum FFmpegAudioConverter {
         min(Double(max(bytes, 0)) * 8 / Double(lowestAssumedBitRate), FFprobeReport.maximumDuration)
     }
 
+    /// The least a source that says no length may write: 64 MB, room for
+    /// the small files that most grow, such as Speex at 2 kbit/s written as
+    /// AAC at 32 kbit/s (15 times its size).
+    static let unknownLengthOutputFloorBytes: Int64 = 64 * 1_048_576
+
+    /// How many times its own size a source that says no length may write:
+    /// 50. Its assumed length alone (`assumedDuration(ofBytes:)`) would let
+    /// it write 1,536 bytes for each of its own as 24-bit stereo Apple
+    /// Lossless at 48 kHz: ten minutes of silence as FLAC in Matroska,
+    /// 159 KB with no length, became 55 MB in 0.6 s, so 100 MB of it could
+    /// fill the disk.
+    static let unknownLengthGrowth: Int64 = 50
+
+    /// The most the conversion of a source of `bytes` bytes that says no
+    /// length may write: 50 times its size (`unknownLengthGrowth`), and at
+    /// least 64 MB (`unknownLengthOutputFloorBytes`). A size too large to
+    /// multiply has no cap of this kind.
+    static func unknownLengthOutputCap(ofBytes bytes: Int64) -> Int64 {
+        let (grown, overflowed) = max(bytes, 0).multipliedReportingOverflow(by: unknownLengthGrowth)
+        return overflowed ? .max : max(unknownLengthOutputFloorBytes, grown)
+    }
+
     /// The lowest bit rate a stated length is believed at, in bits a second:
     /// 1 kbit/s, the floor afinfo's reading gives a codec it has no table
     /// for (`AudioFileInfo.lowestPlausibleBitRate`). No real file of these
@@ -490,6 +517,19 @@ enum FFmpegAudioConverter {
         limits.maximumOutputBytes = limits.maximumOutputBytes
             ?? ImportAudioConverter.outputCap(of: .encode, duration: duration, target: plan.target)
         let staged = ImportAudioConverter.temporaryURL(beside: source)
+        if stated == nil {
+            // A length assumed from the size lets the output grow far past
+            // it, so it is capped by the size too, and refused before ffmpeg
+            // runs when even that cap and the reserve left for the rest of
+            // the system (`downmixReserveBytes`) would not fit.
+            let cap = min(limits.maximumOutputBytes ?? .max, unknownLengthOutputCap(ofBytes: bytesBefore))
+            limits.maximumOutputBytes = cap
+            let (needed, overflowed) = cap.addingReportingOverflow(ImportAudioConverter.downmixReserveBytes)
+            if let available = tool.availableBytes(staged.deletingLastPathComponent()),
+               overflowed || available < needed {
+                throw ImportAudioConverter.Failure.notEnoughSpace(fileName: name, bytesNeeded: overflowed ? .max : needed)
+            }
+        }
         let lasts: TimeInterval
         do {
             try await ImportAudioConverter.runConverting(

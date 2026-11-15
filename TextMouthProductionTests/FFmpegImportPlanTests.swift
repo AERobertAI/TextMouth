@@ -395,6 +395,19 @@ final class FFmpegImportPlanTests: XCTestCase {
         XCTAssertEqual(FFmpegAudioConverter.assumedDuration(ofBytes: .max), FFprobeReport.maximumDuration)
     }
 
+    /// A source that says no length may write 50 times its size, and at
+    /// least 64 MB, so its length assumed from its size cannot let it fill
+    /// the disk; a size too large to multiply has no such cap.
+    func testASourceOfNoLengthMayWriteFiftyTimesItsSize() {
+        let floor: Int64 = 64 * 1_048_576
+        XCTAssertEqual(FFmpegAudioConverter.unknownLengthOutputCap(ofBytes: 0), floor)
+        XCTAssertEqual(FFmpegAudioConverter.unknownLengthOutputCap(ofBytes: -1), floor)
+        // The 159 KB of silence that became 55 MB may now write 64 MB.
+        XCTAssertEqual(FFmpegAudioConverter.unknownLengthOutputCap(ofBytes: 159_000), floor)
+        XCTAssertEqual(FFmpegAudioConverter.unknownLengthOutputCap(ofBytes: 100_000_000), 5_000_000_000)
+        XCTAssertEqual(FFmpegAudioConverter.unknownLengthOutputCap(ofBytes: .max), .max)
+    }
+
     /// A stated length is believed only when the file's size can hold it at
     /// 1 kbit/s, as afinfo's is; one past that is no length, so a header
     /// that lies cannot lift the time limit or the output cap.
