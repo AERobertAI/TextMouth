@@ -23,8 +23,6 @@ from output import Hit, UsageError
 
 # The folders of docs/ that --area can name.
 AREAS = ("user", "architecture", "developer", "agents")
-# The most hits printed unless --max says otherwise.
-DEFAULT_MAX = 20
 
 
 def compile_pattern(pattern: str, fixed: bool) -> "re.Pattern[str]":
@@ -92,4 +90,4 @@ def register(subparsers: Any, common: Any) -> None:
     parser.add_argument("--fixed", action="store_true", help="treat the pattern as plain text")
     parser.add_argument("--area", choices=AREAS, default=None,
                         help="only the pages under docs/AREA/ (not with --scope memory)")
-    parser.set_defaults(func=run, default_max=DEFAULT_MAX)
+    parser.set_defaults(func=run, default_max=output.DEFAULT_MAX)
