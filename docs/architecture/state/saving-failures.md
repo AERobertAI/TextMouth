@@ -13,7 +13,6 @@ Outstanding failed writes.
   A later success for the same file settles its failure.
 - How others observe it: the Library window's banner shows one row for each failing subsystem, with Retry and Dismiss, and VoiceOver announces a subsystem once when it starts to fail.
   While anything is unsaved, hasUnsavedChanges makes quitting ask first (UnsavedChangesTermination, with Retry, Quit Anyway, and Cancel).
-- Files: Services/PersistenceFailureCenter.swift, Views/Library/PersistenceFailureBanner.swift, App/UnsavedChangesTermination.swift, Services/Feeds/FeedStore.swift.
 
 ## Quitting with something unsaved
 <!-- id: quitting-something-unsaved; keys: applicationShouldTerminate, TerminationDecision, terminateNow, QuitReason, QuitHold, QuitFinisher, QuitNotice, quit alert; src: TextMouth/App/UnsavedChangesTermination.swift, TextMouth/App/QuitRequest.swift, TextMouth/App/QuitFinisher.swift, TextMouth/App/QuitReason.swift, TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/Views/QuitNotice.swift -->
@@ -28,4 +27,3 @@ Quitting with something unsaved (UnsavedChangesTerminationGuard; the whole quit 
 - If an earlier question cancels the request that follows the work (a take, an editor's edits, or a library move began meanwhile), the kept Quit Anyway is forgotten (forgetQuitAnyway()), since it belonged to that quit, and a later quit asks again.
 - A quit asked for by the system ending the session meets the guard like any other.
   With changes unsaved it is cancelled, which stops the log out, and the alert is shown.
-- Files: App/UnsavedChangesTermination.swift, App/QuitRequest.swift, App/QuitFinisher.swift, App/QuitReason.swift, App/QuitHold.swift, Platform/macOS/Views/QuitNotice.swift.
