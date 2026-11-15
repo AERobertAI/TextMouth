@@ -1,6 +1,8 @@
 # A book's package
 <!-- id: book-package; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## The Library folder and its packages
 <!-- id: library-folder-packages; keys: ; src: -->
 

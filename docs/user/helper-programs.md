@@ -1,6 +1,8 @@
 # Helper programs TextMouth watches
 <!-- id: helper-programs-textmouth-watches; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Converting Ogg audio already in the library
 <!-- id: converting-ogg-audio-already-library; keys: ; src: -->
 

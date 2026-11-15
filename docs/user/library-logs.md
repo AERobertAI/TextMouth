@@ -1,6 +1,8 @@
 # The diagnostic logs
 <!-- id: library-logs-diagnostic-logs; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## The Logs folder
 <!-- id: logs-folder; keys: ; src: -->
 

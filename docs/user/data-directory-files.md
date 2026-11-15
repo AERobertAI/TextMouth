@@ -1,6 +1,8 @@
 # What the data directory holds
 <!-- id: what-data-directory-holds; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 The data directory holds:
 
 ## library.json, the library index

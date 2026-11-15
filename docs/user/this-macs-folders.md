@@ -1,6 +1,8 @@
 # Folders of this Mac's own
 <!-- id: folders-this-mac-own; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 TextMouth also keeps folders of this Mac's own, which never sync and keep working while the data directory isn't available:
 
 ## Logs on this Mac
