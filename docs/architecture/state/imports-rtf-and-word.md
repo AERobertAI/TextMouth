@@ -7,7 +7,9 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 <!-- id: own-readers-rich-text-word; keys: Microsoft Word, OpenDocument Text, WordprocessingML 2003, kill switch, textutil fallback, no helper process, OwnDocumentReaders, comparison test; src: TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
 
 Own readers of rich text, Word 97-2003, OpenDocument text, and Word 2003 XML (FMT47 and FMT27, FMT53): TextMouth's own code reads rtf, rtfd, doc, odt, and wordml documents, the same in both apps, with no helper process and no textutil.
-The rich text and Word 97-2003 readers replaced textutil in 0.3.1, and the OpenDocument and Word 2003 XML readers in 0.4.0, each after its comparison test (RTFTextutilComparisonTests, WordDocumentComparisonTests, ODTTextutilComparisonTests, WordMLReaderTests) found the same words as textutil's in every sample and at least its headings and pages (see [Testing](../../developer/testing-goldens.md)).
+The rich text and Word 97-2003 readers replaced textutil in 0.3.1, and the OpenDocument and Word 2003 XML readers in 0.4.0.
+Each came after its comparison test (RTFTextutilComparisonTests, WordDocumentComparisonTests, ODTTextutilComparisonTests, WordMLReaderTests), which found the same words as textutil's in every sample and at least its headings and pages.
+(see [Testing](../../developer/testing-goldens.md)).
 
 ### The route and the switches
 <!-- id: route-switches; keys: dispatch, kill switch, feature flag, fallback, encrypted doc, TaskLocal, withValue, PhoneImportRefusal; src: TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift -->
@@ -37,7 +39,8 @@ The router switches on the format as reading(of:) found it, not as the book's na
 
 What the reader hands back: one HTML document in the form OwnDocumentReaders describes.
 Its head names the title (title) and the author (meta name author) the file gives, which TextutilDocumentReader.metadata(in:) reads as it reads textutil's.
-Its body holds h1 to h6, p, em and strong, ul, ol, and li, and table, tr, and td, all text escaped, and, when includesPages is true, an empty span with role doc-pagebreak and an aria-label of the page's number before each page's first letter or digit, page 1 at the start of the body of a document that holds a letter or digit.
+Its body holds h1 to h6, p, em and strong, ul, ol, and li, and table, tr, and td, all text escaped.
+When includesPages is true, it also holds an empty span with role doc-pagebreak and an aria-label of the page's number before each page's first letter or digit, page 1 at the start of the body of a document that holds a letter or digit.
 A document with 100,000 breaks or more (TextutilPageBreaks.maximumPages, which is MarkdownPageMarker.maximumPagesPerBook) is written without pages.
 
 - Source.isOwnReading: markdown(from:source:fileName:includesPages:) sends the HTML straight to HTMLToMarkdownConverter.convert(document:readingFlow:includesPages:), with the reading flow of PublicationSemantics.ReadingFlow(source: source.html).
@@ -65,7 +68,8 @@ The rich text reader (RTFDocumentReader, written from Microsoft's RTF 1.9.1 spec
    Each group carries an RTFGroupState.
    Its destination (RTFDestination: body, skipped, attachment, shape, font table, style sheet, style entry, info, title, author, list table, list text), bold, italic, hidden, font size, font, the \uc skip, and the paragraph's style, outline level, list, list level, and table flag.
    Text goes only to the body: skipped destinations (pictures, objects, headers, footers, comments, field instructions, bookmarks, and every unknown starred destination) read nothing.
-   Hidden text (\v) and deleted text (\deleted, which includes a moved-away \mvf; \revised is read) read nothing: RTFGroupState.isDeleted sits beside the hidden flag, isUnreadRun is true for either, and it governs text, \line, \page, and a bullet and tab. \plain and \deleted0 undo \deleted, as the group's end does.
+   Hidden text (\v) and deleted text (\deleted, which includes a moved-away \mvf; \revised is read) read nothing: RTFGroupState.isDeleted sits beside the hidden flag, isUnreadRun is true for either, and it governs text, \line, \page, and a bullet and tab.
+   Both \plain and \deleted0 undo \deleted, as the group's end does.
    A \page, \pagebb, or \sect in unread text begins no page.
    A footnote or endnote (\footnote, \ftnalt) is a .note destination, read by a second RTFBlockBuilder that the interpreter swaps in while the note lasts (the budget is taken from what is left and charged back at the end):
    - the notes follow the body in file order (RTFDocument.notes),
@@ -82,7 +86,9 @@ The rich text reader (RTFDocumentReader, written from Microsoft's RTF 1.9.1 spec
 
 4. The code page: \ansi is 1252, \mac 10000, \pc 437, \pca 850, and \ansicpgN wins.
    A font's \fcharset or \cpg gives the code pages of the text set in it (RTFEncodings: ANSI, Mac Roman, Shift-JIS 932, Korean 949 and Johab 1361, GBK 936, Big5 950, Greek, Turkish, Vietnamese, Hebrew, Arabic, Baltic, Cyrillic, Thai, Eastern European, and the two PC pages).
-   Bytes wait in a run and are decoded together, so the two bytes of a double-byte character are one, even when the second is ASCII (isMultibyte); a run invalid in its code page is read byte by byte as Windows-1252, and a number with no encoding is 1252. \uN is a signed 16-bit value, a surrogate pair is two \u, and the \ucN characters after it are skipped.
+   Bytes wait in a run and are decoded together, so the two bytes of a double-byte character are one, even when the second is ASCII (isMultibyte).
+   A run invalid in its code page is read byte by byte as Windows-1252, and a number with no encoding is 1252.
+   A \uN is a signed 16-bit value, a surrogate pair is two \u, and the \ucN characters after it are skipped.
 5. RTFStyleSheet records each paragraph style (at most 100,000) with its name, outline level, \sbasedon, and \pagebb. headingLevel(ofStyle:) follows the chain in a loop to the first style that says anything, and a loop or an undefined style gives no heading.
    An outline level of 0 to 8 is level 1 to 6 (deeper is 6) and wins over a name; "heading 1" to "heading 9" are the names, "Title" level 1, and "Subtitle" level 2.
    RTFListTable maps \lsN through \listid to the \levelnfc of each level (23 is a bullet, 255 none), at most 10,000 lists.
@@ -166,7 +172,9 @@ The Word 97-2003 reader (WordDocumentReader, written from [MS-DOC], [MS-CFB], an
 ### The Word 6 and Word 95 layout
 <!-- id: word-6-word-95-layout; keys: Word 6.0, old Word files, legacy doc, Macintosh Word, Far East, code page guess, nFib, government samples; src: TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/WordDocumentStructure.swift, TextMouth/Parsers/WordDocumentPieces.swift, TextMouth/Parsers/WordDocumentStyles.swift, TextMouth/Parsers/WordDocumentProperties.swift, TextMouth/Parsers/WordDocumentSections.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/WordDocumentHTMLWriter.swift, TextMouth/Parsers/WordDocumentLegacyText.swift, TextMouth/Parsers/WordDocumentLegacyCodePages.swift, TextMouth/Parsers/WordDocumentLegacySprm.swift, TextMouth/Parsers/WordDocumentLegacyNumbering.swift, TextMouth/Parsers/WordDocumentFonts.swift, TextMouth/Parsers/WordSymbolFontEncodings.swift, TextMouth/Parsers/AdobeSymbolEncoding.swift -->
 
-The Word 6 and Word 95 layout (0.4.1; the same reader, `WordFileInformationBlock.layout == .legacy`): no published description of it exists, so it was worked out from 312 real government files and Apache POI's and LibreOffice's samples (TestData/format-samples/doc6 holds 16 of them; the 312 US government files used for the comparison are not in the repository), which textutil also read, and [MS-DOC] is evidence only where the samples agreed with it (its Prm0 table disagrees at sprms 12, 15, 80, and 81).
+The Word 6 and Word 95 layout (0.4.1; the same reader, `WordFileInformationBlock.layout == .legacy`): no published description of it exists, so it was worked out from 312 real government files and Apache POI's and LibreOffice's samples, which textutil also read.
+TestData/format-samples/doc6 holds 16 of them; the 312 US government files used for the comparison are not in the repository.
+[MS-DOC] is evidence only where the samples agreed with it (its Prm0 table disagrees at sprms 12, 15, 80, and 81).
 It differs from Word 97's in these steps:
 
 1. The FIB (readLegacy) holds the flags at 10, the language at 6, the character set at 0x14, the first and the end of the text at 0x18 and 0x1C, the lengths of the stories from 0x34, and the structures' offsets and sizes from 0x58.
@@ -184,10 +192,17 @@ It differs from Word 97's in these steps:
    A property modifier is one opcode byte and an operand whose size the opcode gives, so a table of sizes (fixedSizes, a size byte first for the sprms whose operand varies, a 16-bit size for sprmTDefTable) is how a list is walked.
    It holds only established sizes, and an opcode it does not hold ends the walk of that list, which costs a toggle at worst.
    The sizes of 22 sprms and the section sprms 142, 147, and 164 to 169 were confirmed by walking every list in the real files to its exact end; italic (86), hidden (92), and deleted (65) rest on the fixed offset from Word 97's order alone.
+
+### The Word 6 and Word 95 layout's numbering, bin tables, and switch
+<!-- id: word-6-numbering-bin-tables; keys: ANLD, sprmPAnld, include previous, bin table, Fast Save, hostile files, comparison with textutil, speaksListNumbers; src: TextMouth/Parsers/WordDocumentLegacyNumbering.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/WordDocumentProperties.swift, TextMouth/Parsers/WordDocumentSections.swift, TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/WordDocumentReader.swift -->
+
 4. Numbering has no list tables.
    A numbered paragraph carries an ANLD of 52 bytes (sprmPAnld) and a level (sprmPNLvlAnm: 1 to 9 an outline, 10 a simple list, 11 a bullet), from the paragraph or else its style.
    WordLegacyNumbering turns them into the list tables Word 97 has, so the same counter and the same switch (speaksListNumbers) apply.
-   The outline levels are one list for the document, a level whose ANLD says "include previous" (fPrev) writes the number of the level above first, a simple list or bullet is a list for each different ANLD and begins again after a paragraph of ordinary text, and a simple list stands in for a missing first outline level only within the same run of numbered paragraphs.
+   The outline levels are one list for the document.
+   A level whose ANLD says "include previous" (fPrev) writes the number of the level above first.
+   A simple list or bullet is a list for each different ANLD and begins again after a paragraph of ordinary text.
+   A simple list stands in for a missing first outline level only within the same run of numbered paragraphs.
    A paragraph with an ANLD and no level is not numbered.
    The numbering a style carries is not followed.
 5. Bin tables (the pages of formatting) are read page by page, each page's count checked, and pages that follow the last the table lists are read from the counts at 0x18E and 0x190, in a file saved without Fast Save; a Fast Save file's formatting comes from the pieces' own Prm0 and Prm1.
@@ -201,7 +216,6 @@ It differs from Word 97's in these steps:
    - the same pages but for a continuous section break.
    Five files read better (Russian, Korean, and Chinese code pages, one that textutil read as nothing).
    Hostile files (truncated, every FIB field at its extremes, byte flips, a loop of 3,000 styles, 65,535 declared bin pages) read or throw in well under a second, but for bins-20000.doc, which takes 2.5 to 3.9 seconds and about 1 GB.
-- Files of the Word 6 and Word 95 layout and of symbols: Parsers/WordDocumentLegacyText.swift (WordLegacyCharacters), Parsers/WordDocumentLegacySprm.swift (WordLegacySprm), Parsers/WordDocumentLegacyNumbering.swift (WordLegacyNumbering), Parsers/WordDocumentLegacyCodePages.swift (WordLegacyCodePages), Parsers/WordDocumentFonts.swift (WordFontTable), Parsers/WordSymbolFontEncodings.swift, Parsers/AdobeSymbolEncoding.swift; the rest are the Word 97-2003 reader's files above.
 
 ### Symbols
 <!-- id: symbols; keys: Insert Symbol, special character, dingbats, font encoding, private use area, Greek letters, bullet glyph, WP fonts; src: TextMouth/Parsers/WordDocumentFonts.swift, TextMouth/Parsers/WordDocumentHTMLWriter.swift, TextMouth/Parsers/WordSymbolFontEncodings.swift, TextMouth/Parsers/AdobeSymbolEncoding.swift, TextMouth/Parsers/WordDocumentStructure.swift, TextMouth/Parsers/WordDocumentProperties.swift, TextMouth/Parsers/WordDocumentLegacySprm.swift -->
@@ -216,6 +230,8 @@ WordSymbolFontEncodings.reading(ofFontNamed:characterSet:) says how a font's cod
 - .pictures for Wingdings, Webdings, Zapf Dingbats, Monotype Sorts, any other font whose name begins "WP ", and any font of character set 2; and
 - .text, the character of the font's own code page, for any other font.
 
-Word 97 stores text typed in a symbol font as U+F020 to U+F0FF (its code plus 0xF000): the same function reads it through the run's font (sprmCRgFtc0, then the character style, the paragraph style, and the sheet default; 1,638 such characters in 47 files showed sprmCRgFtc0 and sprmCRgFtc2 name the same font), and in an ordinary text font it is read through the Symbol table (isPrivateUse), as textutil reads it.
+Word 97 stores text typed in a symbol font as U+F020 to U+F0FF (its code plus 0xF000).
+The same function reads it through the run's font (sprmCRgFtc0, then the character style, the paragraph style, and the sheet default; 1,638 such characters in 47 files showed sprmCRgFtc0 and sprmCRgFtc2 name the same font).
+In an ordinary text font it is read through the Symbol table (isPrivateUse), as textutil reads it.
 That rule costs a checkbox set in Arial, which reads as theta, and buys mu and pi typed in an ordinary font (a measure: of 134 such characters in 11 real documents about half are maths); 78 words in 10 files still differ from textutil's reading, none a regression against a "(".
 A paragraph of only a picture symbol is no longer written; a bullet character at a paragraph's start, from a symbol, makes a list item (bulletItem needs a first character in textutil's set and a following space; only U+2022 is ever one).
