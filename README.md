@@ -8,6 +8,8 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 
 ## For people using TextMouth
 
+### What changed, and what TextMouth reads
+
 - [Changelog](docs/user/changelog.md): every version, newest first, and what changed.
 - [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays.
   - [Kindle books](docs/user/reads-kindle-books.md): MOBI, KF8, KFX, PalmDOC, and Kindle Create.
@@ -17,6 +19,9 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
   - [Audiobooks](docs/user/reads-audiobooks.md): audio formats, conversion, playlists, and ZIPs of tracks.
   - [Transcripts, feeds, and packages](docs/user/reads-transcripts-and-feeds.md): transcribing, subscribing, and TextMouth packages.
 - [The audiobook manifest](docs/user/audiobook-manifest.md): manifest.json, and Edit Manifest.
+
+### Adding books and the Library window
+
 - [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, Import Folder…, New from Text.
   - [Import progress and errors](docs/user/import-progress-and-errors.md): the import overlay, and every refusal's sentence.
   - [Duplicate books and Replace Existing](docs/user/duplicate-books.md): the duplicate question, and Replace Existing.
@@ -24,13 +29,23 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
   - [Book Information](docs/user/book-information.md): edited details, Text Encoding, and braille pop-ups.
   - [Letter keys and Speak Info](docs/user/library-typing-and-speak-info.md): typing a title, leading articles, summaries.
 - [Search Library](docs/user/search-library.md): finding text in every book at once.
+
+### Reading, exporting, and transcribing
+
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
+  - [Pages in a reader](docs/user/reader-pages.md): Go to Page and skipping by page.
+  - [Media keys and the sleep timer](docs/user/reader-media-and-sleep-timer.md): headphones, AirPods, the timer.
+  - [When a book ends, and your saved places](docs/user/reader-book-end.md): what plays next.
+  - [When speech or audio goes wrong](docs/user/reader-speech-problems.md): refusals, stalls, memory limits.
 - [Exporting books](docs/user/exporting-books.md): what Export copies, and the Convert to menu.
   - [Exporting braille files](docs/user/exporting-braille.md): BRF and PEF options, layout, and emphasis.
   - [Exporting a transcript as captions](docs/user/exporting-captions.md): WebVTT and SubRip files.
   - [Exporting text as spoken audio](docs/user/exporting-spoken-audio.md): M4B, M4A, and MP3 files.
 - [Editing a book's text](docs/user/editing-book-text.md): Edit Text in your own editor.
 - [Transcribing an audiobook](docs/user/transcribing.md): Transcribe Audio, Retranscribe Audio, Clean Up Transcript, Attach Transcript.
+
+### Settings, recording, and feeds
+
 - [Settings](docs/user/settings.md): every tab of the Settings window.
   - [Settings: Shortcuts](docs/user/settings-shortcuts.md): changing, recording, and resetting keys.
   - [Settings: Braille](docs/user/settings-braille.md): the braille code, and this Mac's tables.
@@ -39,6 +54,9 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 - [Recording from a microphone](docs/user/recording.md): the New Recording window.
 - [Editing audio](docs/user/editing-audio.md): the audio editor.
 - [Podcasts and article feeds](docs/user/feeds.md): subscribing, downloading, and reading feeds.
+
+### The library, its files, and its speed
+
 - [Speed and memory](docs/user/speed-and-memory.md): how TextMouth stays quick with a large library.
 - [Where TextMouth keeps your library](docs/user/where-your-library-lives.md): the data directory, its files, and logs.
 - [Keeping your library in the cloud](docs/user/cloud-library.md): iCloud Drive, Dropbox, Google Drive.
