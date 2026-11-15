@@ -558,6 +558,8 @@ targets:
       - TextMouthProductionTests/CollectionTestSupport.swift
       - TextMouthProductionTests/DOCXTestPackages.swift
       - TextMouthProductionTests/DamagedFileTestSupport.swift
+      - TextMouthProductionTests/EndOfBookRuleTests.swift
+      - TextMouthProductionTests/FinishedBookModelTests.swift
       - TextMouthProductionTests/HostedTestIsolationSupport.swift
       - TextMouthProductionTests/ImportDecisionTestSupport.swift
       - TextMouthProductionTests/ImportFuzzMutator.swift
@@ -567,11 +569,13 @@ targets:
       - TextMouthProductionTests/KFXTestBook.swift
       - TextMouthProductionTests/LibraryFeedListCountTests.swift
       - TextMouthProductionTests/LibraryIndexTestSupport.swift
+      - TextMouthProductionTests/ListNeighborsTests.swift
       - TextMouthProductionTests/LogTestSupport.swift
       - TextMouthProductionTests/MOBIFixture.swift
       - TextMouthProductionTests/MarkupFuzzGenerator.swift
       - TextMouthProductionTests/PlaceRelocatorTestSupport.swift
       - TextMouthProductionTests/PlaybackFuzzOperations.swift
+      - TextMouthProductionTests/PlaybackFuzzOperationsTests.swift
       - TextMouthProductionTests/RunLoopWaiting.swift
       - TextMouthProductionTests/SourceScanTestSupport.swift
       - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
