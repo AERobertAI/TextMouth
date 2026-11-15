@@ -132,13 +132,13 @@ A transcript's cleanup (FR05, experimental): the Clean Up sheet, and what it wou
 Transcript cleanup rules (FR05, experimental): TextMouth's own, and the user's copy.
 
 - Owner: TranscriptCleanupRuleFile.
-  TextMouth's own rules are transcript-cleanup.json in the app's bundle (Resources/transcript-cleanup.json: format 1, version 1 of 2026-10-04, its rule list empty, with an about and two worked examples that nothing applies).
+  TextMouth's own rules are transcript-cleanup.json in the app's bundle (Resources/transcript-cleanup.json: format 1, version 1 of `2026-10-04`, its rule list empty, with an about and two worked examples that nothing applies).
   The user's copy, transcript-cleanup.json at the data directory's root beside substitutions.json (TextMouthPaths.transcriptCleanupRulesFile), is used instead whenever it is there and usable.
   TranscriptCleanupRuleSet holds a file's format, version, date, and rules (TranscriptCleanupRule: pattern, replacement, wholeWord, evidence, and note).
   It refuses a file, naming the first field at fault and never quoting a rule, if:
   - its format isn't 1;
   - its version is below 1;
-  - its date isn't a day written as 2026-10-04; or
+  - its date isn't a day written as YYYY-MM-DD; or
   - one of its rules has an empty pattern or replacement, a pattern without a letter or figure, a whole-word pattern with a word of punctuation alone, negative evidence, or a replacement its own pattern matches, which every cleanup would change again.
 - Who may write it: the user, in their own editor.
   TextMouth writes the copy only through prepareUserCopy, for the Clean Up sheet's Edit Rules…, as storage work, and only when there is none: it writes its own file there exactly, staged beside it and moved into place, which fails rather than replace a copy that arrived meanwhile.
