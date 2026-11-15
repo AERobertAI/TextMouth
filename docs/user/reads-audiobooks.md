@@ -25,7 +25,7 @@ Part of [TextMouth's documentation](../../README.md).
   - Wave64 (.w64).
 - Each file becomes an .m4a file in the book's package, and only that file is played.
 - A file is converted wherever it comes from: a single file, a ZIP, a folder, a playlist, or a feed's episode.
-- The book's package keeps only the converted file, unless Keep originals of converted audio is on in the Storage tab of Settings (see [Settings](settings.md)).
+- The book's package keeps only the converted file, unless Keep originals of converted audio is on in the Storage tab of Settings (see [Settings](settings-storage.md)).
 
 ### What a file holds decides
 <!-- id: audio-content-decides; keys: sniffing, extension, Ogg named m4a, header length, sample rate, tags; src: TextMouth/Parsers/AudioContentSniffer.swift, TextMouth/Services/OggHeaderReader.swift, TextMouth/Parsers/AudioMediaProbe.swift -->
@@ -63,7 +63,7 @@ Part of [TextMouth's documentation](../../README.md).
 ### Every other converted format
 <!-- id: every-other-converted-format; keys: afinfo, afconvert, WatchedProcess, unreadable, claimed length; src: TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AudioFileInfo.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
-- Every other converted format is read by Apple's afinfo tool, which says what the file holds, and then converted by afconvert, each run as a separate process that TextMouth watches (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- Every other converted format is read by Apple's afinfo tool, which says what the file holds, and then converted by afconvert, each run as a separate process that TextMouth watches (see [Where TextMouth keeps your library](helper-programs.md)).
 - A file of one of them that claims to last more than a year, or a length that its size cannot hold, is refused as unreadable.
 - A Mac that can't read or convert a format refuses a file of it by name when it is imported, and nothing is added.
 

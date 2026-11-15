@@ -38,7 +38,7 @@ A downloaded episode's or article's record also names its feed and item, as its 
 ### A text book's encoding
 <!-- id: text-book-encoding; keys: text encoding, charset, Text Encoding pop-up, textEncoding; src: TextMouth/Models/TextEncodingRecord.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
 
-A plain text, Markdown, or HTML book whose encoding TextMouth guessed when it was added, or whose encoding you chose in Book Information (see [What TextMouth reads](what-textmouth-reads.md)), keeps it in its row and in its record, by name, such as windows-1251, koi8-r, macintosh, or utf-8.
+A plain text, Markdown, or HTML book whose encoding TextMouth guessed when it was added, or whose encoding you chose in Book Information (see [What TextMouth reads](reads-text-files.md)), keeps it in its row and in its record, by name, such as windows-1251, koi8-r, macintosh, or utf-8.
 Every later reading of the book's text, a rebuild of content.md included, uses it.
 A choice is recorded as chosen, in a second key beside it, textEncodingSource, whose value is "chosen", or "automatic" when you chose Automatic.
 A chosen encoding is read whatever the file's bytes say of themselves, and a guessed one only where they name no encoding.
@@ -50,7 +50,7 @@ A BRF or BRL braille book keeps the braille file characters its file is read wit
 
 - "ascii-na" for North American Braille ASCII,
 - "ascii-eurobraille" for Eurobraille, six-dot,
-- or "unicode" for Unicode braille patterns (see [What TextMouth reads](what-textmouth-reads.md)).
+- or "unicode" for Unicode braille patterns (see [What TextMouth reads](reads-daisy-and-braille.md)).
 
 An import records it explicitly, North American's too, and a read of the file again with other characters records the new ones; a PEF records none.
 The key is left out when there is none, and a book without it is read as North American Braille ASCII, or as Unicode braille patterns when its first character is a braille pattern.
@@ -62,7 +62,7 @@ Open a library that holds books you set to Eurobraille or Unicode braille patter
 ### A braille book's guessed code
 <!-- id: braille-book-guessed-code; keys: guessed braille code, braille table, Book Information; src: TextMouth/Models/Book.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift -->
 
-A braille book whose code TextMouth guessed when the book was added (see [What TextMouth reads](what-textmouth-reads.md)) keeps that in its row and in its record, as brailleTableOrigin, whose value is "guessed".
+A braille book whose code TextMouth guessed when the book was added (see [What TextMouth reads](reads-daisy-and-braille.md)) keeps that in its row and in its record, as brailleTableOrigin, whose value is "guessed".
 The key is left out for every other book, for books added before TextMouth could guess, and once you choose a code in Book Information or keep the guess, so those books are written exactly as before.
 A TextMouth older than the one that records it ignores the key and drops it at its next save, and the book is then read with the same code but no longer said to be guessed.
 
@@ -86,7 +86,7 @@ Earlier versions of TextMouth kept the index inside bookInfo.json: TextMouth mov
 content.md: the text cache, the book's text as Markdown, so a text book opens without parsing its source again.
 TextMouth rebuilds it when the source file changes or when a newer version of TextMouth reads that format better, but these automatic rebuilds keep text you changed with Edit Text.
 Redo Text Extraction, a button in the Storage tab of Settings, rebuilds it on request for every text book (see [Editing a book's text](editing-book-text.md) for what it does to that text).
-A choice in a book's Text Encoding pop-up in Book Information rebuilds it for that book alone, in the encoding chosen (see [The Library window](library-window.md)).
+A choice in a book's Text Encoding pop-up in Book Information rebuilds it for that book alone, in the encoding chosen (see [The Library window](book-information.md)).
 
 ### Pages and page markers
 <!-- id: pages-page-markers; keys: page break, page label, page number, pagebreak; src: TextMouth/Parsers/MarkdownPageMarker.swift, TextMouth/Parsers/EPUBParser+Navigation.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift, TextMouth/Models/PageReaderVersions.swift -->
@@ -146,7 +146,7 @@ A transcribed audiobook's content.md holds its transcript's text instead (see tr
 The first launch of version 0.2.2 reads every braille, plain text, EPUB, and HTML book again, once, in the way just described.
 Braille and plain text books gain their pages.
 An EPUB or HTML book loses the number of a page break from the name of any heading that held one.
-A braille book is read with that version's better reading of emphasis and of some words (see [What TextMouth reads](what-textmouth-reads.md) and [Reader windows](reader-windows.md)).
+A braille book is read with that version's better reading of emphasis and of some words (see [What TextMouth reads](reads-daisy-and-braille.md) and [Reader windows](reader-windows.md)).
 A braille book whose new reading differs from its text, by its words or by its emphasis alone, as one whose braille holds emphasis signs may, keeps a copy of its old text beside it, as any book whose content.md differs from what its file gives does.
 An EPUB or HTML book that has its pages already is read again without that comparison, and keeps no copy.
 A book's places follow its words in every case.
@@ -154,7 +154,7 @@ A book's places follow its words in every case.
 ### DAISY books read again
 <!-- id: daisy-books-read-again; keys: DTBook, DAISY 3, page entries; src: TextMouth/Models/PageReaderVersions.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift -->
 
-The first launch of version 0.4.7 reads every DAISY book again, once, in the way just described: only a DAISY 3 book of several DTBook files, with a page that holds no words, ends with another text (see [What TextMouth reads](what-textmouth-reads.md)).
+The first launch of version 0.4.7 reads every DAISY book again, once, in the way just described: only a DAISY 3 book of several DTBook files, with a page that holds no words, ends with another text (see [What TextMouth reads](reads-pages-and-limits.md)).
 
 ## content.md.edited- copies of text
 <!-- id: content-md-edited-copies-text; keys: kept copy, backup of text, edited text, Edit Text; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/Services/TextMouthPaths.swift -->
@@ -246,5 +246,5 @@ The next import into the same library folder removes one that an interrupted imp
 ## .awaitingDuplicateAnswer
 <!-- id: awaitingduplicateanswer; keys: duplicate question, Keep Both, Replace Existing; src: TextMouth/Services/DuplicateReplacement.swift -->
 
-A hidden file named .awaitingDuplicateAnswer marks the package of a duplicate's new copy while its question, Keep Both or Replace Existing, waits for an answer (see [Adding books](adding-books.md)).
+A hidden file named .awaitingDuplicateAnswer marks the package of a duplicate's new copy while its question, Keep Both or Replace Existing, waits for an answer (see [Adding books](duplicate-books.md)).
 Keep Both and Replace Existing take it off, and no walk of the library adopts a package that holds it; a package copied into the library with the mark still on is imported without it.

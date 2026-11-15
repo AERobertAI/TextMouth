@@ -4,7 +4,7 @@
 Part of [TextMouth's documentation](../../README.md).
 
 TextMouth subscribes to podcasts and article feeds, and lists each feed's episodes and articles in a library folder of its own.
-It keeps their downloads in a folder of the feed's own in the data directory, with an index of their own, so the library's index lists books only ([What TextMouth reads](what-textmouth-reads.md) gives the formats, the refreshes, and the downloads).
+It keeps their downloads in a folder of the feed's own in the data directory, with an index of their own, so the library's index lists books only ([What TextMouth reads](reads-transcripts-and-feeds.md) gives the formats, the refreshes, and the downloads).
 A feed's commands, and an episode's, are in their rows' context menus and among the rows' actions in VoiceOver's Actions menu (VO-Command-Space), under the same names.
 
 ## The other feed pages

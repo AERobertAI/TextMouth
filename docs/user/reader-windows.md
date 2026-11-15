@@ -188,7 +188,7 @@ The Book menu holds:
 - Attach Transcript…, available for the audiobooks Transcribe Audio… is available for (see [Transcribing an audiobook](transcribing.md)),
 - Clean Up Transcript (Experimental)… and Delete Transcript…, for a transcribed one,
 - then Edit Audio…, for an audiobook other than a feed's episode (see [Editing audio](editing-audio.md)),
-- and last Move to Library…, for an episode or article downloaded in its feed (see [Podcasts and article feeds](feeds.md)).
+- and last Move to Library…, for an episode or article downloaded in its feed (see [Podcasts and article feeds](feed-commands.md)).
 
 File menu, Export… exports the reader's book.
 

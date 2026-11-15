@@ -10,7 +10,7 @@ Part of [TextMouth's documentation](../../README.md).
 - It reads the older format, MOBI 6, which Mobipocket books and the Kindle used before KF8.
 - It also reads the newer format, KF8, which is what an .azw3 is (see Kindle books in the KF8 format, below).
 - The Library window names all of them "Kindle Book (MOBI)".
-- A copy-protected book is refused, never read: TextMouth does not try to remove copy protection (see [Adding books](adding-books.md) for the sentences).
+- A copy-protected book is refused, never read: TextMouth does not try to remove copy protection (see [Adding books](import-progress-and-errors.md) for the sentences).
 
 ### MOBI chapters
 <!-- id: mobi-chapters; keys: table of contents, INDX, NCX, page break chapter, Chapter N; src: TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIParser.swift -->
@@ -47,7 +47,7 @@ Part of [TextMouth's documentation](../../README.md).
 - TextMouth reads Kindle books in the KF8 format (.azw3, and a KF8 book named .mobi or .azw) that are not copy-protected, with code of its own, the same on the Mac as on iOS.
 - The book's own headers decide the format, never its name.
 - A KF8 book is made of the web pages of an EPUB, so it is read like one: a chapter for each page, with the headings the book's contents names.
-- A copy-protected book is refused, never read (see [Adding books](adding-books.md) for the sentences).
+- A copy-protected book is refused, never read (see [Adding books](import-progress-and-errors.md) for the sentences).
 
 ### Hybrid Kindle books
 <!-- id: hybrid-kindle-books; keys: MOBI 6 half, KF8 half, joint file, BOUNDARY, fallback; src: TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/MOBIParser.swift -->
@@ -133,4 +133,4 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: kindle-create-packages; keys: .kpf, Kindle Create, KPF, author package; src: TextMouth/Parsers/KFXError.swift -->
 
 - A Kindle Create package (.kpf), the file an author makes before a book is published, is refused with its own sentence: "This file is a Kindle Create package, which TextMouth can't read yet."
-- [Adding books](adding-books.md) gives every sentence.
+- [Adding books](import-progress-and-errors.md) gives every sentence.

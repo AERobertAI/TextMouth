@@ -26,7 +26,7 @@ The Playback tab's End of Book group has, just below the When book ends pop-up a
 Its hint, which a caption under the pop-up shows and VoiceOver reads once, as the pop-up's hint, is "Where the next book opens when listening goes on from one book to another: in this window in place of the book here, or in a new window.
 A book already open in another window is brought forward, and with This Window this window closes."
 It decides where the next book opens at the end of a book, with Next in Reading List and Previous in Reading List, and with Next in Folder and Previous in Folder.
-A feed or a folder with a choice of its own overrides it (see [Reader windows](reader-windows.md), [Podcasts and article feeds](feeds.md), and [The Library window](library-window.md)).
+A feed or a folder with a choice of its own overrides it (see [Reader windows](reader-windows.md), [Podcasts and article feeds](feed-listening-and-settings.md), and [The Library window](library-window.md)).
 The file config.json holds it as nextBookWindow, the choice's name (see [Editing settings in config.json](config-json.md)).
 
 ## Show Export in the reader toolbar
@@ -50,7 +50,7 @@ The Playback tab's Pages group has two checkboxes, both on by default.
 "Show the page on the reader screen" puts the page being read beside the percent on a reader's status row, for a book of more than one page; its hint is "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page."
 "Say the page in Where Am I?" adds the page to Where Am I?'s brief and full summaries; its hint is "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page."
 Each hint is shown as a caption under its checkbox, and VoiceOver says it once, as the checkbox's hint.
-The Page navigation unit and Go to Page… work whichever way the checkboxes are set (see [Reader windows](reader-windows.md)). config.json holds them as showsPageInReader and saysPageInWhereAmI (see [Editing settings in config.json](config-json.md)).
+The Page navigation unit and Go to Page… work whichever way the checkboxes are set (see [Reader windows](reader-pages.md)). config.json holds them as showsPageInReader and saysPageInWhereAmI (see [Editing settings in config.json](config-json.md)).
 
 ## Transcription
 <!-- id: settings-transcription; keys: transcriptionLocale, offerTranscriptionAfterImport, speech recognition, language, Transcribe Audio; src: TextMouth/Models/TranscriptionWording.swift, TextMouth/Views/Transcription/TranscriptionSettingsSection.swift -->

@@ -19,7 +19,7 @@ Each is worded with what the feed's items are called, "episode" here, "article" 
   It is dimmed while the feed's episodes do not go on to another episode when one ends, which is when the pop-up button above says Stop, or says Use the global setting and the global choice is not Continue to Next Book.
   Its hint then is "Available only while this feed's episodes go on to another episode when one ends", and it keeps its choice for when they do.
   A dimmed choice is not in effect: Next in Folder and Previous in Folder then follow the global setting.
-  What the choice does is under Where the next book opens, in [Reader windows](reader-windows.md).
+  What the choice does is under Where the next book opens, in [Reader windows](reader-book-end.md).
 - The checkbox "Skip finished episodes", checked unless you clear it, has the hint "When listening goes on to another episode, pass over the episodes already finished".
 - The checkbox "Download the next episode before this one ends", checked unless you clear it, has the hint "When 10 minutes or less of the episode playing are left, download the episode that plays next, if it is not on this Mac yet".
   It is dimmed while the feed's episodes do not go on to another episode when one ends, which is when the pop-up button says Stop, or says Use the global setting and the global choice is not Continue to Next Book.
@@ -30,7 +30,7 @@ Each is worded with what the feed's items are called, "episode" here, "article" 
 
 The episode below is the next one down the feed's list as its folder shows it, newest first, so the next older episode, and the episode above is the next newer one.
 An episode you moved into the library is passed over, since it is a book of your own library now.
-Which of the book's own choice, the feed's, and the global setting decides what happens when an episode ends, and what VoiceOver says then, are under When a book ends, in [Reader windows](reader-windows.md).
+Which of the book's own choice, the feed's, and the global setting decides what happens when an episode ends, and what VoiceOver says then, are under When a book ends, in [Reader windows](reader-book-end.md).
 
 ### Skip finished episodes
 <!-- id: feeds-skip-finished; keys: finished, already played, rests at its end; src: TextMouth/Models/EndOfBookRule.swift, TextMouth/Models/ListeningOptionsWording.swift -->

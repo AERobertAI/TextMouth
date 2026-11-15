@@ -56,7 +56,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
 ### Places in a text book
 <!-- id: replace-keeps-places-text; keys: bookmarks, reading position, skipped headings, PlaceRelocator, words moved; src: TextMouth/Models/PlaceRelocator.swift, TextMouth/Services/DuplicateReplacement.swift -->
 
-- The reading position, the bookmarks with their notes, and the skipped headings of a text book move to their words in the new text, as when a book's text is read again (see [Reader windows](reader-windows.md)), and a place whose words are not found stays where it was saved.
+- The reading position, the bookmarks with their notes, and the skipped headings of a text book move to their words in the new text, as when a book's text is read again (see [Reader windows](reader-book-end.md)), and a place whose words are not found stays where it was saved.
   - They move from the existing copy's text only when that is the text they were saved in.
   - From text saved in an editor without TextMouth's taking the edit, they are found by their words in the new text alone.
 
@@ -65,13 +65,13 @@ Replace Existing makes the new copy the same book as the existing one, under the
 
 - An audiobook's places count time in its recording.
   - Where the new copy has other chapters than the existing one, a book of tracks keeps each place at the same time into the same track, and a skipped heading follows its track.
-  - Any other audiobook keeps each place at the same time on the recording, never cut short at the old chapter's end, and keeps its skipped headings aside, skipping nothing (see [Reader windows](reader-windows.md)).
+  - Any other audiobook keeps each place at the same time on the recording, never cut short at the old chapter's end, and keeps its skipped headings aside, skipping nothing (see [Reader windows](reader-book-end.md)).
 
 ### Copies of edited text
 <!-- id: replace-keeps-edited-text; keys: content.md.edited, Edit Text, saved edit, kept copy; src: TextMouth/Services/DuplicateReplacement.swift -->
 
 - The copies of edited text that Edit Text kept for the existing copy go with it into the new copy's package.
-  And so does the existing copy's own text, kept as a content.md.edited- copy beside the new text, when it holds an edit you made or a save that no edit took (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+  And so does the existing copy's own text, kept as a content.md.edited- copy beside the new text, when it holds an edit you made or a save that no edit took (see [Where TextMouth keeps your library](book-packages.md)).
   - When such a copy is kept, VoiceOver says, after the answer, "Replaced “X”.
     Its earlier text was kept as content.md.edited-…, in the book's package.", with X the book's title and the dots standing for the date and time in the copy's name.
 
@@ -88,7 +88,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
 ### Braille file characters
 <!-- id: replace-keeps-braille-characters; keys: BRF, BRL, Eurobraille, six-dot, braille ASCII, Book Information; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Parsers/BrailleFileCode.swift -->
 
-- A BRF or BRL book keeps the braille file characters it is read with (see Book Information, in [The Library window](library-window.md)).
+- A BRF or BRL book keeps the braille file characters it is read with (see Book Information, in [The Library window](book-information.md)).
   - When the new copy is the very same file, TextMouth reads it again in those characters if the copy was read in others and its bytes are not certainly Unicode braille patterns.
   - When the copy can't be read so, nothing is replaced, and the question stays, with the reason, as in "“Ledger” can't be read as Eurobraille, six-dot (German-speaking countries): Line 3 holds “é”, which is not Eurobraille.
     Nothing was changed."
@@ -140,7 +140,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
 
 - Replace Existing waits
   - while the existing copy is in use,
-  - while its text is being read again in another encoding or with another braille code (see [The Library window](library-window.md)),
+  - while its text is being read again in another encoding or with another braille code (see [The Library window](book-information.md)),
   - while something it would keep is only in the cloud, where nothing is downloaded for it,
   - and while TextMouth moves books between folders or rebuilds its data directory.
 - The question stays open, nothing has changed, and the reason appears above its buttons, which VoiceOver reads as "Error: " and the sentence, and speaks once as it appears.

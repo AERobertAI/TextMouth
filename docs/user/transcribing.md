@@ -110,7 +110,7 @@ After a cleanup, an undo, or a new transcription, choose Edit Text again to edit
 
 A feed episode's transcript can be edited and cleaned up as any audiobook's can:
 - Edit Text in Default Editor, Edit Text With…, and Clean Up Transcript (Experimental)… are offered for a transcribed episode in its feed, in its row's menu and its reader's Book menu,
-- while Edit Audio…, Book Info's editing, and, for a feed's article, Edit Text still are not (see [Podcasts and article feeds](feeds.md)).
+- while Edit Audio…, Book Info's editing, and, for a feed's article, Edit Text still are not (see [Podcasts and article feeds](feed-commands.md)).
 
 Your changes stay with the episode in its feed, even after its download is deleted; Delete Episode… and Delete Feed… delete them, and Move to Library… keeps them with the episode as a book.
 
@@ -258,5 +258,5 @@ An audiobook can take one from a WebVTT (.vtt) or SubRip (.srt) file, on any mac
 ### Podcast transcripts
 <!-- id: podcast-transcripts; keys: Podcasting 2.0, episode download, chapters; src: TextMouth/Parsers/PodcastTranscriptReader.swift, TextMouth/Models/TranscriptionWording.swift -->
 
-- A podcast episode brings its own transcript and chapters when it downloads (see [Podcasts and article feeds](feeds.md)).
+- A podcast episode brings its own transcript and chapters when it downloads (see [Podcasts and article feeds](feed-listening-and-settings.md)).
 - Downloading an episode again replaces its own transcript with the new one, unless you made or changed the transcript yourself.

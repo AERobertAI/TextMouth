@@ -24,7 +24,7 @@ If that file is missing from the library, nothing is saved, and VoiceOver says "
 Turn off “Also write to the library's copy of the EPUB file” to save the metadata to the library only.
 Nothing was changed."
 A field once marked stays marked, even if you later type back what the file says.
-The metadata refresh after an update never replaces a field edited by hand (see library.json, under [Where TextMouth keeps your library](where-your-library-lives.md)).
+The metadata refresh after an update never replaces a field edited by hand (see library.json, under [Where TextMouth keeps your library](data-directory-files.md)).
 
 ## Reading an audiobook's tags
 <!-- id: reading-audiobook-tags; keys: audio tags, ID3, hung file, album, artist, cloud only; src: TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Views/Library/LibrarySheetViews.swift -->
@@ -49,9 +49,9 @@ Text you typed or pasted with New from Text…, a feed's article, a book of any 
 ### The Text Encoding items
 <!-- id: text-encoding-items; keys: Automatic, UTF-8, Windows-1252, Shift JIS, GBK, Big5, EUC-KR; src: TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Models/TextEncodingChoice.swift -->
 
-Its items are "Automatic", "UTF-8", "Windows-1252 (Western European)", and then the encodings TextMouth guesses among, named and ordered as [What TextMouth reads](what-textmouth-reads.md) lists them.
+Its items are "Automatic", "UTF-8", "Windows-1252 (Western European)", and then the encodings TextMouth guesses among, named and ordered as [What TextMouth reads](reads-text-files.md) lists them.
 Automatic reads the file as TextMouth reads a file you add, so it takes back a choice.
-UTF-16 and UTF-32 have no item of their own: Automatic finds them by their byte order mark, and by the pattern of their bytes when they have none (see [What TextMouth reads](what-textmouth-reads.md)).
+UTF-16 and UTF-32 have no item of their own: Automatic finds them by their byte order mark, and by the pattern of their bytes when they have none (see [What TextMouth reads](reads-text-files.md)).
 A short Chinese, Japanese, or Korean UTF-16 file with few spaces, digits, or line ends is not found that way, and cannot be set right here.
 Shift JIS, GBK, Big5, and EUC-KR are one item each, though each stands for two encodings, Windows' variant and the standard it extends, and a choice reads the file in whichever of the two reads every byte.
 
@@ -101,8 +101,8 @@ Choosing another item asks first, in an alert.
 
 Read Again reads the file again, in the encoding chosen or as Automatic reads it.
 - The book's text is replaced.
-  Your reading position, bookmarks, and skipped sections move to their words (see [Reader windows](reader-windows.md)), and a reader that has the book open shows the new text, its cursor on the same words as near as TextMouth can find them (see [Editing a book's text](editing-book-text.md)).
-- A choice is recorded with the book, and every later reading of its text uses it, whatever its bytes say of themselves (see [What TextMouth reads](what-textmouth-reads.md) and [Where TextMouth keeps your library](where-your-library-lives.md)).
+  Your reading position, bookmarks, and skipped sections move to their words (see [Reader windows](reader-book-end.md)), and a reader that has the book open shows the new text, its cursor on the same words as near as TextMouth can find them (see [Editing a book's text](editing-book-text.md)).
+- A choice is recorded with the book, and every later reading of its text uses it, whatever its bytes say of themselves (see [What TextMouth reads](reads-text-files.md) and [Where TextMouth keeps your library](book-packages.md)).
 - While it works, the sheet shows "Reading the book again..." with a spinner, and the pop-up, Cancel, and Save are dimmed.
   The sheet stays open until the book has been read again.
 
@@ -134,7 +134,7 @@ The sheet shows why below the form, which VoiceOver reads as "Error: " and the s
 - After Read Again, it says one of these:
   - "“Moby-Dick” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding.
     Nothing was changed."
-    (see Choosing the encoding in [What TextMouth reads](what-textmouth-reads.md) for what is not valid).
+    (see Choosing the encoding in [What TextMouth reads](reads-text-files.md) for what is not valid).
   - "Moby-Dick isn't downloaded.
     Download it first: select it in the library, then choose Download Now." when the book's file is only in the cloud.
   - "TextMouth couldn't keep the text you changed in “Moby-Dick” beside the new reading, so it left the book as it was." when no copy of the text TextMouth did not write could be made.
@@ -165,7 +165,7 @@ Reading this Mac's tables takes a moment, so the pop-up is dimmed until they are
 <!-- id: guessed-braille-code; keys: Keep This Code, guess, braille code detection, Guess the braille code of new books; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Parsers/BrailleCodeDetector.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift -->
 
 A guessed code says so.
-When TextMouth guessed a BRF or BRL book's code as it was added (see [What TextMouth reads](what-textmouth-reads.md)), the pop-up's value, and Speak Info's, end with ", guessed", as in "English Braille, American Edition, contracted (Grade 2), guessed, Braille Code, pop-up button".
+When TextMouth guessed a BRF or BRL book's code as it was added (see [What TextMouth reads](reads-daisy-and-braille.md)), the pop-up's value, and Speak Info's, end with ", guessed", as in "English Braille, American Edition, contracted (Grade 2), guessed, Braille Code, pop-up button".
 - Under the pop-up stands plain text that VoiceOver and a braille display read as the next item after it: "Guessed from the book's braille.
   If it reads wrongly, choose Unified English Braille in Braille Code."
   The note is not announced when the sheet opens.
@@ -258,7 +258,7 @@ Read Again records the choice with the book, as the encoding's does, and says "�
 
 A file that is not braille in the code chosen changes nothing, and the sheet says why: "“Ledger” can't be read as Eurobraille, six-dot (German-speaking countries): Line 3 holds “é”, which is not Eurobraille.
 Nothing was changed."
-The reader's sentence inside it is one of those listed in [Adding books](adding-books.md).
+The reader's sentence inside it is one of those listed in [Adding books](import-progress-and-errors.md).
 While TextMouth reads a book again with other braille file characters, a second re-read, Edit Text, Redo Text Extraction, and Replace Existing of that book wait and say "TextMouth is reading “Ledger” again with other braille file characters.
 Try again when that finishes."
 The other refusals are the encoding's.

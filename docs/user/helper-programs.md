@@ -15,7 +15,7 @@ The debug log records OGG_CONVERTED for each book converted and OGG_CONVERSION_W
 ## afconvert, the audio converter
 <!-- id: afconvert-audio-converter; keys: AAC, Apple Lossless, converter limits, AUDIO_CONVERSION_KILLED; src: TextMouth/Services/ImportAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
-TextMouth converts Ogg audio, and the other audio its import converts (see [What TextMouth reads](what-textmouth-reads.md)), to AAC, or to Apple Lossless when the source is lossless, with Apple's own afconvert tool, run as a separate process that TextMouth stops when:
+TextMouth converts Ogg audio, and the other audio its import converts (see [What TextMouth reads](reads-audiobooks.md)), to AAC, or to Apple Lossless when the source is lossless, with Apple's own afconvert tool, run as a separate process that TextMouth stops when:
 
 - it runs longer than a minute plus a tenth of the track's length,
 - grows past 1 GB,
@@ -76,7 +76,7 @@ The debug log records TEXTUTIL_LEFTOVERS_SWEPT, with how many processes it stopp
 ## TextMouthBraille, the braille helper
 <!-- id: textmouthbraille-braille-helper; keys: liblouis, braille translation, print to braille, helper limits, Mac tables; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthBraille/main.c -->
 
-TextMouth translates between print and braille with liblouis, which runs in TextMouthBraille, a helper program of TextMouth's own inside the app, also as a separate process that TextMouth watches (see [What TextMouth reads](what-textmouth-reads.md)).
+TextMouth translates between print and braille with liblouis, which runs in TextMouthBraille, a helper program of TextMouth's own inside the app, also as a separate process that TextMouth watches (see [What TextMouth reads](reads-daisy-and-braille.md)).
 TextMouth stops it:
 
 - when it runs longer than 10 seconds plus a quarter of a second for each million bytes of braille it is given to read, or 6 seconds for each million bytes of print it is given to write as braille;
@@ -85,12 +85,12 @@ TextMouth stops it:
 - or when it writes more than 10 times its input, 32 times when it writes braille, and 1 MB more.
 
 The Mac itself ends it when it has used more than four times the time allowed in processor time.
-For one of this Mac's tables that has passed its check (see [Settings](settings.md)), the limits on time and on memory are raised to four times the time and twice the memory its check measured, and a limit is never lowered.
-A book the helper stopped fails to import with "TextMouth stopped the braille translation because ...", and an export of braille fails the same way (see [Adding books](adding-books.md) and [Exporting books](exporting-books.md)).
+For one of this Mac's tables that has passed its check (see [Settings](settings-braille.md)), the limits on time and on memory are raised to four times the time and twice the memory its check measured, and a limit is never lowered.
+A book the helper stopped fails to import with "TextMouth stopped the braille translation because ...", and an export of braille fails the same way (see [Adding books](import-progress-and-errors.md) and [Exporting books](exporting-books.md)).
 The debug log records BRAILLE_HELPER_KILLED, with what the helper was doing (back for braille to print, forward for print to braille), the table, and the reason.
 When the helper fails by itself, because it is missing, could not start, ended with an error, or wrote output that does not match its input, the debug log records BRAILLE_HELPER_FAILED, with the same and what happened.
 Neither line holds any text of a book.
-The debug log also records BRAILLE_MAC_TABLE_REFUSED when the check of one of this Mac's tables refuses it, with the table's name, as "mac:" and its file name, and the reason in the refusal's words (see [Settings](settings.md)).
+The debug log also records BRAILLE_MAC_TABLE_REFUSED when the check of one of this Mac's tables refuses it, with the table's name, as "mac:" and its file name, and the reason in the refusal's words (see [Settings](settings-braille.md)).
 A check that could not run is not logged so, and the line holds no text of a book.
 Cancel in the import overlay stops it at once.
 

@@ -113,7 +113,7 @@ Stop Keeping on This Mac removes nothing: the download stays until the sync serv
 <!-- id: keeping-this-mac-own-choice; keys: Kept Books.json, machine-local, MachineLocalPaths; src: TextMouth/Services/KeptBooks.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Keeping is this Mac's own choice, as Finder's Keep Downloaded is: another Mac that opens the same library keeps only the books chosen there.
-The choice is saved in this Mac's own Kept Books.json (see [Where TextMouth keeps your library](where-your-library-lives.md)), never in the library.
+The choice is saved in this Mac's own Kept Books.json (see [Where TextMouth keeps your library](this-macs-folders.md)), never in the library.
 
 ### The reading list's books
 <!-- id: reading-list-books; keys: Keep these books on this Mac, free space check, DOWNLOAD_SKIPPED_NO_ROOM, 1 GB reserve, options bar; src: TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Services/KeptBooks.swift -->
@@ -243,7 +243,7 @@ Each pass that skipped books writes one MAINTENANCE_SKIPPED_IN_CLOUD line in the
 <!-- id: logs-cloud; keys: debug log, Logs folder, 2 MB, In this Mac's Logs folder; src: TextMouth/Services/DiagnosticLog.swift, TextMouth/Models/CloudStorageContract.swift -->
 
 Logs: they live in the library's Logs folder and sync with it, each kept to 2 MB with one older generation, so the uploads stay small, and TextMouth never downloads a log to write to it.
-To keep them off the cloud, choose In this Mac's Logs folder in Storage settings (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+To keep them off the cloud, choose In this Mac's Logs folder in Storage settings (see [Where TextMouth keeps your library](library-logs.md)).
 
 ## Using several Macs
 <!-- id: using-several-macs; keys: two Macs, Sessions folder, TextMouth Is Open on Another Mac, lease; src: TextMouth/Services/LibrarySessionLease.swift -->
@@ -273,7 +273,7 @@ config.json travels with the library, so a dataDirectoryPath that another Mac wr
 Update TextMouth on every Mac that opens the library.
 A TextMouth older than 0.2.0, such as 0.1.1, can't open a library that holds a book in a format 0.2.0 added: rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, web archive, SSML, or braille (BRF, BRL, or PEF).
 It finds the index unreadable and leaves it as it is, writing no index, but it still writes each book's record, which loses 0.2.0's records of edits and pages.
-It offers Rebuild Library Index; never choose it there (see library.json.unreadable-, under [Where TextMouth keeps your library](where-your-library-lives.md)).
+It offers Rebuild Library Index; never choose it there (see library.json.unreadable-, under [Where TextMouth keeps your library](data-directory-files.md)).
 A TextMouth from 0.2.1 to 0.3.2 opens a library that holds a KFX book, a format added in 0.4.0, without that book (see the [changelog](changelog.md)).
 
 ### Conflict copies
@@ -315,7 +315,7 @@ Opening the library waits for every feed's index, as it waits for library.json (
 - and a Mac marks an item downloaded again, after an older version of TextMouth marked it otherwise, only when its file is on that Mac.
 
 A feed whose record is missing when TextMouth opens, as one an earlier version unsubscribed from on another Mac, keeps its downloads in its folder until a later launch of this Mac finds the record missing again;
-- only this Mac's own launches count (see Commands, under [Podcasts and article feeds](feeds.md)).
+- only this Mac's own launches count (see Commands, under [Podcasts and article feeds](feed-commands.md)).
 
 Unsubscribing and Resubscribe live in the feed's record, which another Mac reads as it next opens the library.
 

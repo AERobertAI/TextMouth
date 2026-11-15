@@ -10,7 +10,7 @@ Choose what the window lists in the View pop-up, a pop-up button above the list.
 Its visible label is "View", and VoiceOver calls it "Library view", reading its value first, as in "Unopened, Library view, pop-up button"; a braille display shows the value and the label.
 Choosing an item says nothing more than VoiceOver's own reading of the item.
 The pop-up is no wider than 320 points, so a long name never makes the window's content wider than the window.
-TextMouth ships six views: Folders, All Items, Unopened, Recently Opened, Reading List, and Feeds; you arrange them, hide them, and make views of your own in the Library tab of Settings (see [Settings](settings.md)).
+TextMouth ships six views: Folders, All Items, Unopened, Recently Opened, Reading List, and Feeds; you arrange them, hide them, and make views of your own in the Library tab of Settings (see [Settings](settings-library.md)).
 
 ### Which views the pop-up offers
 <!-- id: which-views-pop-up-offers; keys: Always, When Applicable, hidden view, Library tab, view order; src: TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibraryViewDefinitionList.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/Models/LibraryViewsSettingsWording.swift -->
@@ -87,7 +87,7 @@ Each folder and each view remembers its own sort, except the Reading List, and a
 Until you choose a sort in Unopened, it uses the sort you chose for No Folder, unless that was manual order, and otherwise sorts by date added, newest first.
 In the Sort menu a checkmark marks the field shown; choosing that field again keeps the sort as it is, and VoiceOver says the sort shown, as in "Sorted by Title, ascending".
 The item below the fields, Sort Descending or Sort Ascending, reverses the order; it is dimmed in manual order, which has no direction.
-Whether a title's leading article counts when the Title sort orders books, and when a tie is broken by title, is the Leading articles setting's choice, in the Library tab of Settings (see [Settings](settings.md)); as shipped it counts, and The Hobbit sorts among the T's.
+Whether a title's leading article counts when the Title sort orders books, and when a tie is broken by title, is the Leading articles setting's choice, in the Library tab of Settings (see [Settings](settings-library.md)); as shipped it counts, and The Hobbit sorts among the T's.
 
 ## Where a book's author comes from
 <!-- id: where-book-author-comes-from; keys: creator, Unknown author, EPUB metadata, contributor, Book Info; src: TextMouth/Parsers/EPUBParser.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/BookInfo.swift -->
@@ -154,7 +154,7 @@ Replace on a duplicate gives the new copy the old one's place on the reading lis
 ### The options above the list
 <!-- id: options-above-list; keys: options bar, When a book ends, Skip finished books, EndOfBookRule; src: TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/EndOfBookRule.swift -->
 
-Above the list, When a book ends chooses what a book opened from the list does at its end: Play the book below, the default, Play the book above, or Stop (see [Reader windows](reader-windows.md)).
+Above the list, When a book ends chooses what a book opened from the list does at its end: Play the book below, the default, Play the book above, or Stop (see [Reader windows](reader-book-end.md)).
 Skip finished books, checked unless you clear it, passes over the books Books Finished counts, in the Stats tab of Settings: a book joins them when it is played or read to its end and doesn't start again, and stays when you read it again.
 
 ### Remove books when finished
@@ -169,7 +169,7 @@ A book finished with no window resting on it, such as a feed episode marked play
 Checking it takes off none of the books already finished; only books finished from then on leave.
 A rewind's replay of a book's end tells nothing, so a book that stayed on the list stays, and Books Finished counts a book only once.
 A book that is not on the list is not touched.
-The sleep timer, Where Am I?, and Next in Reading List are unchanged, though a book that has left the list reads as any book from then on (see [Reader windows](reader-windows.md)).
+The sleep timer, Where Am I?, and Next in Reading List are unchanged, though a book that has left the list reads as any book from then on (see [Reader windows](reader-book-end.md)).
 
 ### The options bar in a cloud library and a narrow window
 <!-- id: options-bar-cloud-library-narrow; keys: Keep these books on this Mac, kept books, iCloud, narrow window; src: TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift -->
@@ -207,7 +207,7 @@ Destination folder: Reports/Q3."; once they close, Return presses Move again and
 ### Episodes and articles
 <!-- id: episodes-articles; keys: feed items, Move to Library, feed folder, stay in feeds; src: TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+MoveToLibrary.swift, TextMouth/ViewModels/LibraryViewModel+FeedItemMove.swift -->
 
-Episodes and articles stay in their feeds' folders: their rows offer no Move to Folder… (Move to Library…, on a downloaded one's row, makes it a book of the library's own; see [Podcasts and article feeds](feeds.md)).
+Episodes and articles stay in their feeds' folders: their rows offer no Move to Folder… (Move to Library…, on a downloaded one's row, makes it a book of the library's own; see [Podcasts and article feeds](feed-commands.md)).
 With only episodes and articles selected, the Library menu's Move to Folder… (Shift-Command-M) and the edit bar's Move open no Move dialog, while a selection holding books too moves only its books.
 Either way VoiceOver says which stayed, a moment after the dialog has closed when there is one, as in "Left “Ep.
 368” where it is: episodes and articles stay in their feeds; Move to Library… makes one a book of your library."
@@ -220,7 +220,7 @@ A move, a folder's rename or move, or Delete Folder's Move Contents that fails k
 ## Book Info and Command-I
 <!-- id: book-info-command-i; keys: Info sheet, title and author, metadata editor, showBookInfo; src: TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Models/KeyboardShortcut.swift -->
 
-Book Info, in a book's context menu, edits a plain text, Markdown, or HTML book's title and author (an EPUB's or an audiobook's metadata opens in an editor of its own, and an episode's or article's in its feed opens read-only; see [Podcasts and article feeds](feeds.md)).
+Book Info, in a book's context menu, edits a plain text, Markdown, or HTML book's title and author (an EPUB's or an audiobook's metadata opens in an editor of its own, and an episode's or article's in its feed opens read-only; see [Podcasts and article feeds](feed-commands.md)).
 Save waits for a title of more than spaces, and drops the spaces typed around the title or the author.
 
 ### The Braille Code row
@@ -228,7 +228,7 @@ Save waits for a title of more than spaces, and drops the spaces typed around th
 
 A braille book's sheet, under the heading Book Information, has the same fields and one more row, "Braille Code", after Format, which names the code the book was imported with, such as "Unified English Braille, contracted (Grade 2)".
 VoiceOver reads it as "Braille Code, Unified English Braille, contracted (Grade 2)".
-A book read with one of this Mac's tables (see [Settings](settings.md)) has its language after the code, as in "French braille, contracted (Grade 2), in French", or, for a table that states no contraction, "Italian braille, in Italian"; Speak Full Info says the same words after "Braille code: ".
+A book read with one of this Mac's tables (see [Settings](settings-braille.md)) has its language after the code, as in "French braille, contracted (Grade 2), in French", or, for a table that states no contraction, "Italian braille, in Italian"; Speak Full Info says the same words after "Braille code: ".
 When this Mac no longer has the table, the row gives the table's stored name instead, as in "mac:fr-bfu-g2.ctb".
 
 ### The Text Encoding row
@@ -285,7 +285,7 @@ The toolbar's buttons for adding and for settings:
   It replaces the old Import, New from Text, and Add Feed buttons.
 - Feed Settings or Folder Settings, between New Folder and the Sort menu, shows only in a folder of the Folders view: never at the top of the library, and in no other view.
   A feed's folder, the folder that lists the feed's episodes or articles, gets Feed Settings, even when it also holds books of your own; any other folder gets Folder Settings.
-  - Feed Settings opens the feed's Feed Info, the sheet that Command-I opens on the feed's row (see [Podcasts and article feeds](feeds.md)).
+  - Feed Settings opens the feed's Feed Info, the sheet that Command-I opens on the feed's row (see [Podcasts and article feeds](feed-commands.md)).
     VoiceOver calls the button "Feed settings for" and the feed's title, as in "Feed settings for Planet Money", and its hint is "Opens the settings of this feed: where its downloads go, what it lists and downloads, and what happens when an episode ends".
   - Folder Settings opens the Folder Settings sheet (below).
     VoiceOver calls the button "Folder settings for" and the folder's name, as in "Folder settings for Classics", and its hint is "Opens the settings of this folder: what it holds, and what happens when one of its books ends".
@@ -314,7 +314,7 @@ The Folder Settings sheet shows a plain folder's facts and how listening goes on
   Its hint then is "Available only while this folder's books go on to another book when one ends", and it keeps its choice for when they do.
   A dimmed choice is not in effect: Next in Folder and Previous in Folder then follow the global setting.
   The checkbox "Skip finished books", checked unless you clear it, has the hint "When listening goes on to another book, pass over the books already finished".
-  What they do is under When a book ends, including Where the next book opens, in [Reader windows](reader-windows.md).
+  What they do is under When a book ends, including Where the next book opens, in [Reader windows](reader-book-end.md).
   A folder's choices apply to the books directly in it, never to those in the folders inside it.
 - Done closes the sheet, and so do Return and Escape, since nothing in the sheet takes typing.
   If another window deletes the folder while the sheet is open, the sheet says "This folder is no longer in the library." in place of the folder.

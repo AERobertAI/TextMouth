@@ -58,7 +58,7 @@ Playback: skipForwardUnit, skipBackwardUnit, shiftSkipForwardUnit, shiftSkipBack
 Shortcuts: keyboardShortcuts, an object naming every action as Settings shows it, the audio editor's and the New Recording window's with their group's name first, as in "Audio Editor: Play / Pause" and "New Recording: Stop".
 TextMouth reads a name in any letter case, and one ending in "…" with three periods or none.
 It still reads the names earlier versions wrote, as in "Recording Window: Stop" for the New Recording window's buttons and "Add Bookmark" for the bookmark command, now Toggle Bookmark in the menu, the Shortcuts tab, and config.json, writing only the new names.
-An action whose shortcuts you changed (see the Shortcuts tab, under [Finding your way around](../../README.md)) is a list of its shortcuts, written like `option+shift+command+b`, as in "Release Media Controls": ["shift+r"], and an empty list leaves it without a shortcut.
+An action whose shortcuts you changed (see the Shortcuts tab, under [Finding your way around](settings-shortcuts.md)) is a list of its shortcuts, written like `option+shift+command+b`, as in "Release Media Controls": ["shift+r"], and an empty list leaves it without a shortcut.
 An action you changed whose Works in differs from its default is an object, as in "New from Text…": {"keys": ["shift+command+t"], "worksIn": "Every window"}.
 TextMouth writes the Works in pop-up's words, and reads them, or "every", "app", "library", or "reader", in any letter case, as it reads "keys" and "worksIn"; "keys" may be one shortcut written as text, an object without "worksIn" counts as a list, and a list works where its action does by default.
 An object naming no kind of window TextMouth knows isn't read.
@@ -71,7 +71,7 @@ Write a list to make an action yours, even with its default keys (a file of only
 A shortcut given to one action is taken from any other that works in any of the same windows (see Works in, under the Shortcuts tab), so one key can do one thing in an editor window or a Library window and another elsewhere.
 If an edit leaves one key on two actions you changed, the one whose entry you changed keeps it (when you changed both, the one the Shortcuts tab lists first), and the other goes without that key, keeping its others.
 TextMouth notes it in the debug log and saves the file again a moment later, to show the shortcuts in force.
-An action the file leaves out keeps its shortcuts. shortcutDoublePressSeconds is the double-press time (see the Shortcuts tab, under [Finding your way around](../../README.md)), 0.2 to 2 seconds.
+An action the file leaves out keeps its shortcuts. shortcutDoublePressSeconds is the double-press time (see the Shortcuts tab, under [Finding your way around](settings-shortcuts.md)), 0.2 to 2 seconds.
 A value out of range, or between tenths, is read as the nearest allowed one and noted in the debug log, and a file without it leaves the time alone.
 
 - A file in the form earlier versions wrote, a list for every action with no text beginning with "default" and no object, is read as the old form it is.
@@ -102,12 +102,12 @@ Braille: brailleTable, the table braille files are read and written with, by its
 
 TextMouth writes the table in use, "en-ueb-g2.ctb" until one is chosen.
 A missing, empty, or other value, such as a name that is not exactly one of these four or "mac:" and a bare file name (no slash or comma, and not starting with a dot), leaves the current table as it is.
-A "mac:" name is taken as it is, without reading this Mac's tables: TextMouth checks the table before its first use, and an import or an export that needs a table this Mac lacks or refuses fails by name (see [Adding books](adding-books.md)).
+A "mac:" name is taken as it is, without reading this Mac's tables: TextMouth checks the table before its first use, and an import or an export that needs a table this Mac lacks or refuses fails by name (see [Adding books](settings-braille.md)).
 It chooses the table for books imported and braille exported from then on.
 A book already in the library keeps the table it was imported with. brailleFileCode, the braille file characters a BRF or BRL file is read with, by id: "ascii-na", North American Braille ASCII, or "ascii-eurobraille", Eurobraille, six-dot (see the Braille tab, under [Settings](settings-braille.md)).
 TextMouth writes the one in use, "ascii-na" until one is chosen.
 A missing, empty, or other value, "unicode" included, since TextMouth recognizes Unicode braille patterns by a file's bytes and never takes them from the setting, leaves the current choice as it is.
-It chooses the characters for books imported from then on, and the Export dialog starts a BRF with them; a book already in the library keeps the characters it was imported with (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+It chooses the characters for books imported from then on, and the Export dialog starts a BRF with them; a book already in the library keeps the characters it was imported with (see [Where TextMouth keeps your library](book-packages.md)).
 
 ### Sounds settings
 <!-- id: sounds-settings; keys: soundEffectsEnabled, soundEffectsVolume, soundEffectAssignments, sound events; src: TextMouth/Services/ConfigService.swift, TextMouth/Views/Settings/SoundEffectsSettingsView.swift -->
@@ -207,7 +207,7 @@ An older TextMouth drops libraryViews from config.json when it saves the file, b
 <!-- id: where-each-view-sort-kept; keys: view sort, /views/ key, library.json, folder sorts; src: TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/Models/LibraryViewDefinition.swift -->
 
 Where each view's sort is kept: not in config.json.
-Every view's sort stays in library.json with the folders' sorts, a view of your own's and Feeds' under a key that begins with "/views/", as "/views/Feeds" (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+Every view's sort stays in library.json with the folders' sorts, a view of your own's and Feeds' under a key that begins with "/views/", as "/views/Feeds" (see [Where TextMouth keeps your library](data-directory-files.md)).
 
 ### Titles setting
 <!-- id: titles-setting; keys: leadingArticles, partOfTitle, ignoredWhenTyping, ignoredWhenTypingAndSorting, sort title, The Hobbit; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/LeadingArticles.swift -->
@@ -222,7 +222,7 @@ A missing or empty value, or a name that is not exactly one of these, leaves the
 Feeds: feedRefreshAtLaunch (true by default);
 
 - feedRefreshIntervalHours (1 to 168, the default 1, or 0 to refresh only at launch and when asked; any number below 1 reads as 0);
-- feedItems, the List and download choice (see Listing and downloading, under [Podcasts and article feeds](feeds.md)): "everyListedNewestDownloaded", the default, "everyListedDownloadsByHand", or "onlyNewestListed", a name TextMouth doesn't know, or none, leaving the choice as it is;
+- feedItems, the List and download choice (see Listing and downloading, under [Podcasts and article feeds](feed-downloads.md)): "everyListedNewestDownloaded", the default, "everyListedDownloadsByHand", or "onlyNewestListed", a name TextMouth doesn't know, or none, leaving the choice as it is;
 - feedNewestCount, the number that goes with it (1 to 2,000, the default 5; a number outside reads as the nearer of the two);
 - feedDeleteDownloadsDaysAfterPlayed (0, at once, to 365, the default 1, or -1 never; any negative number reads as -1);
 - and feedRefreshAlert and feedNotifications (false by default), whether a refresh TextMouth makes by itself that brings new items shows an alert, and posts a notification for each feed.
@@ -257,7 +257,7 @@ What stays out of config.json:
 - window positions,
 - the last sleep timer you used,
 - a feed's and a folder's own listening choices, among them its Open the next book in,
-  - which a feed keeps in its own record and a folder in library.json (see [Podcasts and article feeds](feeds.md), [The Library window](library-window.md), and [Where TextMouth keeps your library](where-your-library-lives.md)),
+  - which a feed keeps in its own record and a folder in library.json (see [Podcasts and article feeds](feed-listening-and-settings.md), [The Library window](library-window.md), and [Where TextMouth keeps your library](data-directory-files.md)),
 - the preferences that record where the data directory is (its path, a bookmark of its folder, and the identity of the library expected there),
 - this Mac's identifier for the Sessions folder,
 - whether Edit Text has explained itself on this Mac (editTextExplained),

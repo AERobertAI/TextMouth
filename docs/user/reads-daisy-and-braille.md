@@ -27,13 +27,13 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: braille-files-read; keys: BRF, BRL, PEF, liblouis, Braille tab, table changed, Book Information; src: TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Models/BrailleTableCatalog.swift -->
 
 - TextMouth reads BRF files (.brf), BRL files (.brl), and PEF files (.pef).
-- It translates them to print with liblouis, using the braille code chosen in the Braille tab of Settings (see [Settings](settings.md)), and the print becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
+- It translates them to print with liblouis, using the braille code chosen in the Braille tab of Settings (see [Settings](settings-braille.md)), and the print becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
 - A book keeps the code it was imported with, through Remove from Library Only and adding it back too, so changing the setting never changes what an imported book says.
-- A book read with one of this Mac's tables (see [Settings](settings.md)) also keeps the liblouis version of this Mac's tables, and if a macOS update changes them, TextMouth refuses to rebuild that book's text and keeps the text as it was, with this sentence.
+- A book read with one of this Mac's tables (see [Settings](settings-braille.md)) also keeps the liblouis version of this Mac's tables, and if a macOS update changes them, TextMouth refuses to rebuild that book's text and keeps the text as it was, with this sentence.
   "This Mac's braille table “mac:fr-bfu-g2.ctb” has changed since the book was read with it, from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
 - When this Mac's tables name no version now, it says the table "may have changed since the book was read with liblouis 3.34.0" instead.
 - A book that recorded no version is never refused for this.
-- Book Info and Speak Info name the code, and Book Information's Braille Code pop-up reads one book again with another braille code (see [The Library window](library-window.md)).
+- Book Info and Speak Info name the code, and Book Information's Braille Code pop-up reads one book again with another braille code (see [The Library window](book-information.md)).
 
 ### Guessing the braille code when a book is added
 <!-- id: guessing-braille-code-when-book; keys: EBAE, UEB, auto-detect, guessed table, guess switch, Braille tab; src: TextMouth/Parsers/BrailleCodeDetector.swift, TextMouth/Models/BrailleTableOrigin.swift, TextMouth/Views/Settings/BrailleSettingsView.swift -->
@@ -44,15 +44,15 @@ Part of [TextMouth's documentation](../../README.md).
   If the book clearly shows them, it is read with TextMouth's own contracted table for that code, English Braille, American Edition, contracted (Grade 2), in place of the Braille tab's code.
   - TextMouth counts only signs that Unified English Braille dropped: "to" or "by" joined to the next word, and "ation" or "ally" inside a word.
   - Clearly means at least 40 words with those signs, at least one in 50 of all the book's words, and, of those, at least 5 words joined with "to" and at least 5 joined with "by".
-  - When TextMouth is unsure, nothing changes: the book is read with the Braille tab's code, and Book Information may still suggest English Braille, American Edition (see [The Library window](library-window.md)).
-- The switch "Guess the braille code of new books" in the Braille tab turns the guess off (see [Settings](settings.md)).
+  - When TextMouth is unsure, nothing changes: the book is read with the Braille tab's code, and Book Information may still suggest English Braille, American Edition (see [The Library window](book-information.md)).
+- The switch "Guess the braille code of new books" in the Braille tab turns the guess off (see [Settings](settings-braille.md)).
   It is on by default.
 - Only a book being added is guessed.
   A book already in the library keeps its code, and the launch's reading again of braille books never guesses.
 - A PEF file is never guessed, and neither is a book read with a code other than contracted Unified English Braille.
 - A guessed book's title and author, read from its title page, are read with the guessed code too.
 - Book Info, Speak Info, and Book Information say the code was guessed: "English Braille, American Edition, contracted (Grade 2), guessed".
-  Book Information can keep the guess or correct it (see [The Library window](library-window.md)).
+  Book Information can keep the guess or correct it (see [The Library window](book-information.md)).
 - A guessed book that you remove with Remove from Library Only and add back keeps its code and the word "guessed", without a new guess.
   A book you chose a code for, in Book Information, is never said to be guessed.
 
@@ -65,7 +65,7 @@ Part of [TextMouth's documentation](../../README.md).
   - Unicode braille patterns write each cell as a character from U+2800 to U+28FF, in UTF-8.
 - TextMouth recognizes Unicode braille patterns by the file's bytes, from the first character after any blank lines in the first 64 KB, and reads such a file as them whatever the Braille tab says.
 - It guesses nothing else, since every printable ASCII character is a cell in every seven-bit code: a file read in the wrong seven-bit code gives wrong numbers and punctuation, with no error.
-- The Braille tab chooses the seven-bit code for the books you add from then on (see [Settings](settings.md)), and Book Information's Braille File Characters pop-up reads one book again with another code (see [The Library window](library-window.md)).
+- The Braille tab chooses the seven-bit code for the books you add from then on (see [Settings](settings-braille.md)), and Book Information's Braille File Characters pop-up reads one book again with another code (see [The Library window](book-information.md)).
 - A PEF always holds Unicode braille and needs no choice.
 
 ### Books that record no braille code
@@ -73,7 +73,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - A book that records no code, as every book added before TextMouth recorded them, is read as North American Braille ASCII, unless its first character is a braille pattern, which can only be Unicode braille patterns: such a book is read as them.
 - A BRF or BRL file of Unicode braille patterns that uses dot 7 or 8 is eight-dot braille, which TextMouth refuses.
-  So is a file of eight-bit computer braille, and so is a file in UTF-16, each refused by name (see [Adding books](adding-books.md) for the sentences).
+  So is a file of eight-bit computer braille, and so is a file in UTF-16, each refused by name (see [Adding books](import-progress-and-errors.md) for the sentences).
 
 ### What a BRF or BRL file holds
 <!-- id: what-brf-brl-file-holds; keys: CR LF, form feed, 25 lines, tab, eight-dot PEF; src: TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Parsers/BrailleCells.swift, TextMouth/Parsers/BrailleBookReader.swift -->
@@ -127,9 +127,9 @@ Part of [TextMouth's documentation](../../README.md).
 - TextMouth's braille helper tests each table for this when the table is used, so none is picked out by name.
 - The faults of liblouis itself in reading EBAE remain, as a decimal such as 3.5 that comes back as "3.e".
 - A braille book is read again once at the first launch of version 0.2.2, and gets this reading then.
-- A book whose new reading differs from its text keeps a copy of its old text beside it, and its saved places follow their words (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- A book whose new reading differs from its text keeps a copy of its old text beside it, and its saved places follow their words (see [Where TextMouth keeps your library](book-packages.md)).
 - Redo Text Extraction reads a book again at any time.
-- Export writes a book's emphasis into braille in UEB, and writes none in EBAE (see [Exporting books](exporting-books.md)).
+- Export writes a book's emphasis into braille in UEB, and writes none in EBAE (see [Exporting books](exporting-braille.md)).
 
 ### English Braille, American Edition words
 <!-- id: english-braille-american-edition-words; keys: EBAE fixes, en_US table, initials, St., still, before, micro sign; src: TextMouthBraille/main.c, TextMouth/Services/BrailleTranslator.swift -->
@@ -173,7 +173,7 @@ Part of [TextMouth's documentation](../../README.md).
 ### Braille file limits
 <!-- id: braille-file-limits; keys: 32 MB, page limit, row limit, refusal; src: TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Parsers/BrailleBookReader.swift -->
 
-- A braille file of more than 32 MB is refused, and so is one of more than 100,000 pages or 4,000,000 lines (see [Adding books](adding-books.md) for the words of each refusal).
+- A braille file of more than 32 MB is refused, and so is one of more than 100,000 pages or 4,000,000 lines (see [Adding books](import-progress-and-errors.md) for the words of each refusal).
 
 ### Braille not read yet
 <!-- id: braille-not-read-yet; keys: hyphenated words, divided words, lists, plain paragraphs; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader.swift -->
@@ -185,4 +185,4 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: braille-helper-process; keys: TextMouthBraille, helper, separate process, timeout, hang; src: TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/main.c -->
 
 - liblouis runs in a separate process that TextMouth watches, never inside TextMouth, so a hang or a crash in liblouis costs that process and never TextMouth or the import.
-- [Where TextMouth keeps your library](where-your-library-lives.md) gives its limits.
+- [Where TextMouth keeps your library](helper-programs.md) gives its limits.

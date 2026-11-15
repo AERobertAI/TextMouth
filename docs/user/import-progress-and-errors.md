@@ -126,7 +126,7 @@ How books are added is in [Adding books](adding-books.md).
 ### A document older than Word 6 that textutil was stopped on
 <!-- id: document-older-than-word-6; keys: textutil limit, watchdog, 31 seconds, 1024 MB, 121 seconds, Word 1, Word 2; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
-- On the Mac, a Word document older than Word 6 that textutil was stopped on, for passing one of its limits (see [Where TextMouth keeps your library](where-your-library-lives.md)), says why: "TextMouth stopped reading this document because it ran longer than 31 seconds."
+- On the Mac, a Word document older than Word 6 that textutil was stopped on, for passing one of its limits (see [Where TextMouth keeps your library](helper-programs.md)), says why: "TextMouth stopped reading this document because it ran longer than 31 seconds."
 - The reason can instead be "it held more than 1024 MB of memory" or "it used more than 121 seconds of processor time".
 - The 31 seconds are the 30 allowed and one more for each million bytes of the document, rounded up, here for a small document, and the 121 are four times the time allowed.
 - Every other kind of document, Word 6 and Word 95 since version 0.4.1 among them, is read inside TextMouth, never by textutil, and is not stopped this way.
@@ -215,7 +215,7 @@ How books are added is in [Adding books](adding-books.md).
 ### Documents past the 64 MB limit
 <!-- id: documents-past-64-mb-limit; keys: size limit, too large, 64 MB, DocumentByteLimit; src: TextMouth/Parsers/DocumentByteLimit.swift -->
 
-- A document, web archive, SSML file, DTBook, or Kindle book past the limit of 64 MB (see [What TextMouth reads](what-textmouth-reads.md)) is refused with "This document holds more than 64 MB, the most TextMouth reads from one document."
+- A document, web archive, SSML file, DTBook, or Kindle book past the limit of 64 MB (see [What TextMouth reads](reads-pages-and-limits.md)) is refused with "This document holds more than 64 MB, the most TextMouth reads from one document."
 - For a rich text document the 64 MB counts the rich text file, or an .rtfd's TXT.rtf alone, whatever its attachments hold.
 - For a Word 97-2003 document it counts the Word file.
 
@@ -292,16 +292,16 @@ How books are added is in [Adding books](adding-books.md).
   - For a PEF file that is not well-formed XML, is not a PEF document, or has a row that is not braille, which is also what a Pentax photo named .pef gets: "This file could not be read as a PEF braille file.
     It may be damaged, or another kind of file."
   - For a PEF file in eight-dot braille, or a BRF or BRL file of Unicode braille patterns that uses dot 7 or 8: "This file is eight-dot braille, which TextMouth does not read."
-  - For a file past a limit (see [What TextMouth reads](what-textmouth-reads.md)).
+  - For a file past a limit (see [What TextMouth reads](reads-pages-and-limits.md)).
     "This braille file holds more than 32 MB, the most TextMouth reads from one braille file.", "This file has more than 100,000 braille pages, the most TextMouth reads.", or "This file has more than 4,000,000 lines of braille, the most TextMouth reads."
   - For a book that names a braille table this TextMouth does not have, as a library written by a newer TextMouth with more tables can: "TextMouth has no braille table named “en-xx.ctb”."
-    - The same sentence refuses one of this Mac's tables that this Mac no longer has or that its check refused (see [Settings](settings.md)), named with "mac:" before its file name, as in "TextMouth has no braille table named “mac:el.ctb”."
+    - The same sentence refuses one of this Mac's tables that this Mac no longer has or that its check refused (see [Settings](settings-braille.md)), named with "mac:" before its file name, as in "TextMouth has no braille table named “mac:el.ctb”."
     - A TextMouth from before it offered this Mac's tables reads every "mac:" name so.
   - For one of this Mac's tables that could not be checked, as when the braille helper failed: "TextMouth could not check this Mac's braille table “mac:el.ctb”: the braille helper failed.
     Try again."
     - The table is not refused, and trying again checks it again.
-    - The other reasons are listed in [Settings](settings.md).
-  - For a translation that TextMouth stopped on, for passing one of the helper's limits (see [Where TextMouth keeps your library](where-your-library-lives.md)): "TextMouth stopped the braille translation because it ran longer than 11 seconds."
+    - The other reasons are listed in [Settings](settings-braille.md).
+  - For a translation that TextMouth stopped on, for passing one of the helper's limits (see [Where TextMouth keeps your library](helper-programs.md)): "TextMouth stopped the braille translation because it ran longer than 11 seconds."
     - The 11 seconds are the 10 allowed and the share of the book's size, rounded up, here for a small book.
     - The reasons are the watchdog's, in the words listed under "Converting X was stopped because ..." in [Adding books](adding-books.md).
   - For a translation that failed any other way, because the helper is missing, could not start, ended with an error, or wrote output that does not match what it was given: "TextMouth could not translate this braille."

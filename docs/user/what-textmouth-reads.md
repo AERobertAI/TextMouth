@@ -26,7 +26,7 @@ Part of [TextMouth's documentation](../../README.md).
 - No helper process runs.
 - A rich text or Word 97-2003 book already in your library was read again once, at the first launch of version 0.3.1, so that it gained its headings and pages.
 - Every rich text, rich text with attachments, Word 97-2003, Word, OpenDocument text, and Word 2003 XML book is read again once more, at the first launch of version 0.4.0, for what the readers now find.
-  See What every document reader reads, below, [Pages](reads-pages-and-limits.md), and [Where TextMouth keeps your library](where-your-library-lives.md).
+  See What every document reader reads, below, [Pages](reads-pages-and-limits.md), and [Where TextMouth keeps your library](book-packages.md).
   Your place follows its words, and text you changed with Edit Text is kept as it is.
 - At the first launch of version 0.4.1 every .doc book is read again once more, for Word 6 and Word 95 documents and for symbols, and every .docx and .wordml book once more, for hidden text, in the same way.
 - At the first launch of version 0.4.2 every .docx and .wordml book is read again once more, for the symbols they now read (see Other limits of each, below), in the same way.
@@ -151,7 +151,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A file whose content is rich text is read as rich text whatever its name, so a .doc that Word saved with "Save as RTF" is read as rich text.
 - A .doc that is really a web page is read as what it is, by TextMouth's own HTML reader.
 - A .doc that is really Word 2003 XML is read as that, by TextMouth's own Word 2003 XML reader.
-- A file named .rtf or .doc that is none of these is refused (see [Adding books](adding-books.md)).
+- A file named .rtf or .doc that is none of these is refused (see [Adding books](import-progress-and-errors.md)).
 
 ## Word 6 and Word 95 documents
 <!-- id: word-6-word-95-documents; keys: .doc, .dot, WinWord 6, compound file, own reader, textutil; src: TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/WordDocumentStructure.swift, TextMouth/Parsers/CompoundFile.swift, TextMouth/Parsers/WordDocumentLegacyText.swift -->
@@ -201,7 +201,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 ### Word 1 and Word 2 documents
 <!-- id: word-1-word-2-documents; keys: WinWord 1, WinWord 2, refused, not a compound file, unreadable; src: TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/OwnDocumentReaders.swift -->
 
-- Word 1 and Word 2 documents are not compound files, and are refused at once with the unreadable sentence of a Word document (see [Adding books](adding-books.md)).
+- Word 1 and Word 2 documents are not compound files, and are refused at once with the unreadable sentence of a Word document (see [Adding books](import-progress-and-errors.md)).
 
 ### Word 6 and Word 95 file type
 <!-- id: word-6-word-95-file; keys: file type, bytes, not the name, Word 97-2003; src: TextMouth/Parsers/WordDocumentStructure.swift, TextMouth/Parsers/TextutilSourceCheck.swift -->
@@ -212,7 +212,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 <!-- id: documents-that-apple-textutil-tool; keys: textutil, older than Word 6, Word 2, Mac only, iOS refusal; src: TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/TextutilSourceCheck.swift -->
 
 - On the Mac only, textutil reads a compound-file Word document older than Word 6, which TextMouth's reader does not know the layout of.
-- On iOS such a document is refused, since iOS runs no helper program (see [Adding books](adding-books.md)).
+- On iOS such a document is refused, since iOS runs no helper program (see [Adding books](import-progress-and-errors.md)).
 
 ### How textutil is run
 <!-- id: how-textutil-run; keys: separate process, WatchedProcess, timeout, cancel, second run, page breaks; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Parsers/TextutilPageBreaks.swift -->
@@ -221,8 +221,8 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - It loads nothing that the document links to and fetches nothing from the network.
 - It converts the document once for each import, and the book's title and author come from that same run.
   A second run reads the page breaks (see [Pages](reads-pages-and-limits.md)).
-- Cancel in the import overlay stops it at once (see [Adding books](adding-books.md)).
-- [Where TextMouth keeps your library](where-your-library-lives.md) gives the limits of time, memory, and processor time at which TextMouth stops it, where it writes, and what stops one that a crash left behind.
+- Cancel in the import overlay stops it at once (see [Adding books](import-progress-and-errors.md)).
+- [Where TextMouth keeps your library](helper-programs.md) gives the limits of time, memory, and processor time at which TextMouth stops it, where it writes, and what stops one that a crash left behind.
 
 ### Headings in a document textutil reads
 <!-- id: headings-document-textutil-reads; keys: font size, bold, heading guess, textutil HTML; src: TextMouth/Parsers/TextutilHTMLStructure.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->

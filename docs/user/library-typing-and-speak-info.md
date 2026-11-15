@@ -11,14 +11,14 @@ That is the list's own letter navigation, and no shortcut takes such a key there
 Shortcuts that are a letter alone, W, J, K, L, F, and B by default, work in reader windows only.
 Space is not a letter, so Play / Pause keeps it, except while you type a title that goes on with a space, in the two choices of the Leading articles setting that pass over articles when typing (next).
 A letter with Shift, Option, Command, or Control still runs its shortcut in a Library window, as a Shift-R you gave Release Media Controls does.
-Shift-J and Shift-L do not fall back to the actions of J and L there, so the list takes them (see the Shortcuts tab, in [Settings](settings.md)).
+Shift-J and Shift-L do not fall back to the actions of J and L there, so the list takes them (see the Shortcuts tab, in [Settings](settings-shortcuts.md)).
 Speak Info and Speak Full Info do not use I and I twice; unless you changed their keys, they follow the defaults described under Speak Info, below.
 
 ## Leading articles
 <!-- id: leading-articles; keys: The Hobbit, articles, Titles section, leadingArticles, partOfTitle, config.json; src: TextMouth/Models/LeadingArticleWording.swift, TextMouth/Models/LeadingArticles.swift, TextMouth/Models/TitleTyping.swift, TextMouth/Views/Library/LibraryTitleTyping.swift, TextMouth/ViewModels/LibraryListCache.swift -->
 
 Leading articles.
-The Library tab of Settings has a Titles section whose Leading articles pop-up chooses what the words The, A, and An, and a book's own language's articles, at the start of a title do in the Library's lists (see [Settings](settings.md) for the choices, the languages, and config.json).
+The Library tab of Settings has a Titles section whose Leading articles pop-up chooses what the words The, A, and An, and a book's own language's articles, at the start of a title do in the Library's lists (see [Settings](settings-library.md) for the choices, the languages, and config.json).
 It changes nothing in a title: Book Information, a reader window, Now Playing, Speak Info, and Export keep each title as written.
 
 - Part of the Title, the default, leaves everything as described above: the list's own letter navigation finds titles as they are written, and The Hobbit is among the T's.
@@ -151,7 +151,7 @@ A book's full summary adds:
 
 A folder's adds its subfolders and the time left in all its books.
 A feed's adds its folder and its address.
-The full summary of a text book that records an encoding, guessed or chosen (see [What TextMouth reads](what-textmouth-reads.md)), says so right after the bookmarks.
+The full summary of a text book that records an encoding, guessed or chosen (see [What TextMouth reads](reads-text-files.md)), says so right after the bookmarks.
 The sentence is "Text encoding: Windows-1251 (Cyrillic), guessed." or "Text encoding: Shift JIS (Japanese), chosen."
 The brief summary does not, and a book that records no encoding has no such sentence, since Speak Full Info never reads a book's file to find one.
 

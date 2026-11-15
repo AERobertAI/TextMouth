@@ -39,7 +39,7 @@ Part of [TextMouth's documentation](../../README.md).
     In testing, a Chinese file needed about 46 characters and a Korean one about 28, and a Japanese file with only 5 spaces, digits, or line ends was not found.
   - Chinese, Japanese, or Korean UTF-16 with no such characters at all, whose bytes look the same as Shift JIS, GBK, or EUC text.
   - A file that is not found is read as one of the other encodings, with the wrong letters, or as Windows-1252.
-- UTF-16 and UTF-32 have no item in the Text Encoding pop-up (see [The Library window](library-window.md)), so a file that is not found cannot be set right there.
+- UTF-16 and UTF-32 have no item in the Text Encoding pop-up (see [The Library window](book-information.md)), so a file that is not found cannot be set right there.
   Save it as UTF-8, or in UTF-16 with a byte-order mark, and add it again.
 - A book that recorded its encoding when you added it is read again in that encoding, and only UTF-16 in Latin letters can overrule it.
   A web archive's page that names no encoding is read as it was before.
@@ -59,7 +59,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: encodings-textmouth-guesses-among; keys: code pages, Shift JIS, KOI8-R, TextEncodingCatalog, Mac Roman, Speak Full Info; src: TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Models/LibraryInfoWording.swift -->
 
 - TextMouth guesses among the encodings below.
-- Book Information and Speak Full Info name the one it chose as written here, then "guessed", and one you chose the same way, then "chosen" (see [The Library window](library-window.md)).
+- Book Information and Speak Full Info name the one it chose as written here, then "guessed", and one you chose the same way, then "chosen" (see [The Library window](book-information.md)).
 - Windows-1252 is not among them: a file is read as Windows-1252 when no guess can be trusted, though you can choose it.
 - The two DOS code pages and Mac Central European, added in version 0.4.7, are taken only when macOS's own guess names one of them.
   TextMouth does not try them itself, so a book already in the library is not read differently; the Text Encoding pop-up in Book Information offers all three for you to choose.
@@ -121,14 +121,14 @@ Part of [TextMouth's documentation](../../README.md).
 
 - A book already in your library keeps its text.
 - TextMouth records a guess with the book when the book is added, and an encoding you choose when you choose it, and reads the book in it every time its text is built again, after an update or with Redo Text Extraction.
-- A book added before then, and a book whose file named its encoding or read right as Windows-1252, has no record and is read as it always was (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- A book added before then, and a book whose file named its encoding or read right as Windows-1252, has no record and is read as it always was (see [Where TextMouth keeps your library](book-packages.md)).
 
 ### Choosing the encoding
 <!-- id: choosing-text-encoding; keys: Text Encoding pop-up, Automatic, strict decoding, JIS X 0212, Big5-HKSCS, GB 18030, refusal; src: TextMouth/Models/TextEncodingChoice.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/Models/LibraryInfoWording.swift -->
 
 - The Text Encoding pop-up in Book Information reads a book's file again in the encoding you choose, or, with Automatic, as TextMouth reads a file you add.
 - Use it for a book whose letters read oddly, whether the guess was wrong or missed.
-- Its items, and every sentence it says, are under Text Encoding in [The Library window](library-window.md).
+- Its items, and every sentence it says, are under Text Encoding in [The Library window](book-information.md).
 - A book you added from a file has it.
   Text you typed in with New from Text, a feed's article, and a book of another format do not.
 - A chosen encoding is read whatever the file's bytes say of themselves: a byte-order mark, bytes that are valid UTF-8, and an HTML file's own declaration do not overrule it, since you choose it for a file that read wrong.
@@ -136,7 +136,7 @@ Part of [TextMouth's documentation](../../README.md).
   UTF-8 refuses a file that is not valid UTF-8, and an encoding of one byte to a character refuses a byte it leaves undefined, such as 0x98 in Windows-1251.
   Windows-1252 gives every byte a character, so it refuses nothing.
 - A file that is not valid in the encoding chosen is refused, and nothing changes: not the book's text, its saved places, nor its record.
-  The sentence names the book and the encoding (see Text Encoding in [The Library window](library-window.md)).
+  The sentence names the book and the encoding (see Text Encoding in [The Library window](book-information.md)).
 - Limits, since macOS's own readers decide which characters an encoding defines:
   - Characters of JIS X 0212 in EUC-JP, which it writes with the byte 0x8F before two bytes, are refused, because macOS reads them as other characters.
   - The euro sign in Big5 and in EUC-KR is refused.
