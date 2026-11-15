@@ -16,7 +16,7 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
 - [`AGENT-NOTES-2026-10-04.md`](AGENT-NOTES-2026-10-04.md): what agents left unverified; read it before a documentation pass.
 - [`research/README.md`](research/README.md): the research and design documents, each ending in the user's answers.
 - `*.md` is gitignored except README.md, AGENTS.md, ARCHITECTURE.md, CLAUDE.md, and the pages under `docs/`: stage other Markdown with `git add -f`.
-- `humanQuestions/` (in the main checkout only) holds the user's questions and answers: read its newest file before asking anything again, and put new questions in a new file.
+- `humanQuestions/` (in the main checkout only) holds the user's questions and answers: read its newest file before asking anything again, since an answer there is the user's answer, and put new questions in a new file.
 
 ## The user's standing rules
 

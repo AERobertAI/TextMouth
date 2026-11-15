@@ -591,7 +591,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **No iPhone simulator on this Mac:** The user also allowed deleting the iPhone simulator runtime once the iPhone tests ran wholly on GitHub; it was deleted on November 14, 2026 (7.5 GB).
 - **The usage override:** The user set the override as standing for the night before the weekly reset (Saturdays at 8:00 a.m. Eastern).
   On October 10, 2026 they said: "please don't warry about the weekly reset and have a full set of agents going and work until the limit runs out, everything can just be resumed without issue in the new week...
-  and remember this for Friday nights / Saturday mornings before the usage resets").
+  and remember this for Friday nights / Saturday mornings before the usage resets".
   On such a night the orchestrator kept three builders and the non-building agents going until the limit ran out.
 - **Branching from local main:** An agent's worktree (`isolation: "worktree"`) starts at origin/main, which can be far behind local main (1,081 commits on October 12, 2026).
   So every brief has its agent make its branch from local main or a team branch, by name.
