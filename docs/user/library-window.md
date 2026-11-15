@@ -234,12 +234,13 @@ When this Mac no longer has the table, the row gives the table's stored name ins
 ### The Text Encoding row
 <!-- id: text-encoding-row; keys: character encoding, charset, bookInfoLabel; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/ViewModels/TextEncodingChoiceModel.swift -->
 
-A plain text, Markdown, or HTML book you added from a file has one more row in its Book Information sheet, "Text Encoding", after Format, a pop-up button that names the encoding the book's file is read in and reads the file again in another when you choose one (see Text Encoding, below).
+A plain text, Markdown, or HTML book you added from a file has one more row in its Book Information sheet, "Text Encoding", after Format.
+It is a pop-up button that names the encoding the book's file is read in and reads the file again in another when you choose one (see Text Encoding, in [Book Information](book-information.md#text-encoding)).
 
 ### Command-I
 <!-- id: command-i; keys: Info shortcut, Feed Info, folder summary, showBookInfo; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/App/MenuCommands.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift -->
 
-Command-I opens Book Info for the selected book and Feed Info for a feed's row, and, for a folder, which has no Info sheet, speaks the folder's full summary, as Speak Full Info does (below).
+Command-I opens Book Info for the selected book and Feed Info for a feed's row, and, for a folder, which has no Info sheet, speaks the folder's full summary, as Speak Full Info does (see [Letter keys and Speak Info](library-typing-and-speak-info.md#speak-full-info)).
 With several rows selected it acts on the first in the list's order, in Edit Mode on the first book selected, and with none it does nothing.
 
 ## Commands in a book's context menu
