@@ -124,6 +124,31 @@ class RestoreMtimesTests(unittest.TestCase):
         restore_mtimes.restore(self.repo, self.manifest)
         self.assertEqual(self.mtime("untracked.txt"), before)
 
+    def test_the_products_are_stale_only_when_many_swift_files_differ(self):
+        few = [f"TextMouth/F{n}.swift" for n in range(restore_mtimes.STALE_SWIFT_FILES)] + ["README.md"] * 500
+        self.assertEqual(restore_mtimes.stale_lines(few), [f"changed_swift={restore_mtimes.STALE_SWIFT_FILES}", "stale=false"])
+        many = few + ["TextMouth/More.swift"]
+        self.assertEqual(restore_mtimes.stale_lines(many)[1], "stale=true")
+        self.assertEqual(restore_mtimes.stale_lines([]), ["changed_swift=0", "stale=false"])
+
+    def test_main_writes_the_step_outputs_when_the_workflow_asks_for_them(self):
+        import contextlib
+        import io
+        from unittest import mock
+        output = self.manifest.parent / "github-output"
+        self.manifest.parent.mkdir(parents=True)
+        restore_mtimes.restore(self.repo, self.manifest)
+        (self.repo / "a.swift").write_text("changed\n")
+        self.git("commit", "-q", "-a", "-m", "second")
+        previous = os.getcwd()
+        os.chdir(self.repo)
+        try:
+            with mock.patch.dict(os.environ, {"GITHUB_OUTPUT": str(output)}), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(restore_mtimes.main([str(self.manifest)]), 0)
+        finally:
+            os.chdir(previous)
+        self.assertEqual(output.read_text().splitlines(), ["changed_swift=1", "stale=false"])
+
     def test_the_fixed_time_is_older_than_now(self):
         self.assertLess(restore_mtimes.FIXED_TIME + restore_mtimes.TIME_SPREAD, os.path.getmtime(__file__))
 

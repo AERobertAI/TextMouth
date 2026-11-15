@@ -102,8 +102,20 @@ def changed_names(current, old):
     return sorted(path for path, blob in current.items() if old.get(path) != blob)
 
 
+# How many Swift files may differ from the cached products' tree before the products are called stale: past this a run builds
+# long enough (a day's changes took 387 seconds, against 109 for a few files) that the workflow saves fresher products.
+STALE_SWIFT_FILES = 60
+
+
+def stale_lines(names):
+    """The step-output lines the workflow reads: "changed_swift=N", N being the number of Swift files among `names` (the
+    files that differ from the products' tree), and "stale=true" when N is more than STALE_SWIFT_FILES, else "stale=false"."""
+    swift = sum(1 for name in names if name.endswith(".swift"))
+    return [f"changed_swift={swift}", f"stale={'true' if swift > STALE_SWIFT_FILES else 'false'}"]
+
+
 def main(argv):
-    """Restores the times and says what it did."""
+    """Restores the times and says what it did; with GITHUB_OUTPUT set (a workflow step) it also writes stale_lines."""
     if len(argv) != 1:
         print("usage: restore_mtimes.py MANIFEST", file=sys.stderr)
         return 2
@@ -116,6 +128,9 @@ def main(argv):
           f"{kept} files as the products were built, {changed} changed or new (every file is given its content's time)")
     for name in names[:NAMED]:
         print(f"restore_mtimes:   changed {name}")
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+            handle.write("\n".join(stale_lines(names)) + "\n")
     return 0
 
 
