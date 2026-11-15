@@ -4,7 +4,7 @@
     "AGENTS.md": {"date": 19, "line-length": 13, "page-size": 1, "user-quote": 3},
     "ARCHITECTURE.md": {"date": 1, "index-line": 1, "line-length": 2, "sentences-per-line": 2},
     "CLAUDE.md": {"date": 1, "line-length": 2, "page-size": 1, "sentences-per-line": 4},
-    "README.md": {"date": 1, "index-line": 16, "line-length": 6, "sentences-per-line": 6},
+    "README.md": {"index-line": 16, "line-length": 5, "sentences-per-line": 5},
     "docs/agents/history.md": {"line-length": 37},
     "docs/agents/orchestrator.md": {"date": 14, "line-length": 14, "sentences-per-line": 18, "user-quote": 6},
     "docs/agents/working-with-agents.md": {"date": 5, "line-length": 11, "marker-missing": 1, "sentences-per-line": 16, "user-quote": 1},
@@ -47,13 +47,13 @@
     "docs/user/exporting-books.md": {"line-length": 33, "marker-missing": 13, "sentences-per-line": 79},
     "docs/user/feeds.md": {"date": 5, "line-length": 38, "marker-missing": 2, "page-size": 1, "section-length": 1, "sentences-per-line": 50},
     "docs/user/library-window.md": {"date": 6, "line-length": 56, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 83},
-    "docs/user/reader-windows.md": {"date": 8, "index-link": 1, "line-length": 62, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 67},
+    "docs/user/reader-windows.md": {"date": 8, "line-length": 62, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 67},
     "docs/user/recording.md": {"date": 3, "line-length": 10, "marker-missing": 1, "sentences-per-line": 16},
     "docs/user/search-library.md": {"date": 1, "line-length": 10, "marker-missing": 9, "sentences-per-line": 28},
     "docs/user/settings.md": {"date": 1, "line-length": 62, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 75},
     "docs/user/speed-and-memory.md": {"date": 1, "line-length": 13, "marker-missing": 1, "section-length": 1, "sentences-per-line": 19},
     "docs/user/transcribing.md": {"date": 10, "line-length": 16, "marker-missing": 9, "sentences-per-line": 34},
-    "docs/user/what-textmouth-reads.md": {"date": 7, "index-link": 1, "line-length": 21, "marker-missing": 110, "page-size": 1, "sentences-per-line": 58},
+    "docs/user/what-textmouth-reads.md": {"date": 7, "line-length": 21, "marker-missing": 110, "page-size": 1, "sentences-per-line": 58},
     "docs/user/where-your-library-lives.md": {"date": 13, "line-length": 63, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 75}
   }
 }

@@ -580,6 +580,9 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### Listening
 - Audio in more formats, such as AC-3, AMR, and MP2, is converted as it is added and lossless audio stays lossless; M3U playlists and Nero chapter lists are read, and a manifest.json can arrange a ZIP of tracks, which Edit Manifest changes later.
 - New Recording records from a microphone, Edit Audio… edits an audiobook's audio from the keyboard, and Transcribe Audio… turns an audiobook into text on macOS 26 and later.
+- Ogg audio is no longer played as it is, since on October 14, 2026 macOS's own Vorbis decoder locked up while TextMouth played an Ogg audiobook, TextMouth's memory grew until the Mac ran out, and the Mac had to be restarted.
+- Every Ogg file is converted to .m4a as it is added, and the Ogg books already in the library were converted once, a book at a time, at the first launch of this version.
+- TextMouth also stops a playback whose audio stops responding, and saves your place and quits before a fault in macOS's audio can exhaust the Mac's memory.
 
 ### Braille
 - TextMouth reads BRF, BRL, and PEF braille files and writes BRF and PEF from Export, in Unified English Braille or English Braille, American Edition, contracted or not, chosen in a new Braille tab, and it keeps italic and bold where the code can carry them.
