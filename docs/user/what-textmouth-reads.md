@@ -822,7 +822,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - Clean Up Transcript (Experimental)… corrects, by rules you write, words the recognizer always writes another way, such as a name in a series of books.
 - The last cleanup can be undone (see [Transcribing an audiobook](transcribing.md)).
 - TextMouth comes with no rules of its own: measured on 38,834 words read aloud, no correction was right in every book.
-- TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md, in the same folder as this file, says which words the recognizer gets wrong, and what a cleanup can fix.
+- research/TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md, in the same folder as this file, says which words the recognizer gets wrong, and what a cleanup can fix.
 
 ### macOS 14 and 15
 

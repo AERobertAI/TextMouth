@@ -2,7 +2,7 @@
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
-CLOUD-STORAGE-RESEARCH-2026-10-03.md and CLOUD-STORAGE-PLAN-2026-10-03.md, at the repository's root, explain the design, and CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md says what real drives have verified and what remains to check by hand.
+research/CLOUD-STORAGE-RESEARCH-2026-10-03.md and research/CLOUD-STORAGE-PLAN-2026-10-03.md, at the repository's root, explain the design, and research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md says what real drives have verified and what remains to check by hand.
 
 - Where the library lives, and each book's cloud state.
   - Owner: nothing stores either. Both are read fresh from file-system metadata, with downloading switched off, by the two services CloudServices holds. The contract (Models/CloudStorageContract.swift) defines what they answer with (StorageLocation, CloudItemStatus, BookPackage, BookDownloadProgress, BookCloudState, and BookCloudError) and the words each state and failure is shown and spoken in. Until TextMouthApp installs the services, LocalItemStatusProvider and LocalBookStorage treat every library as local; tests install fakes (TextMouthProductionTests/CloudTestDoubles.swift) and put the previous services back.

@@ -69,7 +69,7 @@ project.yml defines two apps over one source folder. `TextMouth` is the Mac app,
 - It compiles the TextMouth source folder less `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`, so it compiles the files both apps share and `TextMouth/Platform/iOS/`.
 - It is the product TextMouth, with the module name TextMouth, for iOS 26.0, and has the Mac app's bundle identifier. It takes the same three Swift packages (ZIPFoundation, SwiftSoup, and swift-markdown's Markdown) and its own builds of the two C libraries it links, `LAME_iOS` and `ObjCExceptionCatcher_iOS`. project.yml defines each library once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
 - It has no helper program, since iOS lets an app start none, and no braille helper or liblouis.
-- It is the iPhone app: the Library, the reader, Settings, and importing, built from IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)). It first ran in the iOS simulator on November 8, 2026. Nothing has run on a phone.
+- It is the iPhone app: the Library, the reader, Settings, and importing, built from research/IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)). It first ran in the iOS simulator on November 8, 2026. Nothing has run on a phone.
 - Its scheme, `TextMouthiOS`, is committed. The Mac's schemes are still Xcode's own, so `-scheme TextMouth`, which `make build` and the tests use, builds the Mac app alone.
 - Xcode builds it only once its iOS platform is downloaded (see What you need, above). Until then, `make typecheck-ios` is how its code is checked.
 - Building it for the simulator is the next section.

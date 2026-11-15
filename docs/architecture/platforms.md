@@ -2,7 +2,7 @@
 
 Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 
-TextMouth is a Mac app, and since November 4, 2026 (phase 0 of the iOS port) a second app, for iOS, compiles from the same code. The design is in IOS-PORT-RESEARCH-2026-11-03.md, in the repository root, whose sections "How one codebase builds both apps" and "A plan in phases" this page follows. Phase 0 had one goal: the iOS app compiles and links, and the Mac app does exactly what it did. This page says how the code is divided between the two, and then how the iPhone app built on that division is put together (see "The iPhone app", below). On November 8, 2026 the iPhone interface of IOS-INTERFACE-SPEC-2026-11-07.md first ran in the iOS simulator; nothing has run on a phone.
+TextMouth is a Mac app, and since November 4, 2026 (phase 0 of the iOS port) a second app, for iOS, compiles from the same code. The design is in research/IOS-PORT-RESEARCH-2026-11-03.md, in the repository root, whose sections "How one codebase builds both apps" and "A plan in phases" this page follows. Phase 0 had one goal: the iOS app compiles and links, and the Mac app does exactly what it did. This page says how the code is divided between the two, and then how the iPhone app built on that division is put together (see "The iPhone app", below). On November 8, 2026 the iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md first ran in the iOS simulator; nothing has run on a phone.
 
 ## One source folder, two apps
 
@@ -82,7 +82,7 @@ The EPUB, feed, and OPML readers walk Foundation's `XMLDocument` and search it w
 
 ## The iPhone app
 
-The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes the code main holds since November 8, 2026: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below). The Search in Book of branch `ios/search-1109` (below) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
+The iPhone interface is built from research/IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes the code main holds since November 8, 2026: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below). The Search in Book of branch `ios/search-1109` (below) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
 
 ### The frame
 
