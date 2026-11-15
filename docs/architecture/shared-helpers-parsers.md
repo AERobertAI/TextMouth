@@ -100,7 +100,8 @@ All three entry points use it.
 - Cost: about 55 microseconds more a chapter in a Release build (`alice.epub`: 266 to 321 microseconds a chapter), and about 22 microseconds more for each of 20,000 short feed fragments.
   A 300-chapter book costs about 7 ms more.
   Peak memory is the same.
-- Not checked: shapes beyond the 12 measured; HTML trees past 50,000 levels, because the lifted first-layer count is quadratic (the stack use of HTML was measured to 20,000 levels, and of XML to about a million, where it showed none); and iOS, below.
+- Not checked: shapes beyond the 12 measured; HTML trees past 50,000 levels, because the lifted first-layer count is quadratic (the stack use of HTML was measured to 20,000 levels, and of XML to about a million, where it showed none); and iOS.
+  The iOS stack is described under The portable XML tree in [The two apps and the platform folders](platforms.md).
 
 ## MarkupGuard's four limits
 <!-- id: markupguard-four-limits; keys: thresholds, hostile markup, memory limit, 128 levels; src: TextMouth/Parsers/MarkupGuard.swift -->
