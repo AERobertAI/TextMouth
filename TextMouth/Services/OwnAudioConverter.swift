@@ -118,9 +118,10 @@ enum OwnAudioConverter {
         } catch let problem as OwnAudioError {
             try? FileManager.default.removeItem(at: staged)
             throw ImportAudioConverter.Failure.notRead(fileName: name, problem: problem)
-        } catch let problem as AudioEditError {
+        } catch let AudioEditError.renderFailed(reason) {
+            // The reason is an error's domain and code, which never quote a path.
             try? FileManager.default.removeItem(at: staged)
-            throw ImportAudioConverter.Failure.notWritten(fileName: name, reason: problem.localizedDescription)
+            throw ImportAudioConverter.Failure.notWritten(fileName: name, reason: reason)
         } catch {
             try? FileManager.default.removeItem(at: staged)
             throw error
