@@ -553,6 +553,32 @@ targets:
     deploymentTarget: "26.0"
     sources:
       - TextMouthiOSTests
+      # Mac test files the iPhone's unit tests share by path (one file serves both bundles; see docs/developer/testing.md).
+      - TextMouthProductionTests/CloudTestDoubles.swift
+      - TextMouthProductionTests/CollectionTestSupport.swift
+      - TextMouthProductionTests/DOCXTestPackages.swift
+      - TextMouthProductionTests/DamagedFileTestSupport.swift
+      - TextMouthProductionTests/HostedTestIsolationSupport.swift
+      - TextMouthProductionTests/ImportDecisionTestSupport.swift
+      - TextMouthProductionTests/ImportFuzzMutator.swift
+      - TextMouthProductionTests/ImportRefusalTestSupport.swift
+      - TextMouthProductionTests/KF8Fixture.swift
+      - TextMouthProductionTests/KFXFixture.swift
+      - TextMouthProductionTests/KFXTestBook.swift
+      - TextMouthProductionTests/LibraryIndexTestSupport.swift
+      - TextMouthProductionTests/LogTestSupport.swift
+      - TextMouthProductionTests/MOBIFixture.swift
+      - TextMouthProductionTests/MarkupFuzzGenerator.swift
+      - TextMouthProductionTests/PlaceRelocatorTestSupport.swift
+      - TextMouthProductionTests/PlaybackFuzzOperations.swift
+      - TextMouthProductionTests/RunLoopWaiting.swift
+      - TextMouthProductionTests/SourceScanTestSupport.swift
+      - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
+      - TextMouthProductionTests/StorageGenerationTestSupport.swift
+      - TextMouthProductionTests/TextAnchorRealReadings.swift
+      - TextMouthProductionTests/TextEncodingFixtures.swift
+      - TextMouthProductionTests/ZIPTestSupport.swift
+      # End of the shared Mac test files.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthiOSTests
