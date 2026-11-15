@@ -76,7 +76,6 @@ Its location, and moving it.
   Data is now at…", naming the folder a link leads to, "Move cancelled.
   The library is still at…", or why nothing moved, naming what arrived and where.
   The old folder is left where it was.
-- Files: Services/StorageGeneration.swift, Services/StorageDestinationAssessment.swift, Services/DataDirectoryMigrator.swift, Services/MigrationStagingLeftovers.swift, Services/TextMouthPaths.swift, ViewModels/LibraryViewModel+Migration.swift, ViewModels/DataDirectoryMoveProgress.swift, Views/Library/DataDirectoryMoveSheet.swift, Views/Settings/StorageSettingsView.swift, Platform/macOS/App/AppDelegate.swift.
 
 ## Whether the data directory is available
 <!-- id: whether-data-directory-available; keys: Library Not Available, Try Again, unmounted volume, cloud sync, iCloud, bookmark, Use Default Location; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/ViewModels/LibraryViewModel+LibraryFetch.swift, TextMouth/ViewModels/LibraryViewModel+LaunchFiles.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryFileFetch.swift, TextMouth/Services/BookCloudStorageService.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Views/ContentView.swift -->
@@ -97,7 +96,6 @@ Its availability: whether the data directory can be used.
   Meanwhile TextMouthPaths.ensureDirectoryStructure throws DataDirectoryUnavailableError, and it never creates a custom data directory or any folder above it; library index writes are skipped, not counted as failures; record writes that fail stay listed for a retry; ConfigService neither reads, writes, nor watches config.json; the log writer writes to ~/Library/Logs/TextMouth instead (the diagnostic logs, below); and ReadingStatsService and TextSubstitutionService use stand-ins that they never save over their files, as they do while a file is only in the cloud (files several Macs write, below).
   A check that finds the library again posts dataDirectoryDidBecomeAvailable, and those services read their files.
   After a loss while TextMouth ran, reloadLibraryAfterDataDirectoryReturned reads library.json afresh, carrying the session's newer reading positions and moved packages into it.
-- Files: Services/DataDirectoryAvailability.swift, ViewModels/LibraryViewModel.swift, ViewModels/LibraryViewModel+IndexRecovery.swift, Services/LibraryPersistenceService.swift, Services/TextMouthPaths.swift, Views/Library/DataDirectoryUnavailableView.swift, Views/ContentView.swift.
 
 ## Which library a data directory holds
 <!-- id: which-library-data-directory-holds; keys: identity marker, UUID, wrong folder, another copy of the library; src: TextMouth/Services/LibraryIdentity.swift, TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
@@ -108,7 +106,6 @@ Its identity: which library a data directory holds.
 - Who may write it: LibraryIdentity.adopt writes a marker only where there is none, creating the file exclusively, so one another Mac wrote a moment earlier stands: when the default location is created, and when a library without one starts (recordLibraryIdentity).
   TextMouthPaths.setCustomRoot records the path, the bookmark, and the identity together; recordLibraryIdentity records the identity again whenever a library starts, and a bookmark for a location chosen before bookmarks; TextMouthPaths.recordRelocation records a folder the bookmark found.
 - How others observe it: DataDirectoryCheck compares the marker with the identity expected, so a folder that only has the right name is never taken for the library, and StorageDestinationAssessment recognizes a folder holding another copy of the library in use.
-- Files: Services/LibraryIdentity.swift, Services/DataDirectoryAvailability.swift, Services/TextMouthPaths.swift, ViewModels/LibraryViewModel.swift.
 
 ## The session lease
 <!-- id: session-lease; keys: TextMouth Is Open on Another Mac, Sessions folder, multiple Macs, lease file, stale lease; src: TextMouth/Services/LibrarySessionLease.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
@@ -123,7 +120,6 @@ The session lease: this Mac's note, in a library another Mac can open, that it h
 - How others observe it: each Mac's refresh reads the other files with dataless files left in the cloud, judging one only in the cloud by its modification date.
   Another Mac's lease refreshed in the last three minutes brings one warning a session (TextMouth Is Open on Another Mac, with Continue and Quit TextMouth); nothing is locked.
   A file whose name begins with this Mac's ID, as a sync service's conflict copy of this Mac's own lease does ("<Mac ID> 2.json"), never counts as another Mac, and ages out as any lease does.
-- Files: Services/LibrarySessionLease.swift, ViewModels/LibraryViewModel.swift, Platform/macOS/App/AppDelegate.swift.
 
 ## Files several Macs write
 <!-- id: files-several-macs-write; keys: multi-Mac, conflict copy, stand-in, dataless, unsaved notice, crash safety; src: TextMouth/Services/SavedFile.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift, TextMouth/Services/LibraryIndexQuarantine.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouthProductionTests/MultiMacCrashSafetyTests.swift -->
@@ -142,7 +138,6 @@ Files several Macs write: reading_stats.json and substitutions.json, which TextM
 - How others observe it: the Stats tab, the Text tab, and the reader's substitution pass use the stand-ins until the file is read, and READING_STATS_FILE and SUBSTITUTIONS_FILE lines record each wait, arrival, and preserved copy.
   A sync service's conflict copy of library.json, a package record, the identity marker, config.json, or one of these two files is never read in place of the file it copies, nor removed; a package copied under another name is never adopted as a second book; and nothing merges what two Macs wrote.
   MultiMacCrashSafetyTests feeds library.json, the packages and their records, the identity marker, the leases, config.json, these two files, and the checkpoint journal what another Mac can leave (conflict copies, files cut short, files only in the cloud, packages that disappeared, another Mac's lease, an index listing packages not here yet), and checks that the code reading each may log a line, warn of another Mac, show the recovery sheet or the Library Not Available screen, or leave a row as it is, but never crashes, hangs the main thread, or deletes anything.
-- Files: Services/SavedFile.swift, Services/ReadingStatsService.swift, Services/TextSubstitutionService.swift, Services/LibraryIndexQuarantine.swift, TextMouthProductionTests/MultiMacCrashSafetyTests.swift.
 
 ## This Mac's own folders
 <!-- id: this-mac-own-folders; keys: Application Support, Caches, machine-local, scratch folders, not synced; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/ImportScratchSpace.swift, TextMouth/Services/ImportStaging.swift, TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AudioEditing/AudioEditComposition.swift, TextMouth/Services/AudioEditing/AudioEditCaches.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/Services/KeptBooks.swift, TextMouth/Services/ReadingTextCache.swift, TextMouth/Services/RecordingService.swift, TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/Feeds/FeedStore.swift -->
@@ -158,4 +153,3 @@ This Mac's own folders.
   Only plain folders go.
   Each import sweeps the folder it stages in, and, when that is this Mac's, the destination folder that earlier versions staged in.
   While an import stages a book, the book's tmbDirectory is the staged package, wherever it is (ImportStaging.directory(ofStagedPackage:)).
-- Files: Models/CloudStorageContract.swift, Services/ImportScratchSpace.swift, Services/ImportStaging.swift, Services/ArchiveExtraction.swift, Services/AudioEditing/AudioEditComposition.swift, Services/AudioEditing/AudioEditCaches.swift, Services/TextMouthPaths.swift, App/TextMouthRuntime.swift.
