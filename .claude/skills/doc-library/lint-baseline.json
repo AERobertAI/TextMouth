@@ -37,7 +37,6 @@
     "docs/architecture/state/logs.md": {"line-length": 15},
     "docs/architecture/state/media-playback.md": {"line-length": 46},
     "docs/architecture/state/package-records-places-and-files.md": {"line-length": 28},
-    "docs/architecture/state/package-records.md": {"line-length": 19},
     "docs/architecture/state/preferences-shortcuts.md": {"line-length": 21},
     "docs/architecture/state/preferences.md": {"line-length": 20},
     "docs/architecture/state/reader-navigation.md": {"line-length": 33, "user-quote": 1},
