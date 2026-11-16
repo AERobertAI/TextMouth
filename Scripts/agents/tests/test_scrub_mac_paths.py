@@ -123,6 +123,23 @@ class OtherAccountsTests(unittest.TestCase):
         self.assertEqual(scrub.other_accounts_paths("/var/folders/zz/T/x /var/folders/xy/T /var/folders/zz/xx"), [])
 
 
+class NamesTests(unittest.TestCase):
+    """This Mac's names that are secret wherever they stand."""
+
+    def test_the_account_the_temporary_folders_id_and_the_checkouts_place_are_names(self):
+        self.assertEqual(MACHINE.names(), [ACCOUNT, TMP_ID, "code/work/swift/app"])
+
+    def test_a_made_up_home_folder_has_no_names(self):
+        self.assertEqual(scrub.Machine("/Users/runner", "/Users/runner/work/app/app", TMPDIR, 501).names(), [])
+
+    def test_a_short_account_name_is_left_out_as_it_would_match_ordinary_words(self):
+        short = scrub.Machine("/Users/" + "ann", "/Users/" + "ann/code/work/app", None, 501)
+        self.assertEqual(short.names(), ["code/work/app"])
+
+    def test_a_checkout_directly_under_the_home_folder_has_no_place_name(self):
+        self.assertEqual(scrub.Machine(HOME, HOME + "/app", None, 501).names(), [ACCOUNT])
+
+
 class RepositoryCase(unittest.TestCase):
     """A temporary repository whose tracked files hold this made-up Mac's paths."""
 
@@ -206,6 +223,18 @@ class CheckTests(RepositoryCase):
         self.assertEqual(status, 1)
         self.assertIn("repository location: 0 paths", output)
         self.assertIn("temporary folder: 1 paths in 1 files", output)
+
+    def test_this_macs_name_outside_a_path_is_reported_without_being_printed(self):
+        (self.root / "chat.md").write_text(f"Thanks, {ACCOUNT}, the ID {TMP_ID} is odd.\n")
+        self.git("add", "chat.md")
+        for argv in (["--check"], []):
+            status, output = self.run_main(*argv)
+            self.assertEqual(status, 1, f"{argv}: a name no rule can rewrite leaves it for a person")
+            self.assertIn("this Mac's names outside a path: 2 in 1 files", output)
+            self.assertIn("chat.md: 2 name(s) of this Mac", output)
+            self.assertNotIn(ACCOUNT, output)
+            self.assertNotIn(TMP_ID, output)
+        self.assertIn(ACCOUNT, (self.root / "chat.md").read_text(), "the script does not guess at a name")
 
     def test_another_accounts_path_is_reported_and_left_in_place(self):
         stranger = "/Users/" + "stranger"

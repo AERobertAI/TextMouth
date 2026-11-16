@@ -92,6 +92,29 @@ class Machine:
         """True when the home folder is a made-up one (a test's, or GitHub's runner), whose paths are not secret."""
         return Path(self.home).name in FIXTURE_ACCOUNTS
 
+    def names(self):
+        """The strings that name this Mac's owner or place wherever they stand, not only in a path.
+
+        These are the account name, the temporary folder's long ID, and the checkout's place below the home folder.
+        None are returned for a made-up home folder (nothing there is secret). The account name counts only when
+        it is long enough (5 letters) not to match ordinary words.
+        """
+        if self.is_fixture:
+            return []
+        names = []
+        account = Path(self.home).name
+        if len(account) >= 5:
+            names.append(account)
+        if self.tmpdir:
+            # /var/folders/<xx>/<ID>/T: the ID is the second last part.
+            parts = Path(self.tmpdir).parts
+            if len(parts) >= 2 and len(parts[-2]) >= 20:
+                names.append(parts[-2])
+        relative = self.repository_relative()
+        if relative and len(Path(relative).parts) > 1:
+            names.append(relative)
+        return names
+
     def repository_relative(self):
         """The main checkout's path below the home folder ('a/b/TextMouth'), or None when it is not under it."""
         try:
@@ -186,14 +209,17 @@ def read_text(path):
 def scan(root, machine, pathspecs=(), write=False):
     """Scans the tracked files under `root`; with `write`, rewrites those that hold this Mac's paths.
 
-    Returns (counts, files, others): counts maps each kind to how many paths were found, `files` maps each
-    kind to the set of files holding them, and `others` maps a file to the other accounts' paths it holds
-    (after any rewrite). Only a file whose text changed is written.
+    Returns (counts, files, others, leaks): counts maps each kind to how many paths were found, `files` maps each
+    kind to the set of files holding them, `others` maps a file to the other accounts' paths it holds, and `leaks`
+    maps a file to this Mac's names (Machine.names) it holds outside a path, both as the text is after any rewrite.
+    Only a file whose text changed is written.
     """
     rules = rules_for(machine)
     counts = collections.Counter()
     files = collections.defaultdict(set)
     others = {}
+    leaks = {}
+    names = machine.names()
     for name in tracked_files(root, pathspecs):
         path = Path(root) / name
         text = read_text(path)
@@ -208,11 +234,15 @@ def scan(root, machine, pathspecs=(), write=False):
         strangers = other_accounts_paths(new_text)
         if strangers:
             others[name] = strangers
-    return counts, files, others
+        held = [value for value in names if value in new_text]
+        if held:
+            leaks[name] = held
+    return counts, files, others, leaks
 
 
-def report(counts, files, others, listing=False, out=sys.stdout):
-    """Prints the counts by kind (paths, and files holding them), then the other accounts' paths. Returns the total."""
+def report(counts, files, others, leaks, listing=False, out=sys.stdout):
+    """Prints the counts by kind (paths, and files holding them), then the paths of other accounts and this Mac's
+    names that no rule rewrites. Returns the total found."""
     total = 0
     for kind in KINDS:
         print(f"{kind}: {counts[kind]} paths in {len(files[kind])} files", file=out)
@@ -225,6 +255,12 @@ def report(counts, files, others, listing=False, out=sys.stdout):
     for name in sorted(others):
         # An unrewritable path is always listed, so a person can fix it by hand.
         print(f"    {name}: {', '.join(sorted(set(others[name])))}", file=out)
+    print(f"this Mac's names outside a path: {sum(len(found) for found in leaks.values())} in {len(leaks)} files",
+          file=out)
+    total += sum(len(found) for found in leaks.values())
+    for name in sorted(leaks):
+        # The name itself is not printed, since this output may be copied into a commit message or a report.
+        print(f"    {name}: {len(leaks[name])} name(s) of this Mac", file=out)
     return total
 
 
@@ -232,7 +268,8 @@ def main(argv=None, machine=None, root=None, out=sys.stdout):
     """Runs the script. `machine` and `root` are for tests; by default this Mac and this script's own checkout.
 
     With --check, changes nothing and returns 1 when any path is found. Otherwise rewrites the files, prints what it
-    changed, and returns 1 only when paths remain that it could not rewrite (another account's).
+    changed, and returns 1 only when something remains that it cannot rewrite (another account's path, or one of
+    this Mac's names outside a path).
     """
     parser = argparse.ArgumentParser(prog="scrub-mac-paths.py", description=__doc__.splitlines()[0])
     parser.add_argument("pathspecs", nargs="*", help="only the tracked files under these paths (default: all)")
@@ -241,13 +278,13 @@ def main(argv=None, machine=None, root=None, out=sys.stdout):
     args = parser.parse_args(argv)
     machine = machine or Machine.detect()
     root = Path(root) if root else Path(repo_paths.HERE).parent.parent
-    counts, files, others = scan(root, machine, args.pathspecs, write=not args.check)
-    total = report(counts, files, others, args.list, out)
+    counts, files, others, leaks = scan(root, machine, args.pathspecs, write=not args.check)
+    total = report(counts, files, others, leaks, args.list, out)
     if args.check:
         print("found" if total else "clean", file=out)
         return 1 if total else 0
     # After a rewrite, only paths that could not be rewritten by name remain.
-    remaining = sum(len(found) for found in others.values())
+    remaining = sum(len(found) for found in others.values()) + sum(len(found) for found in leaks.values())
     print("rewritten; left for a person: %d" % remaining, file=out)
     return 1 if remaining else 0
 
