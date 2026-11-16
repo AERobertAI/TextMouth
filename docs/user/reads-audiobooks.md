@@ -68,10 +68,101 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A file of one of them that claims to last more than a year, or a length that its size cannot hold, is refused as unreadable.
 - A Mac that can't read or convert a format refuses a file of it by name when it is imported, and nothing is added.
 
+## True Audio, WavPack, and Monkey's Audio
+<!-- id: true-audio-wavpack-monkeys-audio; keys: TTA, .tta, WavPack, .wv, .wvc, Monkey's Audio, .ape, hybrid; src: TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift -->
+
+- TextMouth decodes True Audio (.tta), WavPack (.wv), and Monkey's Audio (.ape, version 3.99 and later) with readers of its own, inside the app, so no program has to be installed for them.
+- Each file becomes an .m4a file in the book's package, as the other converted audio does (see above), and holds the source's samples exactly.
+  It is Apple Lossless at the source's bit depth, as for other lossless audio.
+  A 20-bit source is written at 24 bits, which holds every sample, and floating-point audio at 24 bits.
+- A file is known by what it holds, not its name, so a TTA file named .mp3 is read as TTA.
+- A WavPack hybrid file (a lossy .wv) with its correction file (.wvc, the same name) beside it is lossless.
+  - The .wvc is copied with the .wv, and kept with it when Keep originals of converted audio is on.
+  - Without it the hybrid file becomes AAC.
+  - A correction file that is damaged or belongs to another recording fails the import with "The correction file NAME.wvc is damaged or belongs to another recording, so NAME.wv could not be converted."
+- Audio of more than two channels is mixed to stereo, as the other converted audio is.
+- The tags are written into the .m4a: APEv2, ID3v2, and ID3v1, as the file holds them, and the book is named by them.
+- A cue sheet kept in a file's APEv2 Cuesheet tag, as WavPack's and Monkey's Audio's encoders write one, gives the book its chapters, a heading for each track of the sheet's first file that begins before the audio ends.
+- A file a reader refuses fails the import with a sentence that says why:
+  - "TextMouth can't read the audio file NAME because it is locked with a password." for a True Audio file with a password;
+  - "… because it was made by a WavPack older than version 4, from before 2004."
+  - "… because it was made by a Monkey's Audio older than version 3.99, from before 2004."
+  - "… because it holds DSD audio, which TextMouth does not read." for WavPack;
+  - "… because its channels, bit depth, sample rate, or compression level are outside what TextMouth reads." for Monkey's Audio, and shorter words for the other two;
+  - "The audio file NAME ends before its audio does, so it could not be converted.";
+  - "The audio file NAME is damaged, so it could not be converted." for a checksum that fails or a value no encoder writes.
+- A file that claims to last more than a year is refused as damaged.
+- The iPhone refuses these formats.
+
+## Formats only ffmpeg reads
+<!-- id: formats-only-ffmpeg-reads; keys: ffmpeg, ffprobe, WMA, Speex, Musepack, WebM, Matroska, brew install ffmpeg; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFprobeReport.swift, TextMouth/Models/FFmpegImportWording.swift -->
+
+- TextMouth converts, as it is imported, the audio of these formats, which macOS cannot read, with the ffmpeg installed on the Mac:
+  - Windows Media Audio (.wma, .asf), and the sound of Windows Media video (.wmv);
+  - Speex (.spx), also in an Ogg file named .ogg;
+  - Musepack (.mpc, .mp+, and .mpp);
+  - WebM and Matroska (.webm, .weba, .mka), and the sound of Matroska video (.mkv);
+  - the sound of AVI (.avi) and Flash video (.flv);
+  - RealAudio and RealMedia (.ra, .rm, .rmvb).
+- TextMouth bundles nothing of ffmpeg.
+  It looks for ffmpeg in Homebrew's and MacPorts' folders and then along PATH, and for the ffprobe that comes with it, which tells it what a file holds.
+- Each file becomes an .m4a file in the book's package, as the other converted audio does (see above): lossless audio becomes Apple Lossless, AAC of at most two channels is copied as it is, and any other audio becomes AAC at about its own bit rate, mixed to stereo when it has more channels.
+- The file's tags and chapters come along, and its sound stream is the one it marks as its default, else its first.
+  A video's picture is dropped, and so is cover art.
+  A file with no sound stream is refused with "“NAME” holds no sound to import."
+- Without ffmpeg, the import refuses the file with "To import WMA files, TextMouth needs ffmpeg, a free program that isn't installed on this Mac.
+  Install it with Homebrew by typing brew install ffmpeg in Terminal, then import the file again."
+  With ffmpeg but no ffprobe, the sentence names ffprobe: "To import WMA files, TextMouth needs ffprobe, which comes with ffmpeg but isn't installed on this Mac." and the same advice to install ffmpeg.
+- A file whose bytes are not of the format its name says is refused with this sentence:
+  "TextMouth can't read “NAME” as WMA.
+  It may be damaged, or named for another format."
+- Copy-protected Windows Media files (including PlayReady's) are refused with "TextMouth cannot open copy-protected files." whether or not ffmpeg is installed.
+- A folder, ZIP, or playlist of tracks leaves out a file that only ffmpeg reads and that can't be converted, rather than refuse the whole book, and the notice names it.
+  - A file left out for want of ffmpeg: "TextMouth left out “Trailer.avi”, which needs ffmpeg, a free program that isn't installed on this Mac."
+    The install advice follows, ending "then import the book again."
+  - A file named for one of these formats whose bytes are of none: "TextMouth left out “Report.spx”, which holds no sound it can read."
+  - Up to five files are named, then "and N more".
+  - The book is refused only when no other track is left.
+- A feed's episode in one of these formats still fails, as it did before.
+- The iPhone refuses these formats, with this sentence:
+  "“NAME” is in WMA, which TextMouth on iPhone can't play.
+  Add it on a Mac with ffmpeg installed, then send the book here."
+- A file that claims no length is limited by its size: its output may be at most 50 times the file's size, and no less than 64 MB.
+  The import refuses it before running when the disk lacks room for that.
+  [Where TextMouth keeps your library](helper-programs.md) lists what else stops ffmpeg.
+
 ## Chapter lists in Nero format
 <!-- id: chapter-lists-nero-format; keys: Nero chapters, chpl, M4B chapters, untitled chapter; src: TextMouth/Parsers/NeroChapterReader.swift -->
 
 - An M4B, M4A, MP4, M4V, or MOV file whose only chapter list is a Nero list (some audiobook tools write only that) has its chapters as headings, an untitled one called "Chapter" and its number.
+
+## Chapters from markers, cue sheets, and label files
+<!-- id: chapters-markers-cue-sheets-labels; keys: CUE sheet, .cue, WAV markers, BWF, AIFF markers, Ogg CHAPTER comments, Audacity labels, CD rip; src: TextMouth/Parsers/FileChapterReaders.swift, TextMouth/Parsers/CueSheet.swift, TextMouth/Parsers/CueSheetArrangement.swift, TextMouth/Parsers/AudacityLabels.swift, TextMouth/Services/AudioMarkerList.swift, TextMouth/Models/CueSheetWording.swift -->
+
+- A single audio file's chapters become its headings from the place its kind keeps them:
+  - a WAV file's cue points and labels (a Broadcast Wave file's too) and an AIFF file's markers;
+  - a FLAC file's CUESHEET block, or a cue sheet kept as text in its CUESHEET comment, when the file has no CHAPTER comments;
+  - the CHAPTERnnn comments of an Ogg file, and the markers of a CAF file, which are kept in the .m4a that the import converts the file to (see below).
+- A marker with no name is called "Chapter" and its number.
+- The sound before the first marker, when it is not at the start, is a heading of its own, named for the book.
+- A file whose list makes only one heading keeps the book's title, not "Track 1" or "Chapter 1".
+- A WAV or AIFF file whose only marker is at 0 seconds has no chapters.
+- A converted file's chapters are written into its .m4a as its chapter track without re-encoding the sound.
+  If that fails, the book is imported without chapters, and the debug log says so with AUDIO_CHAPTERS_NOT_KEPT.
+- A CUE sheet (.cue) lists where each track of a CD rip, or a one-file audiobook, begins in the audio files it names.
+  - TextMouth reads the FILE, TRACK, TITLE, PERFORMER, and INDEX 01 lines (INDEX 00 is ignored: the gap before a track plays as the end of the track before).
+  - Each track is a heading, titled "Track" and its number when the sheet gives it no title, or its title, a comma, "by", and its performer when its performer is not the book's author, as in "Moonlight, by Ada Okafor".
+  - The sheet's title and performer become the book's title and author.
+  - A sheet may be UTF-8 (with or without a byte-order mark), UTF-16, or Windows-1252 or Latin-1, and up to 1 MiB.
+  - It uses only files inside its own folder; a name outside it is skipped, and the notice says it is "outside the cue sheet's folder".
+  - A name that is missing, outside, or not audio falls back to the audio file with the same name beside the sheet (a sheet that names album.wav for an album.flac), and a sheet of one FILE line to the audio file with the sheet's own name.
+- An Audacity label file, a .txt file of labels and nothing else, beside a folder's audio gives that audio its headings, one for each label, in the order of their starts.
+  - It belongs to the audio file with its name, or to the only audio file beside it.
+  - A label with no text is called "Label" and its number.
+  - A .txt file chosen on its own still imports as a text book, and a ZIP holding one still imports as a batch of books.
+- How a sheet or label file arrives is in [Adding books](adding-books.md).
+- A file that ffmpeg converts keeps its own chapters (see [Formats only ffmpeg reads](#formats-only-ffmpeg-reads)).
+- A sheet or label file whose times run past the end of its audio is left unused, with a notice, and the tracks import without its headings.
 
 ## M3U and M3U8 playlists
 <!-- id: m3u-m3u8-playlists; keys: .m3u, .m3u8, playlist, track order; src: TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Models/PlaylistImportWording.swift -->

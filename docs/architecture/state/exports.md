@@ -226,6 +226,23 @@ Transcripts as captions (FMT23; 0.4.2).
 - A Transcript item that holds Markdown and no transcript.json is a failure the export reads out: BookExportWording.noTimedTranscriptReason.
   A transcript only in the cloud is noted, with the book named, as any cloud kind is.
 
+## Headings and bookmarks as chapter lists
+<!-- id: headings-bookmarks-chapter-lists; keys: CUE sheet, Audacity labels, ChapterListFormat, CueSheetWriter, chapterListItems, FMT24, FMT06, Convert headings to; src: TextMouth/Services/Export/ChapterListWriters.swift, TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift -->
+
+Headings and bookmarks as chapter lists (FMT24, FMT06).
+
+- Owner: BookExportService.chapterListItems offers a Headings item (BookExportKind.headings) for an audiobook whose saved index holds more than one chapter, and a Bookmarks item for one with bookmarks.
+  Each is one file, named for the picker's first format (chapterListItem: "Title.cue", or "Title - Bookmarks.txt").
+  BookExportModel offers Convert headings to (ChapterListFormat.formats(for:): CUE sheet first, then Audacity labels); bookmarks have one format, Audacity labels, so no picker.
+  The checkbox says the format and no size, since a chapter list is written, not copied (writesChapterList).
+- Who may write it: ChapterListFormat.fileBytes(of:book:) for the ChapterListEntry list that chapterListEntries(of:ofAudioAt:stem:access:) reads from the book's saved record in its package.
+  - Headings begin where the chapter's first clip does in a book of sections, at its file's start in a book of tracks, and, for a book of one file, as the file's own chapter list read them, since the index keeps only lengths rounded down to a tenth of a second.
+  - Bookmarks sit where the reader plays them (bookmarkPlace), named by their name or "Bookmark N".
+  - CueSheetWriter writes the book's TITLE and PERFORMER, a FILE line for each exported audio file (typed MP3, AIFF, or WAVE by extension), and a track for each chapter with INDEX 01 at its start to the nearest 1/75 s.
+    The file is UTF-8 with a byte-order mark and CRLF line ends, and a quotation mark in a value becomes an apostrophe.
+  - Audacity labels are points, one for each entry; entries in more than one file throw ChapterListExportError.severalFiles, and a book with no saved index throws noHeadings.
+- How others observe it: CueSheet and CueSheetArrangement read a written sheet back as the same headings.
+
 ## Spoken audio export
 <!-- id: spoken-audio-export; keys: Text as spoken audio, M4B, M4A, MP3, text to speech export, AVSpeechSynthesizer, quit hold, Caches; src: TextMouth/Services/SpeechExport/, TextMouth/Models/SpeechExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Services/BookExportService.swift, TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 

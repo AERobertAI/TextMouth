@@ -211,3 +211,40 @@ Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDO
 - PageImageDecoderTests cover the limits: the 100-megapixel check (a TIFF that claims it with no data proves it comes before decoding), orientation, and transparency.
 - PageImageArchiveTests cover the order, ComicInfo.xml, and the 2,000-page cap; PageImageImportTests the import end to end, with the ZIP rules for a picture among other files.
 - PLSAndXSPFPlaylistTests read both formats and import them end to end; PronunciationLexiconTests cover the W3C sample, a round trip, XML escaping, an external entity left unresolved, and the 5,000-rule cap; RefusedFormatAdviceTests pin each sentence of the table and that both alerts use it.
+
+## Cue sheets, markers, and label files
+<!-- id: tests-cue-sheets-markers-labels; keys: CueSheetTests, CueSheetArrangementTests, CueSheetImportTests, FLACCueSheetReaderTests, AudioMarkerListTests, OggChapterCommentTests, AudacityLabelsTests; src: TextMouthProductionTests/CueSheetTests.swift, TextMouthProductionTests/CueSheetArrangementTests.swift, TextMouthProductionTests/CueSheetImportTests.swift, TextMouthProductionTests/FLACCueSheetReaderTests.swift, TextMouthProductionTests/AudioMarkerListTests.swift, TextMouthProductionTests/OggChapterCommentTests.swift, TextMouthProductionTests/ChapterTrackWriterTests.swift, TextMouthProductionTests/AudacityLabelsTests.swift, TextMouthProductionTests/ChapterListExportTests.swift, TextMouthProductionTests/AudioEditorSavingTests.swift, TextMouthProductionTests/AudioFileInfoTests.swift -->
+
+- CueSheetTests read the sheet text, CueSheetArrangementTests make the sections from folders (Finder's order, a sheet's places, a sheet past its audio, files outside the folder), and CueSheetImportTests import a sheet, a folder, and a ZIP end to end.
+- FLACCueSheetReaderTests read the CUESHEET block and an embedded sheet; AudioMarkerListTests read the Broadcast Wave sample's two cue points, write markers into WAVE, AIFF, and CAF files made in the test and read them back, and compare afinfo's list.
+  AudioFileInfoTests list the markers of all 18 samples.
+- OggChapterCommentTests read CHAPTERnnn comments; ChapterTrackWriterTests write a chapter track and check the packets of the copy against the source's.
+- AudacityLabelsTests and ChapterListExportTests read and write label files and the exported chapter lists, and AudioEditorSavingTests and AudioEditorEndToEndTests check that a save and an export keep their chapter markers.
+- Not covered: other programs reading the markers written, cue sheets from the wild, and the labels checkbox with VoiceOver.
+
+## Formats only ffmpeg reads
+<!-- id: tests-ffmpeg-import; keys: FFmpegImportSnifferTests, FFmpegImportPlanTests, FFmpegImportConversionTests, FFmpegImportRealTests, stand-in ffmpeg, ffprobe JSON, PlayReady; src: TextMouthProductionTests/FFmpegImportSnifferTests.swift, TextMouthProductionTests/FFmpegImportPlanTests.swift, TextMouthProductionTests/FFmpegImportConversionTests.swift, TextMouthProductionTests/FFmpegImportRealTests.swift, TextMouthProductionTests/RefusedFormatAdviceTests.swift -->
+
+- GitHub's runners have no ffmpeg, so every test of the import's logic runs without it, and only FFmpegImportRealTests needs the real one.
+- FFmpegImportSnifferTests tell each sample's container from its first bytes and pin the protection check of ASF files on bytes made in the test, one object at a time, PlayReady's among them.
+- FFmpegImportPlanTests take ffprobe's own JSON for each sample (trimmed) and pin the stream chosen, the tags carried, the encoding, ffmpeg's exact arguments, the limits of a source with no length, and every sentence a listener hears.
+- FFmpegImportConversionTests drive the import through FFmpegAudioConverter.Tool stand-ins: a canned report, /bin/cp copying a finished file, and a sleep that hangs.
+  They cover the tracks a book leaves out, with and without ffmpeg.
+- FFmpegImportRealTests run on a Mac with ffmpeg and ffprobe: each sample becomes an .m4a of the codec its source calls for, with its chapters and tags, as long as its sound.
+  The samples are in TestData/format-samples, among them a WMA 1 and 2, a WMV, an AVI, an FLV, WebM, Matroska with chapters and several tracks, Speex, and RealMedia (.rm).
+- IOSBranchTests and PhoneImportBranchTests pin that the iPhone refuses these files and leaves them out of a book; RefusedFormatAdviceTests pin the copy-protection sentence, with an .aax as its example.
+- Not run anywhere yet: a real PlayReady file and a Musepack sample, since no encoder made one.
+
+## TextMouth's own TTA, WavPack, and Monkey's Audio readers
+<!-- id: tests-own-audio-readers; keys: OwnAudioTrueAudioTests, OwnAudioWavPackTests, OwnAudioMonkeysAudioTests, OwnAudioTagTests, OwnAudioImportTests, make-own-audio-samples, pcm.tsv, fuzz; src: TextMouthProductionTests/OwnAudioTrueAudioTests.swift, TextMouthProductionTests/OwnAudioWavPackTests.swift, TextMouthProductionTests/OwnAudioMonkeysAudioTests.swift, TextMouthProductionTests/OwnAudioTagTests.swift, TextMouthProductionTests/OwnAudioImportTests.swift, TextMouthProductionTests/OwnAudioSampleSupport.swift, Scripts/make-own-audio-samples.py -->
+
+- The samples are made by Scripts/make-own-audio-samples.py from tones made in the script, so every file is CC0, and encoded by the format's own BSD encoder built from its pinned source, or by ffmpeg run as a program.
+  Each folder of TestData/format-samples (tta, wv, ape) holds a pcm.tsv with the shape of every file's audio and the SHA-256 of the samples its source held.
+  The WavPack samples include hybrid files with their .wvc, files of 12, 20, and 24-in-32 valid bits (the header shift), floats, and files from ffmpeg's encoder.
+- Each reader's test class decodes every sample and compares the samples with pcm.tsv bit for bit, so a change to a reader's arithmetic fails it: OwnAudioTrueAudioTests, OwnAudioWavPackTests, and OwnAudioMonkeysAudioTests.
+  The WavPack shift samples are also checked end to end, the converted .m4a compared with the source's digest, not with what the decoder gives.
+- Each class also damages the files (cut short, flipped bytes, crafted headers) and requires an OwnAudioError, never a trap, error of another kind, or hang.
+  The Monkey's Audio fuzz pass takes samples of at most 9,000 samples, so it leaves out the multichannel, 24-bit stereo, and multi-frame files.
+- OwnAudioTagTests read APEv2, ID3v2, and ID3v1 tags by hand, and OwnAudioImportTests import each format through ImportAudioConverter: a lossless file's .m4a holds the source's samples exactly, a hybrid file becomes AAC, and a refused file fails with its sentence.
+- Nothing is played, and the only files Apple's frameworks open are the .m4a files the conversion wrote.
+- Not covered: Monkey's Audio 3.93 to 3.98 files (refused, as no encoder at hand writes one), the iPhone build running the readers, and decoding speed on slow Macs.

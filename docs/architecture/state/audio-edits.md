@@ -93,6 +93,22 @@ An MP3 file TextMouth writes (FR04): an MP3 book's save, or an export.
   Swift imports it as the LAME module (Vendor/lame/include/module.modulemap), in MP3Encoder alone.
   README.md's Third-party code is its notice.
 
+## Markers in WAVE, AIFF, and CAF files, and label files
+<!-- id: wave-aiff-caf-markers-labels; keys: AudioMarkerList, holdsChapterMarkers, keepsBookChapters, AUDIO_MARKERS_NOT_WRITTEN, chapterMarkersLeftOut, Audacity labels, FMT11, FMT06; src: TextMouth/Services/AudioMarkerList.swift, TextMouth/Services/AudioEditing/AudioEditRenderer.swift, TextMouth/ViewModels/AudioEditorModel+Saving.swift, TextMouth/Views/AudioEditor/AudioEditorWording.swift, TextMouth/Parsers/AudacityLabels.swift -->
+
+- AudioEditRenderer.render writes a render's chapters into an MPEG-4 file's chapter track and an MP3's chapter frames as it writes.
+  Once the audio is written it writes them into a WAVE, AIFF, or CAF file's marker list (writeMarkers, AudioMarkerList.write, FMT11).
+  Each is at its start, named by its title, the sound before the first included, so the chapters read back exactly (FileChapterReaders).
+  Outcome.chapterMarkersLeftOut is true only when there were markers and the write failed; the file stays whole without them and AUDIO_MARKERS_NOT_WRITTEN says why, naming no folder.
+- AudioRenderFormat.holdsChapterMarkers is true for every format the editor writes (isMPEG4, MP3, isPCM), so AudioEditorWording.chaptersLeftOut never shows now.
+  It stays for a format that would not hold them.
+  keepsBookChapters is false for CAF, whose markers a save writes but metadataAsset never reads back as chapters (FileChapterReaders reads WAVE and AIFF), so a save of a CAF book in place warns with chaptersNotReadBack.
+  Core Audio reports an AIFF's marker list 8 bytes short (120 of 128), so AudioMarkerList counts it by the bytes allocated.
+- Export Audio's checkbox (AudioEditorModel.exportsLabels, off until checked, for the window's life) also writes AudioEditorModel.labelEntries as an Audacity label file (AudacityLabels.text(of:)) beside the audio.
+  The entries are each chapter marker and each marker, in time order.
+  The file is the audio's stem with .txt, or "stem 2.txt" and on, written so that no file is replaced.
+  The export's sentence says the labels written, that they failed with why, or that there was no marker, so none was written (AudioEditorWording.exported(file:labels:), exported(file:labelsFailed:), exportedWithoutLabels(file:)).
+
 ## The originals and the original policy
 <!-- id: originals-original-policy; keys: keep original, delete original, original-take.caf, sweep, Storage settings, recording take, undo limit, AudioOriginalPolicy; src: TextMouth/Models/AudioOriginalPolicy.swift, TextMouth/Models/AudioEditList.swift, TextMouth/Services/AudioEditing/AudioOriginalSweep.swift, TextMouth/Services/AudioEditing/AudioEditActivity.swift, TextMouth/Services/AudioEditing/AudioEditingPreferences.swift, TextMouth/ViewModels/AudioEditSession.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift, TextMouth/ViewModels/LibraryViewModel+Recording.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/Settings/AudioEditingSettingsSection.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
 

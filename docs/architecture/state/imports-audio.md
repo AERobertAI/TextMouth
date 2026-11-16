@@ -97,6 +97,95 @@ Chapters: AudioPlaybackService.extractChapters(from:) reads a Nero chapter list 
 NeroChapterReader.read(at:) walks the box headers of the file to the chpl atom under moov and udta on a FileHandle, never reading the media, with every size checked and every level capped.
 NeroChapterReader.bookChapters(from:fileDuration:) sorts the chapters, drops one at or past the end of the file, and names an untitled one "Chapter N".
 
+## Chapters in WAVE, AIFF, FLAC, and Ogg files, and in converted ones
+<!-- id: chapters-markers-cue-ogg; keys: FileChapterReaders, AudioMarkerList, FLACCueSheetReader, CHAPTER comments, ChapterTrackWriter, keepChapters, AUDIO_CHAPTERS_NOT_KEPT, leadingTitle; src: TextMouth/Parsers/FileChapterReaders.swift, TextMouth/Services/AudioMarkerList.swift, TextMouth/Parsers/FLACCueSheetReader.swift, TextMouth/Services/ChapterTrackWriter.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/OggHeaderReader.swift, TextMouth/Services/AudioFileInfo.swift -->
+
+Chapters: FileChapterReaders.bookChapters(of:lasting:leadingTitle:) is the one place that picks the reader by a file's kind, when AVFoundation finds no chapter (AudioPlaybackService.extractChapters):
+- a Nero list for an MPEG-4 file (above);
+- the CUESHEET block of a FLAC file, or a cue sheet kept in its CUESHEET comment, by FLACCueSheetReader, which walks the metadata blocks by their headers on a FileHandle and is asked only when the file has no CHAPTER comments, which AVFoundation reads and which always win;
+- the cue points and labels of a WAVE or Broadcast Wave file, and the MARK chunk of an AIFF file, by AudioMarkerList (Core Audio's marker list, kAudioFilePropertyMarkerList), opened only for a file a reader may open (ImportAudioConverter.isNeverDecodedInApp), and reading chunks, not samples.
+FileChapterReaders.placedChapters(_:lasting:leadingTitle:) makes the places a book's chapters: sorted, each lasting until the next, an untitled one "Chapter N", and the sound before the first place a chapter titled by the book when that place is not at the start.
+A list that makes one chapter makes none, so a book of one heading keeps its title.
+A WAVE or AIFF file whose only marker is at 0 s so has no chapters.
+
+A file the import converts keeps its chapters through the conversion:
+- SourceInfo.chapters holds them:
+  - an Ogg file's CHAPTERnnn and CHAPTERnnnNAME comments (xiph.org's chapter extension), read by OggHeaderReader.chapters(in:) from the file's own bytes, never through Apple's frameworks;
+  - a CAF file's markers, read from afinfo's output in its child process (AudioFileInfo.markers);
+  - an MPEG-4 file's own.
+- ImportAudioConverter.keepChapters writes them into the checked .m4a as a chapter track (ChapterTrackWriter, copying the samples as they are, not re-encoding) into a hidden file beside it, checks that file as the conversion was checked, and only then replaces the .m4a.
+  A failure of either keeps the .m4a without chapters and logs AUDIO_CHAPTERS_NOT_KEPT with the file's name and an error's domain and code; Stop ends the import, the file as it was.
+- A conversion the library runs on an older book's Ogg files keeps none, so that book's chapters stay as they were.
+- A file ffmpeg converts keeps its own chapters through ffmpeg (-map_chapters 0), so convert returns before keepChapters for it.
+
+## Cue sheets and Audacity label files
+<!-- id: cue-sheets-label-files-import; keys: CueSheet, CueSheetArrangement, arrangeByCueSheets, importCueSheetWithReport, AudacityLabels, FMT24, FMT06, measuredLengths; src: TextMouth/Parsers/CueSheet.swift, TextMouth/Parsers/CueSheetArrangement.swift, TextMouth/Parsers/AudacityLabels.swift, TextMouth/Services/FileImportService+CueSheets.swift, TextMouth/Models/CueSheetWording.swift -->
+
+- CueSheet.parse reads FILE, TRACK, TITLE, PERFORMER, and INDEX 01 (frames of 1/75 s); INDEX 00 is ignored, since the gap belongs to the track before.
+  CueSheet.read(at:) decodes the file as a small text file is (a byte-order mark, UTF-16, Windows-1252, or Latin-1) up to maximumByteCount, 1 MiB, with at most 10,000 tracks and 10,000 files.
+- CueSheetArrangement turns sheets and label files into sections written as a manifest's segments, so the book plays as a DAISY book's sections do:
+  - Files are found as a playlist's are (M3UPlaylist.resolve(inFolder:)): only files inside the sheet's folder, each skipped name told with its reason.
+    A missing, outside, or non-audio name falls back to an audio file of the same stem beside the sheet, and a sheet of one file to one of the sheet's own stem.
+  - A track runs to the next track's start, across a file's end into the next file; the first takes in everything before it, and the last runs to the end of the last file.
+  - Every file a sheet or label file names is measured first (measuredLengths(of:): a file played as it is by AVFoundation's prober, an Ogg file from its own pages, any other by afinfo in its child process), and a sheet that runs past its audio is left unused with a notice.
+  - A track no sheet plays stays a section of its own, and the sections keep Finder's order, each sheet's at its first file's place.
+  - A label file (AudacityLabels, a .txt of tab-separated start, end, and text, and nothing else) is a sheet of one audio file, the file of its stem or the only one beside it; a label with no text is titled "Label N".
+  - FFmpeg-only formats are measured by afinfo, which cannot read WMA or Matroska, so a sheet over one is taken to fit and checked after the conversion (follow-up: measure them with ffprobe).
+- Folder and ZIP imports call arrangeByCueSheets(in:) when AudioManifestLocation.find finds no manifest, and write the sections as a manifest where a new one goes; a manifest.json always wins, and a folder without a sheet is left as it was.
+  FileImportService.publishingWithoutSheetsOnMisfit publishes with the sections.
+  If the book's parse finds one past its file's end after the conversion (AudioParseError.placesASectionOutsideItsFile), it publishes once more without them, their manifest removed, with CueSheetArrangement.noticeWithoutItsSections.
+  A ZIP holding a .txt is a batch of books (isAudioZip), so a label file arranges a folder's tracks alone.
+- A cue sheet chosen alone is importCueSheetWithReport, as a playlist is: the files it names inside its folder become one book, named by its title, with its performer as author, hashed by its files' paths and bytes and its own, and none deleted afterwards.
+  Its refusals are CueSheetError (tooLarge, noTracks, noAudio, timesPastAudio) in CueSheetWording's sentences.
+- FLAC files' cue sheets are read by FLACCueSheetReader (above).
+
+## TextMouth's own TTA, WavPack, and Monkey's Audio readers
+<!-- id: own-audio-readers; keys: OwnAudioFormat, OwnAudioConverter, TTADecoder, WavPackDecoder, MonkeysAudioDecoder, OwnAudioError, .wvc, APEv2; src: TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift, TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/WavPackUnpack.swift, TextMouth/Parsers/OwnAudio/MonkeysAudioDecoder.swift, TextMouth/Parsers/OwnAudio/TTADecoder.swift -->
+
+- Owner: OwnAudioFormat (trueAudio, wavPack, monkeysAudio) tells a file by its signature, after any ID3v2 tag (OwnAudioFormat.of), and gives each reader a decoder (format.decoder(of:companion:)).
+  The readers are Swift ports of BSD-licensed decoders (the TTA hardware players library 1.2, WavPack 5.9.0, and Monkey's Audio SDK 13.47), compiled into both apps from TextMouth/Parsers/OwnAudio.
+  Their notices ship in Licenses/TrueAudio (README and COPYRIGHT), Licenses/WavPack, and Licenses/MonkeysAudio.
+- The import: these files always convert (their extensions are in ImportAudioConverter.ownReaderExtensions and convertedExtensions), and one under another name is caught by its bytes; FFmpegAudioConverter.converts(_:) says no for them.
+  OwnAudioConverter.sourceInfo(of:) reads the header, refuses a length past a year as damaged, and returns the chapters of an APEv2 Cuesheet item (chapters(in:lasting:), by CueSheet and CueSheetArrangement.heading).
+  OwnAudioConverter.write decodes block by block (framesPerAppend) into an AVAssetWriter that sees only PCM made here.
+  A lossless source is written as Apple Lossless at its depth, a 20-bit one at 24 (writtenBitDepth, since the writer's 20-bit files fail the media check), a float at 24, and a hybrid WavPack file without its .wvc as AAC.
+  More than two channels are mixed to stereo (OwnAudioSamples.stereo).
+- The .wvc: OwnAudioConverter.companion(of:) finds it by name beside the .wv; the import copies it with its file, ImportAudioConverter.removeSources removes it with its source, and the kept originals move it beside its file.
+  A damaged .wvc ends in OwnAudioError.companionDamaged, whose sentence names it.
+- Untrusted input: OwnAudioBytes reads with pread(2) and never maps a file, every read is bounds-checked, arithmetic wraps or converts with checks, and each loop is limited by what the file holds, so a crafted file ends in an OwnAudioError, never a trap.
+  Allocations are capped before they are made: a Monkey's Audio frame by the SDK's own limits (MonkeysAudioDecoder.mostFramesPerFrame: a million frames of audio, ten million at Insane) and maximumSamplesPerFrame.
+  Stop is seen between blocks and in the writer's wait, and the decode runs off the main actor.
+- Header shifts: WavPack files of 12 or 20 valid bits, or of 24 in 32, are shifted back to their own width after the unpack, so the samples handed to the encoder are exact (review10 finding 1).
+- Not read: Monkey's Audio before 3.99 and WavPack before 4 (refused with their sentences), True Audio with a password or of floats, DSD, and a later WavPack block that changes the first block's sample format (crafted files only).
+- The iPhone compiles the readers, and its import refuses the files (see the iPhone's import refusals).
+
+## Audio only ffmpeg reads
+<!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, FFprobeReport, FFmpeg.locate, ASF, copy protection, FMT31, FMT32; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFprobeReport.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift -->
+
+- Which files: FFmpegAudioConverter.converts(_:) is true for a file in either of two cases, whatever its name.
+  - Its extension is in FFmpegAudioConverter.extensions (16 of them, joined to ImportAudioConverter.convertedExtensions so the reader guards keep them from Apple's decoders).
+  - Its bytes are of a container only ffmpeg reads, as FFmpegContainer.of(fileAt:) tells: ASF, Matroska, FLV, AVI, RealMedia, Musepack 7 and 8, or Speex in Ogg.
+  Ogg of any other codec stays with afconvert, and a file of TextMouth's own readers (OwnAudioConverter.format(of:)) is never ffmpeg's.
+  No failed Apple open ever chooses the path.
+- Dispatch: ImportAudioConverter.convert returns FFmpegAudioConverter.convert first for such a file, before keepChapters, since ffmpeg carries the chapters itself.
+  FFmpegContainer reads only the first bytes (AudioContentSniffer.firstBytes).
+  ASFHeader.isCopyProtected walks the ASF header for the four protection objects, PlayReady's among them: every object at least 24 bytes and inside its parent, at most 10,000 objects, at most 16 MB (maximumHeaderBytes), one nested level.
+  A protected file is refused before any program is asked.
+- The programs: FFmpeg.locate(in:environment:) looks in /opt/homebrew/bin, /usr/local/bin, and /opt/local/bin, then along PATH, and FFmpeg.probe the ffprobe beside it.
+  Both are always nil on iOS.
+  Each runs through WatchedProcess with no shell, every path given as "file:<path>", -protocol_whitelist file, and the demuxer named (-f), so no name is read as a protocol.
+  Limits: ffmpeg a minute plus a tenth of the length, 1 GB, a stall of 60 s; ffprobe 30 s plus the size at 20 MB/s, 512 MB, an 8 MB report (maximumReportBytes).
+- The plan (FFmpegAudioConverter.plan(for:container:fileName:aacEncoder:)): FFprobeReport.chosenAudio is the first usable stream marked default, else the first.
+  AAC of at most two channels is copied; a lossless codec (isLossless(codec:)) becomes Apple Lossless at its depth; anything else AAC at its own bit rate, by aac_at when ffmpeg has Apple's encoder, else aac.
+  Arguments carry the chapters and tags (-map_chapters 0, -map_metadata 0), and stream tags only for Ogg (FFprobeReport.streamTagsToCarry), since Matroska and AVI keep a track's name there.
+  The book's metadata comes from FFprobeReport.tags (AudioPlaybackService.extractFullMetadata): the title, the artist (or author, or album_artist), and the album.
+  A tag holding U+FFFD, as a Latin-1 tag read as UTF-8 does, is not yet treated as missing.
+- Limits on a source with no length: assumedDuration at 6 kbit/s, and an output cap of max(64 MB, 50 times the file) (unknownLengthOutputCap), refused before running when the volume lacks that and downmixReserveBytes.
+  A stated length the file's size can't hold is taken as unknown (believedDuration, AUDIO_INFO_IMPLAUSIBLE).
+- Tracks left out: FFmpegAudioConverter.tracksToLeaveOut(of:located:) names, among a book's several tracks, the files only ffmpeg reads that this Mac can't convert (no ffmpeg or ffprobe, or the iPhone) and those whose bytes are of no container ffmpeg reads.
+  FileImportService.leavingOutWhatOnlyFFmpegReads removes their staged copies and returns the notice (FFmpegImportWording.tracksLeftOutNotice), and the book is refused only when no track is left.
+- Not built (review9 items 6 to 11): a crashed ffprobe's own sentence, tags capped at 4 KB, and "mpp" (Microsoft Project's extension) dropped from the Musepack list.
+
 ## Playlists
 <!-- id: playlists; keys: playlist import, .m3u, m3u8, folder book, duplicate playlist, skipped entries, Book Imported alert, streaming playlist; src: TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Parsers/PLSAndXSPFPlaylist.swift, TextMouth/Models/PlaylistImportWording.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Parsers/AudioManifest.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 

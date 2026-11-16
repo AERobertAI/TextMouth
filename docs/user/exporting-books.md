@@ -9,6 +9,8 @@ Part of [TextMouth's documentation](../../README.md).
 The Export dialog lists what the books hold: a checkbox for each kind, labelled with its size and with its number of files when there are several, or, for several books, with how many of them hold it, as in "Original file, 1.2 MB", "Audio, 12 files, 340 MB", or "Audio, 2 books, 680 MB".
 The kinds are
 - Audio, an audiobook's file or its tracks;
+- Headings, an audiobook's headings as one file, with a Convert headings to pop-up that chooses CUE sheet (the first choice) or Audacity labels; listed only for a book of more than one heading;
+- Bookmarks, an audiobook's bookmarks as one Audacity label file; listed only for a book with bookmarks;
 - Original file, a text book's own file (an .rtfd, which is a folder, is copied whole, and its size is that of the files inside it) or,
   - for an audiobook whose import kept the originals of the audio it converted (Keep originals of converted audio, under [Settings](settings-storage.md)), those files as they were before:
     - one file under its own name, or, for a book of tracks, a folder named like "Moby-Dick - Original Files", each original under its path inside the book's folder of tracks;
@@ -21,6 +23,26 @@ The kinds are
 
 Kinds that none of the books hold aren't listed.
 VoiceOver starts on the first checkbox, and the first kind that can be exported is checked.
+
+## Headings and bookmarks as CUE sheets and labels
+<!-- id: export-headings-bookmarks; keys: CUE sheet, Audacity labels, Convert headings to, Headings as CUE sheet, Bookmarks as Audacity labels, chapter list; src: TextMouth/Services/Export/ChapterListWriters.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Services/BookExportService.swift -->
+
+- The Headings checkbox is labelled with the format chosen, as in "Headings as CUE sheet", and says no size, since the file is written at export.
+  Its hint, for each choice:
+  - "Each heading's title and where it begins, as a CUE sheet that names the audio as Audio exports it."
+  - "Each heading's title and where it begins, as Audacity labels, for a book whose audio is one file."
+- The Bookmarks hint is "Each bookmark's name and place, as Audacity labels, for a book whose audio is one file."
+  Bookmarks have one format, so there is no pop-up for them.
+- The files are named "Title.cue" (or "Title.txt" for labels) for the headings, and "Title - Bookmarks.txt" for the bookmarks.
+- A CUE sheet names the book's audio as Audio exports it, a FILE line for each file, and a track for each heading, with the book's title and author.
+  It is UTF-8 with a byte-order mark and CRLF line ends, and a quotation mark in a title becomes an apostrophe, since the format can't hold one.
+  TextMouth reads such a sheet back as the same headings.
+- Audacity labels mark one audio file, so they are written only for a book whose audio is one file.
+  For a book of several files the export of them fails with "Audacity labels mark one audio file, and this book's audio is in N files."
+- A bookmark with no name is called "Bookmark" and its number.
+- A book whose headings TextMouth has not read yet fails with this sentence:
+  "TextMouth has not read this book's headings yet.
+  Open the book once, then export them again."
 
 ## Where the files go
 <!-- id: export-where-files-go; keys: Choose Folder…, New Folder, scratch folder, numbered names, never replaced, DAISY; src: TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift -->

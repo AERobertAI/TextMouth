@@ -122,7 +122,7 @@ Storage: logLocation, where the diagnostic logs are written ("dataDirectory", th
 
 - recordingOriginalPolicy, what happens to the original audio of recordings and edited audiobooks ("keep", "delete", or "deleteAfterDays", the default; the name is from when only recordings kept an original),
 - and recordingOriginalDays, the days "deleteAfterDays" keeps it (1 to 365);
-- useInstalledFFmpeg, whether an installed ffmpeg runs the audio editor's filters (true by default);
+- useInstalledFFmpeg, whether an installed ffmpeg runs the audio editor's filters (true by default), and nothing else: the import of formats only ffmpeg reads ignores it;
 - audioEditorPreviewsFilters and audioEditorPlaysAfterMoves, whether the editor's Apply Filter previews a filter before applying it, and whether the editor plays half a second at the cursor after each move (both true by default);
 - and importDeleteBehavior ("Keep Original", "Delete After Import", or "Ask Each Time"), confirmBeforeDelete, moveToTrashInsteadOfDeleting, and keepsOriginalOfConvertedAudio (false by default), whether an import keeps the original of the audio it converts, which config.json alone keeps.
 

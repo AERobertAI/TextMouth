@@ -140,6 +140,32 @@ The duplicate question, Replace Existing, and the questions that wait their turn
 - A playlist and its tracks are never changed, deleted, or offered for deletion, whatever After Importing a Book says.
 - TextMouth never fetches an address: a streaming playlist, for audio on the web, is refused, and so is one that lists only web addresses.
 
+## CUE sheets and label files
+<!-- id: adding-cue-sheets-label-files; keys: .cue, CUE sheet, CD rip, Audacity labels, label file, headings from a sheet, Book Imported notice; src: TextMouth/Services/FileImportService+CueSheets.swift, TextMouth/Parsers/CueSheetArrangement.swift, TextMouth/Models/CueSheetWording.swift -->
+
+- A CUE sheet (.cue), chosen with Open Book… or in the Add to Library sheet, imports as one audiobook of the audio files it names, with a heading for each of its tracks, as a playlist imports (see the section above).
+  - The book is named by the sheet's title, else by the sheet's file name, and takes the sheet's performer as its author.
+  - Only files inside the sheet's own folder are used, each copied into the book's package, and those that need converting are converted.
+  - Importing the same sheet again finds a duplicate.
+  - The sheet and its files are never changed, deleted, or offered for deletion.
+- A single audio file chosen with a .cue of its name is not paired with it: import the .cue.
+- A sheet that lists no audio track with a start is refused with "It lists no audio track with a start that TextMouth can read."
+- A sheet chosen alone whose tracks run past the end of the audio it names is refused with "Its tracks run past the end of the audio it names, so it was made for another copy of that audio."
+- A sheet larger than 1 MiB is refused with "The cue sheet “NAME” is too large to read."
+- A folder or a ZIP of audio tracks with no manifest.json is arranged by the cue sheets in it, and a folder also by its Audacity label files; a manifest.json always wins.
+  - Several sheets arrange the tracks they name, each at the place of its first file in the folder's order, and a track no sheet names stays a section of its own.
+  - A label file arranges the audio file that has its name, or the only audio file beside it.
+  - A folder with no sheet or label file imports as it did before.
+  - The book's checksum includes the sheets, so a folder imported before the sheet was added to it is a different book.
+- When a sheet or label file can't be used, the tracks import without its headings, and the alert titled Book Imported says why:
+  - "The cue sheet “NAME” names none of the audio beside it, so its headings were not used."
+  - "The label file “NAME” matches no audio file beside it by name, so its headings were not used."
+  - "TextMouth could not read the cue sheet “NAME”, so its headings were not used."
+  - "The tracks of the cue sheet “NAME” run past the end of its audio, so its headings were not used."
+  - "The headings from “NAME” run past the end of the audio, so the tracks were imported without them." for a sheet whose times only turned out too long once the audio was read.
+  - The names a sheet gives that are not files of the book are told as a playlist's are, with a name outside the folder "outside the cue sheet's folder".
+- A label file chosen on its own imports as a text book, as it always has, and a ZIP that holds one beside audio imports as a batch of books, so a label file arranges only the audio of a folder.
+
 ## Add Feed…
 <!-- id: add-feed; keys: subscribe, podcast, RSS, Shift-Command-F, Add Feed sheet; src: TextMouth/Views/Feeds/FeedWording.swift, TextMouth/Views/Feeds/AddFeedSheet.swift -->
 
@@ -183,6 +209,22 @@ The duplicate question, Replace Existing, and the questions that wait their turn
   - "There is not enough free disk space to convert X: it needs N GB free."
     This is said before anything is converted, for audio of more than two channels, which is mixed to stereo through a hidden file of uncompressed sound that must fit on the disk.
   - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
+
+## Importing audio that only ffmpeg reads
+<!-- id: importing-audio-only-ffmpeg-reads; keys: ffmpeg, ffprobe, WMA, left out, Trailer.avi, brew install ffmpeg, Converting its audio; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift -->
+
+- Audio in WMA, Speex, Musepack, WebM, Matroska, AVI, Flash video, or RealMedia (see [What TextMouth reads](reads-audiobooks.md)) is converted at the same step, Converting its audio, with the ffmpeg installed on the Mac.
+- A single file of one of them, or a book whose only tracks are of them, is refused when ffmpeg is not installed, with the sentence that says how to install it.
+- A folder, ZIP, or playlist that holds other tracks too leaves out what ffmpeg is needed for, and the alert titled Book Imported names the files:
+  - "TextMouth left out “Trailer.avi”, which needs ffmpeg, a free program that isn't installed on this Mac." followed by how to install it with Homebrew and "then import the book again.";
+  - "TextMouth left out 2 files, “Trailer.avi” and “Intro.wmv”, which need ffmpeg, ..." for several, with at most five named and then "and N more";
+  - "TextMouth left out “Report.spx”, which holds no sound it can read." for a file named like one of these formats that is none (a System Information report is .spx too).
+- With ffmpeg installed, the sound of a video file in a folder of tracks becomes a track of the book.
+- A track that fails to convert stops the import, as any track does, and the alert says why, in the words of the section above and these:
+  - "TextMouth can't read “NAME” as WMA.
+    It may be damaged, or named for another format.";
+  - "“NAME” holds no sound to import."
+- The iPhone leaves these files out of a book it imports and refuses a single one (see [What TextMouth reads](reads-audiobooks.md)).
 
 ## The original file after an import
 <!-- id: original-file-after-import; keys: After Importing a Book, Keep Original, Delete After Import, Ask Each Time, .rtfd, Show Package Contents; src: TextMouth/Models/OriginalFileDeletionWording.swift, TextMouth/Services/FileImportService.swift -->

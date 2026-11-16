@@ -95,7 +95,10 @@ Saving and exporting:
   In a book of several tracks, only those in the track saved move.
   A bookmark keeps its number and note.
 - Shift-Command-E exports to a file and a format you choose.
-- WAVE, AIFF, and CAF files can't hold chapter markers, and saving or exporting one says they are left out.
+- A save or an export writes the chapter markers into every format the editor writes: an MPEG-4 file's chapter track, an MP3's chapter frames, and a WAVE, AIFF, or CAF file's marker list.
+  - A WAVE or AIFF file's markers are read back as the book's chapters.
+  - TextMouth doesn't read CAF markers back, so a save in place of a CAF book says "TextMouth doesn't read chapter markers back from CAF files, so this book won't list its 3 chapter markers once saved."
+  - If the markers can't be written into the file, the file keeps its audio without them, and the save says "Its 3 chapter markers couldn't be written into the file, so it has none."; the debug log records AUDIO_MARKERS_NOT_WRITTEN.
 - Option-Command-Z, after asking, reverts to the original audio, when the original is kept; Redo brings the edits back.
 - Command-I shows Audio Info: the length, the file, the format a save writes, the edits, whether the original is kept, and Original audio for this book, which gives the book a policy of its own (below).
 - Closing the window with edits not saved asks Save, Discard, or Cancel.
@@ -164,6 +167,7 @@ A filter given no value for an option it needs is refused, with the filter and t
 A width that makes no usable filter at its frequency is refused too, as in "The equalizer filter's width can't be “5000”: give a narrower width, since this one makes no usable filter at 3000 Hz.".
 With ffmpeg installed (Homebrew's, MacPorts', or one on PATH), Use ffmpeg for filters, in the Audio Editing group and on by default, runs every filter ffmpeg has; the switch's help names where TextMouth found ffmpeg, and without one, a line says that it isn't installed.
 TextMouth bundles nothing of ffmpeg.
+The switch covers filters only: importing WMA, Matroska, and the other formats only ffmpeg reads uses an installed ffmpeg whatever it says (see [What TextMouth reads](reads-audiobooks.md)).
 Twelve premade presets, such as Remove Rumble, Audiobook Loudness, and Shorten Long Pauses, can be edited, reordered, removed, added to, and reset, in Filter Presets… (below), and work with or without ffmpeg.
 
 ## MP3 without ffmpeg
@@ -181,6 +185,16 @@ Should that encoder ever fail to start, an installed ffmpeg the switch allows wr
 <!-- id: audio-editor-export; keys: Shift-Command-E, export to a file, save a copy; src: TextMouth/ViewModels/AudioEditorModel+Saving.swift, TextMouth/Services/AudioEditing/AudioExportFormat.swift -->
 
 Export writes the edits as they stand, saved or not, to a new file in any of those formats, with its chapter markers where the format holds them, leaving the book's file alone.
+
+- The Export sheet has a checkbox, "Also write the markers as Audacity labels", off when the editor opens, and kept as set until its window closes.
+  Its hint is "Writes the chapter markers and the markers beside the audio, in an Audacity label file of the same name, which Audacity imports as a label track."
+  - The label file is the audio's name with .txt, beside it, or "name 2.txt" and on when that name is taken, so no file is replaced.
+  - A marker with no name is called "Marker" and its number.
+  - The export says "Exported “name.wav” and its labels, “name.txt”."
+  - When the labels failed, it says "Exported “name.wav”, but its labels couldn't be written." and why.
+  - With no marker of either kind, the hint says "The audio has no chapter markers or markers yet, so no label file would be written."
+  - The export then says "Exported “name.wav”."
+    It adds "It has no markers, so no label file was written."
 
 ## Audio editor settings
 <!-- id: audio-editor-settings; keys: Storage tab, Audio Editing group, Filter Presets, config.json, audioEditorPreviewsFilters, audioEditorPlaysAfterMoves; src: TextMouth/Views/Settings/AudioEditingSettingsSection.swift, TextMouth/Views/Settings/AudioFilterPresetsView.swift, TextMouth/Services/AudioEditing/AudioEditorPreferences.swift -->

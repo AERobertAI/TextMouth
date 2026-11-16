@@ -50,8 +50,8 @@ How books are added is in [Adding books](adding-books.md).
 
 - A ZIP import that brings no new book, and in which nothing failed, says what it found in the Library window's alert, titled Nothing Imported, however quickly it ends: "No new books in “Library Export.zip”: all 24 were already in your library."
   ("both" for two, and "its one book" for one).
-- For an archive holding no book TextMouth reads, the alert says what the archive holds instead, most files first, as in "No books were found in “Radio.zip”.
-  It holds 176 .wma files, which TextMouth does not import."
+- For an archive holding no book TextMouth reads, the alert says what the archive holds instead, most files first, as in "No books were found in “Docs.zip”.
+  It holds 176 .exe files, which TextMouth does not import."
 - Up to three kinds are named, the rest counted as other files.
 - A kind with advice adds its sentence once, after the ones that name the files.
   A single refused file gets the same sentence after "Unsupported file format".
