@@ -105,7 +105,10 @@ extension AudioEditRenderingTests {
     /// the settings, for any layout still refused. The exception here is
     /// AVFoundation's own refusal of a 64-bit float, "Bit depth can only be
     /// one of: 24, 16, 8, 32", caught.
+    /// Runs on GitHub's runner only, since it raises an exception on purpose
+    /// (`TestMachine.requireRunnerForRaisingTest`).
     func testAnExceptionFromAVFoundationFailsTheRenderInsteadOfEndingTheApp() async throws {
+        try TestMachine.requireRunnerForRaisingTest()
         let folder = try makeFolder()
         let url = folder.appendingPathComponent("Canal Survey.caf")
         try AudioTestFixtures.writeIdentityRamp(to: url, frames: 8_000, sampleRate: Self.rate)
@@ -141,7 +144,10 @@ extension AudioEditRenderingTests {
     /// render's own error, the edited audio couldn't be written, and leaves
     /// no file: the writer's input raised an exception for these, which
     /// ended the app, in the render of every book until B12 was fixed.
+    /// Runs on GitHub's runner only, since it raises an exception on purpose
+    /// (`TestMachine.requireRunnerForRaisingTest`).
     func testARenderAskedForADepthAVFoundationRefusesFailsInsteadOfEndingTheApp() async throws {
+        try TestMachine.requireRunnerForRaisingTest()
         let (sources, folder) = try await makeRampSources(seconds: 1)
         var timeline = sources.base.timeline
         try timeline.applyRearranging(.insertSilence(at: 0.5, duration: 0.25))

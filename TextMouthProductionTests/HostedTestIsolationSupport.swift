@@ -26,6 +26,24 @@ enum TestMachine {
     static func allowed(_ seconds: TimeInterval) -> TimeInterval {
         seconds * timeScale
     }
+
+    /// Skips the test that calls it anywhere but on GitHub's runner, when the Mac is the development Mac
+    /// (`TEXTMOUTH_TEST_TIME_SCALE` is set on every runner and by nothing here), for a test that raises an
+    /// Objective-C exception on purpose and leaves only the code under test to catch it.
+    ///
+    /// If a later change broke that code, the exception would end the test host, and macOS would put a crash
+    /// report on the user's screen; on the runner the same crash is only a failed run. So such a test proves
+    /// the catch on GitHub, and the Mac's suite runs the rest. The iPhone bundle shares this file and runs only
+    /// on GitHub, so it never skips.
+    ///
+    /// - Throws: `XCTSkip` on the development Mac.
+    static func requireRunnerForRaisingTest() throws {
+        #if os(macOS)
+        guard ProcessInfo.processInfo.environment["TEXTMOUTH_TEST_TIME_SCALE"] != nil else {
+            throw XCTSkip("This test raises an Objective-C exception on purpose, so it runs on GitHub's runner only")
+        }
+        #endif
+    }
 }
 
 // MARK: - The User's Real Account
