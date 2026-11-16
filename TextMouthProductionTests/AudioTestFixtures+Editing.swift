@@ -246,6 +246,29 @@ extension AudioTestFixtures {
         withUnsafeBytes(of: value.bigEndian) { Data($0) }
     }
 
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// Apple Lossless of a 24-bit source (flag 3 after `alac/`, as the import
+    /// makes such files), by `afconvert` in a child process from a 24-bit CAF
+    /// tone made beside it: AVAudioFile's own Apple Lossless takes only a
+    /// hint of the depth. The Mac's own tool, so no sound is made.
+    static func writeToneAppleLossless24(to url: URL, frames: Int, sampleRate: Double) throws {
+        let source = url.deletingLastPathComponent().appendingPathComponent(".alac-source.caf")
+        try writeTone(to: source, frames: frames, sampleRate: sampleRate, settings: [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVLinearPCMBitDepthKey: 24,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsNonInterleaved: false,
+        ])
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/afconvert")
+        process.arguments = ["-f", "m4af", "-d", "alac/3", source.path, url.path]
+        try process.run()
+        process.waitUntilExit()
+        // A file that is not there fails the test that asked for it.
+        guard process.terminationStatus == 0 else { throw CocoaError(.fileWriteUnknown) }
+    }
+
     /// What `sample`, read from an edited identity ramp, is.
     static func rampSample(_ sample: Float) -> RampSample {
         if sample == 0 { return .silence }

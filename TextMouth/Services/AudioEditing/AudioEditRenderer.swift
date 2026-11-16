@@ -183,7 +183,11 @@ struct AudioRenderSettings: Equatable, Sendable {
                 bitRate: Int(target.rounded()), bitsPerSample: 16, isFloat: false
             )
         case .alacM4A:
-            let depth = !isFloat && [16, 20, 24, 32].contains(bits) ? bits : (isFloat ? 24 : 16)
+            // The depth of the source, written as Apple Lossless writes it
+            // (20 bits as 24, which its writer makes a file the media check
+            // can decode); floats and depths it can't hold become 24 and 16.
+            let source = storedIntegerDepth(of: stored).map(OwnAudioConverter.writtenBitDepth(forAppleLossless:))
+            let depth = source.flatMap { [16, 24, 32].contains($0) ? $0 : nil } ?? (isFloat ? 24 : 16)
             return AudioRenderSettings(
                 format: format, sampleRate: base.sampleRate, channels: base.channelCount,
                 bitRate: nil, bitsPerSample: depth, isFloat: false
@@ -196,11 +200,38 @@ struct AudioRenderSettings: Equatable, Sendable {
             // AVAssetWriter writes WAVE and AIFF files of integers only (it
             // refuses floats there). Floats become 32-bit integers, which keep
             // them far more finely than any recording needs (steps of about
-            // -186 dB); compressed audio becomes 16-bit, as on a CD.
-            // Integers of a depth AVFoundation refuses (20 bits, 64 bits)
-            // become 32-bit integers too, which hold the odd depths exactly.
-            let keeps = isPCM && !isFloat && Self.acceptedIntegerDepths.contains(bits)
-            return pcm(format, base, bits: keeps ? bits : (isPCM ? 32 : 16), isFloat: false)
+            // -186 dB); lossy audio becomes 16-bit, as on a CD. Integers keep
+            // their depth, a lossless file's too (Apple Lossless and FLAC
+            // books, whose depth is in their format flags): a depth
+            // AVFoundation refuses between two it takes goes up to the next,
+            // and a deeper one (64 bits) is a 32-bit integer.
+            let source = storedIntegerDepth(of: stored)
+            return pcm(format, base, bits: source.map { min($0, 32) } ?? (isPCM ? 32 : 16), isFloat: false)
+        }
+    }
+
+    /// The bits of each sample of the integer audio `stored` describes, as the
+    /// file holds it: a linear PCM file's, or a lossless file's (Apple Lossless
+    /// or FLAC), which reports 0 bits a channel for its compressed samples and
+    /// gives the depth of its source in its format flags instead (1 for 16
+    /// bits, 2 for 20, 3 for 24, 4 for 32, the values of
+    /// `kAppleLosslessFormatFlag_…`). Nil for floats and lossy audio.
+    static func storedIntegerDepth(of stored: AudioStreamBasicDescription) -> Int? {
+        let reported = Int(stored.mBitsPerChannel)
+        switch stored.mFormatID {
+        case kAudioFormatLinearPCM:
+            return stored.mFormatFlags & kAudioFormatFlagIsFloat == 0 && reported > 0 ? reported : nil
+        case kAudioFormatAppleLossless, kAudioFormatFLAC:
+            if reported > 0 { return reported }
+            switch stored.mFormatFlags {
+            case 1: return 16
+            case 2: return 20
+            case 3: return 24
+            case 4: return 32
+            default: return nil
+            }
+        default:
+            return nil
         }
     }
 

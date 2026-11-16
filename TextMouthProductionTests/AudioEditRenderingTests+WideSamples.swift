@@ -288,6 +288,74 @@ extension AudioEditRenderingTests {
         XCTAssertTrue(problems.isEmpty, problems.joined(separator: "\n"))
     }
 
+    // MARK: - Lossless Books
+
+    /// The depth of a lossless book is read from its format flags (1, 2, 3,
+    /// and 4 for 16, 20, 24, and 32 bits), since the format reports no bits a
+    /// channel for compressed samples; a linear PCM file's own depth counts,
+    /// and floats and lossy audio have none. A 20-bit lossless book is saved
+    /// at 24 bits, as the import writes it, and its WAVE export keeps its
+    /// depth, 20 bits being stored at 24.
+    func testTheDepthOfALosslessBookComesFromItsFormatFlags() {
+        func format(_ id: AudioFormatID, bits: UInt32, flags: AudioFormatFlags) -> AudioStreamBasicDescription {
+            AudioStreamBasicDescription(
+                mSampleRate: 8_000, mFormatID: id, mFormatFlags: flags, mBytesPerPacket: 0, mFramesPerPacket: 4_096,
+                mBytesPerFrame: 0, mChannelsPerFrame: 1, mBitsPerChannel: bits, mReserved: 0
+            )
+        }
+        for id in [kAudioFormatAppleLossless, kAudioFormatFLAC] {
+            for (flags, depth) in [(1, 16), (2, 20), (3, 24), (4, 32)] as [(AudioFormatFlags, Int)] {
+                XCTAssertEqual(AudioRenderSettings.storedIntegerDepth(of: format(id, bits: 0, flags: flags)), depth, "\(id) flags \(flags)")
+            }
+            XCTAssertNil(AudioRenderSettings.storedIntegerDepth(of: format(id, bits: 0, flags: 0)), "\(id) without flags")
+        }
+        XCTAssertEqual(AudioRenderSettings.storedIntegerDepth(of: format(kAudioFormatLinearPCM, bits: 24, flags: kAudioFormatFlagIsSignedInteger)), 24)
+        XCTAssertNil(AudioRenderSettings.storedIntegerDepth(of: format(kAudioFormatLinearPCM, bits: 32, flags: kAudioFormatFlagIsFloat)))
+        XCTAssertNil(AudioRenderSettings.storedIntegerDepth(of: format(kAudioFormatMPEG4AAC, bits: 0, flags: 2)))
+
+        func settings(_ target: AudioRenderFormat, _ id: AudioFormatID, flags: AudioFormatFlags) -> AudioRenderSettings {
+            let base = AudioEditBase(
+                url: URL(fileURLWithPath: "/book.m4a"), sampleRate: 8_000, channelCount: 1, frames: 8_000,
+                format: format(id, bits: 0, flags: flags), bitRate: nil, chapters: []
+            )
+            return AudioRenderSettings.make(target, for: base)
+        }
+        XCTAssertEqual(settings(.alacM4A, kAudioFormatAppleLossless, flags: 3).bitsPerSample, 24)
+        XCTAssertEqual(settings(.alacM4A, kAudioFormatFLAC, flags: 3).bitsPerSample, 24)
+        XCTAssertEqual(settings(.alacM4A, kAudioFormatAppleLossless, flags: 2).bitsPerSample, 24, "20 bits are written as 24")
+        XCTAssertEqual(settings(.alacM4A, kAudioFormatAppleLossless, flags: 1).bitsPerSample, 16)
+        XCTAssertEqual(settings(.pcmWAV, kAudioFormatAppleLossless, flags: 3).bitsPerSample, 24)
+        XCTAssertEqual(settings(.pcmAIFF, kAudioFormatFLAC, flags: 4).bitsPerSample, 32)
+        XCTAssertEqual(settings(.pcmWAV, kAudioFormatAppleLossless, flags: 2).bitsPerSample, 24)
+        XCTAssertEqual(settings(.pcmWAV, kAudioFormatMPEG4AAC, flags: 0).bitsPerSample, 16, "lossy audio is 16-bit")
+    }
+
+    /// A book of 24-bit Apple Lossless, made as the import makes one, is saved
+    /// as 24-bit Apple Lossless and exported to WAVE at 24 bits, not 16, and
+    /// what it saves is the book's tone.
+    func testA24BitAppleLosslessBookKeepsItsDepth() async throws {
+        let folder = try makeFolder()
+        let book = folder.appendingPathComponent("Canal Survey.m4a")
+        try AudioTestFixtures.writeToneAppleLossless24(to: book, frames: 24_000, sampleRate: Self.rate)
+        let base = try await AudioEditBase.load(book, name: "Canal Survey.m4a")
+        XCTAssertEqual(AudioRenderSettings.storedIntegerDepth(of: base.format), 24, "the fixture is 24-bit Apple Lossless")
+        var timeline = base.timeline
+        try timeline.applyRearranging(.cut(AudioTimeRange(start: 1, end: 2)))
+        let sources = AudioEditComposition.Sources(base: base, package: folder, scratch: folder)
+
+        for (format, name) in [(AudioRenderFormat.alacM4A, "saved.m4a"), (.pcmWAV, "exported.wav")] {
+            let output = folder.appendingPathComponent(name)
+            _ = try await AudioEditRenderer.render(
+                timeline, sources: sources, to: output, format: format,
+                metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
+            )
+            let written = try await AudioEditBase.load(output, name: name)
+            XCTAssertEqual(AudioRenderSettings.storedIntegerDepth(of: written.format), 24, "\(format) is written at its source's depth")
+            XCTAssertEqual(written.frames, 16_000, "\(format)")
+            XCTAssertGreaterThan(AudioTestFixtures.rms(try AudioTestFixtures.floatSamples(of: output)), 0.1, "\(format) is silent")
+        }
+    }
+
     // MARK: - Helpers
 
     /// The edits each decoded render is checked on, rendered from `book`,
