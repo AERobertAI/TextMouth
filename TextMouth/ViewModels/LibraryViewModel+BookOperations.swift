@@ -645,8 +645,13 @@ extension LibraryViewModel {
     /// writes have been made (TODO S09): they are written now, and a success
     /// that leaves changes unsaved becomes a failure that names them, since
     /// "Done" would claim the work was saved. Storage settings report their
-    /// operations through this.
+    /// operations through this. A Retry kept until the operation ended runs
+    /// first, in the same turn the operation let the storage work go, before
+    /// its own wait's turn: otherwise a finished move, Rebuild, or Reset
+    /// would be reported failed for a change about to be saved. The outcome
+    /// is what VoiceOver hears, so the retry announces nothing of its own.
     func outcomeConfirmingSaves(_ outcome: OperationOutcome) -> OperationOutcome {
+        failureCenter.runRetriesKeptForStorageWork(announcing: false)
         LibraryPersistenceService.flushPendingSave()
         return outcome.confirmingSaves(failureCenter.unsavedFailures())
     }

@@ -731,13 +731,20 @@ final class PersistenceFailureCenter: ObservableObject {
     /// operation holds the work, or when no retry is kept. The wait for the
     /// operation's end calls this; so does the flush before quitting
     /// (`UnsavedChangesTerminationGuard.flushPendingWrites()`), in case the
-    /// quit comes between the end and that wait's turn.
-    func runRetriesKeptForStorageWork() {
+    /// quit comes between the end and that wait's turn. Without
+    /// `announcing`, as for an operation's own outcome, which is said
+    /// instead (`LibraryViewModel.outcomeConfirmingSaves`), only the banner
+    /// is brought up to date.
+    func runRetriesKeptForStorageWork(announcing: Bool = true) {
         guard boundary.heldFor == nil, !retriesKeptForStorageWork.isEmpty else { return }
         let kept = retriesKeptForStorageWork
         retriesKeptForStorageWork = [:]
         rerun(outstandingFailures().filter { kept[$0.key] != nil })
-        announceOutcomeOfWaitingRetries(of: Set(kept.values))
+        if announcing {
+            announceOutcomeOfWaitingRetries(of: Set(kept.values))
+        } else {
+            publish()
+        }
     }
 
     /// Returns once the wait for the operation holding the storage work has
