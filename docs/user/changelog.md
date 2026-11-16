@@ -4,7 +4,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
-## 0.5.0 (November 15, 2026)
+## 0.5.0 (November 16, 2026)
 
 ### New formats
 - Pictures of pages (.png, .jpg, .jpeg, .heic, .heif, .tif, .tiff) and comic book archives (.cbz) are books: TextMouth reads the words on each page with the Mac's own text recognition, a chapter for each page.
