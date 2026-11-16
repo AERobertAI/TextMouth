@@ -112,11 +112,15 @@ extension FileImportService {
         located: () -> FFmpegAudioConverter.Located?
     ) throws -> (sources: [URL], notice: String?) {
         let leftOut = FFmpegAudioConverter.tracksToLeaveOut(of: sources, located: located)
-        let leaving = Set(leftOut.all.map(\.standardizedFileURL))
+        // Paths as the scan spells them, which both lists come from: a
+        // standardized URL drops "/private" only while its file exists, so it
+        // can't be compared once a file is removed.
+        let leaving = Set(leftOut.all.map(\.path))
         guard !leaving.isEmpty else { return (sources, nil) }
         let tracks = (try? AudioBookParser.audioFiles(in: folder, scan: .importing)) ?? []
-        guard tracks.contains(where: { !leaving.contains($0.standardizedFileURL) }) else { return (sources, nil) }
-        // The names are read while the files exist to be resolved.
+        guard tracks.contains(where: { !leaving.contains($0.path) }) else { return (sources, nil) }
+        // What is kept, and the names, are read while the files exist.
+        let kept = sources.filter { !leaving.contains($0.path) }
         let named = { (files: [URL]) in files.map { AudioBookParser.relativeName(of: $0, in: folder) } }
         let notice = FFmpegImportWording.tracksLeftOutNotice(
             needingFFmpeg: named(leftOut.needingFFmpeg),
@@ -126,7 +130,7 @@ extension FileImportService {
         for file in leftOut.all {
             try FileManager.default.removeItem(at: file)
         }
-        return (sources.filter { !leaving.contains($0.standardizedFileURL) }, notice)
+        return (kept, notice)
     }
 
     /// Gives each of `conversions`, written under a hidden temporary name
