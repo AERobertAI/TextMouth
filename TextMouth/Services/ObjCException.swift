@@ -16,6 +16,32 @@ enum ObjCException {
         TMCatchException(body)
     }
 
+    /// What a call raised, as a Swift error: the exception's name and reason,
+    /// for the debug log.
+    struct Raised: Error, Equatable {
+        /// The exception's name, such as `NSInvalidArgumentException`.
+        let name: String
+        /// The reason it gave, when it gave one.
+        let reason: String?
+    }
+
+    /// Runs `make`, which creates something through a framework API that
+    /// raises an Objective-C exception for arguments it refuses (the
+    /// initializers of AVAssetReader and AVAssetWriter outputs and inputs do,
+    /// for sample layouts they don't take), and returns what it made.
+    ///
+    /// - Parameter make: The call that may raise.
+    /// - Throws: `Raised`, naming the exception, when `make` raised.
+    static func making<Value>(_ make: () -> Value) throws -> Value {
+        var made: Value?
+        if let exception = catching({ made = make() }) {
+            throw Raised(name: exception.name.rawValue, reason: exception.reason)
+        }
+        // Without an exception `make` ran to its end, so `made` is set.
+        guard let made else { throw Raised(name: "NoValue", reason: nil) }
+        return made
+    }
+
     /// The one-line form of a caught exception for the log, as
     /// `SPEECH_PLAYER_EXCEPTION: <name>: <reason>`: the name and the
     /// reason, or "no reason given" when the exception has none.
