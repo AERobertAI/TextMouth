@@ -188,5 +188,124 @@ class RunTests(unittest.TestCase):
         self.assertIn("Reason: the build was stopped after 0.01 minutes", files["ios-summary.txt"])
 
 
+# The error of train 1116-1349's iPhone build, which no branch's code caused: a module cache from another runner image.
+STALE_ERROR = ("error: Clang dependency scanner failure: fatal error: file '/Applications/Xcode_26.0.1.app/Contents/Developer/"
+               "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/clang/include/module.modulemap' has been modified since the "
+               "module file '/Users/runner/work/TextMouth/TextMouth/build/remote-DerivedData-ios/ModuleCache.noindex/"
+               "1TV4X376J16CB/_Builtin_stdbool-FTUUUU4ZHFEK.pcm' was built: mtime changed (was 1793595417, now 1794497068)")
+
+
+class RetryTests(unittest.TestCase):
+    """A build that fails with the stale-module error is run once more with the module caches emptied, in the same limit."""
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.folder = Path(folder.name)
+        # The derived-data folder the script uses by default, with a module cache and a product in it.
+        self.derived = self.folder / "build" / "remote-DerivedData-ios"
+        (self.derived / "ModuleCache.noindex").mkdir(parents=True)
+        (self.derived / "ModuleCache.noindex" / "old.pcm").write_text("x")
+        (self.derived / "Build" / "Products").mkdir(parents=True)
+        (self.derived / "Build" / "Products" / "kept.o").write_text("x")
+        self.limits = []
+
+    def fake_build(self, first, second):
+        """A stand-in build: its first run prints `first` and exits 65 when `first` is not None, and every later run does
+        what `second` says (its text, exiting 0 if it holds SUCCEEDED, else 65). It also prints whether the module cache
+        was still there when it started, so that a test sees what the retry emptied."""
+        marker = self.folder / "tried"
+        program = (
+            "import os, sys\n"
+            f"marker = {str(marker)!r}\n"
+            f"cache = {str(self.derived / 'ModuleCache.noindex')!r}\n"
+            "print('MODULE CACHE', 'present' if os.path.exists(cache) else 'gone')\n"
+            "again = os.path.exists(marker)\n"
+            "open(marker, 'w').write('x')\n"
+            f"text = {second!r} if again else {first!r}\n"
+            "print(text)\n"
+            "sys.exit(0 if 'SUCCEEDED' in text else 65)\n")
+        return [sys.executable, "-c", program]
+
+    def run_main(self, command, limit="20"):
+        """Runs main with `command` as the build; returns (status, the output folder's files, what was printed)."""
+        real = ios.run_build
+
+        def spy(build, log, limit_minutes, append=False):
+            self.limits.append(limit_minutes)
+            return real(build, log, limit_minutes, append)
+
+        output = io.StringIO()
+        with mock.patch.object(ios, "build_command", return_value=command), mock.patch.object(ios, "ROOT", self.folder), \
+                mock.patch.object(ios, "run_build", spy), contextlib.redirect_stdout(output):
+            status = ios.main(["--out", "out", "--limit-minutes", limit])
+        out = self.folder / "out"
+        return status, {path.name: path.read_text() for path in out.iterdir()}, output.getvalue()
+
+    def test_a_build_that_fails_for_the_stale_cache_is_run_again_with_the_caches_emptied_and_passes(self):
+        status, files, printed = self.run_main(self.fake_build(STALE_ERROR, "** TEST BUILD SUCCEEDED **"))
+        self.assertEqual(status, 0)
+        self.assertTrue(files["ios-summary.txt"].startswith("iOS build: PASSED"), files["ios-summary.txt"])
+        # The first try saw the old cache and the second did not.
+        self.assertEqual(files["ios.log"].count("MODULE CACHE present"), 1)
+        self.assertEqual(files["ios.log"].count("MODULE CACHE gone"), 1)
+        self.assertEqual(files["ios-errors.txt"], "", "only the retry's errors count")
+        # Everything but the module caches is kept: this is not a clean build.
+        self.assertTrue((self.derived / "Build" / "Products" / "kept.o").exists())
+
+    def test_the_summary_says_the_retry_happened_and_why(self):
+        _, files, printed = self.run_main(self.fake_build(STALE_ERROR, "** TEST BUILD SUCCEEDED **"))
+        retried = [line for line in files["ios-summary.txt"].splitlines() if line.startswith("Retried: ")]
+        self.assertEqual(len(retried), 1, files["ios-summary.txt"])
+        self.assertIn("has been modified since the module file", retried[0])
+        self.assertIn("module caches were emptied", retried[0])
+        self.assertIn("building once more", printed)
+
+    def test_both_tries_are_in_the_log_and_the_retry_has_what_is_left_of_the_limit(self):
+        _, files, _ = self.run_main(self.fake_build(STALE_ERROR, "** TEST BUILD SUCCEEDED **"), limit="20")
+        self.assertIn("1TV4X376J16CB", files["ios.log"])
+        self.assertIn("TEST BUILD SUCCEEDED", files["ios.log"])
+        self.assertEqual(len(self.limits), 2)
+        self.assertEqual(self.limits[0], 20.0)
+        self.assertTrue(19.0 < self.limits[1] <= 20.0, self.limits)
+
+    def test_a_retry_that_fails_again_is_the_end_and_its_errors_are_the_results(self):
+        again = "/x/Foo.swift:3:4: error: no such thing"
+        status, files, _ = self.run_main(self.fake_build(STALE_ERROR, again))
+        self.assertEqual(status, 0)
+        self.assertEqual(len(self.limits), 2, "one retry, never more")
+        self.assertTrue(files["ios-summary.txt"].startswith("iOS build: FAILED"))
+        self.assertEqual(files["ios-errors.txt"], "/x/Foo.swift:3:4: error: no such thing\n",
+                         "the first try's stale error is not among the retry's results")
+
+    def test_a_retry_that_fails_with_the_stale_error_again_is_not_retried_a_third_time(self):
+        _, files, _ = self.run_main(self.fake_build(STALE_ERROR, STALE_ERROR))
+        self.assertEqual(len(self.limits), 2)
+        self.assertEqual(files["ios-errors.txt"].count("has been modified since the module file"), 1)
+
+    def test_any_other_error_is_not_retried(self):
+        _, files, _ = self.run_main(self.fake_build("/x/Foo.swift:3:4: error: no such thing", "** TEST BUILD SUCCEEDED **"))
+        self.assertEqual(len(self.limits), 1)
+        self.assertNotIn("Retried:", files["ios-summary.txt"])
+        self.assertTrue((self.derived / "ModuleCache.noindex" / "old.pcm").exists(), "an ordinary failure leaves the caches")
+
+    def test_a_build_that_passed_the_first_time_is_not_retried(self):
+        _, files, _ = self.run_main(self.fake_build("** TEST BUILD SUCCEEDED **", ""))
+        self.assertEqual(len(self.limits), 1)
+        self.assertNotIn("Retried:", files["ios-summary.txt"])
+
+    def test_with_less_than_a_minute_of_the_limit_left_there_is_no_retry(self):
+        _, files, _ = self.run_main(self.fake_build(STALE_ERROR, "** TEST BUILD SUCCEEDED **"), limit="0.5")
+        self.assertEqual(len(self.limits), 1)
+        self.assertNotIn("Retried:", files["ios-summary.txt"])
+        self.assertTrue(files["ios-summary.txt"].startswith("iOS build: FAILED"))
+
+    def test_the_stamp_is_checked_before_the_build_in_the_runs_own_derived_data_folder(self):
+        seen = []
+        with mock.patch.object(ios.runner_module_cache, "prepare", lambda derived: seen.append(Path(derived))):
+            self.run_main(self.fake_build("** TEST BUILD SUCCEEDED **", ""))
+        self.assertEqual(seen, [self.derived.resolve()])
+
+
 if __name__ == "__main__":
     unittest.main()
