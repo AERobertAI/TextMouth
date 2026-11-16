@@ -697,11 +697,27 @@ struct FeedInfoFacts: Equatable {
     var address: String?
 }
 
+/// What Speak Info knows of a feed's item not downloaded, from its row
+/// (returnrow).
+struct FeedItemInfoFacts: Equatable {
+    /// The row as VoiceOver speaks it (`FeedWording.itemRowLabel(_:)`):
+    /// its title, its state, the place kept for it, its date, and its
+    /// length.
+    var rowLabel: String
+    /// What Return and the row's default action do with it, in the row's
+    /// hint's words (`FeedWording.itemRowHint(_:keptPlace:)`): "Downloads
+    /// it, then opens it".
+    var opening: String
+    /// The title of its feed, or nil once the feed's record is gone.
+    var feedTitle: String?
+}
+
 /// The selected row's facts, of whichever kind the row is.
 enum LibraryInfoSubject: Equatable {
     case book(BookInfoFacts)
     case folder(FolderInfoFacts)
     case feed(FeedInfoFacts)
+    case feedItem(FeedItemInfoFacts)
 }
 
 /// The sentences Speak Info speaks (`LibraryInfoSpeaker`): the brief
@@ -713,7 +729,8 @@ enum LibraryInfoSubject: Equatable {
 /// `FeedWording.moment`, and a feed's counts through its row's own phrase,
 /// so nothing is spelled twice.
 enum LibraryInfoWording {
-    /// What a press says when no row is selected.
+    /// What a press of Speak Info, or of Return (Open Selected Book), says
+    /// when no row is selected.
     static let nothingSelected = "Nothing is selected."
     /// The kind a folder's summary names after the folder's name.
     static let folderKind = "Folder"
@@ -732,6 +749,7 @@ enum LibraryInfoWording {
         case .book(let book): return sentences(briefParts(of: book))
         case .folder(let folder): return sentences(briefParts(of: folder))
         case .feed(let feed): return sentences(briefParts(of: feed))
+        case .feedItem(let item): return sentences(briefParts(of: item))
         }
     }
 
@@ -751,6 +769,8 @@ enum LibraryInfoWording {
             return sentences(briefParts(of: folder) + fullParts(of: folder))
         case .feed(let feed):
             return sentences(briefParts(of: feed) + fullParts(of: feed))
+        case .feedItem(let item):
+            return sentences(briefParts(of: item) + fullParts(of: item))
         }
     }
 
@@ -792,9 +812,15 @@ enum LibraryInfoWording {
     /// folder, "In Classics", or in none, "Not in a folder".
     static func placeNote(of book: BookInfoFacts) -> String {
         if let feedTitle = book.feedTitle {
-            return "In \(feedTitle), a feed"
+            return inFeedNote(feedTitle)
         }
         return book.folderPath.isEmpty ? noFolderNote : "In \(book.folderPath)"
+    }
+
+    /// Where an episode or an article is, in the feed titled `feedTitle`:
+    /// "In The Digital Antiquarian, a feed".
+    static func inFeedNote(_ feedTitle: String) -> String {
+        "In \(feedTitle), a feed"
     }
 
     /// Where a book in the reading list stands in it, as its brief summary
@@ -933,6 +959,23 @@ enum LibraryInfoWording {
             parts.append("Address \(address)")
         }
         return parts
+    }
+
+    // MARK: A Feed's Item Not Downloaded
+
+    /// A feed's item's brief summary, in parts (returnrow): what its row
+    /// says, then its feed, as an episode's book says its feed
+    /// (`inFeedNote(_:)`), unless the feed's record is gone. Example: "The
+    /// first visit, Not downloaded, March 3, 5 minutes. In The Tactile
+    /// Atlas, a feed."
+    static func briefParts(of item: FeedItemInfoFacts) -> [String] {
+        [item.rowLabel] + (item.feedTitle.map { [inFeedNote($0)] } ?? [])
+    }
+
+    /// What a feed's item's full summary adds: what Return and its row's
+    /// default action do with it, "Downloads it, then opens it."
+    static func fullParts(of item: FeedItemInfoFacts) -> [String] {
+        [item.opening]
     }
 
     // MARK: Sentences

@@ -241,6 +241,14 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
             isArticle: content.isArticle
         )
     }
+
+    /// The Open command of the item row showing `content`, which the row's
+    /// default action (VoiceOver's VO-Space) and Return both run: it opens
+    /// the item's book, downloading the item first when needed. Every item
+    /// row offers it.
+    static func open(for content: FeedItemRowContent) -> FeedItemAction? {
+        actions(for: content).first { $0.command == .open }
+    }
 }
 
 // MARK: - The Commands' Words
