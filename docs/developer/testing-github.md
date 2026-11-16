@@ -263,7 +263,9 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
 <!-- id: flaky-unexplained-runner; keys: intermittent, flake, not retried, 503, rate limit, egress, network error; src: TextMouthProductionTests/IntegrationPersistenceTests.swift, TextMouthProductionTests/MenuKeyShortcutTests.swift, TextMouthProductionTests/LibraryLaunchFilesTests.swift, TextMouthProductionTests/RecordingSaveTests.swift, TextMouthProductionTests/IntegrationWindowRoutingTests.swift, TextMouthProductionTests/ContinueToNextBookTests.swift, TextMouthProductionTests/PreferenceStoreTests.swift, TextMouthProductionTests/MigrationStagingLeftoversTests.swift, TextMouthProductionTests/ReaderLifecycleAuditTests.swift, TextMouthProductionTests/NowPlayingOwnershipTests.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, Scripts/agents/runner-skips.conf, Scripts/agents/github_run.py, Scripts/agents/merge_shards.py -->
 
 These failed on the runner in some runs and not others, and nobody found the cause.
-They are not retried (nothing here is retried on any machine); the ones named in the skip list are left out there, the others are expected now and then in a remote result, and one that appears twice in a row on a quiet change deserves a look on this Mac.
+Xcode runs a failing test again, up to three tries in all (`RETRY_ARGUMENTS` in `Scripts/agents/test_command.py`, for the suite and the trains), and the run passes when one try does.
+The result lists each test that needed a second try as RETRIED (`test_tries.py` reads them from the log), so one that fails now and then stays visible.
+The ones named in the skip list are left out there, the others are expected now and then in a remote result, and one that appears twice in a row on a quiet change deserves a look on this Mac.
 
 - Rebalanced shards change which classes share a test host, and that brings out order dependencies that a fixed order hid.
 - **Left out, cause not found:**
