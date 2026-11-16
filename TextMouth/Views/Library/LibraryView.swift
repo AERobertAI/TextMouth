@@ -1417,24 +1417,47 @@ struct LibraryView: View {
         var rows = folders.map { TypedRow(id: $0.id, name: $0.name) }
         rows += LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: articles)
             .map { TypedRow(id: $0.id, title: $0.title, language: nil) }
-        var listedBooks = books
-        if let feedID, !books.isEmpty {
-            let listing = FeedFolderListing.make(
-                feedID: feedID,
-                center: feedFolders.center,
-                shownBooks: books,
-                folderBooks: allBooks,
-                search: searchText,
-                wordsPerMinute: settingsViewModel.wordsPerMinute,
-                articles: articles
-            )
-            listedBooks = listing.entries.compactMap { entry in
-                if case .book(let book, _) = entry { return book }
-                return nil
-            } + listing.otherBooks
-        }
+        // In a feed's folder, its books in the order it lists them.
+        let listedBooks = feedID == nil || books.isEmpty
+            ? books
+            : booksSectionRows(books, orderedBy: allBooks, feedID: feedID, articles: articles).compactMap(\.book)
         rows += libraryViewModel.typedRows(of: listedBooks)
         return rows
+    }
+
+    /// The Books section's rows in the list's order, as
+    /// `booksSection(_:orderedBy:feedID:)` draws them: in a feed's folder
+    /// (`feedID`), the feed's items newest first, each downloaded one as
+    /// its book's row, then the folder's other books (FR03); elsewhere the
+    /// books shown.
+    /// - Parameters:
+    ///   - books: The books the list shows, as the search narrows them.
+    ///   - allBooks: Every book at the location, in the order shown.
+    ///   - feedID: The feed whose folder the list shows, if it shows one.
+    ///   - articles: How titles are sorted and shown.
+    private func booksSectionRows(
+        _ books: [Book],
+        orderedBy allBooks: [Book],
+        feedID: UUID?,
+        articles: LeadingArticles
+    ) -> [LibraryInfoRow] {
+        guard let feedID else { return books.map(LibraryInfoRow.book) }
+        let listing = FeedFolderListing.make(
+            feedID: feedID,
+            center: feedFolders.center,
+            shownBooks: books,
+            folderBooks: allBooks,
+            search: searchText,
+            wordsPerMinute: settingsViewModel.wordsPerMinute,
+            articles: articles
+        )
+        let entries = listing.entries.map { entry -> LibraryInfoRow in
+            switch entry {
+            case .book(let book, _): return .book(book)
+            case .item(let item): return .feedItem(item)
+            }
+        }
+        return entries + listing.otherBooks.map(LibraryInfoRow.book)
     }
 
     /// The Folders section's rows and the Folders rotor's entries here, of
@@ -1764,17 +1787,29 @@ struct LibraryView: View {
     // MARK: - Speak Info and Book Info for the Selected Row
 
     /// The row Speak Info (Shift-Command-I) and Book Info (Command-I) act
-    /// on: the first selected row in the list's order, which the List
-    /// selects by ID for a folder's and a feed's row as for a book's, or
-    /// the edit selection's first book (`LibraryInfoRow.selected`).
+    /// on: the first selected row in the list's order, or the edit
+    /// selection's first book (`selectedRow(editSelection:)`).
     private var selectedInfoRow: LibraryInfoRow? {
-        LibraryInfoRow.selected(
+        selectedRow(editSelection: editSelection)
+    }
+
+    /// The first row the list's selection holds, in the list's order,
+    /// which the List selects by its tag: a book's, a folder's, or a feed's
+    /// ID, or a feed's item's own tag (returnrow); failing that, the first
+    /// book `editSelection` checks; nil when neither selects a row shown
+    /// (`LibraryInfoRow.selected`).
+    private func selectedRow(editSelection: Set<UUID>) -> LibraryInfoRow? {
+        let articles = libraryViewModel.leadingArticles
+        return LibraryInfoRow.selected(
             selectedBookIDs,
             editSelection: editSelection,
             folders: shownFolderRows(of: libraryViewModel.subfoldersOf(currentFolderPath)).shown,
             // In the order the Feeds section shows them.
-            feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: libraryViewModel.leadingArticles),
-            books: filteredBooks
+            feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: articles),
+            // The Books section's rows, where the view shows that section.
+            rows: listsItems
+                ? booksSectionRows(filteredBooks, orderedBy: displayedBooks, feedID: shownFeedID, articles: articles)
+                : []
         )
     }
 

@@ -11,37 +11,49 @@ enum LibraryInfoRow: Equatable {
     case folder(BookFolder)
     /// A feed's row in the Feeds section.
     case feed(FeedRowContent)
+    /// The row of a feed's item not downloaded, or downloaded into another
+    /// folder, in its feed's folder (FR03, returnrow).
+    case feedItem(FeedItemRowContent)
 
     /// The row's identity, as the List tags the row: its book's, folder's,
-    /// or feed's ID. Speak Info ties each summary to the row it describes by
-    /// it (REV07, Library finding 2), so a press on another row speaks that
-    /// row's summary rather than only stopping the one speaking.
+    /// or feed's ID, or an item row's own tag
+    /// (`FeedItemRowContent.selectionID`). Speak Info ties each summary to
+    /// the row it describes by it (REV07, Library finding 2), so a press on
+    /// another row speaks that row's summary rather than only stopping the
+    /// one speaking.
     var id: UUID {
         switch self {
         case .book(let book): return book.id
         case .folder(let folder): return folder.id
         case .feed(let row): return row.id
+        case .feedItem(let item): return item.selectionID
         }
+    }
+
+    /// The row's book, for a book's row; nil for any other row.
+    var book: Book? {
+        if case .book(let book) = self { return book }
+        return nil
     }
 
     /// The row a Library window's commands act on: the first selected row
     /// in the list's order, by the selection the List keeps, `selected`,
-    /// which holds a folder's or a feed's row by its ID as it holds a
-    /// book's, since each row's ID is its tag; or, when that selects none
-    /// of the rows shown, the first book of the edit-mode selection; nil
-    /// when nothing is selected.
+    /// which holds every row by its ID, since each row's ID is its tag; or,
+    /// when that selects none of the rows shown, the first book of the
+    /// edit-mode selection; nil when nothing is selected.
     /// - Parameters:
     ///   - selected: The List's selection.
     ///   - editSelection: The edit-mode selection.
     ///   - folders: The folder rows shown, in order.
     ///   - feeds: The feed rows shown, in order.
-    ///   - books: The book rows shown, in order.
+    ///   - rows: The Books section's rows shown, in order: books, and in a
+    ///     feed's folder its items not downloaded among them.
     static func selected(
         _ selected: Set<UUID>,
         editSelection: Set<UUID>,
         folders: [BookFolder],
         feeds: [FeedRowContent],
-        books: [Book]
+        rows: [LibraryInfoRow]
     ) -> LibraryInfoRow? {
         if let folder = folders.first(where: { selected.contains($0.id) }) {
             return .folder(folder)
@@ -49,10 +61,10 @@ enum LibraryInfoRow: Equatable {
         if let feed = feeds.first(where: { selected.contains($0.id) }) {
             return .feed(feed)
         }
-        if let book = books.first(where: { selected.contains($0.id) }) {
-            return .book(book)
+        if let row = rows.first(where: { selected.contains($0.id) }) {
+            return row
         }
-        if let book = books.first(where: { editSelection.contains($0.id) }) {
+        if let book = rows.lazy.compactMap(\.book).first(where: { editSelection.contains($0.id) }) {
             return .book(book)
         }
         return nil
@@ -61,8 +73,9 @@ enum LibraryInfoRow: Equatable {
     /// What Book Info (Command-I) does for this row: the Book Info sheet
     /// for a book; Feed Info for a feed's row, or for a feed's folder,
     /// whose feed `feedInFolder` names by the folder's ID; and, for any
-    /// other folder, which has no sheet, its full summary spoken, as Speak
-    /// Full Info speaks it, the summary nearest to a sheet's whole.
+    /// other folder and for a feed's item not downloaded, which have no
+    /// sheet, the full summary spoken, as Speak Full Info speaks it, the
+    /// summary nearest to a sheet's whole.
     func infoCommand(feedInFolder: (UUID) -> UUID?) -> LibraryInfoCommand {
         switch self {
         case .book(let book):
@@ -71,6 +84,8 @@ enum LibraryInfoRow: Equatable {
             return .feedInfo(row.id)
         case .folder(let folder):
             return feedInFolder(folder.id).map(LibraryInfoCommand.feedInfo) ?? .speakFullInfo
+        case .feedItem:
+            return .speakFullInfo
         }
     }
 }
@@ -124,7 +139,21 @@ extension LibraryInfoSubject {
             }
         case .feed(let row):
             self = .feed(FeedInfoFacts.of(feedID: row.id, center: feedFolders.center, now: now) ?? FeedInfoFacts(row))
+        case .feedItem(let item):
+            self = .feedItem(FeedItemInfoFacts(item, feedTitle: feedFolders.center.store.record(of: item.feedID)?.feed.title))
         }
+    }
+}
+
+extension FeedItemInfoFacts {
+    /// The facts of a feed's item from its row, `item`, in the feed titled
+    /// `feedTitle`: what the row says, and what its default action does.
+    init(_ item: FeedItemRowContent, feedTitle: String?) {
+        self.init(
+            rowLabel: item.label,
+            opening: FeedWording.itemRowHint(item.state, keptPlace: item.kept?.hasPlace ?? false),
+            feedTitle: feedTitle
+        )
     }
 }
 
