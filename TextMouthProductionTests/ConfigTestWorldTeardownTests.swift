@@ -20,19 +20,15 @@ import XCTest
 @MainActor
 final class ConfigTestWorldTeardownTests: XCTestCase {
 
-    override func setUp() {
-        super.setUp()
-        // Start from a center with no settings failure, so the checks below
-        // see only what this test makes.
-        PersistenceFailureCenter.shared.recordSuccess(.configuration)
-    }
-
     // MARK: - Dropping a waiting save
 
     /// A waiting save that is dropped never writes: the file is not made, no
     /// failure is reported, and the service has nothing waiting. A save
     /// asked for afterwards still works.
     func testADroppedSaveNeverWrites() throws {
+        // A clean shared center, and cleaned again as the test ends, so the
+        // checks see only this test's own file and no other test's failure.
+        let center = cleanSharedFailureCenter()
         let file = try makeConfigFileURL()
         let service = makeConfigService(fileURL: file, saveDelay: .milliseconds(50))
         service.config.wordsPerMinute = 321
@@ -41,32 +37,41 @@ final class ConfigTestWorldTeardownTests: XCTestCase {
 
         service._dropScheduledSaveForTesting()
         XCTAssertFalse(service.hasScheduledSave)
-        spin(for: 0.4)
+        spinMainRunLoop(for: 0.4)
         XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "a dropped save wrote the file")
-        XCTAssertEqual(PersistenceFailureCenter.shared.outstandingFailures().map(\.subject), [])
+        XCTAssertEqual(center.outstandingFailures().filter { $0.path == file.path }.map(\.subject), [])
 
         // Dropping when nothing waits changes nothing.
         service._dropScheduledSaveForTesting()
         service.scheduleSave()
-        XCTAssertTrue(eventually { FileManager.default.fileExists(atPath: file.path) }, "a later save never wrote")
+        XCTAssertTrue(eventually(within: 5) { FileManager.default.fileExists(atPath: file.path) }, "a later save never wrote")
         XCTAssertEqual(try ConfigService.decode(Data(contentsOf: file)).wordsPerMinute, 321)
     }
 
     /// In the app a config folder that is missing as a save fires is a real
     /// failure, reported for the user to hear and retry; only the test's own
-    /// teardown drops a save. The failure is settled again here, so it is
-    /// never heard by another test.
+    /// teardown drops a save. The failure is reported and announced, and the
+    /// shared center is cleaned as the test ends, so no other test hears it.
     func testASaveWhoseFolderIsGoneIsStillAFailureTheUserHears() throws {
+        let center = cleanSharedFailureCenter()
+        let announced = VoiceOverAnnouncer.recordedAnnouncements.count
         let file = try makeConfigFileURL()
         let service = makeConfigService(fileURL: file, saveDelay: .milliseconds(50))
         service.config.wordsPerMinute = 322
         service.scheduleSave()
         try FileManager.default.removeItem(at: file.deletingLastPathComponent())
-        defer { PersistenceFailureCenter.shared.recordSuccess(.configuration) }
 
         XCTAssertTrue(
-            eventually { PersistenceFailureCenter.shared.outstandingFailures().map(\.subject) == [.configuration] },
+            eventually(within: 5) { center.outstandingFailures().contains { $0.path == file.path && $0.subject == .configuration } },
             "the save into a missing folder was not reported"
+        )
+        XCTAssertTrue(
+            eventually(within: 5) {
+                VoiceOverAnnouncer.recordedAnnouncements.dropFirst(announced).contains {
+                    $0.message.contains("Settings could not be saved")
+                }
+            },
+            "the user was not told the settings could not be saved"
         )
     }
 
@@ -187,18 +192,5 @@ final class ConfigTestWorldTeardownTests: XCTestCase {
             guard let lineSoFar = linesBefore.last, !lineSoFar.contains("//") else { return nil }
             return linesBefore.count
         }
-    }
-
-    // MARK: - Waiting
-
-    /// Runs the main run loop for `seconds`, so a save waiting on its delay
-    /// gets its turn. Every wait here is bounded.
-    private func spin(for seconds: TimeInterval) {
-        RunLoop.current.run(until: Date(timeIntervalSinceNow: seconds))
-    }
-
-    /// Whether `condition` becomes true within five seconds.
-    private func eventually(_ condition: () -> Bool) -> Bool {
-        waitUntil(timeout: 5, condition)
     }
 }
