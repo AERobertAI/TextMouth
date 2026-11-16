@@ -119,7 +119,8 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
                 }
             }
         }
-        print("FFMPEG_HOSTILE: \(crashed.count) copies crashed the helper, caught by its guard: \(crashed)")
+        // Worded without "crash": the run's summary reads a line holding that word as the test host's crash.
+        print("FFMPEG_HOSTILE: \(crashed.count) copies ended in the helper's signal guard (status 70): \(crashed)")
         XCTAssertEqual(unexpected, [])
     }
 
