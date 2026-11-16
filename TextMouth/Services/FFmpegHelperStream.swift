@@ -34,9 +34,10 @@ struct FFmpegHelperStream {
         let payload: [UInt8]
     }
 
-    /// The bytes of each piece asked of a pipe: a megabyte, a PCM record's
-    /// most and its header.
-    static let pieceBytes = Int(TMFF_MAX_PCM_RECORD_BYTES) + Int(TMFF_RECORD_HEADER_BYTES)
+    /// The bytes of each piece asked of a pipe: 256 KB, about a PCM record
+    /// as the session writes them. A longer record is gathered from several
+    /// pieces, and a pipe gives less at a time anyway.
+    static let pieceBytes = 256 * 1_024
 
     /// Gives the next bytes of the stream, empty at its end.
     private let nextPiece: () async throws -> [UInt8]

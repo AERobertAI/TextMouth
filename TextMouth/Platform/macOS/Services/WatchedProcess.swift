@@ -570,22 +570,29 @@ enum WatchedProcess {
         }
 
         /// `read(upTo:)`'s work, blocking its thread: waits (`poll`) for the
-        /// pipe to hold bytes or end, looking at the flags between waits.
+        /// pipe to hold bytes or end, looking at the flags between waits. The
+        /// bytes are read straight into the array returned, never zeroed
+        /// first: a pipe gives far less than is asked at a time, and a
+        /// stream of samples is gigabytes.
         private func readWaiting(upTo count: Int) throws -> [UInt8] {
             let descriptor = handle.fileDescriptor
-            var buffer = [UInt8](repeating: 0, count: count)
             while true {
                 var waiting = pollfd(fd: descriptor, events: Int16(POLLIN), revents: 0)
                 let ready = poll(&waiting, 1, Self.pollMilliseconds)
                 if ready > 0 {
-                    let got = buffer.withUnsafeMutableBytes { Darwin.read(descriptor, $0.baseAddress, count) }
-                    if got > 0 {
-                        state.withLock { $0.bytesRead += Int64(got) }
-                        return Array(buffer[0..<got])
+                    var failure: Int32 = 0
+                    let bytes = [UInt8](unsafeUninitializedCapacity: count) { buffer, initialized in
+                        let got = Darwin.read(descriptor, buffer.baseAddress, count)
+                        failure = got < 0 ? errno : 0
+                        initialized = max(got, 0)
                     }
-                    if got == 0 { return [] }
-                    if errno == EINTR || errno == EAGAIN { continue }
-                    throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+                    if !bytes.isEmpty {
+                        state.withLock { $0.bytesRead += Int64(bytes.count) }
+                        return bytes
+                    }
+                    if failure == 0 { return [] }
+                    if failure == EINTR || failure == EAGAIN { continue }
+                    throw POSIXError(POSIXErrorCode(rawValue: failure) ?? .EIO)
                 }
                 if ready == 0 {
                     // Nothing waits in the pipe: once the child has ended, nothing will.
