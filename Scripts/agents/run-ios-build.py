@@ -59,8 +59,10 @@ DEFAULT_LIMIT_MINUTES = 20
 # it had compiled anything.
 MINIMUM_RETRY_MINUTES = 1.0
 # The longest the device build for the app's size may take, in minutes, when the request asks for the size. It comes after the
-# Simulator build in the same job, so it must fit what the job's 30 minutes leave.
-DEFAULT_SIZE_LIMIT_MINUTES = 12
+# Simulator build in the same job (limit 90 minutes: the platform download about 4, the Simulator build at most
+# DEFAULT_LIMIT_MINUTES, this, and the interface tests' step of at most 45). The first run on GitHub (43966277770, November 16,
+# 2026) took 10.6 minutes for the device build and measuring from a cold cache, and the Simulator build 2.5 from a warm one.
+DEFAULT_SIZE_LIMIT_MINUTES = 15
 # The folder of the device build, inside the derived-data folder, and how much of its log goes into ios.log.
 DEVICE_FOLDER = "device"
 SIZE_LOG_LINES_KEPT = 200
