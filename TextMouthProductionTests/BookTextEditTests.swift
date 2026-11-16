@@ -315,7 +315,7 @@ final class BookTextEditTests: XCTestCase {
         let heard = await check(book, with: editor, in: announcements)
         let copy = try XCTUnwrap(keptCopies(of: book).last, "the refused edit was not kept")
         XCTAssertEqual(try Data(contentsOf: copy), Data(tooDeep.utf8))
-        XCTAssertEqual(heard, [BookTextEditWording.notTaken(.nestedTooDeeply(limit: limit), bookTitle: book.title, keptCopy: copy)])
+        XCTAssertEqual(heard, [BookTextEditWording.notTaken(.nestedTooDeeply(chapter: 2, limit: limit), bookTitle: book.title, keptCopy: copy)])
         let again = await check(book, with: editor, in: announcements)
         XCTAssertEqual(again, [], "the same refusal was announced again")
         XCTAssertEqual(keptCopies(of: book), [copy], "the same edit was kept twice")
@@ -349,7 +349,7 @@ final class BookTextEditTests: XCTestCase {
             guard let held = error as? BookTextEditPending else {
                 return XCTFail("the read was not held: \(error)")
             }
-            XCTAssertEqual(held.refusal, .nestedTooDeeply(limit: limit))
+            XCTAssertEqual(held.refusal, .nestedTooDeeply(chapter: 2, limit: limit))
             XCTAssertNotNil(held.keptCopy)
         }
         XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), tooDeep, "the text was rebuilt over the edit")
@@ -363,25 +363,57 @@ final class BookTextEditTests: XCTestCase {
     }
 
     /// The sentences for an edit nested too deeply, as VoiceOver hears them:
-    /// when it is refused, and in place of the book while it stands.
+    /// when it is refused, and in place of the book while it stands. They
+    /// name the chapter by its number, so that a text that was already too
+    /// deep before the change can be found, and none says its title.
     func testTheSentencesForAnEditNestedTooDeeply() {
-        let refusal = BookTextEditRefusal.nestedTooDeeply(limit: 128)
+        let chapter = BookTextEditRefusal.nestedTooDeeply(chapter: 2, limit: 128)
+        let whole = BookTextEditRefusal.nestedTooDeeply(chapter: nil, limit: 128)
         XCTAssertEqual(
-            BookTextEditWording.refused(refusal, bookTitle: "Harbour Pilots"),
+            BookTextEditWording.refused(chapter, bookTitle: "Harbour Pilots"),
+            "Text not updated: chapter 2 of the edited text of Harbour Pilots nests quotes, lists, or emphasis more than 128 levels deep, "
+                + "which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change; "
+                + "until then, the book keeps the text it had."
+        )
+        XCTAssertEqual(
+            BookTextEditWording.refused(whole, bookTitle: "Harbour Pilots"),
             "Text not updated: the edited text of Harbour Pilots nests quotes, lists, or emphasis more than 128 levels deep, "
-                + "which TextMouth can't read safely. Undo the change in your editor and save again; until then, the book keeps the text it had."
+                + "which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change; "
+                + "until then, the book keeps the text it had."
         )
         XCTAssertEqual(
-            BookTextEditWording.heldReason(refusal),
-            "it nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely. "
-                + "Undo the change in your editor and save again, and the book opens."
+            BookTextEditWording.heldReason(chapter),
+            "its chapter 2 nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely. "
+                + "Flatten it in your editor and save again, or undo the change, and the book opens."
         )
         XCTAssertEqual(
-            BookTextEditWording.heldReason(refusal, forAudiobook: true),
+            BookTextEditWording.heldReason(whole, forAudiobook: true),
             "it nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely. "
-                + "Undo the change in your editor and save again, and the text shows."
+                + "Flatten it in your editor and save again, or undo the change, and the text shows."
         )
-        XCTAssertTrue(refusal.keepsEarlierText, "the book keeps its text, and no rebuild writes over the edit")
+        XCTAssertTrue(chapter.keepsEarlierText, "the book keeps its text, and no rebuild writes over the edit")
+    }
+
+    /// An edit that leaves a chapter nested too deeply as it was (the book was
+    /// too deep before the refusal existed) is refused for that chapter's
+    /// number, whichever chapter the user changed, so the book's holder finds
+    /// the chapter to flatten.
+    func testARefusalNamesTheFirstChapterNestedTooDeeply() {
+        let limit = MarkupGuard.Limits.standard.deepestNesting
+        let deep = DeepMarkdown.quotes(limit + 1)
+        let text = "<!-- chapter: One -->\nWords.\n\n<!-- chapter: Two -->\n\(deep)\n\n<!-- chapter: Three -->\n\(deep)"
+        XCTAssertThrowsError(try MarkdownCacheService.parseMultiChapterMarkdownNamingRefusal(text, bookTitle: "B", bookAuthor: "")) {
+            let refused = $0 as? MarkdownCacheService.RefusedChapter
+            XCTAssertEqual(refused?.number, 2)
+            XCTAssertEqual(refused?.refusal as? MarkupRefusal, .nestedTooDeeply(limit: limit))
+        }
+        XCTAssertThrowsError(try MarkdownCacheService.parseMultiChapterMarkdownNamingRefusal(deep, bookTitle: "B", bookAuthor: "")) {
+            XCTAssertNil(($0 as? MarkdownCacheService.RefusedChapter)?.number)
+        }
+        // The parse an import and the rest of the app ask for still throws the bare refusal.
+        XCTAssertThrowsError(try MarkdownCacheService.parseMultiChapterMarkdownRefusing(text, bookTitle: "B", bookAuthor: "")) {
+            XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: limit))
+        }
     }
 
     /// content.md edited while the book's own file changed too is not taken:

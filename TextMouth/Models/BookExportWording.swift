@@ -407,7 +407,7 @@ enum BookExportWording {
     /// text of this book" instead.
     static func nestedTooDeeply(chapter: Int?, limit: Int) -> String {
         let subject = chapter.map { "Chapter \($0) of this book" } ?? "The text of this book"
-        return "\(subject) nests quotes, lists, or emphasis more than \(limit.formatted()) levels deep, "
+        return "\(subject) \(MarkdownNestingWording.nestsTooDeeply(limit: limit)), "
             + "which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again."
     }
 
