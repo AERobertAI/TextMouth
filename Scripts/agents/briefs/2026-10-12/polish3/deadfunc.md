@@ -39,9 +39,9 @@ Two commits, one per part. Each message ends with `Co-Authored-By: Claude Sonnet
 ## Build and test
 - Run `MetadataEditorBaselineTests`, `EPUBMetadataWritebackTests`, and each other class that pins the words: `grep -rln "is no longer in the library" TextMouthProductionTests`. Nothing else.
 - Start each build in the background, and check on it no more often than every 4 minutes, with one short command.
-- Scratch files go in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/`, each named `polish3-deadfunc-…`.
+- Scratch files go in `<session folder>/scratchpad/`, each named `polish3-deadfunc-…`.
 
-      BBS_AGENT=polish3-deadfunc .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-polish3-deadfunc -only-testing:TextMouthProductionTests/MetadataEditorBaselineTests -only-testing:TextMouthProductionTests/EPUBMetadataWritebackTests > /private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/polish3-deadfunc-build-1.log 2>&1
+      BBS_AGENT=polish3-deadfunc .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath $TMPDIR/TextMouth-DerivedData-polish3-deadfunc -only-testing:TextMouthProductionTests/MetadataEditorBaselineTests -only-testing:TextMouthProductionTests/EPUBMetadataWritebackTests > <session folder>/scratchpad/polish3-deadfunc-build-1.log 2>&1
 
   Add an `-only-testing:` for each class the words grep finds.
 - Read a result with `grep -E "Executed [0-9]+ tests|error:|failed \(" <log> | tail -20`.

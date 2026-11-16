@@ -6,7 +6,7 @@ You are building one slice of TextMouth's iPhone app, from the spec `IOS-INTERFA
 
 - Your worktree starts at origin/main from October 3. First: `git switch -c <your branch> ios/interface`. Your branch comes off the team's branch, `ios/interface`, never off main.
 - The lead merges your branch into `ios/interface`. You don't merge, and you never touch main.
-- Paths under `build/` and the file `TODO-2026-09-04.md` live in the main checkout, `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`. Use full paths for those.
+- Paths under `build/` and the file `TODO-2026-09-04.md` live in the main checkout, `<main checkout>`. Use full paths for those.
 - Read only what your slice needs: the spec's sections your prompt names, then `docs/architecture/platforms.md`, then the code by line range. `grep -E` several patterns in one call. An agent's cost follows its calls times its context.
 
 ## Nothing can run on iOS tonight
@@ -69,7 +69,7 @@ The two apps share one vocabulary. Every word a person can hear or feel in brail
 
 ## Your report
 
-Your final message is your report. Also try to save it: write it in your scratchpad, then `cp` it to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/<slug>-report.md` (the Write tool refuses that path; `cp` through Bash works). At most 40 lines:
+Your final message is your report. Also try to save it: write it in your scratchpad, then `cp` it to `<main checkout>/build/orchestrator/iosui/<slug>-report.md` (the Write tool refuses that path; `cp` through Bash works). At most 40 lines:
 
 - the branch, and each commit's hash and subject;
 - the files added and changed, and every shared file changed, with why it's safe for the Mac;

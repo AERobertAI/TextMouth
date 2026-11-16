@@ -40,7 +40,7 @@ Today's agents work under the user's word "don't worry about the usage limit tha
 4. **Tests that don't prove their fix, or that were weakened.**
    - For each fix the report claims, ask whether its test would fail if the fix were reverted. Where you doubt it, break the fix in a scratch copy of the file (under your worktree's `build/`, never committed) and say whether the test fails.
    - A limit loosened on this Mac, a skip with no reason, or a retry the report doesn't name is a finding.
-   - Run nothing heavier than a single small Python or Swift script outside the lock (`python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/agents/run_locked.py <name> <command...>` for anything heavier). You build no app and run no test target.
+   - Run nothing heavier than a single small Python or Swift script outside the lock (`python3 -I <main checkout>/Scripts/agents/run_locked.py <name> <command...>` for anything heavier). You build no app and run no test target.
 5. **Repetition** that should be one helper, and comments or documentation that say something false.
 
 ## What to report

@@ -6,10 +6,10 @@ You are `iosfixc`, a Sonnet worker. The iPhone app's interface (`ios/lead-1108`)
 
 - Your worktree may start at an old `origin/main`. Make your branch at the merge: `git switch -c ios/fix-c-1108 acf6afc1`, and check that `git log -1 --format=%h` prints `acf6afc1`.
 - Read, in this order:
-  - the lead's report, `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/ioslead-report.md`, its section "What isn't done, and what I couldn't verify";
+  - the lead's report, `<main checkout>/build/orchestrator/iosui/ioslead-report.md`, its section "What isn't done, and what I couldn't verify";
   - the outside check, `iosverify-report.md` beside it, its item 8;
   - how to build and test for the simulator, in `docs/developer/building.md` and `docs/developer/testing.md` as the docs branch has them: `git show docs/ios-1108:docs/developer/building.md`, and the same for testing.md.
-- Read "Making each train count" in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/docs/agents/working-with-agents.md` and follow it. Trains leave once an hour, on the hour, and heavy jobs run one after the other.
+- Read "Making each train count" in `<main checkout>/docs/agents/working-with-agents.md` and follow it. Trains leave once an hour, on the hour, and heavy jobs run one after the other.
 
 ## The work, in this order
 
@@ -26,7 +26,7 @@ You are `iosfixc`, a Sonnet worker. The iPhone app's interface (`ios/lead-1108`)
 ## Checks
 
 - **Simulator runs:**
-  - Every simulator build or test run goes through `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/run_locked.py <name> <command...>`, with `-derivedDataPath /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/DerivedData-ios.noindex`.
+  - Every simulator build or test run goes through `python3 -I <main checkout>/build/orchestrator/followups1105/run_locked.py <name> <command...>`, with `-derivedDataPath <main checkout>/build/DerivedData-ios.noindex`.
   - Use iPhone 17 only, and make no new devices. Run `xcrun simctl shutdown all` afterwards.
   - At most two passes in all, each with every XCUITest and unit test in it. Fix everything you can between them by reading.
 - **Never press Play, never type, and nothing that makes a sound:** the simulator plays through the Mac's speakers, which the user would hear.

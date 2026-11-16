@@ -6,7 +6,7 @@ The orchestrator's full-suite runner, the heavy-lock wrapper, and its copy-phase
 
 ## Read first
 
-- These files in the main checkout's `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/`:
+- These files in the main checkout's `<main checkout>/build/orchestrator/followups1105/`:
   - `run_locked.py`;
   - `run_suite.py`;
   - `copy_phases.py`.

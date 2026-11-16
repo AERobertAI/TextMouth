@@ -1,6 +1,6 @@
 # Common brief for October 12, 2026 (read with your task brief)
 
-Repository: /Users/roberteggleston/programming/ai/claude/swift/TextMouth, TextMouth, a native macOS text-to-speech and audiobook player. You work in your own git worktree (your current directory). `main` is at 258782f9 or later; its suite counts **5929 tests, 64 skipped, 0 failures**, with no Swift warnings (some skips are performance baselines that skip while the Mac is busy, so a quiet run skips fewer). You run on Opus 5.5. No other agent is working today; the orchestrator merges.
+Repository: <main checkout>, TextMouth, a native macOS text-to-speech and audiobook player. You work in your own git worktree (your current directory). `main` is at 258782f9 or later; its suite counts **5929 tests, 64 skipped, 0 failures**, with no Swift warnings (some skips are performance baselines that skip while the Mac is busy, so a quiet run skips fewer). You run on Opus 5.5. No other agent is working today; the orchestrator merges.
 
 **This brief stands in for AGENTS.md.** Do not read AGENTS.md, README.md, ARCHITECTURE.md, the TODO, or AGENT-NOTES-2026-10-04.md: what you need from them is here or in your task brief, and reading them costs every later call.
 

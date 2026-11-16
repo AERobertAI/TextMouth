@@ -5,7 +5,7 @@ You are `wintimerfix`, a Sonnet worker. You fix what the Opus review of the per-
 ## Start
 
 - In your worktree: `git switch feature/window-sleep-timer`, check `git log -1 --format=%h` prints `d26c76a5c`, then rebase onto local main (`git rebase main`): main has moved to 0.4.7 and may hold the Leading articles merge. Keep both sides of any adjacent-line conflict (expect `ReaderViewModel.swift`, `LibraryViewModel.swift`, `ReaderOpenRefusal`, the shortcut and config fixtures); settle a `project.pbxproj` conflict with `make generate`. Its lead has finished and its folder is gone.
-- Read in the main checkout (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`): the review, `build/orchestrator/nov13/wintimer-review.md` (findings 1 to 5, the eight answers, "Not settled"); the report, `build/orchestrator/nov13/wintimer-report.md`; the design, `WINDOW-SLEEP-TIMER-DESIGN-2026-11-13.md` on the branch.
+- Read in the main checkout (`<main checkout>/`): the review, `build/orchestrator/nov13/wintimer-review.md` (findings 1 to 5, the eight answers, "Not settled"); the report, `build/orchestrator/nov13/wintimer-report.md`; the design, `WINDOW-SLEEP-TIMER-DESIGN-2026-11-13.md` on the branch.
 
 ## The work, one commit each, each with a test that fails without it
 

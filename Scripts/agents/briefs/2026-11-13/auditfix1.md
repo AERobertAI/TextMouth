@@ -12,7 +12,7 @@ On November 13, 2026, the user asked for a Fable audit of TextMouth's size, memo
 
 ## Your items
 
-They are in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/optaudit/audit-report.md`, Part C, each with where, mechanism, gain, risk, and tests:
+They are in `<main checkout>/build/orchestrator/optaudit/audit-report.md`, Part C, each with where, mechanism, gain, risk, and tests:
 
 1. **C16. Timers: tolerance, and one hop for the sleep countdown.** Both halves: the sleep timer's change has merged, so the second half is yours too. The countdown's own interval stays exact.
 2. **C17. Small per-second work in the reader.** One commit for each of its bullets.

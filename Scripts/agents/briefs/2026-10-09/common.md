@@ -1,6 +1,6 @@
 # Common brief for the October 9, 2026 wave (read with AGENTS.md)
 
-Repository: /Users/roberteggleston/programming/ai/claude/swift/TextMouth, a native macOS TTS and audiobook app, TextMouth. You work in your own git worktree (your current directory). `main` is at e3fb2c9f or later; the suite on it counts **4943 tests, 70 skipped, 0 failures**, with no Swift warnings (twelve of those skips are performance baselines that skip while the Mac is busy, so a quiet run skips fewer). The orchestrator runs on Opus 5.5, and so do you.
+Repository: <main checkout>, a native macOS TTS and audiobook app, TextMouth. You work in your own git worktree (your current directory). `main` is at e3fb2c9f or later; the suite on it counts **4943 tests, 70 skipped, 0 failures**, with no Swift warnings (twelve of those skips are performance baselines that skip while the Mac is busy, so a quiet run skips fewer). The orchestrator runs on Opus 5.5, and so do you.
 
 ## Who else is working (each owns only the files its brief names)
 - `feeditemindex` (branch `feature/feed-item-index`): FR11's branch A1. Each feed's episodes get packages and an index of their own under `Feeds/<feed ID>/`, out of library.json; the library's lists and counts leave feed rows out. Book.swift, the library model and its persistence, the feed importer's destination, the library's filters, counts, and summary wording, Storage settings, the data-directory move.

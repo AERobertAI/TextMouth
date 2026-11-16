@@ -10,7 +10,7 @@ The iPhone app's interface (unshipped) runs in the simulator, and its tests pass
   - "Searching", at line 187;
   - the focus rules around line 99;
   - the reader's sheets.
-- The lead's report: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/ioslead-report.md`, "What isn't done".
+- The lead's report: `<main checkout>/build/orchestrator/iosui/ioslead-report.md`, "What isn't done".
 - `docs/developer/testing.md` and `building.md`: their iPhone sections.
 - `docs/architecture/platforms.md`.
 - The Mac's in-book search, `BookSearchModel` and what calls it. The iPhone should share its search, not copy it.
@@ -25,7 +25,7 @@ The iPhone app's interface (unshipped) runs in the simulator, and its tests pass
 
 - **Simulator passes:**
   - At most three in all, each with every XCUITest and unit test. Fix everything you can by reading before each pass.
-  - Each through `run_locked.py`, with `-derivedDataPath /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/DerivedData-ios.noindex`.
+  - Each through `run_locked.py`, with `-derivedDataPath <main checkout>/build/DerivedData-ios.noindex`.
   - iPhone 17 only, and make no new devices. Run `xcrun simctl shutdown all` after each.
   - Give each pass's result bundle a new name.
 - **Never press Play, never type, and nothing that makes a sound.** The simulator plays through the Mac's speakers, and the software keyboard clicks.

@@ -47,4 +47,4 @@ An agent's cost follows its number of calls times the size of its context. Read 
 
 ## Your report
 
-Your final message is the report, and the lead (`ioslead`) reads it. Also try to save it: write it in your scratchpad, then `cp` it to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/review-code-1108.md`.
+Your final message is the report, and the lead (`ioslead`) reads it. Also try to save it: write it in your scratchpad, then `cp` it to `<main checkout>/build/orchestrator/iosui/review-code-1108.md`.

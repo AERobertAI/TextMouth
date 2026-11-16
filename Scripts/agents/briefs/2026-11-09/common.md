@@ -15,9 +15,9 @@ On November 9 the user installed 0.4.2 and asked to keep working on the follow-u
   `python3 -I Scripts/agents/build-train.py request --agent NAME --branch BRANCH --areas A,B --classes X,Y`.
   Then wait for it with one background `python3 -I Scripts/agents/wait-for-result.py --agent NAME`. A request made before the hour leaves on that hour's train. Fix every failure it reports in one round, then ask once more.
 - **Never put a deliberate break on the train.** The train tests every request together in one tree, so a branch with a fix broken on purpose fails other agents' classes. Prove a break with a small harness in a scratch copy, run through `run_locked.py`, or by reading where only the hosted app can show it.
-- **Type-checks.** Run `make typecheck-mac` and `make typecheck-ios` once for each batch, after committing, since they check HEAD's commit. Before a train request, also type-check the tests on your commit: `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/ios/typecheck.py --platform macos --tests --ref <your commit>`. Never wrap any of them in `run_locked.py`.
+- **Type-checks.** Run `make typecheck-mac` and `make typecheck-ios` once for each batch, after committing, since they check HEAD's commit. Before a train request, also type-check the tests on your commit: `python3 -I <main checkout>/Scripts/ios/typecheck.py --platform macos --tests --ref <your commit>`. Never wrap any of them in `run_locked.py`.
 - **Anything else heavy** (a Release build, a fuzz run, a simulator pass) goes through the heavy-work lock:
-  `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/run_locked.py <name> <command...>`.
+  `python3 -I <main checkout>/build/orchestrator/followups1105/run_locked.py <name> <command...>`.
 - **Disk.** About 12 GB is free. Keep your scratch in `build/orchestrator/<your name>/` of the main checkout, and report how much you add.
 - **Versions.** If your change alters what a reader makes of a book, raise that reader's version in `PageReaderVersions` or its own version constant, and say so in your report. Leave the app's version and the changelog alone: the orchestrator sets them when it merges.
 

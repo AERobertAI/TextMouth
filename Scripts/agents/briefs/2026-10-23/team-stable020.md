@@ -6,7 +6,7 @@ You are `stable020-lead`, an Opus lead with Sonnet workers, on `team/stable020`.
 "I want to install the new version with it as stable as you can make it so also plan any todos requiring breaking changes for my official update to 0.2.0."
 
 ## Your items
-They are in the TODO's section "## Before the official 0.2.0 install (planned October 23)". The TODO is gitignored, so read it in the main checkout at `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/TODO-2026-09-04.md`: `grep -n -E "^- \[ \] \*\*(ST|V0)" TODO-2026-09-04.md`, then by line range. The detail and evidence for each are in `PLAN-0.2.0-2026-10-23.md` on main, in §3.2 and the V items. Read the questions in `humanQuestions/2026-10-23.md`, also in the main checkout.
+They are in the TODO's section "## Before the official 0.2.0 install (planned October 23)". The TODO is gitignored, so read it in the main checkout at `<main checkout>/TODO-2026-09-04.md`: `grep -n -E "^- \[ \] \*\*(ST|V0)" TODO-2026-09-04.md`, then by line range. The detail and evidence for each are in `PLAN-0.2.0-2026-10-23.md` on main, in §3.2 and the V items. Read the questions in `humanQuestions/2026-10-23.md`, also in the main checkout.
 
 Build them in this order, and keep each a small commit with its test:
 1. **The two that touch the first launch:**

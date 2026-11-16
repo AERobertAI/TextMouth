@@ -5,7 +5,7 @@ You are `encodingchoice`, an Opus agent. TextMouth is a native macOS text-to-spe
 Read `common.md` beside this file first. Its rules apply to you, except that this brief replaces its task list and its last line about the weekly reset.
 
 ## The request
-FMT16 merged today (main 96cd2481): at import, TextMouth guesses the encoding of a text file that names none, records it on the book (`Book.textEncoding`), and Book Information shows "Text Encoding, Windows-1251 (Cyrillic), guessed". Read its TODO entry in the main checkout: `grep -n "Text files in other encodings (FMT16)" /Users/roberteggleston/programming/ai/claude/swift/TextMouth/TODO-2026-09-04.md`.
+FMT16 merged today (main 96cd2481): at import, TextMouth guesses the encoding of a text file that names none, records it on the book (`Book.textEncoding`), and Book Information shows "Text Encoding, Windows-1251 (Cyrillic), guessed". Read its TODO entry in the main checkout: `grep -n "Text files in other encodings (FMT16)" <main checkout>/TODO-2026-09-04.md`.
 
 A guess can be missed or wrong, and there is no way to fix it. The user (October 24): "Go ahead and do the reopening with a different encoding … can it be set in the info screen for a book with the current one selected in the popup?"
 

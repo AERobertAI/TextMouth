@@ -6,7 +6,7 @@ This file is the pattern every reader agent follows tonight. It stands in for AG
 
 ## The project
 
-- **Repository:** `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`. TextMouth is a native macOS text-to-speech and audiobook player for a VoiceOver and braille user. Since November 4 it also has an iOS 26 target compiled from the same sources (`TextMouthiOS`), which iOS's lack of helper programs keeps from reading these formats.
+- **Repository:** `<main checkout>`. TextMouth is a native macOS text-to-speech and audiobook player for a VoiceOver and braille user. Since November 4 it also has an iOS 26 target compiled from the same sources (`TextMouthiOS`), which iOS's lack of helper programs keeps from reading these formats.
 - **Your base:** the branch `core/own-readers`, from main at version 0.2.6, whose full suite is **9337 tests, 75 skipped, 0 failures**. The user installs main, so main must stay stable.
 - **The reading text.** Every book becomes Markdown, its content.md, with headings, page markers (`<!-- page: 12 -->`), and heading annotations. Most formats get there as HTML through the shared `HTMLToMarkdownConverter` (TextMouth/Parsers/HTMLToMarkdownConverter.swift), which already handles headings, paragraphs, emphasis, lists, tables, and page-break elements. **Your reader produces HTML for it.** Do not write Markdown yourself, and do not build a second converter.
 
@@ -146,7 +146,7 @@ An agent's cost follows its number of calls times the size of its context.
 
 ## Your report (your final message)
 
-Write it also to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/readers1104/<slug>-report.md`, which is gitignored and survives a session restart. At most 40 lines:
+Write it also to `<main checkout>/build/orchestrator/readers1104/<slug>-report.md`, which is gitignored and survives a session restart. At most 40 lines:
 - the branch, and each commit's hash and subject;
 - the files added and changed;
 - `make typecheck-mac`'s and `make typecheck-ios`'s result lines;

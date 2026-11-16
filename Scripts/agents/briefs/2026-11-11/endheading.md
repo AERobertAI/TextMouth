@@ -5,7 +5,7 @@ You are `endheading`, a Sonnet worker, on branch `fix/end-of-heading-silent-star
 ## Start
 
 - Make your branch at main **49b9e597** (version 0.4.5), not at the commit `common.md` names: `git switch -c fix/end-of-heading-silent-start 49b9e597`. Check that `git log -1 --format=%h` prints `49b9e597`.
-- Read the outside review that found this bug, finding 3 of `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosuitests/iosuitests-review.md`. Read only that finding; the rest belongs to another branch.
+- Read the outside review that found this bug, finding 3 of `<main checkout>/build/orchestrator/iosuitests/iosuitests-review.md`. Read only that finding; the rest belongs to another branch.
 
 ## The bug
 

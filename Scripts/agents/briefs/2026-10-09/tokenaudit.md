@@ -10,8 +10,8 @@ You are measuring token use, so do not add much to it. Do every count with Pytho
 
 ## The data
 - **Scope:** everything since the weekly reset, 2026-10-10 08:00 EDT (12:00Z), to now.
-- **The orchestrator:** `~/.claude/projects/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/fb2bc309-6924-4c0d-ad7c-78a8677c4bbd.jsonl` (about 15 MB). It runs at a high reasoning effort, with a 1-hour prompt-cache TTL, and it was compacted once.
-- **The agents:** `…/fb2bc309-6924-4c0d-ad7c-78a8677c4bbd/subagents/agent-<id>.jsonl` (116 files, 301 MB; some predate the reset). The slugs are in the session scratchpad's `agents.txt` (`/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/fb2bc309-6924-4c0d-ad7c-78a8677c4bbd/scratchpad/agents.txt`), and each agent's first user message names its slug.
+- **The orchestrator:** `~/.claude/projects/<project folder>/fb2bc309-6924-4c0d-ad7c-78a8677c4bbd.jsonl` (about 15 MB). It runs at a high reasoning effort, with a 1-hour prompt-cache TTL, and it was compacted once.
+- **The agents:** `…/fb2bc309-6924-4c0d-ad7c-78a8677c4bbd/subagents/agent-<id>.jsonl` (116 files, 301 MB; some predate the reset). The slugs are in the session scratchpad's `agents.txt` (`<session folder>/scratchpad/agents.txt`), and each agent's first user message names its slug.
 - **Other sessions:** check whether any other transcript under `~/.claude/projects/` has entries since the reset; I found none.
 - **The records:** each assistant record carries `message.usage`, which holds `input_tokens`, `cache_creation_input_tokens` (split into `ephemeral_5m` and `ephemeral_1h`), `cache_read_input_tokens`, and `output_tokens`; plus `message.model`, `message.id`, `requestId`, `timestamp`, `effort`, `advisorModel`, and `isSidechain`.
   - One API response can be split across several records (`apiBlockIndex`), so dedupe by `message.id` (or `requestId`) before you sum.

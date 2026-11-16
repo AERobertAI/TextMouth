@@ -4,7 +4,7 @@ Slug `shell-router`, branch `shell/router` (from `team/shell`). Read `../ios0-co
 
 ## Your files and their errors (58 in the census)
 
-Census: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/typecheck/results/orchestrator-ios-census-72d9f5cd-1103-200441/errors.txt` (`grep -E "LibraryWindowRouter|BookReaderWindowView|LibraryFeedsWindowSupport|FeedCommandRunner|Settings/SettingsView.swift"`).
+Census: `<main checkout>/build/typecheck/results/orchestrator-ios-census-72d9f5cd-1103-200441/errors.txt` (`grep -E "LibraryWindowRouter|BookReaderWindowView|LibraryFeedsWindowSupport|FeedCommandRunner|Settings/SettingsView.swift"`).
 
 - `TextMouth/Services/LibraryWindowRouter.swift` (28): `NSWindow` type names, `NSApp.keyWindow` as a default, `import AppKit`.
 - `TextMouth/Views/Reader/BookReaderWindowView.swift` (20): `WindowAccessor` (NSViewRepresentable) and its helper classes, lines ~160-281, and `NSWindow` types.

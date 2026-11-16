@@ -4,7 +4,7 @@ You are `docs-ios0`, a documentation agent with no build. Make your branch with 
 
 ## What merged
 
-Main is at cb7cc4c6 or later, with `integrate/ios-phase0` fast-forwarded into it on November 4. Its record is the TODO entry that begins "**iOS phase 0: the iOS app target compiles and links**" in `TODO-2026-09-04.md`: read that entry, and nothing else of the TODO. The design is `IOS-PORT-RESEARCH-2026-11-03.md`, sections "How one codebase builds both apps" and "A plan in phases". The pattern the teams followed is `Scripts/agents/briefs/2026-11-03/ios0-common.md`. The five teams' reports, the five reviews, and the final review are in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/ios0/` (gitignored; read them there by absolute path): `*-lead-report.md`, `review-*.md`.
+Main is at cb7cc4c6 or later, with `integrate/ios-phase0` fast-forwarded into it on November 4. Its record is the TODO entry that begins "**iOS phase 0: the iOS app target compiles and links**" in `TODO-2026-09-04.md`: read that entry, and nothing else of the TODO. The design is `IOS-PORT-RESEARCH-2026-11-03.md`, sections "How one codebase builds both apps" and "A plan in phases". The pattern the teams followed is `Scripts/agents/briefs/2026-11-03/ios0-common.md`. The five teams' reports, the five reviews, and the final review are in `<main checkout>/build/orchestrator/ios0/` (gitignored; read them there by absolute path): `*-lead-report.md`, `review-*.md`.
 
 ## What to document
 
@@ -21,7 +21,7 @@ Main is at cb7cc4c6 or later, with `integrate/ios-phase0` fast-forwarded into it
    - what iOS does now, and what phase 1 starts from.
 
    Link it from ARCHITECTURE.md's index, and from README.md's developer section where it fits.
-3. **Paths that moved.** Every page under docs/architecture that names a moved file by its old path gets the new one. The list is `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/ios0/moved-files.txt`, old path then new. The pages that name one are in docs/architecture/: parts-of-the-app.md, shared-helpers.md, known-duplication.md, and state/{windows, transcription, text-caches, recordings, reader, preferences, media-playback, logs, imports, feeds, exports, data-directory, audio-edits}.md.
+3. **Paths that moved.** Every page under docs/architecture that names a moved file by its old path gets the new one. The list is `<main checkout>/build/orchestrator/ios0/moved-files.txt`, old path then new. The pages that name one are in docs/architecture/: parts-of-the-app.md, shared-helpers.md, known-duplication.md, and state/{windows, transcription, text-caches, recordings, reader, preferences, media-playback, logs, imports, feeds, exports, data-directory, audio-edits}.md.
    - Change only the path, unless a sentence says where a file is and is now wrong.
    - In parts-of-the-app.md, the source folders list gains the Platform folders, and TextMouthApp's place is `Platform/macOS/App/TextMouthApp.swift`.
 4. **docs/developer/testing.md.** `PortableXMLDifferentialTests`, in the import and feeds areas, compares the portable XML tree with Foundation's on 104 documents. MacBrailleTableCheckTests' memory reading can miss three short runs, so a failure of that test alone is rerun on its class.

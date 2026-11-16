@@ -16,7 +16,7 @@ You are `nextbook-verify-3` (Sonnet), an independent verifier. The branch `featu
 - **The fix range:** `git diff ddcebc71..d6aa063f`, 8 commits, about 390 lines of code and 410 of tests in 18 files. Commit ddcebc71 is review 3's tip c113b75f, rebased.
 - **Getting it:** your worktree starts on main. Check out the tip detached: `git checkout --detach d6aa063f`.
 - **The design note:** `NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md`, section "The sleep timer goes on with the book".
-- **The third review**, with line numbers at c113b75f: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/nextbook/review-3.md`. Read it first.
+- **The third review**, with line numbers at c113b75f: `<main checkout>/build/orchestrator/nextbook/review-3.md`. Read it first.
 - The full suite passed at d6aa063f: 9278 tests, 75 skipped, 0 failures. Passing tests are not the question. The question is whether the code is right.
 
 ## The rule the code must keep

@@ -35,9 +35,9 @@ Four functions join words as a sentence lists them ("A", "A and B", "A, B, and C
 ## Build and test
 - Run `CountWordingTests`, `AudioFilterChainTests`, `ReadingStatsViewTests`, `BookExportServiceTests`, and `LogContentPolicyTests`.
 - Start each build in the background, and check on it no more often than every 4 minutes, with one short command.
-- Scratch files go in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/`, each named `polish2-listjoin-…`.
+- Scratch files go in `<session folder>/scratchpad/`, each named `polish2-listjoin-…`.
 
-      BBS_AGENT=polish2-listjoin .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-polish2-listjoin" -only-testing:TextMouthProductionTests/CountWordingTests -only-testing:TextMouthProductionTests/AudioFilterChainTests -only-testing:TextMouthProductionTests/ReadingStatsViewTests -only-testing:TextMouthProductionTests/BookExportServiceTests -only-testing:TextMouthProductionTests/LogContentPolicyTests > /private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/polish2-listjoin-build-1.log 2>&1
+      BBS_AGENT=polish2-listjoin .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-polish2-listjoin" -only-testing:TextMouthProductionTests/CountWordingTests -only-testing:TextMouthProductionTests/AudioFilterChainTests -only-testing:TextMouthProductionTests/ReadingStatsViewTests -only-testing:TextMouthProductionTests/BookExportServiceTests -only-testing:TextMouthProductionTests/LogContentPolicyTests > <session folder>/scratchpad/polish2-listjoin-build-1.log 2>&1
 
 - Read a result with `grep -E "Executed [0-9]+ tests|error:|failed \(" <log> | tail -20`.
 

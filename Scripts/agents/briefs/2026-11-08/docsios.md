@@ -10,7 +10,7 @@ Write the developer documentation for what `ios/lead-1108` adds: the iPhone inte
 
 ## What to document
 
-The lead's report names every page and topic, in its section "The documentation each change needs": `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/ioslead-report.md`. The review beside it, `review-code-1108.md`, explains the parts the fixes changed. Where a report and the code disagree, the code wins.
+The lead's report names every page and topic, in its section "The documentation each change needs": `<main checkout>/build/orchestrator/iosui/ioslead-report.md`. The review beside it, `review-code-1108.md`, explains the parts the fixes changed. Where a report and the code disagree, the code wins.
 
 1. **`docs/architecture/platforms.md`:** how the iPhone app is put together and its new parts. Name each in the code's own words:
    - `PhoneLaunchRequest`, which exists only in debug builds;

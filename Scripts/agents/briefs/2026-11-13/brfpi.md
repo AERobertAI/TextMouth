@@ -8,13 +8,13 @@ You are one of two Sonnet workers, `brfdecode` or `brflayout`; your launch messa
 
 ## What was found
 
-Read `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/lifeofpi/report.md` first. The BRF is a 2003 Australian transcription in the old English Braille code (EBAE), 4 volumes of 40-cell rows, imported with the default UEB table. Its scripts are in that folder; you may run them, but only with `python3 -I`.
+Read `<main checkout>/build/orchestrator/lifeofpi/report.md` first. The BRF is a 2003 Australian transcription in the old English Braille code (EBAE), 4 volumes of 40-cell rows, imported with the default UEB table. Its scripts are in that folder; you may run them, but only with `python3 -I`.
 
 ## The two books (READ ONLY, and only these two)
 
 The user allowed reading these two packages for this work, and nothing else under `~/.TextMouth`:
-- BRF: `/Users/roberteggleston/.TextMouth/Library/000058499-Unknown-1794612212-51b32e89-adb7-4a6c-a2e8-efecedb043e7.tmb/`
-- EPUB: `/Users/roberteggleston/.TextMouth/Library/Life_of_Pi-Yann_Martel-1794614979-68116b86-0a4d-4499-8c85-39f451afc2cf.tmb/`
+- BRF: `~/.TextMouth/Library/000058499-Unknown-1794612212-51b32e89-adb7-4a6c-a2e8-efecedb043e7.tmb/`
+- EPUB: `~/.TextMouth/Library/Life_of_Pi-Yann_Martel-1794614979-68116b86-0a4d-4499-8c85-39f451afc2cf.tmb/`
 
 Rules for them:
 - Read with read-only tools only. Never write there, and never launch TextMouth.

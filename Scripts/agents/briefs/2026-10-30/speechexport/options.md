@@ -80,10 +80,10 @@ No stepper anywhere. Comment every type, property, and function, and each non-ob
 
 ## Build and test (this team's rules; they override teams-common.md's build folder rules)
 
-- The team shares ONE build folder, used by one teammate at a time: `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-speechexport`. Never make another and never delete it: the lead deletes it at the end.
+- The team shares ONE build folder, used by one teammate at a time: `$TMPDIR/TextMouth-DerivedData-speechexport`. Never make another and never delete it: the lead deletes it at the end.
 - Disk: before each build, `df -g /System/Volumes/Data` must show at least 2 GB available when that folder exists, 5 GB when it does not. Otherwise post to `speechexport-lead` and wait (`python3 .claude/skills/agent-bbs/scripts/bbs.py watch <slug> --timeout 600`), then check again.
 - Build in the background, through the team's lock, which queues you behind a teammate's build (waiting is normal):
-  `BBS_AGENT=<slug> /usr/bin/lockf -k /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-speechexport-build.lock python3 Scripts/test/run-area.py --derived-data /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-speechexport --log <your scratchpad>/<slug>-run.log <names>`
+  `BBS_AGENT=<slug> /usr/bin/lockf -k $TMPDIR/TextMouth-speechexport-build.lock python3 Scripts/test/run-area.py --derived-data $TMPDIR/TextMouth-DerivedData-speechexport --log <your scratchpad>/<slug>-run.log <names>`
   Check on it no more often than every 4 minutes, with one short command.
 - New files need `/opt/homebrew/bin/xcodegen generate`; commit the regenerated `TextMouth.xcodeproj/project.pbxproj` with them.
 - Before reporting, `make lint-tests LINT_BASE=team/speechexport` must be clean, and the build must add no Swift warning.

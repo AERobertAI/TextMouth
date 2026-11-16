@@ -19,7 +19,7 @@ You redesign nothing and fix nothing. Report what you find, and the orchestrator
 - **Each item the review asked for:** find the change and read it, then find the test that pins it. Say whether that test asserts the behaviour itself (a value, a sentence, a file on disk) or only something near it. Every first review in this project has found a test that passed for the wrong reason.
 - **The riskiest two or three items:** prove the test by breaking the fix on purpose in a throwaway copy and watching the test fail.
   - Work in a folder of your own, `build/check/` inside your worktree; git ignores `build/`.
-  - A throwaway `swiftc` harness or a SwiftPM copy runs under `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/agents/run_locked.py <name> <command...>`.
+  - A throwaway `swiftc` harness or a SwiftPM copy runs under `python3 -I <main checkout>/Scripts/agents/run_locked.py <name> <command...>`.
   - A test of the Python tools under `Scripts/agents/tests` runs as `python3 -I -B -m unittest` on its own, with no lock.
   - Where only the hosted app or a GitHub run can test a fix, judge it by reading, and say so.
 - **Never put a deliberate break on a shared run,** and don't ask the train for anything: the full suite comes next.

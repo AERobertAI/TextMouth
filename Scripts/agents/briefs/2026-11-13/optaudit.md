@@ -17,7 +17,7 @@ On November 13, 2026:
 
 ## What you may run
 
-- **Release builds of variants**, each through the lock: `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/agents/run_locked.py optaudit <command>`, with a build folder of your own under `build/orchestrator/optaudit/` (pass `-derivedDataPath`; `LD_GENERATE_MAP_FILE=YES` gives a link map, and `LD_MAP_FILE_PATH` must not be set, since every target's link shares it). Before you report, unregister each app you built: `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u <its path>`. Never `make install`. One build at a time; about 14 GB of disk is free, so check `df -h /` before each build and stop building under 6 GB.
+- **Release builds of variants**, each through the lock: `python3 -I <main checkout>/Scripts/agents/run_locked.py optaudit <command>`, with a build folder of your own under `build/orchestrator/optaudit/` (pass `-derivedDataPath`; `LD_GENERATE_MAP_FILE=YES` gives a link map, and `LD_MAP_FILE_PATH` must not be set, since every target's link shares it). Before you report, unregister each app you built: `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u <its path>`. Never `make install`. One build at a time; about 14 GB of disk is free, so check `df -h /` before each build and stop building under 6 GB.
 - **Hosted tests** of your own, on a throwaway branch, only through the build train or a GitHub run of your own tree, never with sound (no test plays aloud).
 - **Never** run TextMouth against the user's library, play anything aloud, or attach a profiler to the user's own TextMouth.
 

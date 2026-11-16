@@ -33,10 +33,10 @@ Make your branch only from `podcast/finish`, by that name. Use `git -C` nowhere 
 
 A test proves something only if it fails when the code is wrong. So for the risky tests, break the code on purpose and see the test fail, **in a throwaway copy, never on the train.**
 
-- **The copy.** Make one folder under the session's scratchpad, named for your slug: `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/6f916f11-568e-4f1a-87f7-9dabb0918bca/scratchpad/<slug>/`. Keep it under 500 MB, because the disk is tight. Overwrite files there instead of deleting them. The orchestrator clears the scratch folders at the end.
+- **The copy.** Make one folder under the session's scratchpad, named for your slug: `<session folder>/scratchpad/<slug>/`. Keep it under 500 MB, because the disk is tight. Overwrite files there instead of deleting them. The orchestrator clears the scratch folders at the end.
 - **How.** For pure code (readers, writers, the models), a small SwiftPM package or a `swiftc` harness compiling copies of just the files needed, with the test bodies cut in verbatim. It is much faster than the whole app and stays small. Run every compile and larger run under the Mac's lock:
 
-      python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/run_locked.py <slug> <command...>
+      python3 -I <main checkout>/build/orchestrator/followups1105/run_locked.py <slug> <command...>
 
   Never wrap `make typecheck-*` in that: they take the lock themselves.
 - **Code that needs the whole app** (hosted tests of a sheet or a library) cannot be proven this way within the size limit. For those, read each test against the code and say in your report why it would fail if the code were wrong, or say that you could not tell.

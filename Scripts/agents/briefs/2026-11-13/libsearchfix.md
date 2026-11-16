@@ -9,7 +9,7 @@ On November 13, 2026: "I want ful and effeicent and fast library text search to 
 ## Start
 
 - In your worktree: `git switch feature/library-search`, and check that `git log -1 --format=%h` prints `c025f2519`. Its lead stopped on an API error and its folder is gone; its branch holds its workers' work.
-- Read, in the main checkout (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`): the review, `build/orchestrator/nov13/libsearch-review.md` (findings 1 to 11, the suspicions, and "Question 6"); the report, `build/orchestrator/nov13/libsearch-report.md`; and the design on the branch, `LIBRARY-SEARCH-RESEARCH-2026-11-13.md`. Then `git diff main...HEAD` where each finding points.
+- Read, in the main checkout (`<main checkout>/`): the review, `build/orchestrator/nov13/libsearch-review.md` (findings 1 to 11, the suspicions, and "Question 6"); the report, `build/orchestrator/nov13/libsearch-report.md`; and the design on the branch, `LIBRARY-SEARCH-RESEARCH-2026-11-13.md`. Then `git diff main...HEAD` where each finding points.
 
 ## The work, one commit each, each with a test that fails without it
 

@@ -10,7 +10,7 @@ You are `docs044`, a Sonnet docs agent, on branch `docs/0.4.4`. Write the docume
 
 ## What to document
 
-1. **The quit fix** (`fix/quit-while-held`). Reports, in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/quitfix/`: `quitfix-report.md`, `quitfix-fix-report.md`, `quitfix-review.md`, `quitcheck-report.md`.
+1. **The quit fix** (`fix/quit-while-held`). Reports, in `<main checkout>/build/orchestrator/quitfix/`: `quitfix-report.md`, `quitfix-fix-report.md`, `quitfix-review.md`, `quitcheck-report.md`.
    - `docs/architecture/launch.md` and `docs/architecture/state/saving-failures.md`:
      - the quit sequence;
      - `QuitRequest.ask()`;
@@ -27,7 +27,7 @@ You are `docs044`, a Sonnet docs agent, on branch `docs/0.4.4`. Write the docume
    - `docs/user/feeds.md` and `docs/user/speed-and-memory.md`:
      - what a listener hears and sees when quitting during downloads, a re-read, or an export, quoting the panel's words from the code;
      - a log out or shut down waits for the work as before.
-2. **The iPhone's Search in Book** (`ios/search-1109`). Reports, in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/`: `iossearch-report.md`, `iossearch-fix-report.md`, `iossearch-review.md`, `searchcheck-report.md`.
+2. **The iPhone's Search in Book** (`ios/search-1109`). Reports, in `<main checkout>/build/orchestrator/iosui/`: `iossearch-report.md`, `iossearch-fix-report.md`, `iossearch-review.md`, `searchcheck-report.md`.
    - `docs/architecture/platforms.md`:
      - `PhoneBookSearch`, `PhoneSearchSheet`, `PhoneFocusRequests`, and the registry's tickets;
      - the six-row grid;

@@ -8,7 +8,7 @@ On November 13, 2026: "Ok I want you to keep working through the todos for Text 
 
 ## Your items
 
-- They are in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/nov13/triage-report.md`: section 1 gives each item's evidence (file and line), its fix, and its test, by number; section 2 gives your batch's files, the test classes for your train requests, and the areas.
+- They are in `<main checkout>/build/orchestrator/nov13/triage-report.md`: section 1 gives each item's evidence (file and line), its fix, and its test, by number; section 2 gives your batch's files, the test classes for your train requests, and the areas.
 - The triage was read from main 130f6788 by Sonnet readers, so **check each item in the code before you change anything.** If an item is already fixed, or its evidence is wrong, skip it and say so in the report, with what you found. If its fix would change more than the item says, take the smallest fix that is right and say why.
 - **One commit for each item, each with its test.** A test must fail without the fix: break the fix in a scratch copy (or by reading, where only the hosted app shows it) and say so in the report.
 - Stay inside your batch's files. A problem you find elsewhere goes on the board as a `finding`, not into your branch.

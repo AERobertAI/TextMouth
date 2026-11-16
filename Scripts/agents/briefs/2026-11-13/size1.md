@@ -8,7 +8,7 @@ On November 13, 2026: "I would like it if we could get it under 20 mb again or e
 
 ## What the audit found
 
-The Fable audit (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/optaudit/audit-report.md`) measured Release builds of main. Read its Part A, and its fixes C1, C2, C5, and C15 in Part C, before you start: they give the lines, the mechanism, the measured bytes, and the tests.
+The Fable audit (`<main checkout>/build/orchestrator/optaudit/audit-report.md`) measured Release builds of main. Read its Part A, and its fixes C1, C2, C5, and C15 in Part C, before you start: they give the lines, the mechanism, the measured bytes, and the tests.
 
 - C1: `SWIFT_OPTIMIZATION_LEVEL: -Osize` in `project.yml`'s TextMouth target, Release only (lines 176 to 195): the app's own code 2.36 MB smaller.
 - C2: `SWIFT_OPTIMIZATION_LEVEL=-Osize` on the Makefile's `build` rule (lines 181 to 196, beside `$(NO_COVERAGE)`), which reaches the three packages that `project.yml` can't: 2.08 MB smaller. Don't add `SWIFT_COMPILATION_MODE=wholemodule`: the audit measured it 1.15 MB larger.
@@ -23,7 +23,7 @@ The Fable audit (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/b
 3. C5.
 4. The gate: lower `APP_SIZE_LIMIT_MB` in `Scripts/check.sh` (about line 121) to 20, so growth past it fails `make check`.
 5. **Proof that nothing changed but the size** (the audit's Part A, "How each would be proved to change nothing"):
-   - one `make check` through the lock, `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/agents/run_locked.py size1 make check`, and its size line in your report (it builds Release from scratch: expect 10 minutes or more); unregister the app it builds afterwards, as the audit's brief says (`lsregister -u <path>`);
+   - one `make check` through the lock, `python3 -I <main checkout>/Scripts/agents/run_locked.py size1 make check`, and its size line in your report (it builds Release from scratch: expect 10 minutes or more); unregister the app it builds afterwards, as the audit's brief says (`lsregister -u <path>`);
    - the audit's benchmark harnesses' checksums for a `-O` and an `-Osize` build, if its tools in `build/orchestrator/optaudit/tools/` run as they are (read them first; run them through the lock); otherwise say why not;
    - a train naming `TextPipelineGoldenTests`, `DocumentGoldenTests`, `MarkupGuardTests`, `BundledLicenseTests`, and any test that reads the build settings or the check script (search the tests for `check.sh`, `APP_SIZE_LIMIT`, and `SWIFT_OPTIMIZATION_LEVEL`).
 6. **If it's small** (one script and a make target): a once-per-release check that runs the golden test classes against a Release build made with testability on, as the audit suggests, so a miscompile can't hide behind a Debug suite. Otherwise describe it in the report.

@@ -5,7 +5,7 @@ You are `rlfix`, a Sonnet worker. You fix what the Opus review of the Reading Li
 ## Start
 
 - In your worktree: `git switch feature/reading-list-remove-finished`, and check that `git log -1 --format=%h` prints `33e959ef`. Its first worker has finished and its folder is gone.
-- Read, in the main checkout (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`):
+- Read, in the main checkout (`<main checkout>/`):
   - the review, `build/orchestrator/nov13/rlfinished-review.md`: findings 1 to 9 and "Not settled";
   - the worker's report, `build/orchestrator/nov13/rlfinished-report.md`;
   - the two briefs it worked from, `Scripts/agents/briefs/2026-11-13/rlfinished.md` and `rlkeep.md` (the user's words are there).

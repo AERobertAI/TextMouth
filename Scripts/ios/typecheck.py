@@ -52,19 +52,21 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 
+# The heavy-work lock, shared with the build train, and the main checkout's finder:
+# Scripts/agents/heavy_lock.py and repo_paths.py beside this script's own folder
+# (python3 -I leaves both out of sys.path).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agents"))
+import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
+import ios_ui_tests  # noqa: E402  (the iPhone test classes, and what a unit test may not name)
+import repo_paths  # noqa: E402
+
 # The main checkout, which holds the package checkouts, the lock, and the
 # results, whichever worktree runs the script.
-MAIN = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
+MAIN = repo_paths.main_checkout()
 WORK_ROOT = MAIN / "build" / "typecheck"
 RESULTS = WORK_ROOT / "results"
 CHECKOUTS = MAIN / "build" / "DerivedData" / "SourcePackages" / "checkouts"
 RESOLVED = Path("TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved")
-
-# The heavy-work lock, shared with the build train: Scripts/agents/heavy_lock.py
-# beside this script's own folder (python3 -I leaves both out of sys.path).
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agents"))
-import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
-import ios_ui_tests  # noqa: E402  (the iPhone test classes, and what a unit test may not name)
 
 # The test kit's inventory of the Mac's test classes and its areas, which the tests census reports by.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "test"))

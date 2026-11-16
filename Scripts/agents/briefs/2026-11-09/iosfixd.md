@@ -37,7 +37,7 @@ The iPhone app's interface (unshipped) runs in the simulator. After yesterday's 
 
 - **Simulator passes:**
   - At most three in all, each with every XCUITest and unit test in it. Fix everything you can by reading before the first, and between passes.
-  - Each through `run_locked.py`, with `-derivedDataPath /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/DerivedData-ios.noindex`.
+  - Each through `run_locked.py`, with `-derivedDataPath <main checkout>/build/DerivedData-ios.noindex`.
   - iPhone 17 only, and make no new devices. Run `xcrun simctl shutdown all` after each.
 - **Never press Play, never type, and nothing that makes a sound:** the simulator plays through the Mac's speakers, which the user would hear.
 - **The train.** If you changed Swift that the Mac compiles, send one request with `--areas phone,accessibility,support` and every class your change could touch.

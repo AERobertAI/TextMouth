@@ -47,7 +47,7 @@ Worker slug `libpolish-movesheet`, branch `libpolish/movesheet` made from `team/
 
 `MoveFolderSheetPresentationTests LibraryFolderPickerTests FeedUIAddFeedTests FeedMoveToLibraryCommandTests LibraryFeedMoveToFolderTests LibraryInfoSpeakerTests LibraryFolderSettingsTargetTests ViewsAndWindowsLibraryListTests LogContentPolicyTests UncheckedConcurrencyPolicyTests`
 
-Log to `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/libpolish-movesheet-<n>.log` (`--log`). Before you report, run `make lint-tests LINT_BASE=team/libpolish` and `make lint-a11y LINT_BASE=team/libpolish`, and fix what they find.
+Log to `<session folder>/scratchpad/libpolish-movesheet-<n>.log` (`--log`). Before you report, run `make lint-tests LINT_BASE=team/libpolish` and `make lint-a11y LINT_BASE=team/libpolish`, and fix what they find.
 
 ## Completion check (must print nothing)
 

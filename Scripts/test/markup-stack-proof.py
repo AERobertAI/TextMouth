@@ -41,14 +41,17 @@ sys.dont_write_bytecode = True
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
+
+# heavy_lock.py and repo_paths.py are in Scripts/agents; python3 -I leaves their folder out of sys.path.
+sys.path.insert(0, str(REPO / "Scripts" / "agents"))
+import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
+import repo_paths  # noqa: E402
+
 # The main checkout holds the build products (SwiftSoup's objects) and the lock.
-MAIN = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
+MAIN = repo_paths.main_checkout()
 PRODUCTS = MAIN / "build" / "DerivedData" / "Build" / "Products"
 OUT = MAIN / "build" / "markup-stack"
 GUARD_SOURCES = [REPO / "TextMouth" / "Parsers" / name for name in ("MarkupGuard.swift", "MarkupScanner.swift", "MarkupNesting.swift")]
-
-sys.path.insert(0, str(REPO / "Scripts" / "agents"))
-import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
 
 # The proof cases: mode, shape, N, dialect. HTML grows with the square of the
 # depth once the first layer's count is lifted (it is not, in the app), so the

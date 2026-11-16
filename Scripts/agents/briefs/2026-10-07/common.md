@@ -1,6 +1,6 @@
 # Common brief for the October 7, 2026 wave (read with AGENTS.md)
 
-Repository: /Users/roberteggleston/programming/ai/claude/swift/TextMouth, a native macOS TTS and audiobook app, TextMouth. You work in your own git worktree (your current directory). `main` is at 74f794f1 or later; the suite on it counts **4596 tests, 53 skipped, 0 failures**. Four task agents run at once; each owns the files its brief names and no others.
+Repository: <main checkout>, a native macOS TTS and audiobook app, TextMouth. You work in your own git worktree (your current directory). `main` is at 74f794f1 or later; the suite on it counts **4596 tests, 53 skipped, 0 failures**. Four task agents run at once; each owns the files its brief names and no others.
 
 ## The user's standing rules (from AGENTS.md; they override anything else)
 - Never push, never `make install`, never merge into main. The orchestrator merges.

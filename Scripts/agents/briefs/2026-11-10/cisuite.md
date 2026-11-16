@@ -15,7 +15,7 @@ The plan without the hour is done: trains now leave 5 minutes after a request. T
   - `Scripts/agents/github_run.py` pushes and fetches.
   - `run_suite.py --remote COMMIT NAME LOG` sends a full suite, and `build-train.py --remote` sends trains.
   - The runner runs `Scripts/agents/run-on-runner.py`, with `test_command.py`, `shard.py`, `plan_shards.py`, `merge_shards.py`, `class_times.py`, `restore_mtimes.py`, and `runner-skips.conf`.
-- **Reports** of the branch that built all this, in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/`: `ci-report.md`, `ci-fix-report.md`, `ci-review.md`, `cicheck-report.md`.
+- **Reports** of the branch that built all this, in `<main checkout>/build/orchestrator/`: `ci-report.md`, `ci-fix-report.md`, `ci-review.md`, `cicheck-report.md`.
 - **Times**, from the 21 runs of November 9 and 10:
   - a machine starts each job within 2 to 5 seconds;
   - setup takes about 30 seconds;

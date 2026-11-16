@@ -17,8 +17,8 @@ You are `nextbook-review-3` (Opus), an independent reviewer. The branch `feature
 - **Getting it:** your worktree starts on main. Check out the tip detached: `git checkout --detach c113b75f`.
 - **The design note:** `NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md`. Its section "The sleep timer goes on with the book" describes the held timer.
 - **Earlier reports,** with line numbers at their own tips:
-  - `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/nextbook/review-1.md`;
-  - `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/nextbook/review-2.md`, findings N1 to N10, which this round fixes.
+  - `<main checkout>/build/orchestrator/nextbook/review-1.md`;
+  - `<main checkout>/build/orchestrator/nextbook/review-2.md`, findings N1 to N10, which this round fixes.
 - The full suite passed at c113b75f: 9265 tests, 75 skipped, 0 failures. Passing tests are not the question. The question is whether the code is right.
 
 ## The rule the code must keep

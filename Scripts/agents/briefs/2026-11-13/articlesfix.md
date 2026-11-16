@@ -5,7 +5,7 @@ You are `articlesfix`, a Sonnet worker. You fix what the Opus review of the Lead
 ## Start
 
 - In your worktree: `git switch feature/title-articles`, check `git log -1 --format=%h` prints `3b9a8a4f`, then rebase onto local main (`git rebase main`; only `project.pbxproj` conflicts are expected: settle them with `make generate`). Its lead has finished and its folder is gone.
-- Read in the main checkout (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`): the review `build/orchestrator/nov13/articles-review.md` (findings 1 to 7 and "Couldn't settle" a to d); the report `build/orchestrator/nov13/articles-report.md`; the design `TITLE-ARTICLES-RESEARCH-2026-11-13.md` on the branch.
+- Read in the main checkout (`<main checkout>/`): the review `build/orchestrator/nov13/articles-review.md` (findings 1 to 7 and "Couldn't settle" a to d); the report `build/orchestrator/nov13/articles-report.md`; the design `TITLE-ARTICLES-RESEARCH-2026-11-13.md` on the branch.
 
 ## The work, one commit each, each with a test that fails without it
 

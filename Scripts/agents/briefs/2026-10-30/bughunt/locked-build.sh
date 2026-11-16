@@ -23,10 +23,10 @@ set -u
 slug="$1"
 shift
 
-lock=/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/bughunt-build.lock
-waiting=/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/bughunt-build.waiting
-data=/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-bughunt
-log="/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/bughunt-$slug.log"
+lock=$TMPDIR/bughunt-build.lock
+waiting=$TMPDIR/bughunt-build.waiting
+data=$TMPDIR/TextMouth-DerivedData-bughunt
+log="$TMPDIR/bughunt-$slug.log"
 lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 
 # Deletes the team's build folder once a build has run, as the orchestrator

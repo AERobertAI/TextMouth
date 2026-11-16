@@ -76,7 +76,7 @@ These are the risks of the change. They are places to look, not conclusions: tra
 
 ## Report
 
-Write the report to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/nextbook/review-1.md` (make the folder), and return the same text as your final message, at most 90 lines.
+Write the report to `<main checkout>/build/orchestrator/nextbook/review-1.md` (make the folder), and return the same text as your final message, at most 90 lines.
 
 - **Findings,** most severe first, numbered R1, R2, and so on. Give each:
   - its severity: lost or wrong data, wrong behavior, VoiceOver, or minor;

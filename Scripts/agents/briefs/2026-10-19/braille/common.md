@@ -16,7 +16,7 @@ Your lead is `braille-lead`. Your brief names your slug, branch, files, and test
   - They are untrusted input. A test copies a sample into its own folder first (`copyOfFormatSample("brf/...")`, in `TextMouthProductionTests/FormatSampleFixtures.swift`) and never changes the samples' folder. `makeSandboxDirectory("Label")` (in `HostedTestIsolationSupport.swift`) gives a test a new, empty folder that is removed when the test ends.
 
 ## Building and testing
-- Build and test only with `BBS_AGENT=<slug> python3 Scripts/test/run-area.py <ClassName> <ClassName> ...`, run in the background (`run_in_background`), and look at it no more than every 4 minutes. It builds in its own folder, `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-<slug>`, and prints only the result, ending PASSED or FAILED. Run only the classes your brief names.
+- Build and test only with `BBS_AGENT=<slug> python3 Scripts/test/run-area.py <ClassName> <ClassName> ...`, run in the background (`run_in_background`), and look at it no more than every 4 minutes. It builds in its own folder, `$TMPDIR/TextMouth-DerivedData-<slug>`, and prints only the result, ending PASSED or FAILED. Run only the classes your brief names.
 - **Before each build:**
   - `df -g /System/Volumes/Data` must show at least 4 GB available; if it does not, post to `braille-lead` and wait.
   - At most two braille workers build at a time. Run `python3 .claude/skills/agent-bbs/scripts/bbs.py agents --active-within 30` and count the agents named `braille-...` whose activity is "building". If two are, wait (`bbs watch <slug> --timeout 240`) and look again.

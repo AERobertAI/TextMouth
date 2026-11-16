@@ -2,7 +2,7 @@
 
 The user asked on October 12 for teams: a lead that breaks its charter into small tasks and a worker per task. On the evening of October 30, 2026 (a Friday, the night before the weekly usage reset at 08:00 Eastern on Saturday) the user wrote: "Theres a lot of usage left this week and I want to use a lot of it before tomorrow morning, treat it as no limit don't even use the usage monitor this session please so you don't worry about it... anyway Please try working through any remaining todos and unfinished work that doesn't require me, improve the tests and look for bugs." They also asked for a new feature, customizable Library views (the views team's charter quotes it). This file is the pattern. It stands in for AGENTS.md: do not read AGENTS.md, README.md, ARCHITECTURE.md, AGENT-NOTES, or more of the TODO than your charter names.
 
-Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, TextMouth, a native macOS text-to-speech and audiobook player. `main` is at 0c2417dd or later (version 0.2.3); its suite counts **8777 tests, 78 skipped, 0 failures** (about 20 minutes of test time), with no Swift warnings. The user has not installed it yet: their installed build is 0.1.1, so main must stay stable and installable.
+Repository: `<main checkout>`, TextMouth, a native macOS text-to-speech and audiobook player. `main` is at 0c2417dd or later (version 0.2.3); its suite counts **8777 tests, 78 skipped, 0 failures** (about 20 minutes of test time), with no Swift warnings. The user has not installed it yet: their installed build is 0.1.1, so main must stay stable and installable.
 
 ## Roles
 - **The orchestrator** (the main session, Opus; `orchestrator` on the board) launches team leads, has each team branch reviewed, merges it into main after a green suite, records it in the TODO, and keeps the documents.
@@ -80,14 +80,14 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
 ## Builds
 Workers build and test with `python3 Scripts/test/run-area.py <areas or ClassNames>` (it uses the build wrapper below; read `-h`), which prints only the result. The wrapper's own command, for a build `run-area.py` cannot make, with your slug, your test classes, and a log file in the session's scratchpad (each scratch file prefixed with your slug):
 
-    BBS_AGENT=<slug> .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-<slug>" -only-testing:TextMouthProductionTests/<Class> > <log> 2>&1
+    BBS_AGENT=<slug> .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "$TMPDIR/TextMouth-DerivedData-<slug>" -only-testing:TextMouthProductionTests/<Class> > <log> 2>&1
 
 - **Disk.** Each build folder takes about 2 to 3 GB, and the disk has about 12 GB free, shared by every team. Before a build that makes a new build folder, `df -g /System/Volumes/Data` must show at least 5 GB available, and before a build in an existing folder at least 2 GB; if it does not, post to your lead (a lead: to the orchestrator) and wait with `bbs watch <name> --timeout 600`, then check again. On October 18 two teams' build folders filled the disk, and builds failed; on October 21 the disk reached 0 GB and every shell call failed. A worker deletes its build folder as soon as its last build ends.
 - **New test file.** It needs `/opt/homebrew/bin/xcodegen generate`, and the regenerated `TextMouth.xcodeproj/project.pbxproj` committed with it. A rebase conflict in `project.pbxproj` is settled by `xcodegen generate`, never by hand.
 - **Editing.** The Mac's `sed` is GNU sed: use `gsed -i` or Python for in-place edits. Never put two heredocs on one command line.
 - **Reading a result.** Use one command that prints only what you need, and look for new warnings as well as errors and failures: `grep -E "Executed [0-9]+ tests|error:|failed \(|\.swift:[0-9]+:[0-9]+: warning:" <log> | tail -20`. A change must add no Swift warning.
 - **Load-sensitive tests.** A failure in one of these is rerun in its class alone and reported with both results: the sleep-timer integration tests, `BookmarkKeyboardAccessTests`, `StorageGenerationMoveTests`, `BookSearchModelTests.testCancelledSearchPublishesNothing`, `DataDirectoryMoveTests.testAMoveShowsItsProgressWhileItCopies`, the reader-sheet redraw count in `ViewsAndWindowsReaderSheetTests`, `FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped`, `ContinueToNextBookTests`, the audiobook-open benchmark, and the performance baselines.
-- **The build folder's path.** The worktree guard refuses `${TMPDIR}` in leads' and workers' commands alike, so write the folder's literal path: `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-<slug>`.
+- **The build folder's path.** The worktree guard refuses `${TMPDIR}` in leads' and workers' commands alike, so write the folder's literal path: `$TMPDIR/TextMouth-DerivedData-<slug>`.
 - **Removing a build folder.** First `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "<folder>/Build/Products/Debug/TextMouth.app"`, then `rm -rf "<folder>"`. Write the folder's literal path in both commands, never a shell variable (`B=...; rm -rf "$B"`): Claude Code stops an `rm` whose path is a variable for the user's approval, and the user is often away. The same holds for every other `rm`, a lead's as much as a worker's, in loops and throwaway experiments too: on October 18 a lead's own `rm -f "$D/$out"` in a test loop waited five hours for the user, and its team stood still all that time. For an experiment, write each run's outputs into a new folder with a literal name and delete nothing during the run.
 
 ## Usage
@@ -113,7 +113,7 @@ An agent's cost follows how many calls it makes times how large its context has 
 - **Leads in particular.** Review diffs with `--stat` first and then file by file. Read a worker's report, not its transcript. Write briefs complete enough that workers do not explore.
 
 ## A lead's report (its final message)
-Write it also to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/<team>-lead-report.md` (that folder is gitignored and shared), so the orchestrator can read it after a session restart.
+Write it also to `<main checkout>/build/orchestrator/oct30/<team>-lead-report.md` (that folder is gitignored and shared), so the orchestrator can read it after a session restart.
 
 - The team branch and its commits: hash, subject, and task.
 - The full suite's exact result line.
