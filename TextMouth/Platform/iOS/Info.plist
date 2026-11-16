@@ -511,6 +511,22 @@
 		<dict>
 			<key>CFBundleTypeExtensions</key>
 			<array>
+				<string>cue</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>CUE Sheet</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.cue-sheet</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
 				<string>tmb</string>
 			</array>
 			<key>CFBundleTypeName</key>
@@ -749,6 +765,23 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/oebps-package+xml</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>CUE Sheet</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.cue-sheet</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>cue</string>
 				</array>
 			</dict>
 		</dict>

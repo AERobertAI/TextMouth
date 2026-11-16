@@ -367,6 +367,12 @@ enum ImportAudioConverter {
         /// that gives no layout (`AudioFileInfo.hasChannelLayout`), which
         /// cannot be mixed to stereo (`Failure.unlabelledChannels`).
         var hasChannelLayout = true
+        /// The source's chapters, which no conversion carries (FMT17): an Ogg
+        /// file's CHAPTERnnn comments (`OggHeaderReader.Tags.chapters`), or
+        /// the markers afinfo lists of any other (`AudioFileInfo.markers`).
+        /// A conversion that keeps chapters writes them into the .m4a's
+        /// chapter track (`ChapterTrackWriter`).
+        var chapters: [NeroChapterReader.Chapter] = []
     }
 
     /// What the import does with one audio file.
@@ -423,14 +429,15 @@ enum ImportAudioConverter {
                 sampleRate: header.sampleRate, channels: header.channels, duration: header.duration,
                 formatID: formatID(of: header.codec), bitsPerSample: header.bitsPerSample,
                 // FLAC keeps every bit of its source, so it becomes Apple Lossless; Vorbis and Opus are lossy.
-                isLossless: header.codec == .flac
+                isLossless: header.codec == .flac,
+                chapters: header.tags.chapters
             )
         }
         guard let facts = try await AudioFileInfo.read(url, using: afinfo) else { return nil }
         return SourceInfo(
             sampleRate: facts.sampleRate, channels: facts.channels, duration: facts.duration,
             formatID: facts.formatID, bitsPerSample: facts.bitsPerSample, isLossless: facts.isLossless,
-            hasChannelLayout: facts.hasChannelLayout
+            hasChannelLayout: facts.hasChannelLayout, chapters: facts.markerChapters
         )
     }
 
@@ -760,9 +767,23 @@ enum ImportAudioConverter {
     /// runs. The conversion runs in a child process the
     /// watchdog of `tool` kills when it hangs (`AUDIO_CONVERSION_KILLED` in the
     /// debug log).
+    ///
+    /// With `keepingChapters`, which an import passes (FMT17), the source's
+    /// chapters (`SourceInfo.chapters`) are then written into the checked
+    /// .m4a's chapter track (`keepChapters`, `ChapterTrackWriter`), its
+    /// samples copied as they are, and the file with them checked again;
+    /// when either fails, the file keeps no chapters, as before, and
+    /// `AUDIO_CHAPTERS_NOT_KEPT` says why in the debug log. The library's
+    /// conversion of an older book's Ogg files keeps none, so that book's
+    /// chapters, and the places in it, stay as they were.
     /// - Throws: `Failure`, or `CancellationError` when the task is
     ///   cancelled.
-    static func convert(_ source: URL, naming: Bool = true, using tool: Tool = .afconvert) async throws -> Conversion {
+    static func convert(
+        _ source: URL,
+        naming: Bool = true,
+        using tool: Tool = .afconvert,
+        keepingChapters: Bool = false
+    ) async throws -> Conversion {
         let started = Date()
         let name = source.lastPathComponent
         guard let info = try await inspect(source, using: tool.info) else {
@@ -794,6 +815,9 @@ enum ImportAudioConverter {
         do {
             try await write(source, to: staged, info: info, target: target, using: tool)
             try await check(staged, against: info.duration, from: name)
+            if keepingChapters, !info.chapters.isEmpty {
+                try await keepChapters(info.chapters, in: staged, lasting: info.duration, from: name)
+            }
         } catch {
             try? FileManager.default.removeItem(at: staged)
             throw error
@@ -909,6 +933,50 @@ enum ImportAudioConverter {
         lengthTolerance + duration * 0.005
     }
 
+    /// The tag of the debug-log line saying a converted file's chapters
+    /// could not be kept (FMT17).
+    static let chaptersNotKeptLogTag = "AUDIO_CHAPTERS_NOT_KEPT"
+
+    /// Gives the .m4a at `url`, converted from the file named `sourceName`
+    /// and already checked, the source's `chapters`: written with them to a
+    /// hidden file beside it (`ChapterTrackWriter`), which is checked as the
+    /// conversion was (`check(_:against:from:)`) and only then takes the
+    /// file's place, so the chapters can never cost the import its audio. A
+    /// failure leaves the file as it was, with no chapters, and is recorded
+    /// as one line, `AUDIO_CHAPTERS_NOT_KEPT: <file>: <reason>`, the reason
+    /// naming only an error's domain and code, which never quote a path.
+    /// Internal so a test can cancel it.
+    /// - Throws: `CancellationError` only, when the task is cancelled: a
+    ///   cancelled import stops here as its conversion would, the file as it
+    ///   was and the hidden one gone.
+    static func keepChapters(
+        _ chapters: [NeroChapterReader.Chapter],
+        in url: URL,
+        lasting duration: TimeInterval,
+        from sourceName: String
+    ) async throws {
+        let withChapters = temporaryURL(beside: url)
+        do {
+            // A list that makes no chapter (every start past the end), or
+            // only one, writes nothing, and the file stays as it is. The
+            // sound before the first place is titled as the book will be: by
+            // the file's title tag, or the source's name, which the
+            // converted file takes.
+            let title = (sourceName as NSString).deletingPathExtension
+            guard try await ChapterTrackWriter.write(chapters, from: url, to: withChapters, lasting: duration, titled: title) else { return }
+            try await check(withChapters, against: duration, from: sourceName)
+            _ = try FileManager.default.replaceItemAt(url, withItemAt: withChapters)
+        } catch {
+            try? FileManager.default.removeItem(at: withChapters)
+            // Whatever AVFoundation throws once the task is cancelled, the
+            // import was cancelled: that, not a lost chapter list, is what
+            // the caller hears.
+            if error is CancellationError || Task.isCancelled { throw CancellationError() }
+            let failure = error as NSError
+            DiagnosticLog.event(.storage, "\(chaptersNotKeptLogTag): \(sourceName): \(failure.domain) \(failure.code)")
+        }
+    }
+
     /// Checks the converted file at `url`, made from the file named
     /// `sourceName` lasting `duration` seconds: it must open and decode as
     /// audio (`AudioMediaProbe`), and last as long to within
@@ -1013,15 +1081,17 @@ enum ImportAudioConverter {
         return true
     }
 
-    /// Converts each of `sources` as `convert(_:naming:)` does, at most
-    /// `maximumConcurrentConversions` at once, telling `progress` how many
-    /// are done as each ends. The conversions are returned in the order of
-    /// `sources`. Should one fail, the others are stopped, every file
-    /// already converted is removed, and its error is thrown.
+    /// Converts each of `sources` as `convert(_:naming:using:keepingChapters:)`
+    /// does, at most `maximumConcurrentConversions` at once, telling
+    /// `progress` how many are done as each ends. The conversions are
+    /// returned in the order of `sources`. Should one fail, the others are
+    /// stopped, every file already converted is removed, and its error is
+    /// thrown.
     static func convertEach(
         _ sources: [URL],
         naming: Bool = true,
         using tool: Tool = .afconvert,
+        keepingChapters: Bool = false,
         progress: (@Sendable (Int) -> Void)? = nil
     ) async throws -> [Conversion] {
         var results = [Conversion?](repeating: nil, count: sources.count)
@@ -1032,7 +1102,7 @@ enum ImportAudioConverter {
                 // the next, so at most the maximum run together.
                 while next < min(maximumConcurrentConversions, sources.count) {
                     let index = next
-                    group.addTask { (index, try await convert(sources[index], naming: naming, using: tool)) }
+                    group.addTask { (index, try await convert(sources[index], naming: naming, using: tool, keepingChapters: keepingChapters)) }
                     next += 1
                 }
                 var done = 0
@@ -1043,7 +1113,7 @@ enum ImportAudioConverter {
                         progress?(done)
                         if next < sources.count {
                             let index = next
-                            group.addTask { (index, try await convert(sources[index], naming: naming, using: tool)) }
+                            group.addTask { (index, try await convert(sources[index], naming: naming, using: tool, keepingChapters: keepingChapters)) }
                             next += 1
                         }
                     }

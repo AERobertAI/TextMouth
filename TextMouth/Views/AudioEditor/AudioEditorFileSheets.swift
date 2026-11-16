@@ -38,9 +38,11 @@ struct AudioEditorProgressSheet: View {
 // MARK: - Export
 
 /// Export (FR04): the formats TextMouth can write the edited audio in, MP3
-/// among them, which TextMouth writes itself, then Export…, which asks where
-/// in a save panel and writes the file there, the book's own file left as
-/// it is. VoiceOver starts on the Format pop-up.
+/// among them, which TextMouth writes itself, a checkbox that writes the
+/// markers beside it as Audacity labels too (FMT06), then Export…, which
+/// asks where in a save panel and writes the file there, the book's own
+/// file left as it is. VoiceOver starts on the Format pop-up; Tab reaches
+/// the checkbox, which VoiceOver reads with its hint.
 struct AudioEditorExportSheet: View {
     /// The window's model.
     @ObservedObject var model: AudioEditorModel
@@ -70,6 +72,12 @@ struct AudioEditorExportSheet: View {
             .pickerStyle(.menu)
             .accessibilityLabel(AudioEditorWording.formatLabel)
             .modifier(InitialVoiceOverFocusModifier(isTarget: true))
+            // The markers as an Audacity label file beside the audio (FMT06);
+            // its hint says when there is none to write.
+            Toggle(AudioEditorWording.exportLabelsToggle, isOn: $model.exportsLabels)
+                .accessibilityHint(
+                    model.labelEntries.isEmpty ? AudioEditorWording.exportLabelsNothingHint : AudioEditorWording.exportLabelsHint
+                )
             Text(AudioEditorWording.exportButtonHint)
                 .font(.caption)
                 .foregroundColor(.secondary)

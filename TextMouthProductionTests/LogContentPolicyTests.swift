@@ -402,6 +402,10 @@ final class LogContentPolicyTests: XCTestCase {
         // Compare Libraries (November 14, 2026): how many differences a comparison found and how many files it
         // could not read; and a cloud drive's conflict copy of an index or a record, by kind and file name.
         "LIBRARY_COMPARED", "CONFLICT_COPY_FOUND",
+        // Chapters in audio files (November 15, 2026): an imported file converted without the chapters its
+        // markers or Ogg comments gave (FMT17), and an audio editor's WAVE, AIFF, or CAF file written without
+        // its chapter markers (FMT11), each with why.
+        "AUDIO_CHAPTERS_NOT_KEPT", "AUDIO_MARKERS_NOT_WRITTEN",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

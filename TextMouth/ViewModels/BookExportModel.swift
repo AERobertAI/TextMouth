@@ -439,6 +439,21 @@ final class BookExportModel: ObservableObject, Identifiable {
         if kind == .transcript {
             return transcriptConversionChoices
         }
+        // An audiobook's headings and bookmarks are always written in a
+        // format chosen here (FMT24, FMT06), the first until another is. A
+        // kind of one format (bookmarks, as Audacity labels) has no pop-up:
+        // its checkbox names the format ("Bookmarks as Audacity labels").
+        if let source = kind.chapterListSource {
+            let formats = ChapterListFormat.formats(for: source)
+            guard formats.count > 1 else { return [] }
+            return formats.map { format in
+                BookExportConversionChoice(
+                    id: format.choiceID,
+                    name: format.name,
+                    hint: BookExportWording.chapterListChoiceHint(for: format, source: source)
+                )
+            }
+        }
         guard kind.convertsText else { return [] }
         let markdown = BookExportConversionChoice(
             id: TextExportWriters.markdownID,
@@ -515,8 +530,20 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// for the transcript, whose checkbox names its own conversion
     /// (`transcriptFormat(for:)`, `transcriptWriter(for:)`).
     private func conversionName(for kind: BookExportKind) -> String? {
+        if let format = chapterListFormat(for: kind) {
+            return format.name
+        }
         guard kind.convertsText else { return nil }
         return writer(id: conversionID(for: kind))?.name
+    }
+
+    /// The format an audiobook's headings or bookmarks are written in
+    /// (FMT24, FMT06): the one chosen beside the checkbox, the kind's first
+    /// until another is; nil for every other kind.
+    private func chapterListFormat(for kind: BookExportKind) -> ChapterListFormat? {
+        guard let source = kind.chapterListSource else { return nil }
+        let formats = ChapterListFormat.formats(for: source)
+        return formats.first { $0.choiceID == conversionID(for: kind) } ?? formats.first
     }
 
     /// The format of captions the transcript is written in (FMT23): the one
@@ -545,6 +572,9 @@ final class BookExportModel: ObservableObject, Identifiable {
     func hint(for kind: BookExportKind) -> String {
         if let format = transcriptFormat(for: kind) {
             return BookExportWording.transcriptHint(as: format)
+        }
+        if let format = chapterListFormat(for: kind), let source = kind.chapterListSource {
+            return BookExportWording.chapterListChoiceHint(for: format, source: source)
         }
         if let textWriter = transcriptWriter(for: kind) {
             return BookExportWording.transcriptTextHint(as: textWriter.name)
@@ -595,6 +625,9 @@ final class BookExportModel: ObservableObject, Identifiable {
             }
             if let format = transcriptFormat(for: kind) {
                 made[kind] = .timedText(format)
+            }
+            if let format = chapterListFormat(for: kind), let source = kind.chapterListSource {
+                made[kind] = .chapterList(format, of: source)
             }
         }
         if isChecked(.spokenAudio), let request = speechRequest {

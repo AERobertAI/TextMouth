@@ -680,6 +680,23 @@ enum AudioEditorWording {
         return "\(format) files can't hold chapter markers, so \(markers) left out of this file."
     }
 
+    /// Said when a save writes the book's file in a format whose markers
+    /// TextMouth writes but never reads back as a book's chapters (a CAF
+    /// file's, FMT11): "TextMouth doesn't read chapter markers back from CAF
+    /// files, so this book won't list its 3 chapter markers once saved."
+    static func chaptersNotReadBack(_ count: Int, format: String) -> String {
+        let markers = count == 1 ? "its chapter marker" : "its \(count) chapter markers"
+        return "TextMouth doesn't read chapter markers back from \(format) files, so this book won't list \(markers) once saved."
+    }
+
+    /// Said after a save or an export whose audio was written but whose
+    /// chapter markers could not be (FMT11): "Its 3 chapter markers couldn't
+    /// be written into the file, so it has none."
+    static func chapterMarkersNotWritten(_ count: Int) -> String {
+        let markers = count == 1 ? "Its chapter marker" : "Its \(count) chapter markers"
+        return "\(markers) couldn't be written into the file, so it has none."
+    }
+
     /// Said as a save ends: the new length, and a new file name when the
     /// format's extension changed it.
     static func saved(_ duration: TimeInterval, renamedTo file: String?) -> String {
@@ -704,6 +721,34 @@ enum AudioEditorWording {
     /// Said as an export ends.
     static func exported(file: String) -> String {
         "Exported “\(file)”."
+    }
+
+    /// Said as an export ends that wrote its label file beside the audio
+    /// (FMT06).
+    static func exported(file: String, labels: String) -> String {
+        "Exported “\(file)” and its labels, “\(labels)”."
+    }
+
+    /// Said as an export ends whose audio was written but whose label file
+    /// could not be, for `reason`.
+    static func exported(file: String, labelsFailed reason: String) -> String {
+        "Exported “\(file)”, but its labels couldn't be written. \(reason)"
+    }
+
+    /// The Export Audio checkbox that writes the markers as labels too, and
+    /// its hint (FMT06).
+    static let exportLabelsToggle = "Also write the markers as Audacity labels"
+    static let exportLabelsHint = "Writes the chapter markers and the markers beside the audio, "
+        + "in an Audacity label file of the same name, which Audacity imports as a label track."
+
+    /// The checkbox's hint while the audio has no marker of either kind to
+    /// write.
+    static let exportLabelsNothingHint = "The audio has no chapter markers or markers yet, so no label file would be written."
+
+    /// Said as an export ends that was asked for labels but had no marker to
+    /// write.
+    static func exportedWithoutLabels(file: String) -> String {
+        "Exported “\(file)”. It has no markers, so no label file was written."
     }
 
     /// Said when an export fails.

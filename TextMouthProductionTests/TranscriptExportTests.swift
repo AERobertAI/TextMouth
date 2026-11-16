@@ -488,7 +488,10 @@ final class TranscriptExportTests: XCTestCase {
     func testThePickersLabels() {
         XCTAssertEqual(BookExportWording.convertToLabel(for: .transcript), "Convert transcript to")
         XCTAssertEqual(BookExportWording.convertToLabel(for: .markdown), "Convert to")
-        for kind in BookExportKind.allCases where kind != .transcript {
+        // The headings' picker has a name of its own too (FMT24); the
+        // bookmarks, of one format, have no picker (FMT06).
+        XCTAssertEqual(BookExportWording.convertToLabel(for: .headings), "Convert headings to")
+        for kind in BookExportKind.allCases where kind != .transcript && !kind.writesChapterList {
             XCTAssertEqual(BookExportWording.convertToLabel(for: kind), BookExportWording.convertToLabel, "\(kind)")
         }
         XCTAssertEqual(BookExportWording.convertToLabel, "Convert to")
@@ -994,11 +997,12 @@ final class TranscriptExportTests: XCTestCase {
         let book = try makeTranscribedBook(in: world)
         let model = BookExportModel(books: [book], destination: try makeSandboxDirectory("Transcript Export Drawn Folder"))
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 2 }) { hostingView in
+        // A book of two tracks offers its headings too (FMT24).
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
             XCTAssertEqual(
                 checkboxes(in: hostingView).count,
-                2,
-                "Audio and Transcript; the dialog is \(model.phase), listing \(model.choices.map(\.kind))"
+                3,
+                "Audio, Headings, and Transcript; the dialog is \(model.phase), listing \(model.choices.map(\.kind))"
             )
             XCTAssertFalse(model.isChecked(.transcript))
             XCTAssertEqual(popUps(in: hostingView).count, 0, "Transcript is unchecked: no picker")

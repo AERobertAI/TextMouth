@@ -287,9 +287,16 @@ final class AudioFileInfoTests: XCTestCase {
             XCTAssertEqual(found.bitsPerSample, expected.bitsPerSample, expected.path)
             XCTAssertEqual(found.isLossless, expected.isLossless, expected.path)
             XCTAssertFalse(found.isFloat, expected.path)
+            XCTAssertEqual(found.markers.map(\.name), Self.markedSamples[expected.path] ?? [], expected.path)
             try FileManager.default.removeItem(at: copy)
         }
     }
+
+    /// The names of the markers afinfo lists in a sample (FMT17): only the
+    /// Broadcast Wave sample has any. Every other sample, the CAF files'
+    /// among them, has none, so the import converts it with no chapters, as
+    /// it always has.
+    private static let markedSamples = ["bwf/tones-bwf.wav": ["First chapter", "Second chapter"]]
 
     // MARK: - The Bound On A Claimed Length (review item 4)
 

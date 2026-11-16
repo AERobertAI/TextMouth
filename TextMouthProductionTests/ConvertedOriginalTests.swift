@@ -432,7 +432,8 @@ final class ConvertedOriginalTests: XCTestCase {
         let offer = BookExportService.offer(for: book)
         let outcome = BookExportService.export([offer], kinds: [.originalFile], to: destination)
 
-        XCTAssertEqual(offer.items.map(\.kind), [.audio, .originalFile])
+        // A book of two tracks offers its headings too (FMT24).
+        XCTAssertEqual(offer.items.map(\.kind), [.audio, .headings, .originalFile])
         XCTAssertEqual(offer.item(.originalFile)?.folderName, "\(stem) - Original Files")
         XCTAssertEqual(offer.item(.originalFile)?.files.map(\.path), ["01.ogg"])
         XCTAssertEqual(offer.item(.audio)?.files.count, 2)

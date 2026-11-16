@@ -102,6 +102,33 @@ enum AudioBookParser {
     ///   this function always did, and is only what older callers (and
     ///   tests) that name no scan rely on.
     static func audioFiles(in directory: URL, scan: TrackScan = .importing) throws -> [URL] {
+        let extensions = Set(BookFormat.audio.fileExtensions)
+        let packageExtensions = BookFormat.packageTrackExtensions
+        return try regularFiles(in: directory) { file in
+            let fileExtension = file.pathExtension.lowercased()
+            switch scan {
+            case .importing:
+                return extensions.contains(fileExtension)
+            case .package:
+                // A format played as it is; or a CAF of TextMouth's own,
+                // known by its place, so its path is worked out for a CAF only.
+                return packageExtensions.contains(fileExtension)
+                    || (fileExtension == RecordingTakeFiles.fileExtension
+                        && isOwnCAF(atPath: relativeName(of: file, in: directory)))
+            }
+        }
+    }
+
+    /// The regular files in `directory`, at any depth, that `accepts` takes,
+    /// in Finder's order by their paths from it: the one walk that finds a
+    /// book's tracks (`audioFiles(in:scan:)`) and the cue sheets beside them
+    /// (`CueSheetArrangement`), so both pass over the same things. Hidden
+    /// files, Finder's `__MACOSX` folder, and symbolic links inside the
+    /// folder are passed over; the folder itself may be a link, which is read
+    /// as the folder it leads to (`resolvingALinkedFolder(_:)`).
+    /// - Throws: `AudioParseError.noAudioFiles` when the folder cannot be
+    ///   walked at all, or the error the walk met.
+    static func regularFiles(in directory: URL, accepting accepts: (URL) -> Bool) throws -> [URL] {
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
         var enumerationError: Error?
         guard let enumerator = FileManager.default.enumerator(
@@ -114,8 +141,6 @@ enum AudioBookParser {
             }
         ) else { throw AudioParseError.noAudioFiles }
 
-        let extensions = Set(BookFormat.audio.fileExtensions)
-        let packageExtensions = BookFormat.packageTrackExtensions
         var files: [URL] = []
         for case let file as URL in enumerator {
             let values = try file.resourceValues(forKeys: keys)
@@ -124,19 +149,7 @@ enum AudioBookParser {
             // metadata folder alone (`skipFinderMetadataFolder`).
             if enumerator.skipFinderMetadataFolder(file, isDirectory: values.isDirectory) { continue }
             guard values.isRegularFile == true else { continue }
-            let fileExtension = file.pathExtension.lowercased()
-            switch scan {
-            case .importing:
-                if extensions.contains(fileExtension) { files.append(file) }
-            case .package:
-                // A format played as it is; or a CAF of TextMouth's own,
-                // known by its place, so its path is worked out for a CAF only.
-                if packageExtensions.contains(fileExtension)
-                    || (fileExtension == RecordingTakeFiles.fileExtension
-                        && isOwnCAF(atPath: relativeName(of: file, in: directory))) {
-                    files.append(file)
-                }
-            }
+            if accepts(file) { files.append(file) }
         }
         if let enumerationError { throw enumerationError }
         return files.sortedStably {
@@ -203,6 +216,15 @@ enum AudioBookParser {
         try await parseFile(url: url, prober: prober, fallbackChapters: fallbackChapters).content
     }
 
+    /// The title a book of the one audio file at `url` takes: the title its
+    /// tags give (`metadataTitle`), or its file's name without the
+    /// extension. A list of places read from the file by hand titles the
+    /// sound before its first place the same way
+    /// (`FileChapterReaders.placedChapters`).
+    static func bookTitle(metadataTitle: String?, of url: URL) -> String {
+        metadataTitle ?? url.deletingPathExtension().lastPathComponent
+    }
+
     /// Parse a single audio file, saying where its chapters came from.
     /// Extracts chapters from M4B metadata if available. A file without
     /// any takes `fallbackChapters`, a podcast episode's chapters kept
@@ -230,7 +252,7 @@ enum AudioBookParser {
 
         // Try to extract metadata
         let metadata = await AudioPlaybackService.extractMetadata(from: url)
-        let title = metadata.title ?? url.deletingPathExtension().lastPathComponent
+        let title = bookTitle(metadataTitle: metadata.title, of: url)
         let author = metadata.artist ?? Book.unknownAuthor
 
         // Try to extract chapter markers, or take a podcast's chapters
