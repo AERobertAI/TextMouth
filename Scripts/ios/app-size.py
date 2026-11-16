@@ -53,7 +53,9 @@ STRICT_LIMIT_MB = 40
 DEFAULT_TOP = 15
 # The target and SDK of the device build. It names the target and the SDK, not the scheme and a destination: a scheme
 # needs a destination, and `-destination generic/platform=iOS` needs the iOS platform installed, which a Mac with only
-# Xcode's SDKs, like the one the agents use, lacks. The target is the one the scheme TextMouthiOS builds. The folder name Xcode gives its products. The product's name is
+# Xcode's SDKs, like the one the agents use, lacks. The target is the one the scheme TextMouthiOS builds. A target build
+# takes no -derivedDataPath, so the folders a derived-data folder holds are named one by one, in the same layout (products
+# in Build/Products/Release-iphoneos, objects and the link map in Build/Intermediates.noindex). The folder name Xcode gives its products. The product's name is
 # TextMouth, as project.yml sets it (the Mac app has the same name).
 TARGET = "TextMouthiOS"
 SDK = "iphoneos"
@@ -269,7 +271,8 @@ def build_command(derived_data):
     """The argv of the device build: Release of the target TextMouthiOS for the iphoneos SDK, arm64, unsigned, small code
     (-Osize, as the Makefile gives the Mac's Release build), no coverage, and a link map."""
     return ["xcodebuild", "build", "-project", "TextMouth.xcodeproj", "-target", TARGET, "-configuration", "Release",
-            "-sdk", SDK, "-derivedDataPath", str(derived_data), "ARCHS=arm64",
+            "-sdk", SDK, "-clonedSourcePackagesDirPath", f"{derived_data}/SourcePackages",
+            f"SYMROOT={derived_data}/Build/Products", f"OBJROOT={derived_data}/Build/Intermediates.noindex", "ARCHS=arm64",
             "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO", "CLANG_COVERAGE_MAPPING=NO",
             "SWIFT_OPTIMIZATION_LEVEL=-Osize", "LD_GENERATE_MAP_FILE=YES"]
 
@@ -451,7 +454,8 @@ def selftest():
     check(describe(18_453_210) == "18.5 MB (18,453,210 bytes)", f"describe gave {describe(18_453_210)}")
     # The build's argv: the device SDK, unsigned, a link map, the scheme.
     argv = build_command("/x/dd")
-    check("iphoneos" in argv and "TextMouthiOS" in argv and "-scheme" not in argv and "ARCHS=arm64" in argv and "-destination" not in argv and "CODE_SIGNING_ALLOWED=NO" in argv and "LD_GENERATE_MAP_FILE=YES" in argv,
+    check("SYMROOT=/x/dd/Build/Products" in argv and "OBJROOT=/x/dd/Build/Intermediates.noindex" in argv
+          and "-derivedDataPath" not in argv and "iphoneos" in argv and "TextMouthiOS" in argv and "-scheme" not in argv and "ARCHS=arm64" in argv and "-destination" not in argv and "CODE_SIGNING_ALLOWED=NO" in argv and "LD_GENERATE_MAP_FILE=YES" in argv,
           f"build command was {argv}")
     for failure in failures:
         print(f"app-size selftest FAILED: {failure}")
