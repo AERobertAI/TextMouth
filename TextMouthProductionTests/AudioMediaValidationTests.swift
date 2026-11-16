@@ -1,3 +1,4 @@
+import AVFoundation
 import os
 import XCTest
 @testable import TextMouth
@@ -169,6 +170,24 @@ final class AudioMediaValidationTests: XCTestCase {
 
         XCTAssertEqual(waveDuration, 2)
         XCTAssertEqual(aacDuration, 1, accuracy: 0.01)
+    }
+
+    /// A book stored as 64-bit floats (a WAVE or CAF file), 64-bit integers,
+    /// or 20-bit integers, which AVAssetReader's outputs take only when
+    /// asked for another depth (B12), imports: the probe measures it, its
+    /// samples decode to the end, and AVFoundation says it plays.
+    func testProbeMeasuresBooksOfWideSamples() async throws {
+        for book in AudioEditRenderingTests.wideBooks {
+            let file = try AudioTestFixtures.makeTemporaryDirectory().appendingPathComponent(book.fileName)
+            addTeardownBlock { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }
+            try book.write(file, 24_000, 8_000)
+
+            let duration = try await AudioMediaProbe.duration(of: file).get()
+            let playable = try await AVURLAsset(url: file).load(.isPlayable)
+
+            XCTAssertEqual(duration, 3, accuracy: 0.01, "\(book)")
+            XCTAssertTrue(playable, "\(book)")
+        }
     }
 
     /// A file whose audio track ends before the file does, as when an
