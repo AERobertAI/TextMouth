@@ -60,11 +60,13 @@ enum ImportAudioConverter {
     /// `afinfo` or `afconvert` could read it.
     static let ownReaderExtensions: Set<String> = OwnAudioFormat.allFileExtensions
 
-    /// The extensions, in lowercase, that only an import takes: the formats
-    /// the import converts whose files a book's package never holds
+    /// The extensions, in lowercase, that only an import takes and the app
+    /// itself converts: the formats whose files a book's package never holds
     /// afterwards (`coreAudioExtensions` and `ownReaderExtensions`). Open
     /// Book accepts them, and a package's track scan does not
-    /// (`BookFormat.packageTrackExtensions`).
+    /// (`BookFormat.packageTrackExtensions`). The formats the installed
+    /// ffmpeg converts are import-only too, and are listed beside these
+    /// wherever they are used (`FFmpegAudioConverter.extensions`).
     static let importOnlyExtensions: Set<String> = coreAudioExtensions.union(ownReaderExtensions)
 
     /// The extensions, in lowercase, of every audio format the import
