@@ -122,6 +122,43 @@ extension AudioTestFixtures {
         try file.write(from: buffer)
     }
 
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// a WAVE file of 64-bit floating-point samples (format tag 3), the
+    /// header written here byte by byte: the depth AVAudioFile and
+    /// AVAssetWriter won't write a WAVE file in, and AVAssetReader's
+    /// outputs, which take 8, 16, 24, and 32 bits only, refuse to be given.
+    static func writeToneFloat64WAVE(to url: URL, frames: Int, sampleRate: Double) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        var samples = Data()
+        for sample in tone(frames: frames, sampleRate: sampleRate) {
+            samples.append(littleEndianBytes(Double(sample).bitPattern))
+        }
+        // The "fmt " chunk: 16 bytes, as a float WAVE file of one or two
+        // channels needs no more.
+        var format = Data()
+        format.append(littleEndianBytes(UInt16(3)))                   // IEEE floating point
+        format.append(littleEndianBytes(UInt16(1)))                   // one channel
+        format.append(littleEndianBytes(UInt32(sampleRate)))          // frames a second
+        format.append(littleEndianBytes(UInt32(sampleRate) * 8))      // bytes a second
+        format.append(littleEndianBytes(UInt16(8)))                   // bytes a frame
+        format.append(littleEndianBytes(UInt16(64)))                  // bits a sample
+        var file = Data("RIFF".utf8)
+        file.append(littleEndianBytes(UInt32(4 + 8 + format.count + 8 + samples.count)))
+        file.append(Data("WAVEfmt ".utf8))
+        file.append(littleEndianBytes(UInt32(format.count)))
+        file.append(format)
+        file.append(Data("data".utf8))
+        file.append(littleEndianBytes(UInt32(samples.count)))
+        file.append(samples)
+        try file.write(to: url)
+    }
+
+    /// The bytes of `value`, least significant first, as WAVE headers and
+    /// samples store integers.
+    private static func littleEndianBytes<T: FixedWidthInteger>(_ value: T) -> Data {
+        withUnsafeBytes(of: value.littleEndian) { Data($0) }
+    }
+
     /// What `sample`, read from an edited identity ramp, is.
     static func rampSample(_ sample: Float) -> RampSample {
         if sample == 0 { return .silence }

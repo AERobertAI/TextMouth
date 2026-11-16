@@ -19,7 +19,7 @@ import XCTest
 final class AudioEditRenderingTests: XCTestCase {
 
     /// Frames a second of the audio.
-    private static let rate = 8_000.0
+    static let rate = 8_000.0
 
     // MARK: - Sample-Exact Edits
 
@@ -635,7 +635,7 @@ final class AudioEditRenderingTests: XCTestCase {
 
     /// Every sample of `made`'s composition, read as AVAssetReader reads it,
     /// as mono 32-bit floats at the timeline's rate.
-    private static func compositionSamples(_ made: AudioEditComposition) async throws -> [Float] {
+    static func compositionSamples(_ made: AudioEditComposition) async throws -> [Float] {
         try await readerSamples(of: made.composition, at: made.sampleRate)
     }
 
@@ -671,10 +671,15 @@ final class AudioEditRenderingTests: XCTestCase {
         return samples
     }
 
-    /// A library of one WAVE audiobook of `seconds` of book ramp, in a
-    /// folder of the sandbox's library of this test's own.
+    /// A library of one audiobook of `seconds` of book ramp, in a folder of
+    /// the sandbox's library of this test's own: a WAVE file, or the file
+    /// `fileName` names, written by `writeBook` (given its URL and frames).
     @MainActor
-    private func makeLibraryBook(seconds: Double) throws -> (LibraryViewModel, Book) {
+    func makeLibraryBook(
+        seconds: Double,
+        fileName: String = "Canal Survey.wav",
+        writeBook: ((URL, Int) throws -> Void)? = nil
+    ) throws -> (LibraryViewModel, Book) {
         let folderPath = "Audio Rendering \(UUID().uuidString.prefix(8))"
         let folder = TextMouthPaths.libraryDir.appendingPathComponent(folderPath, isDirectory: true)
         let package = folder.appendingPathComponent("Canal-Unknown-1-\(UUID().uuidString.prefix(8)).tmb", isDirectory: true)
@@ -685,7 +690,7 @@ final class AudioEditRenderingTests: XCTestCase {
         let book = Book(
             title: "Canal Survey",
             format: .audio,
-            filePath: package.appendingPathComponent("Canal Survey.wav").path,
+            filePath: package.appendingPathComponent(fileName).path,
             md5Hash: UUID().uuidString,
             folderPath: folderPath,
             tmbDirectoryName: package.lastPathComponent
@@ -694,13 +699,18 @@ final class AudioEditRenderingTests: XCTestCase {
             try? FileManager.default.removeItem(at: folder)
             AudioEditScratch.remove(for: book.id)
         }
-        try AudioTestFixtures.writeIdentityRamp(to: book.bookFileURL, frames: Int(seconds * Self.rate), sampleRate: Self.rate)
+        let frames = Int(seconds * Self.rate)
+        if let writeBook {
+            try writeBook(book.bookFileURL, frames)
+        } else {
+            try AudioTestFixtures.writeIdentityRamp(to: book.bookFileURL, frames: frames, sampleRate: Self.rate)
+        }
         model.library.addBook(book)
         return (model, book)
     }
 
     /// A new folder of this test's own, removed when it ends.
-    private func makeFolder() throws -> URL {
+    func makeFolder() throws -> URL {
         let folder = try AudioTestFixtures.makeTemporaryDirectory()
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
         return folder
