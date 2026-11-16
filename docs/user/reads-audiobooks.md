@@ -68,6 +68,32 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A file of one of them that claims to last more than a year, or a length that its size cannot hold, is refused as unreadable.
 - A Mac that can't read or convert a format refuses a file of it by name when it is imported, and nothing is added.
 
+## True Audio, WavPack, and Monkey's Audio
+<!-- id: true-audio-wavpack-monkeys-audio; keys: TTA, .tta, WavPack, .wv, .wvc, Monkey's Audio, .ape, hybrid; src: TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift -->
+
+- TextMouth decodes True Audio (.tta), WavPack (.wv), and Monkey's Audio (.ape, version 3.99 and later) with readers of its own, inside the app, so no program has to be installed for them.
+- Each file becomes an .m4a file in the book's package, as the other converted audio does (see above), and holds the source's samples exactly.
+  It is Apple Lossless at the source's bit depth, as for other lossless audio.
+  A 20-bit source is written at 24 bits, which holds every sample, and floating-point audio at 24 bits.
+- A file is known by what it holds, not its name, so a TTA file named .mp3 is read as TTA.
+- A WavPack hybrid file (a lossy .wv) with its correction file (.wvc, the same name) beside it is lossless.
+  - The .wvc is copied with the .wv, and kept with it when Keep originals of converted audio is on.
+  - Without it the hybrid file becomes AAC.
+  - A correction file that is damaged or belongs to another recording fails the import with "The correction file NAME.wvc is damaged or belongs to another recording, so NAME.wv could not be converted."
+- Audio of more than two channels is mixed to stereo, as the other converted audio is.
+- The tags are written into the .m4a: APEv2, ID3v2, and ID3v1, as the file holds them, and the book is named by them.
+- A cue sheet kept in a file's APEv2 Cuesheet tag, as WavPack's and Monkey's Audio's encoders write one, gives the book its chapters, a heading for each track of the sheet's first file that begins before the audio ends.
+- A file a reader refuses fails the import with a sentence that says why:
+  - "TextMouth can't read the audio file NAME because it is locked with a password." for a True Audio file with a password;
+  - "… because it was made by a WavPack older than version 4, from before 2004."
+  - "… because it was made by a Monkey's Audio older than version 3.99, from before 2004."
+  - "… because it holds DSD audio, which TextMouth does not read." for WavPack;
+  - "… because its channels, bit depth, sample rate, or compression level are outside what TextMouth reads." for Monkey's Audio, and shorter words for the other two;
+  - "The audio file NAME ends before its audio does, so it could not be converted.";
+  - "The audio file NAME is damaged, so it could not be converted." for a checksum that fails or a value no encoder writes.
+- A file that claims to last more than a year is refused as damaged.
+- The iPhone refuses these formats.
+
 ## Formats only ffmpeg reads
 <!-- id: formats-only-ffmpeg-reads; keys: ffmpeg, ffprobe, WMA, Speex, Musepack, WebM, Matroska, brew install ffmpeg; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFprobeReport.swift, TextMouth/Models/FFmpegImportWording.swift -->
 

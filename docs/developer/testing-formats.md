@@ -234,3 +234,17 @@ Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDO
   The samples are in TestData/format-samples, among them a WMA 1 and 2, a WMV, an AVI, an FLV, WebM, Matroska with chapters and several tracks, Speex, and RealMedia (.rm).
 - IOSBranchTests and PhoneImportBranchTests pin that the iPhone refuses these files and leaves them out of a book; RefusedFormatAdviceTests pin the copy-protection sentence, with an .aax as its example.
 - Not run anywhere yet: a real PlayReady file and a Musepack sample, since no encoder made one.
+
+## TextMouth's own TTA, WavPack, and Monkey's Audio readers
+<!-- id: tests-own-audio-readers; keys: OwnAudioTrueAudioTests, OwnAudioWavPackTests, OwnAudioMonkeysAudioTests, OwnAudioTagTests, OwnAudioImportTests, make-own-audio-samples, pcm.tsv, fuzz; src: TextMouthProductionTests/OwnAudioTrueAudioTests.swift, TextMouthProductionTests/OwnAudioWavPackTests.swift, TextMouthProductionTests/OwnAudioMonkeysAudioTests.swift, TextMouthProductionTests/OwnAudioTagTests.swift, TextMouthProductionTests/OwnAudioImportTests.swift, TextMouthProductionTests/OwnAudioSampleSupport.swift, Scripts/make-own-audio-samples.py -->
+
+- The samples are made by Scripts/make-own-audio-samples.py from tones made in the script, so every file is CC0, and encoded by the format's own BSD encoder built from its pinned source, or by ffmpeg run as a program.
+  Each folder of TestData/format-samples (tta, wv, ape) holds a pcm.tsv with the shape of every file's audio and the SHA-256 of the samples its source held.
+  The WavPack samples include hybrid files with their .wvc, files of 12, 20, and 24-in-32 valid bits (the header shift), floats, and files from ffmpeg's encoder.
+- Each reader's test class decodes every sample and compares the samples with pcm.tsv bit for bit, so a change to a reader's arithmetic fails it: OwnAudioTrueAudioTests, OwnAudioWavPackTests, and OwnAudioMonkeysAudioTests.
+  The WavPack shift samples are also checked end to end, the converted .m4a compared with the source's digest, not with what the decoder gives.
+- Each class also damages the files (cut short, flipped bytes, crafted headers) and requires an OwnAudioError, never a trap, error of another kind, or hang.
+  The Monkey's Audio fuzz pass takes samples of at most 9,000 samples, so it leaves out the multichannel, 24-bit stereo, and multi-frame files.
+- OwnAudioTagTests read APEv2, ID3v2, and ID3v1 tags by hand, and OwnAudioImportTests import each format through ImportAudioConverter: a lossless file's .m4a holds the source's samples exactly, a hybrid file becomes AAC, and a refused file fails with its sentence.
+- Nothing is played, and the only files Apple's frameworks open are the .m4a files the conversion wrote.
+- Not covered: Monkey's Audio 3.93 to 3.98 files (refused, as no encoder at hand writes one), the iPhone build running the readers, and decoding speed on slow Macs.

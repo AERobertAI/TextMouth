@@ -139,6 +139,26 @@ A file the import converts keeps its chapters through the conversion:
   Its refusals are CueSheetError (tooLarge, noTracks, noAudio, timesPastAudio) in CueSheetWording's sentences.
 - FLAC files' cue sheets are read by FLACCueSheetReader (above).
 
+## TextMouth's own TTA, WavPack, and Monkey's Audio readers
+<!-- id: own-audio-readers; keys: OwnAudioFormat, OwnAudioConverter, TTADecoder, WavPackDecoder, MonkeysAudioDecoder, OwnAudioError, .wvc, APEv2; src: TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift, TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/WavPackUnpack.swift, TextMouth/Parsers/OwnAudio/MonkeysAudioDecoder.swift, TextMouth/Parsers/OwnAudio/TTADecoder.swift -->
+
+- Owner: OwnAudioFormat (trueAudio, wavPack, monkeysAudio) tells a file by its signature, after any ID3v2 tag (OwnAudioFormat.of), and gives each reader a decoder (format.decoder(of:companion:)).
+  The readers are Swift ports of BSD-licensed decoders (the TTA hardware players library 1.2, WavPack 5.9.0, and Monkey's Audio SDK 13.47), compiled into both apps from TextMouth/Parsers/OwnAudio.
+  Their notices ship in Licenses/TrueAudio (README and COPYRIGHT), Licenses/WavPack, and Licenses/MonkeysAudio.
+- The import: these files always convert (their extensions are in ImportAudioConverter.ownReaderExtensions and convertedExtensions), and one under another name is caught by its bytes; FFmpegAudioConverter.converts(_:) says no for them.
+  OwnAudioConverter.sourceInfo(of:) reads the header, refuses a length past a year as damaged, and returns the chapters of an APEv2 Cuesheet item (chapters(in:lasting:), by CueSheet and CueSheetArrangement.heading).
+  OwnAudioConverter.write decodes block by block (framesPerAppend) into an AVAssetWriter that sees only PCM made here.
+  A lossless source is written as Apple Lossless at its depth, a 20-bit one at 24 (writtenBitDepth, since the writer's 20-bit files fail the media check), a float at 24, and a hybrid WavPack file without its .wvc as AAC.
+  More than two channels are mixed to stereo (OwnAudioSamples.stereo).
+- The .wvc: OwnAudioConverter.companion(of:) finds it by name beside the .wv; the import copies it with its file, ImportAudioConverter.removeSources removes it with its source, and the kept originals move it beside its file.
+  A damaged .wvc ends in OwnAudioError.companionDamaged, whose sentence names it.
+- Untrusted input: OwnAudioBytes reads with pread(2) and never maps a file, every read is bounds-checked, arithmetic wraps or converts with checks, and each loop is limited by what the file holds, so a crafted file ends in an OwnAudioError, never a trap.
+  Allocations are capped before they are made: a Monkey's Audio frame by the SDK's own limits (MonkeysAudioDecoder.mostFramesPerFrame: a million frames of audio, ten million at Insane) and maximumSamplesPerFrame.
+  Stop is seen between blocks and in the writer's wait, and the decode runs off the main actor.
+- Header shifts: WavPack files of 12 or 20 valid bits, or of 24 in 32, are shifted back to their own width after the unpack, so the samples handed to the encoder are exact (review10 finding 1).
+- Not read: Monkey's Audio before 3.99 and WavPack before 4 (refused with their sentences), True Audio with a password or of floats, DSD, and a later WavPack block that changes the first block's sample format (crafted files only).
+- The iPhone compiles the readers, and its import refuses the files (see the iPhone's import refusals).
+
 ## Audio only ffmpeg reads
 <!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, FFprobeReport, FFmpeg.locate, ASF, copy protection, FMT31, FMT32; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFprobeReport.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift -->
 

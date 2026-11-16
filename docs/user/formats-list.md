@@ -98,8 +98,8 @@ Audio gets its title, author, and duration from its tags, and its chapters, wher
 - Ogg (.ogg, .oga, .opus), holding Vorbis, Opus, or FLAC: converted to .m4a at import, and never played through Apple's players; iPhone: no; Tested with made samples.
 - AC-3 (.ac3), E-AC-3 (.ec3, .eac3), MP2 (.mp2), AMR (.amr), 3GPP audio (.3gp), NeXT/Sun audio (.au), AIFC (.aifc), CAF (.caf), and Wave64 (.w64): converted to .m4a at import by afconvert; iPhone: no; Tested with made samples.
 - MP1 (.mp1) and the alternative extensions .mpa, .snd, .awb, .3g2, and .3ga: converted the same way; iPhone: no; Basic.
-- TTA (.tta), WavPack (.wv, with a .wvc correction file beside it), and Monkey's Audio (.ape, version 3.93 and later): read by TextMouth's own decoders and written as Apple Lossless in .m4a, with their tags; iPhone: yes; Tested with made samples.
-- WMA (.wma, .asf), Speex (.spx), Musepack (.mpc, .mp+), WebM and Matroska audio (.webm, .weba, .mka), RealAudio (.ra, .rm, .rmvb), and the sound of .wmv, .avi, .flv, and .mkv videos: converted with the installed ffmpeg, keeping tags and chapters; iPhone: no; Tested with made samples.
+- TTA (.tta), WavPack (.wv, with a .wvc correction file beside it), and Monkey's Audio (.ape, version 3.99 and later): read by TextMouth's own decoders and written as Apple Lossless in .m4a, with their tags; iPhone: no; Tested with made samples.
+- WMA (.wma, .asf), Speex (.spx), Musepack (.mpc, .mp+, .mpp), WebM and Matroska audio (.webm, .weba, .mka), RealAudio (.ra, .rm, .rmvb), and the sound of .wmv, .avi, .flv, and .mkv videos: converted with the installed ffmpeg, keeping tags and chapters; iPhone: no; Tested with made samples.
 - Without ffmpeg, the import of those says how to install it.
 - Copy-protected audio (.aa, .aax, .aaxc, .m4p, and copy-protected ASF) is refused and never read.
 - Chapters come from more than tags: CUE sheets (.cue, or one in a FLAC file), markers in WAV, AIFF, and CAF files, CHAPTER comments in Ogg files, and Audacity label files (.txt) beside a folder's audio.
