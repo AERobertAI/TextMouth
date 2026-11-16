@@ -1369,7 +1369,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: defaults,
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
 
         let content = DocumentContent(title: "Tide Tables", author: "Test Author", chapters: chapters)

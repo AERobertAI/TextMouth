@@ -281,7 +281,7 @@ final class FeedSettingsTests: XCTestCase {
     func testAChangeMadeAnywhereReachesConfigJSON() throws {
         let store = makeSandboxedPreferences("FeedConfigSave")
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let viewModel = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,

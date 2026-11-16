@@ -539,7 +539,7 @@ final class PhoneSettingsModelTests: XCTestCase {
         let catalog = VoiceCatalog(notificationCenter: NotificationCenter(), listVoices: { voices })
         catalog.listNow()
         let folder = try makeSandboxDirectory("PhoneSettingsModel")
-        let configService = ConfigService(fileURL: folder.appendingPathComponent("config.json"))
+        let configService = makeConfigService(fileURL: folder.appendingPathComponent("config.json"))
         addTeardownBlock { configService.shutdown() }
         return SettingsViewModel(
             notificationCenter: NotificationCenter(),

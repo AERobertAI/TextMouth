@@ -274,7 +274,7 @@ final class VoiceCatalogTests: XCTestCase {
 
         XCTAssertEqual(lister.calls, 1)
         XCTAssertEqual(settings.selectedVoiceID, Self.sampleVoices.first?.identifier)
-        XCTAssertEqual(ConfigService(fileURL: configURL).config.selectedVoiceID, Self.sampleVoices.first?.identifier)
+        XCTAssertEqual(makeConfigService(fileURL: configURL).config.selectedVoiceID, Self.sampleVoices.first?.identifier)
     }
 
     /// Any other launch lists no voices: the catalog lists them later, off
@@ -305,7 +305,7 @@ final class VoiceCatalogTests: XCTestCase {
     /// and a config.json of its own at `configURL`; its file watcher stops
     /// when the test ends.
     private func launchSettings(defaults: UserDefaults, configURL: URL, catalog: VoiceCatalog) throws -> SettingsViewModel {
-        let service = ConfigService(fileURL: configURL)
+        let service = makeConfigService(fileURL: configURL)
         addTeardownBlock { service.shutdown() }
         return SettingsViewModel(
             notificationCenter: NotificationCenter(),
@@ -326,7 +326,7 @@ final class VoiceCatalogTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: try isolatedDefaults(),
-            configService: ConfigService(fileURL: try makeConfigFileURL()),
+            configService: makeConfigService(fileURL: try makeConfigFileURL()),
             voiceCatalog: catalog
         )
     }

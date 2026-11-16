@@ -193,7 +193,7 @@ final class BrailleTableGuessTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: defaults,
-            configService: ConfigService(fileURL: try makeConfigFileURL())
+            configService: makeConfigService(fileURL: try makeConfigFileURL())
         )
         var announced = 0
         let subscription = settings.objectWillChange.sink { announced += 1 }

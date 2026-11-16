@@ -120,7 +120,7 @@ final class TranscriptionLanguageTests: XCTestCase {
     func testALanguageChosenAnywhereIsSavedToConfigJSON() throws {
         let store = makeSandboxedPreferences("transcription-language-anywhere")
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let viewModel = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,

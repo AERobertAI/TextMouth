@@ -171,7 +171,7 @@ final class ConfigSaveCoalescingTests: XCTestCase {
         try ConfigService.fileData(for: elsewhere).write(to: file, options: .atomic)
         let inCloud = OSAllocatedUnfairLock(initialState: true)
 
-        let service = ConfigService(fileURL: file, fileOperations: Self.operations(refusingReadsWhile: inCloud))
+        let service = makeConfigService(fileURL: file, fileOperations: Self.operations(refusingReadsWhile: inCloud))
 
         XCTAssertEqual(service.loadedFile, .missing)
         XCTAssertFalse(service.hasExistingConfig)
@@ -198,7 +198,7 @@ final class ConfigSaveCoalescingTests: XCTestCase {
             writes.increment()
             try data.write(to: url, options: .atomic)
         }
-        let service = ConfigService(fileURL: file, fileOperations: operations, saveDelay: .milliseconds(100))
+        let service = makeConfigService(fileURL: file, fileOperations: operations, saveDelay: .milliseconds(100))
         return (service, writes, file)
     }
 

@@ -275,7 +275,7 @@ final class BookExportSheetTests: XCTestCase {
     func testTheToolbarSettingFollowsSettingsAndConfigJSON() throws {
         let defaults = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,

@@ -128,7 +128,7 @@ final class FeedEndToEndTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: makeSandboxedPreferences("FeedReaderSettings"),
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
         // A finished book stops, so no next book starts, and counts among
         // Books Finished, as every end-of-book behavior but looping does.

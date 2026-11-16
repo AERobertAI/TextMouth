@@ -135,7 +135,7 @@ final class RecordingInputTests: XCTestCase {
     func testAChoiceMadeInTheRecordWindowIsSavedToConfigJSON() throws {
         let store = makeSandboxedPreferences("recording-input-save")
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,

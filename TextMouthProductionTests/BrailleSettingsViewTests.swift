@@ -187,7 +187,7 @@ final class BrailleSettingsViewTests: XCTestCase {
     func testChoosingEurobrailleStoresItsID() throws {
         let defaults = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
@@ -265,7 +265,7 @@ final class BrailleSettingsViewTests: XCTestCase {
                       "This Mac does not offer its French contracted table (\(BrailleTableCatalog.macTablesFolder.path))")
         let defaults = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
@@ -456,7 +456,7 @@ final class BrailleSettingsViewTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: store,
-            configService: ConfigService(fileURL: try makeConfigFileURL())
+            configService: makeConfigService(fileURL: try makeConfigFileURL())
         )
     }
 

@@ -165,7 +165,7 @@ final class PhoneLifeCycleReopeningTests: XCTestCase {
             session: session,
             sounds: sounds,
             preferences: preferences,
-            config: ConfigService(fileURL: configFile)
+            config: makeConfigService(fileURL: configFile)
         )
     }
 

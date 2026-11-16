@@ -1275,7 +1275,7 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         world.center.setListeningOptions(options, of: feed.id)
 
         let configFile = try makeSandboxDirectory("EpisodeDownloadConfig").appendingPathComponent("config.json")
-        let configService = ConfigService(fileURL: configFile)
+        let configService = makeConfigService(fileURL: configFile)
         // A reader can outlive its test for a moment: a move asks for its
         // book half a second after saying so, and holds the reader, with
         // these settings, until then. A settings save still waiting when a

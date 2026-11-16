@@ -329,7 +329,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let theirs = halfOf(try ConfigService.fileData(for: ConfigService.AppConfig()))
         let copies = try writeConflictCopies(of: file, holding: theirs)
 
-        let service = ConfigService(fileURL: file)
+        let service = makeConfigService(fileURL: file)
         service.config.wordsPerMinute = 333
         service.saveToDisk()
 
@@ -347,7 +347,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let half = halfOf(try ConfigService.fileData(for: ConfigService.AppConfig()))
         try half.write(to: file)
 
-        let service = ConfigService(fileURL: file)
+        let service = makeConfigService(fileURL: file)
 
         XCTAssertEqual(service.loadedFile, .unreadable)
         XCTAssertEqual(try Data(contentsOf: file), half)
@@ -361,7 +361,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let theirs = try ConfigService.fileData(for: ConfigService.AppConfig())
         try theirs.write(to: file)
         let writes = WriteCounter()
-        let service = ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+        let service = makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
             write: { data, url in
                 writes.count += 1
                 try data.write(to: url, options: .atomic)
@@ -479,7 +479,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let theirs = try ConfigService.fileData(for: theirConfig)
         try theirs.write(to: file)
         let inCloud = CloudFlag()
-        let service = ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+        let service = makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
             write: { data, url in try data.write(to: url, options: .atomic) },
             openForEvents: { _ in -1 },
             close: { _ in },
@@ -957,7 +957,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let provider = FakeCloudItemStatusProvider()
         provider.setLocation(.cloud(.googleDrive), of: folder)
         installItemStatus(provider)
-        let service = ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+        let service = makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
             write: { data, url in try data.write(to: url, options: .atomic) },
             openForEvents: { _ in -1 },
             close: { _ in }
@@ -996,7 +996,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// A settings service for `file`, writing as the app does and watching
     /// nothing.
     private func makeConfigService(at file: URL) -> ConfigService {
-        ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+        makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
             write: { data, url in try data.write(to: url, options: .atomic) },
             openForEvents: { _ in -1 },
             close: { _ in }

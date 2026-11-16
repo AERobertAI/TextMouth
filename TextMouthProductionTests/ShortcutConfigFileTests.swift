@@ -737,7 +737,7 @@ final class ShortcutConfigFileTests: XCTestCase {
     /// reconciles the two, moving the shortcuts to the record when the store
     /// holds none, and starts the watcher, which stops when the test ends.
     private func launch(_ url: URL, store: UserDefaults) -> (service: ConfigService, settings: SettingsViewModel) {
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         addTeardownBlock { service.shutdown() }
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(),

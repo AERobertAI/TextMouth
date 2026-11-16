@@ -335,7 +335,7 @@ final class MacBrailleTableBookTests: XCTestCase {
         XCTAssertEqual(try decoded(gone), gone)
         XCTAssertEqual(try decoded("mac:../escape.ctb"), "")
         let defaults = try isolatedDefaults()
-        let service = ConfigService(fileURL: try makeConfigFileURL())
+        let service = makeConfigService(fileURL: try makeConfigFileURL())
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
