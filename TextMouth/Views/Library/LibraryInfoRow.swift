@@ -2,8 +2,8 @@ import Foundation
 
 // MARK: - The Row Speak Info and Book Info Act On (October 7, 2026)
 
-/// The row of a Library window that Speak Info (Shift-Command-I) and Book Info
-/// (Command-I) act on.
+/// The row of a Library window that Speak Info (Shift-Command-I), Book Info
+/// (Command-I), and Open Selected Book (Return) act on.
 enum LibraryInfoRow: Equatable {
     /// A book's row.
     case book(Book)
@@ -43,7 +43,8 @@ enum LibraryInfoRow: Equatable {
     /// edit-mode selection; nil when nothing is selected.
     /// - Parameters:
     ///   - selected: The List's selection.
-    ///   - editSelection: The edit-mode selection.
+    ///   - editSelection: The edit-mode selection; Return passes none, since
+    ///     its checks are not where the keyboard is.
     ///   - folders: The folder rows shown, in order.
     ///   - feeds: The feed rows shown, in order.
     ///   - rows: The Books section's rows shown, in order: books, and in a

@@ -780,10 +780,7 @@ struct LibraryView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openSelectedBook)) { notification in
             // Only respond in the focused library window
             guard takesCommand(notification) else { return }
-            if let id = selectedBookIDs.first,
-               let book = filteredBooks.first(where: { $0.id == id }) {
-                openBook(book)
-            }
+            openSelectedRow()
         }
         .onReceive(NotificationCenter.default.publisher(for: .removeFromLibrary)) { notification in
             // Cmd+Delete: remove selected books from library
@@ -1551,6 +1548,32 @@ struct LibraryView: View {
             libraryIsMoving: libraryViewModel.dataDirectoryMove != nil,
             with: onOpenBook
         )
+    }
+
+    /// Open Selected Book (Return): opens the first row the list's own
+    /// selection holds, in the list's order, as that row's default action
+    /// (VoiceOver's VO-Space) does outside edit mode (returnrow). A book
+    /// opens in its reader, which first downloads a book only in the cloud.
+    /// A feed's item not downloaded downloads, then opens. A folder's row,
+    /// or a feed's, opens its folder. Edit mode's checks are not where the
+    /// keyboard is, so they open nothing. With no row selected, VoiceOver
+    /// hears so. Return once opened only books, so on an item's row it
+    /// opened the book the selection had stayed on.
+    private func openSelectedRow() {
+        switch selectedRow(editSelection: []) {
+        case .book(let book):
+            openBook(book)
+        case .feedItem(let item):
+            if let open = FeedItemAction.open(for: item) {
+                performFeedItemAction(open)
+            }
+        case .folder(let folder):
+            currentFolderPath = folder.fullPath
+        case .feed(let row):
+            openFeed(row)
+        case nil:
+            announceToVoiceOver(LibraryInfoWording.nothingSelected)
+        }
     }
 
     /// What the rows' commands do, on this list's state as it is when they

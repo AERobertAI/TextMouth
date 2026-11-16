@@ -627,7 +627,7 @@ final class LibraryInfoSpeakerTests: XCTestCase {
     /// A feed's item not downloaded is a row of its own (returnrow). It is
     /// selected by its own tag, in the list's order among the books beside
     /// it. Its summary is what its row says, then its feed, and the full
-    /// one adds what the row's default action does with it.
+    /// one adds what Return and the row's default action do with it.
     /// Command-I speaks the full summary, since the item has no sheet. Once
     /// the feed's record is gone, the summary leaves the feed out.
     func testAFeedsItemNotDownloadedIsARowOfItsOwn() async throws {

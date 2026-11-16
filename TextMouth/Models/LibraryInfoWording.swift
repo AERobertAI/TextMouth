@@ -704,9 +704,9 @@ struct FeedItemInfoFacts: Equatable {
     /// its title, its state, the place kept for it, its date, and its
     /// length.
     var rowLabel: String
-    /// What the row's default action does with it, in the row's hint's
-    /// words (`FeedWording.itemRowHint(_:keptPlace:)`): "Downloads it, then
-    /// opens it".
+    /// What Return and the row's default action do with it, in the row's
+    /// hint's words (`FeedWording.itemRowHint(_:keptPlace:)`): "Downloads
+    /// it, then opens it".
     var opening: String
     /// The title of its feed, or nil once the feed's record is gone.
     var feedTitle: String?
@@ -729,7 +729,8 @@ enum LibraryInfoSubject: Equatable {
 /// `FeedWording.moment`, and a feed's counts through its row's own phrase,
 /// so nothing is spelled twice.
 enum LibraryInfoWording {
-    /// What a press says when no row is selected.
+    /// What a press of Speak Info, or of Return (Open Selected Book), says
+    /// when no row is selected.
     static let nothingSelected = "Nothing is selected."
     /// The kind a folder's summary names after the folder's name.
     static let folderKind = "Folder"
@@ -971,8 +972,8 @@ enum LibraryInfoWording {
         [item.rowLabel] + (item.feedTitle.map { [inFeedNote($0)] } ?? [])
     }
 
-    /// What a feed's item's full summary adds: what its row's default
-    /// action does with it, "Downloads it, then opens it."
+    /// What a feed's item's full summary adds: what Return and its row's
+    /// default action do with it, "Downloads it, then opens it."
     static func fullParts(of item: FeedItemInfoFacts) -> [String] {
         [item.opening]
     }
