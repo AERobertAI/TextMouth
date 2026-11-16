@@ -22,6 +22,11 @@ something only for a build from nothing, "cold": true). Both are what the reprod
 A request sent by hand may carry "type_select_probe": true, which lets LibraryTypeSelectProbeTests run (it skips
 otherwise, since it costs about 72 seconds and its findings are settled).
 
+Before the build the derived-data folder's module caches are emptied when they were made on another runner image or
+toolchain (runner_module_cache.py); a run whose build still fails with "has been modified since the module file", before
+any test started, empties them and runs once more in what is left of the time limit, and says so in the summary's
+"Module caches" line.
+
 It exits 0 when the tests passed and 1 when they did not. Every wait has a
 limit: the whole run (--limit-minutes), and a test host that writes nothing
 to the log for too long is killed, as the Mac's train kills one.
@@ -52,6 +57,7 @@ sys.path.insert(0, str(AGENTS))
 import github_run  # noqa: E402  (the path above must be set first)
 import runner_audio_probe  # noqa: E402
 import runner_ax_probe  # noqa: E402
+import runner_module_cache  # noqa: E402
 import runner_diagnose  # noqa: E402
 import runner_settings  # noqa: E402
 import ios_ui_tests  # noqa: E402
@@ -197,50 +203,29 @@ def sliced(request, number, count):
     return {**request, "areas": [], "classes": mine, "full": False, "shard": f"{number} of {count}"}
 
 
-def run_tests(train, request, out, limit_minutes):
-    """Runs the request's tests; returns (the printed result, whether the time
-    limit stopped the run). The result is run-area.py's own output, or, for the
-    full suite, run-area.py's reading of the log the suite wrote."""
-    derived = (ROOT / "build" / "remote-DerivedData").resolve()
-    log = out / "run.log"
-    # The train's watchdog (a silent test host is killed, an xcodebuild that
-    # outlives its tests is stopped) names the derived-data folder it watches,
-    # and posts to the Mac's message board, which the runner has not. It is the
-    # train's own code on purpose: one definition of "hung" for the Mac and the runner.
-    train.DERIVED = derived
-    train.post = lambda to, topic, tag="build": print(f"{tag}: {topic}", flush=True)
-    if not request["full"] and not request["classes"] and (request.get("shard") or not request["areas"]):
-        # A shard dealt no classes (more shards than classes) has nothing to run, nor has a request that names only
-        # the iPhone's interface tests (which the iPhone job runs).
-        log.write_text("This shard was dealt no test classes.\n"
-                       "Test Suite 'Selected tests' passed at (nothing to run).\n")
-        return ("Executed 0 tests, with 0 tests skipped and 0 failures (0 unexpected) in 0.000 (0.000) seconds\n"
-                "PASSED in 0 seconds\n"), False
-    if request["full"]:
-        command = test_command.full_suite_command(derived, out / "result.xcresult",
-                                                  extra=runner_arguments(request, read_skips()))
-        # The suite's whole output is its log; run-area.py writes its own log.
-        sink = open(log, "wb")
-    else:
-        command = test_command.area_command(request["areas"], request["classes"], derived, log,
-                                            jobs=RUNNER_JOBS,
-                                            extra=runner_arguments(request, read_skips())
-                                            + ["-resultBundlePath", str(out / "result.xcresult")])
-        sink = subprocess.PIPE
-    if request.get("diagnose"):
-        # A request sent by hand asks for the build to be timed apart first (runner_diagnose.py); the tests then find it built.
-        sys.path.insert(0, str(ROOT / "Scripts" / "test"))
-        import testkit
-        runner_diagnose.diagnose(ROOT, derived, testkit.build_command(
-            ROOT, [], str(derived), jobs=RUNNER_JOBS, use_slot=False, action="build-for-testing"), out)
-    # The system settings the tests assume (Keyboard navigation on), written on a GitHub runner only.
-    runner_settings.apply(os.environ)
-    if request.get("ax_probe"):
-        # A request sent by hand asks whether a process here can be an accessibility client (runner_ax_probe.py).
-        runner_ax_probe.probe(out / "ax-probe")
-    if request.get("audio_probe"):
-        # A request sent by hand asks whether audio decodes here and what makes it (runner_audio_probe.py).
-        runner_audio_probe.probe(out / "audio-probe")
+# The least time, in minutes, that must be left of the limit for a retry to be worth starting.
+MINIMUM_RETRY_MINUTES = 5.0
+# The summary's line about a retry (it starts the output, and summary.md shows it). It says nothing of "Executed", which
+# the summaries are searched for.
+RETRY_NOTE = ("Module caches: the first try ended before any test with \"{marker}\", so the module caches were emptied "
+              "and the run went again")
+
+
+def stopped_by_stale_cache(log, timed_out):
+    """Whether a run's build failed for a module cache made on another runner image: its log holds the error and no test
+    suite ever started (an error after the tests began is not the cache's), and the time limit did not stop it."""
+    if timed_out or not log.exists():
+        return False
+    text = log.read_text(encoding="utf-8", errors="replace")
+    return runner_module_cache.is_stale_module_error(text) and "\nTest Suite " not in "\n" + text
+
+
+def execute(train, command, sink_log, request, log, limit_minutes):
+    """Runs `command` once under the train's watchdog and the time limit; returns (the printed result, whether the time
+    limit stopped it). `sink_log` is True for the full suite, whose whole output is its log and whose result is
+    run-area.py's reading of that log; for an area run, run-area.py writes the log and prints the result."""
+    # The suite's whole output is its log; run-area.py writes its own log.
+    sink = open(log, "wb") if sink_log else subprocess.PIPE
     print("command:", " ".join(command), flush=True)
     process = subprocess.Popen(command, cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT, env=runner_environment(request))
     finished = threading.Event()
@@ -261,12 +246,69 @@ def run_tests(train, request, out, limit_minutes):
             output, _ = process.communicate()
     finally:
         finished.set()
-    if request["full"]:
+    if sink_log:
         sink.close()
         read = subprocess.run(["python3", "-I", "Scripts/test/run-area.py", "--summarize", str(log)],
                               cwd=ROOT, capture_output=True, text=True)
         return read.stdout + read.stderr, timed_out
     return (output or b"").decode("utf-8", "replace"), timed_out
+
+
+def run_tests(train, request, out, limit_minutes):
+    """Runs the request's tests; returns (the printed result, whether the time
+    limit stopped the run). The result is run-area.py's own output, or, for the
+    full suite, run-area.py's reading of the log the suite wrote. A run whose build fails
+    for a stale module cache is run once more with the caches emptied (see stopped_by_stale_cache)."""
+    started = time.monotonic()
+    derived = (ROOT / "build" / "remote-DerivedData").resolve()
+    log = out / "run.log"
+    # The train's watchdog (a silent test host is killed, an xcodebuild that
+    # outlives its tests is stopped) names the derived-data folder it watches,
+    # and posts to the Mac's message board, which the runner has not. It is the
+    # train's own code on purpose: one definition of "hung" for the Mac and the runner.
+    train.DERIVED = derived
+    train.post = lambda to, topic, tag="build": print(f"{tag}: {topic}", flush=True)
+    if not request["full"] and not request["classes"] and (request.get("shard") or not request["areas"]):
+        # A shard dealt no classes (more shards than classes) has nothing to run, nor has a request that names only
+        # the iPhone's interface tests (which the iPhone job runs).
+        log.write_text("This shard was dealt no test classes.\n"
+                       "Test Suite 'Selected tests' passed at (nothing to run).\n")
+        return ("Executed 0 tests, with 0 tests skipped and 0 failures (0 unexpected) in 0.000 (0.000) seconds\n"
+                "PASSED in 0 seconds\n"), False
+    if request["full"]:
+        command = test_command.full_suite_command(derived, out / "result.xcresult",
+                                                  extra=runner_arguments(request, read_skips()))
+    else:
+        command = test_command.area_command(request["areas"], request["classes"], derived, log,
+                                            jobs=RUNNER_JOBS,
+                                            extra=runner_arguments(request, read_skips())
+                                            + ["-resultBundlePath", str(out / "result.xcresult")])
+    if request.get("diagnose"):
+        # A request sent by hand asks for the build to be timed apart first (runner_diagnose.py); the tests then find it built.
+        sys.path.insert(0, str(ROOT / "Scripts" / "test"))
+        import testkit
+        runner_diagnose.diagnose(ROOT, derived, testkit.build_command(
+            ROOT, [], str(derived), jobs=RUNNER_JOBS, use_slot=False, action="build-for-testing"), out)
+    # The system settings the tests assume (Keyboard navigation on), written on a GitHub runner only.
+    runner_settings.apply(os.environ)
+    if request.get("ax_probe"):
+        # A request sent by hand asks whether a process here can be an accessibility client (runner_ax_probe.py).
+        runner_ax_probe.probe(out / "ax-probe")
+    if request.get("audio_probe"):
+        # A request sent by hand asks whether audio decodes here and what makes it (runner_audio_probe.py).
+        runner_audio_probe.probe(out / "audio-probe")
+    # Empties the restored module caches when they were made on another toolchain, and stamps this one.
+    runner_module_cache.prepare(derived)
+    output, timed_out = execute(train, command, request["full"], request, log, limit_minutes)
+    left = limit_minutes - (time.monotonic() - started) / 60
+    if stopped_by_stale_cache(log, timed_out) and left >= MINIMUM_RETRY_MINUTES:
+        # The cache that failed the build is emptied and the run goes again in what is left of the limit.
+        print(f"run-on-runner: {runner_module_cache.STALE_MARKER}; emptying the module caches and running once more",
+              flush=True)
+        runner_module_cache.empty_module_caches(derived)
+        output, timed_out = execute(train, command, request["full"], request, log, left)
+        output = RETRY_NOTE.format(marker=runner_module_cache.STALE_MARKER) + "\n" + output
+    return output, timed_out
 
 
 def judge(train, output, log, timed_out, limit_minutes):
@@ -351,6 +393,8 @@ def write_results(request, out, output, passed, seconds, left_out=0):
              f"- Runner: macOS {platform.mac_ver()[0]}, {platform.machine()}",
              f"- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)",
              f"- Failures and errors: {len(failed)}", *[f"  - {line}" for line in failed[:40]]]
+    # A run that went twice because of a stale module cache says so (run_tests puts the note first in the output).
+    lines += [f"- {line.strip()}" for line in output.splitlines() if line.startswith("Module caches:")]
     # Tests that passed on a later try (test_tries.py): no failure, but listed so that they stay visible.
     retried = [l.strip() for l in output.splitlines() if l.strip().startswith("RETRIED ")]
     lines += [f"- Passed on a later try: {len(retried)}", *[f"  - {line}" for line in retried[:40]]]
