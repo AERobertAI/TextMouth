@@ -75,6 +75,8 @@ Import progress (FR10): what the import overlay shows, and what VoiceOver hears 
   LibraryViewModel.completeZIPImport raises the library's alert instead, which waits on screen and which VoiceOver reads, since an announcement made while TextMouth has no window in front is never spoken.
   The alert is titled ImportProgressWording.nothingImportedTitle ("Nothing Imported", set in LibraryViewModel.errorTitle, which goes back to nil, "Error", whenever showError turns false).
   It says nothingImported(from:result:): the duplicates sentence, noNewBooks(in:alreadyInLibrary:), or, for an archive with no book, noBooksFound(in:holding:).
+  After the kinds named comes RefusedFormatAdvice's sentence for each kind that has one, once each (Pages, Keynote, Numbers, WordPerfect, Compiled HTML Help, DjVu, XPS, RAR, copy-protected audio).
+  The one table also serves FileImportError.unsupportedFormat, so a single refused file reads the same.
   The last names what the archive held by kind from ZipImportResult.nonBookFiles, a NonBookFiles that FileImportService.importCandidates counts by extension for every file it passes over, those in archives inside included.
   A batch with failures or an incomplete book raises the alert under ImportProgressWording.zipAlertTitle(for:addedBooks:), set through presentImportMessage(_:title:), where addedBooks counts the books the library took (completeZIPImport's acceptedBooks, not result.books):
   - nothingImportedTitle when the batch found no book,
@@ -209,3 +211,22 @@ ImportFuzzTests.knownIssues, which held the empty Markdown file the first sweep 
 A full disk: ImportFailure.isOutOfSpace(_:) says a volume is full when an error, or one it wraps under NSUnderlyingErrorKey at any depth, is Cocoa's NSFileWriteOutOfSpaceError or POSIX ENOSPC.
 ImportFailure.outOfSpaceDescription ("There isn’t enough free space on the disk.") is then the failed step's reason in place of the system's own sentence, which names the hidden staged package (.import- followed by an ID and .tmb).
 Both reason and reason(for:) word an error this way, so an alert, a ZIP batch's list of failures, the IMPORT_FAILED line, and a feed download's failure (FeedDownloadError.importFailed) say it alike.
+
+## Pictures and comic book archives
+<!-- id: pictures-comic-archives-import; keys: FMT34, PageImageReader, PageImageArchive, ComicInfo.xml, ImportPageProgress, BookFormat.picture, BookFormat.comic; src: TextMouth/Parsers/PageImageReader.swift, TextMouth/Parsers/PageImageReader+Formats.swift, TextMouth/Parsers/PageImageDecoder.swift, TextMouth/Parsers/PageImageArchive.swift, TextMouth/Parsers/PageImageText.swift, TextMouth/Models/PageImageWording.swift, TextMouth/Services/ImportPageProgress.swift, TextMouth/Models/Book.swift -->
+
+Pictures of pages and comic book archives (FMT34) are the formats BookFormat.picture (png, jpg, jpeg, heic, heif, tif, tiff) and BookFormat.comic (cbz); their raw values "picture" and "comic" are new in 0.5.0, so an older TextMouth keeps their rows and hides the books.
+- PageImageReader decodes each page within PageImageDecoding's limits and reads its text through VisionTextRecognition, the recognizer a scanned PDF's pages use (moved unchanged from PDFTextRecognizer).
+  PageImageText turns the lines into paragraphs and the pages into chapters, a chapter for each page with text, each page a page marker (page reader 1.0.0 for the two formats only).
+- Decoding runs in process, within limits: the kind is judged by the bytes (seven decoder kinds), and a declared size of more than 100 megapixels is refused before decoding.
+  A page is decoded to at most 16 megapixels (4 on the iPhone, which reads a larger one at a fraction of its sides), and flattened onto white (onto black when nothing is found and it has transparency).
+  EXIF orientation is applied.
+  If a hang is ever seen, the fallback is to decode through sips under WatchedProcess.
+- PageImageArchive lists a CBZ's pictures in the natural order of their paths, reads each into memory when its turn comes (an entry of at most 64 MB, checked against the archive's checksum, nothing extracted), and caps the book at 2,000 pages.
+  PageImageComicInfo reads ComicInfo.xml (at most 1 MB, through the guarded XML parser): title, or series and number, writer, pages whose Type list includes Deleted (the Type is a white-space list), cover page titles, and bookmarks.
+- The import is told the page count through ImportPageProgress.pagesRead(_:of:) after each page, which the overlay words "reading its text: 3 of 12 pages", and Cancel (ImportCancellation) stops before the next page.
+  A page that can't be read leaves the others to be read, and the report names it (PageImageWording.pagesNotRead).
+- A picture among other files is no book: Book.isBookAmongOtherFiles is false for BookFormat.picture, so a ZIP of books, an audiobook's tracks, or a DAISY archive passes it over, and a ZIP of only pictures imports nothing.
+  A .cbz in a ZIP is a book.
+- Not built: Photos on the iPhone, recognition in another language, a title from the first recognized line.
+  A scanned PDF could report its pages and honour Cancel the same way (ImportPageProgress.pagesRead in PDFTextParser.extract).

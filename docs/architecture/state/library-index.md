@@ -168,7 +168,7 @@ Index-write suspension: what protects an index that cannot be read.
   A build that predates rtf, rtfd, doc, odt, wordml, webarchive, or ssml and meets one in an index, or one that predates braille and meets it, fails to decode it, preserves it, and suspends writes as for any damage.
   Its repair adopts no package whose bookInfo.json names such a format (orphanedBook gives nil when BookInfo.load fails), so its Rebuild Library Index leaves those books out, with the folder rows and manual order that only the index held (the preserved copy keeps them).
   Its package record writes go on, as the service's own comment says, and drop the fields it does not know (editedText and pageReaderVersion among them), which a newer build reads back as an edit not recorded and a book not yet given pages.
-  The same holds for the formats added since: mobi (0.3.0) and kfx (0.4.0), whose rows a build from 0.2.1 on keeps and leaves out of its lists, and an older build cannot decode.
+  So for mobi (0.3.0), kfx (0.4.0), picture and comic (0.5.0): a build from 0.2.1 on keeps their rows and leaves them out of its lists, and an older one cannot decode them.
   The raw values are therefore never changed (see [Imports](imports-textutil.md)).
   A build with V03 keeps such a row as it was read, as it keeps any row it cannot decode, and the index stays readable (Rows this TextMouth cannot read, below).
 - How others observe it: LibraryViewModel.indexRecovery is set while recovering, and the Library window shows the recovery banner and its Recovery Options….

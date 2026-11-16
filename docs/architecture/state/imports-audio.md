@@ -98,7 +98,7 @@ NeroChapterReader.read(at:) walks the box headers of the file to the chpl atom u
 NeroChapterReader.bookChapters(from:fileDuration:) sorts the chapters, drops one at or past the end of the file, and names an untitled one "Chapter N".
 
 ## Playlists
-<!-- id: playlists; keys: playlist import, .m3u, m3u8, folder book, duplicate playlist, skipped entries, Book Imported alert, streaming playlist; src: TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Models/PlaylistImportWording.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Parsers/AudioManifest.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
+<!-- id: playlists; keys: playlist import, .m3u, m3u8, folder book, duplicate playlist, skipped entries, Book Imported alert, streaming playlist; src: TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Parsers/PLSAndXSPFPlaylist.swift, TextMouth/Models/PlaylistImportWording.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Parsers/AudioManifest.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 Playlists (FMT10): importFileWithReport sends an M3U or M3U8 file (M3UPlaylist.isPlaylist, by extension) to importPlaylistWithReport, which builds a folder book through publishTracks as importAudioFolderWithReport does.
 M3UPlaylist.read(at:) takes at most 4 MiB (an .m3u8 as UTF-8, an .m3u through TextFileDecoder) and parse reads #PLAYLIST, #EXTINF, and #EXT-X- lines.
@@ -114,6 +114,10 @@ Its resolve(inFolder:) uses only a file that realpath(3) puts strictly inside th
 - anything hidden or not a regular file, and
 - a repeat (distinctTracks(of:) counts a second spelling of one file as a repeat).
 
+PLS and XSPF files (FMT12, PLSAndXSPFPlaylist.swift) are read into the same M3UPlaylist, so the rest is one path with the same folder rule and web-address refusal.
+PLS is read by file number (FileN, TitleN), a repeated number keeping the first, and names no playlist, so the book takes its file's name.
+XSPF takes each track's first location, resolved against xml:base, and the playlist's title names the book; its creator is ignored.
+A .pls that is a W3C pronunciation lexicon is refused with PlaylistImportWording.pronunciationLexicon(fileName:): "“FILE” is a pronunciation lexicon, not a playlist.", and on the Mac "To use it, choose Import Rules… on the Text tab in Settings."
 With no track left it throws PlaylistImportError.noTrack.
 Each track is copied to the same path in the staged audio folder, with an AudioManifest built in memory from the playlist's order and titles and written there (BookManifestFile.encoded), so the manifest check and the conversion treat the book as any folder of tracks.
 The book is known by folderHash over the tracks' paths and the playlist's own file name, each with the MD5 of its bytes, so the same playlist imported twice is a duplicate.

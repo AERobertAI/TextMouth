@@ -202,3 +202,12 @@ Of more than 40 real books checked when these were chosen, none decoded to less 
 <!-- id: mobi-tests-built-code; keys: MOBIFixture, PalmDOC, HUFF/CDIC, NCX, damaged copies, fixture; src: TextMouthProductionTests/MOBIFixture.swift, TextMouthProductionTests/MOBIHostileFileTests.swift -->
 
 Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDOC or HUFF/CDIC compression, an NCX index, and damaged copies of each.
+
+## Pictures, playlists, lexicons, and refusal advice
+<!-- id: tests-pictures-playlists-lexicons; keys: PageImageReaderTests, PageImageArchiveTests, PLSAndXSPFPlaylistTests, PronunciationLexiconTests, RefusedFormatAdviceTests, scripted recognizer; src: TextMouthProductionTests/PageImageReaderTests.swift, TextMouthProductionTests/PageImageArchiveTests.swift, TextMouthProductionTests/PageImageDecoderTests.swift, TextMouthProductionTests/PageImageImportTests.swift, TextMouthProductionTests/PageImageProgressTests.swift, TextMouthProductionTests/PageImageTextTests.swift, TextMouthProductionTests/PageImageWordingTests.swift, TextMouthProductionTests/PageImageScriptedRecognizer.swift, TextMouthProductionTests/PageImageTestFixtures.swift, TextMouthProductionTests/PLSAndXSPFPlaylistTests.swift, TextMouthProductionTests/PronunciationLexiconTests.swift, TextMouthProductionTests/RefusedFormatAdviceTests.swift -->
+
+- The PageImage tests make their pictures and archives in the test (PageImageTestFixtures) and replace Vision with a scripted recognizer (PageImageScriptedRecognizer, through PageImageReader.defaultRecognizer), so they depend on no recognition model
+  There are no golden files for picture samples.
+- PageImageDecoderTests cover the limits: the 100-megapixel check (a TIFF that claims it with no data proves it comes before decoding), orientation, and transparency.
+- PageImageArchiveTests cover the order, ComicInfo.xml, and the 2,000-page cap; PageImageImportTests the import end to end, with the ZIP rules for a picture among other files.
+- PLSAndXSPFPlaylistTests read both formats and import them end to end; PronunciationLexiconTests cover the W3C sample, a round trip, XML escaping, an external entity left unresolved, and the 5,000-rule cap; RefusedFormatAdviceTests pin each sentence of the table and that both alerts use it.
