@@ -160,22 +160,12 @@ enum FFmpegImportWording {
 
     /// The notice of a book of several tracks that left out files only
     /// ffmpeg reads (`FFmpegAudioConverter.tracksToLeaveOut(of:located:)`):
-    /// those needing ffmpeg, then those holding no sound, as one message;
-    /// nil when it left out none. `located` is what the Mac found of ffmpeg,
-    /// nil on the iPhone, whose own words are used
-    /// (`PhoneImportWording.ffmpegTracksLeftOut(_:)`).
-    static func tracksLeftOutNotice(
-        needingFFmpeg: [String],
-        holdingNoSound: [String],
-        located: FFmpegAudioConverter.Located?
-    ) -> String? {
-        let needing: String?
-        if let located {
-            needing = leftOutNeedingFFmpeg(needingFFmpeg, located: located)
-        } else {
-            needing = PhoneImportWording.ffmpegTracksLeftOut(needingFFmpeg)
-        }
-        let sentences = [needing, leftOutHoldingNoSound(holdingNoSound)].compactMap { $0 }
+    /// `needingFFmpeg`, the sentence of those that can't be converted here
+    /// (the Mac's `leftOutNeedingFFmpeg(_:located:)`, or the iPhone's own),
+    /// then the one of `holdingNoSound`'s files, as one message; nil when it
+    /// left out none.
+    static func tracksLeftOutNotice(needingFFmpeg: String?, holdingNoSound: [String]) -> String? {
+        let sentences = [needingFFmpeg, leftOutHoldingNoSound(holdingNoSound)].compactMap { $0 }
         return sentences.isEmpty ? nil : sentences.joined(separator: " ")
     }
 }

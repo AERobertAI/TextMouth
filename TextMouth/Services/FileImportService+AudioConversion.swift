@@ -122,11 +122,14 @@ extension FileImportService {
         // What is kept, and the names, are read while the files exist.
         let kept = sources.filter { !leaving.contains($0.path) }
         let named = { (files: [URL]) in files.map { AudioBookParser.relativeName(of: $0, in: folder) } }
-        let notice = FFmpegImportWording.tracksLeftOutNotice(
-            needingFFmpeg: named(leftOut.needingFFmpeg),
-            holdingNoSound: named(leftOut.holdingNoSound),
-            located: leftOut.located
-        )
+        let needingNames = named(leftOut.needingFFmpeg)
+        #if os(iOS)
+        // The iPhone's own words: a Mac with ffmpeg is the way to keep them.
+        let needing = PhoneImportWording.ffmpegTracksLeftOut(needingNames)
+        #else
+        let needing = leftOut.located.flatMap { FFmpegImportWording.leftOutNeedingFFmpeg(needingNames, located: $0) }
+        #endif
+        let notice = FFmpegImportWording.tracksLeftOutNotice(needingFFmpeg: needing, holdingNoSound: named(leftOut.holdingNoSound))
         for file in leftOut.all {
             try FileManager.default.removeItem(at: file)
         }
