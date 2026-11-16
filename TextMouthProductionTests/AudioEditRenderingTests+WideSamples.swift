@@ -61,9 +61,8 @@ extension AudioEditRenderingTests {
 
     /// No render's reader or writer is given a depth AVFoundation refuses,
     /// whatever depth the book stores, in any format: the layouts it takes
-    /// stay as they are, and 64-bit floats, 64-bit integers, and 20-bit
-    /// integers become 32-bit floats in CAF files and 32-bit integers where
-    /// the writer takes no floats.
+    /// stay as they are, and 64-bit floats and integers become 32-bit floats
+    /// in CAF files and 32-bit integers where the writer takes no floats.
     func testNoRenderIsGivenADepthTheReadersRefuse() {
         let layouts: [(bits: UInt32, flags: AudioFormatFlags)] = [
             (64, kAudioFormatFlagIsFloat), (32, kAudioFormatFlagIsFloat), (64, kAudioFormatFlagIsSignedInteger),
@@ -97,6 +96,24 @@ extension AudioEditRenderingTests {
             }
         }
         XCTAssertTrue(problems.isEmpty, problems.joined(separator: "\n"))
+    }
+
+    /// An integer depth AVFoundation refuses between two it takes is stored at
+    /// the next one up, which holds every sample exactly (20 bits at 24, 12 at
+    /// 16), while the depths it takes stay and the deeper or unknown ones
+    /// become 32-bit floats.
+    func testAnOddIntegerDepthIsStoredAtTheNextDepthUp() {
+        let expected: [(bits: Int, isFloat: Bool, stored: Int, storedFloat: Bool)] = [
+            (8, false, 8, false), (12, false, 16, false), (16, false, 16, false), (20, false, 24, false),
+            (24, false, 24, false), (28, false, 32, false), (32, false, 32, false),
+            (33, false, 32, true), (64, false, 32, true), (0, false, 32, true),
+            (32, true, 32, true), (64, true, 32, true),
+        ]
+        for layout in expected {
+            let found = AudioRenderSettings.readableDepth(bits: layout.bits, isFloat: layout.isFloat)
+            XCTAssertEqual(found.bits, layout.stored, "\(layout.bits) bits, float \(layout.isFloat)")
+            XCTAssertEqual(found.isFloat, layout.storedFloat, "\(layout.bits) bits, float \(layout.isFloat)")
+        }
     }
 
     /// A raised Objective-C exception from the initializer of a reader's

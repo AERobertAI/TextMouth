@@ -211,13 +211,16 @@ struct AudioRenderSettings: Equatable, Sendable {
 
     /// The sample layout a render stores `bits`-bit samples in (floating
     /// point or not), as far as AVFoundation takes it: integers of 8, 16, 24,
-    /// and 32 bits and 32-bit floats as they are; everything else, which the
-    /// readers refuse by raising an Objective-C exception (a 64-bit float, a
-    /// 64-bit or a 20-bit integer), as 32-bit floats. A 32-bit float holds
-    /// every integer sample of up to 24 bits exactly, and a deeper sample
-    /// to 24 bits of precision, finer than any recording's noise.
+    /// and 32 bits and 32-bit floats as they are; an integer depth between
+    /// those (12 or 20 bits) at the next one up, which holds every sample
+    /// exactly; and everything else, which the readers refuse by raising an
+    /// Objective-C exception (a 64-bit float, a 64-bit integer, a depth
+    /// not known), as 32-bit floats, which keep a deeper sample to 24 bits
+    /// of precision, finer than any recording's noise.
     static func readableDepth(bits: Int, isFloat: Bool) -> (bits: Int, isFloat: Bool) {
-        if !isFloat && acceptedIntegerDepths.contains(bits) { return (bits, false) }
+        if !isFloat, bits > 0, let accepted = acceptedIntegerDepths.first(where: { $0 >= bits }) {
+            return (accepted, false)
+        }
         return (32, true)
     }
 
