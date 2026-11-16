@@ -42,6 +42,7 @@ def complete_project():
                     {"package": "swift-cmark", "product": "cmark-gfm"},
                     {"target": "LAME_iOS"},
                     {"target": "ObjCExceptionCatcher_iOS"},
+                    {"target": "FFmpeg_iOS"},
                 ],
             }
         }
