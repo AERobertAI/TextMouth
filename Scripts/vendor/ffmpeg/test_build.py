@@ -174,6 +174,20 @@ class PathTests(unittest.TestCase):
         self.assertEqual(build.paths_found(text, forbidden), ["--prefix=/Users/reader/install", "/private/var/folders/xy/T"])
         self.assertEqual(build.paths_found("src/libavformat/asfdec_f.c\n", forbidden), [])
 
+    def test_a_build_holding_a_folder_of_this_mac_fails(self):
+        # The build's own check, strings and all: a file naming the work folder fails it, by name.
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        work = SCRATCH / "work-paths"
+        clean = SCRATCH / "clean.o"
+        clean.write_bytes(b"\0\0src/libavcodec/wmadec.c\0\0")
+        planted = SCRATCH / "planted.o"
+        planted.write_bytes(b"\0\0ordinary text\0" + str(work.resolve() / "src" / "x.c").encode("utf-8") + b"\0\0")
+        build.check_no_mac_paths([clean], work)
+        with self.assertRaises(build.BuildError) as caught:
+            build.check_no_mac_paths([clean, planted], work)
+        self.assertIn("planted.o", str(caught.exception))
+        self.assertNotIn("clean.o", str(caught.exception))
+
 
 class ReleaseTests(unittest.TestCase):
     """The release's unpacking, and the notices the apps ship."""
