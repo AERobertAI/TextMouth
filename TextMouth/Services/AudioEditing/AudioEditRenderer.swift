@@ -214,8 +214,8 @@ struct AudioRenderSettings: Equatable, Sendable {
     /// and 32 bits and 32-bit floats as they are; everything else, which the
     /// readers refuse by raising an Objective-C exception (a 64-bit float, a
     /// 64-bit or a 20-bit integer), as 32-bit floats. A 32-bit float holds
-    /// every sample of up to 24 bits exactly, and a 64-bit float's to 24
-    /// bits of precision, more than any recording has.
+    /// every integer sample of up to 24 bits exactly, and a deeper sample
+    /// to 24 bits of precision, finer than any recording's noise.
     static func readableDepth(bits: Int, isFloat: Bool) -> (bits: Int, isFloat: Bool) {
         if !isFloat && acceptedIntegerDepths.contains(bits) { return (bits, false) }
         return (32, true)

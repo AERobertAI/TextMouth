@@ -41,15 +41,16 @@ extension AudioEditRenderingTests {
     }
 
     /// The layouts the tests try: every one the readers refuse that a book
-    /// is found in.
-    static let wideBooks: [WideBook] = [
+    /// is found in. A computed list, since a book holds closures, which a
+    /// stored static property of a test class may not.
+    static var wideBooks: [WideBook] { [
         WideBook(fileName: "Canal Survey.wav", bits: 64, isFloat: true) { url, frames, rate in
             try AudioTestFixtures.writeToneFloat64WAVE(to: url, frames: frames, sampleRate: rate)
         },
         .caf(bits: 64, isFloat: true),
         .caf(bits: 64, isFloat: false),
         .caf(bits: 20, isFloat: false),
-    ]
+    ] }
 
     /// The seconds the books last: three, so a stretch is cut from the middle.
     private static let wideSeconds = 3.0
