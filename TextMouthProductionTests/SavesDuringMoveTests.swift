@@ -233,6 +233,51 @@ final class SavesDuringMoveTests: XCTestCase {
         withExtendedLifetime(service) {}
     }
 
+    // MARK: - The Outcome Is Judged After the Statistics Are Written
+
+    /// The move waits for the statistics' write after saving them again,
+    /// before Storage settings judge its outcome: a failed statistics save
+    /// the rewrite settles is never reported unsaved just before it does.
+    /// The wait is made twice, once before the copy (in the old data
+    /// directory) and once after the rewrite (in the new one); the outcome
+    /// is then reported done.
+    func testTheStatisticsAreWrittenAgainBeforeTheMovesOutcomeIsJudged() async throws {
+        let center = cleanSharedFailureCenter()
+        let world = try makeIntegrationWorld("Saves Move Statistics Judged")
+        let destination = try makeDataDirectoryMoveDestination("StatisticsJudgedAfterMove")
+        let oldRoot = TextMouthPaths.root.path
+        center.recordFailure(
+            .statistics,
+            path: "/data/reading_stats.json",
+            error: NSError(domain: "SavesDuringMoveTests", code: 1)
+        ) { _ in }
+        XCTAssertTrue(center.hasUnsavedChanges, "the failed save was not reported")
+        let during = SaveDuringCopy()
+        let waits = StatisticsWaits()
+
+        let outcome = await LibraryViewModel.$waitForQueuedStatisticsSaves.withValue({
+            ReadingStatsService.waitForQueuedSaves()
+            MainActor.assumeIsolated { waits.roots.append(TextMouthPaths.root.path) }
+        }) {
+            await DataDirectoryMigrator.$copyObserver.withValue(
+                during.observer(saving: {
+                    ReadingStatsService.shared.markBookFinished(bookID: UUID(), title: "Heard mid-copy")
+                })
+            ) {
+                await world.library.moveDataDirectoryReturningOutcome(to: destination)
+            }
+        }
+        let judged = world.library.outcomeConfirmingSaves(outcome)
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(
+            waits.roots, [oldRoot, TextMouthPaths.root.path],
+            "the move did not wait for the statistics' write after saving them again"
+        )
+        XCTAssertEqual(judged, outcome, "the finished move was reported failed for statistics about to be saved")
+        XCTAssertFalse(center.hasUnsavedChanges)
+    }
+
     // MARK: - Helpers
 
     /// Puts the substitutions file of the data directory in use now back as
@@ -291,4 +336,12 @@ private final class SaveDuringCopy {
             }
         )
     }
+}
+
+/// The data directories in use at each wait for the statistics' queue a
+/// move made, in order, on the main actor.
+@MainActor
+private final class StatisticsWaits {
+    /// The data directory's path at each wait.
+    var roots: [String] = []
 }

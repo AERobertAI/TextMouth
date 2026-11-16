@@ -1802,8 +1802,15 @@ extension LibraryViewModel {
         // storage work while a move copied the library (the rules, the
         // statistics) are saved again, in the data directory the library
         // lives in then. Declared before the release below, so it runs
-        // after it: the saves are final then, not provisional again.
-        defer { StorageBoundary.shared.rewriteFilesSavedDuringTheMove() }
+        // after it: the saves are final then, not provisional again. The
+        // statistics are written on a queue of their own, so the move waits
+        // for that write before its outcome is judged: a failure the write
+        // settles is never reported unsaved just before it does.
+        defer {
+            if StorageBoundary.shared.rewriteFilesSavedDuringTheMove() > 0 {
+                Self.waitForQueuedStatisticsSaves()
+            }
+        }
         defer { hold.release() }
         let progress = move.map { DataDirectoryMoveProgress(destination: $0.destination, isResetToDefault: $0.isResetToDefault) }
         if let progress {
