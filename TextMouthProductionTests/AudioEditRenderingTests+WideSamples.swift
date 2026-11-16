@@ -136,6 +136,36 @@ extension AudioEditRenderingTests {
         XCTAssertEqual(try AudioEditRenderer.makingWithoutRaising { 7 }, 7)
     }
 
+    /// A render given settings of its caller's own (a filter's stretch is
+    /// one) that ask for a depth AVFoundation refuses fails with the
+    /// render's own error, the edited audio couldn't be written, and leaves
+    /// no file: the writer's input raised an exception for these, which
+    /// ended the app, in the render of every book until B12 was fixed.
+    func testARenderAskedForADepthAVFoundationRefusesFailsInsteadOfEndingTheApp() async throws {
+        let (sources, folder) = try await makeRampSources(seconds: 1)
+        var timeline = sources.base.timeline
+        try timeline.applyRearranging(.insertSilence(at: 0.5, duration: 0.25))
+        let refused = AudioRenderSettings(
+            format: .pcmCAF, sampleRate: Self.rate, channels: 1, bitRate: nil, bitsPerSample: 64, isFloat: true
+        )
+        let output = folder.appendingPathComponent("refused.caf")
+
+        do {
+            _ = try await AudioEditRenderer.render(
+                timeline,
+                sources: sources,
+                to: output,
+                format: .pcmCAF,
+                settings: refused,
+                metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
+            )
+            XCTFail("a render in 64-bit floats was written")
+        } catch AudioEditError.renderFailed(let reason) {
+            XCTAssertFalse(reason.isEmpty)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: output.path))
+    }
+
     // MARK: - Decoded Renders
 
     /// A punch-in, inserted silence, a filter, and a render at another rate

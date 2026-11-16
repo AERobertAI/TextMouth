@@ -560,7 +560,7 @@ final class AudioEditRenderingTests: XCTestCase {
 
     /// The sources of an edit whose base is `seconds` of book ramp, in a
     /// folder of this test's own serving as package and scratch folder.
-    private func makeRampSources(seconds: Double) async throws -> (AudioEditComposition.Sources, URL) {
+    func makeRampSources(seconds: Double) async throws -> (AudioEditComposition.Sources, URL) {
         let folder = try makeFolder()
         let base = folder.appendingPathComponent("Canal Survey.caf")
         try AudioTestFixtures.writeIdentityRamp(to: base, frames: Int(seconds * Self.rate), sampleRate: Self.rate)
