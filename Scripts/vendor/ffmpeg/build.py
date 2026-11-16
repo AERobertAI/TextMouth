@@ -358,6 +358,11 @@ def shared_download_folder():
         sys.path.pop(0)
 
 
+# The download folder every checkout of this Mac shares, whichever worktree the script runs from
+# (Scripts/agents/tests/test_repo_paths.py holds it to the main checkout's); None outside a checkout.
+SHARED_DOWNLOADS = shared_download_folder()
+
+
 def release_tarball(work, given=None):
     """The checked release tarball in WORK/download: `given` when it is the release, else one
     already in WORK/download or the shared download folder, else a new download. A file that
@@ -367,7 +372,7 @@ def release_tarball(work, given=None):
     wanted = folder / tarball_name()
     if wanted.is_file() and is_the_release(wanted):
         return wanted
-    shared = shared_download_folder()
+    shared = SHARED_DOWNLOADS
     candidates = [Path(given)] if given else []
     if shared is not None:
         candidates.append(shared / tarball_name())
@@ -564,9 +569,9 @@ def forbidden_paths(work):
     this checkout and the main one, the temporary folder (and its /private name), and the work
     folder; also any /Users/ path at all, which only a building Mac's folders begin with."""
     paths = {str(Path.home()), str(REPOSITORY), str(Path(work).resolve()), "/Users/"}
-    shared = shared_download_folder()
-    if shared is not None:
-        paths.add(str(shared.parent.parent.parent))
+    if SHARED_DOWNLOADS is not None:
+        # The main checkout, which the shared folder is in (build/ffmpeg/download).
+        paths.add(str(SHARED_DOWNLOADS.parent.parent.parent))
     temporary = os.environ.get("TMPDIR") or tempfile.gettempdir()
     for folder in (temporary, os.path.realpath(temporary)):
         folder = folder.rstrip("/")
