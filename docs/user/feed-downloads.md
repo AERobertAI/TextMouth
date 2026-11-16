@@ -125,6 +125,10 @@ An episode's or article's row says "Downloading" while its download waits to sta
 <!-- id: feeds-saving-record; keys: banner, Retry, Dismiss, unsaved change, library.json; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 A feed's record that can't be saved is reported as any unsaved change is: the Library window's banner names the feed, with Retry and Dismiss, and quitting asks first.
+If you press Retry while TextMouth is moving its data directory, rebuilding it, or moving books between folders, nothing is lost and nothing hangs: the row says when the changes will be saved, and TextMouth saves them itself once that ends.
+The words are "TextMouth saves them once the move of its data directory ends.", "TextMouth saves them once it has finished rebuilding its data directory.", or "TextMouth saves them once it has finished moving books between folders."
+While TextMouth is opening again on another library, the row says "TextMouth is opening again on another library, so they stay unsaved in this one."
+When the save has ended, VoiceOver says "Feed subscriptions saved.", or "Retry did not succeed." if it failed again.
 
 ### Quitting while episodes download
 <!-- id: feeds-quit-while-downloading; keys: Quitting TextMouth window, Command-Q, Quit Anyway, log out, shut down, resume data, three seconds; src: TextMouth/App/QuitFinisher.swift, TextMouth/Platform/macOS/Views/QuitNotice.swift, TextMouth/Services/Feeds/FeedDownloadManager+PartialDownloads.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift -->

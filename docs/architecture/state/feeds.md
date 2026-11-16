@@ -39,10 +39,10 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
   - and Move to Library…, which marks an item In Library ([Feed items](library-index-reading-feeds.md)).
   Each durable change is written atomically on the store's serial queue, as storage work (StorageWork.savingFeeds), so a data-directory move waits for it; a download's progress is never written, an item downloading or waiting to being written as not downloaded (FeedRecord.durable).
   While the data directory is unavailable, or after a write fails (FEED_RECORD_SAVE_FAILED), the change waits in memory, written with the feed's next change or once the data directory is back.
-  A failed write is reported to PersistenceFailureCenter under feed subscriptions (feedRecords, keyed by the feed), naming the feed.
-  So the banner offers Retry, which writes the record as it is now on the write queue, after every write asked for before, and waits for it (retryWrite(of:failureID:)), and quitting asks first.
+  A failed write is reported to PersistenceFailureCenter under feed subscriptions (feedRecords, keyed by the feed).
+  So the banner offers Retry, which writes the record as it is now on the write queue, after every write asked for before, and waits for it (retryWrite(of:failureID:)), waiting out held storage work ([saving failures](saving-failures.md)); quitting asks first.
   The feed's next write that succeeds settles it, and removing the feed's record withdraws it (FeedStore.remove(_:), which Delete Feed… calls).
-  The engine's environment names the center (FeedEnvironment.failureCenter), so tests use one of their own.
+  FeedEnvironment.failureCenter names the center, so tests use their own.
   Delete Feed… (FeedCenter.deleteFeed(_:), Services/Feeds/FeedCenter+DeleteFeed.swift, FR14) is the one command that deletes a feed, subscribed or not, in an order whose every stopping point is safe.
   It refuses while one of the feed's downloads is in use, open in a reader, being transcribed, or being exported (FeedLibraryHost.feedBookUse(of:); FeedDeleteError.downloadInUse(title:use:), FEED_DELETE_REFUSED).
   Then it closes the feed's downloads (FeedDownloadManager.closeFeed(_:), below) and waits for the imports and rule removals already on the import queue (runBesideImports):

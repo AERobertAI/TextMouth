@@ -165,7 +165,9 @@ Books finished before you turn this on stay on it."), takes a book off the list 
 Nothing is said of it, so the end of a book says what it always said, and the Reading List, if open, shows the book gone.
 A book read from the list that ends still goes on to the book that followed it, or preceded it with Play the book above, and Skip finished books still passes over finished books after it.
 While its window rests on the finished book, the book stays on the list, so Rewind, Play, and Next in Reading List in that window still follow the list as before, and it leaves the list when the window goes on to another book or closes.
-A book finished with no window resting on it, such as a feed episode marked played, leaves at once.
+A book finished with no window resting on it leaves at once.
+A feed episode you mark played, with Mark Played or Mark All Played, is finished in the same way: it leaves at once, or, while a window reads it from the list, when that window goes on or closes.
+Mark Unplayed lets an episode still waiting to leave stay, and puts none back.
 Checking it takes off none of the books already finished; only books finished from then on leave.
 A rewind's replay of a book's end tells nothing, so a book that stayed on the list stays, and Books Finished counts a book only once.
 A book that is not on the list is not touched.

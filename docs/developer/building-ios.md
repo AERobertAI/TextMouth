@@ -64,7 +64,9 @@ A run exits with status 0 when the build succeeded, 1 when it found errors, 2 wh
 **The heavy-work lock.**
 The Mac has 8 GB of memory, and several builds at once freeze it, so one heavy job runs on it at a time.
 The type-checks and the build train both take a lock (`Scripts/agents/heavy_lock.py`) before they start: a folder made with mkdir, build/orchestrator/heavy-lock in the main checkout, holding its owner's process ID, name, and start time.
-A job that finds it held says whom it waits for and since when, and waits, a type-check by default up to three hours.
+A job that finds it held says its place in line and whom it waits for, and waits, a type-check by default up to three hours.
+The waiting jobs are served first come, first served: each takes a ticket (a JSON file in `heavy-lock-line/` beside the lock), and takes the lock only when no live older ticket remains; a ticket whose process ended or whose wait ran out counts for nothing.
+`python3 -I -B Scripts/agents/heavy_lock.py status` prints the holder, the first-in-line mark, and the line, and changes nothing.
 A lock whose owner has ended, from a crash or a killed agent, is taken over.
 So a type-check started while the train builds waits for the train, and the reverse.
 The build train waits first in line: while it waits, no other job takes the lock, even a free one, so the train goes next, and it never runs without the lock.
@@ -92,6 +94,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
   The job has a token that may only read, no secrets, GitHub's own actions pinned to full commit hashes, a limit of 100 minutes for each job (the runner script stops the tests at 80, so their results are still written), and one run at a time: a newer push cancels the older run.
   The shared workflow has four jobs: a Linux job that plans the shards, one macOS job per shard, a macOS job that builds the iPhone app and runs its interface tests, and a Linux job that joins the results.
   The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing or running a test.
+It names the runner's own architecture (`ARCHS=arm64`), since both would compile every file twice.
   It writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
   A request that says `"ios": false` leaves it out.
   Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`: about 1,960 tests, 19 its own and the rest the Mac's, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.

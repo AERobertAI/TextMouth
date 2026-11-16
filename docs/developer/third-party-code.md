@@ -1,12 +1,24 @@
 # Third-party code
-<!-- id: third-party-code; keys: licences, licenses, vendored code, Vendor folder, attribution, MIT, LGPL; src: project.yml, TextMouthProductionTests/BundledLicenseTests.swift -->
+<!-- id: third-party-code; keys: licences, licenses, vendored code, Vendor folder, attribution, MIT, LGPL, check-ios-licenses; src: project.yml, TextMouthProductionTests/BundledLicenseTests.swift, TextMouthiOSTests/BundledLicenseIOSTests.swift, Scripts/ios/check-licenses.py, Vendor/package-licenses/ZIPFoundation/LICENSE -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 TextMouth itself is under the MIT License, in LICENSE at the top of the repository.
-It builds in three libraries by other authors (LAME, liblouis, and SwiftSoup), follows a fourth author's code closely in its Kindle reader, and uses two Swift packages.
-The licence files of the four ship inside the app, in Contents/Resources/Licenses, one folder for each: Licenses/LAME holds COPYING and LICENSE, Licenses/liblouis holds COPYING.LESSER and README, Licenses/foliate-js holds LICENSE, and Licenses/SwiftSoup holds LICENSE.
-The file project.yml copies them from Vendor, never into the repository a second time, so each stays its author's own text, and BundledLicenseTests checks that all six reach the built app.
+It builds in three libraries by other authors (LAME, liblouis, and SwiftSoup), follows a fourth author's code closely in its Kindle reader, and uses two Swift packages (the second with the swift-cmark it builds on).
+The licence files of all seven ship inside the Mac app, in Contents/Resources/Licenses, one folder for each:
+- Licenses/LAME holds COPYING and LICENSE;
+- Licenses/liblouis holds COPYING.LESSER and README;
+- Licenses/foliate-js and Licenses/SwiftSoup hold LICENSE;
+- Licenses/ZIPFoundation holds LICENSE;
+- Licenses/swift-markdown holds LICENSE and NOTICE;
+- Licenses/swift-cmark holds COPYING.
+
+The iPhone app ships the same folders except liblouis, whose braille translator it does not link.
+The file project.yml copies them from Vendor, never into the repository a second time, so each stays its author's own text.
+The three package licences are in Vendor/package-licenses, unchanged from the package checkouts.
+BundledLicenseTests checks that all seven reach the built Mac app, and BundledLicenseIOSTests the six of the iPhone app.
+`make check-ios-licenses` (Scripts/ios/check-licenses.py) reads project.yml and Package.resolved with no build.
+It fails when a library the iPhone app links has no licence in it, when a copied licence is not the file its entry names, or when the app copies the licence of a library it no longer links.
 
 ## LAME, the MP3 encoder
 <!-- id: lame-mp3-encoder; keys: LAME, libmp3lame, lame.h, module.modulemap, MP3 export, LGPL 2; src: project.yml, Vendor/lame/COPYING, Vendor/lame/config.h, Vendor/lame/include/lame.h, Vendor/lame/include/module.modulemap -->
@@ -69,9 +81,10 @@ MOBIHeaders.swift and MOBIPalmDatabase.swift take only the header fields' offset
 - The licence asks that its notice go with every copy of the code or of a substantial part of it, which the app carries in Licenses/foliate-js (above).
 
 ## The Swift packages
-<!-- id: swift-packages; keys: ZIPFoundation, swift-markdown, swift-cmark, Package.resolved, exact version; src: project.yml -->
+<!-- id: swift-packages; keys: ZIPFoundation, swift-markdown, swift-cmark, Package.resolved, exact version; src: project.yml, Vendor/package-licenses/swift-markdown/NOTICE, Vendor/package-licenses/swift-cmark/COPYING -->
 
-The Swift packages ZIPFoundation and swift-markdown, with the swift-cmark it builds on, each under its own licence; [The make check gate](building.md) says how their versions are pinned.
+The Swift packages ZIPFoundation and swift-markdown, with the swift-cmark it builds on, each under its own licence, which both apps carry (from Vendor/package-licenses, above).
+[The make check gate](building.md) says how their versions are pinned.
 
 ## SwiftSoup, the HTML and XML parser
 <!-- id: swiftsoup-vendored; keys: SwiftSoup, jsoup, vendored, markup guard, make_vendor.py, MarkupScanner, Licenses/SwiftSoup; src: project.yml, Vendor/SwiftSoup/README.md, Scripts/vendor/swiftsoup/make_vendor.py, TextMouth/Parsers/MarkupScanner.swift, TextMouth/Parsers/MarkupNesting.swift, TextMouthProductionTests/BundledLicenseTests.swift -->
