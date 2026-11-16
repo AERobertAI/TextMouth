@@ -43,6 +43,12 @@ class RunnerTestCase(unittest.TestCase):
         self.out = self.folder / "out"
         self.request = self.folder / "request.json"
         self.write_request({"areas": ["stats"], "classes": ["FooTests"]})
+        # The stamp check touches a derived-data folder; on a GitHub runner (where check.yml runs these tests) it would be
+        # the checkout's own, so it is replaced by one that records its call. Its own tests are in test_runner_module_cache.py.
+        self.prepared = []
+        patcher = mock.patch.object(runner.runner_module_cache, "prepare", lambda derived: self.prepared.append(Path(derived)))
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def write_request(self, request):
         """Writes the request file the runner will read."""
@@ -280,6 +286,136 @@ class GateRulesTests(RunnerTestCase):
         with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, self.WARNING_LOG)):
             status, _ = self.run_main()
         self.assertEqual(status, 0)
+
+
+# The error of train 1116-1349 as a Mac shard's log holds it: the build stopped before any test suite started.
+STALE_LOG = ("CompileC ...\nerror: Clang dependency scanner failure: fatal error: file '/Applications/Xcode_26.0.1.app/"
+             "Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/clang/include/module.modulemap' has been "
+             "modified since the module file '.../ModuleCache.noindex/1TV4X376J16CB/_Builtin_stdbool-FTUUUU4ZHFEK.pcm' was "
+             "built: mtime changed (was 1793595417, now 1794497068)\n** TEST FAILED **\n")
+
+
+class StaleCacheTests(RunnerTestCase):
+    """The stamp is checked before the build, and a build that fails for a stale module cache runs once more."""
+
+    def setUp(self):
+        super().setUp()
+        # The derived-data folder is the one under the runner's root, which these tests point at a temporary folder.
+        self.derived = self.folder / "build" / "remote-DerivedData"
+        (self.derived / "ModuleCache.noindex").mkdir(parents=True)
+        (self.derived / "ModuleCache.noindex" / "old.pcm").write_text("x")
+        (self.derived / "Build").mkdir()
+        (self.derived / "Build" / "kept.o").write_text("x")
+        # The tests' limit is 5 minutes, so the least time that makes a retry worth starting is made small.
+        for name, value in (("ROOT", self.folder), ("MINIMUM_RETRY_MINUTES", 0.01)):
+            patcher = mock.patch.object(runner, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def stale_then(self, second_log, second_printed):
+        """A command whose first run fails with the stale-module error (and prints a failed summary) and whose later runs
+        write `second_log` and print `second_printed`; each run notes whether the module cache was there when it began."""
+        marker = self.folder / "tried"
+        program = ("import os, sys\n"
+                   "log = sys.argv[1]\n"
+                   f"cache = {str(self.derived / 'ModuleCache.noindex')!r}\n"
+                   f"marker = {str(marker)!r}\n"
+                   "again = os.path.exists(marker)\n"
+                   "open(marker, 'a').write('x')\n"
+                   f"open(log, 'w').write(({second_log!r} if again else {STALE_LOG!r}) + "
+                   "('CACHE ' + ('present' if os.path.exists(cache) else 'gone') + '\\n'))\n"
+                   f"sys.stdout.write({second_printed!r} if again else {SUMMARY_FAILED!r})\n"
+                   "sys.exit(0 if again else 1)\n")
+
+        return lambda areas, classes, derived, log, jobs=3, extra=(): [sys.executable, "-I", "-B", "-c", program, str(log)]
+
+    def run_count(self):
+        """How many times the stale_then command ran (each run adds a character to its marker file)."""
+        return len((self.folder / "tried").read_text())
+
+    def test_the_stamp_is_checked_before_the_build_in_the_shards_derived_data_folder(self):
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)):
+            self.run_main()
+        self.assertEqual(self.prepared, [self.derived.resolve()])
+
+    def test_a_build_that_failed_for_the_stale_cache_runs_again_with_the_caches_emptied_and_passes(self):
+        with mock.patch.object(test_command, "area_command", self.stale_then(LOG_PASSED, SUMMARY_PASSED)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 0)
+        self.assertEqual(self.run_count(), 2)
+        log = (self.out / "run.log").read_text()
+        self.assertIn("CACHE gone", log, "the retry began with the module cache emptied")
+        self.assertNotIn("has been modified", log, "the log is the retry's")
+        self.assertTrue((self.derived / "Build" / "kept.o").exists(), "everything but the module caches is kept")
+
+    def test_the_summary_says_the_run_went_twice_and_why_and_the_trains_reader_still_reads_it(self):
+        train = test_command.load_build_train()
+        with mock.patch.object(test_command, "area_command", self.stale_then(LOG_PASSED, SUMMARY_PASSED)):
+            self.run_main()
+        summary = (self.out / "summary.md").read_text()
+        notes = [line for line in summary.splitlines() if line.startswith("- Module caches: ")]
+        self.assertEqual(len(notes), 1, summary)
+        self.assertIn("has been modified since the module file", notes[0])
+        self.assertIn("emptied", notes[0])
+        self.assertIn("- Verdict: PASSED", summary)
+        verdict, executed, failures, errors, _ = train.summarize((self.out / "run-summary.txt").read_text())
+        self.assertEqual((verdict, executed, failures, errors), ("PASSED", "Executed 3 tests, with 0 failures", [], []))
+
+    def test_a_retry_that_fails_again_is_the_last_and_its_failure_is_the_result(self):
+        with mock.patch.object(test_command, "area_command", self.stale_then(LOG_PASSED, SUMMARY_FAILED)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 1)
+        self.assertEqual(self.run_count(), 2, "one retry, never more")
+
+    def test_a_failure_with_tests_started_is_not_the_caches_and_is_not_retried(self):
+        started = "Test Suite 'Selected tests' started at 2026-11-16 10:00:00.000\n" + STALE_LOG
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_FAILED, started, status=1)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 1)
+        self.assertNotIn("Module caches:", (self.out / "summary.md").read_text())
+        self.assertTrue((self.derived / "ModuleCache.noindex" / "old.pcm").exists())
+
+    def test_any_other_build_failure_is_not_retried(self):
+        with mock.patch.object(test_command, "area_command",
+                               self.child(SUMMARY_FAILED, "error: something else broke\n** TEST FAILED **\n", status=1)):
+            self.run_main()
+        self.assertNotIn("Module caches:", (self.out / "summary.md").read_text())
+        self.assertTrue((self.derived / "ModuleCache.noindex" / "old.pcm").exists())
+
+    def test_with_too_little_of_the_limit_left_there_is_no_retry(self):
+        with mock.patch.object(runner, "MINIMUM_RETRY_MINUTES", 100), \
+                mock.patch.object(test_command, "area_command", self.stale_then(LOG_PASSED, SUMMARY_PASSED)):
+            status, _ = self.run_main(limit_minutes=5)
+        self.assertEqual(status, 1)
+        self.assertIn("has been modified", (self.out / "run.log").read_text())
+
+    def test_the_retry_of_a_full_suite_reads_its_log_again(self):
+        self.write_request({"full": True, "areas": [], "classes": []})
+        marker = self.folder / "full-tried"
+        program = ("import os, sys\n"
+                   f"marker = {str(marker)!r}\n"
+                   "again = os.path.exists(marker)\n"
+                   "open(marker, 'w').write('x')\n"
+                   f"sys.stdout.write({LOG_PASSED!r} if again else {STALE_LOG!r})\n"
+                   "sys.exit(0 if again else 1)\n")
+        summaries = []
+        real_run = runner.subprocess.run
+
+        def fake_run(command, **keywords):
+            """run-area.py --summarize, read by this stand-in from the log it is given; any other call is real."""
+            if "--summarize" not in command:
+                return real_run(command, **keywords)
+            text = Path(command[-1]).read_text()
+            summaries.append(text)
+            return mock.Mock(stdout=SUMMARY_PASSED if "TEST SUCCEEDED" in text else SUMMARY_FAILED, stderr="")
+
+        with mock.patch.object(test_command, "full_suite_command",
+                               lambda *a, **k: [sys.executable, "-I", "-B", "-c", program]), \
+                mock.patch.object(runner.subprocess, "run", fake_run):
+            status, _ = self.run_main()
+        self.assertEqual(status, 0)
+        self.assertEqual(len(summaries), 2)
+        self.assertIn("Module caches:", (self.out / "summary.md").read_text())
 
 
 class ProgressTests(RunnerTestCase):

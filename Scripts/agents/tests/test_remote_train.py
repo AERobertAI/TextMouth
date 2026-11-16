@@ -256,6 +256,44 @@ class IPhoneBuildTests(RemoteTrainCase):
         self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), IOS_PASSED))
         self.assertEqual(self.run_train(), "ran")
 
+    # The two errors of train 1116-1349's iPhone build, in the form ios-errors.txt lists them: in no file of the repository.
+    STALE_ERRORS = (
+        "error: Clang dependency scanner failure: fatal error: file '/Applications/Xcode_26.0.1.app/Contents/Developer/"
+        "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/clang/include/module.modulemap' has been modified since the module "
+        "file '.../ModuleCache.noindex/1TV4X376J16CB/_Builtin_stdbool-FTUUUU4ZHFEK.pcm' was built: mtime changed\n"
+        "error: file '/Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/"
+        "clang/include/module.modulemap' has been modified since the module file '.../Darwin-2KVQ5G7PKP4YG.pcm' was built\n")
+    STALE_SUMMARY = "iOS build: FAILED\nErrors in the app: 2 in 0 files\nMinutes: 3.2\n"
+
+    def test_a_build_whose_only_errors_are_the_stale_module_cache_says_the_runners_cache_was_stale_not_the_code(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), self.STALE_SUMMARY, self.STALE_ERRORS))
+        self.run_train()
+        train_dir = next(train.TRAINS.iterdir())
+        for text in (self.result_of("alpha"), (train_dir / "summary.md").read_text()):
+            self.assertIn(f"FAILED, 2 errors in 0 files ({train.runner_module_cache.STALE_SENTENCE})", text)
+            self.assertIn("not this branch's code", text)
+        self.assertTrue(any("the iPhone build failed for the runner's stale module cache, not for your code" in topic
+                            for topic in self.posts_to("alpha")), self.posts)
+
+    def test_a_stale_cache_error_among_real_errors_is_not_called_the_runners_fault(self):
+        self.branch("alpha", {"TextMouth/Phone/A.swift": "a"})
+        errors = self.STALE_ERRORS + "TextMouth/Phone/A.swift:3:4: error: cannot find 'NSWorkspace' in scope\n"
+        summary = "iOS build: FAILED\nErrors in the app: 3 in 1 files\nMinutes: 3.2\n"
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary, errors))
+        self.run_train()
+        self.assertNotIn("stale", self.result_of("alpha"))
+        self.assertTrue(all("stale" not in topic for topic in self.posts_to("alpha")), self.posts)
+
+    def test_a_build_the_script_ran_twice_says_so_in_the_trains_line(self):
+        self.branch("alpha", {"a.txt": "a"})
+        summary = ("iOS build: PASSED\nErrors in the app: 0 in 0 files\nMinutes: 6.0\n"
+                   "Retried: the first try (3.1 minutes) failed with \"has been modified since the module file\", so the module "
+                   "caches were emptied and the build ran once more\n")
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary))
+        self.run_train()
+        self.assertIn("PASSED, 0 errors in 0 files (the first try (3.1 minutes) failed with", self.result_of("alpha"))
+
     def test_an_unreadable_summary_is_read_as_what_it_is(self):
         folder = self.folder / "ios-dir"
         folder.mkdir()

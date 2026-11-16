@@ -78,6 +78,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import github_run  # noqa: E402
 import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
 import ios_ui_tests  # noqa: E402
+import runner_module_cache  # noqa: E402
 import repo_paths  # noqa: E402
 import runner_skips  # noqa: E402
 import shard  # noqa: E402
@@ -675,12 +676,17 @@ def remote_ios_result(train_dir):
     counted = IOS_ERRORS_LINE.search(summary)
     count = f"{verdict}, {counted.group(1)} errors in {counted.group(2)} files" if counted else verdict
     reasons = [line.removeprefix("Reason: ") for line in lines if line.startswith("Reason: ")]
-    if reasons:
-        count += f" ({'; '.join(reasons)})"
     try:
         errors = (train_dir / "ios-errors.txt").read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
         errors = []
+    # Errors that are all "has been modified since the module file" are the runner's stale module cache and in no file of
+    # the branch: the line says so, so that no agent chases them. A build the script ran twice says that too.
+    if runner_module_cache.stale_cache_only(errors):
+        reasons.append(runner_module_cache.STALE_SENTENCE)
+    reasons += [line.removeprefix("Retried: ") for line in lines if line.startswith("Retried: ")]
+    if reasons:
+        count += f" ({'; '.join(reasons)})"
     return count, errors, IOS_BUILD_LABEL
 
 
@@ -840,6 +846,9 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
             if len(my_ios) > 30:
                 lines += [f"  - … and {len(my_ios) - 30} more, in {ios_file}"]
             ios_note = f"; iOS errors in your files: {len(my_ios)}"
+            if runner_module_cache.stale_cache_only(census[1]):
+                # The board post is what an agent reads first, so it says whose fault the iPhone build's failure is.
+                ios_note += "; the iPhone build failed for the runner's stale module cache, not for your code"
         not_run = runner_skips.not_run_lines(request.get("not_run", []))
         if not_run:
             lines += [*not_run, RUN_ON_THE_MAC]

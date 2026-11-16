@@ -25,6 +25,8 @@ import os
 import sys
 from pathlib import Path
 
+# Importing a sibling module must leave no __pycache__ folder in the repository (set before the import below).
+sys.dont_write_bytecode = True
 # repo_paths.py is beside this script; python3 -I leaves its folder out of sys.path.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import repo_paths  # noqa: E402  (imported by path, after sys.path is set)
