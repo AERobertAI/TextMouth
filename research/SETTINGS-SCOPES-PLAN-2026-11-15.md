@@ -4,7 +4,8 @@ Branch `research/settings-scopes`, designer `scopeplan`, FR23 in `TODO-2026-09-0
 Brief: `Scripts/agents/briefs/2026-11-15/scopeplan.md`.
 Line numbers are those of main at d425dd20f.
 
-The user, November 15: "allow a nother level of scope for speech settings like speed (is pitch supported in the app? that might be another thing) but for feeds to have a global settings for audio or text, a feed setting, and a local setting. maybe have one for folders and the reading list too when opening a book in it, but you have to open the folder's / feeds settings sheet to set that you want the scope".
+The user, November 15: "allow a nother level of scope for speech settings like speed (is pitch supported in the app? that might be another thing) but for feeds to have a global settings for audio or text, a feed setting, and a local setting."
+And: "maybe have one for folders and the reading list too when opening a book in it, but you have to open the folder's / feeds settings sheet to set that you want the scope".
 
 ## 1. The answer
 
@@ -207,7 +208,8 @@ The library row and the package record are unchanged, so their tests must pass u
   It takes the book's own values, the layers nearest first (each a `PlaybackSettingSource` and its `PlaybackScope?`), and the global values.
   It returns `ResolvedPlaybackSettings`: the voice, words per minute, pitch, and audio speed, each with the source it came from, and the owner of each kind (section 5).
   `PlaybackSettingSource` is `.book`, `.readingList`, `.feed(id:title:)`, `.folder(id:name:)`, or `.global`.
-- `TextMouth/ViewModels/LibraryViewModel+PlaybackScopes.swift`: `playbackLayers(of:readFromReadingList:)`, which gathers a book's layers beside `listeningOptions(of:)`; the folder's and the list's setters, each saving once and saving nothing for no change; the count and the clearing of books that keep their own; and the `.playbackScopesChanged` notification all three setters post.
+- `TextMouth/ViewModels/LibraryViewModel+PlaybackScopes.swift`: `playbackLayers(of:readFromReadingList:)`, which gathers a book's layers beside `listeningOptions(of:)`.
+  It also holds the folder's and the list's setters, each saving once and saving nothing for no change, the count and the clearing of books that keep their own, and the `.playbackScopesChanged` notification all three setters post.
 - `TextMouth/Models/PlaybackScopeWording.swift`: the sentences of section 6.
 - `TextMouth/Views/Library/PlaybackScopeControls.swift`: the group of controls, one view for the three sheets, and a voice pop-up shared with `BookVoicePickerView` (its pickers today are `ReaderView.swift:888-900`).
 - `TextMouth/Views/Library/ReadingListSettingsSheet.swift`.
