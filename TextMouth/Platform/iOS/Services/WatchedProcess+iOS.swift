@@ -78,6 +78,28 @@ enum WatchedProcess {
         case couldNotStart
     }
 
+    /// How a child ended, with the signal that ended it (a copy of the Mac's
+    /// value type).
+    struct Ending: Equatable, Sendable {
+        /// How it ended.
+        var outcome: Outcome
+        /// The signal that ended it, when the watchdog did not send it.
+        var signal: Int32?
+    }
+
+    /// The reading end of a child's pipe (a stand-in for the Mac's, with its
+    /// members): no child runs on iOS, so it never holds a byte.
+    final class PipeReader: Sendable {
+        /// How many bytes have been read: none.
+        var bytesRead: Int64 { 0 }
+
+        /// Nothing to note: no child runs.
+        func childEnded() {}
+
+        /// The end at once: no child writes.
+        func read(upTo count: Int) async throws -> [UInt8] { [] }
+    }
+
     /// What every captured-output file's name ends with (the same string as
     /// the Mac's).
     static let outputFileSuffix = ".watched-output"
@@ -124,5 +146,20 @@ enum WatchedProcess {
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) async throws -> (outcome: Outcome, output: Data) {
         (outcome: .couldNotStart, output: Data())
+    }
+
+    /// Would run `executable` and hand its output to `read` as it comes
+    /// (the Mac's FFmpeg helper, FMT50); on iOS it starts nothing and throws
+    /// `IOSUnavailable`, as `run` does. The parameters match the Mac's.
+    static func runStreaming<Value: Sendable>(
+        _ executable: URL,
+        arguments: [String],
+        watching output: URL?,
+        limits: Limits,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
+        uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        reading read: (PipeReader) async throws -> Value
+    ) async throws -> (ending: Ending, read: Result<Value, any Error>) {
+        throw IOSUnavailable.feature("Converting this kind of file")
     }
 }
