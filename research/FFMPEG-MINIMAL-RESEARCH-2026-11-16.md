@@ -64,7 +64,7 @@ configure --disable-everything --disable-autodetect --disable-network --disable-
   A library's `.a` size is not that number: the linker keeps only what the demuxers and decoders named reach.
 - **Build time:** configure's and make's wall-clock seconds at `make -j4` on this 8-core Mac, shared with other agents, and make's processor seconds, which carry to another Mac.
 - **Files compiled:** make's own lines, one for each file (CC for C, AS for assembly).
-- `research/ffmpeg-minimal/build.py` ran every step; its records are `build.json`, `measure.json`, and `decode.json` in each build's folder.
+- `research/ffmpeg-minimal/build.py` ran every step; its records are `build.json` (with each build's whole configure line), `measure.json`, and `decode.json` in each build's folder.
 
 ## The sets
 
