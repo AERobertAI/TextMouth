@@ -104,14 +104,16 @@ class OtherAccountsTests(unittest.TestCase):
     """The paths no rule can rewrite by name, which the check reports."""
 
     def test_a_real_looking_account_is_reported(self):
-        self.assertEqual(scrub.other_accounts_paths("see /Users/" + "somebody-else" + "/notes"), ["/Users/somebody-else"])
+        stranger = "/Users/" + "somebody-else"
+        self.assertEqual(scrub.other_accounts_paths(f"see {stranger}/notes"), [stranger])
 
     def test_the_fixture_accounts_and_placeholders_are_not(self):
         text = "/Users/reader /Users/x/y /Users/someone /Users/runner/work /Users/Shared /Users/<you> /Users/$USER"
         self.assertEqual(scrub.other_accounts_paths(text), [])
 
     def test_a_project_folder_name_of_another_account_is_reported(self):
-        self.assertEqual(scrub.other_accounts_paths("-Users-" + "stranger" + "-code-app"), ["-Users-stranger-"])
+        stranger = "-Users-" + "stranger" + "-"
+        self.assertEqual(scrub.other_accounts_paths(f"{stranger}code-app"), [stranger])
 
     def test_a_session_folder_or_a_long_temporary_folder_is_reported(self):
         self.assertEqual(len(scrub.other_accounts_paths("/tmp/claude-" + "9" + "/abc")), 1)
