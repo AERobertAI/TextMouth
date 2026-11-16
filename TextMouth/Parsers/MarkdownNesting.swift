@@ -49,6 +49,25 @@ enum MarkdownNesting {
         deepest(in: markdown, stopAbove: limit) > limit
     }
 
+    // MARK: The second layer's limit
+
+    /// The levels a tree has beyond its containers: the document, a paragraph or
+    /// heading, and some emphasis and a link around the text.
+    private static let levelsBeyondContainers = 16
+
+    /// The deepest tree of levels any walk of Markdown reads, the document at
+    /// level 1: the second layer's limit, the same for the reader's walk
+    /// (`MarkdownDocParser`), the exporter's (`ExportDocumentWalker`), and
+    /// `MarkdownTree.read(_:within:_:)`, which refuses a deeper tree before a
+    /// walk begins. A list takes two levels (the list and its item), so the
+    /// limit on the count of containers (`deepestNesting`) allows twice as many
+    /// levels of tree, and a few more for the paragraph, its emphasis, and its
+    /// text: 272 by default. A test that sets `Limits.deepestTree` lifts the
+    /// count and sees the second layer refuse.
+    static func deepestTree(under limits: MarkupGuard.Limits) -> Int {
+        limits.deepestTree ?? (2 * min(limits.deepestNesting, Int.max / 4) + levelsBeyondContainers)
+    }
+
     // MARK: The pass
 
     /// Bytes the pass tells apart.
