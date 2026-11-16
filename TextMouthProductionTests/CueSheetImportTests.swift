@@ -340,9 +340,15 @@ final class CueSheetImportTests: XCTestCase {
         let fromLabels = try FileImportService.importAudioFolderWithReport(from: labelFolder, toFolder: folderPath)
         let fromZip = try FileImportService.importAudioZipWithReport(from: zip, toFolder: folderPath)
 
-        let sheetUnused = "The tracks of the cue sheet “Book.cue” run past the end of its audio, so its headings were not used."
-        XCTAssertEqual(fromFolder.notice, sheetUnused)
-        XCTAssertEqual(fromZip.notice, sheetUnused)
+        XCTAssertEqual(
+            fromFolder.notice,
+            "The tracks of the cue sheet “Book.cue” run past the end of its audio, so its headings were not used."
+        )
+        // A ZIP's sheet is named by its path inside the archive.
+        XCTAssertEqual(
+            fromZip.notice,
+            "The tracks of the cue sheet “Album/Book.cue” run past the end of its audio, so its headings were not used."
+        )
         XCTAssertEqual(
             fromLabels.notice,
             "The labels of the label file “Book.txt” run past the end of its audio, so its headings were not used."
