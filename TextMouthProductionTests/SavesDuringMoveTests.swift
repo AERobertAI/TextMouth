@@ -22,6 +22,7 @@ final class SavesDuringMoveTests: XCTestCase {
     /// moved library, and the old library holds them too.
     func testRulesSavedWhileTheLibraryIsCopiedAreInTheMovedLibrary() async throws {
         let world = try makeIntegrationWorld("Saves Move Rules")
+        keepSubstitutionsFile()
         let destination = try makeDataDirectoryMoveDestination("RulesSavedDuringMove")
         let oldFile = TextMouthPaths.substitutionsFile
         let service = TextSubstitutionService(rules: [])
@@ -79,6 +80,7 @@ final class SavesDuringMoveTests: XCTestCase {
     /// change in the library it began in, which is still the library.
     func testRulesSavedDuringAMoveThatIsCancelledStayInTheLibrary() async throws {
         let world = try makeIntegrationWorld("Saves Move Cancelled")
+        keepSubstitutionsFile()
         let destination = try makeDataDirectoryMoveDestination("RulesSavedDuringCancelledMove")
         let oldRoot = TextMouthPaths.root
         let oldFile = TextMouthPaths.substitutionsFile
@@ -107,6 +109,7 @@ final class SavesDuringMoveTests: XCTestCase {
     func testASaveDuringTheCopyDoesNotSettleAFailedSaveBeforeTheMoveEnds() async throws {
         let center = cleanSharedFailureCenter()
         let world = try makeIntegrationWorld("Saves Move Failure")
+        keepSubstitutionsFile()
         let destination = try makeDataDirectoryMoveDestination("RulesFailedSaveDuringMove")
         let oldFile = TextMouthPaths.substitutionsFile
         let obstruction = try WriteObstruction.place(at: oldFile)
@@ -143,6 +146,7 @@ final class SavesDuringMoveTests: XCTestCase {
     func testASaveDuringARebuildIsFinalAtOnce() throws {
         let center = cleanSharedFailureCenter()
         _ = try makeIntegrationWorld("Saves Rebuild")
+        keepSubstitutionsFile()
         let oldFile = TextMouthPaths.substitutionsFile
         let obstruction = try WriteObstruction.place(at: oldFile)
         let service = TextSubstitutionService(rules: [])
@@ -164,6 +168,22 @@ final class SavesDuringMoveTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// Puts the substitutions file of the data directory in use now back as
+    /// it is now (or leaves none, when there is none) when the test ends, so
+    /// the rules a test saves never reach the next test, which shares the
+    /// sandbox's data directory and would copy them into its own move.
+    private func keepSubstitutionsFile() {
+        let file = TextMouthPaths.substitutionsFile
+        let original = try? Data(contentsOf: file)
+        addTeardownBlock {
+            if let original {
+                try? original.write(to: file, options: .atomic)
+            } else {
+                try? FileManager.default.removeItem(at: file)
+            }
+        }
+    }
 
     /// The rules the substitutions file at `url` holds.
     private static func rules(in url: URL) throws -> [SubstitutionRule] {
