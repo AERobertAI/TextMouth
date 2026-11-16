@@ -27,6 +27,10 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
 - Nothing on this Mac may start an iPhone simulator: the iPhone tests run on GitHub, and `make typecheck-ios` needs only Xcode's SDK.
 - Never read or write the user's live library at `~/.TextMouth` from a test or an experiment; copy what a test needs into its own sandbox, and read its logs only for a diagnosis.
 - Never search from `/` or the home folder (`find`, `mdfind`, `du`, `ls -R`): it walks the user's Downloads, Documents, and cloud drives and puts macOS privacy prompts on their screen.
+- No path specific to this Mac goes in a tracked file, at the user's request: not the home folder, not the repository's location under it, not Claude Code's session or project folders, and not `$TMPDIR`'s folder.
+  This holds for code, tests, docs, and commit messages alike, since the repository is public.
+  Tools find the main checkout through git's common directory, and test fixtures use made-up paths such as `/Users/reader`.
+  Briefs and `build/` are gitignored and stay on the Mac.
 - Never play, probe, or decode Ogg through Apple's frameworks in a test or an experiment: its Vorbis decoder locked up in `AVPlayer` once and took the Mac down; `make lint-ogg` flags new calls.
 - Only the orchestrator merges into `main`, with `git merge --no-ff` and only after the full hosted suite is green on the merged tree; the project `CLAUDE.md` otherwise forbids merging.
   Every merge is recorded in the TODO and described in the pages under `docs/` by a documentation pass.
