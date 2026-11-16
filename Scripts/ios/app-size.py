@@ -152,6 +152,10 @@ def library_of(object_path):
         return os.path.basename(archive.group(1))
     if object_path == "linker synthesized":
         return object_path
+    # A Swift package's product is one merged object in the products folder ("Products/Release-iphoneos/cmark-gfm.o").
+    product = re.search(r"/Products/[^/]+/([^/]+)\.o$", object_path)
+    if product:
+        return product.group(1)
     # Xcode nests the target's folder inside the project's ("TextMouth.build/Release-iphoneos/Foo.build/..."), so the
     # innermost one names the target.
     targets = re.findall(r"/([^/]+)\.build/", object_path)
@@ -360,6 +364,7 @@ SAMPLE_LINK_MAP = """# Path: /x/TextMouth
 [  2] /x/Products/Release-iphoneos/libmp3lame.a(util.o)
 [  3] /x/Products/Release-iphoneos/libmp3lame.a(vbrtag.o)
 [  4] /x/Intermediates/TextMouth.build/Release-iphoneos/ZIPFoundation.build/Objects-normal/arm64/Zip.o
+[  5] /x/Products/Release-iphoneos/cmark-gfm.o
 # Sections:
 # Address\tSize    \tSegment\tSection
 0x100000000\t0x00001000\t__TEXT\t__text
@@ -370,6 +375,7 @@ SAMPLE_LINK_MAP = """# Path: /x/TextMouth
 0x100000300\t0x00000100\t[  3] _lame_tag
 0x100000400\t0x00000080\t[  4] _zip
 0x100000480\t0x00000010\t[  0] _stub
+0x100000490\t0x00000040\t[  5] _cmark
 # Dead Stripped Symbols:
 #        \tSize    \tFile  Name
 <<dead>>\t0x00099999\t[  1] _gone
@@ -438,7 +444,7 @@ def selftest():
         map_file.write_text(SAMPLE_LINK_MAP)
         by_library = parse_link_map(map_file.read_text())
         check(by_library == [("libmp3lame.a", 0x300), ("TextMouthiOS", 0x100), ("ZIPFoundation", 0x80),
-                             ("linker synthesized", 0x10)], f"libraries were {by_library}")
+                             ("cmark-gfm", 0x40), ("linker synthesized", 0x10)], f"libraries were {by_library}")
         with_map = measure_app(app, link_map=map_file)
         check(with_map["executable_bytes"] == sizes["TextMouth"], "the executable's size is not found by the app's name")
         # The report names the sizes, the limits, and the libraries.
