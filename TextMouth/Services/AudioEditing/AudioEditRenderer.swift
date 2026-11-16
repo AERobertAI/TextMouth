@@ -558,7 +558,13 @@ enum AudioEditRenderer {
         // as stored are read through the timeline's composition, whole
         // packets, never decoded.
         let pieces = try await AudioEditStretchSound.pieces(of: timeline, sources: sources)
-        let copied = settings == standard && canCopySamples(of: timeline, base: sources.base, into: format)
+        // Samples are copied only under the format's own settings, never under
+        // those a caller asked for (a filter's input, a copy's stretch, MP3's
+        // intermediate file): since depths AVFoundation refuses are stored
+        // as 32-bit floats, a caller's 32-bit floats can equal the standard
+        // settings of a 64-bit float book, whose samples would be copied
+        // at twice the size they ask for.
+        let copied = requested == nil && canCopySamples(of: timeline, base: sources.base, into: format)
         let composition: AudioEditComposition? = try copied ? AudioEditComposition.make(pieces, sampleRate: timeline.sampleRate) : nil
         try? FileManager.default.removeItem(at: destination)
 

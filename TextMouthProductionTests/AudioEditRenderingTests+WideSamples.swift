@@ -288,6 +288,33 @@ extension AudioEditRenderingTests {
         XCTAssertTrue(problems.isEmpty, problems.joined(separator: "\n"))
     }
 
+    /// A render asked for 32-bit floats (a filter's input, the stretch of a
+    /// Copy or Cut, MP3's intermediate file) of a cut of a 64-bit float book
+    /// decodes them and writes 32-bit floats, as asked, rather than copying
+    /// the book's 64-bit samples, which its own standard settings now equal.
+    func testAskedFor32BitFloatsA64BitFloatBookIsDecodedNotCopied() async throws {
+        let book = AudioEditRenderingTests.WideBook.caf(isFloat: true)
+        let (base, folder) = try await makeWideBase(book)
+        var timeline = base.timeline
+        try timeline.applyRearranging(.cut(AudioTimeRange(start: 1, end: 2)))
+        let output = folder.appendingPathComponent("stretch.caf")
+
+        let outcome = try await AudioEditRenderer.render(
+            timeline,
+            sources: AudioEditComposition.Sources(base: base, package: folder, scratch: folder),
+            to: output,
+            format: .pcmCAF,
+            settings: AudioRenderSettings.floatCAF(for: base),
+            metadata: AudioRenderMetadata(title: "", author: nil)
+        )
+
+        XCTAssertFalse(outcome.copiedSamples)
+        let written = try await AudioEditBase.load(output, name: "stretch.caf")
+        XCTAssertEqual(written.format.mBitsPerChannel, 32)
+        XCTAssertNotEqual(written.format.mFormatFlags & kAudioFormatFlagIsFloat, 0)
+        XCTAssertEqual(written.frames, 16_000)
+    }
+
     // MARK: - Lossless Books
 
     /// The depth of a lossless book is read from its format flags (1, 2, 3,
