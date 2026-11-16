@@ -18,7 +18,7 @@ Usage (Python 3 standard library only; run from anywhere):
     python3 -I -B Scripts/ios/app-size.py build [--derived-data DIR] [--limit-minutes N] [--json]
     python3 -I -B Scripts/ios/app-size.py --selftest
 
-`build` runs an unsigned Release build of the scheme TextMouthiOS for the iphoneos SDK (the arm64 device) into
+`build` runs an unsigned Release build of the target TextMouthiOS for the iphoneos SDK (the arm64 device) into
 DERIVED_DATA, then measures the app with the IPA and the link map. It does not take the heavy-work lock itself: on
 this Mac `make ios-size` runs it through Scripts/agents/run_locked.py, and on a GitHub runner there is no lock.
 Exit status: 0 measured (even over the limits: the report says so), 1 the build failed or no app was found, 2 a bad
@@ -51,10 +51,11 @@ LIMIT_MB = 30
 STRICT_LIMIT_MB = 40
 # How many of the biggest files the report lists.
 DEFAULT_TOP = 15
-# The scheme and SDK of the device build (the SDK, not a destination: xcodebuild's `-destination generic/platform=iOS`
-# needs the iOS platform installed, which a Mac with only Xcode's SDKs, like the one the agents use, lacks), and the folder name Xcode gives its products. The product's name is
+# The target and SDK of the device build. It names the target and the SDK, not the scheme and a destination: a scheme
+# needs a destination, and `-destination generic/platform=iOS` needs the iOS platform installed, which a Mac with only
+# Xcode's SDKs, like the one the agents use, lacks. The target is the one the scheme TextMouthiOS builds. The folder name Xcode gives its products. The product's name is
 # TextMouth, as project.yml sets it (the Mac app has the same name).
-SCHEME = "TextMouthiOS"
+TARGET = "TextMouthiOS"
 SDK = "iphoneos"
 PRODUCTS_FOLDER = "Release-iphoneos"
 APP_NAME = "TextMouth.app"
@@ -259,15 +260,15 @@ def summary_lines(result, label="iPhone app"):
 
 def find_link_map(derived_data):
     """The link map of the device build in `derived_data`, or None when Xcode wrote none."""
-    pattern = f"{derived_data}/Build/Intermediates.noindex/*/{PRODUCTS_FOLDER}/{SCHEME}.build/*LinkMap-normal-arm64.txt"
+    pattern = f"{derived_data}/Build/Intermediates.noindex/*/{PRODUCTS_FOLDER}/{TARGET}.build/*LinkMap-normal-arm64.txt"
     found = sorted(glob.glob(pattern))
     return found[0] if found else None
 
 
 def build_command(derived_data):
-    """The argv of the device build: Release of the scheme TextMouthiOS for the iphoneos SDK, arm64, unsigned, small code
+    """The argv of the device build: Release of the target TextMouthiOS for the iphoneos SDK, arm64, unsigned, small code
     (-Osize, as the Makefile gives the Mac's Release build), no coverage, and a link map."""
-    return ["xcodebuild", "build", "-project", "TextMouth.xcodeproj", "-scheme", SCHEME, "-configuration", "Release",
+    return ["xcodebuild", "build", "-project", "TextMouth.xcodeproj", "-target", TARGET, "-configuration", "Release",
             "-sdk", SDK, "-derivedDataPath", str(derived_data), "ARCHS=arm64",
             "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO", "CLANG_COVERAGE_MAPPING=NO",
             "SWIFT_OPTIMIZATION_LEVEL=-Osize", "LD_GENERATE_MAP_FILE=YES"]
@@ -450,7 +451,7 @@ def selftest():
     check(describe(18_453_210) == "18.5 MB (18,453,210 bytes)", f"describe gave {describe(18_453_210)}")
     # The build's argv: the device SDK, unsigned, a link map, the scheme.
     argv = build_command("/x/dd")
-    check("iphoneos" in argv and "ARCHS=arm64" in argv and "-destination" not in argv and "CODE_SIGNING_ALLOWED=NO" in argv and "LD_GENERATE_MAP_FILE=YES" in argv,
+    check("iphoneos" in argv and "TextMouthiOS" in argv and "-scheme" not in argv and "ARCHS=arm64" in argv and "-destination" not in argv and "CODE_SIGNING_ALLOWED=NO" in argv and "LD_GENERATE_MAP_FILE=YES" in argv,
           f"build command was {argv}")
     for failure in failures:
         print(f"app-size selftest FAILED: {failure}")
