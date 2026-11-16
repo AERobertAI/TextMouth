@@ -98,6 +98,11 @@ Audio gets its title, author, and duration from its tags, and its chapters, wher
 - Ogg (.ogg, .oga, .opus), holding Vorbis, Opus, or FLAC: converted to .m4a at import, and never played through Apple's players; iPhone: no; Tested with made samples.
 - AC-3 (.ac3), E-AC-3 (.ec3, .eac3), MP2 (.mp2), AMR (.amr), 3GPP audio (.3gp), NeXT/Sun audio (.au), AIFC (.aifc), CAF (.caf), and Wave64 (.w64): converted to .m4a at import by afconvert; iPhone: no; Tested with made samples.
 - MP1 (.mp1) and the alternative extensions .mpa, .snd, .awb, .3g2, and .3ga: converted the same way; iPhone: no; Basic.
+- TTA (.tta), WavPack (.wv, with a .wvc correction file beside it), and Monkey's Audio (.ape, version 3.93 and later): read by TextMouth's own decoders and written as Apple Lossless in .m4a, with their tags; iPhone: yes; Tested with made samples.
+- WMA (.wma, .asf), Speex (.spx), Musepack (.mpc, .mp+), WebM and Matroska audio (.webm, .weba, .mka), RealAudio (.ra, .rm, .rmvb), and the sound of .wmv, .avi, .flv, and .mkv videos: converted with the installed ffmpeg, keeping tags and chapters; iPhone: no; Tested with made samples.
+- Without ffmpeg, the import of those says how to install it.
+- Copy-protected audio (.aa, .aax, .aaxc, .m4p, and copy-protected ASF) is refused and never read.
+- Chapters come from more than tags: CUE sheets (.cue, or one in a FLAC file), markers in WAV, AIFF, and CAF files, CHAPTER comments in Ogg files, and Audacity label files (.txt) beside a folder's audio.
 - What a file holds decides, not its name, so an Ogg file named .m4a is converted all the same.
 
 ## Playlists, manifests, and packages
@@ -108,6 +113,7 @@ Details: [Audiobooks](reads-audiobooks.md), [The audiobook manifest](audiobook-m
 - M3U and M3U8 playlist (.m3u, .m3u8): one audiobook of the files it lists, a heading for each, in its order; iPhone: yes; Tested with made samples.
 - PLS playlist (.pls) and XSPF playlist (.xspf): the same, PLS in the order of its file numbers and XSPF with the playlist's title naming the book; iPhone: yes; Tested with made samples.
 - A .pls that is a pronunciation lexicon is refused as a playlist; Import Rules… on the Text tab in Settings reads it (see [Settings](settings.md)).
+- CUE sheet (.cue): the audio files it names as one book, a heading for each track; iPhone: not checked; Tested with made samples.
 - ZIP of audio tracks (.zip): one book with a heading for each track; iPhone: yes, except for tracks that need converting; Tested with made samples.
 - manifest.json in such a ZIP: the book's name and author, the tracks' order and titles, groups, and pauses; iPhone: yes; Tested with made samples.
 - Folder of audio files: one book of its tracks, in their order; iPhone: yes, except for tracks that need converting; Tested with made samples.
