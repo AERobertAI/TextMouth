@@ -52,11 +52,15 @@ RELEASE_VERSION = "2.13.9"
 RELEASE_REVISION = "18b80329749eca5ea29fc50211dca5c7eff5bfec"
 
 HERE = Path(__file__).resolve().parent
+# repo_paths.py is in Scripts/agents (two folders up); python3 -I leaves it out of sys.path.
+sys.path.insert(0, str(HERE.parent.parent / "agents"))
+import repo_paths  # noqa: E402  (imported by path, after sys.path is set)
+
 # The repository this script is in (Scripts/vendor/swiftsoup/ is three folders down).
 REPOSITORY = HERE.parent.parent.parent
 # The main checkout, which holds the package checkout Xcode made; a linked
 # worktree of the repository sits under its .claude/worktrees.
-MAIN_CHECKOUT = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
+MAIN_CHECKOUT = repo_paths.main_checkout()
 DEFAULT_SOURCE = MAIN_CHECKOUT / "build" / "DerivedData" / "SourcePackages" / "checkouts" / "SwiftSoup"
 DEFAULT_OUTPUT = REPOSITORY / "Vendor" / "SwiftSoup"
 

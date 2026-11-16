@@ -49,7 +49,13 @@ sys.dont_write_bytecode = True
 
 HERE = Path(__file__).resolve().parent
 REPOSITORY = HERE.parent.parent.parent
-MAIN_CHECKOUT = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
+
+# repo_paths.py is in Scripts/agents; python3 -I leaves its folder out of sys.path.
+sys.path.insert(0, str(REPOSITORY / "Scripts" / "agents"))
+import repo_paths  # noqa: E402  (imported by path, after sys.path is set)
+
+# The main checkout, which holds the package checkout Xcode made and the test data, whichever worktree runs this.
+MAIN_CHECKOUT = repo_paths.main_checkout()
 KIT = REPOSITORY / "TextMouthProductionTests" / "SwiftSoupCorpusKit.swift"
 DRIVER = HERE / "main.swift"
 MARKUP = {".html", ".htm", ".xhtml", ".xml", ".ncx", ".opf", ".smil"}

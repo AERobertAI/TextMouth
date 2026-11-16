@@ -78,12 +78,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import github_run  # noqa: E402
 import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
 import ios_ui_tests  # noqa: E402
+import repo_paths  # noqa: E402
 import runner_skips  # noqa: E402
 import shard  # noqa: E402
 import test_command  # noqa: E402
 import test_tries  # noqa: E402
 
-ROOT = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
+# The main checkout, which holds the train's queue, results, and worktree whichever worktree runs this script.
+ROOT = repo_paths.main_checkout()
 TRAIN_DIR = ROOT / "build" / "orchestrator" / "train"
 QUEUE = TRAIN_DIR / "queue"
 TRAINS = TRAIN_DIR / "trains"

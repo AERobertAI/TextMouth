@@ -19,7 +19,12 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 
-RESULTS = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/train/results")
+# repo_paths.py is beside this script; python3 -I leaves its folder out of sys.path.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import repo_paths  # noqa: E402  (imported by path, after sys.path is set)
+
+# The train's results, in the main checkout whichever worktree runs this script.
+RESULTS = repo_paths.main_checkout() / "build" / "orchestrator" / "train" / "results"
 # How often the file is looked at, in seconds.
 POLL_SECONDS = 20
 

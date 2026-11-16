@@ -44,8 +44,12 @@ import sys
 import time
 from pathlib import Path
 
+# repo_paths.py is beside this script; python3 -I leaves its folder out of sys.path.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import repo_paths  # noqa: E402  (imported by path, after sys.path is set)
+
 # The main checkout, where the lock lives whichever worktree calls.
-ROOT = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
+ROOT = repo_paths.main_checkout()
 LOCK = ROOT / "build" / "orchestrator" / "heavy-lock"
 # The mark of the caller waiting first in line: its process ID, name, start
 # time, and the time its wait ends, after which the mark counts for nothing.
