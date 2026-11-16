@@ -133,7 +133,7 @@ The editor window's model runs on the main actor, measuring the edited audio's l
 <!-- id: swift6-mode-unchecked-declarations; keys: Swift 6, strict concurrency, unchecked Sendable, nonisolated(unsafe), isolation checks, UncheckedConcurrencyPolicyTests; src: project.yml, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
 Every target builds in the Swift 6 language mode, set once in project.yml (TextMouthTests/Package.swift matches it), so concurrency diagnostics are errors.
-`make check` fails on any Swift warning and on a Release app larger than 20 MB.
+`make check` fails on any Swift warning and on a Release app larger than 40 MB, and warns above 30 MB.
 `make build` does not compile with code coverage, and the symbols are stripped into a dSYM that `make install` keeps for the last five installs.
 The mode adds runtime isolation checks to `@objc` methods of main-actor classes and to main-actor closures handed to Objective-C APIs; each of the app's checks runs on the main thread, and VoiceWarmUp's buffer callback relies on AVSpeechSynthesizer calling back on the thread that called write().
 SpeechService handles every callback of its direct synthesizer on the main queue, so its announcement of a text the speech engine refused, made only when no reader listens, asserts the main actor there (endDirectSpeechRefused(at:refusing:spanning:)).
