@@ -52,13 +52,23 @@ final class IOSBranchTests: XCTestCase {
     }
 
     /// With no answer from afinfo, a file the import converts says the spec's
-    /// sentence on iOS, while the Mac keeps calling it unreadable.
+    /// sentence on iOS, while the Mac keeps calling it unreadable. The answer
+    /// is the own readers' when the file is one of theirs (decoded in the
+    /// app, on either platform) and afinfo's otherwise; the guard that
+    /// follows the two is the first step that can refuse.
     func testAConversionWithNoAnswerSaysThePhonesSentence() throws {
         let source = try Self.source("Services/ImportAudioConverter.swift")
+        let asked = try XCTUnwrap(
+            source.range(of: "if described == nil { described = try await inspect(source, using: tool.info) }"),
+            "convert no longer asks afinfo when no reader of TextMouth's own answers"
+        )
         let guardStart = try XCTUnwrap(
-            source.range(of: "guard let info = try await inspect(source, using: tool.info) else {"),
+            source.range(of: "guard let info = described else {", range: asked.upperBound..<source.endIndex),
             "convert's first step moved"
         )
+        // Nothing but the guard stands between the question and the refusal.
+        XCTAssertEqual(
+            source[asked.upperBound..<guardStart.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines), "")
         let guardEnd = try XCTUnwrap(
             source.range(of: "#endif", range: guardStart.upperBound..<source.endIndex),
             "convert's first step has no #if"
