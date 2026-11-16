@@ -51,8 +51,16 @@ OWN_CODE = {"ObjCExceptionCatcher_iOS"}
 
 # Code the iPhone app does not link but its shared readers follow, whose
 # licence asks that its notice travel with the app (the MOBI reader follows
-# foliate-js's mobi.js; the Mac app ships the same file).
-FOLLOWED_CODE = {"foliate-js": ("foliate-js", ["Vendor/foliate-js/LICENSE"])}
+# foliate-js's mobi.js; TextMouth's own audio readers follow the BSD-licensed
+# True Audio, WavPack, and Monkey's Audio decoders; the Mac app ships the same
+# files).
+FOLLOWED_CODE = {
+    "foliate-js": ("foliate-js", ["Vendor/foliate-js/LICENSE"]),
+    "TrueAudio": ("TrueAudio", [
+        "Vendor/package-licenses/TrueAudio/README", "Vendor/package-licenses/TrueAudio/COPYRIGHT"]),
+    "WavPack": ("WavPack", ["Vendor/package-licenses/WavPack/COPYING"]),
+    "MonkeysAudio": ("MonkeysAudio", ["Vendor/package-licenses/MonkeysAudio/License.txt"]),
+}
 
 
 def load_yaml(path):

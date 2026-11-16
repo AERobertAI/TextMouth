@@ -148,7 +148,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .pdf: return ["pdf"]
         case .audio:
             return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "ogg", "oga", "opus", "mp4", "m4v", "mov"]
-                + ImportAudioConverter.coreAudioExtensions.sortedStably()
+                + ImportAudioConverter.importOnlyExtensions.sortedStably()
                 + FFmpegAudioConverter.extensions.sortedStably()
         // .prc is a Palm database, which a Kindle book of the first
         // generation was named, .azw is an Amazon Kindle book, and .azw3 is
@@ -221,7 +221,7 @@ enum BookFormat: String, Codable, CaseIterable {
     /// no TextMouth before them ever kept one.
     static var packageTrackExtensions: Set<String> {
         Set(BookFormat.audio.fileExtensions)
-            .subtracting(ImportAudioConverter.coreAudioExtensions)
+            .subtracting(ImportAudioConverter.importOnlyExtensions)
             .subtracting(FFmpegAudioConverter.extensions)
     }
 

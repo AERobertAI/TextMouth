@@ -22,6 +22,10 @@ is left out by name, with the declaration of any type nothing else names:
 - "Audio and Video Converted with ffmpeg" (WMA, WebM, Matroska, AVI, and the
   rest of FFmpegAudioConverter), with the declarations of its own types: the
   import converts them with the Mac's installed ffmpeg, which iOS cannot start.
+- "Lossless Audio Read by TextMouth" (True Audio, WavPack, and Monkey's Audio,
+  with their type declarations): TextMouth's own readers decode them inside the
+  app, so nothing stops the iPhone, but its import still refuses every
+  converted format in one place. They come in when that refusal lets them by.
 - "ALAC Audio": the one type it names, `com.apple.coreaudio-format`, is the
   system's type for `.caf` files too (the system types `tones-*.caf` so), which
   are converted at import with afconvert. Leaving the type in would offer every
@@ -65,6 +69,7 @@ REFUSED = {
     "Ogg Audio",
     "Audio Converted at Import",
     "Audio and Video Converted with ffmpeg",
+    "Lossless Audio Read by TextMouth",
     "ALAC Audio",
     "BRF Braille File",
     "BRL Braille File",

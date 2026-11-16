@@ -653,7 +653,7 @@ enum AudioEditRenderer {
     }
 
     /// A common metadata item: `identifier` holding `value`.
-    private static func tag(_ identifier: AVMetadataIdentifier?, _ value: NSCopying & NSObjectProtocol) -> AVMetadataItem {
+    static func tag(_ identifier: AVMetadataIdentifier?, _ value: NSCopying & NSObjectProtocol) -> AVMetadataItem {
         let item = AVMutableMetadataItem()
         item.identifier = identifier
         item.value = value

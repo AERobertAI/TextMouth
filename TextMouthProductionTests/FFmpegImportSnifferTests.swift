@@ -238,7 +238,7 @@ final class FFmpegImportSnifferTests: XCTestCase {
     func testTheFormatsTextMouthReadsItselfAreNeverFFmpegs() throws {
         for (sample, name) in [("tta/tones.tta", "Disguised.wma"), ("wv/tones.wv", "Disguised.mka")] {
             let copy = try copyOfFormatSample(sample, named: name)
-            XCTAssertTrue(FFmpegContainer.holdsOwnReaderFormat(fileAt: copy), name)
+            XCTAssertNotNil(OwnAudioConverter.format(of: copy), name)
             XCTAssertFalse(FFmpegAudioConverter.converts(copy), name)
         }
         let folder = try makeSandboxDirectory("FFmpegOwnReaders")
@@ -253,10 +253,10 @@ final class FFmpegImportSnifferTests: XCTestCase {
         let tagged = folder.appendingPathComponent("Tagged.wma")
         try Data(joinedBytes(Array("ID3".utf8), [4, 0, 0, 0, 0, 0, 20], [UInt8](repeating: 0, count: 20), Array("TTA1".utf8), [1, 0]))
             .write(to: tagged)
-        XCTAssertTrue(FFmpegContainer.holdsOwnReaderFormat(fileAt: tagged))
+        XCTAssertEqual(OwnAudioConverter.format(of: tagged), .trueAudio)
         XCTAssertFalse(FFmpegAudioConverter.converts(tagged))
         XCTAssertTrue(FFmpegAudioConverter.converts(try copyOfFormatSample("wma/tones.wma")))
-        XCTAssertFalse(FFmpegContainer.holdsOwnReaderFormat(fileAt: folder.appendingPathComponent("missing.wma")))
+        XCTAssertNil(OwnAudioConverter.format(of: folder.appendingPathComponent("missing.wma")))
     }
 
     // MARK: - Copy Protection
