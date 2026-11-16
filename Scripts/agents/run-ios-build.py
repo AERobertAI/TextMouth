@@ -15,6 +15,12 @@ output folder, which the workflow uploads and the Mac downloads:
                     reads both files)
   ios.log           xcodebuild's whole output (both tries', when it ran twice)
 
+When the request asks for the app's size ("ios_size": true in .github/test-request.json, which `build-train.py request
+--ios-size` and `run_suite.py --remote` set), the script then also builds the Release app for a device (Scripts/ios/app-size.py
+says how) in the folder "device" inside the derived-data folder, which the workflow's cache keeps, and adds the measurement
+to ios-summary.txt as lines starting "Size: " (the headlines) and "Size detail: ". A device build that fails or outlives
+--size-limit-minutes adds one "Size: not measured" line and changes nothing else: the Simulator build's verdict stands.
+
 A build that fails to compile is a result, not a failure of this script: it exits 0 whenever it wrote a summary, so
 the run's tests and the iPhone build are judged apart, and the Mac shows the errors by file. It exits 2 only when it
 cannot start (a missing output folder it cannot make). Every wait has a limit (--limit-minutes): a build that outlives
@@ -30,6 +36,8 @@ Usage: python3 -I -B Scripts/agents/run-ios-build.py [--out DIR] [--derived-data
 Run it from the repository root. Python 3 standard library only.
 """
 import argparse
+import importlib.util
+import json
 import platform
 import re
 import subprocess
@@ -50,6 +58,12 @@ DEFAULT_LIMIT_MINUTES = 20
 # The least time, in minutes, that must be left of the limit for the retry to be worth starting: less would stop it before
 # it had compiled anything.
 MINIMUM_RETRY_MINUTES = 1.0
+# The longest the device build for the app's size may take, in minutes, when the request asks for the size. It comes after the
+# Simulator build in the same job, so it must fit what the job's 30 minutes leave.
+DEFAULT_SIZE_LIMIT_MINUTES = 12
+# The folder of the device build, inside the derived-data folder, and how much of its log goes into ios.log.
+DEVICE_FOLDER = "device"
+SIZE_LOG_LINES_KEPT = 200
 # The scheme and destination: the committed TextMouthiOS scheme, and any iOS Simulator (no device needs to exist).
 SCHEME = "TextMouthiOS"
 DESTINATION = "generic/platform=iOS Simulator"
@@ -175,12 +189,63 @@ def write_results(out, errors, log_text, status, timed_out, seconds, limit_minut
     return passed
 
 
+def load_app_size():
+    """Scripts/ios/app-size.py loaded as a module (its name has a hyphen, so it is loaded by path)."""
+    # By this file's own place, not ROOT (which a test moves): the tool is in the checkout this script is in.
+    spec = importlib.util.spec_from_file_location("app_size", Path(__file__).resolve().parents[1] / "ios" / "app-size.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def size_requested(request_path):
+    """Whether the request file at `request_path` says "ios_size": true. A missing or unreadable file, or any other
+    value, says no, so a run without a request builds only the Simulator app."""
+    try:
+        request = json.loads(Path(request_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(request, dict) and request.get("ios_size") is True
+
+
+def device_build_command(derived_data):
+    """The argv of the Release device build, as Scripts/ios/app-size.py makes it (one place says how)."""
+    return load_app_size().build_command(derived_data)
+
+
+def device_size_lines(derived_data, out, limit_minutes):
+    """Builds the Release app for a device into `derived_data`, measures it, and returns the lines for ios-summary.txt:
+    the measurement's, or one "Size: not measured" line saying why not. The build's log is kept in `out`/ios-size.log, and
+    its last lines are added to ios.log under a heading, since only the files the workflow names are uploaded."""
+    app_size = load_app_size()
+    log = out / "ios-size.log"
+    started = time.monotonic()
+    status, timed_out = run_build(device_build_command(derived_data), log, limit_minutes)
+    minutes = (time.monotonic() - started) / 60
+    log_text = log.read_text(encoding="utf-8", errors="replace")
+    tail = "\n".join(log_text.splitlines()[-SIZE_LOG_LINES_KEPT:])
+    with open(out / "ios.log", "a", encoding="utf-8") as joined:
+        joined.write(f"\n===== device build for the app's size (the last {SIZE_LOG_LINES_KEPT} lines) =====\n{tail}\n")
+    app = Path(derived_data) / "Build" / "Products" / app_size.PRODUCTS_FOLDER / app_size.APP_NAME
+    if timed_out:
+        return [f"{app_size.SUMMARY_PREFIX}not measured: the device build was stopped after {limit_minutes:g} minutes."]
+    if status != 0 or not app.is_dir():
+        errors = parse_errors(log_text)
+        return [f"{app_size.SUMMARY_PREFIX}not measured: the device build failed (xcodebuild status {status}, "
+                f"{len(errors)} errors{': ' + errors[0] if errors else ''})."]
+    result = app_size.measure_app(app, want_ipa=True, link_map=app_size.find_link_map(derived_data))
+    return [*app_size.summary_lines(result),
+            f"{app_size.SUMMARY_DETAIL_PREFIX}the device build and the measuring took {minutes:.1f} minutes."]
+
+
 def main(argv):
     """Builds, writes the results, prints the summary, and exits 0 whenever the results were written."""
     parser = argparse.ArgumentParser(prog="run-ios-build.py", description=__doc__.splitlines()[0])
     parser.add_argument("--out", default="build/remote-ios")
     parser.add_argument("--derived-data", default="build/remote-DerivedData-ios")
     parser.add_argument("--limit-minutes", type=float, default=DEFAULT_LIMIT_MINUTES)
+    parser.add_argument("--size-limit-minutes", type=float, default=DEFAULT_SIZE_LIMIT_MINUTES)
+    parser.add_argument("--request", default=".github/test-request.json")
     args = parser.parse_args(argv)
     out = (ROOT / args.out).resolve()
     try:
@@ -213,6 +278,11 @@ def main(argv):
             retried = retry_note(first_seconds)
     write_results(out, parse_errors(log_text), log_text, status, timed_out, time.monotonic() - started,
                   args.limit_minutes, retried)
+    if size_requested(ROOT / args.request):
+        # The request asked for the app's size: a second build, for a device. Its lines go at the end of the summary.
+        lines = device_size_lines((ROOT / args.derived_data).resolve() / DEVICE_FOLDER, out, args.size_limit_minutes)
+        with open(out / "ios-summary.txt", "a", encoding="utf-8") as summary:
+            summary.write("\n".join(lines) + "\n")
     print((out / "ios-summary.txt").read_text(), end="")
     return 0
 

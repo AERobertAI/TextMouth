@@ -321,6 +321,81 @@ class RetryTests(unittest.TestCase):
         with mock.patch.object(ios.runner_module_cache, "prepare", lambda derived: seen.append(Path(derived))):
             self.run_main(self.fake_build("** TEST BUILD SUCCEEDED **", ""))
         self.assertEqual(seen, [self.derived.resolve()])
+# A stand-in for the device build: it makes a small app in the products folder the real build writes, named by its
+# first argument (the derived-data folder), the way Xcode lays it out.
+FAKE_DEVICE_BUILD = """
+import os, sys
+app = os.path.join(sys.argv[1], 'Build', 'Products', 'Release-iphoneos', 'TextMouth.app')
+os.makedirs(app)
+open(os.path.join(app, 'TextMouth'), 'wb').write(b'\\xcf\\xfa\\xed\\xfe' + b'x' * 5000)
+open(os.path.join(app, 'Info.plist'), 'wb').write(b'plist' * 100)
+print('** BUILD SUCCEEDED **')
+"""
+
+
+class SizeTests(unittest.TestCase):
+    """main() when the request asks for the app's size: the Simulator build, then a device build that is measured."""
+
+    def run_main(self, request, device_script=FAKE_DEVICE_BUILD, *arguments):
+        """Runs main in a temporary repository whose request file holds `request` (None: no file), with both builds
+        replaced by stand-ins; returns (the summary text, the folder of output files, the device build's folder)."""
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        root = Path(folder.name)
+        (root / ".github").mkdir()
+        if request is not None:
+            (root / ".github" / "test-request.json").write_text(request)
+        simulator = [sys.executable, "-c", "print('** TEST BUILD SUCCEEDED **')"]
+
+        def device(derived):
+            """The fake device build's argv, handed the derived-data folder it is asked to build into."""
+            return [sys.executable, "-c", device_script, str(derived)]
+
+        with mock.patch.object(ios, "build_command", return_value=simulator), mock.patch.object(ios, "ROOT", root), \
+                mock.patch.object(ios, "device_build_command", device), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(ios.main(["--out", "out", *arguments]), 0)
+        out = root / "out"
+        return (out / "ios-summary.txt").read_text(), out, root / "build" / "remote-DerivedData-ios" / "device"
+
+    def test_a_request_for_the_size_adds_the_measurement_after_the_simulator_builds_lines(self):
+        summary, out, _ = self.run_main('{"ios_size": true}')
+        lines = summary.splitlines()
+        self.assertEqual(lines[0], "iOS build: PASSED")
+        sizes = [line for line in lines if line.startswith(("Size: ", "Size detail: "))]
+        self.assertTrue(sizes[0].startswith("Size: iPhone app: 0.0 MB (5,504 bytes) in 2 files, within the 30 MB limit."), sizes)
+        self.assertTrue(sizes[1].startswith("Size: iPhone app IPA: "), sizes)
+        self.assertTrue(sizes[2].startswith("Size: iPhone app App Store download, estimated"), sizes)
+        self.assertIn("device build for the app's size", (out / "ios.log").read_text())
+
+    def test_the_lines_are_the_ones_the_trains_and_the_joins_read_back(self):
+        summary, _, _ = self.run_main('{"ios_size": true}')
+        sys.path.insert(0, str(AGENTS))
+        import merge_ios_shards
+        # Three headlines, the two files, and the minutes the build took.
+        self.assertEqual(len(merge_ios_shards.size_lines(summary.splitlines())), 3 + 2 + 1)
+
+    def test_a_request_that_does_not_ask_builds_no_device_app(self):
+        for request in (None, "{}", '{"ios_size": false}', '{"ios_size": "yes"}', "not json", "[1]"):
+            summary, _, device = self.run_main(request)
+            self.assertNotIn("Size", summary, request)
+            self.assertFalse(device.exists(), f"a device build ran for {request!r}")
+
+    def test_a_device_build_that_fails_says_so_in_one_line_and_leaves_the_simulator_verdict_alone(self):
+        script = "import sys; print('/x/Foo.swift:3:4: error: no slice for arm64'); sys.exit(65)"
+        summary, out, _ = self.run_main('{"ios_size": true}', script)
+        self.assertTrue(summary.startswith("iOS build: PASSED"))
+        self.assertIn("Size: not measured: the device build failed (xcodebuild status 65, 1 errors: /x/Foo.swift:3:4: "
+                      "error: no slice for arm64).", summary)
+        self.assertIn("no slice for arm64", (out / "ios.log").read_text())
+
+    def test_a_device_build_that_outlives_its_limit_is_stopped_and_says_so(self):
+        summary, _, _ = self.run_main('{"ios_size": true}', "import time; time.sleep(60)", "--size-limit-minutes", "0.01")
+        self.assertIn("Size: not measured: the device build was stopped after 0.01 minutes.", summary)
+        self.assertTrue(summary.startswith("iOS build: PASSED"))
+
+    def test_a_device_build_that_made_no_app_is_not_measured(self):
+        summary, _, _ = self.run_main('{"ios_size": true}', "print('** BUILD SUCCEEDED **')")
+        self.assertIn("Size: not measured: the device build failed (xcodebuild status 0, 0 errors)", summary)
 
 
 if __name__ == "__main__":
