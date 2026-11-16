@@ -64,11 +64,14 @@ final class BundledLicenseTests: XCTestCase {
     }
 
     /// swift-markdown left the app on November 15, 2026 (Markdown is read from cmark's own tree), so its licence and
-    /// its NOTICE are no longer in the app: a notice for code the app does not hold would mislead.
+    /// its NOTICE are no longer in the app: a notice for code the app does not hold would mislead. An incremental
+    /// build that copied them before leaves their folder behind, empty (Xcode removes a dropped copy's files but
+    /// not its folder, as GitHub's cached build of November 15 showed), so the test asks for no file there.
     func testSwiftMarkdownNoticeIsGoneWithThePackage() throws {
         let resources = try XCTUnwrap(Bundle.main.resourceURL, "the app has no Resources folder")
         let folder = resources.appendingPathComponent("Licenses/swift-markdown")
-        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path), "Licenses/swift-markdown is still in the app")
+        let leftOver = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
+        XCTAssertEqual(leftOver, [], "Licenses/swift-markdown still holds \(leftOver)")
     }
 
     /// swift-cmark's COPYING, cmark's BSD licence, is in the app: cmark is the Markdown parser the app links.
