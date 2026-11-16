@@ -820,7 +820,10 @@ final class ReadingStatsService: ObservableObject {
     /// Writes `snapshot` to `url` and reports the outcome to the failure
     /// center (TODO S09): a file written settles any earlier failed save of
     /// the statistics, and a failure is reported with `retry`, so it is
-    /// never known only to the console. Must run on saveQueue.
+    /// never known only to the console. The retry writes from the main
+    /// thread, so it waits while an operation holds the storage work, such
+    /// as a data-directory move copying this file
+    /// (`PersistenceFailure.waitsForStorageWork`). Must run on saveQueue.
     nonisolated private static func write(
         _ snapshot: ReadingStats,
         to url: URL,
@@ -833,7 +836,13 @@ final class ReadingStatsService: ObservableObject {
             PersistenceFailureCenter.shared.recordSuccess(.statistics)
         } catch {
             print("Failed to save reading stats: \(error)")
-            PersistenceFailureCenter.shared.recordFailure(.statistics, path: url.path, error: error, retry: retry)
+            PersistenceFailureCenter.shared.recordFailure(
+                .statistics,
+                path: url.path,
+                error: error,
+                waitsForStorageWork: true,
+                retry: retry
+            )
         }
     }
 

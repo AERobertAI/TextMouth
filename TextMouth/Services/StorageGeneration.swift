@@ -173,6 +173,13 @@ final class StorageBoundary: @unchecked Sendable {
     /// What the operation holding new work back is doing; nil while no
     /// operation holds it.
     private var holdReason: StorageHoldReason?
+    /// Callers waiting for the operation holding new work back to release
+    /// it (`waitForRelease(after:)`), such as a retry kept until the hold
+    /// ends.
+    private var releaseWaiters: [CheckedContinuation<Void, Never>] = []
+    /// How many times an operation has let held work go, so a caller can
+    /// tell whether a release came since it looked (`releases`).
+    private var releaseCount = 0
     /// The key of this boundary's work depth in each thread's dictionary:
     /// how deep that thread is inside work it is performing here.
     private let workDepthKey = "com.textmouth.storageWorkDepth.\(UUID().uuidString)"
@@ -394,12 +401,48 @@ final class StorageBoundary: @unchecked Sendable {
         return holdReason
     }
 
-    /// Lets the held work go on, under the generation current now.
+    /// How many times an operation has let held work go so far: what a
+    /// caller passes to `waitForRelease(after:)`, read when it decides to
+    /// wait, so a release that comes before its wait begins is not missed.
+    var releases: Int {
+        condition.lock()
+        defer { condition.unlock() }
+        return releaseCount
+    }
+
+    /// Returns once an operation has let held work go after `seen` releases
+    /// (`releases`): at once when one has already, or when no operation
+    /// holds the work now. A hold taken since that release is not waited
+    /// for, so a caller that must find the work free, as a retry kept until
+    /// an operation ends does (`PersistenceFailureCenter`), asks `heldFor`
+    /// again on the main actor, where every hold is taken, and waits again
+    /// while one is.
+    func waitForRelease(after seen: Int) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            condition.lock()
+            guard releaseCount == seen, holdReason != nil else {
+                condition.unlock()
+                continuation.resume()
+                return
+            }
+            releaseWaiters.append(continuation)
+            condition.unlock()
+        }
+    }
+
+    /// Lets the held work go on, under the generation current now, counts
+    /// the release, and resumes every caller waiting for it, outside the lock.
     fileprivate func releaseWork() {
         condition.lock()
         holdReason = nil
+        releaseCount += 1
+        let waiters = releaseWaiters
+        releaseWaiters.removeAll()
         condition.broadcast()
         condition.unlock()
+        for waiter in waiters {
+            waiter.resume()
+        }
     }
 
     /// The first kind of work under way, in the order of

@@ -697,7 +697,9 @@ final class TextSubstitutionService: ObservableObject {
 
     /// Writes the rules to the substitutions file. A failure is reported to
     /// the failure center with a retry that saves the rules as they are
-    /// then, and the next save that succeeds settles it (TODO S09). While
+    /// then, and the next save that succeeds settles it (TODO S09); the
+    /// retry writes on the main thread, so it waits while an operation holds
+    /// the storage work, such as a move copying the file. While
     /// the file waits in the cloud, nothing is written over it
     /// (`saveWhileFileInCloud()`). While the standard rules stand in for a
     /// file that wasn't there, a file the sync service has brought down
@@ -725,7 +727,8 @@ final class TextSubstitutionService: ObservableObject {
             PersistenceFailureCenter.shared.recordFailure(
                 .substitutions,
                 path: TextMouthPaths.substitutionsFile.path,
-                error: error
+                error: error,
+                waitsForStorageWork: true
             ) { [weak self] _ in
                 self?.saveRules()
             }
@@ -741,10 +744,14 @@ final class TextSubstitutionService: ObservableObject {
         readFileWaitingInTheCloud()
         guard rulesAwaitFileInCloud else { return }
         let url = TextMouthPaths.substitutionsFile
+        // Its retry writes on the main thread once the file is here, so it
+        // waits while an operation holds the storage work, as a failed
+        // save's does.
         PersistenceFailureCenter.shared.recordFailure(
             .substitutions,
             path: url.path,
-            error: SavedFile.InCloudError(fileName: url.lastPathComponent)
+            error: SavedFile.InCloudError(fileName: url.lastPathComponent),
+            waitsForStorageWork: true
         ) { [weak self] _ in
             self?.saveRules()
         }

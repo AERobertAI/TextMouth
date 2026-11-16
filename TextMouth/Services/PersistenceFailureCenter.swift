@@ -164,6 +164,14 @@ struct PersistenceFailure: Identifiable, Sendable {
     let date: Date
     /// Runs it again, or nil when it cannot be run again with the same data.
     let retry: Retry?
+    /// Whether the retry must wait while an operation holds the storage work
+    /// (`StorageBoundary.heldFor`): a retry that writes into the data
+    /// directory, or moves a package, from the main thread, where the
+    /// boundary holds nothing back. Run during a data-directory move's copy
+    /// it would write the data directory being copied and call the change
+    /// saved, and during a folder edit it would race the edit's moves, so
+    /// the center keeps it until the operation ends.
+    let waitsForStorageWork: Bool
 
     /// The key a later outcome settles this failure by.
     var key: Key { subject.key }
@@ -257,6 +265,71 @@ extension PersistenceFailure.Subject {
                 fileName: URL(fileURLWithPath: path).lastPathComponent
             ).failureSentence(reason: reason)
         }
+    }
+}
+
+// MARK: - Retries Waiting for Storage Work
+
+/// Why a retry has not run yet: `operation` holds the storage work, and the
+/// failure center runs the retry once it ends (`PersistenceFailureCenter`,
+/// `PersistenceFailure.waitsForStorageWork`). Its description ends the
+/// banner's sentence and what VoiceOver hears, and says when the retry runs:
+/// "Settings could not be saved: TextMouth saves them once the move of its
+/// data directory ends."
+struct RetryWaitsForStorageWork: LocalizedError, Equatable {
+    /// The operation holding the storage work.
+    let operation: StorageHoldReason
+    /// What the retry does once the operation ends.
+    let action: StorageWorkWaitWording.Action
+
+    var errorDescription: String? {
+        StorageWorkWaitWording.sentence(action, waitingFor: operation)
+    }
+}
+
+/// The words for a retry that waits while an operation holds the storage
+/// work: what TextMouth does once the operation ends, as the reason that
+/// ends a failure's sentence, for every subsystem's retry, a feed record's
+/// included (`FeedStore.retryWrite`), with the verb of what the retry does.
+enum StorageWorkWaitWording {
+    /// What a waiting retry does once the operation ends.
+    enum Action: Equatable, Sendable {
+        /// Saves the changes that could not be saved.
+        case save
+        /// Moves a package back where the library expects it.
+        case moveBack
+
+        /// The action of a retry for `subject`.
+        init(for subject: PersistenceFailure.Subject) {
+            if case .strandedPackage = subject {
+                self = .moveBack
+            } else {
+                self = .save
+            }
+        }
+    }
+
+    /// The reason for a retry that does `action` and waits for `operation`:
+    /// "TextMouth saves them once it has finished moving books between
+    /// folders."
+    static func sentence(_ action: Action, waitingFor operation: StorageHoldReason) -> String {
+        let once: String
+        switch operation {
+        case .movingDataDirectory:
+            once = "once the move of its data directory ends"
+        case .rebuildingDirectory:
+            once = "once it has finished rebuilding its data directory"
+        case .movingBooksBetweenFolders:
+            once = "once it has finished moving books between folders"
+        case .switchingLibraries:
+            // A switch ends with TextMouth opening again on the other
+            // library, not with the retry: the words say what stays here.
+            return action == .save
+                ? "TextMouth is opening again on another library, so they stay unsaved in this one."
+                : "TextMouth is opening again on another library, so they stay where they are in this one."
+        }
+        let doing = action == .save ? "saves them" : "moves them back"
+        return "TextMouth \(doing) \(once)."
     }
 }
 
@@ -414,6 +487,13 @@ private final class PersistenceFailureLedger: @unchecked Sendable {
 /// subsystem, and VoiceOver announces a subsystem once when it starts to
 /// fail. Failures recur every half second while a disk stays unavailable,
 /// so nothing here is ever a modal alert.
+///
+/// Every Retry runs through here: the banner's, Storage settings' Retry
+/// Saving, and the quit prompt's. A retry that must not run while an
+/// operation holds the storage work (`PersistenceFailure.waitsForStorageWork`:
+/// a data-directory move, Rebuild Directory, a folder edit, a switch of
+/// libraries) is kept until that operation ends, saying so in its row, and
+/// then runs by itself, which VoiceOver hears.
 @MainActor
 final class PersistenceFailureCenter: ObservableObject {
     /// The center every service reports to.
@@ -436,9 +516,29 @@ final class PersistenceFailureCenter: ObservableObject {
     /// The outstanding failures, readable and writable from any thread.
     nonisolated private let ledger = PersistenceFailureLedger()
 
-    /// A center with no failures. The app uses `shared`; tests make their
-    /// own so they never disturb it.
-    nonisolated init() {}
+    /// The boundary whose holds a retry that waits for storage work waits
+    /// for (`PersistenceFailure.waitsForStorageWork`).
+    nonisolated private let boundary: StorageBoundary
+
+    /// The retries an operation holding the storage work made wait, by the
+    /// key of the failure each retries, with that failure's subsystem: each
+    /// runs, for the failure outstanding for its key then, once the
+    /// operation ends (`runRetriesKeptForStorageWork()`).
+    private var retriesKeptForStorageWork: [PersistenceFailure.Key: PersistenceSubsystem] = [:]
+
+    /// The wait for the operation holding the storage work to end, while any
+    /// retry is kept for it.
+    private var storageWorkWait: Task<Void, Never>?
+    /// The number of the latest such wait, so a wait that `reset()`
+    /// abandoned does nothing when it ends.
+    private var storageWorkWaitNumber = 0
+
+    /// A center with no failures, whose waiting retries wait for `boundary`'s
+    /// holds. The app uses `shared`; tests make their own so they never
+    /// disturb it.
+    nonisolated init(boundary: StorageBoundary = .shared) {
+        self.boundary = boundary
+    }
 
     // MARK: Reporting, from any thread
 
@@ -452,15 +552,26 @@ final class PersistenceFailureCenter: ObservableObject {
     ///   - subject: What the operation was for.
     ///   - path: The file or folder it was for.
     ///   - error: Why it failed.
+    ///   - waitsForStorageWork: Whether `retry` must wait while an operation
+    ///     holds the storage work (`PersistenceFailure.waitsForStorageWork`).
     ///   - retry: Runs it again with the same data; nil when it cannot.
     nonisolated func recordFailure(
         _ subject: PersistenceFailure.Subject,
         path: String,
         error: any Error,
+        waitsForStorageWork: Bool = false,
         retry: PersistenceFailure.Retry? = nil
     ) {
         let (failure, replaced) = ledger.record { id in
-            PersistenceFailure(id: id, subject: subject, path: path, error: error, date: Date(), retry: retry)
+            PersistenceFailure(
+                id: id,
+                subject: subject,
+                path: path,
+                error: error,
+                date: Date(),
+                retry: retry,
+                waitsForStorageWork: waitsForStorageWork
+            )
         }
         if !replaced {
             Self.log("PERSISTENCE_FAILURE: \(failure.sentence) Path: \(DiagnosticLog.loggablePath(path))")
@@ -484,7 +595,23 @@ final class PersistenceFailureCenter: ObservableObject {
             "PERSISTENCE_WITHDRAWN: \(withdrawn.subject.logName) no longer needs to be "
                 + withdrawn.subsystem.outcomeWord
         )
+        forgetKeptRetry(for: key)
         schedulePublish()
+    }
+
+    /// Forgets a retry kept for the failure of `key` until storage work is
+    /// free, once that failure is withdrawn: nothing is left to save, so
+    /// nothing is said of it when the operation ends. On the main actor at
+    /// once, or soon from any other thread.
+    nonisolated private func forgetKeptRetry(for key: PersistenceFailure.Key) {
+        let forget: @MainActor @Sendable () -> Void = { [self] in
+            retriesKeptForStorageWork[key] = nil
+        }
+        if Thread.isMainThread {
+            MainActor.assumeIsolated(forget)
+        } else {
+            DispatchQueue.main.async { MainActor.assumeIsolated(forget) }
+        }
     }
 
     // MARK: Questions, from any thread
@@ -529,7 +656,9 @@ final class PersistenceFailureCenter: ObservableObject {
     /// Runs again every outstanding failure of `subsystem` that can be, then
     /// tells VoiceOver how it went: the subsystem is saved, or the row's
     /// sentence, now naming the latest failure. Each retry finishes before
-    /// this returns, so the banner is up to date at once.
+    /// this returns, so the banner is up to date at once, except one kept
+    /// while an operation holds the storage work, whose row says when it
+    /// runs (`RetryWaitsForStorageWork`).
     func retry(_ subsystem: PersistenceSubsystem) {
         rerun(outstandingFailures().filter { $0.subsystem == subsystem })
         publish()
@@ -549,14 +678,21 @@ final class PersistenceFailureCenter: ObservableObject {
     }
 
     /// Tells VoiceOver how a retry of `subsystem` went once the writes it
-    /// had to wait for have ended, as `retry(_:)` tells of one that ran at
-    /// once: "Feed subscriptions saved.", or "Retry did not succeed." and the
-    /// row. A feed's record waits while an operation holds the storage work,
-    /// and its store calls this once the last such write has ended
-    /// (`FeedStore`), so the save it promised is never a silent one.
+    /// had to wait for have ended (`announceOutcomeOfWaitingRetries(of:)`):
+    /// a feed store whose boundary is not the center's calls this once the
+    /// last such write has ended (`FeedStore`).
     func announceOutcomeOfWaitingRetry(of subsystem: PersistenceSubsystem) {
+        announceOutcomeOfWaitingRetries(of: [subsystem])
+    }
+
+    /// Tells VoiceOver how the retries of `subsystems` went once the writes
+    /// they had to wait for have ended, as `retry(_:)` tells of one that ran
+    /// at once, in one announcement: "Feed subscriptions saved. Settings
+    /// saved.", or "Retry did not succeed." and the rows still failing. So
+    /// the save a waiting retry promised is never a silent one.
+    func announceOutcomeOfWaitingRetries(of subsystems: Set<PersistenceSubsystem>) {
         publish()
-        announceRetryOutcome(for: [subsystem])
+        announceRetryOutcome(for: subsystems)
     }
 
     /// Hides `subsystem`'s banner row until the subsystem has no failure
@@ -588,13 +724,121 @@ final class PersistenceFailureCenter: ObservableObject {
         }
     }
 
-    /// Forgets every failure and dismissal at once, announcing nothing.
-    /// Tests that report through `shared` start and end with this.
+    /// Forgets every failure, dismissal, and kept retry at once, announcing
+    /// nothing. Tests that report through `shared` start and end with this.
     func reset() {
         ledger.removeAll()
         failures = []
         dismissedSubsystems = []
         subsystemsFailingAtLastPublish = []
+        retriesKeptForStorageWork = [:]
+        storageWorkWait = nil
+        storageWorkWaitNumber += 1
+    }
+
+    // MARK: Retries Kept for Storage Work
+
+    /// Runs each retry an operation holding the storage work made wait, once
+    /// that operation has ended, for the failure outstanding for its key
+    /// then, and tells VoiceOver how they went, in one announcement:
+    /// "Settings saved.", or "Retry did not succeed." and the rows still
+    /// failing. A retry whose failure a later save settled meanwhile has
+    /// nothing left to run, and is told as saved. Does nothing while an
+    /// operation holds the work, or when no retry is kept. The wait for the
+    /// operation's end calls this; so does the flush before quitting
+    /// (`UnsavedChangesTerminationGuard.flushPendingWrites()`), in case the
+    /// quit comes between the end and that wait's turn. Without
+    /// `announcing`, as for an operation's own outcome, which is said
+    /// instead (`LibraryViewModel.outcomeConfirmingSaves`), only the banner
+    /// is brought up to date.
+    func runRetriesKeptForStorageWork(announcing: Bool = true) {
+        guard boundary.heldFor == nil, !retriesKeptForStorageWork.isEmpty else { return }
+        let kept = retriesKeptForStorageWork
+        retriesKeptForStorageWork = [:]
+        rerun(outstandingFailures().filter { kept[$0.key] != nil })
+        if announcing {
+            announceOutcomeOfWaitingRetries(of: Set(kept.values))
+        } else {
+            publish()
+        }
+    }
+
+    /// Returns once the wait for the operation holding the storage work has
+    /// seen it end: the kept retries have run, or, when another operation
+    /// took the work before their turn, they are kept for that one, which
+    /// this does not wait for. Returns at once when no retry is kept, as
+    /// after `reset()`. Tests await this after letting a hold go, never
+    /// while it still holds, or it would wait for good.
+    func waitForRetriesKeptForStorageWork() async {
+        while let wait = storageWorkWait {
+            await wait.value
+            // Kept again for an operation that still holds the work: that
+            // one ends only when the test lets it go.
+            if boundary.heldFor != nil {
+                return
+            }
+        }
+    }
+
+    /// Keeps `retry` of `failure` until `operation`, which holds the storage
+    /// work, ends: the failure is reported again with that operation as its
+    /// reason, saying when the retry runs (`RetryWaitsForStorageWork`), and
+    /// the retry runs once the operation ends
+    /// (`runRetriesKeptForStorageWork()`). A retry kept already for the
+    /// failure's key is not kept twice.
+    private func keep(_ failure: PersistenceFailure, _ retry: @escaping PersistenceFailure.Retry, until operation: StorageHoldReason) {
+        recordFailure(
+            failure.subject,
+            path: failure.path,
+            error: RetryWaitsForStorageWork(operation: operation, action: .init(for: failure.subject)),
+            waitsForStorageWork: true,
+            retry: retry
+        )
+        if retriesKeptForStorageWork.updateValue(failure.subsystem, forKey: failure.key) == nil {
+            Self.log("PERSISTENCE_RETRY_WAITS: \(failure.subject.logName) waits for \(operation) to end")
+        }
+        waitForStorageWorkToBeFree()
+    }
+
+    /// Starts waiting for the operation holding the storage work to end,
+    /// unless a wait is under way already. The releases are counted now,
+    /// not in the wait's first turn: a release that comes before that turn,
+    /// with another operation holding the work by then, is seen, and the
+    /// retries are kept for that operation with its words.
+    private func waitForStorageWorkToBeFree() {
+        guard storageWorkWait == nil else { return }
+        storageWorkWaitNumber += 1
+        let number = storageWorkWaitNumber
+        let seen = boundary.releases
+        storageWorkWait = Task { [weak self, boundary] in
+            await boundary.waitForRelease(after: seen)
+            self?.storageWorkWasReleased(wait: number)
+        }
+    }
+
+    /// The wait `number` saw the storage work released. Unless `reset()`
+    /// abandoned that wait, the kept retries run now, on the main actor,
+    /// where every hold is taken, so none can begin while they run; or, when
+    /// another operation took the work before this turn, they are kept for
+    /// that one, and each still waiting says so.
+    private func storageWorkWasReleased(wait number: Int) {
+        guard number == storageWorkWaitNumber else { return }
+        storageWorkWait = nil
+        guard !retriesKeptForStorageWork.isEmpty else { return }
+        guard let operation = boundary.heldFor else {
+            runRetriesKeptForStorageWork()
+            return
+        }
+        // A failure whose later save failed for a reason of its own keeps
+        // that reason: its retry still runs once this operation ends.
+        for failure in outstandingFailures()
+        where retriesKeptForStorageWork[failure.key] != nil && failure.error is RetryWaitsForStorageWork {
+            if let retry = failure.retry {
+                keep(failure, retry, until: operation)
+            }
+        }
+        publish()
+        waitForStorageWorkToBeFree()
     }
 
     // MARK: Private
@@ -612,10 +856,18 @@ final class PersistenceFailureCenter: ObservableObject {
         VoiceOverAnnouncer.announce(message.joined(separator: " "))
     }
 
-    /// Runs the retry of each of `failures` that has one, oldest first.
+    /// Runs the retry of each of `failures` that has one, oldest first. A
+    /// retry that must wait for the storage work
+    /// (`PersistenceFailure.waitsForStorageWork`) is kept instead while an
+    /// operation holds it, and runs once that operation ends (`keep`).
     private func rerun(_ failures: [PersistenceFailure]) {
         for failure in failures {
-            failure.retry?(failure.id)
+            guard let retry = failure.retry else { continue }
+            if failure.waitsForStorageWork, let operation = boundary.heldFor {
+                keep(failure, retry, until: operation)
+            } else {
+                retry(failure.id)
+            }
         }
     }
 

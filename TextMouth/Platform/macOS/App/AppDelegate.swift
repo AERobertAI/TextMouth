@@ -152,11 +152,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var requestTermination: @MainActor @Sendable () -> Void = { QuitRequest.ask() }
 
     /// The work a quit must not cut off, as the app has it: feed downloads,
-    /// books read again in another encoding, and speech exports under way.
-    /// Tests replace it with work of their own.
+    /// then the feed records still being written, which stopping the
+    /// downloads can add to, books read again in another encoding, and
+    /// speech exports under way. Tests replace it with work of their own.
     var heldWork: @MainActor () -> [QuitHold.Work] = {
         [
             FeedQuitHold.work(FeedCenter.shared.downloads),
+            FeedCenter.shared.store.quitWork(),
             TextRereads.shared.quitWork(),
             SpeechExportsUnderWay.shared.quitWork(),
         ]
@@ -198,12 +200,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    goes on past the editors (`AudioEditorWindowController.holdQuit`,
     ///    FR04).
     /// 1. Here, everything pending is flushed as the termination path
-    ///    flushes it, but nothing is ended: the library index and every
-    ///    queued book record (`LibraryPersistenceService.flushPendingSave`),
-    ///    then the statistics, whose open listening session is credited so
-    ///    far and left open (`ReadingStatsService.flushPendingSaves`).
-    ///    Settings and substitution rules are written as they change. Each
-    ///    write's failure reaches the failure center before its flush ends.
+    ///    flushes it, but nothing is ended: a Retry kept for an operation
+    ///    holding the storage work that has just ended runs
+    ///    (`PersistenceFailureCenter.runRetriesKeptForStorageWork`), then
+    ///    the library index and every queued book record
+    ///    (`LibraryPersistenceService.flushPendingSave`), then the
+    ///    statistics, whose open listening session is credited so far and
+    ///    left open (`ReadingStatsService.flushPendingSaves`). Settings and
+    ///    substitution rules are written as they change. Each write's
+    ///    failure reaches the failure center before its flush ends.
     /// 2. With nothing unsaved, TextMouth quits: `applicationWillTerminate`
     ///    then shuts down as it always has, in its order: a transcription
     ///    under way is cancelled (FR05), menu observation
@@ -217,15 +222,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    that second request quits at step 2, whatever is unsaved. Cancel
     ///    keeps TextMouth open.
     /// 4. A quit that goes ahead at step 2 while feed downloads wait or run,
-    ///    while a book's text is read again in another encoding, or while a
-    ///    speech export is under way, waits for that work (`QuitHold`). A
+    ///    while feed records are still being written, while a book's text is
+    ///    read again in another encoding, or while a speech export is under
+    ///    way, waits for that work (`QuitHold`). A
     ///    quit the person asks for is cancelled, TextMouth says in a panel
     ///    and through VoiceOver what it is finishing and that it will quit
     ///    afterwards (`QuitFinisher`, `QuitNotice`), and asks to quit again
     ///    once the work has ended, or has had its longest wait. Each
     ///    download keeps its place for the next launch, the one under way its
     ///    resume data (`FeedQuitHold`, FR03), after three seconds at most;
-    ///    then each re-read finishes, its text and its record both written
+    ///    then every feed record change on its write queue is written, one
+    ///    waiting behind a folder edit's or Rebuild Directory's hold
+    ///    included, after ten seconds at most, and a change still waiting
+    ///    then is reported unsaved, so the request asked again stops at step
+    ///    3 (`FeedStore.quitWork()`); then each re-read finishes, its text
+    ///    and its record both written
     ///    (`TextRereads`, encodingchoice), after ten seconds at most; then
     ///    each speech export stops with its chapters kept
     ///    (`SpeechExportsUnderWay`); and then TextMouth quits. It is
@@ -269,14 +280,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return .terminateCancel
         }
         // Step 4, for a quit that is sure to go ahead.
-        return terminationGuard.reply { [self] in
-            quitFinisher.reply(
+        var wentAhead = false
+        terminationGuard.promptCancelled = { [weak self] in self?.quitFinisher.forgetFinished() }
+        let reply = terminationGuard.reply { [self] in
+            wentAhead = true
+            return quitFinisher.reply(
                 forQuitWith: heldWork(),
                 waitedFor: waitedFor,
                 endsTheSession: endsTheSession,
                 replyLater: { sender.reply(toApplicationShouldTerminate: $0) }
             )
         }
+        // The guard asks about unsaved changes first: the work this quit
+        // waited for goes with the request its Retry or Quit Anyway makes,
+        // which then does not wait for it again; its Cancel forgets it.
+        if !wentAhead {
+            quitFinisher.keepFinished(waitedFor)
+        }
+        return reply
     }
 
     /// Step 0, the questions asked before anything is flushed or waited for:

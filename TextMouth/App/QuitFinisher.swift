@@ -149,6 +149,19 @@ final class QuitFinisher {
         return waitedFor
     }
 
+    /// Keeps `kinds`, taken by a request that the unsaved-changes prompt
+    /// stopped before its quit went ahead, for the request the prompt's
+    /// Retry or Quit Anyway makes, so that one does not wait for them again.
+    func keepFinished(_ kinds: Set<String>) {
+        waitedFor.formUnion(kinds)
+    }
+
+    /// Forgets the kinds of work waited for, when the person cancels the
+    /// quit at the unsaved-changes prompt: a later quit waits for them anew.
+    func forgetFinished() {
+        waitedFor = []
+    }
+
 #if os(macOS)
     /// The answer for a quit that is sure to go ahead, with nothing unsaved
     /// or asked first. Work of a kind in `waitedFor` (`takeFinished()`) was

@@ -231,27 +231,4 @@ enum FeedWording {
     static func insecureMessage(title: String) -> String {
         "Subscribed to \(title). This feed uses plain http, so what it sends can be read or changed on the way; TextMouth still loads it."
     }
-
-    // MARK: Saving a Feed's Record
-
-    /// Why a feed's changes are not saved yet when Retry is pressed while
-    /// `operation` holds the storage work, and when they will be: the reason
-    /// that ends the banner's sentence and what VoiceOver hears, "Changes to
-    /// the feed “Planet Money” could not be saved: TextMouth saves them once
-    /// it has finished moving books between folders." (`FeedStore`). A
-    /// library switch is refused while changes are unsaved, and TextMouth
-    /// opens again on the other library before the hold ends, so the words
-    /// for it say the changes stay unsaved here.
-    static func recordWaits(for operation: StorageHoldReason) -> String {
-        switch operation {
-        case .movingDataDirectory:
-            return "TextMouth saves them once the move of its data directory ends."
-        case .rebuildingDirectory:
-            return "TextMouth saves them once it has finished rebuilding its data directory."
-        case .movingBooksBetweenFolders:
-            return "TextMouth saves them once it has finished moving books between folders."
-        case .switchingLibraries:
-            return "TextMouth is opening again on another library, so they stay unsaved in this one."
-        }
-    }
 }
