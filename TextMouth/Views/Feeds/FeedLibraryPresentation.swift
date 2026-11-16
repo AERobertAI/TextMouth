@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 // MARK: - What the Library Shows of Feeds (FR03)
@@ -312,6 +313,12 @@ struct FeedItemRowContent: Equatable, Identifiable {
     /// them, as the book rows beside it do; nil shows the title as written.
     /// Commands and announcements name the item by `title`.
     let shownTitle: String?
+    /// The row's tag in the Library list's selection, whose tags are UUIDs
+    /// (`selectionID(feedID:itemID:)`). With it the row holds the selection
+    /// as a book's row does, so Return and Speak Info act on this item.
+    /// Without a tag, the selection stayed on the nearest book's row, and
+    /// Return opened that book instead (returnrow).
+    let selectionID: UUID
 
     /// The title the row shows and speaks.
     var rowTitle: String {
@@ -321,6 +328,27 @@ struct FeedItemRowContent: Equatable, Identifiable {
     /// The row as VoiceOver speaks it.
     var label: String {
         FeedWording.itemRowLabel(self)
+    }
+
+    /// The selection tag of the row of the item `itemID` of the feed
+    /// `feedID`: the first 16 bytes of the SHA-256 digest of the two
+    /// identities, marked as a version 8 UUID (RFC 9562) with the standard
+    /// variant. It is the same at every drawing and every launch. It never
+    /// equals the ID of a book, folder, or feed, which are random version 4
+    /// UUIDs.
+    nonisolated static func selectionID(feedID: UUID, itemID: FeedItem.ID) -> UUID {
+        // A UUID string is always 36 characters long, so no two pairs of
+        // identities are written the same way.
+        let name = "TextMouth feed item row \(feedID.uuidString) \(itemID)"
+        var bytes = Array(SHA256.hash(data: Data(name.utf8)).prefix(16))
+        // The version in the high half of byte 6, and the variant (binary
+        // 10) in the top two bits of byte 8.
+        bytes[6] = (bytes[6] & 0x0F) | 0x80
+        bytes[8] = (bytes[8] & 0x3F) | 0x80
+        return UUID(uuid: (
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+        ))
     }
 
     /// The row's content for `item` of `feed` in `center`, an article's
@@ -333,6 +361,7 @@ struct FeedItemRowContent: Equatable, Identifiable {
         let isPlayed = item.playedDate != nil
         feedID = feed.id
         id = item.id
+        selectionID = Self.selectionID(feedID: feed.id, itemID: item.id)
         title = item.title
         shownTitle = articles.sortsWithoutArticles ? articles.shownTitle(item.title, language: nil) : nil
         self.state = state

@@ -1396,8 +1396,9 @@ struct LibraryView: View {
     /// (`LibraryTitleTyping`): the Folders section's folders by their names
     /// as written; the Feeds section's feeds, in the order it shows them;
     /// and the books, as a feed's folder lists them where the list shows
-    /// one (its items' books, then its other books). Rows the list's
-    /// selection cannot hold, a feed's items not downloaded, are left out.
+    /// one (its items' books, then its other books). A feed's items not
+    /// downloaded are left out, as they were before their rows could hold
+    /// the selection (returnrow): letters reach folders, feeds, and books.
     /// - Parameters:
     ///   - folders: The folders the Folders section shows, or none.
     ///   - books: The books the list shows, as the search narrows them, or none.

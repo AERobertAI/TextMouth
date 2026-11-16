@@ -232,12 +232,15 @@ struct FeedFolderSections<BookRowView: View>: View {
 
     /// An item's row, whose default action opens it, downloading it first,
     /// with its commands in its context menu and as its VoiceOver actions.
+    /// Its tag (`FeedItemRowContent.selectionID`) lets it hold the list's
+    /// selection, so Return opens this item and not the nearest book
+    /// (returnrow).
     private func itemRow(_ content: FeedItemRowContent) -> some View {
         let actions = FeedItemAction.actions(for: content)
         return FeedItemRow(content: content)
             .equatable()
             .accessibilityAction(.default) {
-                if let open = actions.first(where: { $0.command == .open }) {
+                if let open = FeedItemAction.open(for: content) {
                     perform(open)
                 }
             }
@@ -256,6 +259,7 @@ struct FeedFolderSections<BookRowView: View>: View {
                     }
                 }
             }
+            .tag(content.selectionID)
     }
 }
 
