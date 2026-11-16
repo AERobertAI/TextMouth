@@ -165,7 +165,7 @@ extension AudioTestFixtures {
             if isFloat {
                 samples.append(littleEndianBytes(Double(sample).bitPattern))
             } else {
-                samples.append(littleEndianBytes(Int64(Double(sample) * 9_223_372_036_854_775_807)))
+                samples.append(littleEndianBytes(Int64(Double(sample) * 9_223_372_036_854_775_808.0)))
             }
         }
         // The "desc" chunk: the stream description, big-endian as every
