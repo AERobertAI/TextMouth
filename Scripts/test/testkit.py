@@ -18,9 +18,15 @@ import difflib
 import os
 import re
 import shlex
+import sys
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
+
+# The reader of a retried test's tries lives beside the agents' scripts; this folder's scripts run
+# with `python3 -I`, which leaves their own folder out of the path, so it is added by location.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agents"))
+import test_tries  # noqa: E402
 
 # The folder of hosted test sources, the project and scheme, and the wrapper
 # that holds one of the machine's three build slots (all relative to the root).
@@ -304,6 +310,7 @@ class Summary:
     errors: Tuple[Tuple[str, str, str], ...] = ()   # (file, line, message); file may be ""
     warnings: Tuple[Tuple[str, str, str], ...] = ()
     crash: Optional[str] = None
+    retried: Tuple[str, ...] = ()              # "RETRIED Class.test passed on try 2 of 3", one per test
     succeeded: bool = False                    # "** TEST SUCCEEDED **" (or "TEST EXECUTE SUCCEEDED") seen
     tail: Tuple[str, ...] = ()                 # last log lines, shown when nothing else explains a failure
     log_path: Optional[str] = None             # set by the caller
@@ -342,6 +349,14 @@ def _in_repository(path: str, root: Path) -> bool:
     """True for a source file of this repository (not a package or DerivedData)."""
     roots = {str(root), os.path.realpath(root)}
     return any(path.startswith(r + "/") for r in roots) and not any(p in path for p in _FOREIGN_PATH)
+
+
+def _executed_without_tries(line: str, tests: int, skipped: int, failures: int) -> str:
+    """`line` (an Executed line) with the counts of the tests' final outcomes in place of xcodebuild's, which
+    count every try of a retried test; its times are kept."""
+    seconds = re.search(r" in [\d.]+ \([\d.]+\) seconds", line)
+    return (f"Executed {tests} tests, with {skipped} tests skipped and {failures} failures (0 unexpected)"
+            + (seconds.group(0) if seconds else ""))
 
 
 def summarize_log(text: str, root: Path) -> Summary:
@@ -411,9 +426,19 @@ def summarize_log(text: str, root: Path) -> Summary:
                 and not line.startswith(("Test Case ", "Test Suite ", _WRAPPER_PREFIX)) \
                 and ".swift:" not in line:
             crash = line.strip()[:240]
+    retried: Tuple[str, ...] = ()
+    if test_tries.has_retries(text):
+        # A run that retries: its Executed line counts every try, so the tests' last results are read instead.
+        found = test_tries.outcomes(text)
+        retried = tuple(test_tries.retried_line(o) for o in test_tries.retried(found))
+        failed_order = [name for name, o in found.items() if o.result == "failed"]
+        if found and executed_line is not None:
+            executed, failures = len(found), len(failed_order)
+            skipped = test_tries.counts(found)[1]
+            executed_line = _executed_without_tries(executed_line, executed, skipped, failures)
     failed_tests = tuple((key,) + test_errors.get(key, ("", "", "")) for key in failed_order)
     return Summary(
-        executed_line=executed_line, executed=executed, failures=failures,
+        executed_line=executed_line, executed=executed, failures=failures, retried=retried,
         failed_tests=failed_tests, errors=tuple(errors), warnings=tuple(warnings),
         crash=crash, succeeded=succeeded,
         tail=tuple(l.strip() for l in lines if l.strip())[-3:])
@@ -432,6 +457,8 @@ def format_summary(summary: Summary) -> List[str]:
     for test, file, number, message in summary.failed_tests:
         where = f" at {file}:{number}: {message}" if file else ""
         out.append(f"FAILED {test}{where}")
+    # A test that passed on a later try stays visible, though it does not fail the run.
+    out.extend(summary.retried)
     for file, number, message in summary.errors[:MAX_ERRORS_SHOWN]:
         out.append(f"ERROR {file}:{number}: {message}" if file else f"ERROR {message}")
     if len(summary.errors) > MAX_ERRORS_SHOWN:

@@ -35,11 +35,12 @@ EXECUTED = re.compile(r"Executed (\d+) tests?, with (?:(\d+) tests? skipped and 
 
 
 def is_kept(line):
-    """Whether a summary line is a failed test (which names where, with " at "), a compile error, or a
-    crash. A closing "FAILED in 41 seconds" or "FAILED: reason" line is not: the merge writes its own."""
+    """Whether a summary line is a failed test (which names where, with " at "), a compile error, a
+    crash, or a test that passed on a later try (RETRIED, kept so that it stays visible). A closing
+    "FAILED in 41 seconds" or "FAILED: reason" line is not: the merge writes its own."""
     if line.startswith("FAILED "):
         return " at " in line
-    return line.startswith(("ERROR ", "CRASH"))
+    return line.startswith(("ERROR ", "CRASH", "RETRIED "))
 
 
 # The count of entries a shard's summary.md says the runner left out of it.
@@ -197,10 +198,13 @@ def merge(shards_dir, out_dir, expected, ios_dir=None, ios_expected=1):
                        if line.strip().startswith("FAILED:")]
             problems.append(f"shard {number} of {expected} did not pass" + (f" ({'; '.join(reasons)})" if reasons else ""))
         logs.append(f"===== shard {number} of {expected} =====\n{shard['log']}\n")
+    # Tests that passed on a later try are listed apart: they are no failure, but must stay visible.
+    retried = [line for line in lines if line.startswith("RETRIED ")]
+    lines = [line for line in lines if not line.startswith("RETRIED ")]
     passed = not problems and failures == 0
     executed = (f"Executed {tests} tests, with {skipped} tests skipped and {failures} failures "
                 f"(0 unexpected) in {seconds:.3f} ({seconds:.3f}) seconds")
-    summary = [f"{executed}", f"shards: {expected}", *lines]
+    summary = [f"{executed}", f"shards: {expected}", *lines, *retried]
     summary += [f"FAILED: {problem}" for problem in problems]
     summary += ["PASSED" if passed else "FAILED"]
     (out_dir / "run-summary.txt").write_text("\n".join(summary) + "\n", encoding="utf-8")
@@ -224,6 +228,7 @@ def merge(shards_dir, out_dir, expected, ios_dir=None, ios_expected=1):
         "\n".join(["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",
                    f"- Shards: {expected}", f"- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)",
                    *ios_line, f"- Failures and errors: {len(lines)}", *[f"  - {l}" for l in lines[:40]],
+                   f"- Passed on a later try: {len(retried)}", *[f"  - {l}" for l in retried[:40]],
                    *[f"- Problem: {p}" for p in problems]]) + "\n", encoding="utf-8")
     return passed
 

@@ -41,6 +41,7 @@ import heavy_lock  # noqa: E402
 import github_run  # noqa: E402
 import shard  # noqa: E402
 import test_command  # noqa: E402
+import test_tries  # noqa: E402
 
 # The train's own reading of a log, so the two can't disagree.
 _train = test_command.load_build_train()
@@ -111,6 +112,7 @@ def judge_log(log):
         tail = handle.read().decode("utf-8", "replace")
     executed = [line.strip() for line in tail.splitlines() if "Executed " in line]
     print(executed[-1] if executed else "no tests ran", flush=True)
+    report_retried(log)
     # xcodebuild's own verdict is the last word when it printed one; the log's
     # reading (no host restarted, the last suite passed) must also hold, and
     # stands alone only when xcodebuild had to be stopped before its verdict.
@@ -118,6 +120,17 @@ def judge_log(log):
         print("run_suite: xcodebuild says TEST FAILED", flush=True)
         return 1
     return 0 if _train.tests_all_passed(log) else 1
+
+
+def report_retried(log):
+    """Prints a line for each test of a retrying run that passed on a later try, so that a test which fails
+    now and then stays visible. The Executed line above counts each try as a test (xcodebuild's own count,
+    see test_tries.py); these lines say which tests those extra tries were."""
+    text = Path(log).read_text(encoding="utf-8", errors="replace")
+    if not test_tries.has_retries(text):
+        return
+    for outcome in test_tries.retried(test_tries.outcomes(text)):
+        print(f"run_suite: {test_tries.retried_line(outcome)}", flush=True)
 
 
 def take_train_lock():
