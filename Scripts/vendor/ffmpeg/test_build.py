@@ -114,6 +114,14 @@ class PinAndConfigureTests(unittest.TestCase):
         self.assertEqual(mac, build.build_key("macosx", "clang 1"))
         self.assertNotEqual(mac, build.build_key("iphoneos", "clang 1"))
         self.assertNotEqual(mac, build.build_key("macosx", "clang 2"))
+        # A change of the configure line (--enable-small, or one more decoder), of the pin, or
+        # of the recipe gives another key, so the build is made again instead of skipped.
+        changes = {"ENABLE_SMALL": not build.ENABLE_SMALL, "DECODERS": build.DECODERS + ["tmff_test_decoder"],
+                   "FFMPEG_SHA256": "0" * 64, "RECIPE": build.RECIPE + 1}
+        for name, value in changes.items():
+            with mock.patch.object(build, name, value):
+                self.assertNotEqual(mac, build.build_key("macosx", "clang 1"), name)
+        self.assertEqual(mac, build.build_key("macosx", "clang 1"))
 
     def test_the_wrapper_maps_the_work_folder_away(self):
         text = build.compiler_wrapper_text()
