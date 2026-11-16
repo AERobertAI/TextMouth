@@ -269,12 +269,15 @@ def find_link_map(derived_data):
 
 def build_command(derived_data):
     """The argv of the device build: Release of the target TextMouthiOS for the iphoneos SDK, arm64, unsigned, small code
-    (-Osize, as the Makefile gives the Mac's Release build), no coverage, and a link map."""
+    (-Osize, as the Makefile gives the Mac's Release build), no coverage, a link map, and the strip an archive does
+    (DEPLOYMENT_POSTPROCESSING=YES: a plain build leaves the symbol table in the executable, 14.1 MB of the iPhone app's
+    27.5 MB on November 16, 2026, and the App Store's app is archived; the target's own STRIP_INSTALLED_PRODUCT=YES and
+    STRIP_STYLE=all then apply, and the Mac app's Release settings in project.yml say the same)."""
     return ["xcodebuild", "build", "-project", "TextMouth.xcodeproj", "-target", TARGET, "-configuration", "Release",
             "-sdk", SDK, "-clonedSourcePackagesDirPath", f"{derived_data}/SourcePackages",
             f"SYMROOT={derived_data}/Build/Products", f"OBJROOT={derived_data}/Build/Intermediates.noindex", "ARCHS=arm64",
             "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO", "CLANG_COVERAGE_MAPPING=NO",
-            "SWIFT_OPTIMIZATION_LEVEL=-Osize", "LD_GENERATE_MAP_FILE=YES"]
+            "SWIFT_OPTIMIZATION_LEVEL=-Osize", "LD_GENERATE_MAP_FILE=YES", "DEPLOYMENT_POSTPROCESSING=YES"]
 
 
 def run_build(derived_data, limit_minutes):
@@ -454,7 +457,7 @@ def selftest():
     check(describe(18_453_210) == "18.5 MB (18,453,210 bytes)", f"describe gave {describe(18_453_210)}")
     # The build's argv: the device SDK, unsigned, a link map, the scheme.
     argv = build_command("/x/dd")
-    check("SYMROOT=/x/dd/Build/Products" in argv and "OBJROOT=/x/dd/Build/Intermediates.noindex" in argv
+    check("DEPLOYMENT_POSTPROCESSING=YES" in argv and "SYMROOT=/x/dd/Build/Products" in argv and "OBJROOT=/x/dd/Build/Intermediates.noindex" in argv
           and "-derivedDataPath" not in argv and "iphoneos" in argv and "TextMouthiOS" in argv and "-scheme" not in argv and "ARCHS=arm64" in argv and "-destination" not in argv and "CODE_SIGNING_ALLOWED=NO" in argv and "LD_GENERATE_MAP_FILE=YES" in argv,
           f"build command was {argv}")
     for failure in failures:
