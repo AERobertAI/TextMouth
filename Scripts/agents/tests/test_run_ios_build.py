@@ -393,6 +393,22 @@ class SizeTests(unittest.TestCase):
         self.assertIn("Size: not measured: the device build was stopped after 0.01 minutes.", summary)
         self.assertTrue(summary.startswith("iOS build: PASSED"))
 
+    def test_a_device_build_that_fails_with_the_stale_module_error_runs_once_more_and_is_measured(self):
+        # The first try prints the runner's stale-module error and stops; the second finds the flag file and builds.
+        script = ("import os, sys\n"
+                  "flag = sys.argv[1] + '-tried'\n"
+                  "if not os.path.exists(flag):\n"
+                  "    os.makedirs(os.path.dirname(flag), exist_ok=True)\n"
+                  "    open(flag, 'w').close()\n"
+                  f"    print({ios.runner_module_cache.STALE_MARKER!r})\n"
+                  "    sys.exit(65)\n") + FAKE_DEVICE_BUILD
+        seen = []
+        with mock.patch.object(ios.runner_module_cache, "prepare", lambda derived: seen.append(Path(derived).name)):
+            summary, _, _ = self.run_main('{"ios_size": true}', script)
+        self.assertEqual(seen[-1], "device", "the stamp is checked in the device build's own folder, before it")
+        self.assertIn("Size: iPhone app: 0.0 MB (5,504 bytes)", summary)
+        self.assertNotIn("not measured", summary)
+
     def test_a_device_build_that_made_no_app_is_not_measured(self):
         summary, _, _ = self.run_main('{"ios_size": true}', "print('** BUILD SUCCEEDED **')")
         self.assertIn("Size: not measured: the device build failed (xcodebuild status 0, 0 errors)", summary)

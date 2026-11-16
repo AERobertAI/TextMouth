@@ -221,10 +221,18 @@ def device_size_lines(derived_data, out, limit_minutes):
     its last lines are added to ios.log under a heading, since only the files the workflow names are uploaded."""
     app_size = load_app_size()
     log = out / "ios-size.log"
+    # As for the Simulator build: a module cache made on another runner image is emptied first, and a build that still
+    # fails with the stale-module error runs once more with the caches emptied, in what is left of the limit.
+    runner_module_cache.prepare(derived_data)
     started = time.monotonic()
     status, timed_out = run_build(device_build_command(derived_data), log, limit_minutes)
-    minutes = (time.monotonic() - started) / 60
     log_text = log.read_text(encoding="utf-8", errors="replace")
+    left = limit_minutes - (time.monotonic() - started) / 60
+    if needs_retry(status, timed_out, log_text) and left >= MINIMUM_RETRY_MINUTES:
+        runner_module_cache.empty_module_caches(derived_data)
+        status, timed_out = run_build(device_build_command(derived_data), log, left)
+        log_text = log.read_text(encoding="utf-8", errors="replace")
+    minutes = (time.monotonic() - started) / 60
     tail = "\n".join(log_text.splitlines()[-SIZE_LOG_LINES_KEPT:])
     with open(out / "ios.log", "a", encoding="utf-8") as joined:
         joined.write(f"\n===== device build for the app's size (the last {SIZE_LOG_LINES_KEPT} lines) =====\n{tail}\n")
