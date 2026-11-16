@@ -27,22 +27,31 @@ enum TestMachine {
         seconds * timeScale
     }
 
-    /// Skips the test that calls it anywhere but on GitHub's runner, when the Mac is the development Mac
-    /// (`TEXTMOUTH_TEST_TIME_SCALE` is set on every runner and by nothing here), for a test that raises an
-    /// Objective-C exception on purpose and leaves only the code under test to catch it.
+    /// Whether this test host runs on one of GitHub's runners, and not on the user's Mac.
     ///
-    /// If a later change broke that code, the exception would end the test host, and macOS would put a crash
-    /// report on the user's screen; on the runner the same crash is only a failed run. So such a test proves
-    /// the catch on GitHub, and the Mac's suite runs the rest. The iPhone bundle shares this file and runs only
-    /// on GitHub, so it never skips.
-    ///
-    /// - Throws: `XCTSkip` on the development Mac.
-    static func requireRunnerForRaisingTest() throws {
+    /// It keys on `TEXTMOUTH_TEST_TIME_SCALE`, which `Scripts/agents/run-on-runner.py` hands to every test
+    /// host it starts, on GitHub's runners only, and which nothing sets on the development Mac. The iPhone
+    /// tests share this file and run only on GitHub, so there it is always true.
+    static var isGitHubRunner: Bool {
         #if os(macOS)
-        guard ProcessInfo.processInfo.environment["TEXTMOUTH_TEST_TIME_SCALE"] != nil else {
-            throw XCTSkip("This test raises an Objective-C exception on purpose, so it runs on GitHub's runner only")
-        }
+        return ProcessInfo.processInfo.environment["TEXTMOUTH_TEST_TIME_SCALE"] != nil
+        #else
+        return true
         #endif
+    }
+
+    /// Skips the test that calls it anywhere but on a GitHub runner: the one way every test that may crash
+    /// the test host, or a helper process, is kept off the user's Mac.
+    ///
+    /// A test that raises an Objective-C exception on purpose leaves only the code under test to catch it.
+    /// Were that code broken by a later change, the exception would end the host, and macOS would put a
+    /// crash report on the user's screen; on a runner the same crash is only a failed run. So such a test
+    /// proves its catch on GitHub, and the Mac's suite runs the rest.
+    ///
+    /// - Parameter reason: Why the test runs on GitHub only, as the skip says it.
+    /// - Throws: `XCTSkip` on the development Mac.
+    static func skipUnlessGitHubRunner(_ reason: String) throws {
+        guard isGitHubRunner else { throw XCTSkip("\(reason), so it runs on GitHub's runner only") }
     }
 }
 

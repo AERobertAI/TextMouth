@@ -4,7 +4,7 @@ import XCTest
 /// `ObjCException.catching(_:)`: the way a framework call that may raise an
 /// Objective-C exception is made without ending the process.
 ///
-/// The two tests that raise one run on GitHub's runner only (`TestMachine.requireRunnerForRaisingTest`): were
+/// The two tests that raise one run on GitHub's runner only (`TestMachine.skipUnlessGitHubRunner`): were
 /// the catcher broken, the exception would end the host and put a crash report on the Mac's screen.
 final class ObjCExceptionTests: XCTestCase {
     /// A block that raises nothing runs once, and no exception comes back.
@@ -20,7 +20,7 @@ final class ObjCExceptionTests: XCTestCase {
     /// A block that raises comes back as that very exception, name, reason,
     /// and user info intact, and the test goes on.
     func testABlockThatRaisesYieldsTheExceptionItRaised() throws {
-        try TestMachine.requireRunnerForRaisingTest()
+        try TestMachine.skipUnlessGitHubRunner("This test raises an Objective-C exception on purpose")
         let name = NSExceptionName("TextMouthTestException")
 
         let caught = ObjCException.catching {
@@ -49,7 +49,7 @@ final class ObjCExceptionTests: XCTestCase {
     /// The statements before the raise ran, and the catcher is usable again
     /// after it caught one.
     func testTheCatcherWorksAgainAfterCatching() throws {
-        try TestMachine.requireRunnerForRaisingTest()
+        try TestMachine.skipUnlessGitHubRunner("This test raises an Objective-C exception on purpose")
         var steps: [String] = []
 
         let first = ObjCException.catching {

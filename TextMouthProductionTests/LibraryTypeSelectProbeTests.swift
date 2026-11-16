@@ -41,11 +41,8 @@ final class LibraryTypeSelectProbeTests: XCTestCase {
     /// request asked for it (see the class).
     override func setUpWithError() throws {
         try super.setUpWithError()
-        let environment = ProcessInfo.processInfo.environment
-        guard environment["TEXTMOUTH_TEST_TIME_SCALE"] != nil else {
-            throw XCTSkip("The type-select probe types into lists, which can beep, so it runs on GitHub's runner only")
-        }
-        guard environment["TEXTMOUTH_TYPE_SELECT_PROBE"] != nil else {
+        try TestMachine.skipUnlessGitHubRunner("The type-select probe types into lists, which can beep")
+        guard ProcessInfo.processInfo.environment["TEXTMOUTH_TYPE_SELECT_PROBE"] != nil else {
             throw XCTSkip("The type-select probe runs only on request: its request says type_select_probe")
         }
     }
