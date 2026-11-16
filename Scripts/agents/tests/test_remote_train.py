@@ -69,16 +69,17 @@ class RemoteTrainCase(RemoteTestCase):
             self.addCleanup(setattr, module, name, getattr(module, name))
             setattr(module, name, value)
 
-    def branch(self, agent, files, areas=("stats",), classes=("FooTests",)):
+    def branch(self, agent, files, areas=("stats",), classes=("FooTests",), **more):
         """Makes a branch for `agent` off main that adds `files` (a dict of name to text), queues
-        a request for it as `build-train.py request` does, and returns the request."""
+        a request for it as `build-train.py request` does (with any more fields of `more`, such as
+        ios_size=True), and returns the request."""
         self.git("checkout", "-q", "-b", agent, "main")
         head = ""
         for name, text in files.items():
             head = self.commit(name, text)
         self.git("checkout", "-q", "main")
         request = {"agent": agent, "branch": agent, "head": head, "classes": list(classes), "areas": list(areas),
-                   "note": "", "time": "2026-11-09T09:00:00"}
+                   "note": "", "time": "2026-11-09T09:00:00", **more}
         train.QUEUE.mkdir(parents=True, exist_ok=True)
         self.counter += 1
         (train.QUEUE / f"{self.counter:013d}-{agent}.json").write_text(json.dumps(request))
@@ -294,6 +295,42 @@ class IPhoneBuildTests(RemoteTrainCase):
         self.run_train()
         self.assertIn("PASSED, 0 errors in 0 files (the first try (3.1 minutes) failed with", self.result_of("alpha"))
 
+    def test_a_request_for_the_size_asks_the_run_for_it_and_the_results_show_it(self):
+        self.branch("alpha", {"a.txt": "a"}, ios_size=True)
+        self.branch("beta", {"b.txt": "b"}, classes=["BarTests"])
+        summary = IOS_PASSED + "\n".join(SIZE_LINES) + "\n"
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary))
+        self.assertEqual(self.run_train(), "ran")
+        train_dir = next(train.TRAINS.iterdir())
+        self.assertIn('"ios_size": true', (train_dir / "command.txt").read_text(),
+                      "one request for the size gives the whole train's run the measurement")
+        for agent in ("alpha", "beta"):
+            self.assertIn("- iPhone app size: iPhone app: 20.1 MB (20,123,456 bytes) in 90 files, within the 30 MB limit.",
+                          self.result_of(agent))
+        # The details are in the train's summary, indented under the headlines.
+        text = (train_dir / "summary.md").read_text()
+        self.assertIn("  - 9.0 MB (9,000,000 bytes)  TextMouth", text)
+        self.assertNotIn("9,000,000", self.result_of("alpha"), "an agent's result keeps to the headlines")
+
+    def test_a_train_that_nobody_asked_the_size_of_does_not_ask_for_it(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), IOS_PASSED))
+        self.run_train()
+        train_dir = next(train.TRAINS.iterdir())
+        self.assertNotIn("ios_size", (train_dir / "command.txt").read_text())
+        self.assertNotIn("iPhone app size", self.result_of("alpha"))
+
+    def test_the_request_command_records_the_size_flag_only_when_given(self):
+        self.git("checkout", "-q", "-b", "alpha", "main")
+        self.git("checkout", "-q", "main")
+        for flag in (False, True):
+            args = SimpleNamespace(agent="alpha", branch="alpha", classes="FooTests", areas="stats", note="", ios_size=flag)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(train.command_request(args), 0)
+            queued = json.loads(sorted(train.QUEUE.glob("*.json"))[-1].read_text())
+            self.assertEqual(queued.get("ios_size"), True if flag else None, f"ios_size={flag}")
+            self.assertEqual(queued["areas"], ["stats"])
+
     def test_an_unreadable_summary_is_read_as_what_it_is(self):
         folder = self.folder / "ios-dir"
         folder.mkdir()
@@ -301,6 +338,15 @@ class IPhoneBuildTests(RemoteTrainCase):
         count, errors, label = train.remote_ios_result(folder)
         self.assertEqual((count, errors, label), ("NOT RUN (its job reported nothing)", [], train.IOS_BUILD_LABEL))
         self.assertIsNone(train.remote_ios_result(self.folder / "no-such-folder"))
+
+
+# The size lines a run asked for the iPhone app's size adds to ios-summary.txt (Scripts/ios/app-size.py): three headlines,
+# then details.
+SIZE_LINES = ["Size: iPhone app: 20.1 MB (20,123,456 bytes) in 90 files, within the 30 MB limit.",
+              "Size: iPhone app IPA: 8.0 MB (8,000,000 bytes).",
+              "Size: iPhone app App Store download, estimated (Mach-O files at full size): 14.0 MB (14,000,000 bytes), "
+              "within the 30 MB limit.",
+              "Size detail: 9.0 MB (9,000,000 bytes)  TextMouth"]
 
 
 def with_interface_tests(download, summary):

@@ -240,6 +240,22 @@ def format_report(result, label="App"):
     return lines
 
 
+# What a line of a run's ios-summary.txt starts with when it carries the size: the three headline lines (the app, the IPA,
+# the download) first, then the detail lines (the biggest files, the libraries). Scripts/agents/merge_ios_shards.py
+# reads these two prefixes back, for the train's and the suite's reports.
+SUMMARY_PREFIX = "Size: "
+SUMMARY_DETAIL_PREFIX = "Size detail: "
+
+
+def summary_lines(result, label="iPhone app"):
+    """The measurement as the lines a run's ios-summary.txt carries: the headlines (what format_report says first),
+    each starting SUMMARY_PREFIX, then each file and library line starting SUMMARY_DETAIL_PREFIX."""
+    lines = format_report(result, label)
+    headlines = 3 if "ipa_bytes" in result else 1
+    return ([SUMMARY_PREFIX + line for line in lines[:headlines]]
+            + [SUMMARY_DETAIL_PREFIX + line.strip() for line in lines[headlines:]])
+
+
 def find_link_map(derived_data):
     """The link map of the device build in `derived_data`, or None when Xcode wrote none."""
     pattern = f"{derived_data}/Build/Intermediates.noindex/*/{PRODUCTS_FOLDER}/{SCHEME}.build/*LinkMap-normal-arm64.txt"
@@ -280,11 +296,13 @@ def main(argv=None):
     measure.add_argument("--link-map", help="a linker map to split the executable by library")
     measure.add_argument("--top", type=int, default=DEFAULT_TOP)
     measure.add_argument("--json", action="store_true")
+    measure.add_argument("--summary", action="store_true", help="print the lines a run's ios-summary.txt carries")
     build = sub.add_parser("build", help="build the iPhone app for a device, then measure it")
     build.add_argument("--derived-data", default=str(ROOT / "build" / "ios-size-DerivedData"))
     build.add_argument("--limit-minutes", type=int, default=DEFAULT_BUILD_LIMIT_MINUTES)
     build.add_argument("--top", type=int, default=DEFAULT_TOP)
     build.add_argument("--json", action="store_true")
+    build.add_argument("--summary", action="store_true", help="print the lines a run's ios-summary.txt carries")
     args = parser.parse_args(argv)
     if args.selftest:
         return selftest()
@@ -314,6 +332,8 @@ def main(argv=None):
         result["build_minutes"] = round(build_minutes, 1)
     if args.json:
         print(json.dumps(result, indent=2))
+    elif args.summary:
+        print("\n".join(summary_lines(result, label)))
     else:
         print("\n".join(format_report(result, label)))
     return 0
@@ -417,6 +437,11 @@ def selftest():
         text = "\n".join(format_report({**result, **with_map}, "iPhone app"))
         check("iPhone app:" in text and "within the 30 MB limit" in text, f"report was {text}")
         check("libmp3lame.a" in text and "App Store download" in text, "report lacks a part")
+    # The summary lines: three headlines, then details, each with its prefix.
+    lines = summary_lines({**result, **with_map}, "iPhone app")
+    check(len([line for line in lines if line.startswith(SUMMARY_PREFIX)]) == 3, f"headline lines were {lines}")
+    check(all(line.startswith((SUMMARY_PREFIX, SUMMARY_DETAIL_PREFIX)) for line in lines), f"a line has no prefix: {lines}")
+    check(any(line.startswith(SUMMARY_DETAIL_PREFIX) and "libmp3lame.a" in line for line in lines), "no library detail line")
     # The limits' words.
     check("within the 30 MB limit" == verdict(30 * MEGABYTE), "30 MB itself is within the limit")
     check("over the 30 MB limit" in verdict(30 * MEGABYTE + 1), "30 MB and a byte is over the limit")

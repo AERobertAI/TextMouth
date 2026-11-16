@@ -88,6 +88,7 @@ class RunSuiteRemoteTests(RemoteTestCase):
         self.assertEqual((request["areas"], request["shards"]), (["all"], run_suite.shard.MAX_SHARDS),
                          "the full suite is every test, dealt out as widely as the workflow allows")
         self.assertEqual(request["requests"], [{"agent": "orchestrator-suite", "head": self.head}])
+        self.assertIs(request["ios_size"], True, "the release check also measures the iPhone app")
 
     def test_a_remote_suite_with_failing_tests_exits_one(self):
         self.gh_runs(results("FAILED\n", SUITE_FAILED), view={**DONE, "conclusion": "failure"})
@@ -186,6 +187,17 @@ class RunSuiteRemoteTests(RemoteTestCase):
         _, out, _ = self.run_remote()
         self.assertIn("PASSED, 0 errors in 0 files", out)
         self.assertNotIn("run_suite:   ", out)
+
+    def test_the_iphone_apps_size_is_printed_as_headlines_then_details(self):
+        summary = ("iOS build: PASSED\nErrors in the app: 0 in 0 files\n"
+                   "Size: iPhone app: 20.1 MB (20,123,456 bytes) in 90 files, within the 30 MB limit.\n"
+                   "Size: iPhone app IPA: 8.0 MB (8,000,000 bytes).\n"
+                   "Size detail: 9.0 MB (9,000,000 bytes)  TextMouth\n")
+        self.gh_runs(self.with_iphone_build(summary))
+        _, out, _ = self.run_remote()
+        self.assertIn("run_suite: iPhone app size: iPhone app: 20.1 MB (20,123,456 bytes) in 90 files, within the 30 MB limit.\n", out)
+        self.assertIn("run_suite: iPhone app size: iPhone app IPA: 8.0 MB (8,000,000 bytes).\n", out)
+        self.assertIn("run_suite:   9.0 MB (9,000,000 bytes)  TextMouth\n", out)
 
     def test_a_run_with_no_iphone_build_says_nothing_of_one(self):
         self.gh_runs(results("PASSED\n", SUITE_PASSED))
