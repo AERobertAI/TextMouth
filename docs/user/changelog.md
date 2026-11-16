@@ -4,6 +4,26 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.0 (November 15, 2026)
+
+### Listening and editing
+- A text book holds less memory while it plays or sits paused: about 15 to 21 MB less for a novel's chapter, which is the next chapter's audio.
+- That audio is now made only in the last minutes of the chapter you are in (at least 5 minutes before its end, earlier when the next chapter is long).
+- A book left paused for 5 minutes lets that audio go, and makes it again when you resume near the end.
+- If the audio is not ready when a chapter ends, the next chapter starts in direct speech, as it already did when a render was late.
+
+### Library and feeds
+- A feed episode you mark played, with Mark Played or Mark All Played, now leaves the Reading List when "Remove books when finished" is checked, as a finished book does.
+- If a window is reading it from the list, it leaves when that window goes on or closes. Mark Unplayed lets one still waiting to leave stay, and puts none back.
+- Retry on a feed's unsaved changes, pressed while TextMouth moves its data directory, rebuilds it, or moves books between folders, no longer risks hanging TextMouth or writing into the folder being copied.
+- The row says when the changes will be saved, for example "TextMouth saves them once the move of its data directory ends.", TextMouth saves them itself when that ends, and VoiceOver says "Feed subscriptions saved."
+
+### Smaller and faster
+- The licences of ZIPFoundation, swift-markdown, and swift-cmark are now in the Mac app with the others, and the iPhone app carries the licences of every library it links.
+
+### Not changed
+- How any book reads or is laid out.
+
 ## 0.4.11 (November 15, 2026)
 
 ### Smaller and faster
