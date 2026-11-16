@@ -272,6 +272,10 @@ They are not retried (nothing here is retried on any machine); the ones named in
   - `LibraryLaunchFilesTests.testNoMoreThanEightLaunchFilesAreReadAtOnce`: an 8-second wait for queued reads missed in 2 of 12 runs.
   - `RecordingSaveTests.testSavingARecordingAddsItsBookToTheLibrary`: a file missing at the end, 2 of 6 runs.
   - `IntegrationWindowRoutingTests.testFinishedBookOpensOneReaderForTheNextBookWithNoLibraryWindow` and two ContinueToNextBookTests are left out because an audio book did not finish loading.
+- **Explained and fixed:**
+  - `LibraryFeedMoveToFolderTests` failed on a record save that belonged to another test: a Delete Download test made its own feed engine and stopped it only at teardown, so its last record writes landed after the folders were gone and were announced into the next test that records announcements.
+    Every extra engine now comes from `FeedTestWorld.engine(_:on:)` (see [the hosted-test sandbox](../architecture/state/hosted-test-sandbox.md)).
+  - `LibrarySessionLeaseTests`: a lease ended during a refresh did not wait for the refresh's events; it waits for them now, up to 30 seconds, since the end needs a task-pool thread and the runner has three.
 - **Not left out:** The unexplained ones of the earlier list did not appear in the ten runs after the fixes.
   That list:
   - `PreferenceStoreTests.testChangeFromAnotherThreadReachesTheHandlerOnTheMainThread`,
