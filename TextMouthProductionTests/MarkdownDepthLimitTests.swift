@@ -120,13 +120,13 @@ final class MarkdownDepthLimitTests: XCTestCase {
     /// Counting does not call itself, nor does the parse or the freeing of the
     /// tree around it: a tree 5,000 levels deep is parsed, counted, and freed
     /// on an 8 MiB stack (`StackProbe`), and what was written of the stack is
-    /// measured. A count that called itself once for a level would write 5,000
+    /// measured (the margin is 128 KiB). A count that called itself once for a level would write 5,000
     /// frames, hundreds of KiB, and fail the assertion without overflowing.
     func testACountOfADeepTreeNeedsNoStack() {
         let deep = DeepMarkdown.quotes(5_000)
-        let probe = StackProbe.run { MarkdownTree.read(deep) { $0.levels(stopAbove: .max) } }
+        let probe = StackProbe.run(margin: 128 * 1024) { MarkdownTree.read(deep) { $0.levels(stopAbove: .max) } }
         XCTAssertEqual(probe.value, 5_000 + 3)
-        XCTAssertLessThan(probe.bytesUsed, 128 * 1024, "the count, the parse, or the freeing used the stack for each level")
+        XCTAssertNil(probe.deepestWrite, "the count, the parse, or the freeing used the stack for each level: \(probe.deepestWrite ?? 0) bytes deep")
     }
 
     /// A text read inside a level of a tree (the rest of a marker line, inside

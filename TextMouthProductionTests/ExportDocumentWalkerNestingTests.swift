@@ -175,9 +175,9 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
     /// The walk at the limit uses none of the stack of the thread that asks:
     /// it runs on a thread of a large stack of its own (`onLargeStack`), so
     /// the 512 KiB of an export's worker thread are never needed. Measured,
-    /// not survived (`StackProbe`): each shape is walked at its edge on an
-    /// 8 MiB stack filled with a pattern, and less than 64 KiB of it may have
-    /// been written, by the walk's own entry and the thread's. The old walk,
+    /// not survived (`StackProbe`): each shape is walked at its edge on a
+    /// thread of 8 MiB whose unused stack is filled with a pattern, and none of
+    /// the stack more than 64 KiB below the walk's entry may have been written. The old walk,
     /// which has no hop, writes about 0.83 MB for the inline shapes and 0.17
     /// to 0.23 MB for quotes and lists in a debug build, so a regression of
     /// the hop fails here and overflows nothing.
@@ -189,7 +189,10 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
             }
             let document = try XCTUnwrap(probe.value, "\(shape.name): no thread").get()
             XCTAssertTrue(words(of: document).contains(shape.word), shape.name)
-            XCTAssertLessThan(probe.bytesUsed, 64 * 1024, "\(shape.name) at \(shape.edge) walked on the asking thread's own stack")
+            XCTAssertNil(
+                probe.deepestWrite,
+                "\(shape.name) at \(shape.edge) walked on the asking thread's own stack, \(probe.deepestWrite ?? 0) bytes deep"
+            )
         }
     }
 
