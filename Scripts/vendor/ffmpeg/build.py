@@ -409,13 +409,19 @@ def copy_replacing(source, destination):
     os.replace(temporary, destination)
 
 
+def unpacked_marker(work):
+    """The file saying WORK/source holds the pinned release unpacked: named by the pin's SHA-256,
+    and written only once every member was checked and extracted."""
+    return work / "source" / f".unpacked-{FFMPEG_SHA256[:16]}"
+
+
 def unpacked_release(work, tarball):
     """The release unpacked in WORK/source/ffmpeg-<version>, unpacking it the first time. Every
     member must be a file or folder inside that one folder: no absolute name, no "..", and no
     link or device, since the tarball is a download."""
     source_root = work / "source"
     folder = source_root / f"ffmpeg-{FFMPEG_VERSION}"
-    marker = source_root / f".unpacked-{FFMPEG_SHA256[:16]}"
+    marker = unpacked_marker(work)
     if marker.is_file() and (folder / "configure").is_file():
         return folder
     source_root.mkdir(parents=True, exist_ok=True)

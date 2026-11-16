@@ -235,6 +235,12 @@ class ReleaseTests(unittest.TestCase):
         for bad in (f"{prefix}/../escaped", "elsewhere/configure", "/absolute"):
             path = self.tarball("bad.tar.xz", [(f"{prefix}/configure", b"#!/bin/sh\n"), (bad, b"x")])
             work = SCRATCH / "work-bad"
+            # A marker left by a run whose check was broken would skip the unpacking, and the
+            # check with it, so a fixed check would still fail here: it is moved aside (over the
+            # last one moved), never deleted.
+            marker = build.unpacked_marker(work)
+            if marker.exists():
+                os.replace(marker, marker.with_name(marker.name + ".stale"))
             with self.assertRaises(build.BuildError, msg=bad):
                 build.unpacked_release(work, path)
 
