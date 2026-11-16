@@ -214,7 +214,8 @@ class ToolRootTests(RepositoryCase):
                 continue
             if "import repo_paths" in path.read_text(errors="replace") and path.name != "repo_paths.py":
                 importers.add(relative.as_posix())
-        # heavy_lock.py is imported by the tools that take the lock, but it names its own root.
+        # scrub-mac-paths.py takes the main checkout at run time, as a value (its tests are in test_scrub_mac_paths.py).
+        importers -= {"agents/scrub-mac-paths.py"}
         self.assertEqual(importers - set(TOOLS), set(), "a tool that imports repo_paths is not in TOOLS")
 
 
