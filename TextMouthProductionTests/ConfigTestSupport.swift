@@ -151,7 +151,7 @@ extension XCTestCase {
         }
     ) throws -> SettingsViewModel {
         let file = try configFile ?? makeTestDirectory(label).appendingPathComponent("config.json")
-        let configService = ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+        let configService = makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
             write: configWrite,
             openForEvents: { _ in -1 },
             close: { _ in }
@@ -162,6 +162,40 @@ extension XCTestCase {
             userDefaults: makeSandboxedPreferences(label),
             configService: configService
         )
+    }
+
+    /// A config service on `fileURL` of the test's own, whose waiting save is
+    /// dropped as the test ends. Every config service a test makes besides
+    /// the shared one comes from here (`ConfigTestWorldTeardownTests` checks
+    /// the test sources): a settings change asks its service for a save that
+    /// waits a moment for more changes (`ConfigService.scheduleSave()`), the
+    /// folders the test made are deleted as it ends, and a save still
+    /// waiting then fired after them, failed with "The folder "config.json"
+    /// doesn't exist", and had its failure announced into whichever test
+    /// ran next (`ReaderCloudDownloadTests`, Q-flake). The parameters are
+    /// the service's own.
+    @MainActor
+    func makeConfigService(
+        fileURL: URL,
+        fileOperations: ConfigService.FileOperations = .system,
+        coalescingDelay: Duration = .milliseconds(200),
+        saveDelay: Duration = ConfigService.defaultSaveDelay
+    ) -> ConfigService {
+        let service = ConfigService(
+            fileURL: fileURL,
+            fileOperations: fileOperations,
+            coalescingDelay: coalescingDelay,
+            saveDelay: saveDelay
+        )
+        settleConfigSaves(of: service)
+        return service
+    }
+
+    /// Has the test's teardown drop `service`'s waiting save, whatever order
+    /// the teardown blocks run in: dropping it needs no folder.
+    @MainActor
+    func settleConfigSaves(of service: ConfigService) {
+        addTeardownBlock { service.cancelScheduledSave() }
     }
 
     /// A config.json location in a directory of this test's own inside the
