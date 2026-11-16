@@ -181,7 +181,11 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
     /// which has no hop, writes about 0.83 MB for the inline shapes and 0.17
     /// to 0.23 MB for quotes and lists in a debug build, so a regression of
     /// the hop fails here and overflows nothing.
+    ///
+    /// It fills a thread's stack, so it runs on GitHub's runner only: a probe
+    /// that miscounted by a guard page would end the test host here.
     func testTheWalkAtTheLimitUsesNoStackOfTheThreadThatAsks() throws {
+        try TestMachine.skipUnlessGitHubRunner("This test fills a thread's stack with a pattern to measure the walk")
         for shape in DeepMarkdown.shapes() {
             let markdown = shape.text(shape.edge)
             let probe = StackProbe.run {

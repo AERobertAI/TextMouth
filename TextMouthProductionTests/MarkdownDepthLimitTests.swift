@@ -122,7 +122,11 @@ final class MarkdownDepthLimitTests: XCTestCase {
     /// on an 8 MiB stack (`StackProbe`), and what was written of the stack is
     /// measured (the margin is 128 KiB). A count that called itself once for a level would write 5,000
     /// frames, hundreds of KiB, and fail the assertion without overflowing.
-    func testACountOfADeepTreeNeedsNoStack() {
+    ///
+    /// It fills a thread's stack, so it runs on GitHub's runner only: a probe
+    /// that miscounted by a guard page would end the test host here.
+    func testACountOfADeepTreeNeedsNoStack() throws {
+        try TestMachine.skipUnlessGitHubRunner("This test fills a thread's stack with a pattern to measure the count")
         let deep = DeepMarkdown.quotes(5_000)
         let probe = StackProbe.run(margin: 128 * 1024) { MarkdownTree.read(deep) { $0.levels(stopAbove: .max) } }
         XCTAssertEqual(probe.value, 5_000 + 3)
