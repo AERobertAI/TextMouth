@@ -278,7 +278,120 @@ final class SavesDuringMoveTests: XCTestCase {
         XCTAssertFalse(center.hasUnsavedChanges)
     }
 
+    // MARK: - A Save's Temporary File Never Fails the Move (B14)
+
+    /// A save writes a temporary file beside its target and renames it into
+    /// place. One the copy's listing names, renamed away before the copy
+    /// reached it, used to stop the move with "couldn't be opened because
+    /// there is no such file". It is no item of the copy: the move ends, and
+    /// the save's result is in the moved library.
+    func testASavesTemporaryFileListedThenRenamedAwayDoesNotFailTheMove() async throws {
+        let world = try makeIntegrationWorld("Saves Move Temporary")
+        keepSubstitutionsFile()
+        let destination = try makeDataDirectoryMoveDestination("TemporaryFileRenamedAway")
+        let target = TextMouthPaths.substitutionsFile
+        // A file the copy lists, which the save replaces.
+        try Data("[]".utf8).write(to: target)
+        // The save under way when the copy lists the data directory: its
+        // temporary file, written beside the target.
+        let rule = SubstitutionRule(name: "Saved by rename", pattern: "plough", replacement: "plow")
+        let temporary = TextMouthPaths.root.appendingPathComponent(".dat.nosync8247.Ab12Cd")
+        try JSONEncoder().encode([rule]).write(to: temporary)
+        addTeardownBlock { try? FileManager.default.removeItem(at: temporary) }
+        // The save ends once the plan is made and before the first item.
+        let ending = ChangeBeforeFirstItem {
+            try? SavedFile.renameReplacing(temporary, target)
+        }
+
+        let outcome = await DataDirectoryMigrator.$copyObserver.withValue(ending.observer()) {
+            await world.library.moveDataDirectoryReturningOutcome(to: destination)
+        }
+
+        XCTAssertEqual(ending.runs, 1, "the save did not end during the copy")
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(
+            try Self.rules(in: destination.appendingPathComponent("substitutions.json")),
+            [rule],
+            "the moved library does not have what the save wrote"
+        )
+        XCTAssertEqual(Self.temporaryNames(in: destination), [], "a temporary file was copied into the moved library")
+    }
+
+    /// A file the user has that vanishes between the listing and its copy is
+    /// not a temporary file: the move still stops with the system's words,
+    /// and nothing is published, so the new library never lacks a file the
+    /// old one had.
+    func testARealFileThatVanishesDuringTheCopyStillFailsTheMove() async throws {
+        let world = try makeIntegrationWorld("Saves Move Vanished")
+        let destination = try makeDataDirectoryMoveDestination("RealFileVanished")
+        let oldRoot = TextMouthPaths.root
+        // Neither a temporary name nor a saved file of the app's: a name
+        // the copy must not take for a save's.
+        let file = oldRoot.appendingPathComponent("Vanishing Notes B14.json")
+        try Data("{}".utf8).write(to: file)
+        let elsewhere = try makeSandboxDirectory("RealFileVanishedTo").appendingPathComponent("Vanishing Notes B14.json")
+        addTeardownBlock { try? FileManager.default.removeItem(at: file) }
+        let vanishing = ChangeBeforeFirstItem {
+            try? FileManager.default.moveItem(at: file, to: elsewhere)
+        }
+
+        let outcome = await DataDirectoryMigrator.$copyObserver.withValue(vanishing.observer()) {
+            await world.library.moveDataDirectoryReturningOutcome(to: destination)
+        }
+
+        XCTAssertEqual(vanishing.runs, 1, "the file did not vanish during the copy")
+        XCTAssertFalse(outcome.succeeded, "the move was reported done without a file the library had")
+        XCTAssertTrue(
+            outcome.failureMessage?.contains("Vanishing Notes B14") == true,
+            "the failure does not name the file that vanished: \(outcome.failureMessage ?? "no message")"
+        )
+        XCTAssertEqual(TextMouthPaths.root.path, oldRoot.path, "the failed move published its copy")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "the failed move left a copy")
+    }
+
+    /// A temporary file an earlier crash left is not the library's: it is
+    /// not copied into the moved library, and the old library keeps it.
+    func testAStaleTemporaryFileIsNotCopiedAndStaysWhereItWas() async throws {
+        let world = try makeIntegrationWorld("Saves Move Stale")
+        let destination = try makeDataDirectoryMoveDestination("StaleTemporaryFile")
+        let oldRoot = TextMouthPaths.root
+        let stale = [
+            ".dat.nosync1a2b.StaLe0",
+            SaveTemporaryNames.stagedName(for: "substitutions.json"),
+        ].map { oldRoot.appendingPathComponent($0) }
+        for file in stale {
+            try Data("left by a crash".utf8).write(to: file)
+            addTeardownBlock { try? FileManager.default.removeItem(at: file) }
+        }
+        // A look-alike a user could have is copied as any file is.
+        let hidden = oldRoot.appendingPathComponent(".dat.nosync-notes")
+        try Data("mine".utf8).write(to: hidden)
+        addTeardownBlock { try? FileManager.default.removeItem(at: hidden) }
+
+        let outcome = await world.library.moveDataDirectoryReturningOutcome(to: destination)
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(Self.temporaryNames(in: destination), [], "a stale temporary file was copied")
+        for file in stale {
+            XCTAssertEqual(
+                try Data(contentsOf: file), Data("left by a crash".utf8),
+                "\(file.lastPathComponent) was changed or removed from the old library"
+            )
+        }
+        XCTAssertEqual(
+            try Data(contentsOf: destination.appendingPathComponent(".dat.nosync-notes")), Data("mine".utf8),
+            "a look-alike name was left out of the copy"
+        )
+    }
+
     // MARK: - Helpers
+
+    /// The names of the saves' temporary files in the folder `folder` and
+    /// the folders in it, at any depth.
+    private static func temporaryNames(in folder: URL) -> [String] {
+        let names = FileManager.default.enumerator(atPath: folder.path)?.allObjects as? [String] ?? []
+        return names.map { ($0 as NSString).lastPathComponent }.filter(SaveTemporaryNames.isTemporary).sorted()
+    }
 
     /// Puts the substitutions file of the data directory in use now back as
     /// it is now (or leaves none, when there is none) when the test ends, so
@@ -334,6 +447,41 @@ private final class SaveDuringCopy {
             isCancelled: { [self] in
                 DispatchQueue.main.sync { MainActor.assumeIsolated { cancelsAfterTheSave } }
             }
+        )
+    }
+}
+
+/// A change made to the data directory being copied once the copy has listed
+/// it and before it copies its first item (B14): the moment a save under
+/// way ends, or a file goes. It runs on the copy's thread, once.
+private final class ChangeBeforeFirstItem: @unchecked Sendable {
+    /// Guards `runs`.
+    private let lock = NSLock()
+    /// How many times the change was made.
+    private var count = 0
+    /// The change.
+    private let change: @Sendable () -> Void
+
+    /// A change to make before the first item is copied.
+    init(_ change: @escaping @Sendable () -> Void) {
+        self.change = change
+    }
+
+    /// How many times the change was made.
+    var runs: Int {
+        lock.withLock { count }
+    }
+
+    /// An observer that makes the change when it hears of the copy's start,
+    /// with no item copied, and never asks for Cancel.
+    func observer() -> DataDirectoryCopyObserver {
+        DataDirectoryCopyObserver(
+            report: { [self] progress in
+                guard progress.copiedItems == 0, lock.withLock({ count == 0 }) else { return }
+                change()
+                lock.withLock { count += 1 }
+            },
+            isCancelled: { false }
         )
     }
 }
