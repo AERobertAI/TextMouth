@@ -415,6 +415,12 @@ def build(set_name, platform, variant, source, work):
         write_json(folder / "build-failed.json", record)
         return record
     record["summary"] = parse_configure_summary((folder / "configure.log").read_text(encoding="utf-8", errors="replace"))
+    # configure drops a component whose needs are unmet without failing, so
+    # each one asked for must be among those its summary says it enabled.
+    record["components_missing"] = {
+        kind: sorted(set(SETS[set_name][kind]) - set(record["summary"].get(f"Enabled {kind}", [])))
+        for kind in ("demuxers", "decoders", "parsers")
+    }
     config_mak = (folder / "ffbuild" / "config.mak").read_text(encoding="utf-8", errors="replace")
     record["flags"] = {key: value.strip() for key, value in re.findall(r"^(CFLAGS|CPPFLAGS|ASFLAGS|LDFLAGS|EXTRALIBS[-A-Za-z]*)=(.*)$", config_mak, re.MULTILINE)}
     print(f"build: making {folder.name}", flush=True)
@@ -485,6 +491,57 @@ def macho_layout(path):
 
 # The sections whose bytes take memory but no bytes of the file.
 ZEROFILL_SECTIONS = {"__bss", "__common", "__thread_bss"}
+
+# The components the linked bytes are grouped into, each a pattern on an
+# object file's name in its library ("libavcodec.a(wmaprodec.o)"), tried in
+# order; an object no pattern matches counts as its library's core. The names
+# are those the build printed; no source was read to make them.
+COMPONENT_PATTERNS = [
+    ("WMA decoders", r"^libavcodec\.a\(wma"),
+    ("ASF demuxer", r"^libavformat\.a\(asf"),
+    ("Matroska and WebM demuxer", r"^libavformat\.a\((matroska|webm)"),
+    ("Ogg demuxer", r"^libavformat\.a\(ogg"),
+    ("Flash video demuxer", r"^libavformat\.a\(flv"),
+    ("AVI demuxer", r"^libavformat\.a\(avi"),
+    ("RealMedia demuxer", r"^libavformat\.a\(rm"),
+    ("Musepack demuxers", r"^libavformat\.a\(mpc"),
+    ("RIFF and WAVE headers (shared by ASF, AVI, Matroska)", r"^libavformat\.a\(riff"),
+    ("Speex decoder", r"^libavcodec\.a\(speex"),
+    ("Musepack decoders", r"^libavcodec\.a\(mpc"),
+    ("RealAudio decoders", r"^libavcodec\.a\((cook|sipr|atrac|ralf|ra144|ra288|acelp|celp|lsp|qcelp)"),
+    ("AAC decoder", r"^libavcodec\.a\(aac|^libavcodec\.a\(sbr|^libavcodec\.a\(psdata|^libavcodec\.a\(cbrt"),
+    ("MP3 and MP2 decoders", r"^libavcodec\.a\(mpegaudio|^libavcodec\.a\(mpa|^libavcodec\.a\(dct32"),
+    ("AC-3 and E-AC-3 decoders", r"^libavcodec\.a\((ac3|eac3)"),
+    ("DTS decoder", r"^libavcodec\.a\(dca|^libavcodec\.a\(dolby_e|^libavcodec\.a\(synth_filter"),
+    ("Opus decoder", r"^libavcodec\.a\(opus|^libavcodec\.a\(celt|^libavcodec\.a\(silk"),
+    ("Vorbis decoder", r"^libavcodec\.a\(vorbis"),
+    ("FLAC decoder", r"^libavcodec\.a\(flac"),
+    ("ALAC decoder", r"^libavcodec\.a\(alac"),
+    ("TrueHD and MLP decoders", r"^libavcodec\.a\(mlp|^libavcodec\.a\(truehd"),
+    ("TTA, WavPack, and Monkey's Audio decoders", r"^libavcodec\.a\((tta|wavpack|ape)"),
+    ("PCM decoders", r"^libavcodec\.a\(pcm"),
+    ("ADPCM, Nellymoser, and GSM decoders", r"^libavcodec\.a\((adpcm|nelly|gsm|msgsm)"),
+    ("libavcodec's core and shared parts", r"^libavcodec\.a\("),
+    ("libavformat's core", r"^libavformat\.a\("),
+    ("libavutil", r"^libavutil\.a\("),
+]
+
+
+def by_component(by_object):
+    """The linked bytes of `by_object` (link_map_by_object's result) summed by
+    COMPONENT_PATTERNS, each with the object files it holds; objects outside
+    FFmpeg's libraries (the harness, the system's stubs) are left out."""
+    patterns = [(name, re.compile(pattern)) for name, pattern in COMPONENT_PATTERNS]
+    components = {}
+    for name, sizes in by_object.items():
+        component = next((label for label, pattern in patterns if pattern.search(name)), None)
+        if component is None:
+            continue
+        entry = components.setdefault(component, {"file": 0, "zerofill": 0, "objects": []})
+        entry["file"] += sizes["file"]
+        entry["zerofill"] += sizes["zerofill"]
+        entry["objects"].append(name.split("(")[1].rstrip(")"))
+    return dict(sorted(components.items(), key=lambda item: -item[1]["file"]))
 
 
 def link_map_by_object(map_path):
@@ -601,6 +658,7 @@ def measure(set_name, platform, variant, work):
         "added_file_bytes": full_layout["file_bytes"] - baseline_layout["file_bytes"],
         "added_section_bytes": full_layout["section_bytes"] - baseline_layout["section_bytes"],
         "linked_bytes_by_object": by_object,
+        "linked_bytes_by_component": by_component(by_object),
         "linked_bytes_by_library": {},
         "imports": imports,
         "dylibs": run_text(["otool", "-L", str(full)]).splitlines()[1:],
