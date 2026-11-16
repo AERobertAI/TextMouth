@@ -134,6 +134,8 @@ Its chapters were timed to the audio as it was downloaded, and an edited file no
 
 Undo and redo go back through every edit of a file, across launches and Macs, since the edits are kept in the book's package.
 Saving writes the edits into the book's file, in its own format where TextMouth can write it: AAC in .m4a or .m4b, MP3, which TextMouth writes itself (below), Apple Lossless, WAVE, AIFF, or uncompressed CAF.
+An MP3 cut is saved with no short silence at the cut and without the occasional refusal ("The edited audio couldn't be written.") that earlier versions had.
+To remove an old gap from a book saved before, choose Revert to Original, redo the edits, and save.
 A FLAC book becomes Apple Lossless, and any other becomes AAC in .m4a.
 Its chapters, length, and index are measured afresh.
 A book open in a reader can't be saved; close it there first.
