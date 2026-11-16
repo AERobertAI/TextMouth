@@ -23,6 +23,23 @@ enum ObjCException {
         let name: String
         /// The reason it gave, when it gave one.
         let reason: String?
+
+        /// What `exception` raised.
+        init(_ exception: NSException) {
+            self.init(name: exception.name.rawValue, reason: exception.reason)
+        }
+
+        /// Names and reasons, as the log and a failed render say them.
+        init(name: String, reason: String?) {
+            self.name = name
+            self.reason = reason
+        }
+
+        /// The name and the reason, as `<name>: <reason>`, or "no reason
+        /// given" when the exception gave none.
+        var summary: String {
+            "\(name): \(reason ?? "no reason given")"
+        }
     }
 
     /// Runs `make`, which creates something through a framework API that
@@ -35,7 +52,7 @@ enum ObjCException {
     static func making<Value>(_ make: () -> Value) throws -> Value {
         var made: Value?
         if let exception = catching({ made = make() }) {
-            throw Raised(name: exception.name.rawValue, reason: exception.reason)
+            throw Raised(exception)
         }
         // Without an exception `make` ran to its end, so `made` is set.
         guard let made else { throw Raised(name: "NoValue", reason: nil) }
@@ -46,6 +63,6 @@ enum ObjCException {
     /// `SPEECH_PLAYER_EXCEPTION: <name>: <reason>`: the name and the
     /// reason, or "no reason given" when the exception has none.
     static func logLine(tag: String, for exception: NSException) -> String {
-        "\(tag): \(exception.name.rawValue): \(exception.reason ?? "no reason given")"
+        "\(tag): \(Raised(exception).summary)"
     }
 }

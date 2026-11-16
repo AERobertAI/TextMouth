@@ -257,9 +257,10 @@ struct AudioRenderSettings: Equatable, Sendable {
 
     /// PCM settings for `format` at `base`'s rate and channels, in the
     /// layout of `bits` and `isFloat` where AVFoundation takes it
-    /// (`readableDepth(bits:isFloat:)`). Every render's PCM settings are made
-    /// here, so no reader or writer is given a depth it refuses.
-    private static func pcm(_ format: AudioRenderFormat, _ base: AudioEditBase, bits: Int, isFloat: Bool) -> AudioRenderSettings {
+    /// (`readableDepth(bits:isFloat:)`). Every PCM setting a render makes is
+    /// made here (the format's own in `make`, and a filter's floats in
+    /// `floatCAF`), so no reader or writer is given a depth it refuses.
+    static func pcm(_ format: AudioRenderFormat, _ base: AudioEditBase, bits: Int, isFloat: Bool) -> AudioRenderSettings {
         let depth = readableDepth(bits: bits, isFloat: isFloat)
         return AudioRenderSettings(
             format: format, sampleRate: base.sampleRate, channels: base.channelCount,
@@ -1176,7 +1177,7 @@ enum AudioEditRenderer {
         do {
             return try ObjCException.making(make)
         } catch let raised as ObjCException.Raised {
-            throw AudioEditError.renderFailed("\(raised.name): \(raised.reason ?? "no reason given")")
+            throw AudioEditError.renderFailed(raised.summary)
         }
     }
 

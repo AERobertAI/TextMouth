@@ -33,6 +33,19 @@ final class ObjCExceptionTests: XCTestCase {
         XCTAssertEqual(exception.userInfo?["key"] as? Int, 1)
     }
 
+    /// A call that raises nothing gives what it made, and what a raised
+    /// exception becomes says its name and reason, or that it gave none,
+    /// as the log line does.
+    func testMakingGivesItsValueAndARaisedExceptionSaysItself() throws {
+        XCTAssertEqual(try ObjCException.making { 7 }, 7)
+
+        let withReason = ObjCException.Raised(NSException(name: .genericException, reason: "the depth", userInfo: nil))
+        let withoutReason = ObjCException.Raised(name: "NSInvalidArgumentException", reason: nil)
+
+        XCTAssertEqual(withReason.summary, "NSGenericException: the depth")
+        XCTAssertEqual(withoutReason.summary, "NSInvalidArgumentException: no reason given")
+    }
+
     /// The statements before the raise ran, and the catcher is usable again
     /// after it caught one.
     func testTheCatcherWorksAgainAfterCatching() throws {
