@@ -134,11 +134,15 @@ final class ConfigTestWorldTeardownTests: XCTestCase {
         let repository = AppSourceFile.folder.deletingLastPathComponent()
         // The Mac's tests, and the iPhone's two bundles of a few files each.
         let folders = [("TextMouthProductionTests", 51), ("TextMouthiOSTests", 1), ("TextMouthiOSUITests", 1)]
-        let allowed = ["ConfigTestSupport.swift", "ConfigTestWorldTeardownTests.swift"]
+        // By path, so a file of another folder with the same name is not let in.
+        let allowed = [
+            "TextMouthProductionTests/ConfigTestSupport.swift",
+            "TextMouthProductionTests/ConfigTestWorldTeardownTests.swift",
+        ]
         var madeByHand: [String] = []
         for (folder, fewest) in folders {
             let sources = try AppSourceFile.all(in: repository.appendingPathComponent(folder, isDirectory: true), atLeast: fewest)
-            for source in sources where !allowed.contains(source.name) {
+            for source in sources where !allowed.contains("\(folder)/\(source.path)") {
                 madeByHand += try Self.serviceMakings(in: source.text).map { "\(folder)/\(source.path):\($0)" }
             }
         }
@@ -150,8 +154,9 @@ final class ConfigTestWorldTeardownTests: XCTestCase {
     }
 
     /// The guard finds a service made on a file however Swift spells it:
-    /// with `.init`, with spaces, or with the argument on a line of its own,
-    /// each counted on the line the making begins; and not one in a comment,
+    /// with `.init` (after the type's name, or alone where the type is known
+    /// from the context), with spaces, or with the argument on a line of its
+    /// own, each counted on the line the making begins; and not one in a comment,
     /// another type's name ending in ConfigService, the shared service, one
     /// that follows the data directory, or the helper. The sample is written
     /// with a stand-in for the type's name, so this file holds no making for
@@ -164,6 +169,11 @@ final class ConfigTestWorldTeardownTests: XCTestCase {
         let d = SERVICE(
             fileURL: file
         )
+        let settings = Model(configService: .init(fileURL: file))
+        let j: SERVICE = .init(fileURL: file)
+        let k = SERVICE.init (fileURL: file)
+        let l = other.init(fileURL: file)
+        let m = Other(fileURL: file).init(fileURL: file)
         // SERVICE(fileURL: in a comment)
         /// A doc comment naming SERVICE(fileURL:).
         let e = MirrorSERVICE(fileURL: file)
@@ -173,19 +183,24 @@ final class ConfigTestWorldTeardownTests: XCTestCase {
         let i = make() // SERVICE(fileURL: after code)
         """.replacingOccurrences(of: "SERVICE", with: "Config" + "Service")
 
-        XCTAssertEqual(try Self.serviceMakings(in: sample), [1, 2, 3, 4])
+        XCTAssertEqual(try Self.serviceMakings(in: sample), [1, 2, 3, 4, 7, 8, 9])
     }
 
     /// The lines, counted from 1, on which `text` makes a ConfigService on a
-    /// file: `ConfigService(fileURL:` or `ConfigService.init(fileURL:`, with
-    /// any spaces or line breaks between the parts, each counted on the line
-    /// where it begins. One after `//` on its line is in a comment and is
-    /// passed over.
+    /// file: `ConfigService(fileURL:`, `ConfigService.init(fileURL:`, or the
+    /// bare `.init(fileURL:` of a context that names the type, with any
+    /// spaces or line breaks between the parts, each counted on the line
+    /// where it begins. A bare `.init` that follows a name or a closing
+    /// bracket belongs to that value, not to a new service. One after `//` on
+    /// its line is in a comment and is passed over.
     private static func serviceMakings(in text: String) throws -> [Int] {
-        guard text.contains("ConfigService") else { return [] }
+        guard text.contains("fileURL") else { return [] }
         // The name must start the word: `makeConfigService(fileURL:` and
-        // `MirrorConfigService(fileURL:` are not it.
-        let making = try NSRegularExpression(pattern: #"(?<![A-Za-z0-9_])ConfigService\s*(?:\.init)?\s*\(\s*fileURL\s*:"#)
+        // `MirrorConfigService(fileURL:` are not it. The second way is a
+        // bare `.init(fileURL:`, after no name or bracket.
+        let making = try NSRegularExpression(
+            pattern: #"(?<![A-Za-z0-9_])ConfigService\s*(?:\.init)?\s*\(\s*fileURL\s*:|(?<![A-Za-z0-9_)\]])\.init\s*\(\s*fileURL\s*:"#
+        )
         let whole = text as NSString
         return making.matches(in: text, range: NSRange(location: 0, length: whole.length)).compactMap { match in
             let linesBefore = whole.substring(to: match.range.location).components(separatedBy: "\n")
