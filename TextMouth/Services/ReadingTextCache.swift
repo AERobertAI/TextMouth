@@ -2,7 +2,7 @@ import Foundation
 
 // A temporary copy of the reading text of a large book this Mac opened
 // lately (PERF22's second half). Opening a text book parses its content.md:
-// swift-markdown and the plain-text walk over every chapter, about 30 ms a
+// the Markdown parser and the plain-text walk over every chapter, about 30 ms a
 // megabyte in the Release app, 0.7 s for a 25 MB anthology and 0.8 to 1.3 s
 // for a 20 MB book in one chapter, with a transient peak of 5 to 22 times
 // the text. The reading text that parse gives is kept here, so the next open

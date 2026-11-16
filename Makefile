@@ -52,7 +52,7 @@ NO_COVERAGE = CLANG_COVERAGE_MAPPING=NO
 # well as the app's own code. project.yml gives the app's targets the level
 # (their Release blocks), but not the packages' targets, which it cannot
 # reach; a setting on the command line does, as NO_COVERAGE's does. Given
-# that way, Xcode compiles each package (ZIPFoundation, swift-markdown) file
+# that way, Xcode compiles each package (ZIPFoundation, swift-cmark) file
 # by file instead of whole-module, which is the smaller build for them, so do
 # not add SWIFT_COMPILATION_MODE=wholemodule here. SwiftSoup is not a package
 # but a vendored target (Vendor/SwiftSoup), which project.yml compiles

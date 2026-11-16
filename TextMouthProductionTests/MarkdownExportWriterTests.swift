@@ -1,4 +1,3 @@
-import Markdown
 import XCTest
 @testable import TextMouth
 
@@ -8,7 +7,7 @@ import XCTest
 /// 2026): the escaping of the Markdown an export writes, which backslashes only
 /// the characters a Markdown reader would otherwise read as syntax (the user:
 /// "every , and . character seems to be escaped in the markdown"). The
-/// examples pin each rule both ways; a round trip through swift-markdown
+/// examples pin each rule both ways; a round trip through the parser
 /// itself proves that every short string comes back as exactly its
 /// characters. Hermetic: no helper, no library, no file.
 final class MarkdownMinimalEscapingTests: XCTestCase {
@@ -101,7 +100,7 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
         XCTAssertEqual(escaped("<<"), #"\<\<"#)
     }
 
-    /// An email address between angle brackets is an autolink to swift-markdown
+    /// An email address between angle brackets is an autolink to the parser
     /// whatever its first character is: a letter or digit, or any of
     /// `. ! # $ % & ' * + / = ? ^ _ { | } ~ - ` and a backtick. Each reads back
     /// as exactly its characters, brackets included, where it became a link
@@ -249,7 +248,7 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
         XCTAssertEqual(MarkdownLiteral.guardingLineStart(#"\-\-"#), #"\-\-"#)
     }
 
-    // MARK: - The Round Trip Through swift-markdown
+    // MARK: - The Round Trip Through the Parser
 
     /// The kinds of block the round trip puts a piece in.
     private enum Place: String, CaseIterable {
@@ -265,59 +264,68 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
         }
     }
 
-    /// What swift-markdown reads from `markdown` for `place`: the strings of
+    /// What the parser (`MarkdownTree`) reads from `markdown` for `place`: the strings of
     /// the one block's children joined, or nil when the document is not
     /// that one block, or the block holds anything but `Text`.
     private func readBack(_ markdown: String, place: Place, smart: Bool) -> String? {
-        let document = Markdown.Document(parsing: markdown, options: smart ? [] : [.disableSmartOpts])
-        guard document.childCount == 1, let block = document.child(at: 0) else { return nil }
-        let container: Markdown.Markup?
-        switch place {
-        case .paragraph:
-            container = block as? Markdown.Paragraph
-        case .heading:
-            container = block as? Markdown.Heading
-        case .listItem:
-            // One bullet list of one item with no checkbox, holding one paragraph.
-            if let list = block as? Markdown.UnorderedList, list.childCount == 1,
-               let item = list.child(at: 0) as? Markdown.ListItem, item.checkbox == nil, item.childCount == 1 {
-                container = item.child(at: 0) as? Markdown.Paragraph
-            } else {
-                container = nil
+        MarkdownTree.read(markdown, smartPunctuation: smart) { document in
+            guard let block = Self.onlyChild(of: document) else { return nil }
+            let container: MarkdownNode?
+            switch place {
+            case .paragraph:
+                container = block.kind == .paragraph ? block : nil
+            case .heading:
+                container = block.kind == .heading ? block : nil
+            case .listItem:
+                // One bullet list of one item with no checkbox, holding one paragraph.
+                if block.kind == .list, !block.isOrderedList, let item = Self.onlyChild(of: block),
+                   item.kind == .listItem, !item.isTaskListItem, let paragraph = Self.onlyChild(of: item),
+                   paragraph.kind == .paragraph {
+                    container = paragraph
+                } else {
+                    container = nil
+                }
             }
+            guard let container else { return nil }
+            var text = ""
+            for child in container.children {
+                guard child.kind == .text else { return nil }
+                text += child.literal
+            }
+            return text
         }
-        guard let container else { return nil }
-        var text = ""
-        for child in container.children {
-            guard let piece = child as? Markdown.Text else { return nil }
-            text += piece.string
-        }
-        return text
     }
 
-    /// What swift-markdown reads from the two lines `first` and `second`,
+    /// `node`'s child when it has exactly one, or nil.
+    private static func onlyChild(of node: MarkdownNode) -> MarkdownNode? {
+        guard let child = node.firstChild, child.next == nil else { return nil }
+        return child
+    }
+
+    /// What the parser (`MarkdownTree`) reads from the two lines `first` and `second`,
     /// apart by a hard break, as one paragraph: its inline children as text,
     /// `⏎` for the break; nil when the document is anything but one paragraph.
     private func readTwoLines(_ first: String, _ second: String) -> [String]? {
-        let document = Markdown.Document(parsing: first + "\\\n" + second, options: [.disableSmartOpts])
-        guard document.childCount == 1, let paragraph = document.child(at: 0) as? Markdown.Paragraph else { return nil }
-        var pieces: [String] = []
-        var lastWasText = false
-        for child in paragraph.children {
-            if let text = child as? Markdown.Text {
-                // An escape can be a text of its own beside the words around it.
-                if lastWasText, let last = pieces.indices.last {
-                    pieces[last] += text.string
+        MarkdownTree.read(first + "\\\n" + second, smartPunctuation: false) { document in
+            guard let paragraph = Self.onlyChild(of: document), paragraph.kind == .paragraph else { return nil }
+            var pieces: [String] = []
+            var lastWasText = false
+            for child in paragraph.children {
+                if child.kind == .text {
+                    // An escape can be a text of its own beside the words around it.
+                    if lastWasText, let last = pieces.indices.last {
+                        pieces[last] += child.literal
+                    } else {
+                        pieces.append(child.literal)
+                    }
+                    lastWasText = true
                 } else {
-                    pieces.append(text.string)
+                    pieces.append(child.kind == .lineBreak ? "\u{23CE}" : "<\(child.kind)>")
+                    lastWasText = false
                 }
-                lastWasText = true
-            } else {
-                pieces.append(child is Markdown.LineBreak ? "\u{23CE}" : "<\(type(of: child))>")
-                lastWasText = false
             }
+            return pieces
         }
-        return pieces
     }
 
     /// A line that is a table's delimiter row, after a hard break, turns the
@@ -332,8 +340,10 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
                 ["one", "\u{23CE}", text],
                 "guarded \(row.debugDescription)"
             )
-            let unguarded = Markdown.Document(parsing: "one\\\n" + row, options: [.disableSmartOpts])
-            XCTAssertTrue(unguarded.children.contains { $0 is Markdown.Table }, "unguarded \(row.debugDescription) is no table")
+            let unguardedIsATable = MarkdownTree.read("one\\\n" + row, smartPunctuation: false) { document in
+                document.children.contains { $0.kind == .table }
+            }
+            XCTAssertTrue(unguardedIsATable, "unguarded \(row.debugDescription) is no table")
         }
     }
 
@@ -345,7 +355,7 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
     }
 
     /// Asserts that each of `strings`, minimally escaped (for `smart`
-    /// punctuation or not), reads back from swift-markdown as exactly its
+    /// punctuation or not), reads back from the parser as exactly its
     /// characters in a paragraph, a heading, and a list item. Strings that
     /// begin or end with a space are skipped: Markdown trims a line's ends.
     private func assertRoundTrip(_ strings: [String], smart: Bool, file: StaticString = #filePath, line: UInt = #line) {

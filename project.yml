@@ -10,16 +10,17 @@ options:
 # an exactVersion requirement, so regenerating the project can never float to
 # an untested release, and the committed Package.resolved under
 # TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/ pins exact
-# revisions plus the transitive swift-cmark package. `make check` fails when
-# resolution would change that file. To upgrade a package, change its version
-# here, run `make update-packages`, review the Package.resolved diff, run
-# `make check`, and commit both files together.
+# revisions. `make check` fails when resolution would change that file. To
+# upgrade a package, change its version here, run `make update-packages`,
+# review the Package.resolved diff, run `make check`, and commit both files
+# together.
 packages:
   ZIPFoundation:
     url: https://github.com/weichsel/ZIPFoundation.git
     exactVersion: "0.9.20"
-  swift-markdown:
-    url: https://github.com/swiftlang/swift-markdown.git
+  # cmark-gfm, the Markdown parser: the app reads its tree itself (MarkdownTree).
+  swift-cmark:
+    url: https://github.com/swiftlang/swift-cmark.git
     exactVersion: "0.9.0"
 
 # Every target compiles in the Swift 6 language mode and checks Swift
@@ -183,22 +184,12 @@ targets:
             destination: resources
             subpath: Licenses/SwiftSoup
       # The Swift packages' licences, from the one copy in Vendor/package-licenses that the iPhone app copies too. Each
-      # package has its own entries (two for swift-markdown's licence and notice), so a dropped package takes them with it.
+      # package has its own entries, so a dropped package takes them with it.
       - path: Vendor/package-licenses/ZIPFoundation/LICENSE
         buildPhase:
           copyFiles:
             destination: resources
             subpath: Licenses/ZIPFoundation
-      - path: Vendor/package-licenses/swift-markdown/LICENSE
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: Licenses/swift-markdown
-      - path: Vendor/package-licenses/swift-markdown/NOTICE
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: Licenses/swift-markdown
       - path: Vendor/package-licenses/swift-cmark/COPYING
         buildPhase:
           copyFiles:
@@ -269,8 +260,11 @@ targets:
       - package: ZIPFoundation
       # The HTML and XML parser, vendored (Vendor/SwiftSoup).
       - target: SwiftSoup
-      - package: swift-markdown
-        product: Markdown
+      # The Markdown parser and its GitHub extensions (MarkdownTree).
+      - package: swift-cmark
+        product: cmark-gfm
+      - package: swift-cmark
+        product: cmark-gfm-extensions
       # The MP3 encoder, linked into the app (MP3Encoder).
       - target: LAME
       # The Objective-C exception catcher (ObjCException).
@@ -394,16 +388,6 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/ZIPFoundation
-      - path: Vendor/package-licenses/swift-markdown/LICENSE
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: Licenses/swift-markdown
-      - path: Vendor/package-licenses/swift-markdown/NOTICE
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: Licenses/swift-markdown
       - path: Vendor/package-licenses/swift-cmark/COPYING
         buildPhase:
           copyFiles:
@@ -444,8 +428,11 @@ targets:
     dependencies:
       - package: ZIPFoundation
       - target: SwiftSoup_iOS
-      - package: swift-markdown
-        product: Markdown
+      # The Markdown parser and its GitHub extensions (MarkdownTree).
+      - package: swift-cmark
+        product: cmark-gfm
+      - package: swift-cmark
+        product: cmark-gfm-extensions
       - target: LAME_iOS
       - target: ObjCExceptionCatcher_iOS
     # The iPhone app's scheme, committed, so that `xcodebuild test -scheme

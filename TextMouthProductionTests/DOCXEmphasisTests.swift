@@ -7,7 +7,7 @@ import XCTest
 /// `MarkdownEmphasis`, which writes only delimiters that Markdown pairs, a
 /// stretch of touching runs at a time, so a mark of bold or italic is never
 /// read aloud as an asterisk. These tests ask what a listener hears (the
-/// reading text swift-markdown makes of the Markdown), not the Markdown string.
+/// reading text the reader makes of the Markdown), not the Markdown string.
 final class DOCXEmphasisTests: XCTestCase {
 
     private func bold(_ text: String) -> String { docxRun(text, "<w:b/>") }

@@ -41,10 +41,6 @@ LICENSES_ROOT = "Licenses"
 # project.yml.
 LIBRARY_LICENCES = {
     "zipfoundation": ("ZIPFoundation", ["Vendor/package-licenses/ZIPFoundation/LICENSE"]),
-    "swift-markdown": (
-        "swift-markdown",
-        ["Vendor/package-licenses/swift-markdown/LICENSE", "Vendor/package-licenses/swift-markdown/NOTICE"],
-    ),
     "swift-cmark": ("swift-cmark", ["Vendor/package-licenses/swift-cmark/COPYING"]),
     "SwiftSoup_iOS": ("SwiftSoup", ["Vendor/SwiftSoup/LICENSE"]),
     "LAME_iOS": ("LAME", ["Vendor/lame/COPYING", "Vendor/lame/LICENSE"]),
@@ -69,8 +65,8 @@ def linked_libraries(project):
     """The names of what TextMouthiOS links, from project.yml's dependencies.
 
     A package dependency is named by its package; a target dependency by its
-    target. Packages the listed ones build on (swift-cmark under
-    swift-markdown) are added by `package_identities`.
+    target. Packages the listed ones build on are added by
+    `package_identities`.
     """
     names = []
     for dependency in project["targets"][IOS_TARGET].get("dependencies", []):

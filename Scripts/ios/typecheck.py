@@ -83,12 +83,9 @@ IOS_TEST_TARGET = "TextMouthiOSTests"
 SHARED_TESTS_FOLDER = f"{IOS_TEST_TARGET}/_SharedWithTheMac"
 
 # Each package: its identity in Package.resolved, its checkout's folder name,
-# and the folder name the probe gives it. swift-markdown finds cmark at
-# ../cmark when SWIFTCI_USE_LOCAL_DEPS is set, which keeps the build off the
-# network.
+# and the folder name the probe gives it.
 PACKAGES = [
     ("zipfoundation", "ZIPFoundation", "ZIPFoundation"),
-    ("swift-markdown", "swift-markdown", "swift-markdown"),
     ("swift-cmark", "swift-cmark", "cmark"),
 ]
 
@@ -273,7 +270,8 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
                 "ObjCExceptionCatcher",
                 "ZIPFoundation",
                 "SwiftSoup",
-                .product(name: "Markdown", package: "swift-markdown"),
+                .product(name: "cmark-gfm", package: "cmark"),
+                .product(name: "cmark-gfm-extensions", package: "cmark"),
             ],
             path: "{target}",
             exclude: [{skipped}],
@@ -289,7 +287,7 @@ let package = Package(
     platforms: [.iOS("{ios_target}"), .macOS(.v14)],
     dependencies: [
         .package(path: "{pkgs / 'ZIPFoundation'}"),
-        .package(path: "{pkgs / 'swift-markdown'}"),
+        .package(path: "{pkgs / 'cmark'}"),
     ],
     targets: [
         // LAME's encoder, as project.yml's LAME target builds it.
@@ -328,7 +326,8 @@ let package = Package(
                 "ObjCExceptionCatcher",
                 "ZIPFoundation",
                 "SwiftSoup",
-                .product(name: "Markdown", package: "swift-markdown"),
+                .product(name: "cmark-gfm", package: "cmark"),
+                .product(name: "cmark-gfm-extensions", package: "cmark"),
             ],
             path: "TextMouth",
             exclude: [{excludes}],
@@ -475,7 +474,7 @@ def reason_for(round_number, messages, mac_names, skipped_names):
 # An import line of a Swift file: its attributes, an optional kind (`import struct Foo.Bar`), and the module's dotted name.
 IMPORT = re.compile(r"^[ \t]*(?:@\w+(?:\([^)]*\))?\s+)*import\s+(?:(?:struct|class|enum|func|typealias|protocol|var|let)\s+)?([A-Za-z_][\w.]*)", re.M)
 # Modules every test file may import that are not the SDK's: the compiler is not asked about these.
-KNOWN_MODULES = {"XCTest", "Testing", "TextMouth", "ZIPFoundation", "SwiftSoup", "Markdown", "LAME", "ObjCExceptionCatcher", "UIKit"}
+KNOWN_MODULES = {"XCTest", "Testing", "TextMouth", "ZIPFoundation", "SwiftSoup", "cmark_gfm", "cmark_gfm_extensions", "LAME", "ObjCExceptionCatcher", "UIKit"}
 
 
 def unavailable_imports(src, sdk, ios_target, say):

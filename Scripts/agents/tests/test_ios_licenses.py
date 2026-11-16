@@ -18,7 +18,7 @@ check_licenses = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(check_licenses)
 
 # The packages the real iPhone app links, as Package.resolved names them.
-IDENTITIES = ["zipfoundation", "swift-markdown", "swift-cmark"]
+IDENTITIES = ["zipfoundation", "swift-cmark"]
 
 
 def copy_entry(path, folder):
@@ -39,7 +39,7 @@ def complete_project():
                 "dependencies": [
                     {"package": "ZIPFoundation"},
                     {"target": "SwiftSoup_iOS"},
-                    {"package": "swift-markdown", "product": "Markdown"},
+                    {"package": "swift-cmark", "product": "cmark-gfm"},
                     {"target": "LAME_iOS"},
                     {"target": "ObjCExceptionCatcher_iOS"},
                 ],

@@ -63,16 +63,15 @@ final class BundledLicenseTests: XCTestCase {
         XCTAssertTrue(licence.contains("Thomas Zoechling"), String(licence.prefix(160)))
     }
 
-    /// swift-markdown's licence (Apache 2.0) and its NOTICE are in the app. When the package goes, this test and its
-    /// project.yml entries go with it.
-    func testSwiftMarkdownLicenseAndNoticeShipWithTheApp() throws {
-        let licence = try licenseText("swift-markdown", "LICENSE")
-        XCTAssertTrue(licence.contains("Apache License"), String(licence.prefix(120)))
-        let notice = try licenseText("swift-markdown", "NOTICE")
-        XCTAssertTrue(notice.contains("The Swift Markdown Project"), String(notice.prefix(120)))
+    /// swift-markdown left the app on November 15, 2026 (Markdown is read from cmark's own tree), so its licence and
+    /// its NOTICE are no longer in the app: a notice for code the app does not hold would mislead.
+    func testSwiftMarkdownNoticeIsGoneWithThePackage() throws {
+        let resources = try XCTUnwrap(Bundle.main.resourceURL, "the app has no Resources folder")
+        let folder = resources.appendingPathComponent("Licenses/swift-markdown")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path), "Licenses/swift-markdown is still in the app")
     }
 
-    /// swift-cmark's COPYING, cmark's BSD licence, is in the app.
+    /// swift-cmark's COPYING, cmark's BSD licence, is in the app: cmark is the Markdown parser the app links.
     func testSwiftCmarkLicenseShipsWithTheApp() throws {
         let licence = try licenseText("swift-cmark", "COPYING")
         XCTAssertTrue(licence.contains("John MacFarlane"), String(licence.prefix(120)))

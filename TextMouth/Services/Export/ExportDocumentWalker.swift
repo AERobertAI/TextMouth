@@ -1,5 +1,4 @@
 import Foundation
-import Markdown
 
 // MARK: - The Walk of content.md (FMT18)
 
@@ -180,9 +179,10 @@ struct ExportHeadingIDs {
 // MARK: - The Walk's State
 
 /// The state of one walk of a content.md: the ids its headings have taken,
-/// and the functions that make blocks and runs from swift-markdown's tree.
-/// Every swift-markdown type is written `Markdown.Name`, since TextMouth has
-/// types of its own with some of the same names.
+/// and the functions that make blocks and runs from the tree cmark parses
+/// (`MarkdownTree`). Until November 15, 2026 the walk read the tree
+/// swift-markdown built from cmark's; it reads every node as it read that
+/// tree's, and `MarkdownWalkCorpusTests` holds the records that prove it.
 private struct Walk {
     /// What the walk keeps besides the words.
     let options: ExportWalkOptions
@@ -213,8 +213,9 @@ private struct Walk {
     /// that asked names the chapter in its contents without adding words the
     /// book does not have.
     mutating func blocks(ofSectionTitled title: String, content: String) -> [ExportBlock] {
-        let parsed = Markdown.Document(parsing: content)
-        var blocks = Self.droppingRedundantTargets(from: self.blocks(in: parsed, nesting: 0, listDepth: 0))
+        var blocks = Self.droppingRedundantTargets(
+            from: MarkdownTree.read(content) { document in self.blocks(in: document, nesting: 0, listDepth: 0) }
+        )
         // Claimed after the blocks are made: they hold no heading, so the
         // order of ids is still the order of reading.
         if !options.keepsChapters, !title.isEmpty, ExportBlock.headings(in: blocks).isEmpty {
@@ -233,7 +234,7 @@ private struct Walk {
     /// The blocks of `container`'s children, in order. `nesting` counts the
     /// lists and quotes opened around the container and `listDepth` the lists;
     /// the document's body is 0 and 0.
-    mutating func blocks(in container: Markdown.Markup, nesting: Int, listDepth: Int) -> [ExportBlock] {
+    mutating func blocks(in container: MarkdownNode, nesting: Int, listDepth: Int) -> [ExportBlock] {
         var made: [ExportBlock] = []
         for child in container.children {
             made += blocks(of: child, nesting: nesting, listDepth: listDepth)
@@ -243,23 +244,23 @@ private struct Walk {
 
     /// The blocks `block` makes: usually one, none for a block that is
     /// dropped, several for a list or quote past the nesting cap.
-    private mutating func blocks(of block: Markdown.Markup, nesting: Int, listDepth: Int) -> [ExportBlock] {
-        switch block {
-        case let heading as Markdown.Heading:
+    private mutating func blocks(of block: MarkdownNode, nesting: Int, listDepth: Int) -> [ExportBlock] {
+        switch block.kind {
+        case .heading:
             // A page that starts inside a heading starts where the heading
             // does (as the reader places it), so it is a break before it.
             // A contents target inside a heading is the heading's own place,
             // which the contents link already: the reader adds no row for it.
-            let (places, runs) = Self.splittingPlaces(from: self.runs(of: heading))
+            let (places, runs) = Self.splittingPlaces(from: self.runs(of: block))
             let breaks = places.compactMap(\.pageBreak).map(ExportBlock.pageBreak)
             // A heading with nothing to read is dropped, as the reader's
             // heading list drops it.
             guard !runs.isEmpty else { return breaks }
-            let level = min(max(heading.level, 1), 6)
+            let level = min(max(block.headingLevel, 1), 6)
             return breaks + [.heading(ExportHeading(level: level, runs: runs, id: ids.claim(runs.plainText)))]
 
-        case let paragraph as Markdown.Paragraph:
-            let runs = self.runs(of: paragraph)
+        case .paragraph:
+            let runs = self.runs(of: block)
             // A paragraph that is only the start of a page, or a place the
             // contents point at, is that and no paragraph.
             if !runs.isEmpty, runs.allSatisfy(\.isPlace) {
@@ -267,50 +268,50 @@ private struct Walk {
             }
             return runs.isEmpty ? [] : [.paragraph(runs)]
 
-        case let list as Markdown.UnorderedList:
-            return listBlocks(of: list, isOrdered: false, start: 1, nesting: nesting, listDepth: listDepth)
+        case .list:
+            // An unordered list starts at 1. CommonMark allows an ordered
+            // list a start of at most nine digits (a longer number is no
+            // list), and cmark never gives one below 0.
+            let isOrdered = block.isOrderedList
+            let start = isOrdered ? max(block.listStart, 0) : 1
+            return listBlocks(of: block, isOrdered: isOrdered, start: start, nesting: nesting, listDepth: listDepth)
 
-        case let list as Markdown.OrderedList:
-            // CommonMark allows a start of at most nine digits (a longer
-            // number is no list), so the parser's start always fits; the
-            // conversion clamps all the same, so it can never trap.
-            let start = Int(clamping: list.startIndex)
-            return listBlocks(of: list, isOrdered: true, start: start, nesting: nesting, listDepth: listDepth)
-
-        case let quote as Markdown.BlockQuote:
+        case .blockQuote:
             // Past the cap the quote is not opened: its blocks join the
             // container that holds it.
             if nesting >= ExportDocument.maximumNesting {
-                return blocks(in: quote, nesting: nesting, listDepth: listDepth)
+                return blocks(in: block, nesting: nesting, listDepth: listDepth)
             }
-            return [.blockQuote(blocks(in: quote, nesting: nesting + 1, listDepth: listDepth))]
+            return [.blockQuote(blocks(in: block, nesting: nesting + 1, listDepth: listDepth))]
 
-        case let code as Markdown.CodeBlock:
+        case .codeBlock:
             // The parser keeps the line feed that ends the code.
-            var text = code.code
+            var text = block.literal
             if text.hasSuffix("\n") {
                 text.removeLast()
             }
             return text.isEmpty ? [] : [.codeBlock(text)]
 
-        case is Markdown.ThematicBreak:
+        case .thematicBreak:
             return [.thematicBreak]
 
-        case let table as Markdown.Table:
+        case .table:
             // A target in a cell is a place before the table; a page that
             // starts in a cell stays in it (`ExportTable.cellPages`).
-            let (hoisted, converted) = self.table(of: table)
+            let (hoisted, converted) = self.table(of: block)
             return hoisted + (converted.map { [.table($0)] } ?? [])
 
-        case let html as Markdown.HTMLBlock:
-            return blocks(ofHTML: html, nesting: nesting, listDepth: listDepth)
+        case .htmlBlock:
+            return blocks(ofHTML: block.literal, nesting: nesting, listDepth: listDepth)
 
-        case let other as Markdown.BlockContainer:
-            // Any other container is walked for its children; any other
-            // block is dropped.
-            return blocks(in: other, nesting: nesting, listDepth: listDepth)
+        case .document, .listItem, .other:
+            // Any other container of blocks is walked for its children
+            // (cmark makes none of these here from a text).
+            return blocks(in: block, nesting: nesting, listDepth: listDepth)
 
-        default:
+        case .tableHeader, .tableRow, .tableCell, .text, .softBreak, .lineBreak, .inlineCode, .inlineHTML, .emphasis,
+             .strong, .strikethrough, .link, .image, .inlineAttributes:
+            // Anything else is no block, and is dropped.
             return []
         }
     }
@@ -320,15 +321,17 @@ private struct Walk {
     /// reads them, but for what follows a line's markers (ST05, read as the
     /// reader reads it, `MarkdownMarker.leading(of:)`): that is Markdown, and
     /// its blocks are walked, preceded by the places of the markers.
-    private mutating func blocks(ofHTML html: Markdown.HTMLBlock, nesting: Int, listDepth: Int) -> [ExportBlock] {
-        if !isReadingRestOfMarkerLine, let (markers, rest) = MarkdownMarker.leading(of: html.rawHTML) {
+    private mutating func blocks(ofHTML rawHTML: String, nesting: Int, listDepth: Int) -> [ExportBlock] {
+        if !isReadingRestOfMarkerLine, let (markers, rest) = MarkdownMarker.leading(of: rawHTML) {
             var made = markers.compactMap { place(of: $0) }.compactMap(Self.block(ofPlace:))
             isReadingRestOfMarkerLine = true
-            made += blocks(in: Markdown.Document(parsing: String(rest)), nesting: nesting, listDepth: listDepth)
+            made += MarkdownTree.read(String(rest)) { document in
+                blocks(in: document, nesting: nesting, listDepth: listDepth)
+            }
             isReadingRestOfMarkerLine = false
             return made
         }
-        if let marker = MarkdownMarker.decode(html.rawHTML), let found = place(of: marker) {
+        if let marker = MarkdownMarker.decode(rawHTML), let found = place(of: marker) {
             return [Self.block(ofPlace: found)].compactMap { $0 }
         }
         return []
@@ -413,13 +416,13 @@ private struct Walk {
     /// nesting cap the list is not opened: each item's blocks, in turn, join
     /// the container that holds it.
     private mutating func listBlocks(
-        of list: Markdown.Markup,
+        of list: MarkdownNode,
         isOrdered: Bool,
         start: Int,
         nesting: Int,
         listDepth: Int
     ) -> [ExportBlock] {
-        let items = list.children.compactMap { $0 as? Markdown.ListItem }
+        let items = list.children.filter { $0.kind == .listItem }
         if nesting >= ExportDocument.maximumNesting {
             var joined: [ExportBlock] = []
             for item in items {
@@ -443,12 +446,16 @@ private struct Walk {
     /// the contents targets in its cells, and the pages in a head row that is
     /// left out. The pages that start in the other cells stay in them
     /// (`ExportTable.cellPages`).
-    private mutating func table(of table: Markdown.Table) -> (before: [ExportBlock], table: ExportTable?) {
+    private mutating func table(of table: MarkdownNode) -> (before: [ExportBlock], table: ExportTable?) {
         var before: [ExportBlock] = []
         var rows: [[String]] = []
         var found: [ExportCellPage] = []
-        let allRows = [Array(table.head.cells)] + table.body.rows.map { Array($0.cells) }
-        for (rowIndex, cells) in allRows.enumerated() {
+        // cmark's table holds its rows, the header row first. A table
+        // without one (cmark makes none) has a head row of no cells.
+        var allRows = Array(table.children)
+        let head = allRows.first?.kind == .tableHeader ? allRows.removeFirst() : nil
+        let cellsOfRows = [head.map { Array($0.children) } ?? []] + allRows.map { Array($0.children) }
+        for (rowIndex, cells) in cellsOfRows.enumerated() {
             var texts: [String] = []
             for (column, cell) in cells.enumerated() {
                 let cellText = self.cellText(cell, hoisting: &before)
@@ -479,7 +486,7 @@ private struct Walk {
     /// Characters of the words come before it; the targets that start in it
     /// join `hoisted`.
     private mutating func cellText(
-        _ cell: Markdown.Markup,
+        _ cell: MarkdownNode,
         hoisting hoisted: inout [ExportBlock]
     ) -> (text: String, pages: [(offset: Int, page: ExportPageBreak)]) {
         var text = ""
@@ -506,7 +513,7 @@ private struct Walk {
     /// or a table cell: neighbouring runs of one style joined, runs with no
     /// text dropped (but for the start of a page), and white space and line
     /// feeds trimmed from both ends of the text.
-    mutating func runs(of container: Markdown.Markup) -> [ExportRun] {
+    mutating func runs(of container: MarkdownNode) -> [ExportRun] {
         var runs = Self.joined(inlineRuns(of: container, style: ExportRun("")))
         // Trim the first run that has text at its start and the last at its
         // end, dropping any run that trimming empties, until each end has
@@ -549,44 +556,45 @@ private struct Walk {
     /// The runs of `markup`'s children in `style` (an `ExportRun` with empty
     /// text, carrying the emphasis, strength, code, and link of the markup
     /// around them), before neighbours are joined.
-    private mutating func inlineRuns(of markup: Markdown.Markup, style: ExportRun) -> [ExportRun] {
+    private mutating func inlineRuns(of markup: MarkdownNode, style: ExportRun) -> [ExportRun] {
         var made: [ExportRun] = []
         for child in markup.children {
             var inner = style
-            switch child {
-            case let text as Markdown.Text:
-                made.append(Self.styled(text.string, like: style))
+            switch child.kind {
+            case .text:
+                made.append(Self.styled(child.literal, like: style))
                 continue
-            case is Markdown.Emphasis:
+            case .emphasis:
                 inner.isEmphasis = true
-            case is Markdown.Strong:
+            case .strong:
                 inner.isStrong = true
-            case is Markdown.Strikethrough:
+            case .strikethrough:
                 break // keeps the style it is in
-            case let code as Markdown.InlineCode:
+            case .inlineCode:
                 inner.isCode = true
-                made.append(Self.styled(code.code, like: inner))
+                made.append(Self.styled(child.literal, like: inner))
                 continue
-            case let link as Markdown.Link:
+            case .link:
                 // Only a web or mail address becomes a link; any other
                 // link's words are plain text in the style they had.
-                if let destination = link.destination, ExportRun.isAllowedLinkAddress(destination) {
+                if let destination = child.destination, ExportRun.isAllowedLinkAddress(destination) {
                     inner.link = destination.trimmingCharacters(in: .whitespacesAndNewlines)
                 }
-            case is Markdown.Image:
+            case .image:
                 break // its alternative text, in the style it is in; never its source
-            case is Markdown.SoftBreak:
+            case .softBreak:
                 made.append(Self.styled(" ", like: style))
                 continue
-            case is Markdown.LineBreak:
+            case .lineBreak:
                 made.append(Self.styled("\n", like: style))
                 continue
-            case let html as Markdown.InlineHTML:
-                // Dropped, ahead of the container case below, but for a page
-                // start or a contents target where the walk keeps them: a run
-                // of its own at its exact place in the text, in the style it
-                // is in.
-                if let marker = MarkdownMarker.decode(html.rawHTML), var found = place(of: marker) {
+            case .inlineHTML:
+                // Dropped, but for a page start or a contents target where
+                // the walk keeps them: a run of its own at its exact place in
+                // the text, in the style it is in. No string is made of it
+                // for a walk that keeps none.
+                if options.keepsPageMarkers, let marker = MarkdownMarker.decode(child.literal),
+                   var found = place(of: marker) {
                     found.isEmphasis = style.isEmphasis
                     found.isStrong = style.isStrong
                     found.isCode = style.isCode
@@ -594,10 +602,11 @@ private struct Walk {
                     made.append(found)
                 }
                 continue
-            case is Markdown.InlineContainer:
-                break // any other container: its children
-            default:
-                continue // any other inline: nothing
+            case .inlineAttributes, .paragraph, .heading, .tableCell:
+                break // any other container of inlines: its children
+            case .document, .blockQuote, .list, .listItem, .codeBlock, .htmlBlock, .thematicBreak, .table,
+                 .tableHeader, .tableRow, .other:
+                continue // anything else: nothing
             }
             made += inlineRuns(of: child, style: inner)
         }
