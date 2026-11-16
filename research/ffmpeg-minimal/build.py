@@ -181,6 +181,7 @@ ALL_BUILDS = [
     ("d", "macos", "small"),
     ("a", "ios", "small"), ("a", "iossim", "small"),
     ("a", "macos", "small-lto"),
+    ("b", "ios", "small"), ("d", "ios", "small"), ("d", "iossim", "small"),
 ]
 
 # The test samples, by their path under TestData/format-samples, and the
