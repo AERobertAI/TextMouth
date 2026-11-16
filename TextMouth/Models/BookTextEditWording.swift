@@ -97,6 +97,9 @@ enum BookTextEditWording {
         case .noChapters:
             return "Text not updated: the edited text of \(bookTitle) has no chapter left with anything in it. "
                 + "Undo the change in your editor and save again; until then, the book keeps the text it had."
+        case .nestedTooDeeply(let limit):
+            return "Text not updated: the edited text of \(bookTitle) nests quotes, lists, or emphasis more than \(limit.formatted()) levels deep, "
+                + "which TextMouth can't read safely. Undo the change in your editor and save again; until then, the book keeps the text it had."
         case .sourceChanged:
             return "Text not updated: the original file of \(bookTitle) changed too, "
                 + "so TextMouth reads the book's text from that file again the next time the book opens."
@@ -157,6 +160,9 @@ enum BookTextEditWording {
         case .noChapters:
             return "it has no chapter left with anything in it. Undo the change in your editor and save again, "
                 + "and \(outcome)."
+        case .nestedTooDeeply(let limit):
+            return "it nests quotes, lists, or emphasis more than \(limit.formatted()) levels deep, which TextMouth can't read safely. "
+                + "Undo the change in your editor and save again, and \(outcome)."
         case .sourceChanged:
             return "the book's own file changed too. Open the book again to read its text from that file."
         case .transcriptChanged:
