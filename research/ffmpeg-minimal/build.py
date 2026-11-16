@@ -525,8 +525,11 @@ COMPONENT_PATTERNS = [
     ("RIFF and WAVE headers (shared by ASF, AVI, Matroska)", r"^libavformat\.a\(riff"),
     ("Speex decoder", r"^libavcodec\.a\(speex"),
     ("Musepack decoders", r"^libavcodec\.a\(mpc"),
-    ("RealAudio decoders", r"^libavcodec\.a\((cook|sipr|atrac|ralf|ra144|ra288|acelp|celp|lsp|qcelp)"),
-    ("AAC decoder", r"^libavcodec\.a\(aac|^libavcodec\.a\(sbr|^libavcodec\.a\(psdata|^libavcodec\.a\(cbrt"),
+    # The speech codecs' shared tools serve WMA Voice as well as ACELP.net.
+    ("Speech-codec tools (WMA Voice, ACELP.net)", r"^libavcodec\.a\((acelp|celp|lsp)"),
+    ("RealAudio decoders", r"^libavcodec\.a\((cook|sipr|atrac|ralf|ra144|ra288)"),
+    # aactab.o is a table other decoders share too, so it stays in the core.
+    ("AAC decoder", r"^libavcodec\.a\(aac(?!tab)|^libavcodec\.a\(sbr|^libavcodec\.a\(psdata|^libavcodec\.a\(cbrt"),
     ("MP3 and MP2 decoders", r"^libavcodec\.a\(mpegaudio|^libavcodec\.a\(mpa|^libavcodec\.a\(dct32"),
     ("AC-3 and E-AC-3 decoders", r"^libavcodec\.a\((ac3|eac3)"),
     ("DTS decoder", r"^libavcodec\.a\(dca|^libavcodec\.a\(dolby_e|^libavcodec\.a\(synth_filter"),
