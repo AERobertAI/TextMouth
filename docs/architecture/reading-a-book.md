@@ -72,7 +72,8 @@ Code that asks where Play will start must not prepare speech to find out: Play's
 
 Speaking begins a new play of the chapter (ChapterPlay), which gives the speech service a finish callback made for that play, and hands the spoken text and the starting offset to SpeechService.speak.
 SpeechService.speak starts the synthesizer speaking directly at once, from a short first chunk, and renders the same text into an AudioEngineService in the background, through SpeechRenderCoordinator, for the next natural break.
-The reader then pre-renders the next speakable chapter, recording what that render was asked for as its signature and carrying that chapter's speech to its start; a chapter too long to render ahead is not rendered, and only its speech is prepared, off the main actor.
+The reader then prepares the next speakable chapter's speech at once, carrying it to the chapter's start, and renders its audio once the playing chapter's end is within the lead (5 minutes at least).
+The render's signature records what it was asked for; a chapter too long to render ahead is not rendered, and only its speech is prepared, off the main actor.
 As each word is spoken, onWordSpoken moves the cursor back through the offset map to the original text.
 The reader refreshes its view at most every 0.12 seconds, gives the library's rows and summary bar its cursor about once a second, through LiveReadingPositions, and saves a durable checkpoint every 30 seconds, into the book's record at once and into library.json within five minutes.
 
@@ -82,7 +83,7 @@ The reader refreshes its view at most every 0.12 seconds, gives the library's ro
 When a chapter's speech finishes, the callback made for its play ignores the end of a play the reader has already left, a later play having begun.
 Otherwise it saves the position and starts the next speakable chapter after the one that played, as a new play.
 It does not do so when the reader's own sleep timer stops playback at this chapter's end, where the next chapter begins the next heading, or the book ends (expireAtChapterEnd(endingTheHeading:endingTheBook:by:)): the reader stops there instead, its cursor waiting at the next chapter's start.
-If the look-ahead holds that chapter's audio, rendered with the signature its speech has now, the engine plays it at once and the chapter after it is pre-rendered; otherwise the chapter is spoken from its current text.
+If the look-ahead holds that chapter's audio, rendered with the signature its speech has now, the engine plays it at once and the chapter after it is prepared, to render within its own lead; otherwise the chapter is spoken from its current text.
 When no speakable chapter remains, handleEndOfBook stops, starts the book again, or continues to the next book in the folder or feed, as the book's end-of-book rule says (EndOfBookRule: its own choice, else its feed's or folder's, else the global setting).
 A sleep timer of the reader's can end listening there instead (sleepTimerEndsListeningHere: a running timer counting minutes goes on with the next book).
 For a book read from the reading list, handleEndOfBook goes where the list's options say (finishBookReadFromReadingList).

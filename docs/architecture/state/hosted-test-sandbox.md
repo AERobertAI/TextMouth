@@ -139,7 +139,7 @@ VoiceOver announcements.
   ContentView's folder announcement goes through it too (announceFolderChange).
 
 ## The network
-<!-- id: network; keys: URLProtocol, offline tests, notifications permission, URLSession, no internet, stubbing; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/FeedTestSupport.swift -->
+<!-- id: network; keys: URLProtocol, offline tests, notifications permission, URLSession, no internet, stubbing; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/FeedTestSupport.swift, TextMouthProductionTests/FeedUIAddFeedTests.swift, TextMouthProductionTests/AccessibilityTestSupport.swift -->
 
 The network.
 
@@ -148,7 +148,12 @@ The network.
   The move of the retired settings to the List and download choice still runs.
   The feed tests answer their requests, a podcast directory search's included (FeedEnvironment.directory), from a stub server of their own (FeedNetwork.stubbed(protocolClasses:reachability:)), so no test reaches the network.
   FeedArrivals.shared posts its notifications through InertFeedNotifier there, so no test reaches the system's notification center or shows a permission prompt.
-  FeedTestWorld.finish(_:) stops a test's feed engine, stops its downloads as quitting does, waits for its sweeps and passes, and then waits for every write it asked for: its records (FeedStore.flush()), its fetch details, and the statistics saves.
+  FeedTestWorld.finish(_:) stops a test's feed engine, stops its downloads as quitting does, waits (up to 15 seconds) for its sweeps, passes, and refreshes under way, and then waits for every write it asked for: its records (FeedStore.flush()), its fetch details, and the statistics saves.
+  FeedTestWorld.engine(_:on:) makes every engine a test needs besides the world's own, and its teardown runs finish(_:) before the world's folders go.
+  One made by hand left its last record writes to land once the sandbox was gone, and the failure was announced into LibraryFeedMoveToFolderTests on GitHub's runner.
+  FeedUIAddFeedTests.testEveryOtherEngineComesFromTheWorld reads the sources of all three test folders and fails on any engine made by hand, however it is spelled.
+  StubResponse.answerGate holds a whole answer on a background queue until a test lets it go, for a refresh or download whose request has reached the server.
+  recordingAnnouncementsWhileAwaiting(_:) records what is announced while a test waits for work to end, the store's flush included.
   FeedTestWorld.relaunch(_:configuring:) lets a test hook the next engine.
   FeedTestWorld.holdImports(_:), through a WorkGate, holds the import queue until the gate is released, as heavy load can.
   The test's teardown releases the gate too.
