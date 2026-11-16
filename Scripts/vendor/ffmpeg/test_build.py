@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """test_build.py: tests of Scripts/vendor/ffmpeg/build.py, the FFmpeg build TextMouth links.
 
-They build nothing: they check the pin, the configure line (all of it LGPL, every component the
+They build nothing: they check the pin and that only a file of its size and SHA-256 is built
+from, the configure line (all of it LGPL, every component the
 import reads, no path of the building Mac), the key, the archive reader that merges FFmpeg's
 libraries, the Mach-O platform check, the path scan, the refusal of a tarball member outside its
 folder, the Xcode settings, and that the notices both apps ship are the release's own and the
@@ -22,6 +23,7 @@ import sys
 import tarfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.dont_write_bytecode = True
 
@@ -180,6 +182,31 @@ class ReleaseTests(unittest.TestCase):
         path = SCRATCH / name
         path.write_bytes(lzma.compress(buffer.getvalue()))
         return path
+
+    def test_only_the_pinned_release_is_built_from(self):
+        # A small file's size and SHA-256 stand in for the pin, so no 12 MB release is needed.
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        pinned = SCRATCH / "pinned.tar.xz"
+        pinned.write_bytes(b"the pinned release")
+        flipped = SCRATCH / "flipped.tar.xz"
+        flipped.write_bytes(b"the pinned releasE")  # the same size, one byte changed: only the digest differs
+        work = SCRATCH / "work-pin"
+        wanted = work / "download" / build.tarball_name()
+        with mock.patch.object(build, "FFMPEG_SHA256", build.digest_of(pinned)), \
+                mock.patch.object(build, "FFMPEG_TARBALL_BYTES", pinned.stat().st_size), \
+                mock.patch.object(build, "SHARED_DOWNLOADS", None):
+            self.assertTrue(build.is_the_release(pinned))
+            self.assertFalse(build.is_the_release(flipped))
+            self.assertFalse(build.is_the_release(SCRATCH / "no-such.tar.xz"))
+            # A file in the work folder that is not the release is not used; a file given that
+            # is not the release is refused and never copied in; the release given is.
+            wanted.parent.mkdir(parents=True, exist_ok=True)
+            wanted.write_bytes(b"stale")
+            with self.assertRaises(build.BuildError):
+                build.release_tarball(work, given=flipped)
+            self.assertEqual(wanted.read_bytes(), b"stale")
+            self.assertEqual(build.release_tarball(work, given=pinned), wanted)
+            self.assertEqual(wanted.read_bytes(), pinned.read_bytes())
 
     def test_a_member_outside_the_release_folder_is_refused(self):
         prefix = f"ffmpeg-{build.FFMPEG_VERSION}"
