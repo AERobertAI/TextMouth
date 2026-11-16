@@ -117,6 +117,8 @@ write_stubs() {
 #                               build/xcodebuild-Release.log; empty writes none
 #   STUB_APP_BYTES=<number>     build packages build/TextMouth.app, of <number>
 #                               bytes (at least 600); empty packages none
+#   STUB_APP_TEXT=<text>        build also writes <text> into the app, as
+#                               Contents/Resources/planted.txt
 #   STUB_TEST_OUTPUT=<file>     test prints <file>
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
 # In the log and output files, @ROOT@ stands for the repository root, since
@@ -155,6 +157,10 @@ case $target in
       head -c 600 /dev/zero > build/TextMouth.app/Contents/Info.plist
       dd if=/dev/zero of=build/TextMouth.app/Contents/MacOS/TextMouth bs=1 count=0 \
         seek=$(( STUB_APP_BYTES - 600 )) 2>/dev/null
+      if [ -n "${STUB_APP_TEXT:-}" ]; then
+        mkdir -p build/TextMouth.app/Contents/Resources
+        printf '%s' "$STUB_APP_TEXT" | sed "s#@ROOT@#$(pwd -P)#g" > build/TextMouth.app/Contents/Resources/planted.txt
+      fi
     fi
     if [ -n "${STUB_BUILD_WRITES:-}" ]; then cp "$STUB_BUILD_WRITES" "$STUB_RESOLVED"; fi ;;
   test)
@@ -717,6 +723,22 @@ real_run_cases() {
   expect_report "Package.resolved still holds the committed pins"
   refute_report "Executed"
   expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app that names no folder of this Mac passes, and says so"
+  run_gate STUB_APP_TEXT="built in /Users/reader/TextMouth"
+  expect_status 0
+  expect_report "build/TextMouth.app holds no folder of this Mac"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app that holds the checkout's folder fails the gate before the tests, naming the file"
+  run_gate STUB_APP_TEXT="built in @ROOT@/TextMouth"
+  expect_status 1
+  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_report "| Contents/Resources/planted.txt"
+  refute_report "holds no folder of this Mac"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds a folder of this Mac (its home folder, the checkout, or \$TMPDIR)"
   end_case
 
   begin_case "a Release app of exactly the warning size passes with no warning"

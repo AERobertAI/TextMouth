@@ -13,7 +13,8 @@
 #      APP_SIZE_LIMIT_MB megabytes, a limit this script sets once. It warns,
 #      without failing, when the app is larger than APP_SIZE_WARNING_MB, and
 #      reports the app's size either way, so growth is noticed long before
-#      the limit is reached;
+#      the limit is reached. No file of the app may hold a folder of this
+#      Mac (its home folder, the checkout, or $TMPDIR);
 #   4. runs the hosted XCTest suite with the Makefile's flags (make test),
 #      built from scratch in the same folder, and requires that this build
 #      reports no Swift warning either. The performance baselines tests run
@@ -501,6 +502,33 @@ require_app_within_size_limit() {
   detail "$RELEASE_APP is $(describe_size "$bytes"), within the $APP_SIZE_WARNING_MB MB limit"
 }
 
+# require_app_free_of_mac_paths: fails the gate when a file of the Release app
+# holds a folder of the Mac that built it: its home folder, this checkout, or
+# the temporary folder ($TMPDIR). The app is published, and the user's rule of
+# November 16, 2026 keeps every path of this Mac out of what the repository
+# makes as well as what it holds; FFmpeg's libraries, which configure would
+# write such paths into, are checked by their own script too
+# (Scripts/vendor/ffmpeg/build.py). Names the files, as paths in the app.
+require_app_free_of_mac_paths() {
+  if (( dry_run )); then
+    detail "would require $RELEASE_APP to hold no folder of this Mac"
+    return 0
+  fi
+  local folder files="" temporary=${TMPDIR:-}
+  temporary=${temporary%/}
+  for folder in "$HOME" "$ROOT" "$temporary"; do
+    # An unset or root folder would match everything.
+    (( ${#folder} > 1 )) || continue
+    files+=$(grep -r -l -a -F -e "$folder" "$RELEASE_APP" 2>/dev/null)$'\n'
+  done
+  files=$(sort -u <<<"$files" | sed '/^$/d')
+  if [[ -n $files ]]; then
+    detail_lines "| " "$(sed "s#^$RELEASE_APP/##" <<<"$files" | head -n 5)"
+    fail "step $step_number of $STEP_COUNT ($step_title): $RELEASE_APP holds a folder of this Mac (its home folder, the checkout, or \$TMPDIR)"
+  fi
+  detail "$RELEASE_APP holds no folder of this Mac"
+}
+
 # show_failure_lines <log>: prints the lines of a failed step's log a reader
 # needs first: errors with two lines of context (where compiler diagnostics
 # show the source line and caret), xcodebuild's verdict, and make's failure
@@ -631,6 +659,7 @@ main() {
   run_step build yes make build || step_failed build $?
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
   require_app_within_size_limit
+  require_app_free_of_mac_paths
 
   if (( without_tests )); then
     say "the hosted XCTest suite is not run by this gate (--without-tests)"
