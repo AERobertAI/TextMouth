@@ -67,6 +67,35 @@ COMPONENTS = {
 # The components of the WMA-only set (b), listed CVE by CVE.
 WMA_SET = ("WMA decoders", "ASF demuxer")
 
+# The automatic match above also catches a CVE whose description only names
+# the container its attack file came in ("a crafted AVI file" holding a video
+# codec's bug), and FFmpeg's encoders and muxers, which no set compiles. So
+# every match since 2016 was read by hand on November 16, 2026, and these are
+# the CVEs whose bug lies in code a set compiles, by the component it lies in.
+# A CVE left out was judged to lie elsewhere; two unclear ones are noted on
+# the research page and not counted.
+REVIEWED = {
+    "CVE-2016-7122": "AVI demuxer", "CVE-2016-7555": "AVI demuxer", "CVE-2016-7785": "AVI demuxer",
+    "CVE-2016-7905": "AVI demuxer", "CVE-2024-36618": "AVI demuxer",
+    "CVE-2017-14057": "ASF demuxer", "CVE-2017-14223": "ASF demuxer", "CVE-2018-1999015": "ASF demuxer",
+    "CVE-2016-9561": "AAC decoder", "CVE-2020-24995": "AAC decoder",
+    "CVE-2017-11399": "Monkey's Audio decoder", "CVE-2026-125104": "Monkey's Audio decoder",
+    "CVE-2026-125182": "Cook decoder", "CVE-2026-125203": "Cook decoder",
+    "CVE-2016-8595": "GSM parser", "CVE-2018-13303": "AC-3 parser", "CVE-2018-1999013": "RealMedia demuxer",
+    "CVE-2014-125008": "Ogg demuxer (Vorbis headers)", "CVE-2024-35369": "Speex decoder",
+    "CVE-2026-125171": "Musepack SV7 decoder", "CVE-2026-125221": "FLAC parser", "CVE-2026-125224": "Vorbis parser",
+}
+
+# Which reviewed components each set compiles: a is all of them; c leaves out
+# the AVI demuxer and the GSM parser; b is the ASF demuxer alone (no WMA
+# decoder has one); d is the ASF demuxer and the Vorbis parser.
+SET_COMPONENTS = {
+    "a": set(REVIEWED.values()),
+    "c": set(REVIEWED.values()) - {"AVI demuxer", "GSM parser"},
+    "b": {"ASF demuxer"},
+    "d": {"ASF demuxer", "Vorbis parser"},
+}
+
 # The components only the video containers bring (in set a, not in set c).
 VIDEO_ONLY = ("Flash video demuxer", "AVI demuxer", "ADPCM decoders", "Nellymoser decoder", "GSM decoder")
 
@@ -140,9 +169,27 @@ def tally(work, since):
         cves = by_component.get(name, [])
         per_year = ", ".join(f"{year}: {count}" for year, count in sorted(years.get(name, {}).items()))
         print(f"  {name}: {len(cves)}" + (f" ({per_year})" if per_year else ""))
-    print("The WMA-only set's CVEs:")
+    print("The WMA-only set's automatic matches:")
     for cve_id, published, level, text in sorted(wma_set):
         print(f"  {cve_id} ({published}, {level}): {text}")
+    reviewed(record)
+
+
+def reviewed(record):
+    """Prints the CVEs read by hand (REVIEWED): each with its date, severity,
+    and component, then how many each set compiles, and by year."""
+    by_id = {item["cve"]["id"]: item["cve"] for item in record["vulnerabilities"]}
+    print("Read by hand, the bug in code a set compiles:")
+    years = {}
+    for cve_id, component in sorted(REVIEWED.items(), key=lambda item: by_id[item[0]]["published"]):
+        cve = by_id[cve_id]
+        year = int(cve["published"][:4])
+        years[year] = years.get(year, 0) + 1
+        print(f"  {cve_id} ({cve['published'][:10]}, {severity(cve)}): {component}")
+    print("  by year published: " + ", ".join(f"{year}: {count}" for year, count in sorted(years.items())))
+    for set_name, components in SET_COMPONENTS.items():
+        count = sum(1 for component in REVIEWED.values() if component in components)
+        print(f"  set {set_name}: {count}")
 
 
 def main():
