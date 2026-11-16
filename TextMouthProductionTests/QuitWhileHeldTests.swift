@@ -512,6 +512,69 @@ final class QuitWhileHeldTests: XCTestCase {
         XCTAssertEqual(prompts.count, 1, "the prompt was shown again")
     }
 
+    /// Work a quit waited for that gives up and leaves a change unsaved: the
+    /// prompt asks about that change, and its Quit Anyway goes ahead at
+    /// once, since the work was waited for already; that request used to
+    /// wait the work's full longest wait again. Cancel instead forgets the
+    /// wait, so a later quit waits for the work anew.
+    func testAfterWorkGaveUpQuitAnywayDoesNotWaitAgainAndCancelForgetsTheWait() async {
+        for answer in [UnsavedChangesChoice.quitAnyway, .cancel] {
+            let center = PersistenceFailureCenter()
+            center.recordFailure(.substitutions, path: "/data/substitutions.json", error: WriteRefused())
+            let prompts = Counter()
+            let guardAsks = Counter()
+            let world = DelegateWorld(terminationGuard: UnsavedChangesTerminationGuard(
+                failureCenter: center,
+                flush: {},
+                prompt: { _ in
+                    prompts.count += 1
+                    // Only the prompt about the change left behind is
+                    // answered as this case says; every other, Quit Anyway.
+                    return prompts.count == 2 ? answer : .quitAnyway
+                },
+                requestTermination: { guardAsks.count += 1 }
+            ))
+            let feedID = UUID()
+            let stuck = FakeWork("feed records")
+            world.delegate.heldWork = {
+                [stuck.work(longestWait: .milliseconds(50), gaveUp: {
+                    center.recordFailure(.feedRecord(feedID: feedID, title: "Tide Tables"), path: "/data/Feeds/t.json", error: WriteRefused())
+                })]
+            }
+
+            XCTAssertEqual(world.ask(), .terminateCancel)
+            let firstQuitAnyway = await eventually { guardAsks.count == 1 }
+            XCTAssertTrue(firstQuitAnyway, "\(answer): Quit Anyway never asked to quit again")
+            XCTAssertEqual(world.ask(), .terminateCancel, "\(answer): the request Quit Anyway made did not wait for the work")
+            let gaveUp = await eventually { world.log.asks == 1 }
+            XCTAssertTrue(gaveUp, "\(answer): the work was never given up on")
+            XCTAssertEqual(world.ask(), .terminateCancel, "\(answer): the change the work left behind was not asked about")
+            let askedAboutIt = await eventually { prompts.count == 2 }
+            XCTAssertTrue(askedAboutIt, "\(answer): no prompt named the change the work left behind")
+
+            if answer == .cancel {
+                // TextMouth stays open. A later quit asks again, and its Quit
+                // Anyway waits for the work anew.
+                XCTAssertEqual(world.ask(), .terminateCancel)
+                let thirdPrompt = await eventually { prompts.count == 3 }
+                XCTAssertTrue(thirdPrompt)
+            }
+            let quitAnyway = await eventually { guardAsks.count == 2 }
+            XCTAssertTrue(quitAnyway, "\(answer): the last Quit Anyway never asked to quit again")
+            let waitsAgain = answer == .cancel
+            XCTAssertEqual(
+                world.ask(),
+                waitsAgain ? .terminateCancel : .terminateNow,
+                waitsAgain ? "a quit after Cancel did not wait for the work anew" : "Quit Anyway waited for the work again"
+            )
+            // The work starts in a task of its own, a turn after the answer.
+            let expectedStarts = waitsAgain ? 2 : 1
+            let started = await eventually { stuck.started == expectedStarts }
+            XCTAssertTrue(started, "\(answer): the work was waited for \(stuck.started) times, not \(expectedStarts)")
+            stuck.released = true
+        }
+    }
+
     /// A Quit Anyway kept for the request that follows the work belongs to that
     /// quit: when a library move, begun during the wait, cancels that request,
     /// the choice is forgotten, and the next quit asks about the unsaved

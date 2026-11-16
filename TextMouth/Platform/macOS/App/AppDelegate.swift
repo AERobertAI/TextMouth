@@ -280,14 +280,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return .terminateCancel
         }
         // Step 4, for a quit that is sure to go ahead.
-        return terminationGuard.reply { [self] in
-            quitFinisher.reply(
+        var wentAhead = false
+        terminationGuard.promptCancelled = { [weak self] in self?.quitFinisher.forgetFinished() }
+        let reply = terminationGuard.reply { [self] in
+            wentAhead = true
+            return quitFinisher.reply(
                 forQuitWith: heldWork(),
                 waitedFor: waitedFor,
                 endsTheSession: endsTheSession,
                 replyLater: { sender.reply(toApplicationShouldTerminate: $0) }
             )
         }
+        // The guard asks about unsaved changes first: the work this quit
+        // waited for goes with the request its Retry or Quit Anyway makes,
+        // which then does not wait for it again; its Cancel forgets it.
+        if !wentAhead {
+            quitFinisher.keepFinished(waitedFor)
+        }
+        return reply
     }
 
     /// Step 0, the questions asked before anything is flushed or waited for:

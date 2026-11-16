@@ -96,6 +96,11 @@ final class UnsavedChangesTerminationGuard {
     /// Whether the prompt is on its way or showing.
     private var isPrompting = false
 
+    /// What else the prompt's Cancel ends, beside this quit: the app
+    /// delegate forgets the work the quit had waited for, which a later quit
+    /// must wait for again (`QuitFinisher.forgetFinished()`).
+    var promptCancelled: @MainActor () -> Void = {}
+
 #if os(macOS)
     /// A guard over `failureCenter`. Tests replace the flush, the prompt,
     /// and the request to quit, so nothing is shown and nothing quits.
@@ -199,7 +204,7 @@ final class UnsavedChangesTerminationGuard {
             quitAnywayCovers = Set(unsaved.map(\.key))
             requestTermination()
         case .cancel:
-            break
+            promptCancelled()
         }
     }
 
