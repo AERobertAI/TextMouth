@@ -564,12 +564,13 @@ enum FFmpegAudioConverter {
         let staged = ImportAudioConverter.temporaryURL(beside: source)
         if stated == nil {
             // A length assumed from the size lets the output grow far past
-            // it, so it is capped by the size too, and refused before ffmpeg
-            // runs when even that cap and the reserve left for the rest of
-            // the system (`downmixReserveBytes`) would not fit.
-            let cap = min(limits.maximumOutputBytes ?? .max, unknownLengthOutputCap(ofBytes: bytesBefore))
-            limits.maximumOutputBytes = cap
-            let (needed, overflowed) = cap.addingReportingOverflow(ImportAudioConverter.downmixReserveBytes)
+            // it, so it is capped by the size too (`unknownLengthOutputCap`),
+            // and refused before ffmpeg runs when the volume lacks room for
+            // that cap and the reserve left for the rest of the system
+            // (`downmixReserveBytes`).
+            let sizeCap = unknownLengthOutputCap(ofBytes: bytesBefore)
+            limits.maximumOutputBytes = min(limits.maximumOutputBytes ?? .max, sizeCap)
+            let (needed, overflowed) = sizeCap.addingReportingOverflow(ImportAudioConverter.downmixReserveBytes)
             if let available = tool.availableBytes(staged.deletingLastPathComponent()),
                overflowed || available < needed {
                 throw ImportAudioConverter.Failure.notEnoughSpace(fileName: name, bytesNeeded: overflowed ? .max : needed)
