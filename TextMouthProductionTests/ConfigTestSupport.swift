@@ -168,7 +168,9 @@ extension XCTestCase {
     /// dropped as the test ends. Every config service a test makes besides
     /// the shared one comes from here (`ConfigTestWorldTeardownTests` checks
     /// the test sources): a settings change asks its service for a save that
-    /// waits a moment for more changes (`ConfigService.scheduleSave()`), the
+    /// waits a moment for more changes (`ConfigService.scheduleSave()`; a
+    /// reader opening saves through `ConfigService.shared` instead, which
+    /// `ConfigSaveFlush` writes as each test ends), the
     /// folders the test made are deleted as it ends, and a save still
     /// waiting then fired after them, failed with "The folder "config.json"
     /// doesn't exist", and had its failure announced into whichever test
@@ -187,15 +189,14 @@ extension XCTestCase {
             coalescingDelay: coalescingDelay,
             saveDelay: saveDelay
         )
-        settleConfigSaves(of: service)
+        // Teardown blocks run last registered first. The service needs its
+        // file's URL, so the folder that holds it was made, and its removal
+        // registered, before this block: this one runs first, and the save
+        // is dropped while nothing has been deleted. (Dropping it needs no
+        // folder, so one made some other way is no harm either, as long as
+        // the block runs before the next test starts.)
+        addTeardownBlock { service._dropScheduledSaveForTesting() }
         return service
-    }
-
-    /// Has the test's teardown drop `service`'s waiting save, whatever order
-    /// the teardown blocks run in: dropping it needs no folder.
-    @MainActor
-    func settleConfigSaves(of service: ConfigService) {
-        addTeardownBlock { service.cancelScheduledSave() }
     }
 
     /// A config.json location in a directory of this test's own inside the

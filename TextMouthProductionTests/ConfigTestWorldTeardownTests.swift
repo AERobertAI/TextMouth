@@ -13,7 +13,7 @@ import XCTest
 ///
 /// The fix is in the tests: every config service a test makes comes from
 /// `makeConfigService(fileURL:)`, whose teardown drops the save still
-/// waiting (`ConfigService.cancelScheduledSave()`), and these tests check
+/// waiting (`ConfigService._dropScheduledSaveForTesting()`), and these tests check
 /// that, and that the sources keep to it. The app stays as it was: a config
 /// folder that is missing there is a failure the user must hear, and one
 /// test here pins that.
@@ -39,14 +39,14 @@ final class ConfigTestWorldTeardownTests: XCTestCase {
         service.scheduleSave()
         XCTAssertTrue(service.hasScheduledSave)
 
-        service.cancelScheduledSave()
+        service._dropScheduledSaveForTesting()
         XCTAssertFalse(service.hasScheduledSave)
         spin(for: 0.4)
         XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "a dropped save wrote the file")
         XCTAssertEqual(PersistenceFailureCenter.shared.outstandingFailures().map(\.subject), [])
 
         // Dropping when nothing waits changes nothing.
-        service.cancelScheduledSave()
+        service._dropScheduledSaveForTesting()
         service.scheduleSave()
         XCTAssertTrue(eventually { FileManager.default.fileExists(atPath: file.path) }, "a later save never wrote")
         XCTAssertEqual(try ConfigService.decode(Data(contentsOf: file)).wordsPerMinute, 321)
@@ -96,7 +96,7 @@ final class ConfigTestWorldTeardownTests: XCTestCase {
     func testAServiceMadeByHandLeavesItsSaveWaitingPastTheTeardown() throws {
         let made = MadeService()
         // Registered first, so it runs last: it drops what the check found.
-        addTeardownBlock { made.service?.cancelScheduledSave() }
+        addTeardownBlock { made.service?._dropScheduledSaveForTesting() }
         addTeardownBlock {
             XCTAssertEqual(made.service?.hasScheduledSave, true, "a service made by hand had no save waiting")
         }

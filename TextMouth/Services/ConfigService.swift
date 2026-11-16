@@ -908,15 +908,15 @@ final class ConfigService: ObservableObject {
         saveToDisk(creatingAwaitedFile: scheduledSaveMayCreateFile)
     }
 
-    /// Drops a save that `scheduleSave()` left waiting, without writing it.
-    /// A test world calls this as it ends, before it deletes the folder the
-    /// file lives in: a save that stayed waiting would fire after the folder
-    /// was gone, fail, and have its failure announced into whichever test
-    /// runs next. The app never needs it: quitting and a data-directory move
-    /// write a waiting save (`flushScheduledSave()`), and a folder that is
-    /// missing in the app is a real failure the user must hear, so nothing
-    /// here hides one. Does nothing when no save waits.
-    func cancelScheduledSave() {
+    /// For tests: drops a save that `scheduleSave()` left waiting, without
+    /// writing it. A test's teardown calls this before it deletes the folder
+    /// the file lives in: a save that stayed waiting would fire after the
+    /// folder was gone, fail, and have its failure announced into whichever
+    /// test runs next. The app never calls it: quitting and a data-directory
+    /// move write a waiting save (`flushScheduledSave()`), and a folder that
+    /// is missing in the app is a real failure the user must hear, so
+    /// nothing here hides one. Does nothing when no save waits.
+    func _dropScheduledSaveForTesting() {
         scheduledSave?.cancel()
         scheduledSave = nil
     }
