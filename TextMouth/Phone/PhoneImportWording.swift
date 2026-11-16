@@ -93,30 +93,30 @@ enum PhoneImportWording {
         "\(subject(name)) is in \(kind), which TextMouth on iPhone can't play yet. \(refusalNextStep)"
     }
 
-    /// The next step the refusal of a format only ffmpeg reads gives: the
-    /// Mac needs ffmpeg for it too (FMT31).
-    static let ffmpegRefusalNextStep = "Add it on a Mac with ffmpeg installed, then send the book here."
+    /// The next step the refusal of a format only FFmpeg reads gives: the
+    /// Mac converts it with the FFmpeg TextMouth carries (FMT31, FMT50).
+    static let ffmpegRefusalNextStep = "Add it on your Mac, then send the book here."
 
-    /// The refusal of audio or video that only a Mac's installed ffmpeg
-    /// converts: "“Lecture” is in WMA, which TextMouth on iPhone can't play.
-    /// Add it on a Mac with ffmpeg installed, then send the book here."
-    /// `kind` names the format as the Mac names it
-    /// (`FFmpegImportWording.kindName(of:container:)`). It says no "yet": the
-    /// phone can start no ffmpeg. A nil `name` says "This file".
+    /// The refusal of audio or video that only the Mac's TextMouth converts:
+    /// "“Lecture” is in WMA, which TextMouth on iPhone can't play. Add it on
+    /// your Mac, then send the book here." `kind` names the format as the
+    /// Mac names it (`FFmpegImportWording.kindName(of:container:)`). It says
+    /// no "yet": the phone runs no FFmpeg helper. A nil `name` says "This
+    /// file".
     static func ffmpegAudioRefusal(_ name: String?, kind: String) -> String {
         "\(subject(name)) is in \(kind), which TextMouth on iPhone can't play. \(ffmpegRefusalNextStep)"
     }
 
     /// What a book of several tracks says on the iPhone of `names`, files
-    /// only a Mac's ffmpeg converts, which it left out and imported the rest
-    /// (`FFmpegAudioConverter.tracksToLeaveOut(of:located:)`): "TextMouth
-    /// left out “Trailer.avi”, which TextMouth on iPhone can't play. To keep
-    /// it, import the book on a Mac with ffmpeg installed, then send the
-    /// book here." Nil for no names.
+    /// only the Mac's TextMouth converts, which it left out and imported the
+    /// rest (`FFmpegAudioConverter.tracksToLeaveOut(of:located:)`):
+    /// "TextMouth left out “Trailer.avi”, which TextMouth on iPhone can't
+    /// play. To keep it, import the book on your Mac, then send the book
+    /// here." Nil for no names.
     static func ffmpegTracksLeftOut(_ names: [String]) -> String? {
         guard !names.isEmpty else { return nil }
         return "TextMouth left out \(FFmpegImportWording.leftOutFiles(names)), which TextMouth on iPhone can't play. "
-            + "To keep \(names.count == 1 ? "it" : "them"), import the book on a Mac with ffmpeg installed, then send the book here."
+            + "To keep \(names.count == 1 ? "it" : "them"), import the book on your Mac, then send the book here."
     }
 
     /// The refusal of a Word 6 or Word 95 document, which only textutil

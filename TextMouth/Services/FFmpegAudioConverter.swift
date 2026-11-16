@@ -1,42 +1,52 @@
 import Foundation
 import os
+private import TextMouthFFmpegProtocol
 
-/// Converts, at import, the audio of the formats macOS cannot read and the
-/// installed ffmpeg can (FMT31, FMT32): Windows Media Audio (versions 1 and
-/// 2, Pro, Lossless, and Voice) and Windows Media video, Speex, Musepack,
-/// WebM and Matroska, AVI, Flash video, and RealMedia. The result is what
-/// every other conversion writes (`ImportAudioConverter`): an .m4a file
-/// beside the source, of Apple Lossless for a lossless source and AAC for a
-/// lossy one, under the same hidden temporary name, checked the same way,
-/// and named the same way; an AAC source of at most two channels is copied
-/// into it without a second encoding. The file's tags and chapters come
-/// along.
+/// Converts, at import, the audio of the formats macOS cannot read and FFmpeg
+/// can (FMT31, FMT32): Windows Media Audio (versions 1 and 2, Pro, Lossless,
+/// and Voice) and Windows Media video, Speex, Musepack, WebM and Matroska,
+/// AVI, Flash video, and RealMedia. The result is what every other conversion
+/// writes (`ImportAudioConverter`): an .m4a file beside the source, of Apple
+/// Lossless for a lossless source and AAC for a lossy one, under the same
+/// hidden temporary name, checked the same way, and named the same way. The
+/// file's tags and chapters come along.
 ///
-/// TextMouth bundles nothing of ffmpeg: it runs the one installed on the Mac
-/// (`FFmpeg.locate`), with the ffprobe beside it, and refuses these formats
-/// with a sentence saying what to install when there is none. Each program
-/// runs as a child process under a watchdog (`WatchedProcess`), so a hostile
-/// file can hang or crash a child, never the import; only the file
-/// protocol is allowed (`-protocol_whitelist file`), and the demuxer is
+/// FFmpeg is built into TextMouth (FMT50): a pinned FFmpeg 9.0.x release that
+/// Scripts/vendor/ffmpeg/build.py builds, linked into a small helper program
+/// in the app's bundle, TextMouthFFmpeg, so no Homebrew is needed. The Mac app
+/// is not sandboxed, so FFmpeg never runs in it: the helper runs as a child
+/// process under a watchdog (`WatchedProcess`), and a hostile file can hang or
+/// crash a helper, never the import. The helper reads the file through its
+/// own callbacks, with no FFmpeg protocol compiled in, and with the demuxer
 /// named from TextMouth's own reading of the first bytes (`FFmpegContainer`),
-/// so ffmpeg never guesses a format. TTA, WavPack, and Monkey's Audio are
-/// not here: TextMouth reads those itself. Ogg holding Vorbis, Opus, or FLAC
-/// stays with afconvert, as before; only Ogg holding Speex comes here.
+/// so FFmpeg never guesses a format. It first says what the file holds
+/// (`probe`), then decodes it to plain samples on its standard output
+/// (`FFmpegHelperStream`), which the app writes into the .m4a with the writer
+/// TextMouth's own readers use (`OwnAudioConverter.writeBlocks`). TTA,
+/// WavPack, and Monkey's Audio are not here: TextMouth reads those itself.
+/// Ogg holding Vorbis, Opus, or FLAC stays with afconvert, as before; only Ogg
+/// holding Speex comes here.
+///
+/// The iPhone starts no program, so it has no helper and refuses these
+/// formats (`PhoneImportRefusal`); it will run the same session in its own
+/// process, reading the same stream, once it links the FFmpeg_iOS library.
 enum FFmpegAudioConverter {
     // MARK: - Which Files
 
-    /// The extensions, in lowercase, of the files the installed ffmpeg
-    /// converts at import: Windows Media (wma, asf, wmv), Speex (spx),
-    /// Musepack (mpc, mp+, mpp), Matroska and WebM (mka, mkv, webm, weba),
-    /// and the video files macOS cannot open whose sound is the book (avi,
-    /// flv, and RealMedia's ra, rm, and rmvb).
+    /// The extensions, in lowercase, of the files FFmpeg converts at import:
+    /// Windows Media (wma, asf, wmv), Speex (spx), Musepack (mpc, mp+),
+    /// Matroska and WebM (mka, mkv, webm, weba), and the video files macOS
+    /// cannot open whose sound is the book (avi, flv, and RealMedia's ra, rm,
+    /// and rmvb). Musepack's rare .mpp is not here: it is Microsoft Project's
+    /// extension too (the TODO's FU-FFMPEG item), and a Musepack file named
+    /// so is still told by its bytes (`converts(_:)`).
     static let extensions: Set<String> = [
-        "wma", "asf", "wmv", "spx", "mpc", "mp+", "mpp", "mka", "mkv", "webm", "weba", "avi", "flv", "ra", "rm", "rmvb",
+        "wma", "asf", "wmv", "spx", "mpc", "mp+", "mka", "mkv", "webm", "weba", "avi", "flv", "ra", "rm", "rmvb",
     ]
 
-    /// Whether the import converts the file at `url` with ffmpeg: its
+    /// Whether the import converts the file at `url` with FFmpeg: its
     /// extension is one of `extensions`, or its bytes are of a container
-    /// only ffmpeg reads (`FFmpegContainer`), Speex in Ogg among them,
+    /// only FFmpeg reads (`FFmpegContainer`), Speex in Ogg among them,
     /// whatever its name. Ogg of any other codec is afconvert's, and a file
     /// that holds TTA, WavPack, or Monkey's Audio is TextMouth's own readers'
     /// whatever its name (`OwnAudioConverter.format(of:)`, the readers' own sniff).
@@ -53,100 +63,89 @@ enum FFmpegAudioConverter {
     /// The files a book of several tracks leaves out rather than be refused
     /// for (`tracksToLeaveOut(of:located:)`).
     struct TracksLeftOut: Equatable, Sendable {
-        /// Files of a container ffmpeg reads that can't be converted here:
-        /// this Mac has no ffmpeg, or no ffprobe beside it, or this is the
-        /// iPhone, which has neither.
-        var needingFFmpeg: [URL] = []
-        /// Files named for a format only ffmpeg reads whose bytes are of no
+        /// Files of a container FFmpeg reads that can't be converted here:
+        /// this is the iPhone, which has no helper, or the Mac's helper is
+        /// missing from the app.
+        var needingConverter: [URL] = []
+        /// Files named for a format only FFmpeg reads whose bytes are of no
         /// container it reads, such as a System Information report (.spx).
         var holdingNoSound: [URL] = []
         /// What `located` found when it was asked: nil on the iPhone, and
-        /// when no file was one only ffmpeg reads.
+        /// when no file was one only FFmpeg reads.
         var located: Located?
 
-        /// Every file left out, those needing ffmpeg first.
-        var all: [URL] { needingFFmpeg + holdingNoSound }
+        /// Every file left out, those needing the converter first.
+        var all: [URL] { needingConverter + holdingNoSound }
     }
 
     /// Which of `sources`, tracks of a book of several that the import
     /// converts, the book leaves out (review9 finding 2): a folder, ZIP, or
     /// playlist of MP3s may hold a stray video, or a file merely named like
     /// one of these formats, and it imported its MP3s before these formats
-    /// were tracks. Of the files only ffmpeg reads (`converts(_:)`), those
-    /// whose bytes are of no container ffmpeg reads are always left out, and
+    /// were tracks. Of the files only FFmpeg reads (`converts(_:)`), those
+    /// whose bytes are of no container FFmpeg reads are always left out, and
     /// the rest when `located`, asked only when there is such a file, found
-    /// no ffmpeg or no ffprobe (nil on the iPhone, which never has them). A
-    /// file of such a container is converted when it can be, and fails the
-    /// book if that fails, as any track's conversion does.
+    /// no helper (nil on the iPhone, which never has one). A file of such a
+    /// container is converted when it can be, and fails the book if that
+    /// fails, as any track's conversion does.
     static func tracksToLeaveOut(of sources: [URL], located: () -> Located?) -> TracksLeftOut {
         var leftOut = TracksLeftOut()
         let ffmpegFiles = sources.filter(converts)
         guard !ffmpegFiles.isEmpty else { return leftOut }
         leftOut.located = located()
-        var installed = false
-        if case .found? = leftOut.located { installed = true }
+        var found = false
+        if case .found? = leftOut.located { found = true }
         for file in ffmpegFiles {
             if FFmpegContainer.of(fileAt: file) == nil {
                 leftOut.holdingNoSound.append(file)
-            } else if !installed {
-                leftOut.needingFFmpeg.append(file)
+            } else if !found {
+                leftOut.needingConverter.append(file)
             }
         }
         return leftOut
     }
 
-    // MARK: - The Programs
+    // MARK: - The Helper
 
-    /// The installed ffmpeg, and the ffprobe that came with it.
-    struct Programs: Equatable, Sendable {
-        /// The ffmpeg executable, which converts.
-        let ffmpeg: URL
-        /// The ffprobe executable, which says what a file holds.
-        let ffprobe: URL
-    }
+    /// The name of the helper program in the app's Contents/MacOS.
+    static let helperName = "TextMouthFFmpeg"
 
-    /// What looking for the programs found.
+    /// What looking for the helper found.
     enum Located: Equatable, Sendable {
-        /// Both programs.
-        case found(Programs)
-        /// No ffmpeg at all.
-        case ffmpegMissing
-        /// An ffmpeg with no ffprobe beside it or on the PATH.
-        case ffprobeMissing
+        /// The helper, at this path.
+        case found(URL)
+        /// No helper: the app is damaged (the Mac), or this is the iPhone.
+        case missing
     }
 
-    /// The programs installed on this Mac: ffmpeg where `FFmpeg.locate`
-    /// finds it, and the ffprobe beside it (`FFmpeg.probe`). Reads only file
-    /// metadata. On iOS, which starts no child process, there are none.
-    static func locateInstalled() -> Located {
-        guard let ffmpeg = FFmpeg.locate() else { return .ffmpegMissing }
-        guard let ffprobe = ffmpeg.probe() else { return .ffprobeMissing }
-        return .found(Programs(ffmpeg: ffmpeg.executable, ffprobe: ffprobe))
+    /// The helper in the app's own bundle, beside its executable, where
+    /// `Bundle.main.url(forAuxiliaryExecutable:)` finds it (the hosted tests'
+    /// main bundle is the app, so they find it too). On iOS, which starts no
+    /// program, there is none.
+    static func locateBundled() -> Located {
+        #if os(macOS)
+        if let helper = Bundle.main.url(forAuxiliaryExecutable: helperName),
+           FileManager.default.isExecutableFile(atPath: helper.path) {
+            return .found(helper)
+        }
+        #endif
+        return .missing
     }
 
     // MARK: - The Tool
 
-    /// What finds, asks, and runs the programs, and what watches them: the
-    /// installed ffmpeg and ffprobe under the watchdog's rules in the app,
-    /// replaced in tests by stand-ins (a canned report, `/bin/cp` copying a
-    /// finished file, a `sleep` that hangs), since GitHub's runners have no
-    /// ffmpeg.
+    /// What finds the helper and what watches it: the bundled helper under
+    /// the watchdog's rules in the app, replaced in tests by a stand-in (a
+    /// script that writes a damaged stream, a `sleep` that hangs) or a
+    /// missing helper, and tight limits.
     struct Tool: Sendable {
-        /// Finds the programs.
+        /// Finds the helper.
         var locate: @Sendable () -> Located
-        /// What ffprobe says the file holds, read as the `container` it was
-        /// sniffed as; nil when it cannot say.
-        var probe: @Sendable (_ file: URL, _ container: FFmpegContainer, _ programs: Programs) async throws -> FFprobeReport?
-        /// Whether this ffmpeg has Apple's own AAC encoder (`aac_at`), which
-        /// writes what afconvert writes; its own (`aac`) otherwise.
-        var hasAppleAACEncoder: @Sendable (_ programs: Programs) async throws -> Bool
-        /// The executable and arguments that write `output` from `input` as
-        /// `plan` says.
-        var command: @Sendable (_ input: URL, _ output: URL, _ plan: Plan, _ programs: Programs)
-            -> (executable: URL, arguments: [String])
-        /// What the watchdog allows a conversion of a source lasting the
-        /// given seconds.
+        /// What the watchdog allows the decode of a source lasting the given
+        /// seconds.
         var limits: @Sendable (_ duration: TimeInterval) -> WatchedProcess.Limits
+        /// What the watchdog allows the probe of a file of the given bytes.
+        var probeLimits: @Sendable (_ bytes: Int64) -> WatchedProcess.Limits
         /// How the watchdog reads a child's resident memory.
         var residentMemory: @Sendable (pid_t) -> Int64?
         /// The bytes free on the volume that holds the given folder, or nil
@@ -155,19 +154,15 @@ enum FFmpegAudioConverter {
         /// the volume.
         var availableBytes: @Sendable (_ folder: URL) -> Int64? = { ImportAudioConverter.availableBytes(on: $0) }
 
-        /// The installed ffmpeg and ffprobe. A conversion has the limits of
-        /// afconvert's (`ImportAudioConverter.Tool.afconvert`), but for the
-        /// stall: a video file's sound can lie far apart in it, so its output
-        /// may wait on the reading of the pictures between.
-        static let installed = Tool(
-            locate: { FFmpegAudioConverter.locateInstalled() },
-            probe: { file, container, programs in
-                try await FFmpegAudioConverter.report(of: file, as: container, using: programs.ffprobe)
-            },
-            hasAppleAACEncoder: { programs in try await FFmpegAudioConverter.hasAppleAACEncoder(programs.ffmpeg) },
-            command: { input, output, plan, programs in
-                (programs.ffmpeg, FFmpegAudioConverter.arguments(from: input, to: output, plan: plan))
-            },
+        /// The bundled helper. A decode has the limits of afconvert's
+        /// (`ImportAudioConverter.Tool.afconvert`), but for the stall: a video
+        /// file's sound can lie far apart in it, so its samples may wait on
+        /// the reading of the pictures between. A probe has ffprobe's limits
+        /// of before: 30 seconds and one more for each 20 MB, and 512 MB; it
+        /// writes most of what it says at its end, so the stall allowance is
+        /// the whole run's.
+        static let bundled = Tool(
+            locate: { FFmpegAudioConverter.locateBundled() },
             limits: { duration in
                 WatchedProcess.Limits(
                     maximumSeconds: 60 + duration / 10,
@@ -175,152 +170,160 @@ enum FFmpegAudioConverter {
                     maximumStalledSeconds: 60
                 )
             },
+            probeLimits: { bytes in
+                let seconds = 30 + Double(bytes) / 20_000_000
+                return WatchedProcess.Limits(
+                    maximumSeconds: seconds, maximumResidentBytes: 536_870_912, maximumStalledSeconds: seconds
+                )
+            },
             residentMemory: { WatchedProcess.residentMemory(of: $0) }
         )
     }
 
-    /// The tool conversions use: the installed programs, unless a test binds
-    /// a stand-in with `FFmpegAudioConverter.$tool.withValue(_:operation:)`.
+    /// The tool conversions use: the bundled helper, unless a test binds a
+    /// stand-in with `FFmpegAudioConverter.$tool.withValue(_:operation:)`.
     /// It is read on the caller's thread, as `TextutilConverter.tool` is: an
     /// import reads it before its conversions start in tasks of their own
     /// (`FileImportService.convertTracks`), which do not inherit it.
-    @TaskLocal static var tool: Tool = .installed
+    @TaskLocal static var tool: Tool = .bundled
 
-    // MARK: - Asking ffprobe
+    // MARK: - Asking the Helper
 
-    /// What ffprobe says the file at `file`, read as `container`, holds;
-    /// nil when it cannot start, fails, prints what does not parse, or is
-    /// killed by the watchdog (logged as `AUDIO_INFO_KILLED`, as an afinfo
-    /// that is killed is). It prints only when it ends, so the stall
-    /// allowance is the whole run's, as afinfo's is (`AudioFileInfo.Tool`).
-    /// - Throws: `CancellationError` only.
-    static func report(of file: URL, as container: FFmpegContainer, using ffprobe: URL) async throws -> FFprobeReport? {
-        let bytes = ImportAudioConverter.fileSize(of: file)
-        let seconds = 30 + Double(bytes) / 20_000_000
-        let result = try await WatchedProcess.runCapturingOutput(
-            ffprobe,
-            arguments: probeArguments(for: file, as: container),
-            limits: WatchedProcess.Limits(
-                maximumSeconds: seconds, maximumResidentBytes: 536_870_912, maximumStalledSeconds: seconds
-            ),
-            maximumOutputBytes: maximumReportBytes
-        )
-        switch result.outcome {
-        case .exited(status: 0):
-            return FFprobeReport(json: result.output)
-        case .exited, .couldNotStart:
-            return nil
-        case let .killed(reason):
-            DiagnosticLog.event(.storage, "AUDIO_INFO_KILLED: \(file.lastPathComponent): \(reason.words)")
-            return nil
+    /// What the helper says the file at `file`, read as `container`, holds
+    /// (its `probe` mode): its sound stream, length, tags, and chapters.
+    /// `kind` names the format in a refusal.
+    /// - Throws: `Failure` or `ImportAudioConverter.Failure` saying why it
+    ///   cannot (`failure(of:read:fileName:kind:limits:)`), or
+    ///   `CancellationError`.
+    static func probe(
+        _ file: URL,
+        as container: FFmpegContainer,
+        kind: String,
+        using tool: Tool
+    ) async throws -> FFmpegReport {
+        guard case let .found(helper) = tool.locate() else { throw Failure.helperMissing(kind: kind) }
+        let name = file.lastPathComponent
+        let limits = tool.probeLimits(ImportAudioConverter.fileSize(of: file))
+        let (ending, read) = try await WatchedProcess.runStreaming(
+            helper, arguments: [TMFF_MODE_PROBE, container.demuxer, file.path], watching: nil, limits: limits,
+            residentMemory: tool.residentMemory
+        ) { pipe in
+            var stream = FFmpegHelperStream { try await pipe.read(upTo: FFmpegHelperStream.pieceBytes) }
+            let report = try await stream.readReport()
+            // A probe's stream ends at END, with no samples.
+            guard try await stream.nextBlock() == nil else { throw FFmpegHelperStream.StreamError.damaged }
+            return report
+        }
+        if let failure = failure(of: ending, read: read, fileName: name, kind: kind, limits: limits, logTag: "AUDIO_INFO_KILLED") {
+            throw failure
+        }
+        return try read.get()
+    }
+
+    /// The failure a run of the helper on the file named `name` ended in, or
+    /// nil when it ended well. In order:
+    /// - a kill by the watchdog, logged with `logTag`, as every kill is;
+    /// - a cancellation, as it is;
+    /// - a whole stream, read to its END, is success, however the helper
+    ///   then ended;
+    /// - a stream that ended early ends in what the helper's ending says: its
+    ///   exit status (`failure(forExitStatus:fileName:kind:limits:)`), a
+    ///   signal (`crashed`), or, after a clean exit, that it stopped before
+    ///   the end (`endedEarly`);
+    /// - a stream that broke the protocol is `unreadableStream`, the helper
+    ///   being killed when it was still writing;
+    /// - any other error, the reader's own (a sound the converter can't
+    ///   write), as it is.
+    static func failure<Value>(
+        of ending: WatchedProcess.Ending,
+        read: Result<Value, any Error>,
+        fileName name: String,
+        kind: String,
+        limits: WatchedProcess.Limits,
+        logTag: String
+    ) -> (any Error)? {
+        if case let .killed(reason) = ending.outcome {
+            DiagnosticLog.event(.storage, "\(logTag): \(name): \(reason.words)")
+            return ImportAudioConverter.Failure.killed(fileName: name, reason: reason.words)
+        }
+        guard case let .failure(error) = read else { return nil }
+        if error is CancellationError { return error }
+        guard let streamError = error as? FFmpegHelperStream.StreamError else { return error }
+        switch streamError {
+        case .endedEarly:
+            if ending.signal != nil { return Failure.crashed(fileName: name) }
+            switch ending.outcome {
+            case .exited(status: 0): return Failure.endedEarly(fileName: name)
+            case let .exited(status): return failure(forExitStatus: status, fileName: name, kind: kind, limits: limits)
+            case .couldNotStart: return ImportAudioConverter.Failure.processFailed(fileName: name, status: -1)
+            case .killed: return nil  // Answered above.
+            }
+        case .damaged, .otherProtocol:
+            return Failure.unreadableStream(fileName: name)
         }
     }
 
-    /// The most of ffprobe's report read: 8 MB, which holds the streams and
-    /// tags of any real file many times over.
-    static let maximumReportBytes = 8 << 20
-
-    /// ffprobe's arguments for `file`, read as `container`: no banner, only
-    /// errors (which go nowhere), only the file protocol, the demuxer named,
-    /// and the format and streams as JSON.
-    static func probeArguments(for file: URL, as container: FFmpegContainer) -> [String] {
-        [
-            "-hide_banner", "-loglevel", "error", "-protocol_whitelist", "file",
-            "-f", container.demuxer, "-print_format", "json", "-show_format", "-show_streams",
-            "file:" + file.path,
-        ]
-    }
-
-    /// Whether each ffmpeg already asked has Apple's AAC encoder, by its
-    /// path, so an import of many files asks once.
-    private static let appleEncoderAnswers = OSAllocatedUnfairLock(initialState: [String: Bool]())
-
-    /// Whether the ffmpeg at `ffmpeg` lists Apple's own AAC encoder,
-    /// `aac_at`, among its encoders (`ffmpeg -encoders`, a line such as
-    /// " A..... aac_at  aac (AudioToolbox)"); false when it cannot say.
-    /// - Throws: `CancellationError` only.
-    static func hasAppleAACEncoder(_ ffmpeg: URL) async throws -> Bool {
-        if let known = appleEncoderAnswers.withLock({ $0[ffmpeg.path] }) { return known }
-        let result = try await WatchedProcess.runCapturingOutput(
-            ffmpeg,
-            arguments: ["-hide_banner", "-loglevel", "error", "-encoders"],
-            limits: WatchedProcess.Limits(maximumSeconds: 30, maximumResidentBytes: 536_870_912, maximumStalledSeconds: 30)
-        )
-        guard case .exited(status: 0) = result.outcome else { return false }
-        let answer = listsAppleAACEncoder(String(decoding: result.output, as: UTF8.self))
-        appleEncoderAnswers.withLock { $0[ffmpeg.path] = answer }
-        return answer
-    }
-
-    /// Whether `encoders`, what `ffmpeg -encoders` prints, names `aac_at`:
-    /// each encoder is a line of its flags, its name, and its description.
-    static func listsAppleAACEncoder(_ encoders: String) -> Bool {
-        encoders.split(whereSeparator: \.isNewline).contains { line in
-            line.split(separator: " ").dropFirst().first == "aac_at"
+    /// What the helper's exit `status` says of the file named `fileName`, of
+    /// the format `kind`, run under `limits`: the sentence a listener hears
+    /// for each of TextMouthFFmpegProtocol.h's statuses, and the converter's
+    /// code for any other.
+    static func failure(forExitStatus status: Int32, fileName: String, kind: String, limits: WatchedProcess.Limits) -> any Error {
+        switch status {
+        case TMFF_EXIT_UNREADABLE:
+            return ImportAudioConverter.Failure.unreadable(fileName: fileName)
+        case TMFF_EXIT_NOT_RECOGNIZED:
+            return Failure.notRecognized(fileName: fileName, kind: kind)
+        case TMFF_EXIT_NO_SOUND:
+            return Failure.noSound(fileName: fileName)
+        case TMFF_EXIT_NO_DECODER:
+            return Failure.soundNotDecoded(fileName: fileName)
+        case TMFF_EXIT_DAMAGED:
+            return ImportAudioConverter.Failure.notRead(fileName: fileName, problem: .damaged)
+        case TMFF_EXIT_FORM_CHANGED:
+            return Failure.formChanged(fileName: fileName)
+        case TMFF_EXIT_MEMORY:
+            return ImportAudioConverter.Failure.killed(fileName: fileName, reason: FFmpegImportWording.neededTooMuchMemory)
+        case TMFF_EXIT_CRASHED:
+            return Failure.crashed(fileName: fileName)
+        case TMFF_EXIT_PROCESSOR_TIME:
+            let reason = WatchedProcess.KillReason.usedTooMuchProcessorTime(seconds: limits.effectiveMaximumCPUSeconds)
+            return ImportAudioConverter.Failure.killed(fileName: fileName, reason: reason.words)
+        default:
+            return ImportAudioConverter.Failure.processFailed(fileName: fileName, status: status)
         }
     }
 
-    // MARK: - Tags Before the Conversion
+    // MARK: - Tags and Length Before the Conversion
 
     /// What a book of the file at `url` is named by, before it is converted:
-    /// the tags of the sound it is made of, as ffprobe reports them
-    /// (`FFprobeReport.tags(of:in:)`, keys in lowercase), and how long that
-    /// sound lasts, when the file says. The import names a book of one file
-    /// by them (`AudioPlaybackService.extractFullMetadata`), since no Apple
-    /// framework opens such a file in the app. Nil when it is no file only
-    /// ffmpeg reads (`converts(_:)`), no ffmpeg or ffprobe is installed, or
-    /// ffprobe can't say; a cancellation answers nil too, as only tags are
-    /// wanted.
-    static func tags(of url: URL, using tool: Tool) async -> (tags: [String: String], duration: TimeInterval?)? {
+    /// the tags of the sound it is made of, as the helper reports them
+    /// (`FFmpegReport.bookTags(in:)`), and how long that sound lasts, when the
+    /// file says. The import names a book of one file by them
+    /// (`AudioPlaybackService.extractFullMetadata`), since no Apple framework
+    /// opens such a file in the app. Nil when it is no file only FFmpeg reads
+    /// (`converts(_:)`), there is no helper, or it can't say; a cancellation
+    /// answers nil too, as only tags are wanted.
+    static func tags(of url: URL, using tool: Tool) async -> (tags: OwnAudioTags, duration: TimeInterval?)? {
         guard converts(url), let container = FFmpegContainer.of(fileAt: url),
-              case let .found(programs) = tool.locate(),
-              let report = try? await tool.probe(url, container, programs),
-              let stream = report.chosenAudio else { return nil }
-        return (report.tags(of: stream, in: container), report.duration(of: stream))
+              let report = try? await probe(url, as: container, kind: FFmpegImportWording.kindName(of: url, container: container), using: tool),
+              report.isUsableSound else { return nil }
+        return (report.bookTags(in: container), report.duration)
     }
 
-    // MARK: - The Plan
-
-    /// What a conversion writes, decided from ffprobe's report before
-    /// anything runs.
-    struct Plan: Equatable, Sendable {
-        /// How the sound is written.
-        enum Encoding: Equatable, Sendable {
-            /// An AAC source of at most two channels, copied as it is.
-            case copy
-            /// A lossy source, encoded as AAC-LC by `encoder` ("aac_at",
-            /// Apple's own, or ffmpeg's "aac").
-            case aac(encoder: String)
-            /// A lossless source, written as Apple Lossless.
-            case appleLossless
-        }
-
-        /// One tag the conversion writes itself, besides the file's own.
-        struct Tag: Equatable, Sendable {
-            let key: String
-            let value: String
-        }
-
-        /// The container, whose demuxer reads the file.
-        let container: FFmpegContainer
-        /// The index of the sound stream converted (`-map 0:<index>`).
-        let streamIndex: Int
-        /// How it is written.
-        let encoding: Encoding
-        /// The channels, sample rate, bit rate, and Apple Lossless depth
-        /// written, as every conversion's (`ImportAudioConverter.Target`).
-        let target: ImportAudioConverter.Target
-        /// The source's channels.
-        let sourceChannels: Int
-        /// The source's sample rate, in hertz.
-        let sourceSampleRate: Double
-        /// How long the source lasts, in seconds, when it says.
-        let duration: TimeInterval?
-        /// The stream's tags the file leaves out, written as the file's own.
-        let tags: [Tag]
+    /// How long the sound of the file at `url` lasts, as the helper reads it,
+    /// when its size can hold that length (`believedDuration`); nil when it
+    /// is no file only FFmpeg reads, it says no length, or it can't say. A
+    /// cue sheet over a WMA or Matroska file is measured so
+    /// (`FileImportService.measuredLengths(of:)`), which afinfo cannot read
+    /// (the TODO's FU-FFMPEG item).
+    static func length(of url: URL, using tool: Tool) async -> TimeInterval? {
+        guard let probed = await tags(of: url, using: tool) else { return nil }
+        return believedDuration(probed.duration, ofFileNamed: url.lastPathComponent, bytes: ImportAudioConverter.fileSize(of: url))
     }
 
-    /// Whether ffmpeg's codec `codec` keeps every bit of its source, so it
+    // MARK: - What Is Written
+
+    /// Whether FFmpeg's codec `codec` keeps every bit of its source, so it
     /// becomes Apple Lossless: linear PCM of any kind but the companded
     /// A-law and μ-law, FLAC, ALAC, WMA Lossless, RealAudio Lossless, MLP,
     /// TrueHD, and the three lossless formats TextMouth also reads itself.
@@ -329,103 +332,46 @@ enum FFmpegAudioConverter {
         return ["flac", "alac", "wmalossless", "ralf", "mlp", "truehd", "tta", "wavpack", "ape"].contains(codec)
     }
 
-    /// The plan for the file named `fileName`, read as `container`, of
-    /// which ffprobe said `report`, with `aacEncoder` for a lossy source.
-    /// The sound is the stream the report chooses (`FFprobeReport.chosenAudio`).
-    /// An AAC stream of at most two channels is copied; a lossless one
-    /// becomes Apple Lossless; any other becomes AAC at its own bit rate
+    /// What a conversion writes from the sound `report` describes, for the
+    /// file named `fileName`: the source as `ImportAudioConverter` describes
+    /// one, and the target every conversion's rules make of it. A lossless
+    /// source becomes Apple Lossless at its own depth (24 bits for floating
+    /// point, which keeps none); any other becomes AAC at its own bit rate
     /// rounded up to a standard one (`ImportAudioConverter.target(for:averageBitRate:)`),
     /// or at 64 kbit/s a channel when its rate is unknown, as the audio
-    /// editor writes. More than two channels are mixed to stereo.
-    /// - Throws: `Failure.noSound` when the file holds no sound to convert.
-    static func plan(
-        for report: FFprobeReport,
-        container: FFmpegContainer,
-        fileName: String,
-        aacEncoder: String
-    ) throws -> Plan {
-        guard let stream = report.chosenAudio, let channels = stream.channels, let rate = stream.sampleRate else {
+    /// editor writes. More than two channels are mixed to stereo. An AAC
+    /// source is encoded again, at its own rate or higher, as every lossy
+    /// source is: the helper hands over samples, not packets.
+    /// - Throws: `Failure.noSound` when the report says no usable sound.
+    static func plan(for report: FFmpegReport, fileName: String) throws
+        -> (info: ImportAudioConverter.SourceInfo, target: ImportAudioConverter.Target)
+    {
+        guard report.isUsableSound, let channels = report.channels, let rate = report.sampleRate else {
             throw Failure.noSound(fileName: fileName)
         }
-        let duration = report.duration(of: stream)
-        let lossless = isLossless(codec: stream.codecName)
-        // Floating-point PCM keeps no depth of whole bits, as afinfo's
-        // reading of it says none (`SourceInfo.bitsPerSample`), so it becomes
-        // Apple Lossless of 24 bits, as it does through afconvert.
-        let isFloat = stream.codecName.hasPrefix("pcm_f")
+        let lossless = isLossless(codec: report.codecName)
         let info = ImportAudioConverter.SourceInfo(
-            sampleRate: rate, channels: channels, duration: duration ?? 0, formatID: stream.codecName,
-            bitsPerSample: isFloat ? nil : stream.bitsPerSample, isLossless: lossless
+            sampleRate: rate, channels: channels, duration: report.duration ?? 0, formatID: report.codecName,
+            bitsPerSample: report.bitsPerSample, isLossless: lossless
         )
-        let encoding: Plan.Encoding
-        let target: ImportAudioConverter.Target
-        if stream.codecName == "aac", channels <= ImportAudioConverter.maximumChannels {
-            encoding = .copy
-            target = ImportAudioConverter.Target(channels: channels, sampleRate: rate, bitRate: report.bitRate(of: stream))
-        } else if lossless {
-            encoding = .appleLossless
-            target = ImportAudioConverter.target(for: info, averageBitRate: 0)
-        } else {
-            encoding = .aac(encoder: aacEncoder)
-            let unknownRate = AudioRenderSettings.bitRatePerChannel * min(channels, ImportAudioConverter.maximumChannels)
-            target = ImportAudioConverter.target(for: info, averageBitRate: Double(report.bitRate(of: stream) ?? unknownRate))
+        if lossless {
+            return (info, ImportAudioConverter.target(for: info, averageBitRate: 0))
         }
-        return Plan(
-            container: container,
-            streamIndex: stream.index,
-            encoding: encoding,
-            target: target,
-            sourceChannels: channels,
-            sourceSampleRate: rate,
-            duration: duration,
-            tags: report.streamTagsToCarry(of: stream, in: container).map { Plan.Tag(key: $0.key, value: $0.value) }
-        )
+        let unknownRate = AudioRenderSettings.bitRatePerChannel * min(channels, ImportAudioConverter.maximumChannels)
+        return (info, ImportAudioConverter.target(for: info, averageBitRate: Double(report.bitRate ?? unknownRate)))
     }
 
-    // MARK: - The Command
-
-    /// ffmpeg's arguments for writing `output` from `input` as `plan` says:
-    ///
-    /// - no banner, no questions, only errors (which go nowhere), and any
-    ///   earlier output replaced (`FFmpeg.quietOptions`);
-    /// - only the file protocol, and the demuxer named (`-f`), each path
-    ///   given with "file:" so no name can be read as another protocol;
-    /// - the one sound stream (`-map 0:<index>`), the file's chapters and
-    ///   tags (`-map_chapters 0`, `-map_metadata 0`), and the stream's own
-    ///   tags the file leaves out (`-metadata`);
-    /// - for an encoding, the timestamps made again from the samples
-    ///   (`asetpts=N/SR/TB`), since some containers give many packets one
-    ///   time (RealMedia does), which leaves an MPEG-4 file that says it is
-    ///   shorter than its sound; then AAC at the bit rate and, where it
-    ///   differs, the sample rate of the plan, or Apple Lossless in 16 or 32
-    ///   bits a sample with the depth it keeps (`-bits_per_raw_sample` for 20
-    ///   and 24); and a mix to stereo for more than two channels (`-ac 2`);
-    /// - an MPEG-4 audio file (`-f ipod`), whatever the output's name.
-    static func arguments(from input: URL, to output: URL, plan: Plan) -> [String] {
-        var arguments = FFmpeg.quietOptions + [
-            "-protocol_whitelist", "file",
-            "-f", plan.container.demuxer, "-i", "file:" + input.path,
-            "-map", "0:\(plan.streamIndex)", "-map_chapters", "0", "-map_metadata", "0",
-        ]
-        for tag in plan.tags {
-            arguments += ["-metadata", "\(tag.key)=\(tag.value)"]
-        }
-        switch plan.encoding {
-        case .copy:
-            arguments += ["-c:a", "copy"]
-        case let .aac(encoder):
-            arguments += ["-af", "asetpts=N/SR/TB", "-c:a", encoder]
-            if let bitRate = plan.target.bitRate { arguments += ["-b:a", String(bitRate)] }
-            if plan.target.sampleRate != plan.sourceSampleRate { arguments += ["-ar", String(Int(plan.target.sampleRate))] }
-        case .appleLossless:
-            let depth = plan.target.appleLosslessBitDepth ?? 24
-            arguments += ["-af", "asetpts=N/SR/TB", "-c:a", "alac", "-sample_fmt", depth == 16 ? "s16p" : "s32p"]
-            if depth == 20 || depth == 24 { arguments += ["-bits_per_raw_sample", String(depth)] }
-        }
-        if plan.encoding != .copy, plan.sourceChannels > plan.target.channels {
-            arguments += ["-ac", String(plan.target.channels)]
-        }
-        return arguments + ["-f", "ipod", "file:" + output.path]
+    /// The stream of samples `report` describes, as the shared writer takes
+    /// one (`OwnAudioConverter.writeBlocks`): its rate, channels, and depth,
+    /// whether the samples are floats, whether its codec is lossless, and
+    /// which loudspeaker each channel is.
+    static func samplesStream(of report: FFmpegReport) -> OwnAudioStream {
+        OwnAudioStream(
+            sampleRate: Int(report.sampleRate ?? 0), channels: report.channels ?? 0,
+            bitsPerSample: report.sampleFormat == .f32 ? 32 : report.bits,
+            isFloat: report.sampleFormat == .f32, isLossless: isLossless(codec: report.codecName),
+            frames: 0, channelMask: report.channelMask
+        )
     }
 
     // MARK: - Converting
@@ -434,25 +380,39 @@ enum FFmpegAudioConverter {
     /// shares (`ImportAudioConverter.Failure`), in the words a listener hears
     /// (`FFmpegImportWording`).
     enum Failure: LocalizedError, Equatable {
-        /// No ffmpeg is installed; `kind` names the format.
-        case ffmpegMissing(kind: String)
-        /// The ffmpeg installed has no ffprobe; `kind` names the format.
-        case ffprobeMissing(kind: String)
+        /// The helper is missing from the app (it is damaged); `kind` names
+        /// the format.
+        case helperMissing(kind: String)
         /// A Windows Media file is copy-protected.
         case copyProtected
         /// The file's bytes are not of the format `kind` its name says, or
-        /// ffprobe could not read them.
+        /// the helper's FFmpeg could not read them.
         case notRecognized(fileName: String, kind: String)
         /// The file holds no sound, as a video without a sound track.
         case noSound(fileName: String)
+        /// The file's sound is in a codec TextMouth's FFmpeg does not decode.
+        case soundNotDecoded(fileName: String)
+        /// The sound changes its rate, channels, or form partway through.
+        case formChanged(fileName: String)
+        /// The helper crashed (a fatal signal) reading the file (the TODO's
+        /// FU-FFMPEG item: a crashed helper's own sentence).
+        case crashed(fileName: String)
+        /// The helper ended, with no error, before the end of the sound.
+        case endedEarly(fileName: String)
+        /// What the helper wrote is not the stream it writes.
+        case unreadableStream(fileName: String)
 
         var errorDescription: String? {
             switch self {
-            case let .ffmpegMissing(kind): return FFmpegImportWording.ffmpegMissing(kind: kind)
-            case let .ffprobeMissing(kind): return FFmpegImportWording.ffprobeMissing(kind: kind)
+            case let .helperMissing(kind): return FFmpegImportWording.helperMissing(kind: kind)
             case .copyProtected: return FFmpegImportWording.copyProtected
             case let .notRecognized(fileName, kind): return FFmpegImportWording.notRecognized(fileName: fileName, kind: kind)
             case let .noSound(fileName): return FFmpegImportWording.noSound(fileName: fileName)
+            case let .soundNotDecoded(fileName): return FFmpegImportWording.soundNotDecoded(fileName: fileName)
+            case let .formChanged(fileName): return FFmpegImportWording.formChanged(fileName: fileName)
+            case let .crashed(fileName): return FFmpegImportWording.crashed(fileName: fileName)
+            case let .endedEarly(fileName): return FFmpegImportWording.endedEarly(fileName: fileName)
+            case let .unreadableStream(fileName): return FFmpegImportWording.unreadableStream(fileName: fileName)
             }
         }
     }
@@ -466,7 +426,7 @@ enum FFmpegAudioConverter {
     /// taken to last, for its limits only: as long as `lowestAssumedBitRate`
     /// would make it, at most a year.
     static func assumedDuration(ofBytes bytes: Int64) -> TimeInterval {
-        min(Double(max(bytes, 0)) * 8 / Double(lowestAssumedBitRate), FFprobeReport.maximumDuration)
+        min(Double(max(bytes, 0)) * 8 / Double(lowestAssumedBitRate), FFmpegReport.maximumDuration)
     }
 
     /// The least a source that says no length may write: 64 MB, room for
@@ -513,24 +473,34 @@ enum FFmpegAudioConverter {
         return stated
     }
 
-    /// Converts `source`, a file the import converts with ffmpeg
-    /// (`converts(_:)`), to an .m4a file beside it, as `plan(for:...)`
+    /// Converts `source`, a file the import converts with FFmpeg
+    /// (`converts(_:)`), to an .m4a file beside it, as `plan(for:fileName:)`
     /// decides, under the hidden temporary name every conversion has
     /// (`ImportAudioConverter.temporaryURL(beside:)`), and checks it: it must
     /// play and, when the source says a length its size can hold
     /// (`believedDuration(_:ofFileNamed:bytes:)`), last as long to within
-    /// `ImportAudioConverter.allowedLengthError(for:)`. With `naming`, it then
-    /// gets its final name (`ImportAudioConverter.givingFinalName(_:)`). The
-    /// source is never changed, and nothing is left behind by a failure.
+    /// `ImportAudioConverter.allowedLengthError(for:)`. With `keepingChapters`
+    /// the file's chapters are then written into it as every conversion's are
+    /// (`ImportAudioConverter.keepChapters`). With `naming`, it then gets its
+    /// final name (`ImportAudioConverter.givingFinalName(_:)`). The source is
+    /// never changed, and nothing is left behind by a failure.
     ///
     /// In order: a file that is missing or only in the cloud is unreadable;
-    /// one whose bytes are of no container only ffmpeg reads is not
-    /// recognized; a copy-protected Windows Media file is refused; a Mac
-    /// without ffmpeg, or with no ffprobe beside it, refuses with what to
-    /// install; then ffprobe reads it, and ffmpeg converts it.
+    /// one whose bytes are of no container only FFmpeg reads is not
+    /// recognized; a copy-protected Windows Media file is refused; an app
+    /// whose helper is missing refuses; then the helper says what the file
+    /// holds, a source of no stated length is refused when the volume lacks
+    /// room for what it may write, and the helper decodes it while the app
+    /// writes the .m4a.
     /// - Throws: `Failure`, `ImportAudioConverter.Failure` (a kill, a failed
-    ///   run, a failed check, a name), or `CancellationError`.
-    static func convert(_ source: URL, naming: Bool = true, using tool: Tool) async throws -> ImportAudioConverter.Conversion {
+    ///   run, a failed check, a name, a writer's failure), or
+    ///   `CancellationError`.
+    static func convert(
+        _ source: URL,
+        naming: Bool = true,
+        keepingChapters: Bool = true,
+        using tool: Tool
+    ) async throws -> ImportAudioConverter.Conversion {
         let started = Date()
         let name = source.lastPathComponent
         guard FileManager.default.fileExists(atPath: source.path), !DatalessFiles.isDataless(source) else {
@@ -539,34 +509,26 @@ enum FFmpegAudioConverter {
         let container = FFmpegContainer.of(fileAt: source)
         let kind = FFmpegImportWording.kindName(of: source, container: container)
         guard let container else { throw Failure.notRecognized(fileName: name, kind: kind) }
-        // A protected file is refused whether or not ffmpeg is installed:
-        // installing it would not help.
+        // A protected file is refused before anything runs: no converter
+        // could help.
         if container == .asf, ASFHeader.isCopyProtected(fileAt: source) { throw Failure.copyProtected }
-        let programs: Programs
-        switch tool.locate() {
-        case let .found(found): programs = found
-        case .ffmpegMissing: throw Failure.ffmpegMissing(kind: kind)
-        case .ffprobeMissing: throw Failure.ffprobeMissing(kind: kind)
-        }
-        guard let report = try await tool.probe(source, container, programs) else {
-            throw Failure.notRecognized(fileName: name, kind: kind)
-        }
-        let encoder = try await tool.hasAppleAACEncoder(programs) ? "aac_at" : "aac"
-        let plan = try plan(for: report, container: container, fileName: name, aacEncoder: encoder)
+        guard case let .found(helper) = tool.locate() else { throw Failure.helperMissing(kind: kind) }
+        let report = try await probe(source, as: container, kind: kind, using: tool)
+        let planned = try plan(for: report, fileName: name)
         let bytesBefore = ImportAudioConverter.fileSize(of: source)
         // A length the file's size cannot hold is no length (as afinfo's is
         // not): the limits and the check then go by what is measured.
-        let stated = believedDuration(plan.duration, ofFileNamed: name, bytes: bytesBefore)
+        let stated = believedDuration(report.duration, ofFileNamed: name, bytes: bytesBefore)
         let duration = stated ?? assumedDuration(ofBytes: bytesBefore)
         var limits = tool.limits(duration)
         limits.maximumOutputBytes = limits.maximumOutputBytes
-            ?? ImportAudioConverter.outputCap(of: .encode, duration: duration, target: plan.target)
+            ?? ImportAudioConverter.outputCap(of: .encode, duration: duration, target: planned.target)
         let staged = ImportAudioConverter.temporaryURL(beside: source)
         if stated == nil {
             // A length assumed from the size lets the output grow far past
             // it, so it is capped by the size too (`unknownLengthOutputCap`),
-            // and refused before ffmpeg runs when the volume lacks room for
-            // that cap and the reserve left for the rest of the system
+            // and refused before the decode runs when the volume lacks room
+            // for that cap and the reserve left for the rest of the system
             // (`downmixReserveBytes`).
             let sizeCap = unknownLengthOutputCap(ofBytes: bytesBefore)
             limits.maximumOutputBytes = min(limits.maximumOutputBytes ?? .max, sizeCap)
@@ -577,12 +539,14 @@ enum FFmpegAudioConverter {
             }
         }
         let lasts: TimeInterval
+        let written: ImportAudioConverter.Target
         do {
-            try await ImportAudioConverter.runConverting(
-                tool.command(source, staged, plan, programs), named: name, limits: limits,
-                residentMemory: tool.residentMemory, watching: staged
+            (written, lasts) = try await decode(
+                source, as: container, kind: kind, helper: helper, into: staged, limits: limits, tool: tool, stated: stated
             )
-            lasts = try await check(staged, against: stated, from: name)
+            if keepingChapters, report.chapterMarks.count > 0 {
+                try await ImportAudioConverter.keepChapters(report.chapterMarks, in: staged, lasting: lasts, from: name)
+            }
         } catch {
             try? FileManager.default.removeItem(at: staged)
             throw error
@@ -594,7 +558,7 @@ enum FFmpegAudioConverter {
             secondsTaken: Date().timeIntervalSince(started),
             bytesBefore: bytesBefore,
             bytesAfter: ImportAudioConverter.fileSize(of: staged),
-            bitRate: plan.encoding == .copy ? nil : plan.target.bitRate
+            bitRate: written.bitRate
         )
         if naming {
             do {
@@ -606,6 +570,57 @@ enum FFmpegAudioConverter {
         }
         return conversion
     }
+
+    /// Runs the helper's decode of `source`, read as `container`, under
+    /// `limits`, writing its samples into `staged` as the decode's own report
+    /// plans (`plan(for:fileName:)`: the samples decoded are what it
+    /// describes, which may differ from the probe's, as HE-AAC's rate does),
+    /// with the file's tags (`FFmpegReport.bookTags(in:)`); then checks the
+    /// .m4a (`check(_:against:from:)`). Returns what was written and how long
+    /// the .m4a lasts.
+    /// - Throws: as `convert` does; a writer's failure as
+    ///   `ImportAudioConverter.Failure.notWritten`.
+    private static func decode(
+        _ source: URL,
+        as container: FFmpegContainer,
+        kind: String,
+        helper: URL,
+        into staged: URL,
+        limits: WatchedProcess.Limits,
+        tool: Tool,
+        stated: TimeInterval?
+    ) async throws -> (target: ImportAudioConverter.Target, lasts: TimeInterval) {
+        let name = source.lastPathComponent
+        let (ending, read) = try await WatchedProcess.runStreaming(
+            helper, arguments: [TMFF_MODE_DECODE, container.demuxer, source.path], watching: staged, limits: limits,
+            residentMemory: tool.residentMemory
+        ) { pipe -> ImportAudioConverter.Target in
+            var stream = FFmpegHelperStream { try await pipe.read(upTo: FFmpegHelperStream.pieceBytes) }
+            let report = try await stream.readReport()
+            let target = try plan(for: report, fileName: name).target
+            do {
+                try await OwnAudioConverter.writeBlocks(
+                    of: samplesStream(of: report), tags: report.bookTags(in: container), to: staged, target: target
+                ) { try await stream.nextBlock() }
+            } catch let AudioEditError.renderFailed(reason) {
+                // The reason is an error's domain and code, which never quote a path.
+                throw ImportAudioConverter.Failure.notWritten(fileName: name, reason: reason)
+            }
+            if stream.refusedPackets > 0 || stream.refusedFrames > 0 {
+                DiagnosticLog.event(.storage, "\(refusedLogTag): \(name): \(stream.refusedPackets) packets, \(stream.refusedFrames) frames")
+            }
+            return target
+        }
+        if let failure = failure(of: ending, read: read, fileName: name, kind: kind, limits: limits, logTag: "AUDIO_CONVERSION_KILLED") {
+            throw failure
+        }
+        let target = try read.get()
+        return (target, try await check(staged, against: stated, from: name))
+    }
+
+    /// The tag of the debug-log line saying how many packets and frames the
+    /// decoder refused in a file it converted all the same (a damaged file).
+    static let refusedLogTag = "AUDIO_DECODER_REFUSED"
 
     /// Checks the converted file at `url`, made from the file named
     /// `sourceName`: when the source said it lasts `duration` seconds, as

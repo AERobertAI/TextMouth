@@ -56,8 +56,8 @@ extension FileImportService {
             let found = try AsyncBridge.waitForResult { try await ImportAudioConverter.tracksNeedingConversion(in: bookURL) }
             guard !found.isEmpty else { return nil }
             #if os(iOS)
-            // The iPhone never has ffmpeg, and has no converter at all: what
-            // only ffmpeg reads is left out, and the rest refused, naming the kind.
+            // The iPhone has no FFmpeg helper, and no converter at all: what
+            // only FFmpeg reads is left out, and the rest refused, naming the kind.
             let (sources, notice) = try leavingOutWhatOnlyFFmpegReads(found, from: bookURL) { nil }
             try PhoneImportRefusal.refuseConversion(of: sources)
             #else
@@ -94,15 +94,15 @@ extension FileImportService {
 
     /// Leaves out of the book whose staged folder of tracks is `folder` the
     /// files among `sources`, its tracks the import converts, that only
-    /// ffmpeg reads and that can't be converted here
+    /// FFmpeg reads and that can't be converted here
     /// (`FFmpegAudioConverter.tracksToLeaveOut(of:located:)`, review9
     /// finding 2): a stray video in a folder, ZIP, or playlist of MP3s, or a
     /// file merely named like one. Their staged copies are removed, so no
     /// reader or player meets them; what was imported from is never touched.
-    /// `located` says what this Mac has of ffmpeg (nil on the iPhone), and is
-    /// asked only when some source is a file only ffmpeg reads. A book that
-    /// would have no track left leaves nothing out, so it is refused as a
-    /// single such file is, with what to install.
+    /// `located` says whether this Mac's app has its FFmpeg helper (nil on
+    /// the iPhone), and is asked only when some source is a file only FFmpeg
+    /// reads. A book that would have no track left leaves nothing out, so it
+    /// is refused as a single such file is, with what to do.
     /// - Returns: the sources still to convert, and the notice that names
     ///   what was left out (nil when nothing was).
     /// - Throws: the file system's error when a staged copy can't be removed.
@@ -122,14 +122,14 @@ extension FileImportService {
         // What is kept, and the names, are read while the files exist.
         let kept = sources.filter { !leaving.contains($0.path) }
         let named = { (files: [URL]) in files.map { AudioBookParser.relativeName(of: $0, in: folder) } }
-        let needingNames = named(leftOut.needingFFmpeg)
+        let needingNames = named(leftOut.needingConverter)
         #if os(iOS)
-        // The iPhone's own words: a Mac with ffmpeg is the way to keep them.
+        // The iPhone's own words: the Mac is the way to keep them.
         let needing = PhoneImportWording.ffmpegTracksLeftOut(needingNames)
         #else
-        let needing = leftOut.located.flatMap { FFmpegImportWording.leftOutNeedingFFmpeg(needingNames, located: $0) }
+        let needing = leftOut.located.flatMap { FFmpegImportWording.leftOutNeedingConverter(needingNames, located: $0) }
         #endif
-        let notice = FFmpegImportWording.tracksLeftOutNotice(needingFFmpeg: needing, holdingNoSound: named(leftOut.holdingNoSound))
+        let notice = FFmpegImportWording.tracksLeftOutNotice(needingConverter: needing, holdingNoSound: named(leftOut.holdingNoSound))
         for file in leftOut.all {
             try FileManager.default.removeItem(at: file)
         }

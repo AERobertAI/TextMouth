@@ -101,3 +101,102 @@ enum FFmpegTestStream {
         return bytes
     }
 }
+
+// MARK: - The Helper, Real and Stood In
+
+/// Why a test of the FFmpeg helper could not start.
+enum FFmpegTestError: Error {
+    /// The app holds no FFmpeg helper, which every build of it does.
+    case noHelper
+}
+
+extension XCTestCase {
+    /// The FFmpeg helper the app carries (Contents/MacOS/TextMouthFFmpeg of
+    /// the test host, which is the app). Every build of the app has it, on
+    /// GitHub's runners too, so a test that finds none fails.
+    /// - Throws: `FFmpegTestError.noHelper` when there is none.
+    func bundledFFmpegHelper() throws -> URL {
+        guard case let .found(helper) = FFmpegAudioConverter.locateBundled() else { throw FFmpegTestError.noHelper }
+        return helper
+    }
+
+    /// What a stand-in helper does when it is asked to probe or to decode.
+    enum StandInAction {
+        /// Runs the app's own helper, as the import would.
+        case realHelper
+        /// Writes these bytes and exits with this status.
+        case write([UInt8], status: Int32)
+        /// Hangs, writing nothing, for this many seconds.
+        case hang(seconds: Int)
+        /// Kills itself with SIGKILL, as a crash kills (SIGKILL makes no
+        /// crash report, so it is safe on this Mac).
+        case killItself
+    }
+
+    /// A stand-in for the FFmpeg helper: a shell script in this test's
+    /// sandbox that does `probe` for the helper's probe and `decode` for its
+    /// decode, and appends its first two arguments (the mode and the
+    /// demuxer) to the log file it returns, so a test can see what was asked.
+    func ffmpegHelperStandIn(probe: StandInAction = .realHelper, decode: StandInAction = .realHelper) throws -> (helper: URL, log: URL) {
+        let folder = try makeSandboxDirectory("FFmpegStandIn")
+        let log = folder.appendingPathComponent("calls.log")
+        try Data().write(to: log)
+        /// The shell lines that do `action`, writing its bytes to a file of
+        /// their own named for `mode`.
+        func lines(_ action: StandInAction, mode: String) throws -> String {
+            switch action {
+            case .realHelper:
+                return "exec '\(try bundledFFmpegHelper().path)' \"$@\""
+            case let .write(bytes, status):
+                let output = folder.appendingPathComponent("\(mode).stream")
+                try Data(bytes).write(to: output)
+                return "cat '\(output.path)'; exit \(status)"
+            case let .hang(seconds):
+                // exec: the sleep is the helper's own process, which the watchdog's kill ends.
+                return "exec /bin/sleep \(seconds)"
+            case .killItself:
+                return "kill -9 $$"
+            }
+        }
+        let script = """
+        #!/bin/sh
+        echo "$1 $2" >> '\(log.path)'
+        case "$1" in
+        probe) \(try lines(probe, mode: "probe")) ;;
+        decode) \(try lines(decode, mode: "decode")) ;;
+        esac
+        exit 1
+        """
+        let helper = folder.appendingPathComponent("TextMouthFFmpeg")
+        try Data(script.utf8).write(to: helper)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: helper.path)
+        return (helper, log)
+    }
+
+    /// The calls a stand-in made, one "mode demuxer" line each.
+    func standInCalls(_ log: URL) throws -> [String] {
+        try String(contentsOf: log, encoding: .utf8).split(separator: "\n").map(String.init)
+    }
+
+    /// The FFmpeg tool with `helper` (none: a missing helper), the
+    /// watchdog's limits at `seconds` for everything when given, and a volume
+    /// of `available` free bytes, or one that says nothing of its space
+    /// (nil), so no test depends on the disk it runs on.
+    func ffmpegTool(helper: URL?, seconds: TimeInterval? = nil, available: Int64? = nil) -> FFmpegAudioConverter.Tool {
+        var tool = FFmpegAudioConverter.Tool.bundled
+        tool.locate = { helper.map { .found($0) } ?? .missing }
+        if let seconds {
+            let limits = WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
+            tool.limits = { _ in limits }
+            tool.probeLimits = { _ in limits }
+        }
+        tool.availableBytes = { _ in available }
+        return tool
+    }
+
+    /// The tool with the app's own helper, and a volume that says nothing of
+    /// its space.
+    func bundledFFmpegTool() throws -> FFmpegAudioConverter.Tool {
+        ffmpegTool(helper: try bundledFFmpegHelper())
+    }
+}
