@@ -45,7 +45,7 @@ enum ExportDocumentWalker {
     /// walk calls itself once for each level of nesting, as the reader's does.
     /// So the walk is held to the reader's limit on nesting
     /// (`MarkdownTree.read(_:within:_:)`), whose refusal is this walk's
-    /// `ExportWalkError.nestedTooDeeply`, naming the chapter, and it runs on
+    /// `ExportWalkError.nestedTooDeeply`, naming the chapter by its number, and it runs on
     /// `MarkupGuard.onLargeStack`, whose stack holds a tree at that limit
     /// however small the stack of the thread that asks (an export's own is
     /// 512 KiB).
@@ -58,6 +58,8 @@ enum ExportDocumentWalker {
         cancellation: BookExportCancellation? = nil
     ) throws -> ExportDocument {
         var sections = MarkdownCacheService.splitChapters(markdown)
+        // Whether the text has chapter markers: a refusal names a chapter only if it does.
+        let hasChapters = !sections.isEmpty
         if sections.isEmpty {
             sections = [(title: "", content: markdown)]
         }
@@ -66,14 +68,19 @@ enum ExportDocumentWalker {
         let limits = MarkupGuard.limits
         let chapters = sections
         return try MarkupGuard.onLargeStack {
-            try walk(chapters, book: book, options: options, limits: limits, cancellation: cancellation)
+            try walk(
+                chapters, namingThem: hasChapters, book: book, options: options, limits: limits, cancellation: cancellation
+            )
         }
     }
 
     /// `document(fromMarkdown:book:options:cancellation:)`'s walk of the
-    /// chapters `sections`, which its caller runs on the big stack.
+    /// chapters `sections`, which its caller runs on the big stack. A refusal
+    /// names the chapter by its number when `namingThem`, which is false for a
+    /// text with no chapter markers, whose one section is the whole text.
     private static func walk(
         _ sections: [(title: String, content: String)],
+        namingThem: Bool,
         book: ExportBookDetails,
         options: ExportWalkOptions,
         limits: MarkupGuard.Limits,
@@ -82,12 +89,14 @@ enum ExportDocumentWalker {
         var state = Walk(options: options, limits: limits)
         var blocks: [ExportBlock] = []
         var chapterStarts: [ExportChapterStart] = []
-        for section in sections {
+        for (index, section) in sections.enumerated() {
             try cancellation?.checkCancelled()
             if options.keepsChapters {
                 chapterStarts.append(ExportChapterStart(blockIndex: blocks.count, title: section.title))
             }
-            blocks += try state.blocks(ofSectionTitled: section.title, content: section.content)
+            blocks += try state.blocks(
+                ofSectionTitled: section.title, number: namingThem ? index + 1 : nil, content: section.content
+            )
         }
 
         // The book's title heads a document that has no level-1 heading of
@@ -107,14 +116,15 @@ enum ExportDocumentWalker {
 /// Why a content.md is not walked into a document: a sentence of its own, the
 /// same on screen, in VoiceOver, and in braille, which the export's failure
 /// names after the file (`BookExportWording.failureSentence(_:)`). It never
-/// quotes the text, but for the chapter's title, which the user's own export
-/// dialog names too.
+/// quotes the text, not even a chapter's title, which is the book's text and
+/// which the log of the failure may not hold: a chapter is named by its number.
 enum ExportWalkError: LocalizedError, Equatable, Sendable {
     /// A chapter's Markdown nests quotes, lists, or emphasis past the limit
     /// the reader holds every text to (`MarkdownTree.read(_:within:_:)`):
-    /// `chapter` is its title, empty for a text with no chapter markers, and
-    /// `limit` the deepest nesting read (`MarkupGuard.Limits.deepestNesting`).
-    case nestedTooDeeply(chapter: String, limit: Int)
+    /// `chapter` is its number, from 1, among the text's chapter markers, nil
+    /// for a text with no chapter markers, and `limit` the deepest nesting
+    /// read (`MarkupGuard.Limits.deepestNesting`).
+    case nestedTooDeeply(chapter: Int?, limit: Int)
 
     var errorDescription: String? {
         switch self {
@@ -265,9 +275,11 @@ private struct Walk {
     /// and what it is called (`ExportDocument.chapterStarts`), and the writer
     /// that asked names the chapter in its contents without adding words the
     /// book does not have.
+    /// - Parameter number: The chapter's number among the text's chapter
+    ///   markers, from 1, for a refusal to name it; nil for a text with none.
     /// - Throws: `ExportWalkError.nestedTooDeeply` when the chapter nests past
     ///   the limit, in its own Markdown or in the rest of a marker line.
-    mutating func blocks(ofSectionTitled title: String, content: String) throws -> [ExportBlock] {
+    mutating func blocks(ofSectionTitled title: String, number: Int?, content: String) throws -> [ExportBlock] {
         let walked: [ExportBlock]
         do {
             walked = try MarkdownTree.read(content, within: limits) { document in
@@ -276,7 +288,7 @@ private struct Walk {
         } catch let refusal as MarkupRefusal {
             // The only refusal a walk of Markdown makes, named for the chapter.
             guard case let .nestedTooDeeply(limit) = refusal else { throw refusal }
-            throw ExportWalkError.nestedTooDeeply(chapter: title, limit: limit)
+            throw ExportWalkError.nestedTooDeeply(chapter: number, limit: limit)
         }
         var blocks = Self.droppingRedundantTargets(from: walked)
         // Claimed after the blocks are made: they hold no heading, so the

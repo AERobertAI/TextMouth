@@ -45,8 +45,9 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
         }
     }
 
-    /// `ExportWalkError.nestedTooDeeply` for the chapter `chapter`, at the standard limit.
-    private func tooDeep(chapter: String = "") -> ExportWalkError {
+    /// `ExportWalkError.nestedTooDeeply` for the chapter numbered `chapter`
+    /// (nil for a text with no chapter markers), at the standard limit.
+    private func tooDeep(chapter: Int? = nil) -> ExportWalkError {
         .nestedTooDeeply(chapter: chapter, limit: limits.deepestNesting)
     }
 
@@ -77,15 +78,15 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
         XCTAssertEqual(words(of: try walk("A plain paragraph.")), "A plain paragraph.")
     }
 
-    /// The refusal names the chapter a deep text is in, the first of them,
-    /// and says nothing of a text with no chapter markers.
-    func testTheRefusalNamesTheChapter() {
+    /// The refusal names the chapter a deep text is in by its number, the
+    /// first of them, and no chapter for a text with no chapter markers.
+    func testTheRefusalNamesTheChapterByItsNumber() {
         let deep = DeepMarkdown.quotes(limits.deepestNesting + 1)
         let book = "\(MarkdownCacheService.chapterMarker(title: "First"))\nWords.\n\n"
             + "\(MarkdownCacheService.chapterMarker(title: "Second"))\n\(deep)\n\n"
             + "\(MarkdownCacheService.chapterMarker(title: "Third"))\n\(deep)"
-        XCTAssertEqual(refusal(of: book), tooDeep(chapter: "Second"))
-        XCTAssertEqual(refusal(of: deep), tooDeep(chapter: ""))
+        XCTAssertEqual(refusal(of: book), tooDeep(chapter: 2))
+        XCTAssertEqual(refusal(of: deep), tooDeep(chapter: nil))
         // A chapter deep at the limit's edge is walked, whatever surrounds it.
         let edge = "\(MarkdownCacheService.chapterMarker(title: "Edge"))\n\(DeepMarkdown.quotes(limits.deepestNesting))"
         XCTAssertNil(refusal(of: edge))
@@ -115,7 +116,7 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
         lowered.deepestNesting = 3
         MarkupGuard.$limits.withValue(lowered) {
             XCTAssertNil(refusal(of: DeepMarkdown.quotes(3)))
-            XCTAssertEqual(refusal(of: DeepMarkdown.quotes(4)), .nestedTooDeeply(chapter: "", limit: 3))
+            XCTAssertEqual(refusal(of: DeepMarkdown.quotes(4)), .nestedTooDeeply(chapter: nil, limit: 3))
         }
         var shallowTree = limits
         shallowTree.deepestTree = 5
@@ -212,14 +213,16 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
 
     // MARK: - The sentence
 
-    /// The sentence a refused export says: it names the chapter, or the book's
-    /// text, the limit, and what to do, and it sits in an export's summary as
-    /// every failure's reason does, a sentence of its own.
+    /// The sentence a refused export says: it names the chapter by its number,
+    /// or the book's text, the limit, and what to do, and it sits in an
+    /// export's summary as every failure's reason does, a sentence of its own.
+    /// No chapter title is in it: a title is the book's text, which the log of
+    /// the failure may not hold.
     func testTheSentenceNamesTheChapterTheLimitAndWhatToDo() {
-        let chapter = tooDeep(chapter: "The Long Night").localizedDescription
+        let chapter = tooDeep(chapter: 3).localizedDescription
         XCTAssertEqual(
             chapter,
-            "The chapter called The Long Night nests quotes, lists, or emphasis more than 128 levels deep, "
+            "Chapter 3 of this book nests quotes, lists, or emphasis more than 128 levels deep, "
                 + "which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again."
         )
         XCTAssertEqual(
@@ -230,7 +233,7 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
         let summary = BookExportWording.failureSentence([BookExportFailure(name: "Night - Text.html", reason: chapter)])
         XCTAssertEqual(
             summary,
-            "Couldn't export Night - Text.html: The chapter called The Long Night nests quotes, lists, or emphasis more than "
+            "Couldn't export Night - Text.html: Chapter 3 of this book nests quotes, lists, or emphasis more than "
                 + "128 levels deep, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; "
                 + "then export again."
         )
