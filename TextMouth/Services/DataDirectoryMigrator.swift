@@ -761,9 +761,86 @@ extension DataDirectoryMigrator {
     @TaskLocal static var copyObserver: DataDirectoryCopyObserver?
 }
 
+/// The names a save gives the temporary file it writes beside its target
+/// before it renames the file into place (B14), so a copy of the data
+/// directory can tell a file that is only on its way to being a save from
+/// a file the user has.
+///
+/// A temporary file is whole or half written, and gone the moment its save
+/// ends: copying it would put a stray file in the new library, and a
+/// listing that names it can find it renamed away before it is reached,
+/// which stopped the move. Two names are made beside the target, inside
+/// the data directory:
+/// - Foundation's own, for every `Data.write(to:options: .atomic)` and
+///   `String.write(to:atomically:encoding:)` (the rules, the statistics,
+///   config.json, library.json, the feeds' files, and the rest): a dot,
+///   "dat.nosync", the writing process's number in hexadecimal, a dot, and
+///   six letters or digits, as ".dat.nosync1f4c.AbC123" (measured on
+///   November 16, 2026);
+/// - TextMouth's own, a file staged whole beside the one it is to become
+///   and moved into place (`stagedName(for:)`): a dot, the target's name, a
+///   dot, and a UUID.
+///
+/// `FileManager.replaceItemAt` writes nothing beside its target (measured the
+/// same day), and the caches' ".partial" files live in this Mac's Caches
+/// folder, outside any data directory.
+enum SaveTemporaryNames {
+    /// What begins every name Foundation gives a temporary file of an
+    /// atomic write.
+    private static let foundationPrefix = ".dat.nosync"
+    /// How many letters or digits end such a name, after a dot.
+    private static let foundationSuffixLength = 6
+    /// The most digits the writing process's number takes in hexadecimal
+    /// (macOS's process numbers stay under 100000, five digits; eight is
+    /// room to spare, not a licence for other names).
+    private static let foundationMostProcessDigits = 8
+
+    /// The name of the file a save of the file named `target` stages whole
+    /// beside it, to move it into place: ".<target>.<UUID>".
+    static func stagedName(for target: String) -> String {
+        ".\(target).\(UUID().uuidString)"
+    }
+
+    /// Whether `name` is the name of a save's temporary file, as described
+    /// above, and nothing else: a hidden file the user or another program
+    /// made, such as ".DS_Store" or ".dat.nosync", is not.
+    static func isTemporary(_ name: String) -> Bool {
+        isFoundationTemporary(name) || isStaged(name)
+    }
+
+    /// Whether `name` is ".dat.nosync", the process number in hexadecimal,
+    /// a dot, and six letters or digits.
+    private static func isFoundationTemporary(_ name: String) -> Bool {
+        guard name.hasPrefix(foundationPrefix) else { return false }
+        let parts = name.dropFirst(foundationPrefix.count).split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 2 else { return false }
+        let process = parts[0], random = parts[1]
+        return (1...foundationMostProcessDigits).contains(process.count)
+            && process.allSatisfy { $0.isASCII && $0.isHexDigit }
+            && random.count == foundationSuffixLength
+            && random.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
+    }
+
+    /// Whether `name` is a dot, a target's name, a dot, and a UUID: what
+    /// `stagedName(for:)` makes.
+    private static func isStaged(_ name: String) -> Bool {
+        // The last dot must come after the first, or there is no target's
+        // name between them (and no range to take).
+        guard name.hasPrefix("."), let lastDot = name.lastIndex(of: "."), lastDot > name.startIndex else { return false }
+        // At least one character of the target's name between the dots.
+        let target = name[name.index(after: name.startIndex)..<lastDot]
+        let identifier = name[name.index(after: lastDot)...]
+        return !target.isEmpty && UUID(uuidString: String(identifier)) != nil
+    }
+}
+
 /// The items a migration copies, in the order it copies them, with their
 /// sizes (FR02): every item in the data directory's folder, hidden ones
 /// included, as a folder to make or an item to copy whole.
+///
+/// A save's temporary file (`SaveTemporaryNames`) is no item: it is not the
+/// user's, and a save made during the copy can rename it away before it is
+/// reached (B14).
 ///
 /// A book's package (a .tmb folder, or any folder the system treats as a
 /// package) is one item, copied whole, so each book arrives in one piece
@@ -819,6 +896,12 @@ struct DataDirectoryCopyPlan: Equatable {
         var folders: [(item: Item, url: URL)] = []
         var others: [Item] = []
         for name in try fileManager.contentsOfDirectory(atPath: folder.path).sortedStably() {
+            // A save's temporary file is nobody's data, and may be renamed
+            // away before the copy reaches it (B14). It is left out before
+            // anything asks the file system about it, which could fail for
+            // the same reason; an earlier crash's stale one stays in the old
+            // folder, untouched, and is not copied.
+            if SaveTemporaryNames.isTemporary(name) { continue }
             let url = folder.appendingPathComponent(name)
             let path = relativePath.isEmpty ? name : relativePath + "/" + name
             // The item itself, never a link's target.

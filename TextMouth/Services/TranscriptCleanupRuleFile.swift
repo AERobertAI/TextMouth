@@ -159,7 +159,7 @@ enum TranscriptCleanupRuleFile {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             // Written whole beside it first, then moved into place, which
             // fails rather than replace a copy that arrived meanwhile.
-            let staged = folder.appendingPathComponent(".\(url.lastPathComponent).\(UUID().uuidString)")
+            let staged = folder.appendingPathComponent(SaveTemporaryNames.stagedName(for: url.lastPathComponent))
             try builtInBytes.write(to: staged, options: .atomic)
             defer { try? FileManager.default.removeItem(at: staged) }
             do {

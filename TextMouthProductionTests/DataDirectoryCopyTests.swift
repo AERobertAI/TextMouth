@@ -54,6 +54,38 @@ final class DataDirectoryCopyTests: XCTestCase {
         XCTAssertEqual(paths, ["Library", "Library/.DS_Store", ".hidden-note"])
     }
 
+    /// A save's temporary file is no item of the plan, at any depth, while
+    /// the names that only look like one are (B14).
+    func testThePlanLeavesOutSavesTemporaryFilesAndKeepsLookAlikes() throws {
+        let root = try makeSandboxDirectory("CopyPlanTemporary").appendingPathComponent("Data", isDirectory: true)
+        let staged = SaveTemporaryNames.stagedName(for: "substitutions.json")
+        // A UUID after two dots has no target's name between them.
+        let dotDotName = UUID().uuidString
+        try write("a", to: root.appendingPathComponent(".dat.nosync8247.BvENvv"))
+        try write("b", to: root.appendingPathComponent(staged))
+        try write("c", to: root.appendingPathComponent("Feeds/.dat.nosync1f4c.Zz09aB"))
+        try write("d", to: root.appendingPathComponent("substitutions.json"))
+        // Look-alikes the user or another program could have made.
+        try write("e", to: root.appendingPathComponent(".dat.nosync"))
+        try write("f", to: root.appendingPathComponent(".dat.nosync-notes"))
+        try write("g", to: root.appendingPathComponent(".dat.nosyncXYZ.BvENvv"))
+        try write("h", to: root.appendingPathComponent(".dat.nosync8247.short"))
+        try write("i", to: root.appendingPathComponent(".notes.not-a-uuid"))
+        try write("j", to: root.appendingPathComponent("..\(dotDotName)"))
+        try write("k", to: root.appendingPathComponent(".DS_Store"))
+
+        let paths = try DataDirectoryCopyPlan(of: root).items.map(\.relativePath)
+
+        // The folder first, which now holds nothing; then the files, whose
+        // order within the folder is the plan's own and not this test's.
+        XCTAssertEqual(paths.first, "Feeds")
+        XCTAssertEqual(Set(paths.dropFirst()), [
+            "substitutions.json", ".dat.nosync", ".dat.nosync-notes", ".dat.nosyncXYZ.BvENvv",
+            ".dat.nosync8247.short", ".notes.not-a-uuid", "..\(dotDotName)", ".DS_Store",
+        ])
+        XCTAssertEqual(paths.count, 9, "a name was listed twice or a temporary file was kept")
+    }
+
     // MARK: - Copying
 
     /// Each package is copied with one copy of the whole package, and each
