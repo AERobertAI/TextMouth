@@ -182,14 +182,14 @@ def test_names(kind):
 
 
 def prepare_sources(repo, commit, src, census, tests=False):
-    """Replaces `src` with the committed TextMouth/, Vendor/, and
-    TextMouthBraille/ folders at `commit`; with `tests` (see test_kind), also the
+    """Replaces `src` with the committed TextMouth/, Vendor/, TextMouthBraille/, and
+    TextMouthFFmpeg/ folders at `commit`; with `tests` (see test_kind), also the
     test target's Swift sources, gathered into one folder; in a census, reads AppKit
     imports as UIKit there. Returns how many imports the census rewrote."""
     if src.exists():
         shutil.rmtree(src)
     src.mkdir(parents=True)
-    extract(repo, commit, ["TextMouth", "Vendor", "TextMouthBraille"], src)
+    extract(repo, commit, ["TextMouth", "Vendor", "TextMouthBraille", "TextMouthFFmpeg"], src)
     kind = test_kind(tests)
     if kind:
         target, listed_folder, project_target = test_names(kind)
@@ -260,8 +260,9 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
         extra_flags += ["-whole-module-optimization"]
     flags = "".join(f', "{flag}"' for flag in extra_flags)
     excludes = ", ".join(f'"{e}"' for e in excluded_folders(src, platform))
-    # The braille helper's protocol is a header-only module, found by its map.
-    include_flags = f'"-I", "{src / "TextMouthBraille" / "include"}"'
+    # The braille helper's protocol and the FFmpeg helper's stream are header-only modules, found by their maps.
+    include_flags = (f'"-I", "{src / "TextMouthBraille" / "include"}", '
+                     f'"-I", "{src / "TextMouthFFmpeg" / "include"}"')
     test_target = f"""
         // The tests of the platform: compiled, never run.
         .testTarget(
