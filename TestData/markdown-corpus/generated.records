@@ -6665,33 +6665,9 @@ refused: nestedTooDeeply(limit: 128)
 -- tree limit 12: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
 -- tree limit 16: 4533bcf5ba990ebf refused: nestedTooDeeply(limit: 128)
 -- export words
-title heading 1 #corpus-book ["Corpus Book"]
-quote
-  quote
-    quote
-      quote
-        quote
-          quote
-            quote
-              quote
-                paragraph ["deep"]
-html "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Corpus Book</title>\n<meta name=\"author\" content=\"Corpus Author\"/>\n</head>\n<body>\n<h1 id=\"corpus-book\">Corpus Book</h1>\n<blockquote>\n<blockquote>\n<blockquote>\n<blockquote>\n<blockquote>\n<blockquote>\n<blockquote>\n<blockquote>\n<p>deep</p>\n</blockquote>\n</blockquote>\n</blockquote>\n</blockquote>\n</blockquote>\n</blockquote>\n</blockquote>\n</blockquote>\n</body>\n</html>\n"
-markdown "> > > > > > > > deep\n"
-rtf fe05152bfdaeffbc
-braille blocks d2c80e4eb3832f21
+failed: nestedTooDeeply(chapter: "", limit: 128)
 -- export structure
-title heading 1 #corpus-book ["Corpus Book"]
-chapter starts at block 0 ""
-quote
-  quote
-    quote
-      quote
-        quote
-          quote
-            quote
-              quote
-                paragraph ["deep"]
-epub d0276618f7148cef in 5 files
+failed: nestedTooDeeply(chapter: "", limit: 128)
 === quotes and lists in turn
 markdown "> - > - > - > - > - > - bottom"
 -- read whole

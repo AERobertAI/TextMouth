@@ -396,6 +396,19 @@ enum BookExportWording {
         }
     }
 
+    /// Why a book's text was not exported when a chapter of it nests quotes,
+    /// lists, or emphasis past `limit` levels (`ExportWalkError`), and what
+    /// to do, as the end of the sentence that names the file: "The chapter
+    /// called Two nests quotes, lists, or emphasis more than 128 levels deep,
+    /// which TextMouth can't export safely. Choose Edit Text, flatten the
+    /// nesting, and save; then export again." A text with no chapter markers
+    /// (`chapter` empty) says "The text of this book" instead.
+    static func nestedTooDeeply(chapter: String, limit: Int) -> String {
+        let subject = chapter.isEmpty ? "The text of this book" : "The chapter called \(chapter)"
+        return "\(subject) nests quotes, lists, or emphasis more than \(limit.formatted()) levels deep, "
+            + "which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again."
+    }
+
     /// `count` items: "1 item", "3 items".
     static func items(_ count: Int) -> String {
         CountWording.phrase(count, singular: "item", plural: "items")

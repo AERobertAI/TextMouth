@@ -40,6 +40,17 @@ enum ExportDocumentWalker {
     /// `options` say what besides the words the document keeps. `cancellation`
     /// is checked before each chapter, and a cancelled export throws
     /// `CancellationError`.
+    ///
+    /// content.md is untrusted: Edit Text lets the user's own text in, and a
+    /// walk calls itself once for each level of nesting, as the reader's does.
+    /// So the walk is held to the reader's limit on nesting
+    /// (`MarkdownTree.read(_:within:_:)`), whose refusal is this walk's
+    /// `ExportWalkError.nestedTooDeeply`, naming the chapter, and it runs on
+    /// `MarkupGuard.onLargeStack`, whose stack holds a tree at that limit
+    /// however small the stack of the thread that asks (an export's own is
+    /// 512 KiB).
+    /// - Throws: `ExportWalkError.nestedTooDeeply` for the first chapter that
+    ///   nests past the limit, and `CancellationError` when stopped.
     static func document(
         fromMarkdown markdown: String,
         book: ExportBookDetails,
@@ -50,8 +61,25 @@ enum ExportDocumentWalker {
         if sections.isEmpty {
             sections = [(title: "", content: markdown)]
         }
+        // The limits in force are task-local, which a thread of its own does
+        // not inherit, so they are read here and handed on.
+        let limits = MarkupGuard.limits
+        let chapters = sections
+        return try MarkupGuard.onLargeStack {
+            try walk(chapters, book: book, options: options, limits: limits, cancellation: cancellation)
+        }
+    }
 
-        var walk = Walk(options: options)
+    /// `document(fromMarkdown:book:options:cancellation:)`'s walk of the
+    /// chapters `sections`, which its caller runs on the big stack.
+    private static func walk(
+        _ sections: [(title: String, content: String)],
+        book: ExportBookDetails,
+        options: ExportWalkOptions,
+        limits: MarkupGuard.Limits,
+        cancellation: BookExportCancellation?
+    ) throws -> ExportDocument {
+        var state = Walk(options: options, limits: limits)
         var blocks: [ExportBlock] = []
         var chapterStarts: [ExportChapterStart] = []
         for section in sections {
@@ -59,7 +87,7 @@ enum ExportDocumentWalker {
             if options.keepsChapters {
                 chapterStarts.append(ExportChapterStart(blockIndex: blocks.count, title: section.title))
             }
-            blocks += walk.blocks(ofSectionTitled: section.title, content: section.content)
+            blocks += try state.blocks(ofSectionTitled: section.title, content: section.content)
         }
 
         // The book's title heads a document that has no level-1 heading of
@@ -68,9 +96,31 @@ enum ExportDocumentWalker {
         let title = book.title.trimmingCharacters(in: .whitespacesAndNewlines)
         var titleHeading: ExportHeading?
         if !title.isEmpty, !ExportBlock.headings(in: blocks).contains(where: { $0.level == 1 }) {
-            titleHeading = walk.plainHeading(level: 1, title: title)
+            titleHeading = state.plainHeading(level: 1, title: title)
         }
         return ExportDocument(book: book, titleHeading: titleHeading, blocks: blocks, chapterStarts: chapterStarts)
+    }
+}
+
+// MARK: - Why a Walk Stops
+
+/// Why a content.md is not walked into a document: a sentence of its own, the
+/// same on screen, in VoiceOver, and in braille, which the export's failure
+/// names after the file (`BookExportWording.failureSentence(_:)`). It never
+/// quotes the text, but for the chapter's title, which the user's own export
+/// dialog names too.
+enum ExportWalkError: LocalizedError, Equatable, Sendable {
+    /// A chapter's Markdown nests quotes, lists, or emphasis past the limit
+    /// the reader holds every text to (`MarkdownTree.read(_:within:_:)`):
+    /// `chapter` is its title, empty for a text with no chapter markers, and
+    /// `limit` the deepest nesting read (`MarkupGuard.Limits.deepestNesting`).
+    case nestedTooDeeply(chapter: String, limit: Int)
+
+    var errorDescription: String? {
+        switch self {
+        case let .nestedTooDeeply(chapter, limit):
+            return BookExportWording.nestedTooDeeply(chapter: chapter, limit: limit)
+        }
     }
 }
 
@@ -196,11 +246,14 @@ private struct Walk {
     /// marker-led block inside it is not read again (as the reader does not,
     /// so a crafted line cannot be re-parsed once per level).
     var isReadingRestOfMarkerLine = false
+    /// The limits on nesting every text read is held to.
+    let limits: MarkupGuard.Limits
 
-    /// A walk that keeps what `options` ask for, with no id claimed and no
-    /// page or target met.
-    init(options: ExportWalkOptions) {
+    /// A walk that keeps what `options` ask for, held to `limits`, with no id
+    /// claimed and no page or target met.
+    init(options: ExportWalkOptions, limits: MarkupGuard.Limits) {
         self.options = options
+        self.limits = limits
     }
 
     // MARK: Chapters
@@ -212,10 +265,20 @@ private struct Walk {
     /// and what it is called (`ExportDocument.chapterStarts`), and the writer
     /// that asked names the chapter in its contents without adding words the
     /// book does not have.
-    mutating func blocks(ofSectionTitled title: String, content: String) -> [ExportBlock] {
-        var blocks = Self.droppingRedundantTargets(
-            from: MarkdownTree.read(content) { document in self.blocks(in: document, nesting: 0, listDepth: 0) }
-        )
+    /// - Throws: `ExportWalkError.nestedTooDeeply` when the chapter nests past
+    ///   the limit, in its own Markdown or in the rest of a marker line.
+    mutating func blocks(ofSectionTitled title: String, content: String) throws -> [ExportBlock] {
+        let walked: [ExportBlock]
+        do {
+            walked = try MarkdownTree.read(content, within: limits) { document in
+                try self.blocks(in: document, nesting: 0, listDepth: 0)
+            }
+        } catch let refusal as MarkupRefusal {
+            // The only refusal a walk of Markdown makes, named for the chapter.
+            guard case let .nestedTooDeeply(limit) = refusal else { throw refusal }
+            throw ExportWalkError.nestedTooDeeply(chapter: title, limit: limit)
+        }
+        var blocks = Self.droppingRedundantTargets(from: walked)
         // Claimed after the blocks are made: they hold no heading, so the
         // order of ids is still the order of reading.
         if !options.keepsChapters, !title.isEmpty, ExportBlock.headings(in: blocks).isEmpty {
@@ -234,17 +297,17 @@ private struct Walk {
     /// The blocks of `container`'s children, in order. `nesting` counts the
     /// lists and quotes opened around the container and `listDepth` the lists;
     /// the document's body is 0 and 0.
-    mutating func blocks(in container: MarkdownNode, nesting: Int, listDepth: Int) -> [ExportBlock] {
+    mutating func blocks(in container: MarkdownNode, nesting: Int, listDepth: Int) throws -> [ExportBlock] {
         var made: [ExportBlock] = []
         for child in container.children {
-            made += blocks(of: child, nesting: nesting, listDepth: listDepth)
+            made += try blocks(of: child, nesting: nesting, listDepth: listDepth)
         }
         return made
     }
 
     /// The blocks `block` makes: usually one, none for a block that is
     /// dropped, several for a list or quote past the nesting cap.
-    private mutating func blocks(of block: MarkdownNode, nesting: Int, listDepth: Int) -> [ExportBlock] {
+    private mutating func blocks(of block: MarkdownNode, nesting: Int, listDepth: Int) throws -> [ExportBlock] {
         switch block.kind {
         case .heading:
             // A page that starts inside a heading starts where the heading
@@ -274,15 +337,15 @@ private struct Walk {
             // list), and cmark never gives one below 0.
             let isOrdered = block.isOrderedList
             let start = isOrdered ? max(block.listStart, 0) : 1
-            return listBlocks(of: block, isOrdered: isOrdered, start: start, nesting: nesting, listDepth: listDepth)
+            return try listBlocks(of: block, isOrdered: isOrdered, start: start, nesting: nesting, listDepth: listDepth)
 
         case .blockQuote:
             // Past the cap the quote is not opened: its blocks join the
             // container that holds it.
             if nesting >= ExportDocument.maximumNesting {
-                return blocks(in: block, nesting: nesting, listDepth: listDepth)
+                return try blocks(in: block, nesting: nesting, listDepth: listDepth)
             }
-            return [.blockQuote(blocks(in: block, nesting: nesting + 1, listDepth: listDepth))]
+            return [.blockQuote(try blocks(in: block, nesting: nesting + 1, listDepth: listDepth))]
 
         case .codeBlock:
             // The parser keeps the line feed that ends the code.
@@ -302,12 +365,12 @@ private struct Walk {
             return hoisted + (converted.map { [.table($0)] } ?? [])
 
         case .htmlBlock:
-            return blocks(ofHTML: block.literal, nesting: nesting, listDepth: listDepth)
+            return try blocks(ofHTML: block.literal, nesting: nesting, listDepth: listDepth)
 
         case .document, .listItem, .other:
             // Any other container of blocks is walked for its children
             // (cmark makes none of these here from a text).
-            return blocks(in: block, nesting: nesting, listDepth: listDepth)
+            return try blocks(in: block, nesting: nesting, listDepth: listDepth)
 
         case .tableHeader, .tableRow, .tableCell, .text, .softBreak, .lineBreak, .inlineCode, .inlineHTML, .emphasis,
              .strong, .strikethrough, .link, .image, .inlineAttributes:
@@ -321,14 +384,17 @@ private struct Walk {
     /// reads them, but for what follows a line's markers (ST05, read as the
     /// reader reads it, `MarkdownMarker.leading(of:)`): that is Markdown, and
     /// its blocks are walked, preceded by the places of the markers.
-    private mutating func blocks(ofHTML rawHTML: String, nesting: Int, listDepth: Int) -> [ExportBlock] {
+    ///
+    /// The rest is a text of its own, so it is held to the limit like one.
+    /// - Throws: `MarkupRefusal.nestedTooDeeply` when the rest nests past it.
+    private mutating func blocks(ofHTML rawHTML: String, nesting: Int, listDepth: Int) throws -> [ExportBlock] {
         if !isReadingRestOfMarkerLine, let (markers, rest) = MarkdownMarker.leading(of: rawHTML) {
             var made = markers.compactMap { place(of: $0) }.compactMap(Self.block(ofPlace:))
             isReadingRestOfMarkerLine = true
-            made += MarkdownTree.read(String(rest)) { document in
-                blocks(in: document, nesting: nesting, listDepth: listDepth)
+            defer { isReadingRestOfMarkerLine = false }
+            made += try MarkdownTree.read(String(rest), within: limits) { document in
+                try blocks(in: document, nesting: nesting, listDepth: listDepth)
             }
-            isReadingRestOfMarkerLine = false
             return made
         }
         if let marker = MarkdownMarker.decode(rawHTML), let found = place(of: marker) {
@@ -421,19 +487,19 @@ private struct Walk {
         start: Int,
         nesting: Int,
         listDepth: Int
-    ) -> [ExportBlock] {
+    ) throws -> [ExportBlock] {
         let items = list.children.filter { $0.kind == .listItem }
         if nesting >= ExportDocument.maximumNesting {
             var joined: [ExportBlock] = []
             for item in items {
-                joined += blocks(in: item, nesting: nesting, listDepth: listDepth)
+                joined += try blocks(in: item, nesting: nesting, listDepth: listDepth)
             }
             return joined
         }
         // A task-list checkbox is ignored: the item's words are all it keeps.
         var exportItems: [ExportListItem] = []
         for item in items {
-            exportItems.append(ExportListItem(blocks: blocks(in: item, nesting: nesting + 1, listDepth: listDepth + 1)))
+            exportItems.append(ExportListItem(blocks: try blocks(in: item, nesting: nesting + 1, listDepth: listDepth + 1)))
         }
         return [.list(ExportList(isOrdered: isOrdered, start: start, depth: listDepth, items: exportItems))]
     }
