@@ -96,6 +96,8 @@ The diagnostic logs.
   - AUDIO_ORIGINALS_SWEPT and AUDIO_ORIGINAL_REMOVAL_FAILED, for the originals of recordings and edited audiobooks the policy deleted or couldn't;
   - AUDIO_FILTERS_FILE, for the filter presets' file, unusable or only in the cloud;
   - AUDIO_EDIT_CACHES_SWEPT, for the folders a crash, or a quit with editors open, left in this Mac's audio editing caches, removed at launch;
+  - AUDIO_MARKERS_NOT_WRITTEN, for a render whose WAVE, AIFF, or CAF file could not be given its chapter markers, naming the file and an error, never a folder;
+  - AUDIO_CHAPTERS_NOT_KEPT, for a converted .m4a whose source's chapters could not be written into it, naming the file and an error's domain and code;
   - and AUDIO_EDITOR, for a book the editor couldn't open, a save or an export it couldn't finish, and markers it couldn't keep, naming an error by its kind, never by a path.
 
 ### Log tags: feeds

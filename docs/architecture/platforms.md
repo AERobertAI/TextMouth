@@ -61,6 +61,8 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
   - project.yml leaves out `INFOPLIST_KEY_UIApplicationSceneManifest_Generation`, because Xcode's generated manifest would allow several scenes.
     The iOS plist holds no key that an `INFOPLIST_KEY_` setting in project.yml also sets (`INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace` and `INFOPLIST_KEY_UILaunchScreen_Generation`), since Apple does not say which would win.
     The app's display name, "TextMouth", comes from this plist, which takes it from the Mac's.
+  - It keeps the "CUE Sheet" type (`com.textmouth.cue-sheet`, `.cue`, FMT24), declared in both plists as a plain-text type.
+    The sheet's reader and arranger are shared code under `TextMouth/Parsers/`; whether the iPhone's import takes a .cue chosen alone has not been tried.
   - iOS goes by the types a document type names (`LSItemContentTypes`) and the extensions their declarations tag, not by `CFBundleTypeExtensions`, which is why a type is left out by name.
     Everything else is the Mac's, including the Kindle MOBI and KFX types and the App Transport Security setting feeds need.
   - `IOSInfoPlistTests` reads both plists and the project's per-configuration setting.

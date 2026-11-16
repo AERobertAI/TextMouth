@@ -140,6 +140,32 @@ The duplicate question, Replace Existing, and the questions that wait their turn
 - A playlist and its tracks are never changed, deleted, or offered for deletion, whatever After Importing a Book says.
 - TextMouth never fetches an address: a streaming playlist, for audio on the web, is refused, and so is one that lists only web addresses.
 
+## CUE sheets and label files
+<!-- id: adding-cue-sheets-label-files; keys: .cue, CUE sheet, CD rip, Audacity labels, label file, headings from a sheet, Book Imported notice; src: TextMouth/Services/FileImportService+CueSheets.swift, TextMouth/Parsers/CueSheetArrangement.swift, TextMouth/Models/CueSheetWording.swift -->
+
+- A CUE sheet (.cue), chosen with Open Book… or in the Add to Library sheet, imports as one audiobook of the audio files it names, with a heading for each of its tracks, as a playlist imports (see the section above).
+  - The book is named by the sheet's title, else by the sheet's file name, and takes the sheet's performer as its author.
+  - Only files inside the sheet's own folder are used, each copied into the book's package, and those that need converting are converted.
+  - Importing the same sheet again finds a duplicate.
+  - The sheet and its files are never changed, deleted, or offered for deletion.
+- A single audio file chosen with a .cue of its name is not paired with it: import the .cue.
+- A sheet that lists no audio track with a start is refused with "It lists no audio track with a start that TextMouth can read."
+- A sheet chosen alone whose tracks run past the end of the audio it names is refused with "Its tracks run past the end of the audio it names, so it was made for another copy of that audio."
+- A sheet larger than 1 MiB is refused with "The cue sheet “NAME” is too large to read."
+- A folder or a ZIP of audio tracks with no manifest.json is arranged by the cue sheets in it, and a folder also by its Audacity label files; a manifest.json always wins.
+  - Several sheets arrange the tracks they name, each at the place of its first file in the folder's order, and a track no sheet names stays a section of its own.
+  - A label file arranges the audio file that has its name, or the only audio file beside it.
+  - A folder with no sheet or label file imports as it did before.
+  - The book's checksum includes the sheets, so a folder imported before the sheet was added to it is a different book.
+- When a sheet or label file can't be used, the tracks import without its headings, and the alert titled Book Imported says why:
+  - "The cue sheet “NAME” names none of the audio beside it, so its headings were not used."
+  - "The label file “NAME” matches no audio file beside it by name, so its headings were not used."
+  - "TextMouth could not read the cue sheet “NAME”, so its headings were not used."
+  - "The tracks of the cue sheet “NAME” run past the end of its audio, so its headings were not used."
+  - "The headings from “NAME” run past the end of the audio, so the tracks were imported without them." for a sheet whose times only turned out too long once the audio was read.
+  - The names a sheet gives that are not files of the book are told as a playlist's are, with a name outside the folder "outside the cue sheet's folder".
+- A label file chosen on its own imports as a text book, as it always has, and a ZIP that holds one beside audio imports as a batch of books, so a label file arranges only the audio of a folder.
+
 ## Add Feed…
 <!-- id: add-feed; keys: subscribe, podcast, RSS, Shift-Command-F, Add Feed sheet; src: TextMouth/Views/Feeds/FeedWording.swift, TextMouth/Views/Feeds/AddFeedSheet.swift -->
 

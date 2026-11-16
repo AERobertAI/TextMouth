@@ -211,3 +211,13 @@ Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDO
 - PageImageDecoderTests cover the limits: the 100-megapixel check (a TIFF that claims it with no data proves it comes before decoding), orientation, and transparency.
 - PageImageArchiveTests cover the order, ComicInfo.xml, and the 2,000-page cap; PageImageImportTests the import end to end, with the ZIP rules for a picture among other files.
 - PLSAndXSPFPlaylistTests read both formats and import them end to end; PronunciationLexiconTests cover the W3C sample, a round trip, XML escaping, an external entity left unresolved, and the 5,000-rule cap; RefusedFormatAdviceTests pin each sentence of the table and that both alerts use it.
+
+## Cue sheets, markers, and label files
+<!-- id: tests-cue-sheets-markers-labels; keys: CueSheetTests, CueSheetArrangementTests, CueSheetImportTests, FLACCueSheetReaderTests, AudioMarkerListTests, OggChapterCommentTests, AudacityLabelsTests; src: TextMouthProductionTests/CueSheetTests.swift, TextMouthProductionTests/CueSheetArrangementTests.swift, TextMouthProductionTests/CueSheetImportTests.swift, TextMouthProductionTests/FLACCueSheetReaderTests.swift, TextMouthProductionTests/AudioMarkerListTests.swift, TextMouthProductionTests/OggChapterCommentTests.swift, TextMouthProductionTests/ChapterTrackWriterTests.swift, TextMouthProductionTests/AudacityLabelsTests.swift, TextMouthProductionTests/ChapterListExportTests.swift, TextMouthProductionTests/AudioEditorSavingTests.swift, TextMouthProductionTests/AudioFileInfoTests.swift -->
+
+- CueSheetTests read the sheet text, CueSheetArrangementTests make the sections from folders (Finder's order, a sheet's places, a sheet past its audio, files outside the folder), and CueSheetImportTests import a sheet, a folder, and a ZIP end to end.
+- FLACCueSheetReaderTests read the CUESHEET block and an embedded sheet; AudioMarkerListTests read the Broadcast Wave sample's two cue points, write markers into WAVE, AIFF, and CAF files made in the test and read them back, and compare afinfo's list.
+  AudioFileInfoTests list the markers of all 18 samples.
+- OggChapterCommentTests read CHAPTERnnn comments; ChapterTrackWriterTests write a chapter track and check the packets of the copy against the source's.
+- AudacityLabelsTests and ChapterListExportTests read and write label files and the exported chapter lists, and AudioEditorSavingTests and AudioEditorEndToEndTests check that a save and an export keep their chapter markers.
+- Not covered: other programs reading the markers written, cue sheets from the wild, and the labels checkbox with VoiceOver.

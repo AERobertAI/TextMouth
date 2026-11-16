@@ -73,6 +73,33 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 
 - An M4B, M4A, MP4, M4V, or MOV file whose only chapter list is a Nero list (some audiobook tools write only that) has its chapters as headings, an untitled one called "Chapter" and its number.
 
+## Chapters from markers, cue sheets, and label files
+<!-- id: chapters-markers-cue-sheets-labels; keys: CUE sheet, .cue, WAV markers, BWF, AIFF markers, Ogg CHAPTER comments, Audacity labels, CD rip; src: TextMouth/Parsers/FileChapterReaders.swift, TextMouth/Parsers/CueSheet.swift, TextMouth/Parsers/CueSheetArrangement.swift, TextMouth/Parsers/AudacityLabels.swift, TextMouth/Services/AudioMarkerList.swift, TextMouth/Models/CueSheetWording.swift -->
+
+- A single audio file's chapters become its headings from the place its kind keeps them:
+  - a WAV file's cue points and labels (a Broadcast Wave file's too) and an AIFF file's markers;
+  - a FLAC file's CUESHEET block, or a cue sheet kept as text in its CUESHEET comment, when the file has no CHAPTER comments;
+  - the CHAPTERnnn comments of an Ogg file, and the markers of a CAF file, which are kept in the .m4a that the import converts the file to (see below).
+- A marker with no name is called "Chapter" and its number.
+- The sound before the first marker, when it is not at the start, is a heading of its own, named for the book.
+- A file whose list makes only one heading keeps the book's title, not "Track 1" or "Chapter 1".
+- A WAV or AIFF file whose only marker is at 0 seconds has no chapters.
+- A converted file's chapters are written into its .m4a as its chapter track without re-encoding the sound.
+  If that fails, the book is imported without chapters, and the debug log says so with AUDIO_CHAPTERS_NOT_KEPT.
+- A CUE sheet (.cue) lists where each track of a CD rip, or a one-file audiobook, begins in the audio files it names.
+  - TextMouth reads the FILE, TRACK, TITLE, PERFORMER, and INDEX 01 lines (INDEX 00 is ignored: the gap before a track plays as the end of the track before).
+  - Each track is a heading, titled "Track" and its number when the sheet gives it no title, or its title, a comma, "by", and its performer when its performer is not the book's author, as in "Moonlight, by Ada Okafor".
+  - The sheet's title and performer become the book's title and author.
+  - A sheet may be UTF-8 (with or without a byte-order mark), UTF-16, or Windows-1252 or Latin-1, and up to 1 MiB.
+  - It uses only files inside its own folder; a name outside it is skipped, and the notice says it is "outside the cue sheet's folder".
+  - A name that is missing, outside, or not audio falls back to the audio file with the same name beside the sheet (a sheet that names album.wav for an album.flac), and a sheet of one FILE line to the audio file with the sheet's own name.
+- An Audacity label file, a .txt file of labels and nothing else, beside a folder's audio gives that audio its headings, one for each label, in the order of their starts.
+  - It belongs to the audio file with its name, or to the only audio file beside it.
+  - A label with no text is called "Label" and its number.
+  - A .txt file chosen on its own still imports as a text book, and a ZIP holding one still imports as a batch of books.
+- How a sheet or label file arrives is in [Adding books](adding-books.md).
+- A sheet or label file whose times run past the end of its audio is left unused, with a notice, and the tracks import without its headings.
+
 ## M3U and M3U8 playlists
 <!-- id: m3u-m3u8-playlists; keys: .m3u, .m3u8, playlist, track order; src: TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Models/PlaylistImportWording.swift -->
 

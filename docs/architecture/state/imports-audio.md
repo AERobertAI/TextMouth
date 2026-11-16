@@ -97,6 +97,48 @@ Chapters: AudioPlaybackService.extractChapters(from:) reads a Nero chapter list 
 NeroChapterReader.read(at:) walks the box headers of the file to the chpl atom under moov and udta on a FileHandle, never reading the media, with every size checked and every level capped.
 NeroChapterReader.bookChapters(from:fileDuration:) sorts the chapters, drops one at or past the end of the file, and names an untitled one "Chapter N".
 
+## Chapters in WAVE, AIFF, FLAC, and Ogg files, and in converted ones
+<!-- id: chapters-markers-cue-ogg; keys: FileChapterReaders, AudioMarkerList, FLACCueSheetReader, CHAPTER comments, ChapterTrackWriter, keepChapters, AUDIO_CHAPTERS_NOT_KEPT, leadingTitle; src: TextMouth/Parsers/FileChapterReaders.swift, TextMouth/Services/AudioMarkerList.swift, TextMouth/Parsers/FLACCueSheetReader.swift, TextMouth/Services/ChapterTrackWriter.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/OggHeaderReader.swift, TextMouth/Services/AudioFileInfo.swift -->
+
+Chapters: FileChapterReaders.bookChapters(of:lasting:leadingTitle:) is the one place that picks the reader by a file's kind, when AVFoundation finds no chapter (AudioPlaybackService.extractChapters):
+- a Nero list for an MPEG-4 file (above);
+- the CUESHEET block of a FLAC file, or a cue sheet kept in its CUESHEET comment, by FLACCueSheetReader, which walks the metadata blocks by their headers on a FileHandle and is asked only when the file has no CHAPTER comments, which AVFoundation reads and which always win;
+- the cue points and labels of a WAVE or Broadcast Wave file, and the MARK chunk of an AIFF file, by AudioMarkerList (Core Audio's marker list, kAudioFilePropertyMarkerList), opened only for a file a reader may open (ImportAudioConverter.isNeverDecodedInApp), and reading chunks, not samples.
+FileChapterReaders.placedChapters(_:lasting:leadingTitle:) makes the places a book's chapters: sorted, each lasting until the next, an untitled one "Chapter N", and the sound before the first place a chapter titled by the book when that place is not at the start.
+A list that makes one chapter makes none, so a book of one heading keeps its title.
+A WAVE or AIFF file whose only marker is at 0 s so has no chapters.
+
+A file the import converts keeps its chapters through the conversion:
+- SourceInfo.chapters holds them:
+  - an Ogg file's CHAPTERnnn and CHAPTERnnnNAME comments (xiph.org's chapter extension), read by OggHeaderReader.chapters(in:) from the file's own bytes, never through Apple's frameworks;
+  - a CAF file's markers, read from afinfo's output in its child process (AudioFileInfo.markers);
+  - an MPEG-4 file's own.
+- ImportAudioConverter.keepChapters writes them into the checked .m4a as a chapter track (ChapterTrackWriter, copying the samples as they are, not re-encoding) into a hidden file beside it, checks that file as the conversion was checked, and only then replaces the .m4a.
+  A failure of either keeps the .m4a without chapters and logs AUDIO_CHAPTERS_NOT_KEPT with the file's name and an error's domain and code; Stop ends the import, the file as it was.
+- A conversion the library runs on an older book's Ogg files keeps none, so that book's chapters stay as they were.
+- A file ffmpeg converts keeps its own chapters through ffmpeg (-map_chapters 0), so convert returns before keepChapters for it.
+
+## Cue sheets and Audacity label files
+<!-- id: cue-sheets-label-files-import; keys: CueSheet, CueSheetArrangement, arrangeByCueSheets, importCueSheetWithReport, AudacityLabels, FMT24, FMT06, measuredLengths; src: TextMouth/Parsers/CueSheet.swift, TextMouth/Parsers/CueSheetArrangement.swift, TextMouth/Parsers/AudacityLabels.swift, TextMouth/Services/FileImportService+CueSheets.swift, TextMouth/Models/CueSheetWording.swift -->
+
+- CueSheet.parse reads FILE, TRACK, TITLE, PERFORMER, and INDEX 01 (frames of 1/75 s); INDEX 00 is ignored, since the gap belongs to the track before.
+  CueSheet.read(at:) decodes the file as a small text file is (a byte-order mark, UTF-16, Windows-1252, or Latin-1) up to maximumByteCount, 1 MiB, with at most 10,000 tracks and 10,000 files.
+- CueSheetArrangement turns sheets and label files into sections written as a manifest's segments, so the book plays as a DAISY book's sections do:
+  - Files are found as a playlist's are (M3UPlaylist.resolve(inFolder:)): only files inside the sheet's folder, each skipped name told with its reason.
+    A missing, outside, or non-audio name falls back to an audio file of the same stem beside the sheet, and a sheet of one file to one of the sheet's own stem.
+  - A track runs to the next track's start, across a file's end into the next file; the first takes in everything before it, and the last runs to the end of the last file.
+  - Every file a sheet or label file names is measured first (measuredLengths(of:): a file played as it is by AVFoundation's prober, an Ogg file from its own pages, any other by afinfo in its child process), and a sheet that runs past its audio is left unused with a notice.
+  - A track no sheet plays stays a section of its own, and the sections keep Finder's order, each sheet's at its first file's place.
+  - A label file (AudacityLabels, a .txt of tab-separated start, end, and text, and nothing else) is a sheet of one audio file, the file of its stem or the only one beside it; a label with no text is titled "Label N".
+  - FFmpeg-only formats are measured by afinfo, which cannot read WMA or Matroska, so a sheet over one is taken to fit and checked after the conversion (follow-up: measure them with ffprobe).
+- Folder and ZIP imports call arrangeByCueSheets(in:) when AudioManifestLocation.find finds no manifest, and write the sections as a manifest where a new one goes; a manifest.json always wins, and a folder without a sheet is left as it was.
+  FileImportService.publishingWithoutSheetsOnMisfit publishes with the sections.
+  If the book's parse finds one past its file's end after the conversion (AudioParseError.placesASectionOutsideItsFile), it publishes once more without them, their manifest removed, with CueSheetArrangement.noticeWithoutItsSections.
+  A ZIP holding a .txt is a batch of books (isAudioZip), so a label file arranges a folder's tracks alone.
+- A cue sheet chosen alone is importCueSheetWithReport, as a playlist is: the files it names inside its folder become one book, named by its title, with its performer as author, hashed by its files' paths and bytes and its own, and none deleted afterwards.
+  Its refusals are CueSheetError (tooLarge, noTracks, noAudio, timesPastAudio) in CueSheetWording's sentences.
+- FLAC files' cue sheets are read by FLACCueSheetReader (above).
+
 ## Playlists
 <!-- id: playlists; keys: playlist import, .m3u, m3u8, folder book, duplicate playlist, skipped entries, Book Imported alert, streaming playlist; src: TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Parsers/PLSAndXSPFPlaylist.swift, TextMouth/Models/PlaylistImportWording.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Parsers/AudioManifest.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
