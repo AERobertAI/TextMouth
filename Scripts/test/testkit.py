@@ -23,6 +23,8 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
+# Importing a sibling module must leave no __pycache__ folder in the repository (set before the import below).
+sys.dont_write_bytecode = True
 # The reader of a retried test's tries lives beside the agents' scripts; this folder's scripts run
 # with `python3 -I`, which leaves their own folder out of the path, so it is added by location.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agents"))
