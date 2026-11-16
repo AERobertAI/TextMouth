@@ -38,7 +38,7 @@ Prepared speech: what the reader will say for each chapter.
 - How others observe it: Play, each chapter's start, the look-ahead, and refreshLookAhead() read it, so a chapter is prepared once for as long as its inputs stay the same, and a speed or pitch step prepares nothing.
 
 ## The look-ahead and render signature
-<!-- id: look-ahead-render-signature; keys: pre-render, next chapter, gapless, speech render signature, AVSpeechSynthesizer, audio engine; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: look-ahead-render-signature; keys: pre-render, next chapter, gapless, speech render signature, AVSpeechSynthesizer, audio engine; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/LookAheadLead.swift, TextMouth/ViewModels/LongPauseWatch.swift, Scripts/agents/probes/speech-render-speed-probe.swift, TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift, TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
 
 The look-ahead and its render signature.
 
@@ -47,6 +47,16 @@ The look-ahead and its render signature.
   Speed and pitch do not count, because they are applied as the audio plays.
   So applyLocalSpeechOverrides, which every playing reader runs at each step of a global setting, refreshes the look-ahead only when the voice in effect is not the one the look-ahead renders in.
   The look-ahead carries its chapter's speech to that chapter's start (ChapterSpeechCache.lookAheadSpeech), so the chapter's end prepares nothing.
+  preRenderNextChapter() prepares that speech at once but renders it only when the listening time left is within LookAheadLead.
+  lookAheadWait holds the render until then.
+  The lead is the larger of 5 minutes and 4 times the next chapter's estimated render time (400 UTF-16 units a second).
+  The time left counts 7.5 units a word at the reader's speed.
+  startLookAheadRenderIfDue() asks at every cursor move, so reaching the lead and a seek into it both start the render.
+  A seek back out leaves a render alone, and a chapter shorter than the lead renders at once.
+  On the iPhone the render also waits while mayRenderAhead() refuses (memory or heat).
+  A text book paused for LongPauseWatch.delay (5 minutes) lets go of the look-ahead's audio, or abandons its render, and keeps its speech (releaseLookAheadAudioForLongPause()).
+  A resume within the lead renders again.
+  watchPauseForGrowingLong() starts that watch for every pause: Pause, a Where Am I? that ends paused, and speech that paused itself.
   The reader's renders wait their turn on SpeechRenderCoordinator.shared, so the look-ahead never competes with the chapter Play waits for, and a stale or oversized render never starts.
   Overlapping calls of AVSpeechSynthesizer.write() don't change what each one writes: two and three writes at once, in one voice and in two (Samantha, and the Eloquence voice Eddy), each wrote the very samples it wrote alone.
   So the speech export's writes run beside the reader's renders, through synthesizers of their own.
