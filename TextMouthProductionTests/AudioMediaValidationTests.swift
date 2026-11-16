@@ -191,7 +191,12 @@ final class AudioMediaValidationTests: XCTestCase {
                 let playable = try await AVURLAsset(url: file).load(.isPlayable)
                 XCTAssertEqual(try probed.get(), 3, accuracy: 0.01, "\(book)")
                 XCTAssertTrue(playable, "\(book)")
-            } else if case .failure(let problem) = probed {
+            } else {
+                // The refusal itself is asserted: a probe that accepted the book would fail here.
+                guard case .failure(let problem) = probed else {
+                    XCTFail("\(book) was accepted, not refused")
+                    continue
+                }
                 XCTAssertEqual(problem, .cannotDecode, "\(book)")
             }
         }
