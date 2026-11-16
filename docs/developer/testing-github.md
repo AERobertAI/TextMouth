@@ -45,7 +45,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
 <!-- id: run-iphone-job; keys: build-for-testing, simulator, iPhone 17, iOS 26.0.1, xcodebuild, downloadPlatform, ios-ui-summary; src: Scripts/agents/run-ios-build.py, project.yml -->
 
 4. **The iPhone app** (macOS, beside the shards).
-   `Scripts/agents/run-ios-build.py` runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination.
+   `Scripts/agents/run-ios-build.py` runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, naming the runner's own architecture (`ARCHS=arm64`).
    It compiles the app and its two test bundles, `TextMouthiOSTests` and `TextMouthiOSUITests`, without signing (the scheme's test action builds Debug, which is why the two unit tests inside `#if DEBUG` are there).
    The runner image's Xcode 26.0.1 lists the iOS SDKs but says "iOS 26.0 is not installed", so the job first downloads the platform (`xcodebuild -downloadPlatform iOS`, about 3 minutes).
    It uploads `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`.
@@ -64,7 +64,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
 
      One run for both bundles saves xcodebuild's start-up, 2 to 2.7 minutes.
      `"ios": false` leaves the whole iPhone job out, and `"ios_ui": false` only the tests.
-     Before the first test it sets the simulator's keyboard preferences (the one-time swipe-typing page off, no prediction), and the job restarts the audio service as the shards do.
+     Before the first test it sets the simulator's keyboard preferences, all four at once (the one-time swipe-typing page off, no prediction), and the job restarts the audio service as the shards do.
      The tests run in one simulator: two clones (`PARALLEL_WORKERS`) took no less time on the runner's three cores, and xcodebuild printed no failure message for a failed test then.
    - **Its results** are `ios-ui-summary.txt` and `ios-ui.log`.
      The summary holds:
@@ -209,7 +209,10 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
   - The shards are dealt out by the times in `class-times.json` (refreshed: 3 shards of about 574 seconds each, one shard per 600 seconds of tests).
   - **Building once and sharing the products** would not help: a build is now 2 to 3 minutes, and uploading and downloading the products would cost as much.
 - **The iPhone job** (beside the shards): the platform download takes 3.4 to 4.9 minutes, the build 3.5 (7.3 before the file-time fix), and the simulator's set-up 5.8 (its first boot about 5.7), so it is on the longest path whenever it runs the interface tests.
-  A run's page shows when it finished.
+  - **Three cuts** after run 43716590818, whose two jobs spent 11.6 and 8.2 minutes building and 3.6 and 3.4 setting up the simulator.
+    The build names one architecture, since 1,086 files had been compiled twice; the four keyboard settings are written by `simctl spawn` calls made together (set-up 3.5 to 2.3 minutes).
+    `Scripts/agents/ios-class-times.json` holds the interface classes' measured times (873 seconds, not 673), with `TARGET_SHARD_SECONDS` at 600, so the full suite stays two iPhone jobs (a third comes past 1,200 seconds of tests).
+    The next full run took 26.2 minutes in all (34.1 before), its iPhone jobs 25.1 and 26.7.
   - **The interface tests add the most.**
     A launch of the app takes 10 to 15 seconds on the runner's three slow cores, and the tests wait for screens.
     The 35 interface tests took about 733 seconds, and the unit bundle's 1,979 tests (the Mac's shared test files among them) 71 seconds; the whole step took 17.5 minutes, 2.3 of them the simulator's set-up.
@@ -217,10 +220,7 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
     Two clones of the simulator took 17.1 minutes against 17.5 for one.
   - **Two cuts that were tried.**
     Looking with `exists` before a wait (`XCUIElement.appears(within:)`), the keyboard's one-time page checked with `exists`, and the timer test waiting for its value to change cost nothing and saved time.
-    The phone-area run 42986107227 ran its 33 tests in 768 seconds (23 seconds each) against 29 to 37 seconds each before, on whatever machine it got; it failed only on the skip test, whose new check had a different fault.
-    Starting the simulator while the app builds was tried and taken out: the runs that did it (42976557216, 42979000712) found `bootstatus` still waiting after 300 seconds, so no interface test ran.
-    But so did a run with that change already undone (42982618359), and the next (42986107227) booted in 2.5 minutes.
-    The cause is not known; it may be the runner and not the early boot.
+    Starting the simulator while the app builds was tried and taken out: the runs that did it found `bootstatus` still waiting after 300 seconds, so did one with the change undone, and the next booted in 2.5 minutes; the cause is not known.
     A boot that never finishes stopped the interface tests of four runs (42976557216, 42979000712, 42982618359 and 43005173856), `bootstatus` printing "Waiting on BackBoard" for the whole 300 seconds.
     So the first boot is waited for 180 seconds; a device that has not booted by then is shut down, a new one is made and booted (300 seconds); and a boot that still does not finish is a failure whose message holds what `simctl` had printed and the booted devices.
   - **So a request for the phone area or a full suite waits for the iPhone job**, not for the shards.

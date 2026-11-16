@@ -94,6 +94,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
   The job has a token that may only read, no secrets, GitHub's own actions pinned to full commit hashes, a limit of 100 minutes for each job (the runner script stops the tests at 80, so their results are still written), and one run at a time: a newer push cancels the older run.
   The shared workflow has four jobs: a Linux job that plans the shards, one macOS job per shard, a macOS job that builds the iPhone app and runs its interface tests, and a Linux job that joins the results.
   The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing or running a test.
+It names the runner's own architecture (`ARCHS=arm64`), since both would compile every file twice.
   It writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
   A request that says `"ios": false` leaves it out.
   Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`: about 1,960 tests, 19 its own and the rest the Mac's, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
