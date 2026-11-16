@@ -10,7 +10,7 @@ On November 13, 2026, the user asked for a Fable audit of size, memory, and CPU,
 
 Your branch is `perf/reader-publish`: `git switch -c perf/reader-publish main`. Main is 22320789 or later. **Rebase onto local main before your report:** `perf/audit-small` (C4, C6, C7, C16, C17) is about to merge, and it touches `ReaderViewModel`'s refresh (C6). Read its diff (`git diff main...perf/audit-small`) before you start, and build on it: `git switch -c perf/reader-publish perf/audit-small` is the better start if main has not yet taken it.
 
-The item is C3 in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/optaudit/audit-report.md`, Part C: its where, mechanism, gain, must-keep, risk, and tests. Take approach (a), the one `Equatable` value of what the window shows, unless the code shows (b) is clearly better; say why.
+The item is C3 in `<main checkout>/build/orchestrator/optaudit/audit-report.md`, Part C: its where, mechanism, gain, must-keep, risk, and tests. Take approach (a), the one `Equatable` value of what the window shows, unless the code shows (b) is clearly better; say why.
 
 ## Must keep
 

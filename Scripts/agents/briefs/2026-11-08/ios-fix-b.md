@@ -2,7 +2,7 @@
 
 Slug `iosfixb`, branch `ios/fix-b-1108` from `ios/lead-1108`. Read `Scripts/agents/briefs/2026-11-08/ios-workers.md` first; its rules hold.
 
-An outside Opus review read the iPhone branch against the spec and Apple's documentation. Its report is `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/review-code-1108.md`: read each finding below there in full, with its evidence and the fix it proposes, then check it against the code yourself before you change anything. If a finding turns out wrong, say why in your report and leave it.
+An outside Opus review read the iPhone branch against the spec and Apple's documentation. Its report is `<main checkout>/build/orchestrator/iosui/review-code-1108.md`: read each finding below there in full, with its evidence and the fix it proposes, then check it against the code yourself before you change anything. If a finding turns out wrong, say why in your report and leave it.
 
 ## Your findings
 

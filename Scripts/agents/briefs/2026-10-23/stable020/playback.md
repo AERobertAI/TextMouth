@@ -5,7 +5,7 @@
 - **Why:** two ways the user's place or play can go wrong before the official 0.2.0 install (`PLAN-0.2.0-2026-10-23.md` §3.2 items 3 and 8).
 - **Register with:** `--files TextMouth/Services/SpeechService.swift,TextMouth/ViewModels/ReaderViewModel+Playback.swift,TextMouthProductionTests/PlaybackLifecyclePolicyTests.swift,TextMouthProductionTests/ReaderRefreshTests.swift`
 - **Two commits:** ST03, then ST08, each with its tests.
-- **Disk:** before every build, `df -g /System/Volumes/Data` must show at least 4 GB available; if not, post to `stable020-lead` and wait for an answer (`bbs watch stable020-playback --timeout 240`). Your build folder is `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-stable020-playback`.
+- **Disk:** before every build, `df -g /System/Volumes/Data` must show at least 4 GB available; if not, post to `stable020-lead` and wait for an answer (`bbs watch stable020-playback --timeout 240`). Your build folder is `$TMPDIR/TextMouth-DerivedData-stable020-playback`.
 - **No test may play a sound.** The integration world's audiobooks are silent and its reader's audio service plays nothing aloud; use only those.
 
 ## Commit 1: ST03, Resume after a very quick Pause restarts the chapter

@@ -34,7 +34,7 @@ The user's words for tonight: "fixing all IOS errors without changing MacOS beha
 
 ## Your report (your final message)
 
-Write it also to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/ios0/review-<team>.md`.
+Write it also to `<main checkout>/build/orchestrator/ios0/review-<team>.md`.
 - One line with your verdict: ready to integrate, ready after fixes, or not ready.
 - **Findings**, most severe first. Each gives:
   - its severity (Mac behavior change, iOS bug, rule broken, or cleanliness);

@@ -41,4 +41,4 @@ So the user is weighing, not deciding. Your document is what they decide from: p
 
 ## Your output
 
-Write `LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md` in the main checkout's root (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`), plain Markdown, with a summary of at most 15 lines at the top that a listener can take in by ear. If you can't write there, put the whole document in your final message. Your final message is its summary, at most 40 lines, also saved as `build/orchestrator/nov13/localfirst-report.md`.
+Write `LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md` in the main checkout's root (`<main checkout>/`), plain Markdown, with a summary of at most 15 lines at the top that a listener can take in by ear. If you can't write there, put the whole document in your final message. Your final message is its summary, at most 40 lines, also saved as `build/orchestrator/nov13/localfirst-report.md`.

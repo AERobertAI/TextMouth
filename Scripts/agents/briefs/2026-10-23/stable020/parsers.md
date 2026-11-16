@@ -5,7 +5,7 @@
 - **Why:** the user's official 0.2.0 install reads every EPUB again at its first launch (the page re-read). These three fixes keep words from being lost. Plan: `PLAN-0.2.0-2026-10-23.md` §3.2 items 2, 5, and 9.
 - **Register with:** `--files TextMouth/Parsers/MarkdownPageMarker.swift,TextMouth/Parsers/HTMLToMarkdownConverter.swift,TextMouth/Parsers/DAISYParser.swift,TextMouth/Parsers/ArchiveEntryReader.swift,TextMouth/Parsers/EPUBParser.swift,TextMouth/Parsers/EPUBParser+Navigation.swift,TextMouth/Parsers/MarkdownParser.swift`
 - **Three commits, in this order:** ST02, then ST05, then ST09. Each with its tests.
-- **Disk:** before every build, `df -g /System/Volumes/Data` must show at least 4 GB available; if not, post to `stable020-lead` and wait for an answer (`bbs watch stable020-parsers --timeout 240`). Your build folder is `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-stable020-parsers`. Write all three commits' code and tests before your first build if you can; fewer builds is better.
+- **Disk:** before every build, `df -g /System/Volumes/Data` must show at least 4 GB available; if not, post to `stable020-lead` and wait for an answer (`bbs watch stable020-parsers --timeout 240`). Your build folder is `$TMPDIR/TextMouth-DerivedData-stable020-parsers`. Write all three commits' code and tests before your first build if you can; fewer builds is better.
 
 ## Commit 1: ST02, a page-break element that holds words
 

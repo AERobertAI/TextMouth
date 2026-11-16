@@ -5,7 +5,7 @@ You are `batchBfix`, a Sonnet worker. You fix what the Opus review of batch B as
 ## Start
 
 - In your worktree: `git switch fix/batch-b-parser-safety`, and check `git log -1 --format=%h` prints `49e9aea73`. Its worker has finished and its folder is gone.
-- Read in the main checkout (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`): the review `build/orchestrator/nov13/batchB-review.md` (findings 1 to 6, the answers, "Where I stopped"); the report `build/orchestrator/nov13/batchB-report.md`; the batch brief `Scripts/agents/briefs/2026-11-13/batch-common.md` and items 1, 8, 24, 25, 30 in section 1 of `build/orchestrator/nov13/triage-report.md`.
+- Read in the main checkout (`<main checkout>/`): the review `build/orchestrator/nov13/batchB-review.md` (findings 1 to 6, the answers, "Where I stopped"); the report `build/orchestrator/nov13/batchB-report.md`; the batch brief `Scripts/agents/briefs/2026-11-13/batch-common.md` and items 1, 8, 24, 25, 30 in section 1 of `build/orchestrator/nov13/triage-report.md`.
 - swift-markdown and swift-cmark are checked out, read-only, in the main checkout's `build/DerivedData/SourcePackages/checkouts/`. Never search from `/` or the home folder.
 
 ## The work, one commit each, each with a test that fails without it

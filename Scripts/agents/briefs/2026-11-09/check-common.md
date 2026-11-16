@@ -18,7 +18,7 @@ You redesign nothing and fix nothing. Report what you find, and the orchestrator
 - **Each item the review asked for:** find the change and read it, then find the test that pins it. Say whether that test asserts the behaviour itself (a value, a sentence, a file on disk) or only something near it. Every first review in this project has found a test that passed for the wrong reason.
 - **The riskiest two or three items:** prove the test by breaking the fix on purpose in a throwaway copy and watching the test fail.
   - Work in a folder of your own, `build/check/` inside your worktree; git ignores `build/`.
-  - A throwaway `swiftc` harness or a SwiftPM copy runs under `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/run_locked.py <name> <command...>`.
+  - A throwaway `swiftc` harness or a SwiftPM copy runs under `python3 -I <main checkout>/build/orchestrator/followups1105/run_locked.py <name> <command...>`.
   - Where only the hosted app can test a fix, judge it by reading, and say so.
 - **Never put a deliberate break on the build train:** it tests every agent's branch together. Don't ask the train for anything: the batch's full suite comes next.
 - **Type-checks** already passed at the tip. Don't repeat them.

@@ -11,7 +11,7 @@ Each brief names the functions, test classes, and SKILL.md lines that are yours.
 Other teams use the live board while you work. Your worktree's `bbs.py` is a changed copy from the moment you edit it, and **it must never touch the live board**.
 - **For every live-board command** (register, task move, post, release), run this read-only copy of main's script, from your worktree root:
 
-      python3 /private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/board2-live-bbs.py
+      python3 <session folder>/scratchpad/board2-live-bbs.py
 
   Below, `LIVE` stands for that command. Never edit that file.
 - **To try your own copy by hand,** always prefix the command with a scratch board, written as a literal path: `TEXTMOUTH_BBS_DIR=<scratchpad>/<slug>-board python3 .claude/skills/agent-bbs/scripts/bbs.py ...`. Without the prefix, your copy would open the live board.

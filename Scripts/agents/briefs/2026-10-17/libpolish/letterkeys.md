@@ -48,7 +48,7 @@ Worker slug `libpolish-letterkeys`, branch `libpolish/letterkeys` made from `tea
 
 ## Tests to run (only these; `python3 Scripts/test/run-area.py shortcuts LibraryInfoSpeakerTests AddToLibraryTests` with `BBS_AGENT=libpolish-letterkeys`)
 
-The `shortcuts` area holds `KeyboardReachabilityTests`, `ShortcutMigrationTests`, `ShortcutPressDispatcherTests`, `MenuKeyShortcutTests`, `SpeakInfoShortcutTests`, `TextFieldEditingKeysTests`, `WindowScopeShortcutTests`, `ShortcutsSettingsTabTests`, and the legacy `LegacyKeyboardShortcutScenarioTests`. Log to `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/libpolish-letterkeys-<n>.log` (`--log`). Before you report, run `make lint-tests LINT_BASE=team/libpolish` and `make lint-a11y LINT_BASE=team/libpolish`.
+The `shortcuts` area holds `KeyboardReachabilityTests`, `ShortcutMigrationTests`, `ShortcutPressDispatcherTests`, `MenuKeyShortcutTests`, `SpeakInfoShortcutTests`, `TextFieldEditingKeysTests`, `WindowScopeShortcutTests`, `ShortcutsSettingsTabTests`, and the legacy `LegacyKeyboardShortcutScenarioTests`. Log to `<session folder>/scratchpad/libpolish-letterkeys-<n>.log` (`--log`). Before you report, run `make lint-tests LINT_BASE=team/libpolish` and `make lint-a11y LINT_BASE=team/libpolish`.
 
 ## Completion check (must print nothing but the editor's Mark In)
 

@@ -15,7 +15,7 @@ You are `nextbook-verify-5` (Sonnet), an independent verifier. The branch `featu
 - **The fix range:** `git diff 1a760bab..362a3217`. That is 3 commits: about 240 lines of code and 180 of tests in 9 files.
 - **Getting it:** your worktree starts on main. Check out the tip detached: `git checkout --detach 362a3217`.
 - **The design note:** `NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md`, section "The sleep timer goes on with the book".
-- **The findings,** with line numbers at 1a760bab: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/nextbook/verify-4.md`. Read it first. The earlier reports (`review-3.md`, `verify-3.md`) are beside it.
+- **The findings,** with line numbers at 1a760bab: `<main checkout>/build/orchestrator/nextbook/verify-4.md`. Read it first. The earlier reports (`review-3.md`, `verify-3.md`) are beside it.
 - The full suite runs on the tip in parallel with you. Passing tests are not the question. The question is whether the code is right.
 
 ## The rule the code must keep

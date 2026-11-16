@@ -15,7 +15,7 @@ The user has not installed 0.2.0 yet, and wants it as stable as it can be made b
   - the command wiring: `TextMouth/Views/Reader/ReaderBookCommands.swift`, `TextMouth/Views/Library/LibraryView.swift`, and `TextMouth/App/MenuCommands.swift`;
   - wording: `TranscriptionWording.swift` and `TranscriptCleanupWording.swift`.
 - **The research and decisions:**
-  - `TRANSCRIPTION-RESEARCH-2026-10-03.md` and `TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md`, which are gitignored, so read them in the main checkout at `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`;
+  - `TRANSCRIPTION-RESEARCH-2026-10-03.md` and `TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md`, which are gitignored, so read them in the main checkout at `<main checkout>/`;
   - the FR05 (Edit Text for transcribed audiobooks) and FR11 (feeds) items in the TODO, also in the main checkout: `grep -n -E "FR05|FR11" TODO-2026-09-04.md`.
 
 ## Items

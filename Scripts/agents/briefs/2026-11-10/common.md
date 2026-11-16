@@ -19,7 +19,7 @@ On November 10 main is **1aea96b1**: version 0.4.4 (tag `v0.4.4`), then the GitH
   - by reading the code, where only the hosted app can show it.
 - **Type-checks.** Run `make typecheck-mac` and `make typecheck-ios` once for each batch that changes Swift, after committing, since they check HEAD's commit. Type-check the tests on a commit with `make typecheck-tests REF=<commit>`. Never wrap any of them in `run_locked.py`.
 - **Anything else heavy on this Mac** (a build, a test run, a fuzz run, a simulator pass) goes through the heavy-work lock:
-  `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/agents/run_locked.py <name> <command...>`.
+  `python3 -I <main checkout>/Scripts/agents/run_locked.py <name> <command...>`.
 - **Disk.** About 13 GB is free. Keep your scratch in `build/orchestrator/<your name>/` of the main checkout, and report how much you add.
 - **Versions.** If your change alters what a reader makes of a book, raise that reader's version in `PageReaderVersions` or its own version constant, and say so in your report. Leave the app's version and the changelog alone: the orchestrator sets them when it merges.
 

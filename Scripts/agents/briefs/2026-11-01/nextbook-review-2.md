@@ -17,7 +17,7 @@ The rules of the first review hold, as written in the "Rules" section of `Script
 - **The fix range:** `git diff 3f5ca4cb..3d574c2f`, 15 commits, about 1,950 lines in 31 files.
 - **Getting it:** your worktree starts on main. Check out the tip detached: `git checkout --detach 3d574c2f`.
 - **The design note:** `NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md`, now 83 lines with the fix round's sections.
-- **Round 1's report:** `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/nextbook/review-1.md`, findings R1 to R10, its line numbers at 1d1c8790.
+- **Round 1's report:** `<main checkout>/build/orchestrator/nextbook/review-1.md`, findings R1 to R10, its line numbers at 1d1c8790.
 - The full suite passed at 3d574c2f: 9250 tests, 75 skipped, 0 failures. Passing tests are not the question; whether the code is right is.
 
 ## The user's answers that the fix round built

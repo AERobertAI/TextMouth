@@ -3,7 +3,7 @@
 You are `bughunt-revert` (Sonnet). Read `../teams-common.md` ("The worker's part", "Rules for everyone", "Builds") first; it stands in for AGENTS.md. Work on branch `bughunt/revert-htmldepth`, made from `team/bughunt` (at 2fd75730) by name: `git checkout -b bughunt/revert-htmldepth team/bughunt`.
 
 ## Why
-An outside review of the bug hunt's parser changes (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/review-bughunt-parsers.md`) found that the new HTML depth guard changes the words of ordinary books:
+An outside review of the bug hunt's parser changes (`<main checkout>/build/orchestrator/oct30/review-bughunt-parsers.md`) found that the new HTML depth guard changes the words of ordinary books:
 - Any chapter nesting more than 32 levels deep is read as flattened words: its headings, links, pages and alt text are lost, and hidden text is read.
 - Sloppy but ordinary HTML can count as deep and be read as one paragraph.
 - Two of the crash paths it was meant to close are still open.

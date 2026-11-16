@@ -2,12 +2,12 @@
 
 You are `iosunitfix`, a Sonnet worker. You fix what the Opus review of branch `ci/ios-unit-tests` asked for, on that branch.
 
-First read `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/agents/briefs/2026-11-11/iosunit.md`, the brief of the worker who made the branch. Follow its sections "Runs on GitHub", "Pushing: what you may do, and what you may not", "The rule on sound", and "Checks", with one change: never run `gh run watch` (see "Waiting" below). Through it, also follow `../2026-11-10/common.md`, as that brief says.
+First read `<main checkout>/Scripts/agents/briefs/2026-11-11/iosunit.md`, the brief of the worker who made the branch. Follow its sections "Runs on GitHub", "Pushing: what you may do, and what you may not", "The rule on sound", and "Checks", with one change: never run `gh run watch` (see "Waiting" below). Through it, also follow `../2026-11-10/common.md`, as that brief says.
 
 ## Start
 
 - In your worktree, run `git switch ci/ios-unit-tests`, and check that `git log -1 --format=%h` prints `2b9b371b`. The branch's first worker has finished, and its folder no longer holds the branch.
-- Read, in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosunit/`:
+- Read, in `<main checkout>/build/orchestrator/iosunit/`:
   - `iosunit-review.md`, the review, findings 1 to 6 and "Couldn't settle";
   - `iosunit-report.md`, the worker's report.
 - Briefs are gitignored, so after the switch they are not in your worktree: read them from the main checkout's paths above.
@@ -64,7 +64,7 @@ When everything is done, send one GitHub run of your final tree for the phone ar
 
 ## Your report
 
-Your final message is the report, at most 40 lines. Also save it as `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosunit/iosunit-fix-report.md`. It holds:
+Your final message is the report, at most 40 lines. Also save it as `<main checkout>/build/orchestrator/iosunit/iosunit-fix-report.md`. It holds:
 - the branch's tip and your commits;
 - each finding: what you changed, and the break that fails its test;
 - the four parts' heights at both sizes, the bound you chose, and why;

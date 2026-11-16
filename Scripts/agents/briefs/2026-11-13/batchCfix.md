@@ -5,7 +5,7 @@ You are `batchCfix`, a Sonnet worker. You fix what the Opus review of batch C as
 ## Start
 
 - In your worktree: `git switch fix/batch-c-replace-encodings`, and check that `git log -1 --format=%h` prints `107971cc`. Its first worker has finished and its folder is gone.
-- Read, in the main checkout (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`):
+- Read, in the main checkout (`<main checkout>/`):
   - the review, `build/orchestrator/nov13/batchC-review.md`: findings 1 to 10, "Settled by reading", and "Not settled";
   - the worker's report, `build/orchestrator/nov13/batchC-report.md`;
   - the batch's brief, `Scripts/agents/briefs/2026-11-13/batch-common.md`, and its items 2, 3, 27, and 28 in section 1 of `build/orchestrator/nov13/triage-report.md`.

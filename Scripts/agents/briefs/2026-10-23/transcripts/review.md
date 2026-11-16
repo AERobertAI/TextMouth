@@ -15,7 +15,7 @@ You are `transcripts-review`, an Opus reviewer on team `transcripts`, lead `tran
 - Edit Text: `TextMouth/Services/BookTextEditor.swift`, `BookTextEditing.swift`, `PackageFileEditing.swift`.
 - Export of a transcript: `TextMouth/Services/BookExportService.swift` (`transcriptItem`).
 - Feed episodes: `TextMouth/Services/Feeds/FeedItemPackage.swift`, `FeedLifecycle.swift` (`deleteDownload`, `removeDownload`, the sweep), `TextMouth/ViewModels/LibraryViewModel+Feeds.swift` (`removeFeedFiles`, `feedBooksInUse`), `TextMouth/Models/FeedBookUse.swift`.
-- The design decisions, gitignored, in the main checkout: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/TRANSCRIPTION-RESEARCH-2026-10-03.md` and `TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md`. Skim their decisions only.
+- The design decisions, gitignored, in the main checkout: `<main checkout>/TRANSCRIPTION-RESEARCH-2026-10-03.md` and `TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md`. Skim their decisions only.
 
 ## What to look for
 Areas: transcribing, the job center, the transcript store, Edit Text's alignment, cleanup, deletion, export, feed episodes, the cloud (files only in iCloud, never downloaded by a read), and cancelling. Look for:

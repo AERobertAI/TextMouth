@@ -5,13 +5,13 @@ You check `ios/lead-1108` at **1fefa2cf** before the orchestrator merges it into
 Read `Scripts/agents/briefs/2026-11-08/verify-common.md` for the method, the rules (word for word), and the report format. These lines replace its older ones:
 
 - **Start.** `git log -1 --format=%h main` should print `bbf72424` (version 0.4.2 with KF8). Run `git checkout --detach 1fefa2cf`. The branch's diff is `git diff main...1fefa2cf`, and its own commits are `git log --first-parent --oneline 37292728..1fefa2cf`.
-- **Trains** leave once an hour, on the hour, and each tests the commit your request names. Read "Making each train count" in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/docs/agents/working-with-agents.md`: one request, naming every class you need, reviewed before you send it.
+- **Trains** leave once an hour, on the hour, and each tests the commit your request names. Read "Making each train count" in `<main checkout>/docs/agents/working-with-agents.md`: one request, naming every class you need, reviewed before you send it.
 - **No simulator.** Don't build or run `TextMouthiOS` or its tests; the lead's two passes are the evidence. Judge iOS-only screens by reading, and say so. Never press Play.
 
 ## Read first
 
-- The review: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/review-code-1108.md`.
-- The lead's report: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/ioslead-report.md`.
+- The review: `<main checkout>/build/orchestrator/iosui/review-code-1108.md`.
+- The lead's report: `<main checkout>/build/orchestrator/iosui/ioslead-report.md`.
 - The spec, only where a finding needs it: `IOS-INTERFACE-SPEC-2026-11-07.md` in the repository root.
 
 ## What to check
@@ -22,7 +22,7 @@ Read `Scripts/agents/briefs/2026-11-08/verify-common.md` for the method, the rul
 4. **The debug launch request** (`PhoneLaunchRequest`, `TEXTMOUTH_UI_TEST=1`, `TEXTMOUTH_OPEN_AT_LAUNCH`). It should be compiled only into debug builds, and only for iOS, so a release build can't be steered by an environment variable. Its sandboxed library should never touch a real one.
 5. **The project.**
    - The Mac's `TextMouth` scheme, and what its tests run, should not include the two new iOS test targets, so the Mac's full suite is unchanged.
-   - The copy-files phases should match main's: `python3 -I -B /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/copy_phases.py TextMouth.xcodeproj/project.pbxproj`, compared with the same command's output for main's project file.
+   - The copy-files phases should match main's: `python3 -I -B <main checkout>/build/orchestrator/followups1105/copy_phases.py TextMouth.xcodeproj/project.pbxproj`, compared with the same command's output for main's project file.
 6. **The iOS plist.** There is one plist. `Scripts/ios/sync-info-plist.py` adds the audio background mode and the one-scene setting. `IOSInfoPlistTests` checks both, and `make check-ios-plist` passes.
 7. **The two defects of the first run.**
    - Book content was blank at a chapter with no text; it should now show the next chapter with words.

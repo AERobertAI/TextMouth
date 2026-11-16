@@ -10,7 +10,7 @@ You are `docs043`, a Sonnet docs agent, on branch `docs/0.4.3`. Write the docume
 
 ## What to document
 
-1. **The iPhone's audit findings** (`ios/fix-d-1109`). Reports: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/iosfixd-report.md` and `iosfixd-fix-report.md`, and the review `iosfixd-review.md` beside them (its finding 7 lists the false lines).
+1. **The iPhone's audit findings** (`ios/fix-d-1109`). Reports: `<main checkout>/build/orchestrator/iosui/iosfixd-report.md` and `iosfixd-fix-report.md`, and the review `iosfixd-review.md` beside them (its finding 7 lists the false lines).
    - `docs/developer/testing.md`, the iPhone section:
      - the probe and `ToolbarPlacementProbeUITests` are gone;
      - the audit runs each kind alone, from one table of kinds;
@@ -24,7 +24,7 @@ You are `docs043`, a Sonnet docs agent, on branch `docs/0.4.3`. Write the docume
      - `PhoneSheetButton` has no probe;
      - `PhoneTextStyle` cites the spec sections by their names.
    - The crash guard's page (find it from `ARCHITECTURE.md`): the reopen keys are cleared with the guard as the session is made, and the verdict keeps the keys of a book opened since.
-2. **The KF8 follow-ups** (`readers/kf8-followups`). Reports: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/kf8follow-report.md`, `kf8follow-fix-report.md`, `kf8follow-review.md`, `kf8check-report.md`.
+2. **The KF8 follow-ups** (`readers/kf8-followups`). Reports: `<main checkout>/build/orchestrator/followups1105/kf8follow-report.md`, `kf8follow-fix-report.md`, `kf8follow-review.md`, `kf8check-report.md`.
    - `docs/architecture/state/imports.md`, the KF8 items:
      - the repeated-title exception, now only when a piece opens in no section element;
      - the licence-opening rule;
@@ -43,7 +43,7 @@ You are `docs043`, a Sonnet docs agent, on branch `docs/0.4.3`. Write the docume
      - the DOCX title and creator fallbacks;
      - the damaged-file sentence;
      - the DAISY notice.
-4. **The Mac app's size** (`build/mac-size`, no commits). Report: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/macsize/macsize-report.md`.
+4. **The Mac app's size** (`build/mac-size`, no commits). Report: `<main checkout>/build/orchestrator/macsize/macsize-report.md`.
    - `docs/developer/building.md`'s size sentence, which still says about 20 MB:
      - the Release executable is 22.7 MB and the bundle about 23 MB, against the 25 MB target;
      - `TextMouth/Phone/` keeps 59 KB after the linker strips it;

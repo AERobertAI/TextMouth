@@ -16,7 +16,7 @@ Calibre's KFX plugins are GPL 3, and TextMouth is MIT. **You work only from `KFX
 
 Nothing is installed. Amazon's Kindle Previewer 4.0.4 runs unpacked and calibre 9.18 runs from its disk image, each with throwaway settings. Always go through this script, which takes the heavy-work lock itself:
 
-`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/kindle-previewer/kfx_tools.sh`
+`<main checkout>/build/orchestrator/followups1105/kindle-previewer/kfx_tools.sh`
 
 - `kfx_tools.sh make INPUT.epub OUTPUT.kfx`: EPUB to Amazon's KPF (kept as `OUTPUT.kpf`) to KFX, in about a minute.
 - `kfx_tools.sh epub BOOK.kfx OUTPUT.epub`: a KFX back to EPUB, as a yardstick to compare against by hand.

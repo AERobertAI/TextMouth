@@ -13,7 +13,7 @@ The Mac app compiles `TextMouth/Phone/`, about 9,400 lines of the iPhone's model
 ## The work
 
 1. **Measure.**
-   - Build the Mac app in Release at e0ea3b9d through `run_locked.py`, with its own derived data in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/DerivedData-size.noindex`. Use `xcodebuild` directly, with the same settings as `make build`, and ask the linker for a map (`LD_GENERATE_MAP_FILE=YES` with `LD_MAP_FILE_PATH`, or `-Xlinker -map`).
+   - Build the Mac app in Release at e0ea3b9d through `run_locked.py`, with its own derived data in `<main checkout>/build/DerivedData-size.noindex`. Use `xcodebuild` directly, with the same settings as `make build`, and ask the linker for a map (`LD_GENERATE_MAP_FILE=YES` with `LD_MAP_FILE_PATH`, or `-Xlinker -map`).
    - From the map, give:
      - the executable's size;
      - what the `Phone/` objects add to it, with the five largest;

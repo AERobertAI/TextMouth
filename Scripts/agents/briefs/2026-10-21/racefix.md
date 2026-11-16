@@ -12,7 +12,7 @@ You are `racefix`, an Opus agent, on the branch `fix/reader-load-race`. TextMout
   - line 819: the player's loaded URL was nil.
 - **What the test does.** It opens a reader on a two-track silent audiobook. While the reader loads in the background, it moves the book into another folder with `moveBooksReturningOutcome`. Its comment says: "Whichever finishes first, the reader ends up loaded, with no error, naming the book's chapter files where they are now, and plays from there."
 - **The merge** that ran it changed no reader, audio, or library code, so this is an older race that a busy machine exposed.
-- **Background.** The TODO (`/Users/roberteggleston/programming/ai/claude/swift/TextMouth/TODO-2026-09-04.md`, gitignored, so read it in the main checkout) has a related open note: `grep -n "Still open after T06's branch D merge" TODO-2026-09-04.md`. It describes T06's moves and the "move at every load" backstop. The design is in `TEXT-ANCHORS-RESEARCH-2026-10-10.md`, also in the main checkout; read only the parts about moves and loads.
+- **Background.** The TODO (`<main checkout>/TODO-2026-09-04.md`, gitignored, so read it in the main checkout) has a related open note: `grep -n "Still open after T06's branch D merge" TODO-2026-09-04.md`. It describes T06's moves and the "move at every load" backstop. The design is in `TEXT-ANCHORS-RESEARCH-2026-10-10.md`, also in the main checkout; read only the parts about moves and loads.
 
 ## What to do
 1. **Find the race.** Read the reader's load path for an audiobook (`ReaderViewModel` and its extensions, the audio content loading, and `AudioMediaProbe`) and the library's move (`LibraryViewModel+BookOperations.swift` and the move code).

@@ -5,7 +5,7 @@ You are `docs24c`, a Sonnet documentation agent. You build nothing and run no te
 ## Setup
 Run `git checkout -b docs/fmt16 integrate/fmt16`, then check that `git merge-base --is-ancestor 62575681 HEAD` succeeds. `integrate/fmt16` is main (0.2.2) with the `formats/encodings` merge (1cf19935).
 
-These are your sources, in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/`, and where they disagree, the code wins:
+These are your sources, in `<main checkout>/build/orchestrator/`, and where they disagree, the code wins:
 - `fmt16-report.md`: the first report and its first fix round, with the wording;
 - `fmt16-fix2-report.md`: the second fix round;
 - `verify-fmt16-2-report.md`: the reviewer's final check, with the limits that remain;

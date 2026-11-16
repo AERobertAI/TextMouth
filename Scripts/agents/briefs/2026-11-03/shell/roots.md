@@ -4,7 +4,7 @@ Slug `shell-roots`, branch `shell/roots` (from `team/shell`, after `shell/router
 
 ## Your files and their errors (41 in the census)
 
-Census: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/typecheck/results/orchestrator-ios-census-72d9f5cd-1103-200441/errors.txt` (`grep -E "Views/ContentView|Library/LibraryView.swift|ReaderBookCommands"`). Run your own census first: the router task changed what is left.
+Census: `<main checkout>/build/typecheck/results/orchestrator-ios-census-72d9f5cd-1103-200441/errors.txt` (`grep -E "Views/ContentView|Library/LibraryView.swift|ReaderBookCommands"`). Run your own census first: the router task changed what is left.
 
 - `TextMouth/Views/ContentView.swift` (13): `hostWindow: NSWindow?`, `NSApplication.shared.terminate(nil)`, `NSApplication.ModalResponse` in the DAISY panel handler (~412), `ImportOrigin(window:)` (a cascade), the `window:`/`windowNumber:` label errors at ~360 and ~409 (cascades from calls typed `NSWindow`), a type-check timeout at line 33 that goes with the `NSApplication` error.
 - `TextMouth/Views/Library/LibraryView.swift` (16): `NSWindow` in `WindowCommandRouting` (lines ~21-60: `shouldAccept(sourceWindow:hostWindow:keyWindow:)`, `rootWindow(for:)`), `hostWindow` (~269), `as? NSWindow` (~1662); the rest are cascades (`StandardVoiceOverFocus` backgrounds, the `Binding` errors, the `announcingFrom` extra-argument errors at ~1521).

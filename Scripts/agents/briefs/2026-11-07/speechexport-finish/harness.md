@@ -18,7 +18,7 @@ TextMouth is a native macOS and iOS text-to-speech and audiobook reader whose us
 - A new agent's worktree starts at origin/main from October 3: switch onto the branch named above first.
 
 And these, from the briefs of this campaign:
-- **Heavy work takes the lock.** Every `swift build`, `swift test`, and run of your harness goes under `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/run_locked.py speechexport-harness <command...>`. It waits its turn; that is normal. The Mac has 8 GB of memory. Run them in the Bash tool's background mode (you are told when each ends), one at a time. Never wrap `make typecheck-*` in it.
+- **Heavy work takes the lock.** Every `swift build`, `swift test`, and run of your harness goes under `python3 -I <main checkout>/build/orchestrator/followups1105/run_locked.py speechexport-harness <command...>`. It waits its turn; that is normal. The Mac has 8 GB of memory. Run them in the Bash tool's background mode (you are told when each ends), one at a time. Never wrap `make typecheck-*` in it.
 - Python tools write no bytecode. Use `-I -B`.
 - Use absolute paths and `git -C <path>`, since your shell's working directory resets. `sed` here is GNU sed; use Python for in-place edits.
 - Check `df -g /System/Volumes/Data` before a build: below 3 GB free, post to the lead and wait.
@@ -30,7 +30,7 @@ And these, from the briefs of this campaign:
 Model it on `Scripts/ios/typecheck.py` (read `prepare_sources` and `write_package`). A Python script of yours, kept in `<your worktree>/build/harness/`:
 
 1. Copies the committed sources of a given commit (`git archive <commit> TextMouth Vendor TextMouthBraille TextMouthProductionTests`, by default the tip of `speechexport/finish`) into `build/harness/src`. Overwrite in place: to refresh a file, write it again. Do not delete folders. If a commit's files must replace older ones, extract over them.
-2. Copies `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/typecheck/macos/pkgs` (36 MB: ZIPFoundation, SwiftSoup, swift-markdown, cmark) once into `build/harness/pkgs`.
+2. Copies `<main checkout>/build/typecheck/macos/pkgs` (36 MB: ZIPFoundation, SwiftSoup, swift-markdown, cmark) once into `build/harness/pkgs`.
 3. Writes `build/harness/src/Package.swift`: `typecheck.py`'s package for macOS (the `LAME` and `ObjCExceptionCatcher` targets, the `TextMouth` executable target, excluding `Resources` and `Platform/iOS`, and the braille `-I` flag), plus one `.testTarget` named `SpeechHarnessTests` depending on `TextMouth`, whose `path` is a folder of yours that holds copies of the test files the lead names and your own tests, or `sources:` naming them.
 4. Builds with `swift test --scratch-path build/harness/spm -j 2 -Xswiftc -gnone --filter <classes>`, with the macOS SDK as `typecheck.py` passes it (`--sdk`). `-gnone` drops the debug information, which keeps the folder small; the aim is under 500 MB, and if it cannot stay under 700 MB say so to the lead. `@testable import TextMouth` works on an executable target on macOS.
 

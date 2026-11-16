@@ -3,7 +3,7 @@
 You are `polish020`, an Opus agent, on the branch `fix/polish020`. TextMouth is a native macOS text-to-speech and audiobook player whose user is blind and reads with VoiceOver and a braille display. The user will install the result as their stable version.
 
 ## Fix these, each a small commit with its test
-They come from the outside review of team stable020: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/review-stable020-report.md`. Read it first.
+They come from the outside review of team stable020: `<main checkout>/build/orchestrator/review-stable020-report.md`. Read it first.
 1. **Finding 2, a DAISY heading lost.** DAISY 2.02 can now drop a heading such as "IV", "XII.", "I", "1984", or "1, 2, 3." under a page label like "5": `looksLikeAPageNumber` (`MarkdownPageMarker.swift:114`) and the "label contains text" check (`:103`), with `DAISYParser.swift:793` marking it read.
    - Narrow the rule, so that a fragment is dropped only when it is the page's own label: the same text as the label, ignoring case, spaces, and a trailing period, or the label's Roman or Arabic twin ("V" for "5", "5" for "V").
    - Apply the same narrowing to EPUB page-break elements, where "Mix" or "Civil" now read as Roman numerals.
@@ -13,7 +13,7 @@ They come from the outside review of team stable020: `/Users/roberteggleston/pro
    - Say so in the question, in a sentence pinned by a test, for example: "It also holds N books a newer TextMouth added, which are kept."
 3. **Finding 5, chapter lengths.** Use the precise-timing asset options in the chapter-marker reader too (`metadataAsset`, `AudioPlaybackService.swift:1606`, with the length read at :1638), through the same helper ST06 added (DRY). Test it as ST06's test does.
 4. **Finding 4, a comment.** Correct the comment at `AudioPlaybackService.swift:1602` that says `AsyncBridge` has no timeout, and say in it that abandoned AVFoundation work can keep running.
-5. **V05, re-reads without the byte compare.** Read the TODO's V05 item in the main checkout: `grep -n "V05 —" /Users/roberteggleston/programming/ai/claude/swift/TextMouth/TODO-2026-09-04.md`, then by line range. It is required before any future page-reader bump, and it is cheap now. Build it as written, with its tests.
+5. **V05, re-reads without the byte compare.** Read the TODO's V05 item in the main checkout: `grep -n "V05 —" <main checkout>/TODO-2026-09-04.md`, then by line range. It is required before any future page-reader bump, and it is cheap now. Build it as written, with its tests.
 
 ## Rules
 - **Setup.** Your worktree is made from main. Run `git checkout -b fix/polish020 main`. Register on the board as `polish020`, and build only through the wrapper (`run-area.py`).

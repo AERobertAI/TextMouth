@@ -52,7 +52,7 @@ Commit 2: `Refuse a text file that holds no text`.
 
 ## Tests to run
 
-Run with `BBS_AGENT=todo18-import python3 Scripts/test/run-area.py <ClassNames>` (see `-h`; its build folder is then `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-todo18-import`).
+Run with `BBS_AGENT=todo18-import python3 Scripts/test/run-area.py <ClassNames>` (see `-h`; its build folder is then `$TMPDIR/TextMouth-DerivedData-todo18-import`).
 1. After commit 1: `OriginalFileDeletionTests`, `LogContentPolicyTests`, `DAISYPackageImportTests`.
 2. After commit 2: `StagedImportTests`, `TextEncodingFidelityTests`, `ImportDecisionFlowTests`, `IntegrationImportTests`, `ZIPImportTests`, `ImportFuzzMutatorTests`, `ImportFuzzTests` (it shows its skip line without the variable).
 3. The fuzz, for real, through the script: first `BBS_AGENT=todo18-import Scripts/test/import-fuzz.sh --docs sample.md --seed 20261016` (the old finding must be gone and nothing else found), then once with the defaults. Report the counts line of each.

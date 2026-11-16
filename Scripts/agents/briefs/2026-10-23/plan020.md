@@ -5,7 +5,7 @@ You are `plan020`, an Opus agent, on the branch `research/plan020`. You research
 ## The request, in the user's words
 "I want to install the new version with it as stable as you can make it so also plan any todos requiring breaking changes for my official update to 0.2.0."
 
-The user runs one Mac, with a live library at `~/.TextMouth`, which you must never read or touch. They will install 0.2.0 soon. Its first launch re-reads the library's text books for pages (PG09 and PG16; see "## From pg16 and version" in `AGENT-NOTES-2026-10-04.md` in the main checkout, `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`). After that, updates should be smooth.
+The user runs one Mac, with a live library at `~/.TextMouth`, which you must never read or touch. They will install 0.2.0 soon. Its first launch re-reads the library's text books for pages (PG09 and PG16; see "## From pg16 and version" in `AGENT-NOTES-2026-10-04.md` in the main checkout, `<main checkout>/`). After that, updates should be smooth.
 
 ## Find and plan
 1. **What 0.2.0 already changes that an older build cannot read:**

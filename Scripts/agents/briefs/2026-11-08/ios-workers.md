@@ -8,7 +8,7 @@ TextMouth is a native Mac text-to-speech and audiobook reader. Its second target
 
 - Your worktree starts at an old commit. First: `git switch -c <your branch> ios/lead-1108`. Your branch comes off the lead's branch, never off main or `ios/interface`.
 - The lead merges your branch. You don't merge, and you never touch main.
-- Paths under `build/` live in the main checkout, `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`. Use full paths for those.
+- Paths under `build/` live in the main checkout, `<main checkout>`. Use full paths for those.
 - Read only what your task needs: the spec's sections your prompt names, then the code by line range. `grep -E` several patterns in one call. An agent's cost follows its calls times its context.
 
 ## Where the code goes
@@ -66,7 +66,7 @@ The two apps share one vocabulary. Every word a person can hear or feel in brail
 
 ## Your report
 
-Your final message is your report, and the lead reads it. Also try to save it: write it in your scratchpad, then `cp` it to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/<slug>-report.md`. At most 40 lines:
+Your final message is your report, and the lead reads it. Also try to save it: write it in your scratchpad, then `cp` it to `<main checkout>/build/orchestrator/iosui/<slug>-report.md`. At most 40 lines:
 - the branch, and each commit's hash and subject;
 - the files added and changed, and every shared file changed, with why it's safe for the Mac;
 - the result lines of `make typecheck-mac`, `make typecheck-ios`, and the train;

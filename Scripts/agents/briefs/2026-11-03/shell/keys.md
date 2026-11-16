@@ -4,7 +4,7 @@ Slug `shell-keys`, branch `shell/keys` (from `team/shell`). Read `../ios0-common
 
 ## Your files and their errors (82 in the census)
 
-The census at `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/typecheck/results/orchestrator-ios-census-72d9f5cd-1103-200441/errors.txt` (yours: `grep -E "Models/KeyboardShortcut.swift|Services/KeyboardShortcutManager|Services/ShortcutPressDispatcher|Settings/KeyboardShortcutsSettingsView"`):
+The census at `<main checkout>/build/typecheck/results/orchestrator-ios-census-72d9f5cd-1103-200441/errors.txt` (yours: `grep -E "Models/KeyboardShortcut.swift|Services/KeyboardShortcutManager|Services/ShortcutPressDispatcher|Settings/KeyboardShortcutsSettingsView"`):
 
 - `TextMouth/Models/KeyboardShortcut.swift` (40): `KeyBinding.from(event: NSEvent)` (line ~945) and the `NS…FunctionKey` constants in `functionKeys` (lines ~1023-1059).
 - `TextMouth/Services/KeyboardShortcutManager.swift` (21): the event monitor and everything that handles an `NSEvent`, `NSWindow`, `NSResponder`, `NSPanel`, `NSTextView`, `NSTextField` (lines ~566-760).

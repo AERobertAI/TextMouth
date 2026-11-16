@@ -1,6 +1,6 @@
 # Common brief for the October 7, 2026 evening wave (read with AGENTS.md)
 
-Repository: /Users/roberteggleston/programming/ai/claude/swift/TextMouth, a native macOS TTS and audiobook app, TextMouth. You work in your own git worktree (your current directory) unless your brief says you are a read-only reviewer. `main` is at fca0f91d or later; the suite on it counts **4687 tests, 56 skipped, 0 failures**. The orchestrator runs on Opus 5.5, and so do you.
+Repository: <main checkout>, a native macOS TTS and audiobook app, TextMouth. You work in your own git worktree (your current directory) unless your brief says you are a read-only reviewer. `main` is at fca0f91d or later; the suite on it counts **4687 tests, 56 skipped, 0 failures**. The orchestrator runs on Opus 5.5, and so do you.
 
 ## Who else is working (each owns only the files its brief names)
 - `reviewspeech` and `reviewlibrary`: read-only code reviewers of the five October 7 afternoon merges. They edit nothing and build nothing.

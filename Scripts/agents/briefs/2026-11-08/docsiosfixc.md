@@ -6,7 +6,7 @@ Write the developer documentation for what `ios/fix-c-1108` changed. It is merge
 
 - Make your branch at the merge: `git switch -c docs/ios-fixc 3d4d6b98`, and check that `git log -1 --format=%h` prints `3d4d6b98`.
 - Read the worker's two reports, which name the documentation each change needs:
-  - `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/iosui/iosfixc-report-1.md`;
+  - `<main checkout>/build/orchestrator/iosui/iosfixc-report-1.md`;
   - `iosfixc-report-2.md` beside it. Where the two disagree, the second and the code win.
 - Then read the pages you edit and the code each sentence describes.
 

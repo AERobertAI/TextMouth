@@ -6,8 +6,8 @@ When TextMouth is asked to quit while work it must finish is under way, it holds
 
 ## Read first
 
-- Findings 1 and 2, the two blockers, of `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/transcriptfollow-review.md`.
-- The review's probes, copied to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/quitfix/review-probes/`: `terminate_later.swift`, `terminate_key.swift`, `terminate_key_queue.swift`. Each is a small AppKit program with a 5-second watchdog. You may build and run them, and copies of them.
+- Findings 1 and 2, the two blockers, of `<main checkout>/build/orchestrator/followups1105/transcriptfollow-review.md`.
+- The review's probes, copied to `<main checkout>/build/orchestrator/quitfix/review-probes/`: `terminate_later.swift`, `terminate_key.swift`, `terminate_key_queue.swift`. Each is a small AppKit program with a 5-second watchdog. You may build and run them, and copies of them.
 - The code the review names:
   - `AppDelegate.swift` around 142-148;
   - `UnsavedChangesTermination.swift` (101, 145, 163-169, 231-253);
@@ -34,6 +34,6 @@ When TextMouth is asked to quit while work it must finish is under way, it holds
 - **The AppKit behaviour** in child processes, with a watchdog, as the review's probes do. Make them a script in `Scripts/test/` that runs each case and prints its verdict; it isn't part of the suite.
   - It must show a held quit asked again from the main queue replying within a limit.
   - It must show a second Command-Q during a hold no longer cutting the work off.
-- Before your train request, type-check your tests on your commit with `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/ios/typecheck.py --platform macos --tests --ref <your commit>`. It takes the heavy lock itself, so never wrap it in `run_locked.py`.
+- Before your train request, type-check your tests on your commit with `python3 -I <main checkout>/Scripts/ios/typecheck.py --platform macos --tests --ref <your commit>`. It takes the heavy lock itself, so never wrap it in `run_locked.py`.
 - Then one train with the areas that hold the quit, the editors, the feeds' downloads, the exports, and the library move, and every class you change.
 - **Breaks:** undo each fix in a scratch copy, and show that a test or the script's case fails.

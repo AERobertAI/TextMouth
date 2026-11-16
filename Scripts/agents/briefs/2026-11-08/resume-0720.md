@@ -11,7 +11,7 @@ The user paused every agent and train at 04:45 because the builds took a lot of 
 
 ## Making each train count
 
-A missed train, or one spent on a mistake a careful reading would have caught, costs you an hour. The full text is in `docs/agents/working-with-agents.md` on main, under Making each train count. Read it in the main checkout: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/docs/agents/working-with-agents.md`.
+A missed train, or one spent on a mistake a careful reading would have caught, costs you an hour. The full text is in `docs/agents/working-with-agents.md` on main, under Making each train count. Read it in the main checkout: `<main checkout>/docs/agents/working-with-agents.md`.
 
 1. **Review before you ask.** Read your whole diff against your base as an outside reviewer would. Look for a bug in plain sight, a missed edge case, a test that would still pass with the change undone, a stale comment, or a repeated block, and fix what you find. Then run the type-checks once for the whole batch, not after each edit, so no train is spent on a compile error.
 2. **Ask once, for everything.** Send one request per batch of work, not one per commit. Name every class and area the change could break, not only those you edited.

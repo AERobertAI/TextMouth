@@ -13,7 +13,7 @@ You are `docs31` (Sonnet). You change only documentation: `README.md`, `ARCHITEC
 ## Part 1, now: customizable Library views (`team/views`, merged into integrate/oct30 as 71f22891)
 Sources:
 - the design, `LIBRARY-VIEWS-RESEARCH-2026-10-30.md` (in your checkout's root), whose section 9 lists every wording;
-- the lead's report, `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/views-lead-report.md`, which ends with the review round's changed sentences;
+- the lead's report, `<main checkout>/build/orchestrator/oct30/views-lead-report.md`, which ends with the review round's changed sentences;
 - the code in `TextMouth/Models/LibraryView*.swift`, `TextMouth/Views/Settings/LibraryViews*.swift`, `LibraryViewEditor*`, and `LibraryView.swift`'s picker.
 
 Pages:

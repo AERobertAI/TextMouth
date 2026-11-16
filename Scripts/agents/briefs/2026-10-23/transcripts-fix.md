@@ -3,7 +3,7 @@
 You are `transcripts-fix`, a Sonnet agent, working on `team/transcripts` itself (4b6d67b1). TextMouth is a native macOS text-to-speech and audiobook player whose user is blind and reads with VoiceOver and a braille display.
 
 ## Why
-A fresh Opus review of team/transcripts judged it safe to install, but asked for two cheap fixes first, plus several small ones. Its whole report is `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/review-transcripts-report.md`: read it first. The team's report is `transcripts-lead-report.md` beside it.
+A fresh Opus review of team/transcripts judged it safe to install, but asked for two cheap fixes first, plus several small ones. Its whole report is `<main checkout>/build/orchestrator/review-transcripts-report.md`: read it first. The team's report is `transcripts-lead-report.md` beside it.
 
 ## Fix these, each a small commit with its test
 1. **Review item 1.** Retranscribing a book whose content.md is only in iCloud throws away the finished transcription, because install refuses afterwards (`TranscriptInstallation.swift:84`, with `TranscriptionSheetModel.swift:287`). Check content.md, and transcript.json, before transcribing begins: the sheet then says the book must be downloaded first, and Retranscribe is unavailable. Pin the sentence. Reuse the existing failure sentence, "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again.", or one in its style.

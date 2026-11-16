@@ -1,6 +1,6 @@
 # Task media/windows: the Record window's and the audio editor's AppKit windows leave the shared build
 
-Worker slug `media-windows`. Branch `media/windows`, from `team/media`. Lead: `media-lead`. Read `Scripts/agents/briefs/2026-11-03/ios0-common.md` (the pattern and "The worker's part") first; its rules override this brief. It is in the orchestrator's worktree: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/ios0/Scripts/agents/briefs/2026-11-03/ios0-common.md`.
+Worker slug `media-windows`. Branch `media/windows`, from `team/media`. Lead: `media-lead`. Read `Scripts/agents/briefs/2026-11-03/ios0-common.md` (the pattern and "The worker's part") first; its rules override this brief. It is in the orchestrator's worktree: `<main checkout>/.claude/worktrees/ios0/Scripts/agents/briefs/2026-11-03/ios0-common.md`.
 
 ## What to do
 

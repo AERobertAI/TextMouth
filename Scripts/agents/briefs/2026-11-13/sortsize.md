@@ -15,7 +15,7 @@ Your branch is `perf/sort-helper`, made at local main: `git switch -c perf/sort-
 
 ## Items
 
-Both items are in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/optaudit/audit-report.md`, Part C.
+Both items are in `<main checkout>/build/orchestrator/optaudit/audit-report.md`, Part C.
 
 1. **C10. One sort helper.**
    - First, build the helper and convert a handful of call sites in a scratch copy. Then read the Release link map, as the audit says (`tools/patterns.py`; find it in the repo and in the audit report's method notes). Measure the size gain with `make check CHECK_ARGS=--without-tests` through `run_locked.py`.

@@ -2,7 +2,7 @@
 
 On the evening of November 3, 2026 the user wrote: "please try spending the night with well reviewed sonnet agent teams and the pooled contribution scheduled builds to try conducting the first phase and fixing all IOS errors without changing MacOS behavior if possible." This file is the pattern every team follows tonight. It stands in for AGENTS.md: do not read AGENTS.md, README.md, ARCHITECTURE.md, the TODO, or AGENT-NOTES. Read `IOS-PORT-RESEARCH-2026-11-03.md` only in its sections "What the compiler found" and "How one codebase builds both apps".
 
-Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, TextMouth, a native macOS text-to-speech and audiobook player for a VoiceOver and braille user. The integration branch is `integrate/ios-phase0` (from main, version 0.2.5, whose suite is **9301 tests, 75 skipped, 0 failures**). It adds the iOS app target `TextMouthiOS`, the platform folders, and the tools below. The user has not installed 0.2.5 yet: main must stay stable and installable.
+Repository: `<main checkout>`, TextMouth, a native macOS text-to-speech and audiobook player for a VoiceOver and braille user. The integration branch is `integrate/ios-phase0` (from main, version 0.2.5, whose suite is **9301 tests, 75 skipped, 0 failures**). It adds the iOS app target `TextMouthiOS`, the platform folders, and the tools below. The user has not installed 0.2.5 yet: main must stay stable and installable.
 
 ## The goal
 
@@ -184,7 +184,7 @@ An agent's cost follows how many calls it makes times how large its context has 
 
 ## A lead's report (its final message)
 
-Write it also to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/ios0/<team>-lead-report.md`, which is gitignored and survives a session restart.
+Write it also to `<main checkout>/build/orchestrator/ios0/<team>-lead-report.md`, which is gitignored and survives a session restart.
 - The team branch and its commits: hash and subject.
 - The census's count for your files, with the path of its `errors.txt`.
 - `make typecheck-mac`'s result.

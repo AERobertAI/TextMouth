@@ -3,7 +3,7 @@
 - **Slug:** `braille-fixhelper`. **Branch:** `braille/fix-helper`, made with `git checkout -b braille/fix-helper team/braille`.
 - Read `Scripts/agents/briefs/2026-10-19/braille/common.md` first.
 - **Files (yours alone):** `TextMouthBraille/main.c`; `TextMouth/Services/BrailleTranslator.swift`; `TextMouth/Services/BrailleFileWriter.swift`; `TextMouthProductionTests/BrailleTranslatorTests.swift`, `BrailleFileWriterTests.swift`, `BrailleDocumentWriterTests.swift`. Touch nothing else.
-- **Read first:** `TextMouthBraille/main.c` (all, about 330 lines); `BrailleTranslator.swift` lines 100 to 330; `BrailleFileWriter.swift` (all); the reviewer's repro tools in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/review-braille-c/tools/` (`exp12_truncation.py`, `exp13_trigger.py`, `probe.c`, `build-helper.sh`: read them as text, and copy what you need into your own scratch folder before running anything).
+- **Read first:** `TextMouthBraille/main.c` (all, about 330 lines); `BrailleTranslator.swift` lines 100 to 330; `BrailleFileWriter.swift` (all); the reviewer's repro tools in `<session folder>/scratchpad/review-braille-c/tools/` (`exp12_truncation.py`, `exp13_trigger.py`, `probe.c`, `build-helper.sh`: read them as text, and copy what you need into your own scratch folder before running anything).
 - One commit per item, each with its tests, in this order.
 
 ## M1: forward output is silently cut (`main.c`, `translate`, about line 225 to 260)

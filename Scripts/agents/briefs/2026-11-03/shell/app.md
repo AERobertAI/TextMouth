@@ -4,7 +4,7 @@ Slug `shell-app`, branch `shell/app` (from `team/shell`). Read `../ios0-common.m
 
 ## Your files and their errors (60 in the census)
 
-Census: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/typecheck/results/orchestrator-ios-census-72d9f5cd-1103-200441/errors.txt` (`grep -E "AppDelegate|MenuCommands|UnsavedChangesTermination|MenuVisibilityManager|SilentKeyEquivalent|LogsInFinder|SwitchedWindowFocus"`).
+Census: `<main checkout>/build/typecheck/results/orchestrator-ios-census-72d9f5cd-1103-200441/errors.txt` (`grep -E "AppDelegate|MenuCommands|UnsavedChangesTermination|MenuVisibilityManager|SilentKeyEquivalent|LogsInFinder|SwitchedWindowFocus"`).
 
 - `TextMouth/App/AppDelegate.swift` (13), `TextMouth/Services/MenuVisibilityManager.swift` (11): Mac only.
 - `TextMouth/App/UnsavedChangesTermination.swift` (6): mixed.

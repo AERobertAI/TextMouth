@@ -34,7 +34,7 @@ Worker slug `libpolish-readinglist`, branch `libpolish/readinglist` made from `t
 
 `ReadingListViewTests ReadingListTests LibraryCloudNoteTests KeepOnThisMacTests TranscriptionProgressTests FinishedBookWordingTests LiveReadingPositionsTests LibraryProgressTextTests ViewsAndWindowsLibraryListTests FeedUILibraryRowsTests` (drop any that `run-area.py` says does not exist).
 
-Log to `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/libpolish-readinglist-<n>.log` (`--log`). Before you report, run `make lint-tests LINT_BASE=team/libpolish` and `make lint-a11y LINT_BASE=team/libpolish`.
+Log to `<session folder>/scratchpad/libpolish-readinglist-<n>.log` (`--log`). Before you report, run `make lint-tests LINT_BASE=team/libpolish` and `make lint-a11y LINT_BASE=team/libpolish`.
 
 ## Completion check (must print nothing)
 

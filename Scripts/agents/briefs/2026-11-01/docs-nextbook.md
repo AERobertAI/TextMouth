@@ -33,8 +33,8 @@ Branch: `docs/nextbook`, made from local main by name (`git checkout -b docs/nex
   - `TextMouth/ViewModels/ReaderViewModel+NextBookWindow.swift`;
   - `TextMouth/ViewModels/ReaderViewModel+FolderNavigation.swift`;
   - for the sleep timer: `TextMouth/Models/SleepTimerHandOverWording.swift`, `TextMouth/Services/SleepTimerService.swift` (from "Held for the Next Book" on), `TextMouth/ViewModels/ReaderViewModel+SleepTimerHandOver.swift`, and `TextMouth/ViewModels/ReaderViewModel+BookMoves.swift`.
-- **The review and fix reports,** in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/nextbook/`. Where a fix changed a sentence, the code wins.
-- **The user's questions and answers,** numbered as below: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/humanQuestions/2026-11-01.md`. Read it; never change it.
+- **The review and fix reports,** in `<main checkout>/build/orchestrator/nextbook/`. Where a fix changed a sentence, the code wins.
+- **The user's questions and answers,** numbered as below: `<main checkout>/humanQuestions/2026-11-01.md`. Read it; never change it.
 
 ## Part 1: the user's pages
 

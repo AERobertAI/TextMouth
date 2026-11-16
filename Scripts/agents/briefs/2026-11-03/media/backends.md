@@ -1,6 +1,6 @@
 # Task media/backends: the capture backend, input devices, ffmpeg, the two models, and two sheets
 
-Worker slug `media-backends`. Branch `media/backends`, from `team/media`. Lead: `media-lead`. Read `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/ios0/Scripts/agents/briefs/2026-11-03/ios0-common.md` (the pattern and "The worker's part") first; its rules override this brief. Another worker (`media-windows`) moves the four window-controller files at the same time: do not touch those, `PlatformTypes.swift`, or `project.pbxproj`. Do not run xcodegen.
+Worker slug `media-backends`. Branch `media/backends`, from `team/media`. Lead: `media-lead`. Read `<main checkout>/.claude/worktrees/ios0/Scripts/agents/briefs/2026-11-03/ios0-common.md` (the pattern and "The worker's part") first; its rules override this brief. Another worker (`media-windows`) moves the four window-controller files at the same time: do not touch those, `PlatformTypes.swift`, or `project.pbxproj`. Do not run xcodegen.
 
 Your 8 files and their census errors:
 
