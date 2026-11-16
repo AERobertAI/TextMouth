@@ -152,13 +152,13 @@ final class MarkdownDepthLimitTests: XCTestCase {
     }
 
     /// The second layer refuses what the first cannot see: a limit on the
-    /// tree set below the count refuses a text the count passes, and the
+    /// tree set below the count (five levels, which "> > words" fills) refuses a text the count passes, and the
     /// sentence's number is the count's.
     func testTheSecondLayerRefusesWhatTheCountPasses() {
         var limits = standard
         limits.deepestTree = 5
         XCTAssertTrue(readOutcome("> words", limits: limits).readIt)
-        let refused = readOutcome("> > words", limits: limits)
+        let refused = readOutcome("> > > words", limits: limits)
         XCTAssertFalse(refused.readIt)
         XCTAssertEqual(refused.refusal, .nestedTooDeeply(limit: nestingLimit))
     }

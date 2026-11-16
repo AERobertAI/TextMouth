@@ -122,7 +122,7 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
         shallowTree.deepestTree = 5
         MarkupGuard.$limits.withValue(shallowTree) {
             XCTAssertNil(refusal(of: "> words"))
-            XCTAssertEqual(refusal(of: "> > words"), tooDeep())
+            XCTAssertEqual(refusal(of: "> > > words"), tooDeep())
         }
     }
 
