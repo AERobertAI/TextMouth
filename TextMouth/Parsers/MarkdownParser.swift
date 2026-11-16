@@ -329,10 +329,11 @@ private struct PlainTextExtractor {
     /// That rule is not simply "the last two bytes are line feeds": it
     /// compares whole Characters, and a carriage return with the line feed
     /// after it is one Character, which is not a line feed. So a blank line
-    /// right after a carriage return (code whose last line ends with one, or
-    /// `&#13;`) does not count, and another blank line follows it. The rule
-    /// is kept as it was, so every book reads as it did (400,000 generated
-    /// texts read by both walks found it, November 15, 2026).
+    /// right after a carriage return does not count, and another blank line
+    /// follows it. Only the entity `&#13;` puts a carriage return in the
+    /// text: cmark reads one that ends a line, in code too, as a line feed.
+    /// The rule is kept as it was, so every book reads as it did (400,000
+    /// generated texts read by both walks found it, November 15, 2026).
     private var endsWithBlankLine: Bool {
         let count = bytes.count
         guard count >= 2, bytes[count - 1] == Self.lineFeed, bytes[count - 2] == Self.lineFeed else { return false }
