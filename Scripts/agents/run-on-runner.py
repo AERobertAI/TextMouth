@@ -351,6 +351,9 @@ def write_results(request, out, output, passed, seconds, left_out=0):
              f"- Runner: macOS {platform.mac_ver()[0]}, {platform.machine()}",
              f"- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)",
              f"- Failures and errors: {len(failed)}", *[f"  - {line}" for line in failed[:40]]]
+    # Tests that passed on a later try (test_tries.py): no failure, but listed so that they stay visible.
+    retried = [l.strip() for l in output.splitlines() if l.strip().startswith("RETRIED ")]
+    lines += [f"- Passed on a later try: {len(retried)}", *[f"  - {line}" for line in retried[:40]]]
     # Why a run with no failed test failed (a host that restarted, a time limit, a Swift warning the gate allows none of),
     # on the run's page and in the job's log, where the next reader looks first.
     lines += [f"- Reason: {line.strip()[len('FAILED:'):].strip()}" for line in output.splitlines()

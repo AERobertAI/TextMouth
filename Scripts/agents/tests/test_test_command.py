@@ -22,21 +22,30 @@ OLD_SUITE_COMMAND = ["xcodebuild", "test", "-project", "TextMouth.xcodeproj", "-
                      "-destination", "platform=macOS", "-parallel-testing-enabled", "NO",
                      "CODE_SIGNING_ALLOWED=NO", "SWIFT_STRICT_CONCURRENCY=complete",
                      "-derivedDataPath", "build/DerivedData"]
+# What a failing test is given since November 15, 2026: up to three tries in all, Xcode's own retry.
+RETRY_WORDS = ["-retry-tests-on-failure", "-test-iterations", "3"]
+RETRY_ARGUMENTS_AS_RUN_AREA_TAKES_THEM = ["--xcodebuild-arg=-retry-tests-on-failure",
+                                          "--xcodebuild-arg=-test-iterations", "--xcodebuild-arg=3"]
 
 
 class FullSuiteCommandTests(unittest.TestCase):
     """The orchestrator's full suite."""
 
     def test_the_command_is_what_run_suite_ran_before(self):
-        self.assertEqual(test_command.full_suite_command("build/DerivedData"), OLD_SUITE_COMMAND)
+        self.assertEqual(test_command.full_suite_command("build/DerivedData"), [*OLD_SUITE_COMMAND, *RETRY_WORDS])
 
     def test_run_suite_takes_its_command_from_here(self):
-        self.assertEqual(run_suite.COMMAND, OLD_SUITE_COMMAND)
+        self.assertEqual(run_suite.COMMAND, [*OLD_SUITE_COMMAND, *RETRY_WORDS])
+
+    def test_a_failing_test_is_tried_up_to_three_times_in_all(self):
+        command = test_command.full_suite_command("/d")
+        self.assertIn("-retry-tests-on-failure", command)
+        self.assertEqual(command[command.index("-test-iterations") + 1], "3")
 
     def test_a_result_bundle_is_added_at_the_end_when_asked_for(self):
         command = test_command.full_suite_command("/d", "/r/result.xcresult")
         self.assertEqual(command[-2:], ["-resultBundlePath", "/r/result.xcresult"])
-        self.assertEqual(command[:-2], [*OLD_SUITE_COMMAND[:-1], "/d"])
+        self.assertEqual(command[:-2], [*OLD_SUITE_COMMAND[:-1], "/d", *RETRY_WORDS])
 
     def test_the_suite_signs_nothing_and_does_not_run_in_parallel(self):
         command = test_command.full_suite_command("/d")
@@ -51,7 +60,8 @@ class AreaCommandTests(unittest.TestCase):
         self.assertEqual(
             test_command.area_command(["feeds", "logs"], ["FooTests", "BarTests"], "/d", "/l"),
             ["python3", "-I", "Scripts/test/run-area.py", "feeds", "logs", "--classes", "FooTests,BarTests",
-             "--jobs", "2", "--no-slot", "--derived-data", "/d", "--log", "/l"])
+             "--jobs", "2", "--no-slot", "--derived-data", "/d", "--log", "/l",
+             *RETRY_ARGUMENTS_AS_RUN_AREA_TAKES_THEM])
 
     def test_all_stands_for_everything_and_drops_the_classes(self):
         command = test_command.area_command(["feeds", "all"], ["FooTests"], "/d", "/l")
@@ -70,6 +80,7 @@ class AreaCommandTests(unittest.TestCase):
     def test_extra_xcodebuild_arguments_are_passed_with_an_equals_sign(self):
         command = test_command.area_command(["feeds"], [], "/d", "/l", extra=["-test-timeouts-enabled", "YES"])
         self.assertEqual(command[-2:], ["--xcodebuild-arg=-test-timeouts-enabled", "--xcodebuild-arg=YES"])
+        self.assertEqual(command[-5:-2], RETRY_ARGUMENTS_AS_RUN_AREA_TAKES_THEM)
 
     def test_extra_arguments_reach_the_full_suite_before_its_result_bundle(self):
         command = test_command.full_suite_command("/d", "/r.xcresult", extra=["-test-timeouts-enabled", "YES"])
@@ -100,7 +111,7 @@ class TrainRunsTheSharedCommandTests(unittest.TestCase):
             self.assertEqual(seen["command"],
                              ["python3", "-I", "Scripts/test/run-area.py", "feeds", "--classes", "FooTests",
                               "--jobs", "2", "--no-slot", "--derived-data", "/derived",
-                              "--log", str(train_dir / "run.log")])
+                              "--log", str(train_dir / "run.log"), *RETRY_ARGUMENTS_AS_RUN_AREA_TAKES_THEM])
             self.assertIn("PASSED", output)
             self.assertEqual((train_dir / "run-summary.txt").read_text(), output)
 

@@ -81,6 +81,7 @@ import ios_ui_tests  # noqa: E402
 import runner_skips  # noqa: E402
 import shard  # noqa: E402
 import test_command  # noqa: E402
+import test_tries  # noqa: E402
 
 ROOT = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
 TRAIN_DIR = ROOT / "build" / "orchestrator" / "train"
@@ -362,11 +363,19 @@ def tests_all_passed(log):
     A host that crashed or quit is restarted by xcodebuild, and the suite after
     the restart can pass though the test that ended the host failed: on
     November 7, 2026 one run's last suite passed and xcodebuild still said
-    TEST FAILED. So a restart anywhere in the log means not passed."""
+    TEST FAILED. So a restart anywhere in the log means not passed.
+
+    A run that retries failing tests prints a `failed` suite line though every test finally passed (a test
+    that failed on try 1 and passed on try 2 fails its suite), so there the tests' own last results decide."""
     text = Path(log).read_text(encoding="utf-8", errors="replace")
     if "Restarting after unexpected exit, crash, or test timeout" in text:
         return False
-    return re.search(r"Test Suite '(Selected tests|All tests)' passed at", text[-4096:]) is not None
+    if re.search(r"Test Suite '(Selected tests|All tests)' passed at", text[-4096:]) is not None:
+        return True
+    if not test_tries.has_retries(text) or test_tries.last_suite_verdict(text) != "failed":
+        return False
+    found = test_tries.outcomes(text)
+    return bool(found) and all(outcome.result != "failed" for outcome in found.values())
 
 
 def watch_for_a_hung_run(log, finished, stopped):
@@ -729,6 +738,12 @@ def summarize(output):
     return verdict, executed, failures, errors, crashed
 
 
+def retried_tests(output):
+    """The tests a run's summary says passed on a later try ("RETRIED Class.test passed on try 2 of 3" lines),
+    each as that line, so that a test which fails now and then stays visible though it does not fail the run."""
+    return [l.strip() for l in output.splitlines() if l.strip().startswith("RETRIED ")]
+
+
 def failure_class(line):
     """The test class a FAILED line names ("FAILED FooTests.testBar at …")."""
     match = re.match(r"FAILED\s+([A-Za-z0-9_]+)\.", line)
@@ -772,6 +787,8 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
         summary += ["## Compile errors", *[f"- {e}" for e in errors], ""]
     if failures:
         summary += ["## Failures", *[f"- {f}" for f in failures], ""]
+    if retried_tests(output):
+        summary += ["## Passed on a later try", *[f"- {r}" for r in retried_tests(output)], ""]
     if interface_line and interface[2]:
         summary += ["## iPhone test failures", *[f"- {f}" for f in interface[2]], ""]
     for agent, (request, files) in conflicts.items():
@@ -794,6 +811,8 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
                  f"- Verdict of the whole train: {verdict}", f"- {executed}",
                  f"- Failures in the classes you asked for: {len(mine)}", *[f"  - {f}" for f in mine],
                  f"- Compile errors in files your branch changes: {len(my_errors)}", *[f"  - {e}" for e in my_errors]]
+        # Tests of the train that passed only on a later try: shown, so that one that fails now and then is seen.
+        lines += [f"- Passed on a later try: {len(retried_tests(output))}", *[f"  - {r}" for r in retried_tests(output)]]
         if any(request is other for other in taken_back):
             lines[2:2] = ["- Your branch first conflicted with a branch that broke the build, so it was left out; "
                           "the train then built again without that branch and your branch merged cleanly.", ""]

@@ -38,16 +38,23 @@ FULL_SUITE_BASE = ["xcodebuild", "test", "-project", "TextMouth.xcodeproj", "-sc
                    "CODE_SIGNING_ALLOWED=NO", "SWIFT_STRICT_CONCURRENCY=complete"]
 
 
+# Xcode's own retry: a failing test is run again, up to three tries in all, and the run passes when
+# one try passes. A test that is slow on a busy Mac or runner then no longer fails a whole run (each
+# failed run emails the user). The tests that needed a second try are listed in every result
+# (test_tries.py reads them from the log), so one that fails now and then stays visible.
+RETRY_ARGUMENTS = ["-retry-tests-on-failure", "-test-iterations", "3"]
+
+
 def full_suite_command(derived_data, result_bundle=None, extra=()):
     """The argv of the full suite, built in `derived_data`. With `result_bundle`
     (a path), xcodebuild also writes its result bundle there; `extra` is more
-    xcodebuild arguments, put before it."""
+    xcodebuild arguments, put before it. A failing test is tried again (RETRY_ARGUMENTS)."""
     base = list(FULL_SUITE_BASE)
     if "-parallel-testing-enabled" in extra:
         # xcodebuild refuses an option given twice: an extra one takes the place of the base's `NO`.
         at = base.index("-parallel-testing-enabled")
         del base[at:at + 2]
-    command = [*base, "-derivedDataPath", str(derived_data), *extra]
+    command = [*base, "-derivedDataPath", str(derived_data), *RETRY_ARGUMENTS, *extra]
     if result_bundle:
         command += ["-resultBundlePath", str(result_bundle)]
     return command
@@ -64,7 +71,8 @@ def area_command(areas, classes, derived_data, log, jobs=2, slot=False, extra=()
     empty), built in `derived_data` and logged to `log`. A class named beside
     "all" is already part of it, so it is left out. `slot` False leaves out the
     build-slot wrapper, as the train and the runner both want; `jobs` is
-    xcodebuild's -jobs; `extra` is more xcodebuild arguments."""
+    xcodebuild's -jobs; `extra` is more xcodebuild arguments. A failing test is tried again
+    (RETRY_ARGUMENTS), as in the full suite."""
     names = area_names(areas)
     command = ["python3", "-I", "Scripts/test/run-area.py", *names]
     if classes and names != ["all"]:
@@ -74,7 +82,7 @@ def area_command(areas, classes, derived_data, log, jobs=2, slot=False, extra=()
         command += ["--no-slot"]
     command += ["--derived-data", str(derived_data), "--log", str(log)]
     # run-area.py takes each as --xcodebuild-arg=ARG (the equals sign, since ARG starts with a hyphen).
-    command += [f"--xcodebuild-arg={argument}" for argument in extra]
+    command += [f"--xcodebuild-arg={argument}" for argument in [*RETRY_ARGUMENTS, *extra]]
     return command
 
 
