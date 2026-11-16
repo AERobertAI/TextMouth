@@ -706,6 +706,12 @@ final class TextSubstitutionService: ObservableObject {
     /// since is taken up instead, and nothing is written over its rules
     /// (`readFileThatArrived()`); otherwise this save is the first to write
     /// the file.
+    ///
+    /// A save made while a data-directory move copies the library is
+    /// provisional (`StorageBoundary.isProvisionalSave(of:rewrite:)`): it
+    /// writes the file where the move copies from, which the copy may have
+    /// passed, so it does not settle an earlier failure, and the move saves
+    /// the rules again once it has ended, in the moved library.
     func saveRules() {
         if readFileThatArrived() {
             return
@@ -714,6 +720,9 @@ final class TextSubstitutionService: ObservableObject {
             saveWhileFileInCloud()
             return
         }
+        let isProvisional = StorageBoundary.shared.isProvisionalSave(of: TextMouthPaths.substitutionsFile.lastPathComponent) { [weak self] in
+            self?.saveRules()
+        }
         do {
             try TextMouthPaths.ensureDirectoryStructure()
             let encoder = JSONEncoder()
@@ -721,7 +730,9 @@ final class TextSubstitutionService: ObservableObject {
             let data = try encoder.encode(rules)
             try data.write(to: TextMouthPaths.substitutionsFile, options: .atomic)
             rulesStandInForMissingFile = false
-            PersistenceFailureCenter.shared.recordSuccess(.substitutions)
+            if !isProvisional {
+                PersistenceFailureCenter.shared.recordSuccess(.substitutions)
+            }
         } catch {
             print("Failed to save substitutions: \(error)")
             PersistenceFailureCenter.shared.recordFailure(
