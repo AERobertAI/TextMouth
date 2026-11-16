@@ -357,7 +357,7 @@ final class BookTextEditTests: XCTestCase {
         try Self.editedChapters.write(to: cache, atomically: true, encoding: .utf8)
         editor.editor.appBecameActive()
         let opened = await eventually(timeout: 10) {
-            (try? ReaderViewModel.readContent(of: book, readingTexts: nil))?.chapters[safe: 1]?.text.contains("A pilot boat waits") == true
+            (try? ReaderViewModel.readContent(of: book, readingTexts: nil))?.content.chapters[safe: 1]?.text.contains("A pilot boat waits") == true
         }
         XCTAssertTrue(opened, "the book did not open once the edit was taken")
     }
