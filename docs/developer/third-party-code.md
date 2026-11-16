@@ -4,13 +4,12 @@
 Part of [TextMouth's documentation](../../README.md).
 
 TextMouth itself is under the MIT License, in LICENSE at the top of the repository.
-It builds in three libraries by other authors (LAME, liblouis, and SwiftSoup), follows a fourth author's code closely in its Kindle reader, and uses two Swift packages (the second with the swift-cmark it builds on).
-The licence files of all seven ship inside the Mac app, in Contents/Resources/Licenses, one folder for each:
+It builds in three libraries by other authors (LAME, liblouis, and SwiftSoup), follows a fourth author's code closely in its Kindle reader, and uses two Swift packages, ZIPFoundation and swift-cmark.
+The licence files of all six ship inside the Mac app, in Contents/Resources/Licenses, one folder for each:
 - Licenses/LAME holds COPYING and LICENSE;
 - Licenses/liblouis holds COPYING.LESSER and README;
 - Licenses/foliate-js and Licenses/SwiftSoup hold LICENSE;
 - Licenses/ZIPFoundation holds LICENSE;
-- Licenses/swift-markdown holds LICENSE and NOTICE;
 - Licenses/swift-cmark holds COPYING.
 
 The iPhone app ships the same folders except liblouis, whose braille translator it does not link.
@@ -81,9 +80,10 @@ MOBIHeaders.swift and MOBIPalmDatabase.swift take only the header fields' offset
 - The licence asks that its notice go with every copy of the code or of a substantial part of it, which the app carries in Licenses/foliate-js (above).
 
 ## The Swift packages
-<!-- id: swift-packages; keys: ZIPFoundation, swift-markdown, swift-cmark, Package.resolved, exact version; src: project.yml, Vendor/package-licenses/swift-markdown/NOTICE, Vendor/package-licenses/swift-cmark/COPYING -->
+<!-- id: swift-packages; keys: ZIPFoundation, swift-cmark, MarkdownTree, Package.resolved, exact version; src: project.yml, Vendor/package-licenses/swift-cmark/COPYING, TextMouth/Parsers/MarkdownTree.swift -->
 
-The Swift packages ZIPFoundation and swift-markdown, with the swift-cmark it builds on, each under its own licence, which both apps carry (from Vendor/package-licenses, above).
+The Swift packages ZIPFoundation and swift-cmark, each under its own licence, which both apps carry (from Vendor/package-licenses, above).
+TextMouth reads Markdown through cmark-gfm directly (MarkdownTree), with no swift-markdown in either app.
 [The make check gate](building.md) says how their versions are pinned.
 
 ## SwiftSoup, the HTML and XML parser
