@@ -137,11 +137,12 @@ struct AudioFileInfo: Equatable, Sendable {
     }
 
     /// `xml` with every byte sequence that is not UTF-8 replaced by U+FFFD,
-    /// every ASCII byte kept. afinfo prints the path it was given twice: as
-    /// UTF-8 in `file_name`, and again in its `filename` item, where a
-    /// letter outside ASCII ("é", in a book's folder named by its title)
-    /// comes out as bytes that are not UTF-8 at all; XMLParser then refuses
-    /// the whole answer. Neither element is read, and the markup is ASCII,
+    /// every ASCII byte kept. afinfo prints the path it was given as UTF-8
+    /// in `file_name`, and again in the `filename` entry of each alert (a
+    /// property it could not read, such as a mono file's channel layout),
+    /// where a letter outside ASCII ("é", in a book's folder named by its
+    /// title) comes out as bytes that are not UTF-8 at all; XMLParser then
+    /// refuses the whole answer. No alert is read, and the markup is ASCII,
     /// so the repair changes no fact.
     private static func validUTF8(_ xml: Data) -> Data {
         // Valid UTF-8, the common case, is passed on as it came.
