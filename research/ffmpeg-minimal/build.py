@@ -8,7 +8,8 @@ how the page's numbers were made.
 Usage, from the repository (every build under the Mac's heavy-work lock):
 
     python3 -I Scripts/agents/run_locked.py ffmpeglib \
-        python3 -I -B research/ffmpeg-minimal/build.py all --source SRC --work WORK
+        python3 -I -B research/ffmpeg-minimal/build.py all --source SRC --work WORK [--only macos-a-small,...]
+    python3 -I -B research/ffmpeg-minimal/build.py finish --source SRC --work WORK
 
     python3 -I -B research/ffmpeg-minimal/build.py build --set a --platform macos --variant small --source SRC --work WORK
     python3 -I -B research/ffmpeg-minimal/build.py measure --set a --platform macos --variant small --work WORK
@@ -22,6 +23,9 @@ and WORK a scratch folder that holds the builds, the harnesses, the copies of
 the test samples, and each step's JSON record.
 
 What each step does:
+- all: build, measure, and (on the Mac) decode, for every build of
+  ALL_BUILDS or those --only names; the only heavy step, for the lock.
+- finish: tree on each platform and xcframework, for the parity set; light.
 - build: runs FFmpeg's configure with the set's components, then make and make
   install, timing each and counting the files compiled (WORK/builds/NAME).
 - measure: compiles harness.c twice, without FFmpeg and with it, links each
@@ -479,38 +483,50 @@ def macho_layout(path):
     return layout
 
 
+# The sections whose bytes take memory but no bytes of the file.
+ZEROFILL_SECTIONS = {"__bss", "__common", "__thread_bss"}
+
+
 def link_map_by_object(map_path):
     """The bytes each object file keeps in the linked program, from the
     linker's map (-map): every live symbol's size, summed by the file it came
-    from. Files are named "libavcodec.a(wmadec.o)", or by their own name."""
+    from, apart for the bytes in the file ("file") and those of zero-fill
+    sections, which take memory only ("zerofill"). Files are named
+    "libavcodec.a(wmadec.o)", or by their own name. Sorted by file bytes."""
     text = Path(map_path).read_text(encoding="utf-8", errors="replace")
-    files = {}
-    totals = {}
-    section = None
+    files, sections, totals = {}, [], {}
+    part = None
     for line in text.splitlines():
         if line.startswith("# Object files:"):
-            section = "objects"
+            part = "objects"
             continue
         if line.startswith("# Sections:"):
-            section = "sections"
+            part = "sections"
             continue
         if line.startswith("# Symbols:"):
-            section = "symbols"
+            part = "symbols"
             continue
         if line.startswith("# Dead Stripped Symbols:"):
             break
-        if section == "objects":
+        if part == "objects":
             match = re.match(r"^\[\s*(\d+)\]\s+(.*)$", line)
             if match:
                 path = match.group(2).strip()
                 member = re.search(r"/(lib\w+\.a)(?:\[\d+\])?\((.+)\)$", path)
                 files[int(match.group(1))] = f"{member.group(1)}({member.group(2)})" if member else Path(path).name
-        elif section == "symbols":
-            match = re.match(r"^0x[0-9A-Fa-f]+\s+0x([0-9A-Fa-f]+)\s+\[\s*(\d+)\]\s", line)
+        elif part == "sections":
+            match = re.match(r"^0x([0-9A-Fa-f]+)\s+0x([0-9A-Fa-f]+)\s+(\S+)\s+(\S+)\s*$", line)
             if match:
-                name = files.get(int(match.group(2)), "?")
-                totals[name] = totals.get(name, 0) + int(match.group(1), 16)
-    return dict(sorted(totals.items(), key=lambda item: -item[1]))
+                start, size = int(match.group(1), 16), int(match.group(2), 16)
+                sections.append((start, start + size, match.group(4) in ZEROFILL_SECTIONS))
+        elif part == "symbols":
+            match = re.match(r"^0x([0-9A-Fa-f]+)\s+0x([0-9A-Fa-f]+)\s+\[\s*(\d+)\]\s", line)
+            if match:
+                address, size = int(match.group(1), 16), int(match.group(2), 16)
+                zerofill = any(start <= address < end and empty for start, end, empty in sections)
+                entry = totals.setdefault(files.get(int(match.group(3)), "?"), {"file": 0, "zerofill": 0})
+                entry["zerofill" if zerofill else "file"] += size
+    return dict(sorted(totals.items(), key=lambda item: -item[1]["file"]))
 
 
 def imported_symbols(binary):
@@ -595,9 +611,11 @@ def measure(set_name, platform, variant, work):
         },
         "whole_libraries_need": whole_library_needs,
     }
-    for name, size in by_object.items():
-        library = name.split("(")[0] if "(" in name else "the harness and the linker"
-        record["linked_bytes_by_library"][library] = record["linked_bytes_by_library"].get(library, 0) + size
+    for name, sizes in by_object.items():
+        library = name.split("(")[0] if "(" in name else "the harness, the system, and the linker"
+        totals = record["linked_bytes_by_library"].setdefault(library, {"file": 0, "zerofill": 0})
+        totals["file"] += sizes["file"]
+        totals["zerofill"] += sizes["zerofill"]
     write_json(folder / "measure.json", record)
     print(f"measure: {folder.name}: adds {record['added_file_bytes']:,} bytes", flush=True)
     return record
@@ -792,11 +810,15 @@ def xcframework(set_name, variant, work):
 # all, and report
 # ---------------------------------------------------------------------------
 
-def run_all(source, work):
-    """Every build of ALL_BUILDS, each measured; the decode of each Mac build;
-    the trimmed tree of the parity set on each platform; and its XCFramework.
-    A step that fails is recorded and the rest go on."""
+def run_all(source, work, only=None):
+    """Every build of ALL_BUILDS (or those `only` names, such as
+    "macos-a-small"), each measured, and the decode of each Mac build. A step
+    that fails is recorded and the rest go on. The builds are the heavy part,
+    run under the heavy-work lock; `only` lets them go in several runs, so
+    the lock is never held long."""
     for set_name, platform, variant in ALL_BUILDS:
+        if only and build_name(set_name, platform, variant) not in only:
+            continue
         try:
             if build(set_name, platform, variant, source, work).get("error"):
                 continue
@@ -805,15 +827,21 @@ def run_all(source, work):
                 decode(set_name, variant, work)
         except Exception as error:  # noqa: BLE001 - one build's failure must not stop the rest
             print(f"all: {build_name(set_name, platform, variant)}: {error}", flush=True)
+
+
+def finish(source, work):
+    """The light steps after the builds: the trimmed tree of the parity set on
+    each platform, and its XCFramework. Each failure is recorded and the rest
+    go on."""
     for platform in ("macos", "ios", "iossim"):
         try:
             tree("a", platform, "small", source, work)
-        except Exception as error:  # noqa: BLE001
-            print(f"all: tree {platform}: {error}", flush=True)
+        except Exception as error:  # noqa: BLE001 - one step's failure must not stop the rest
+            print(f"finish: tree {platform}: {error}", flush=True)
     try:
         xcframework("a", "small", work)
     except Exception as error:  # noqa: BLE001
-        print(f"all: xcframework: {error}", flush=True)
+        print(f"finish: xcframework: {error}", flush=True)
 
 
 def report(work):
@@ -843,19 +871,22 @@ def report(work):
 def main():
     """Reads the command line and runs one step."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("step", choices=["all", "build", "measure", "decode", "tree", "xcframework", "report"])
+    parser.add_argument("step", choices=["all", "finish", "build", "measure", "decode", "tree", "xcframework", "report"])
     parser.add_argument("--set", dest="set_name", choices=sorted(SETS), default="a")
     parser.add_argument("--platform", choices=sorted(PLATFORMS), default="macos")
     parser.add_argument("--variant", choices=sorted(VARIANTS), default="small")
+    parser.add_argument("--only", help="for all: the builds to make, by name, separated by commas (macos-a-small,...)")
     parser.add_argument("--source", help="the unpacked FFmpeg release")
     parser.add_argument("--work", required=True, help="the scratch folder")
     options = parser.parse_args()
     work = Path(options.work).resolve()
     work.mkdir(parents=True, exist_ok=True)
-    if options.step in ("all", "build", "tree") and not options.source:
+    if options.step in ("all", "finish", "build", "tree") and not options.source:
         parser.error(f"{options.step} needs --source")
     if options.step == "all":
-        run_all(Path(options.source).resolve(), work)
+        run_all(Path(options.source).resolve(), work, set(options.only.split(",")) if options.only else None)
+    elif options.step == "finish":
+        finish(Path(options.source).resolve(), work)
     elif options.step == "build":
         build(options.set_name, options.platform, options.variant, Path(options.source).resolve(), work)
     elif options.step == "measure":
@@ -866,7 +897,8 @@ def main():
         tree(options.set_name, options.platform, options.variant, options.source, work)
     elif options.step == "xcframework":
         xcframework(options.set_name, options.variant, work)
-    report(work) if options.step in ("all", "report") else None
+    if options.step in ("all", "finish", "report"):
+        report(work)
     return 0
 
 
