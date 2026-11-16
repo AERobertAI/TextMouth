@@ -595,7 +595,23 @@ final class PersistenceFailureCenter: ObservableObject {
             "PERSISTENCE_WITHDRAWN: \(withdrawn.subject.logName) no longer needs to be "
                 + withdrawn.subsystem.outcomeWord
         )
+        forgetKeptRetry(for: key)
         schedulePublish()
+    }
+
+    /// Forgets a retry kept for the failure of `key` until storage work is
+    /// free, once that failure is withdrawn: nothing is left to save, so
+    /// nothing is said of it when the operation ends. On the main actor at
+    /// once, or soon from any other thread.
+    nonisolated private func forgetKeptRetry(for key: PersistenceFailure.Key) {
+        let forget: @MainActor @Sendable () -> Void = { [self] in
+            retriesKeptForStorageWork[key] = nil
+        }
+        if Thread.isMainThread {
+            MainActor.assumeIsolated(forget)
+        } else {
+            DispatchQueue.main.async { MainActor.assumeIsolated(forget) }
+        }
     }
 
     // MARK: Questions, from any thread

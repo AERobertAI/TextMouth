@@ -355,6 +355,28 @@ final class PersistenceFailureCenterTests: XCTestCase {
         XCTAssertTrue(center.outstandingFailures().isEmpty)
     }
 
+    /// A kept retry whose failure is withdrawn, as a book that leaves the
+    /// library withdraws its record's, runs nothing when the operation
+    /// ends, and VoiceOver is not told it was saved: nothing was. It used to
+    /// hear "Listening statistics saved."
+    func testAWithdrawnFailuresKeptRetryIsNotHeardAsSaved() throws {
+        let (center, boundary) = try centerOverItsOwnBoundary()
+        let attempts = CallLog<PersistenceFailure.ID>()
+        center.recordFailure(.statistics, path: "/data/reading_stats.json", error: WriteRefused(), waitsForStorageWork: true) { id in
+            attempts.record(id)
+        }
+        let hold = try boundary.holdWork(for: .movingDataDirectory)
+        defer { hold.release() }
+        recordingAnnouncements { center.retry(.statistics) }
+
+        center.withdraw(.statistics)
+        hold.release()
+        let heard = recordingAnnouncements { center.runRetriesKeptForStorageWork() }
+
+        XCTAssertEqual(attempts.calls, [], "the withdrawn failure's retry ran")
+        XCTAssertEqual(heard.announcements.map(\.message), [], "VoiceOver was told a withdrawn change was saved")
+    }
+
     /// What a kept retry's row says, for each operation that can hold the
     /// storage work and each thing a retry does: when it runs, or, for a
     /// switch of libraries, which ends with TextMouth opening again
