@@ -86,8 +86,13 @@ final class UnsavedChangesTerminationGuard {
     /// Asks AppKit to quit again.
     private let requestTermination: @MainActor () -> Void
 
-    /// Set by Quit Anyway for the one request it makes.
-    private var userChoseQuitAnyway = false
+    /// Set by Quit Anyway for the one request it makes: the keys of the
+    /// unsaved failures its prompt listed, the changes the person chose to
+    /// quit without. A failure of another key reported since, such as a feed
+    /// change a quit's wait for its records gave up on, is asked about once
+    /// more. Keys, not failure IDs: a failure that recurs while a disk is
+    /// away is reported again under a new ID for the same file.
+    private var quitAnywayCovers: Set<PersistenceFailure.Key>?
     /// Whether the prompt is on its way or showing.
     private var isPrompting = false
 
@@ -133,24 +138,29 @@ final class UnsavedChangesTerminationGuard {
     /// may hold the quit for work to finish, answering `.terminateCancel`
     /// (and asking to quit again itself later) or `.terminateLater`. A cancel
     /// keeps Quit Anyway for the request that follows, which must not ask
-    /// about the unsaved changes again.
+    /// about the changes it covers again; a change reported meanwhile that
+    /// its prompt did not list is asked about (`quitAnywayCovers`).
     func reply(
         whenQuitting answer: @MainActor () -> NSApplication.TerminateReply = { .terminateNow }
     ) -> NSApplication.TerminateReply {
         guard !isPrompting else { return .terminateCancel }
         flush()
+        let unsaved = failureCenter.unsavedFailures()
+        let coveredByQuitAnyway = quitAnywayCovers.map { covered in
+            unsaved.allSatisfy { covered.contains($0.key) }
+        } ?? false
         let decision = TerminationDecision.decide(
-            hasUnsavedChanges: failureCenter.hasUnsavedChanges,
-            userChoseQuitAnyway: userChoseQuitAnyway
+            hasUnsavedChanges: !unsaved.isEmpty,
+            userChoseQuitAnyway: coveredByQuitAnyway
         )
         // Quit Anyway answers one request: the one it makes.
-        let choseQuitAnyway = userChoseQuitAnyway
-        userChoseQuitAnyway = false
+        let keptQuitAnyway = quitAnywayCovers
+        quitAnywayCovers = nil
         switch decision {
         case .terminate:
             let reply = answer()
             if reply == .terminateCancel {
-                userChoseQuitAnyway = choseQuitAnyway
+                quitAnywayCovers = keptQuitAnyway
             }
             return reply
         case .cancelAndPrompt:
@@ -168,7 +178,7 @@ final class UnsavedChangesTerminationGuard {
     /// (a take, an editor's edits, or a library move began meanwhile): the
     /// choice belonged to that quit, and a later one must ask again.
     func forgetQuitAnyway() {
-        userChoseQuitAnyway = false
+        quitAnywayCovers = nil
     }
 
     /// Shows the prompt and carries out the choice. Changes saved since the
@@ -186,7 +196,7 @@ final class UnsavedChangesTerminationGuard {
             failureCenter.retryUnsavedChanges()
             requestTermination()
         case .quitAnyway:
-            userChoseQuitAnyway = true
+            quitAnywayCovers = Set(unsaved.map(\.key))
             requestTermination()
         case .cancel:
             break

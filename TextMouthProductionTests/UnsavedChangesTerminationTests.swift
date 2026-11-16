@@ -65,6 +65,33 @@ final class UnsavedChangesTerminationTests: XCTestCase {
         XCTAssertEqual(harness.terminationGuard.reply(), .terminateCancel, "Quit Anyway answered only that request")
     }
 
+    /// Quit Anyway answers only the changes its prompt listed. A change of
+    /// another file reported before the request it makes goes ahead, as a
+    /// feed change that a quit's wait for its records gave up on is, is
+    /// asked about once more, and Quit Anyway chosen again covers both; a
+    /// change it listed, reported again as a failure that recurs is, needs
+    /// no second answer. Quit Anyway used to quit without the new change.
+    func testQuitAnywayCoversOnlyTheChangesItsPromptListed() {
+        let center = self.center
+        center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused())
+        let harness = Harness(center: center, answer: .quitAnyway)
+        XCTAssertEqual(harness.terminationGuard.reply(), .terminateCancel)
+        XCTAssertTrue(waitUntil(timeout: 5) { harness.terminationRequests.calls.count == 1 })
+
+        // The request Quit Anyway made waits for work, which gives up on a
+        // feed change; the library index fails again meanwhile.
+        XCTAssertEqual(harness.terminationGuard.reply { .terminateCancel }, .terminateCancel)
+        center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused())
+        let feedID = UUID()
+        center.recordFailure(.feedRecord(feedID: feedID, title: "Tide Tables"), path: "/data/Feeds/t.json", error: WriteRefused())
+
+        XCTAssertEqual(harness.terminationGuard.reply(), .terminateCancel, "Quit Anyway quit without a change its prompt never listed")
+        XCTAssertTrue(waitUntil(timeout: 5) { harness.terminationRequests.calls.count == 2 })
+        XCTAssertEqual(harness.prompts.calls, [[.libraryIndex], [.libraryIndex, .feed(feedID)]])
+        center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused())
+        XCTAssertEqual(harness.terminationGuard.reply(), .terminateNow, "Quit Anyway, chosen again, did not cover both")
+    }
+
     /// Retry runs the unsaved writes again and asks to quit again; with
     /// them saved, that request quits.
     func testRetrySavesAndAsksToQuitAgain() {
