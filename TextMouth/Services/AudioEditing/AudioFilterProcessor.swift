@@ -118,13 +118,6 @@ extension AudioRenderSettings {
     /// 32-bit float PCM in a CAF file at `base`'s rate and channels: what a
     /// filter chain reads and writes, which loses nothing between filters.
     static func floatCAF(for base: AudioEditBase) -> AudioRenderSettings {
-        AudioRenderSettings(
-            format: .pcmCAF,
-            sampleRate: base.sampleRate,
-            channels: base.channelCount,
-            bitRate: nil,
-            bitsPerSample: 32,
-            isFloat: true
-        )
+        pcm(.pcmCAF, base, bits: 32, isFloat: true)
     }
 }

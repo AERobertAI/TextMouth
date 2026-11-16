@@ -183,7 +183,11 @@ struct AudioRenderSettings: Equatable, Sendable {
                 bitRate: Int(target.rounded()), bitsPerSample: 16, isFloat: false
             )
         case .alacM4A:
-            let depth = !isFloat && [16, 20, 24, 32].contains(bits) ? bits : (isFloat ? 24 : 16)
+            // The depth of the source, written as Apple Lossless writes it
+            // (20 bits as 24, which its writer makes a file the media check
+            // can decode); floats and depths it can't hold become 24 and 16.
+            let source = storedIntegerDepth(of: stored).map(OwnAudioConverter.writtenBitDepth(forAppleLossless:))
+            let depth = source.flatMap { [16, 24, 32].contains($0) ? $0 : nil } ?? (isFloat ? 24 : 16)
             return AudioRenderSettings(
                 format: format, sampleRate: base.sampleRate, channels: base.channelCount,
                 bitRate: nil, bitsPerSample: depth, isFloat: false
@@ -196,17 +200,71 @@ struct AudioRenderSettings: Equatable, Sendable {
             // AVAssetWriter writes WAVE and AIFF files of integers only (it
             // refuses floats there). Floats become 32-bit integers, which keep
             // them far more finely than any recording needs (steps of about
-            // -186 dB); compressed audio becomes 16-bit, as on a CD.
-            let keeps = isPCM && !isFloat && [8, 16, 24, 32].contains(bits)
-            return pcm(format, base, bits: keeps ? bits : (isFloat ? 32 : 16), isFloat: false)
+            // -186 dB); lossy audio becomes 16-bit, as on a CD. Integers keep
+            // their depth, a lossless file's too (Apple Lossless and FLAC
+            // books, whose depth is in their format flags): a depth
+            // AVFoundation refuses between two it takes goes up to the next,
+            // and a deeper one (64 bits) is a 32-bit integer.
+            let source = storedIntegerDepth(of: stored)
+            return pcm(format, base, bits: source.map { min($0, 32) } ?? (isPCM ? 32 : 16), isFloat: false)
         }
     }
 
-    /// PCM settings for `format` at `base`'s rate and channels.
-    private static func pcm(_ format: AudioRenderFormat, _ base: AudioEditBase, bits: Int, isFloat: Bool) -> AudioRenderSettings {
-        AudioRenderSettings(
+    /// The bits of each sample of the integer audio `stored` describes, as the
+    /// file holds it: a linear PCM file's, or a lossless file's (Apple Lossless
+    /// or FLAC), which reports 0 bits a channel for its compressed samples and
+    /// gives the depth of its source in its format flags instead (1 for 16
+    /// bits, 2 for 20, 3 for 24, 4 for 32, the values of
+    /// `kAppleLosslessFormatFlag_…`). Nil for floats and lossy audio.
+    static func storedIntegerDepth(of stored: AudioStreamBasicDescription) -> Int? {
+        let reported = Int(stored.mBitsPerChannel)
+        switch stored.mFormatID {
+        case kAudioFormatLinearPCM:
+            return stored.mFormatFlags & kAudioFormatFlagIsFloat == 0 && reported > 0 ? reported : nil
+        case kAudioFormatAppleLossless, kAudioFormatFLAC:
+            if reported > 0 { return reported }
+            switch stored.mFormatFlags {
+            case 1: return 16
+            case 2: return 20
+            case 3: return 24
+            case 4: return 32
+            default: return nil
+            }
+        default:
+            return nil
+        }
+    }
+
+    /// The depths of integer samples AVFoundation's readers and writers take
+    /// (the message of the exception it raises for any other:
+    /// "Bit depth can only be one of: 24, 16, 8, 32").
+    static let acceptedIntegerDepths = [8, 16, 24, 32]
+
+    /// The sample layout a render stores `bits`-bit samples in (floating
+    /// point or not), as far as AVFoundation takes it: integers of 8, 16, 24,
+    /// and 32 bits and 32-bit floats as they are; an integer depth between
+    /// those (12 or 20 bits) at the next one up, which holds every sample
+    /// exactly; and everything else, which the readers refuse by raising an
+    /// Objective-C exception (a 64-bit float, a 64-bit integer, a depth
+    /// not known), as 32-bit floats, which keep a deeper sample to 24 bits
+    /// of precision, finer than any recording's noise.
+    static func readableDepth(bits: Int, isFloat: Bool) -> (bits: Int, isFloat: Bool) {
+        if !isFloat, bits > 0, let accepted = acceptedIntegerDepths.first(where: { $0 >= bits }) {
+            return (accepted, false)
+        }
+        return (32, true)
+    }
+
+    /// PCM settings for `format` at `base`'s rate and channels, in the
+    /// layout of `bits` and `isFloat` where AVFoundation takes it
+    /// (`readableDepth(bits:isFloat:)`). Every PCM setting a render makes is
+    /// made here (the format's own in `make`, and a filter's floats in
+    /// `floatCAF`), so no reader or writer is given a depth it refuses.
+    static func pcm(_ format: AudioRenderFormat, _ base: AudioEditBase, bits: Int, isFloat: Bool) -> AudioRenderSettings {
+        let depth = readableDepth(bits: bits, isFloat: isFloat)
+        return AudioRenderSettings(
             format: format, sampleRate: base.sampleRate, channels: base.channelCount,
-            bitRate: nil, bitsPerSample: bits, isFloat: isFloat
+            bitRate: nil, bitsPerSample: depth.bits, isFloat: depth.isFloat
         )
     }
 
@@ -501,7 +559,13 @@ enum AudioEditRenderer {
         // as stored are read through the timeline's composition, whole
         // packets, never decoded.
         let pieces = try await AudioEditStretchSound.pieces(of: timeline, sources: sources)
-        let copied = settings == standard && canCopySamples(of: timeline, base: sources.base, into: format)
+        // Samples are copied only under the format's own settings, never under
+        // those a caller asked for (a filter's input, a copy's stretch, MP3's
+        // intermediate file): since depths AVFoundation refuses are stored
+        // as 32-bit floats, a caller's 32-bit floats can equal the standard
+        // settings of a 64-bit float book, whose samples would be copied
+        // at twice the size they ask for.
+        let copied = requested == nil && canCopySamples(of: timeline, base: sources.base, into: format)
         let composition: AudioEditComposition? = try copied ? AudioEditComposition.make(pieces, sampleRate: timeline.sampleRate) : nil
         try? FileManager.default.removeItem(at: destination)
 
@@ -690,9 +754,9 @@ enum AudioEditRenderer {
         let input: AVAssetWriterInput
         switch samples {
         case .stored(let format):
-            input = AVAssetWriterInput(mediaType: .audio, outputSettings: nil, sourceFormatHint: format)
+            input = try makingWithoutRaising { AVAssetWriterInput(mediaType: .audio, outputSettings: nil, sourceFormatHint: format) }
         case .decoded:
-            input = AVAssetWriterInput(mediaType: .audio, outputSettings: settings.outputSettings)
+            input = try makingWithoutRaising { AVAssetWriterInput(mediaType: .audio, outputSettings: settings.outputSettings) }
         }
         input.expectsMediaDataInRealTime = false
         guard writer.canAdd(input) else { throw AudioEditError.renderFailed("the writer refused the audio") }
@@ -1011,7 +1075,9 @@ enum AudioEditRenderer {
             throw failure(error)
         }
         reader.timeRange = range
-        let output = AVAssetReaderAudioMixOutput(audioTracks: [piece.track], audioSettings: settings.readerSettings)
+        let output = try makingWithoutRaising {
+            AVAssetReaderAudioMixOutput(audioTracks: [piece.track], audioSettings: settings.readerSettings)
+        }
         output.alwaysCopiesSampleData = false
         guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
         reader.add(output)
@@ -1100,6 +1166,19 @@ enum AudioEditRenderer {
             try await Task.sleep(for: .milliseconds(1))
         }
         guard input.append(sample) else { throw failure(writer.error) }
+    }
+
+    /// Makes what `make` creates through an AVFoundation initializer, which
+    /// raises an Objective-C exception, ending the app, for settings it
+    /// refuses (a sample depth it doesn't take). The render fails instead, as
+    /// any other refusal of the writer does.
+    /// - Throws: `AudioEditError.renderFailed`, naming the exception.
+    static func makingWithoutRaising<Value>(_ make: () -> Value) throws -> Value {
+        do {
+            return try ObjCException.making(make)
+        } catch let raised as ObjCException.Raised {
+            throw AudioEditError.renderFailed(raised.summary)
+        }
     }
 
     /// `error`, from AVFoundation, as a render failure naming its domain and

@@ -33,8 +33,9 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
     /// The edits wait to be rendered from an original that is gone; only
     /// undoing or redoing them back to the audio as last rendered helps.
     case originalNeeded
-    /// The audio could not be written, for the reason given: an
-    /// AVFoundation error's domain and code, for the debug log.
+    /// The audio could not be written, for the reason given, for the debug
+    /// log: an AVFoundation error's domain and code, or the name and reason
+    /// of the Objective-C exception it raised (`ObjCException.Raised.summary`).
     case renderFailed(String)
     /// MP3 was asked for, but neither the LAME built into TextMouth, which
     /// could not start, nor an installed ffmpeg it may use can write it.
