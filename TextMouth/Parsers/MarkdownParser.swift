@@ -351,6 +351,8 @@ private struct PlainTextExtractor {
     /// the body: a level of their own that held nothing else. The count of
     /// levels keeps that shape, so a tree at the limit is refused exactly
     /// where it was: the body is a level entered even with no row in it.
+    /// `MarkdownNode.levels(stopAbove:)` counts the same body level, for
+    /// the walks that do not count their own.
     private mutating func readTable(_ table: MarkdownNode) {
         separateBlock()
         var row = table.firstChild

@@ -117,13 +117,36 @@ final class MarkdownDepthLimitTests: XCTestCase {
         XCTAssertEqual(MarkdownTree.read(DeepMarkdown.quotes(8)) { $0.levels(stopAbove: 10) }, 11)
     }
 
-    /// Counting does not call itself: a tree tens of thousands of levels deep
-    /// is counted, on a thread of a large stack only to be safe in the
-    /// parse, which the count was never asked to do.
-    func testACountOfAVeryDeepTreeNeedsNoStack() throws {
-        let deep = DeepMarkdown.quotes(20_000)
-        let counted = try MarkupGuard.onLargeStack { MarkdownTree.read(deep) { $0.levels(stopAbove: .max) } }
-        XCTAssertEqual(counted, 20_000 + 3)
+    /// Counting does not call itself, nor does the parse or the freeing of the
+    /// tree around it: a tree 5,000 levels deep is parsed, counted, and freed
+    /// on an 8 MiB stack (`StackProbe`), and what was written of the stack is
+    /// measured. A count that called itself once for a level would write 5,000
+    /// frames, hundreds of KiB, and fail the assertion without overflowing.
+    func testACountOfADeepTreeNeedsNoStack() {
+        let deep = DeepMarkdown.quotes(5_000)
+        let probe = StackProbe.run { MarkdownTree.read(deep) { $0.levels(stopAbove: .max) } }
+        XCTAssertEqual(probe.value, 5_000 + 3)
+        XCTAssertLessThan(probe.bytesUsed, 128 * 1024, "the count, the parse, or the freeing used the stack for each level")
+    }
+
+    /// A text read inside a level of a tree (the rest of a marker line, inside
+    /// its HTML block) is counted on top of that level, without a level for
+    /// its own document: "> > words" is 5 levels, so inside level 4 it reaches
+    /// 8, the limit, and inside level 5 it reaches 9, past it.
+    func testATextReadInsideALevelIsCountedOnTopOfIt() {
+        var limits = standard
+        limits.deepestTree = 8
+        func refused(insideLevel level: Int) -> Bool {
+            do {
+                try MarkdownTree.read("> > words", within: limits, insideLevel: level) { _ in }
+                return false
+            } catch {
+                return true
+            }
+        }
+        XCTAssertFalse(refused(insideLevel: 1))
+        XCTAssertFalse(refused(insideLevel: 4))
+        XCTAssertTrue(refused(insideLevel: 5))
     }
 
     // MARK: - Reading within the limit

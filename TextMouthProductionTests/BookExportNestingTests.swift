@@ -69,8 +69,8 @@ final class BookExportNestingTests: XCTestCase {
 
     /// What the export says once it ends: the file named, the chapter named
     /// by its number, and what to do, as one sentence VoiceOver reads from the
-    /// summary; the chapter's title is in neither the summary nor the log line
-    /// of the failure.
+    /// summary; the chapter's title is not in the sentence, the only text the
+    /// failure's log line adds to the file's name.
     func testTheSummaryNamesTheFileTheChapterAndWhatToDo() throws {
         let world = try makeIntegrationWorld("Export Nested Summary")
         let book = try world.importBook(from: writeSource(named: "Deep Notes.md", "# Deep\n\nWords."))

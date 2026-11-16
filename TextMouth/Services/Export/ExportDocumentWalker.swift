@@ -377,7 +377,7 @@ private struct Walk {
             return hoisted + (converted.map { [.table($0)] } ?? [])
 
         case .htmlBlock:
-            return try blocks(ofHTML: block.literal, nesting: nesting, listDepth: listDepth)
+            return try blocks(ofHTML: block.literal, atLevel: block.level, nesting: nesting, listDepth: listDepth)
 
         case .document, .listItem, .other:
             // Any other container of blocks is walked for its children
@@ -397,14 +397,16 @@ private struct Walk {
     /// reader reads it, `MarkdownMarker.leading(of:)`): that is Markdown, and
     /// its blocks are walked, preceded by the places of the markers.
     ///
-    /// The rest is a text of its own, so it is held to the limit like one.
+    /// The rest is a text of its own, so it is held to the limit like one,
+    /// on top of the level the HTML block is at in its tree (`level`), as the
+    /// reader counts it, so that the two refuse the same texts.
     /// - Throws: `MarkupRefusal.nestedTooDeeply` when the rest nests past it.
-    private mutating func blocks(ofHTML rawHTML: String, nesting: Int, listDepth: Int) throws -> [ExportBlock] {
+    private mutating func blocks(ofHTML rawHTML: String, atLevel level: Int, nesting: Int, listDepth: Int) throws -> [ExportBlock] {
         if !isReadingRestOfMarkerLine, let (markers, rest) = MarkdownMarker.leading(of: rawHTML) {
             var made = markers.compactMap { place(of: $0) }.compactMap(Self.block(ofPlace:))
             isReadingRestOfMarkerLine = true
             defer { isReadingRestOfMarkerLine = false }
-            made += try MarkdownTree.read(String(rest), within: limits) { document in
+            made += try MarkdownTree.read(String(rest), within: limits, insideLevel: level) { document in
                 try blocks(in: document, nesting: nesting, listDepth: listDepth)
             }
             return made
