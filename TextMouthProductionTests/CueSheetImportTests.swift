@@ -394,6 +394,29 @@ final class CueSheetImportTests: XCTestCase {
         }
     }
 
+    /// A file only FFmpeg reads is measured by the FFmpeg helper the app
+    /// carries, which afinfo could not do, so a sheet over a WMA or Matroska
+    /// file is checked against its length rather than taken to fit (the
+    /// TODO's FU-FFMPEG item); a RealAudio file that says no length is left
+    /// unmeasured, for the parse to check after its conversion.
+    func testAFileOnlyFFmpegReadsIsMeasuredByItsHelper() throws {
+        let folder = try makeSandboxDirectory("cue-measure-ffmpeg")
+        let samples = ["wma/tones-wma1.wma": "tones-wma1.wma", "mkv/three-tones-flac.mkv": "three-tones-flac.mkv", "rm/tones.ra": "tones.ra"]
+        for (sample, name) in samples {
+            try FileManager.default.copyItem(at: try formatSampleURL(sample), to: folder.appendingPathComponent(name))
+        }
+
+        let lengths = FFmpegAudioConverter.$tool.withValue(try bundledFFmpegTool()) {
+            FileImportService.measuredLengths(of: samples.values.sorted().map {
+                M3UPlaylist.Track(url: folder.appendingPathComponent($0), path: $0, title: nil)
+            })
+        }
+
+        XCTAssertEqual(Set(lengths.keys), ["tones-wma1.wma", "three-tones-flac.mkv"])
+        XCTAssertEqual(lengths["tones-wma1.wma"] ?? 0, 3.999, accuracy: 0.01)
+        XCTAssertEqual(lengths["three-tones-flac.mkv"] ?? 0, 4, accuracy: 0.1)
+    }
+
     /// Should the book's reading find a sheet's section past its file's end
     /// after all (a converted file a little shorter than its source), the
     /// sheets' manifest goes and the tracks are published again without it,
