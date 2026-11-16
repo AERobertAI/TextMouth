@@ -78,23 +78,11 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.4.11 (tag `v0.4.11`), and the user still runs 0.4.2.
-- 0.4.11 holds:
-  - SwiftSoup vendored and trimmed (audit C14, `Vendor/SwiftSoup`): the Release app is 18.2 MB;
-  - the safe import speed-ups;
-  - the cloud library's Phase 0: the guards (`Book.readingState(standingAgainst:)`, `movedToLibrary`, the two-file waits) and Compare Libraries;
-  - the Mac's tests shared with the iPhone unit bundle (1,960 tests);
-  - faster GitHub runs, with the iPhone job as a matrix;
-  - the doc-library skill, and the docs reworked into marked sections (`make lint-docs` gates at 0 violations).
-- The user answered `humanQuestions/2026-11-14.md`:
-  - yes to C11, to Markdown from cmark's tree, and to V04;
-  - C12 only as a throttle that keeps the stream open, not the full stop;
-  - research into decoders smaller than ffmpeg;
-  - PDFs read by two workers, and the local-first store's Phase 1 (on iCloud Drive), are low priority.
-- Waiting for the user's hand checks: Remove Download on one Google Drive and one Dropbox book, and the new cloud alerts and Compare Libraries with VoiceOver.
-- Open:
-  - the iPhone app bundles no Licenses folder, though LAME is linked;
-  - `AudioExportTests.testAnMP3BookIsSavedAsMP3` failed once in a full suite and passed alone;
-  - `LibraryFeedMoveToFolderTests.testAMixedSelectionMovesTheBooksAndSaysWhatItLeft` fails now and then on GitHub's runner only;
-  - the iPhone jobs are a full run's longest part (33 and 27.5 of its 34 minutes);
-  - the heavy-work lock serves its waiters in no order (FIFO tickets wanted).
+- Main is version 0.5.0 (tag `v0.5.0`), and the user still runs 0.4.2.
+- 0.5.0 holds, beyond 0.4.11:
+  - new formats: pictures of pages and CBZ (`BookFormat` picture and comic, hence MINOR), CUE sheets, markers, and Audacity labels, PLS and XSPF playlists, pronunciation lexicons, formats read through the installed ffmpeg, and TextMouth's own TTA, WavPack, and Monkey's Audio readers;
+  - Markdown read from cmark's own tree (swift-markdown gone); the Release app is 18.5 MB;
+  - C11's look-ahead near a chapter's end; V04's kept keys; the MP3 edit fix; quitting and moves losing no write; Return on the selected row;
+  - tests tried up to three times (RETRIED), and the heavy-work lock first come, first served.
+- Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22 and FR23 and the iCloud store, the audio decoders, C11's follow-ups), and the hand checks there.
+- Open (in the TODO): B12, B13, #5512, a stray settings save announced into `ReaderCloudDownloadTests`, the iPhone Go To sheet's text fields without Dynamic Type, and the leftover items of the format branches' reports.
