@@ -12,7 +12,7 @@ project.yml defines two apps over one source folder.
 
 - It compiles the TextMouth source folder less `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`, so it compiles the files both apps share and `TextMouth/Platform/iOS/`.
 - It is the product TextMouth, with the module name TextMouth, for iOS 26.0, and has a bundle identifier of its own, `com.textmouth.TextMouth.iOS`.
-  It takes the same two Swift packages (ZIPFoundation and swift-markdown's Markdown), the vendored SwiftSoup through its own library target, SwiftSoup_iOS, and its own builds of the two C libraries it links, `LAME_iOS` and `ObjCExceptionCatcher_iOS`.
+  It takes the same two Swift packages (ZIPFoundation and swift-cmark), the vendored SwiftSoup through its own library target, SwiftSoup_iOS, and its own builds of the two C libraries it links, `LAME_iOS` and `ObjCExceptionCatcher_iOS`.
   The file project.yml defines each library, SwiftSoup included, once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
 - It has no helper program, since iOS lets an app start none, and no braille helper or liblouis.
 - It is the iPhone app: the Library, the reader, Settings, and importing, built from research/IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)).

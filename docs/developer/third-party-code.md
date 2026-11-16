@@ -5,17 +5,18 @@ Part of [TextMouth's documentation](../../README.md).
 
 TextMouth itself is under the MIT License, in LICENSE at the top of the repository.
 It builds in three libraries by other authors (LAME, liblouis, and SwiftSoup), follows a fourth author's code closely in its Kindle reader, and uses two Swift packages, ZIPFoundation and swift-cmark.
-The licence files of all six ship inside the Mac app, in Contents/Resources/Licenses, one folder for each:
+The licence files of all nine ship inside the Mac app, in Contents/Resources/Licenses, one folder for each:
 - Licenses/LAME holds COPYING and LICENSE;
 - Licenses/liblouis holds COPYING.LESSER and README;
 - Licenses/foliate-js and Licenses/SwiftSoup hold LICENSE;
 - Licenses/ZIPFoundation holds LICENSE;
-- Licenses/swift-cmark holds COPYING.
+- Licenses/swift-cmark holds COPYING;
+- Licenses/TrueAudio holds COPYRIGHT and README, Licenses/WavPack holds COPYING, and Licenses/MonkeysAudio holds License.txt: the notices of the decoders TextMouth's own TTA, WavPack, and Monkey's Audio readers are ported from.
 
-The iPhone app ships the same folders except liblouis, whose braille translator it does not link.
+Both apps ship the same folders except liblouis, whose braille translator it does not link.
 The file project.yml copies them from Vendor, never into the repository a second time, so each stays its author's own text.
-The three package licences are in Vendor/package-licenses, unchanged from the package checkouts.
-BundledLicenseTests checks that all seven reach the built Mac app, and BundledLicenseIOSTests the six of the iPhone app.
+The package and decoder licences are in Vendor/package-licenses, unchanged from their sources.
+BundledLicenseTests and BundledLicenseIOSTests check that they reach the built apps.
 `make check-ios-licenses` (Scripts/ios/check-licenses.py) reads project.yml and Package.resolved with no build.
 It fails when a library the iPhone app links has no licence in it, when a copied licence is not the file its entry names, or when the app copies the licence of a library it no longer links.
 

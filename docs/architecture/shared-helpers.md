@@ -324,8 +324,8 @@ MarkdownDocParser.parseChapter:
 
 A marker line's rest, which is parsed again, is counted first.
 Every caller goes through parseChapter: BookParser's .md and .txt, EPUB, MOBI, DOCX, DAISY, and content.md.
-Inline emphasis nesting is still bounded only by the file's size (a known follow-up: parse with cmark-gfm directly and measure the tree with cmark_iter before swift-markdown converts, which would close a leading U+FEFF and lazy paragraph continuation too).
-ExportDocumentWalker parses Markdown with no guard (board finding #5512).
+Markdown is parsed with cmark-gfm directly (MarkdownTree), which the reader's walk and ExportDocumentWalker both read.
+Inline emphasis nesting is still bounded only by the file's size, and ExportDocumentWalker parses Markdown with no guard (board finding #5512).
 
 ## AsyncBridge
 <!-- id: asyncbridge; keys: semaphore, timeout, synchronous wait, Task.detached, priority inversion, audio tags; src: TextMouth/Services/AsyncBridge.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/BookContentAnalysisService.swift -->
