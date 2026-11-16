@@ -18,7 +18,7 @@ final class TranscriptionSettingsTests: XCTestCase {
     func testTheOfferIsOffUntilTurnedOnAndFollowsConfigJSON() throws {
         let defaults = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,
@@ -54,7 +54,7 @@ final class TranscriptionSettingsTests: XCTestCase {
     func testTheLanguageFollowsSettingsAndConfigJSON() throws {
         let defaults = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,

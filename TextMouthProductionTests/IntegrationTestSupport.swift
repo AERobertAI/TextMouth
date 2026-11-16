@@ -323,6 +323,11 @@ extension XCTestCase {
             statistics.endSession()
             statistics.stats = savedStatistics
             statistics.save()
+            // The save is queued on the statistics' own queue, and its file
+            // is in the data root, which outlives the test: wait for it
+            // anyway, so the write is made inside the test that asked for
+            // it and never lands during the next one.
+            ReadingStatsService.waitForQueuedSaves()
         }
 
         let notifications = NotificationCenter()
@@ -331,7 +336,7 @@ extension XCTestCase {
             notificationCenter: notifications,
             initializeServices: false,
             userDefaults: makeSandboxedPreferences(label),
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
         let world = IntegrationWorld(folder: folder, settings: settings, notifications: notifications)
         addTeardownBlock { world.closeReaders() }

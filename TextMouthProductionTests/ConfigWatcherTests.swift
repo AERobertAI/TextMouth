@@ -19,7 +19,7 @@ final class ConfigWatcherTests: XCTestCase {
         let saved = ConfigService.AppConfig.everyFieldCustomized
         try ConfigService.fileData(for: saved).write(to: url)
 
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
 
         XCTAssertEqual(service.config, saved)
         XCTAssertEqual(service.loadedFile, .decoded)
@@ -32,7 +32,7 @@ final class ConfigWatcherTests: XCTestCase {
         let url = try makeConfigFileURL()
         try Data(#"{"wordsPerMinute": 0, "confirmBeforeDelete": false}"#.utf8).write(to: url)
 
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
 
         XCTAssertTrue(service.hasExistingConfig)
         XCTAssertEqual(service.loadedFile, .decoded)
@@ -41,7 +41,7 @@ final class ConfigWatcherTests: XCTestCase {
 
     /// Without a file there is no existing config, and the defaults stand.
     func testAMissingFileIsNoExistingConfig() throws {
-        let service = ConfigService(fileURL: try makeConfigFileURL())
+        let service = makeConfigService(fileURL: try makeConfigFileURL())
 
         XCTAssertFalse(service.hasExistingConfig)
         XCTAssertEqual(service.loadedFile, .missing)
@@ -54,7 +54,7 @@ final class ConfigWatcherTests: XCTestCase {
         let url = try makeConfigFileURL()
         try Data(#"{"wordsPerMinute": 300,,}"#.utf8).write(to: url)
 
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
 
         XCTAssertFalse(service.hasExistingConfig)
         XCTAssertEqual(service.loadedFile, .unreadable)
@@ -885,7 +885,7 @@ final class ConfigWatcherTests: XCTestCase {
     func testSavingUnchangedSettingsWritesNothing() throws {
         let url = try makeConfigFileURL()
         let counter = FileOperationCounter()
-        let service = ConfigService(fileURL: url, fileOperations: counter.operations)
+        let service = makeConfigService(fileURL: url, fileOperations: counter.operations)
         service.config = .everyFieldCustomized
 
         service.saveToDisk()
@@ -913,7 +913,7 @@ final class ConfigWatcherTests: XCTestCase {
         counter: FileOperationCounter,
         notificationCenter: NotificationCenter = NotificationCenter()
     ) -> (service: ConfigService, settings: SettingsViewModel) {
-        let service = ConfigService(fileURL: url, fileOperations: counter.operations)
+        let service = makeConfigService(fileURL: url, fileOperations: counter.operations)
         addTeardownBlock { service.shutdown() }
         let settings = SettingsViewModel(
             notificationCenter: notificationCenter,
@@ -927,7 +927,7 @@ final class ConfigWatcherTests: XCTestCase {
     /// A service on `url`, counting through `counter`, that watches the file
     /// without a settings model; it stops when the test ends.
     private func makeWatchingService(_ url: URL, counter: FileOperationCounter) -> ConfigService {
-        let service = ConfigService(fileURL: url, fileOperations: counter.operations)
+        let service = makeConfigService(fileURL: url, fileOperations: counter.operations)
         addTeardownBlock { service.shutdown() }
         service.startWatching()
         return service

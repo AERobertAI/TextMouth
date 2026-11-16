@@ -60,7 +60,7 @@ final class LeadingArticlesSettingsTests: XCTestCase {
     func testAChoiceMadeAnywhereIsSavedToConfigJSONAndAnnounced() throws {
         let store = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let viewModel = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,

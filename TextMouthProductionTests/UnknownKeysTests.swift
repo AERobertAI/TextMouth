@@ -957,7 +957,7 @@ final class UnknownKeysTests: XCTestCase {
         )
         read[Self.addedKey] = Self.everyKind
         try Self.data(read).write(to: url)
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         XCTAssertEqual(service.config.wordsPerMinute, 425)
 
         service.config.wordsPerMinute = 310
@@ -969,7 +969,7 @@ final class UnknownKeysTests: XCTestCase {
         // A second service, as the next launch, reads them and writes
         // nothing: the file already holds exactly what it would write.
         let saved = try Data(contentsOf: url)
-        let next = ConfigService(fileURL: url)
+        let next = makeConfigService(fileURL: url)
         next.saveToDisk()
         XCTAssertEqual(try Data(contentsOf: url), saved)
         XCTAssertEqual(Set(next.config.unknownKeys.members.keys), [Self.addedKey])

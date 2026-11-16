@@ -12,7 +12,7 @@ final class PhoneDefaultsTests: XCTestCase {
     func testApplyingSetsWhatThePhoneFixes() throws {
         let world = try makeIntegrationWorld("PhoneDefaultsApply")
         let file = try makeSandboxDirectory("PhoneDefaultsApply").appendingPathComponent("config.json")
-        let config = ConfigService(fileURL: file)
+        let config = makeConfigService(fileURL: file)
         world.settings.playbackNavigationUnitControlMode = .none
 
         PhoneDefaults.apply(to: world.settings, config: config)

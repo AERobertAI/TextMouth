@@ -62,7 +62,7 @@ final class DataFileFailureReportingTests: XCTestCase {
         let center = cleanSharedFailureCenter()
         let refusing = FailureSwitch()
         let url = try makeTestDirectory("SettingsFailure").appendingPathComponent("config.json")
-        let service = ConfigService(fileURL: url, fileOperations: ConfigService.FileOperations(
+        let service = makeConfigService(fileURL: url, fileOperations: ConfigService.FileOperations(
             write: { data, url in
                 try refusing.throwIfOn()
                 try data.write(to: url, options: .atomic)
@@ -93,7 +93,7 @@ final class DataFileFailureReportingTests: XCTestCase {
     func testASaveThatFindsTheSettingsOnDiskSettlesAFailure() throws {
         let center = cleanSharedFailureCenter()
         let url = try makeTestDirectory("SettingsOnDisk").appendingPathComponent("config.json")
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         center.recordFailure(.configuration, path: url.path, error: WriteRefused())
         try ConfigService.fileData(for: service.config).write(to: url)
 
@@ -175,7 +175,7 @@ final class DataFileFailureReportingTests: XCTestCase {
         let center = cleanSharedFailureCenter()
         let refusing = FailureSwitch()
         let url = try makeTestDirectory("SettingsHeldRetry").appendingPathComponent("config.json")
-        let service = ConfigService(fileURL: url, fileOperations: ConfigService.FileOperations(
+        let service = makeConfigService(fileURL: url, fileOperations: ConfigService.FileOperations(
             write: { data, url in
                 try refusing.throwIfOn()
                 try data.write(to: url, options: .atomic)

@@ -357,7 +357,7 @@ final class NextEpisodePredownloadTests: FeedItemIndexTestCase {
             notificationCenter: notifications,
             initializeServices: false,
             userDefaults: makeSandboxedPreferences("PredownloadSettings"),
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
         settings.endOfBookBehavior = global
         return Setup(world: world, settings: settings, notifications: notifications, feed: feed, playing: book)

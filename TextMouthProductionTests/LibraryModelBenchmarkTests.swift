@@ -260,7 +260,7 @@ final class LibraryModelBenchmarkTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: try isolatedDefaults(),
-            configService: ConfigService(fileURL: try makeConfigFileURL()),
+            configService: makeConfigService(fileURL: try makeConfigFileURL()),
             voiceCatalog: catalog
         )
 
