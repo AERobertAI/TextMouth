@@ -221,3 +221,16 @@ Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDO
 - OggChapterCommentTests read CHAPTERnnn comments; ChapterTrackWriterTests write a chapter track and check the packets of the copy against the source's.
 - AudacityLabelsTests and ChapterListExportTests read and write label files and the exported chapter lists, and AudioEditorSavingTests and AudioEditorEndToEndTests check that a save and an export keep their chapter markers.
 - Not covered: other programs reading the markers written, cue sheets from the wild, and the labels checkbox with VoiceOver.
+
+## Formats only ffmpeg reads
+<!-- id: tests-ffmpeg-import; keys: FFmpegImportSnifferTests, FFmpegImportPlanTests, FFmpegImportConversionTests, FFmpegImportRealTests, stand-in ffmpeg, ffprobe JSON, PlayReady; src: TextMouthProductionTests/FFmpegImportSnifferTests.swift, TextMouthProductionTests/FFmpegImportPlanTests.swift, TextMouthProductionTests/FFmpegImportConversionTests.swift, TextMouthProductionTests/FFmpegImportRealTests.swift, TextMouthProductionTests/RefusedFormatAdviceTests.swift -->
+
+- GitHub's runners have no ffmpeg, so every test of the import's logic runs without it, and only FFmpegImportRealTests needs the real one.
+- FFmpegImportSnifferTests tell each sample's container from its first bytes and pin the protection check of ASF files on bytes made in the test, one object at a time, PlayReady's among them.
+- FFmpegImportPlanTests take ffprobe's own JSON for each sample (trimmed) and pin the stream chosen, the tags carried, the encoding, ffmpeg's exact arguments, the limits of a source with no length, and every sentence a listener hears.
+- FFmpegImportConversionTests drive the import through FFmpegAudioConverter.Tool stand-ins: a canned report, /bin/cp copying a finished file, and a sleep that hangs.
+  They cover the tracks a book leaves out, with and without ffmpeg.
+- FFmpegImportRealTests run on a Mac with ffmpeg and ffprobe: each sample becomes an .m4a of the codec its source calls for, with its chapters and tags, as long as its sound.
+  The samples are in TestData/format-samples, among them a WMA 1 and 2, a WMV, an AVI, an FLV, WebM, Matroska with chapters and several tracks, Speex, and RealMedia (.rm).
+- IOSBranchTests and PhoneImportBranchTests pin that the iPhone refuses these files and leaves them out of a book; RefusedFormatAdviceTests pin the copy-protection sentence, with an .aax as its example.
+- Not run anywhere yet: a real PlayReady file and a Musepack sample, since no encoder made one.

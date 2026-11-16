@@ -47,6 +47,7 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
   `Scripts/ios/sync-info-plist.py` writes the iOS file from the Mac's, `TextMouth/Resources/Info.plist`, so the two cannot drift apart by hand, and `make check-ios-plist` (`--check`) exits 1 when the iOS file is stale:
   - It leaves out the document types iOS cannot import, with the declaration of any type nothing else names:
     - "Ogg Audio" and "Audio Converted at Import" (the import converts that audio with `afconvert`, which iOS cannot start);
+    - "Audio and Video Converted with ffmpeg" (FMT31), with its types' declarations, since only the Mac's installed ffmpeg converts them;
     - "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is the system's type for `.caf` files too, which are converted the same way, so `.alac` is not offered on iOS either);
     - and the BRF, BRL, and PEF braille files (reading them takes the braille helper).
   - It leaves out the keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which are macOS's, and, until 0.4.2, added `.azw3` to the Kindle MOBI type and its declaration.
@@ -61,8 +62,7 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
   - project.yml leaves out `INFOPLIST_KEY_UIApplicationSceneManifest_Generation`, because Xcode's generated manifest would allow several scenes.
     The iOS plist holds no key that an `INFOPLIST_KEY_` setting in project.yml also sets (`INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace` and `INFOPLIST_KEY_UILaunchScreen_Generation`), since Apple does not say which would win.
     The app's display name, "TextMouth", comes from this plist, which takes it from the Mac's.
-  - It keeps the "CUE Sheet" type (`com.textmouth.cue-sheet`, `.cue`, FMT24), declared in both plists as a plain-text type.
-    The sheet's reader and arranger are shared code under `TextMouth/Parsers/`; whether the iPhone's import takes a .cue chosen alone has not been tried.
+  - It keeps the "CUE Sheet" type (`com.textmouth.cue-sheet`, FMT24); whether the iPhone's import takes a .cue has not been tried.
   - iOS goes by the types a document type names (`LSItemContentTypes`) and the extensions their declarations tag, not by `CFBundleTypeExtensions`, which is why a type is left out by name.
     Everything else is the Mac's, including the Kindle MOBI and KFX types and the App Transport Security setting feeds need.
   - `IOSInfoPlistTests` reads both plists and the project's per-configuration setting.

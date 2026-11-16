@@ -80,9 +80,11 @@ Delete a kept sandbox when you are done with it.
   It keeps each transcript in the folder's transcripts folder, so a second run doesn't transcribe again, and writes measurement.md, the document's tables, and differences.json, every difference with its confidences and context.
   `TEST_RUNNER_TEXTMOUTH_TRANSCRIPT_MEASUREMENT_LOCALE=en-US,en-GB` measures in both Englishes.
   It downloads and plays nothing.
-- The two tests that need an installed ffmpeg, which TextMouth looks for in Homebrew's and MacPorts' folders and along PATH, skip on a Mac without it:
-  - one that writes MP3 through it, the route MP3 takes only should the LAME built in fail to start, and
-  - one that runs every premade filter preset through it and through TextMouth's own filters and compares them.
+- The tests that need an installed ffmpeg, which TextMouth looks for in Homebrew's and MacPorts' folders and along PATH, skip on a Mac without it, as they do on GitHub's runners, which have none:
+  - one that writes MP3 through it, the route MP3 takes only should the LAME built in fail to start;
+  - one that runs every premade filter preset through it and through TextMouth's own filters and compares them;
+  - and the three of `FFmpegImportRealTests`, which import every sample of a format only ffmpeg reads and check its chapters, tags, and length against ffprobe's.
+  Only a run on a Mac with ffmpeg and ffprobe proves them, so the full Mac suite at a merge is their gate.
 - The opt-in benchmarks of the performance work (below).
 - `LibraryTypeSelectProbeTests`, which types into hosted lists to find out what AppKit's type select does (for the Leading articles setting), runs only on request and only on GitHub's runner.
   It skips unless the test host has both `TEXTMOUTH_TEST_TIME_SCALE`, which marks the runner, and `TEXTMOUTH_TYPE_SELECT_PROBE`, since a key AppKit turned down would make the Mac beep, and no test may make a sound.

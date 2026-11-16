@@ -210,6 +210,22 @@ The duplicate question, Replace Existing, and the questions that wait their turn
     This is said before anything is converted, for audio of more than two channels, which is mixed to stereo through a hidden file of uncompressed sound that must fit on the disk.
   - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
 
+## Importing audio that only ffmpeg reads
+<!-- id: importing-audio-only-ffmpeg-reads; keys: ffmpeg, ffprobe, WMA, left out, Trailer.avi, brew install ffmpeg, Converting its audio; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift -->
+
+- Audio in WMA, Speex, Musepack, WebM, Matroska, AVI, Flash video, or RealMedia (see [What TextMouth reads](reads-audiobooks.md)) is converted at the same step, Converting its audio, with the ffmpeg installed on the Mac.
+- A single file of one of them, or a book whose only tracks are of them, is refused when ffmpeg is not installed, with the sentence that says how to install it.
+- A folder, ZIP, or playlist that holds other tracks too leaves out what ffmpeg is needed for, and the alert titled Book Imported names the files:
+  - "TextMouth left out “Trailer.avi”, which needs ffmpeg, a free program that isn't installed on this Mac." followed by how to install it with Homebrew and "then import the book again.";
+  - "TextMouth left out 2 files, “Trailer.avi” and “Intro.wmv”, which need ffmpeg, ..." for several, with at most five named and then "and N more";
+  - "TextMouth left out “Report.spx”, which holds no sound it can read." for a file named like one of these formats that is none (a System Information report is .spx too).
+- With ffmpeg installed, the sound of a video file in a folder of tracks becomes a track of the book.
+- A track that fails to convert stops the import, as any track does, and the alert says why, in the words of the section above and these:
+  - "TextMouth can't read “NAME” as WMA.
+    It may be damaged, or named for another format.";
+  - "“NAME” holds no sound to import."
+- The iPhone leaves these files out of a book it imports and refuses a single one (see [What TextMouth reads](reads-audiobooks.md)).
+
 ## The original file after an import
 <!-- id: original-file-after-import; keys: After Importing a Book, Keep Original, Delete After Import, Ask Each Time, .rtfd, Show Package Contents; src: TextMouth/Models/OriginalFileDeletionWording.swift, TextMouth/Services/FileImportService.swift -->
 

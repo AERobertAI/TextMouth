@@ -139,6 +139,33 @@ A file the import converts keeps its chapters through the conversion:
   Its refusals are CueSheetError (tooLarge, noTracks, noAudio, timesPastAudio) in CueSheetWording's sentences.
 - FLAC files' cue sheets are read by FLACCueSheetReader (above).
 
+## Audio only ffmpeg reads
+<!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, FFprobeReport, FFmpeg.locate, ASF, copy protection, FMT31, FMT32; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFprobeReport.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift -->
+
+- Which files: FFmpegAudioConverter.converts(_:) is true for a file in either of two cases, whatever its name.
+  - Its extension is in FFmpegAudioConverter.extensions (16 of them, joined to ImportAudioConverter.convertedExtensions so the reader guards keep them from Apple's decoders).
+  - Its bytes are of a container only ffmpeg reads, as FFmpegContainer.of(fileAt:) tells: ASF, Matroska, FLV, AVI, RealMedia, Musepack 7 and 8, or Speex in Ogg.
+  Ogg of any other codec stays with afconvert, and a file of TextMouth's own readers (OwnAudioConverter.format(of:)) is never ffmpeg's.
+  No failed Apple open ever chooses the path.
+- Dispatch: ImportAudioConverter.convert returns FFmpegAudioConverter.convert first for such a file, before keepChapters, since ffmpeg carries the chapters itself.
+  FFmpegContainer reads only the first bytes (AudioContentSniffer.firstBytes).
+  ASFHeader.isCopyProtected walks the ASF header for the four protection objects, PlayReady's among them: every object at least 24 bytes and inside its parent, at most 10,000 objects, at most 16 MB (maximumHeaderBytes), one nested level.
+  A protected file is refused before any program is asked.
+- The programs: FFmpeg.locate(in:environment:) looks in /opt/homebrew/bin, /usr/local/bin, and /opt/local/bin, then along PATH, and FFmpeg.probe the ffprobe beside it.
+  Both are always nil on iOS.
+  Each runs through WatchedProcess with no shell, every path given as "file:<path>", -protocol_whitelist file, and the demuxer named (-f), so no name is read as a protocol.
+  Limits: ffmpeg a minute plus a tenth of the length, 1 GB, a stall of 60 s; ffprobe 30 s plus the size at 20 MB/s, 512 MB, an 8 MB report (maximumReportBytes).
+- The plan (FFmpegAudioConverter.plan(for:container:fileName:aacEncoder:)): FFprobeReport.chosenAudio is the first usable stream marked default, else the first.
+  AAC of at most two channels is copied; a lossless codec (isLossless(codec:)) becomes Apple Lossless at its depth; anything else AAC at its own bit rate, by aac_at when ffmpeg has Apple's encoder, else aac.
+  Arguments carry the chapters and tags (-map_chapters 0, -map_metadata 0), and stream tags only for Ogg (FFprobeReport.streamTagsToCarry), since Matroska and AVI keep a track's name there.
+  The book's metadata comes from FFprobeReport.tags (AudioPlaybackService.extractFullMetadata): the title, the artist (or author, or album_artist), and the album.
+  A tag holding U+FFFD, as a Latin-1 tag read as UTF-8 does, is not yet treated as missing.
+- Limits on a source with no length: assumedDuration at 6 kbit/s, and an output cap of max(64 MB, 50 times the file) (unknownLengthOutputCap), refused before running when the volume lacks that and downmixReserveBytes.
+  A stated length the file's size can't hold is taken as unknown (believedDuration, AUDIO_INFO_IMPLAUSIBLE).
+- Tracks left out: FFmpegAudioConverter.tracksToLeaveOut(of:located:) names, among a book's several tracks, the files only ffmpeg reads that this Mac can't convert (no ffmpeg or ffprobe, or the iPhone) and those whose bytes are of no container ffmpeg reads.
+  FileImportService.leavingOutWhatOnlyFFmpegReads removes their staged copies and returns the notice (FFmpegImportWording.tracksLeftOutNotice), and the book is refused only when no track is left.
+- Not built (review9 items 6 to 11): a crashed ffprobe's own sentence, tags capped at 4 KB, and "mpp" (Microsoft Project's extension) dropped from the Musepack list.
+
 ## Playlists
 <!-- id: playlists; keys: playlist import, .m3u, m3u8, folder book, duplicate playlist, skipped entries, Book Imported alert, streaming playlist; src: TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Parsers/PLSAndXSPFPlaylist.swift, TextMouth/Models/PlaylistImportWording.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Parsers/AudioManifest.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
