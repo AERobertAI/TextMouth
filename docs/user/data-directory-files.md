@@ -103,6 +103,7 @@ TextMouth remembers the identifier it expects, so a folder that only has the rig
 <!-- id: config-json-your-settings; keys: settings file, edit by hand, preferences; src: TextMouth/Services/ConfigService.swift -->
 
 config.json: your settings, which you can edit by hand (see [Editing settings in config.json](config-json.md)).
+From 0.5.0 on, TextMouth keeps a setting a later one added when it saves the file, and keeps a later one's keys in library.json, bookInfo.json, and reading_stats.json the same way.
 
 ## substitutions.json
 <!-- id: substitutions-json; keys: text substitutions, pronunciation rules, Text tab; src: TextMouth/Services/TextSubstitutionService.swift -->

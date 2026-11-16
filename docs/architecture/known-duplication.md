@@ -34,6 +34,11 @@ The files library.json (LibraryPersistenceService.encodedIndex(_:), whose keys a
 So sharing one encoder with the pretty ones would change those files' layouts.
 DataDirectoryMigrator writes a moved library's library.json with its own pretty, sorted encoder rather than encodedIndex(_:), so the index stays pretty-printed after a move until the library is next saved.
 
+## Coding keys of arbitrary names
+<!-- id: any-coding-key; keys: AnyCodingKey, EntryKey, LibraryViewFileKey, CodingKey; src: TextMouth/Models/UnknownKeys.swift -->
+
+AnyCodingKey (Models/UnknownKeys.swift) is a CodingKey for any name, as EntryKey and LibraryViewFileKey are for their files.
+
 ## Off-main work helpers
 <!-- id: off-main-work-helpers; keys: DispatchQueue.global, withCheckedContinuation, background queue, blocking work, cloud download; src: TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Services/StorageDestinationAssessment.swift -->
 

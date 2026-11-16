@@ -179,3 +179,19 @@ The launch's move of downloads into their feeds refuses a book whose record hold
 Replace Existing reads the old record's note before the old package goes and writes it into the new record.
 A move made before the note existed carries none, and none is added.
 
+
+## Keys a later TextMouth adds
+<!-- id: unknown-keys-kept; keys: V04, UnknownKeys, StoredKeyScan, JSONValue, forward compatibility, downgrade, unknown member; src: TextMouth/Models/UnknownKeys.swift, TextMouth/Models/StoredKeyScan.swift, TextMouth/Models/JSONValue.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/DuplicateReplacement.swift, TextMouthProductionTests/UnknownKeysTests.swift -->
+
+A key a later TextMouth adds is read with its object, held beside its fields as UnknownKeys, and written back as it was, so saving in an older TextMouth loses nothing (V04).
+- It keeps them for a library row (Book and every record in it), a package record (BookInfo's top level, metadata, state, and the transcript note), config.json's top level, library.json's sections, folders and reading list, reading_stats.json's top level, and a feed index's rows.
+- A known key always wins: unknown members are written first, then the type's own fields.
+- An object changed in place keeps its keys; one made anew (a reading position at another place, fingerprints of rewritten files) starts with none, since a later version's note would describe the old object.
+  A position saved again at its place keeps its keys (ReadingPosition.keepingUnknownKeys(ofSamePlaceIn:)), so a later TextMouth must treat its own keys as possibly stale.
+- Unknown keys take part in == (a change only in one must be noticed by a save) and not in hashing; FeedBookLink's == stays feed and item.
+- Values are JSONValue: exact above Int64.max, not kept to the last place past UInt64 or past 17 fraction places; keys are written sorted.
+- Each hand-written encoder is held to the bytes and field list of a plain struct's, so a file with no unknown keys is written exactly as before.
+- Merges carry them (bookInfo(replacing:), the standing reading state, Move to Library's note, config's save and merge); Replace Existing keeps the old row's, not the old package record's.
+- StoredKeyScan looks through a file's bytes first for a name its schema lacks, and only a file that may hold one is decoded key by key (about 5 ms for 2.4 MB, against 14 ms on a 22 ms decode); it answers "may hold" whenever unsure.
+- Not kept: feed records (Feeds/ID.json), substitutions.json, config.json's keyboard-shortcut and sound-assignment maps, removedFromLibrary.json, and Book.HandEdits' field names.
+- UnknownKeysTests loads TestData/stored-v0.4.11 (files written by v0.4.11's own writers) and saves them byte for byte; a setting added since goes in its settingsAddedSince0411.
