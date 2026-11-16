@@ -66,6 +66,10 @@ enum { MAX_SAMPLE_RATE = 768000, MAX_CHANNELS = 64 };
    names with the same bits; a layout with any other bit is sent as unknown. */
 #define WAVE_CHANNEL_BITS 0x3FFFFull
 
+/* The most errors in a row the decoder may give without a frame between: past them the file is
+   damaged, rather than a decoder that answers every call with an error being asked for ever. */
+enum { MAX_ERRORS_IN_A_ROW = 1000 };
+
 /* Where the stream has got to: each stage gives its records in turn. */
 typedef enum {
     STAGE_HEAD,
@@ -540,8 +544,10 @@ static void settle_form(tmff_session *session, int format, int raw_bits) {
 
 /* Takes the next decoded frame into session->frame. Returns 1 when a frame is there, 0 when the
    decoder has given its last, or a negative TMFF_EXIT_ number. A packet or frame the decoder
-   refuses is counted and skipped, as a damaged packet would be. */
+   refuses is counted and skipped, as a damaged packet would be, up to MAX_ERRORS_IN_A_ROW in a
+   row (TMFF_EXIT_DAMAGED past them). */
 static int next_frame(tmff_session *session) {
+    int errors_in_a_row = 0;
     for (;;) {
         if (atomic_load(&session->stopped)) {
             return -TMFF_EXIT_STOPPED;
@@ -562,8 +568,12 @@ static int next_frame(tmff_session *session) {
         }
         if (received != AVERROR(EAGAIN)) {
             session->frame_errors++;
+            if (++errors_in_a_row > MAX_ERRORS_IN_A_ROW) {
+                return -TMFF_EXIT_DAMAGED;
+            }
             continue;
         }
+        errors_in_a_row = 0;
         /* The decoder wants more: the next packet of the chosen stream, or, at the file's end,
            none, which drains the decoder. */
         if (session->demuxer_ended) {
