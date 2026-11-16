@@ -168,9 +168,8 @@ enum OwnAudioConverter {
         }
     }
 
-    /// The pass itself: every block of `decoder` made whole numbers, mixed
-    /// to `target`'s channels, packed, and appended to a writer of `staged`
-    /// that carries `tags`.
+    /// The pass of one of the own readers: `writeBlocks` with `decoder`'s
+    /// stream and blocks.
     /// - Throws: `OwnAudioError` from the decoder, `AudioEditError` naming
     ///   an AVFoundation error's domain and code, or `CancellationError`.
     private static func write(
@@ -179,7 +178,26 @@ enum OwnAudioConverter {
         to staged: URL,
         target: ImportAudioConverter.Target
     ) async throws {
-        let stream = decoder.stream
+        try await writeBlocks(of: decoder.stream, tags: tags, to: staged, target: target) { try decoder.nextBlock() }
+    }
+
+    /// The pass every conversion that decodes in TextMouth's own code writes
+    /// through (DRY: one writer): every block `next` gives, samples of
+    /// `stream`, made whole numbers, mixed to `target`'s channels, packed,
+    /// and appended to a writer of `staged` that carries `tags`. TextMouth's
+    /// own readers give their decoder's blocks; the FFmpeg import gives the
+    /// bundled helper's (`FFmpegAudioConverter`, FMT50), which writes its
+    /// samples as these readers do. Nothing is left at `staged` by a failure
+    /// of the writer; the caller removes the file for any other.
+    /// - Throws: what `next` throws, `AudioEditError` naming an AVFoundation
+    ///   error's domain and code, or `CancellationError`.
+    static func writeBlocks(
+        of stream: OwnAudioStream,
+        tags: OwnAudioTags,
+        to staged: URL,
+        target: ImportAudioConverter.Target,
+        next: () async throws -> [Int32]?
+    ) async throws {
         let bits = stream.isFloat ? OwnAudioSamples.bitsForFloats : stream.bitsPerSample
         // Sixteen bits go to the encoder as they are; anything wider in 32-bit numbers.
         let container = bits <= 16 ? 16 : 32
@@ -209,7 +227,7 @@ enum OwnAudioConverter {
 
         do {
             var written = 0
-            while var block = try decoder.nextBlock() {
+            while var block = try await next() {
                 try Task.checkCancellation()
                 if stream.isFloat { block = OwnAudioSamples.wholeNumbers(fromFloats: block) }
                 if !gains.isEmpty { block = OwnAudioSamples.stereo(block, gains: gains) }
