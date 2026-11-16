@@ -87,8 +87,9 @@ enum FFmpegImportWording {
     }
 
     /// Why a copy-protected Windows Media file was not imported: the
-    /// sentence every copy-protected file is refused with (FMT02).
-    static let copyProtected = "TextMouth cannot open copy-protected files."
+    /// sentence every copy-protected file is refused with, kept once in the
+    /// advice for refused formats (`RefusedFormatAdvice.copyProtected`, FMT02).
+    static let copyProtected = RefusedFormatAdvice.copyProtected
 
     /// Why a file was not imported whose bytes are not of the format its
     /// name says (`kind`), or are damaged: "TextMouth can't read
