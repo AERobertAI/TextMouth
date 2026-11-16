@@ -172,9 +172,9 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(aacDuration, 1, accuracy: 0.01)
     }
 
-    /// A book stored as 64-bit floats (a WAVE or CAF file), 64-bit integers,
-    /// or 20-bit integers, which AVAssetReader's outputs take only when
-    /// asked for another depth (B12), imports: the probe measures it, its
+    /// A book stored as 64-bit floats (a WAVE, AIFF, or CAF file) or 64-bit
+    /// integers (a CAF file), depths AVAssetReader's outputs take only when
+    /// asked for another (B12), imports: the probe measures it, its
     /// samples decode to the end, and AVFoundation says it plays.
     func testProbeMeasuresBooksOfWideSamples() async throws {
         for book in AudioEditRenderingTests.wideBooks {

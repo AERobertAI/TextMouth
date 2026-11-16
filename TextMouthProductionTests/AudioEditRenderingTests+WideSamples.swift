@@ -3,7 +3,7 @@ import XCTest
 @testable import TextMouth
 
 /// Books whose samples are wider than AVFoundation's readers take (B12): a
-/// 64-bit float WAVE or CAF file, a 64-bit integer CAF, a 20-bit CAF.
+/// 64-bit float WAVE, AIFF, or CAF file, or a 64-bit integer CAF.
 /// AVAssetReader's outputs and AVAssetWriter's inputs raise an Objective-C
 /// exception, which ends the app, for any depth but 8, 16, 24, and 32 bits
 /// ("Bit depth can only be one of: 24, 16, 8, 32"), and a render took the
@@ -26,30 +26,28 @@ extension AudioEditRenderingTests {
 
         var description: String { "\(bits)-bit \(isFloat ? "float" : "integer") \(fileName)" }
 
-        /// A CAF file written through AVAudioFile, which takes these depths.
-        static func caf(bits: Int, isFloat: Bool) -> WideBook {
-            WideBook(fileName: "Canal Survey.caf", bits: bits, isFloat: isFloat) { url, frames, rate in
-                try AudioTestFixtures.writeTone(to: url, frames: frames, sampleRate: rate, settings: [
-                    AVFormatIDKey: kAudioFormatLinearPCM,
-                    AVLinearPCMBitDepthKey: bits,
-                    AVLinearPCMIsFloatKey: isFloat,
-                    AVLinearPCMIsBigEndianKey: false,
-                    AVLinearPCMIsNonInterleaved: false,
-                ])
+        /// A CAF file of 64-bit samples, written by hand.
+        static func caf(isFloat: Bool) -> WideBook {
+            WideBook(fileName: "Canal Survey.caf", bits: 64, isFloat: isFloat) { url, frames, rate in
+                try AudioTestFixtures.writeToneCAF64(to: url, frames: frames, sampleRate: rate, isFloat: isFloat)
             }
         }
     }
 
-    /// The layouts the tests try: every one the readers refuse that a book
-    /// is found in. A computed list, since a book holds closures, which a
-    /// stored static property of a test class may not.
+    /// The layouts the tests try: every one the readers refuse that a
+    /// book is found in as a file type TextMouth imports: 64-bit floats in
+    /// WAVE, AIFF, and CAF files, and 64-bit integers in a CAF file. A
+    /// computed list, since a book holds closures, which a stored static
+    /// property of a test class may not.
     static var wideBooks: [WideBook] { [
         WideBook(fileName: "Canal Survey.wav", bits: 64, isFloat: true) { url, frames, rate in
             try AudioTestFixtures.writeToneFloat64WAVE(to: url, frames: frames, sampleRate: rate)
         },
-        .caf(bits: 64, isFloat: true),
-        .caf(bits: 64, isFloat: false),
-        .caf(bits: 20, isFloat: false),
+        WideBook(fileName: "Canal Survey.aiff", bits: 64, isFloat: true) { url, frames, rate in
+            try AudioTestFixtures.writeToneFloat64AIFC(to: url, frames: frames, sampleRate: rate)
+        },
+        .caf(isFloat: true),
+        .caf(isFloat: false),
     ] }
 
     /// The seconds the books last: three, so a stretch is cut from the middle.

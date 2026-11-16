@@ -153,10 +153,97 @@ extension AudioTestFixtures {
         try file.write(to: url)
     }
 
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// a CAF file of 64-bit samples, floats or integers (little-endian, a
+    /// full-scale integer being 2^63), written byte by byte: AVAudioFile
+    /// wrote a file of 64-bit floats as 32-bit floats, and refused one of
+    /// 64-bit integers.
+    static func writeToneCAF64(to url: URL, frames: Int, sampleRate: Double, isFloat: Bool) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        var samples = Data()
+        for sample in tone(frames: frames, sampleRate: sampleRate) {
+            if isFloat {
+                samples.append(littleEndianBytes(Double(sample).bitPattern))
+            } else {
+                samples.append(littleEndianBytes(Int64(Double(sample) * 9_223_372_036_854_775_807)))
+            }
+        }
+        // The "desc" chunk: the stream description, big-endian as every
+        // CAF field is, flagged little-endian (2) and float (1) or neither.
+        var description = Data()
+        description.append(bigEndianBytes(sampleRate.bitPattern))
+        description.append(Data("lpcm".utf8))
+        description.append(bigEndianBytes(UInt32(isFloat ? 3 : 2)))
+        description.append(bigEndianBytes(UInt32(8)))                 // bytes a packet
+        description.append(bigEndianBytes(UInt32(1)))                 // frames a packet
+        description.append(bigEndianBytes(UInt32(1)))                 // one channel
+        description.append(bigEndianBytes(UInt32(64)))                // bits a sample
+        var file = Data("caff".utf8)
+        file.append(bigEndianBytes(UInt16(1)))                        // version
+        file.append(bigEndianBytes(UInt16(0)))                        // flags
+        file.append(Data("desc".utf8))
+        file.append(bigEndianBytes(Int64(description.count)))
+        file.append(description)
+        file.append(Data("data".utf8))
+        file.append(bigEndianBytes(Int64(4 + samples.count)))         // the edit count and the samples
+        file.append(bigEndianBytes(UInt32(0)))
+        file.append(samples)
+        try file.write(to: url)
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// an AIFF-C file of 64-bit floating-point samples (compression type
+    /// "fl64"), written byte by byte: the only way a 64-bit float AIFF file
+    /// comes about. `sampleRate` must be a whole number of hertz.
+    static func writeToneFloat64AIFC(to url: URL, frames: Int, sampleRate: Double) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        var samples = Data()
+        for sample in tone(frames: frames, sampleRate: sampleRate) {
+            samples.append(bigEndianBytes(Double(sample).bitPattern))
+        }
+        // The sample rate as AIFF holds it, an 80-bit extended float: a
+        // 15-bit exponent biased by 16,383, and a mantissa whose top bit is 1.
+        let rate = UInt64(sampleRate)
+        let exponent = 63 - rate.leadingZeroBitCount
+        var extended = bigEndianBytes(UInt16(16_383 + exponent))
+        extended.append(bigEndianBytes(rate << UInt64(63 - exponent)))
+        let name = "64-bit floating point"
+        var common = Data()
+        common.append(bigEndianBytes(Int16(1)))                       // one channel
+        common.append(bigEndianBytes(UInt32(frames)))
+        common.append(bigEndianBytes(Int16(64)))                      // bits a sample
+        common.append(extended)
+        common.append(Data("fl64".utf8))
+        common.append(UInt8(name.utf8.count))                         // a Pascal string, 22 bytes in all
+        common.append(Data(name.utf8))
+        var version = Data()
+        version.append(bigEndianBytes(UInt32(0xA280_5140)))           // AIFF-C version 1
+        var sound = Data()
+        sound.append(bigEndianBytes(UInt32(0)))                       // offset
+        sound.append(bigEndianBytes(UInt32(0)))                       // block size
+        sound.append(samples)
+        var chunks = Data("AIFC".utf8)
+        for (id, body) in [("FVER", version), ("COMM", common), ("SSND", sound)] {
+            chunks.append(Data(id.utf8))
+            chunks.append(bigEndianBytes(UInt32(body.count)))
+            chunks.append(body)
+        }
+        var file = Data("FORM".utf8)
+        file.append(bigEndianBytes(UInt32(chunks.count)))
+        file.append(chunks)
+        try file.write(to: url)
+    }
+
     /// The bytes of `value`, least significant first, as WAVE headers and
     /// samples store integers.
     private static func littleEndianBytes<T: FixedWidthInteger>(_ value: T) -> Data {
         withUnsafeBytes(of: value.littleEndian) { Data($0) }
+    }
+
+    /// The bytes of `value`, most significant first, as CAF and AIFF files
+    /// store their integers.
+    private static func bigEndianBytes<T: FixedWidthInteger>(_ value: T) -> Data {
+        withUnsafeBytes(of: value.bigEndian) { Data($0) }
     }
 
     /// What `sample`, read from an edited identity ramp, is.
