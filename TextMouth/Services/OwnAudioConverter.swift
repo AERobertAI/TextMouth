@@ -23,6 +23,16 @@ enum OwnAudioConverter {
     /// The most frames handed to the encoder in one buffer.
     static let framesPerAppend = 32_768
 
+    /// The Apple Lossless bit depth the writer is asked for when the target
+    /// says `depth`: the same, but 24 for 20. AVFoundation's writer makes a
+    /// 20-bit file whose audio the media check then cannot decode (train
+    /// 1115-2137, a 20-bit WavPack file), and 24 bits hold every 20-bit
+    /// sample exactly, as a downmix's PCM does
+    /// (`ImportAudioConverter.downmixBitDepth`).
+    static func writtenBitDepth(forAppleLossless depth: Int) -> Int {
+        depth == 20 ? 24 : depth
+    }
+
     /// The format of the file at `url` among those TextMouth's own readers
     /// read, told from its first bytes; nil for any other file, one that
     /// cannot be opened, and one only in the cloud (never downloaded).
@@ -160,7 +170,7 @@ enum OwnAudioConverter {
         let settings = AudioRenderSettings(
             format: target.appleLosslessBitDepth == nil ? .aacM4A : .alacM4A,
             sampleRate: target.sampleRate, channels: target.channels, bitRate: target.bitRate,
-            bitsPerSample: target.appleLosslessBitDepth ?? 16, isFloat: false
+            bitsPerSample: target.appleLosslessBitDepth.map(writtenBitDepth(forAppleLossless:)) ?? 16, isFloat: false
         )
         let description = try pcmDescription(sampleRate: stream.sampleRate, channels: target.channels, container: container)
 

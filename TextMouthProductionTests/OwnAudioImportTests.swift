@@ -287,6 +287,7 @@ final class OwnAudioImportTests: XCTestCase {
     /// not lossless, and more than two channels have a layout only with a
     /// mask.
     func testAStreamsDescription() {
+        XCTAssertEqual([16, 20, 24, 32].map(OwnAudioConverter.writtenBitDepth(forAppleLossless:)), [16, 24, 24, 32])
         let float = OwnAudioStream(sampleRate: 44_100, channels: 2, bitsPerSample: 32, isFloat: true, frames: 44_100)
         let floatInfo = OwnAudioConverter.sourceInfo(for: float, format: .wavPack)
         XCTAssertNil(floatInfo.bitsPerSample)
@@ -346,9 +347,11 @@ final class OwnAudioImportTests: XCTestCase {
                 let convertedRead = try await AudioFileInfo.read(conversion.converted)
                 let converted = try XCTUnwrap(convertedRead, sample.path)
                 XCTAssertEqual(converted.formatID, "alac", sample.path)
+                // The smallest depth that holds the samples; 24 for 20, which the writer is never asked for.
                 XCTAssertEqual(
                     converted.bitsPerSample,
-                    ImportAudioConverter.appleLosslessBitDepth(forBitsPerSample: sample.isFloat ? nil : sample.bits),
+                    OwnAudioConverter.writtenBitDepth(forAppleLossless: ImportAudioConverter.appleLosslessBitDepth(
+                        forBitsPerSample: sample.isFloat ? nil : sample.bits)),
                     sample.path)
                 XCTAssertEqual(converted.sampleRate, Double(sample.sampleRate), sample.path)
                 XCTAssertEqual(converted.channels, min(sample.channels, 2), sample.path)
