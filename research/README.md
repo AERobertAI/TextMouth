@@ -4,6 +4,7 @@ Each document was written before its feature was built, and is kept as written: 
 The reference pages are under `docs/` (see `README.md` and `ARCHITECTURE.md`).
 
 - [AUDIO-DECODERS-RESEARCH-2026-11-15.md](AUDIO-DECODERS-RESEARCH-2026-11-15.md): Smaller ways than ffmpeg to read WMA, WavPack, TTA, APE, Speex
+- [FFMPEG-MINIMAL-RESEARCH-2026-11-16.md](FFMPEG-MINIMAL-RESEARCH-2026-11-16.md): A minimal FFmpeg built into TextMouth: its size, the iPhone, the licence, and trimming
 - [AUDIO-RECORDING-EDITOR-RESEARCH-2026-10-03.md](AUDIO-RECORDING-EDITOR-RESEARCH-2026-10-03.md): Recording audio and a basic, fully accessible audio editor in TextMouth
 - [BRAILLE-CODES-RESEARCH-2026-10-25.md](BRAILLE-CODES-RESEARCH-2026-10-25.md): Braille character codes outside North America (research, October 25, 2026)
 - [CACHE-UPDATES-2026-09-09.md](CACHE-UPDATES-2026-09-09.md): Faster automatic cache updates
