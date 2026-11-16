@@ -1,4 +1,5 @@
 import Foundation
+private import TextMouthFFmpegProtocol
 
 /// What TextMouth's FFmpeg session says a file of a format only FFmpeg reads
 /// holds (FMT31, FMT32, FMT50): the sound stream it chose, how long it lasts,
@@ -82,19 +83,21 @@ struct FFmpegReport: Equatable, Sendable {
     static let maximumDuration: TimeInterval = AudioFileInfo.maximumPlausibleDuration
 
     /// The highest sample rate believed, in hertz: 768 kHz, the highest any
-    /// recording format writes.
-    static let maximumSampleRate: Double = 768_000
+    /// recording format writes (the protocol's TMFF_MAX_SAMPLE_RATE, which
+    /// the session chooses no stream beyond).
+    static let maximumSampleRate = Double(TMFF_MAX_SAMPLE_RATE)
 
-    /// The most channels believed: 64.
-    static let maximumChannels = 64
+    /// The most channels believed: 64 (the protocol's TMFF_MAX_CHANNELS).
+    static let maximumChannels = Int(TMFF_MAX_CHANNELS)
 
     /// The highest bit rate believed, in bits a second: 100 Mbit/s.
     static let maximumBitRate = 100_000_000
 
     /// The most bytes of a tag's value or a chapter's title kept: 4 KB, as
-    /// the session cuts them (the TODO's FU-FFMPEG item). A longer one, which
-    /// no session of this protocol writes, is cut here too.
-    static let maximumTagBytes = 4_096
+    /// the session cuts them (the protocol's TMFF_MAX_TAG_VALUE_BYTES, the
+    /// TODO's FU-FFMPEG item). A longer one, which no session of this
+    /// protocol writes, is cut here too.
+    static let maximumTagBytes = Int(TMFF_MAX_TAG_VALUE_BYTES)
 
     // MARK: - Reading the Records
 

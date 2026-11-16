@@ -97,11 +97,6 @@ struct FFmpegHelperStream {
         return true
     }
 
-    /// The little-endian 32-bit number at `offset` of the buffer.
-    private func number32(at offset: Int) -> UInt32 {
-        (0..<4).reduce(UInt32(0)) { value, index in value | UInt32(buffered[offset + index]) << (8 * index) }
-    }
-
     /// The next record; nil at a clean end, between two records.
     /// - Throws: `StreamError.endedEarly` for a stream cut inside a record,
     ///   `.damaged` for a length past its kind's limit.
@@ -111,8 +106,8 @@ struct FFmpegHelperStream {
             if buffered.count > position { throw StreamError.endedEarly }
             return nil
         }
-        let kind = number32(at: position)
-        let length = Int(number32(at: position + 4))
+        let kind = Self.number32(buffered, at: position)
+        let length = Int(Self.number32(buffered, at: position + 4))
         let limit = kind == UInt32(TMFF_RECORD_PCM) ? Int(TMFF_MAX_PCM_RECORD_BYTES) : Int(TMFF_MAX_RECORD_BYTES)
         guard length <= limit else { throw StreamError.damaged }
         guard try await fill(header + length) else { throw StreamError.endedEarly }

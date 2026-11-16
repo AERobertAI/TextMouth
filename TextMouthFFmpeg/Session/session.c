@@ -58,10 +58,6 @@ enum { PCM_RECORD_TARGET = 256 * 1024 };
 /* The most memory FFmpeg may ask for at once: far more than any audio frame or index needs. */
 #define MAX_ALLOCATION_BYTES (256u * 1024u * 1024u)
 
-/* The highest sample rate and the most channels a stream may have to be chosen, as TextMouth's
-   own reading of a report believes (FFprobeReport.maximumSampleRate, .maximumChannels). */
-enum { MAX_SAMPLE_RATE = 768000, MAX_CHANNELS = 64 };
-
 /* The loudspeakers a WAVE channel mask names (its bits 0 to 17), which FFmpeg's native order
    names with the same bits; a layout with any other bit is sent as unknown. */
 #define WAVE_CHANNEL_BITS 0x3FFFFull
@@ -302,13 +298,13 @@ static int append_line(tmff_session *session, const char *key, const char *forma
 static int is_usable_sound(const AVStream *stream) {
     const AVCodecParameters *parameters = stream->codecpar;
     return parameters->codec_type == AVMEDIA_TYPE_AUDIO && !(stream->disposition & AV_DISPOSITION_ATTACHED_PIC)
-        && parameters->sample_rate > 0 && parameters->sample_rate <= MAX_SAMPLE_RATE
-        && parameters->ch_layout.nb_channels > 0 && parameters->ch_layout.nb_channels <= MAX_CHANNELS;
+        && parameters->sample_rate > 0 && parameters->sample_rate <= TMFF_MAX_SAMPLE_RATE
+        && parameters->ch_layout.nb_channels > 0 && parameters->ch_layout.nb_channels <= TMFF_MAX_CHANNELS;
 }
 
 /* The sound stream the book is made of: the first usable one this build decodes that the file
-   marks as its default, else the first usable one it decodes (FFprobeReport.chosenAudio's rule,
-   which the installed ffmpeg's import followed, less the sound no decoder here reads). Returns
+   marks as its default, else the first usable one it decodes (the rule the import followed with
+   the installed ffmpeg before FMT50, less the sound no decoder here reads). Returns
    its index, or a negative TMFF_EXIT_ number: NO_DECODER when there is usable sound but none
    decodes here, NO_SOUND when there is none at all. */
 static int choose_stream(const AVFormatContext *format) {
@@ -689,8 +685,8 @@ static int read_first_frame(tmff_session *session) {
         return TMFF_EXIT_DAMAGED;
     }
     const AVFrame *frame = session->frame;
-    if (frame->sample_rate <= 0 || frame->sample_rate > MAX_SAMPLE_RATE || frame->ch_layout.nb_channels <= 0
-        || frame->ch_layout.nb_channels > MAX_CHANNELS) {
+    if (frame->sample_rate <= 0 || frame->sample_rate > TMFF_MAX_SAMPLE_RATE || frame->ch_layout.nb_channels <= 0
+        || frame->ch_layout.nb_channels > TMFF_MAX_CHANNELS) {
         return TMFF_EXIT_DAMAGED;
     }
     session->sample_rate = frame->sample_rate;

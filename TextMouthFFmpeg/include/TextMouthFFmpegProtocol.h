@@ -84,6 +84,12 @@
 #define TMFF_MAX_TAGS 512u
 #define TMFF_MAX_CHAPTERS 4096u
 
+/* The highest sample rate, in hertz, and the most channels of sound a book is made of: 768 kHz,
+   the highest any recording format writes, and 64. The session chooses no stream beyond them,
+   and the app believes no report beyond them (FFmpegReport). Plain ints, as FFmpeg's fields are. */
+#define TMFF_MAX_SAMPLE_RATE 768000
+#define TMFF_MAX_CHANNELS 64
+
 /* The helper's exit statuses, and the session's results. */
 #define TMFF_EXIT_DONE 0             /* the stream is whole */
 #define TMFF_EXIT_USAGE 1            /* the arguments are wrong */
