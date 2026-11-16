@@ -99,7 +99,16 @@ final class BundledLicenseTests: XCTestCase {
                       "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e", "--disable-everything"] {
             XCTAssertTrue(readme.contains(words), words)
         }
-        XCTAssertFalse(readme.contains("--enable-gpl") || readme.contains("--enable-nonfree") || readme.contains("--enable-version3"))
+        // The configure lines, one for each platform, enable no part under the GPL; the prose
+        // above them names those flags only to say they were not given.
+        let lines = readme.split(separator: "\n").filter { $0.hasPrefix("configure ") }
+        XCTAssertEqual(lines.count, 3, "one configure line for each platform")
+        for line in lines {
+            XCTAssertFalse(
+                line.contains("--enable-gpl") || line.contains("--enable-nonfree") || line.contains("--enable-version3"),
+                String(line.prefix(80))
+            )
+        }
     }
 
     // MARK: - The Credits
