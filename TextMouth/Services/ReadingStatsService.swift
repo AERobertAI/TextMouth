@@ -779,6 +779,12 @@ final class ReadingStatsService: ObservableObject {
     /// from the main thread — the actual encoding and file write
     /// are dispatched asynchronously. Nothing is written while the file
     /// waits in the cloud (`mayReplaceStatsFile()`).
+    ///
+    /// A save made while a data-directory move copies the library is
+    /// provisional (`StorageBoundary.isProvisionalSave(of:rewrite:)`): it
+    /// writes the file where the move copies from, which the copy may have
+    /// passed, so it does not settle an earlier failure, and the move saves
+    /// the statistics again once it has ended, in the moved library.
     func save() {
         guard mayReplaceStatsFile() else { return }
         // Snapshot the stats value type on the calling thread so
@@ -787,8 +793,11 @@ final class ReadingStatsService: ObservableObject {
         let snapshot = stats
         let url = fileURL
         let retry = retryAfterFailure
+        let isProvisional = StorageBoundary.shared.isProvisionalSave(of: url.path) { [weak self] in
+            self?.save()
+        }
         Self.saveQueue.async {
-            Self.write(snapshot, to: url, retry: retry)
+            Self.write(snapshot, to: url, retry: retry, isProvisional: isProvisional)
         }
     }
 
@@ -823,17 +832,23 @@ final class ReadingStatsService: ObservableObject {
     /// never known only to the console. The retry writes from the main
     /// thread, so it waits while an operation holds the storage work, such
     /// as a data-directory move copying this file
-    /// (`PersistenceFailure.waitsForStorageWork`). Must run on saveQueue.
+    /// (`PersistenceFailure.waitsForStorageWork`). A provisional write,
+    /// made during a move's copy, settles nothing: the move saves the
+    /// statistics again once it has ended, and that write does. Must run on
+    /// saveQueue.
     nonisolated private static func write(
         _ snapshot: ReadingStats,
         to url: URL,
-        retry: @escaping PersistenceFailure.Retry
+        retry: @escaping PersistenceFailure.Retry,
+        isProvisional: Bool = false
     ) {
         do {
             try TextMouthPaths.ensureDirectoryStructure()
             let data = try snapshot.fileData()
             try data.write(to: url, options: .atomic)
-            PersistenceFailureCenter.shared.recordSuccess(.statistics)
+            if !isProvisional {
+                PersistenceFailureCenter.shared.recordSuccess(.statistics)
+            }
         } catch {
             print("Failed to save reading stats: \(error)")
             PersistenceFailureCenter.shared.recordFailure(

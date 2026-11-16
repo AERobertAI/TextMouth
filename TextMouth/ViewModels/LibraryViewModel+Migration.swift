@@ -1770,6 +1770,16 @@ extension LibraryViewModel {
     /// (`copyAndPublish`). The held work goes on once `body` returns or
     /// throws, under whichever generation is current then.
     ///
+    /// Two of those files can be saved again while the move copies, from
+    /// outside the storage work: the substitution rules, from the rules
+    /// editor, and the statistics. Such a save writes the data directory
+    /// being copied, which the copy may have passed, and is not reported
+    /// saved (`StorageBoundary.isProvisionalSave(of:rewrite:)`). Once the
+    /// hold is released, however the operation ended, each such file is
+    /// saved again as it stands, in the data directory the library lives
+    /// in then (`StorageBoundary.rewriteFilesSavedDuringTheMove()`), as
+    /// config.json and library.json are saved by `body`.
+    ///
     /// Only one operation holds the storage work at a time: while another
     /// does (a move, a rebuild, or a folder edit moving books between
     /// folders), this throws `StorageBusyError`, saying which (#673).
@@ -1784,6 +1794,12 @@ extension LibraryViewModel {
         // An operation that moves the data directory holds the work as a
         // move; every other one here rebuilds the directory where it is.
         let hold = try StorageBoundary.shared.holdWork(for: move == nil ? .rebuildingDirectory : .movingDataDirectory)
+        // However the operation ends, the files saved from outside the
+        // storage work while a move copied the library (the rules, the
+        // statistics) are saved again, in the data directory the library
+        // lives in then. Declared before the release below, so it runs
+        // after it: the saves are final then, not provisional again.
+        defer { StorageBoundary.shared.rewriteFilesSavedDuringTheMove() }
         defer { hold.release() }
         let progress = move.map { DataDirectoryMoveProgress(destination: $0.destination, isResetToDefault: $0.isResetToDefault) }
         if let progress {

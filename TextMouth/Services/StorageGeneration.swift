@@ -180,6 +180,10 @@ final class StorageBoundary: @unchecked Sendable {
     /// How many times an operation has let held work go, so a caller can
     /// tell whether a release came since it looked (`releases`).
     private var releaseCount = 0
+    /// The files saved while a data-directory move held the work
+    /// (`isProvisionalSave(of:rewrite:)`), by path, each with the save that
+    /// writes it again once the move has ended.
+    private var rewritesOwed: [String: @MainActor @Sendable () -> Void] = [:]
     /// The key of this boundary's work depth in each thread's dictionary:
     /// how deep that thread is inside work it is performing here.
     private let workDepthKey = "com.textmouth.storageWorkDepth.\(UUID().uuidString)"
@@ -442,6 +446,59 @@ final class StorageBoundary: @unchecked Sendable {
         condition.unlock()
         for waiter in waiters {
             waiter.resume()
+        }
+    }
+
+    // MARK: - Saves During a Move
+
+    /// Whether a save of `file` made now is only provisional, because a
+    /// data-directory move holds the work: the save lands in the data
+    /// directory being copied, which the copy may already have passed, so
+    /// the moved library could miss it. A store that writes its file from
+    /// outside the storage work (the substitution rules from the main
+    /// thread, the statistics on their own queue) asks this when it saves.
+    /// When it answers true, `rewrite` is kept, to run once the move has
+    /// ended (`rewriteFilesSavedDuringTheMove()`), and the store writes as
+    /// it would, but does not report the file saved yet, since it is not
+    /// saved where the library will be. Only the latest `rewrite` for a
+    /// file is kept.
+    ///
+    /// Only a move changes the data directory in use; Rebuild Directory and
+    /// a folder edit hold the work but write in the same directory, so a
+    /// save made during them is final.
+    /// - Parameters:
+    ///   - file: The path of the file saved: what a later save of it replaces.
+    ///   - rewrite: The save to make again once the move has ended, which
+    ///     writes the file as it stands then, wherever the data directory is.
+    @MainActor
+    func isProvisionalSave(of file: String, rewrite: @escaping @MainActor @Sendable () -> Void) -> Bool {
+        condition.lock()
+        defer { condition.unlock() }
+        guard holdReason == .movingDataDirectory else { return false }
+        rewritesOwed[file] = rewrite
+        return true
+    }
+
+    /// Makes again each save that was only provisional while a move held
+    /// the work (`isProvisionalSave(of:rewrite:)`), each once, in the order
+    /// of their paths. A move calls this after it has released the work, so
+    /// these saves are final: the data directory is then the one the
+    /// library lives in, whether the move published its copy or not.
+    /// Nothing happens when no save was made during a move.
+    @MainActor
+    func rewriteFilesSavedDuringTheMove() {
+        condition.lock()
+        let owed = rewritesOwed
+        rewritesOwed.removeAll()
+        condition.unlock()
+        guard !owed.isEmpty else { return }
+        DiagnosticLog.event(
+            .storage,
+            "DATA_DIRECTORY_MOVE: saving \(CountWording.phrase(owed.count, singular: "file", plural: "files")) again, "
+                + "since each was saved while the move copied the library"
+        )
+        for file in owed.keys.sorted() {
+            owed[file]?()
         }
     }
 
