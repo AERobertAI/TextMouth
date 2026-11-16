@@ -152,3 +152,12 @@ A simulator run, or a deliberate break proven on a scratch copy, takes the same 
 <!-- id: tests-board-build-train; keys: unittest, discover, board tests, train tests; src: Scripts/agents/run_locked.py, Scripts/agents/run_suite.py, Scripts/agents/copy_phases.py, Scripts/agents/regenerate-project.py, .claude/skills/agent-bbs/tests/test_bbs.py, Scripts/agents/tests/test_build_train.py, Scripts/agents/tests/test_heavy_lock.py, Scripts/agents/tests/test_run_locked.py, Scripts/agents/tests/test_copy_phases.py, Scripts/agents/tests/test_regenerate_project.py, Scripts/agents/tests/test_run_suite_remote.py -->
 
 The board's tests run with `python3 -m unittest discover -s .claude/skills/agent-bbs/tests`, and those of the build train, the heavy-work lock, `run_locked.py`, `run_suite.py`, `copy_phases.py`, and `regenerate-project.py` with `python3 -I -B -m unittest discover -s Scripts/agents/tests`.
+
+## No path of one Mac in a tracked file
+<!-- id: no-mac-paths; keys: main checkout, repo_paths, scrub-mac-paths, home folder, $TMPDIR, session folder, policy test; src: Scripts/agents/repo_paths.py, Scripts/agents/scrub-mac-paths.py, Scripts/agents/tests/test_repo_paths.py, Scripts/agents/tests/test_scrub_mac_paths.py, Scripts/agents/tests/test_no_mac_paths.py, Makefile -->
+
+The repository is public, so no tracked file names the home folder, the repository's location, Claude's session or project folders, or `$TMPDIR`'s folder, in code, tests, docs, briefs, or commit messages.
+Test fixtures use made-up paths such as `/Users/reader`.
+A tool finds the main checkout through `Scripts/agents/repo_paths.py` (it asks git for the common directory), so it reaches the shared lock and results from any worktree; the same module computes Claude's project folder.
+`python3 -I -B Scripts/agents/scrub-mac-paths.py` rewrites a tracked file's paths to `<main checkout>`, `<session folder>`, `<project folder>`, `$TMPDIR`, or `~/…`, and `--check` only counts them.
+`test_no_mac_paths.py` fails when a tracked file holds one, and `make check-selftest` runs it, so the Check workflow does.
