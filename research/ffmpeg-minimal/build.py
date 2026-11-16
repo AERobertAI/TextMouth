@@ -291,15 +291,27 @@ def tail(path, lines=40):
 # build
 # ---------------------------------------------------------------------------
 
+# The decoders that need libswresample: FFmpeg 9.0.2's configure disables the
+# Opus decoder without it ("Disabled opus_decoder because not all dependencies
+# are satisfied: swresample").
+NEEDS_SWRESAMPLE = {"opus"}
+
+
+def needs_swresample(set_name):
+    """Whether the set has a decoder that needs libswresample."""
+    return bool(NEEDS_SWRESAMPLE & set(SETS[set_name]["decoders"]))
+
+
 def configure_arguments(set_name, platform, variant, source, prefix):
     """FFmpeg's configure line for one build, as a list of arguments.
 
     The base is the brief's: nothing enabled but what is named, nothing
     detected, no network, no programs, no documentation, and static libraries
-    only. libavdevice, libswscale, libavfilter, and libswresample are left out:
-    the decode path needs none of them (TextMouth's own code would hand the
-    samples to Apple's converter and encoder). No protocol is enabled, since
-    the program reads the file through its own callbacks.
+    only. libavdevice, libswscale, and libavfilter are left out, and
+    libswresample too unless a decoder of the set needs it: the decode path
+    needs none of them otherwise (TextMouth's own code would hand the samples
+    to Apple's converter and encoder). No protocol is enabled, since the
+    program reads the file through its own callbacks.
     """
     components = SETS[set_name]
     target = PLATFORMS[platform]
@@ -313,7 +325,11 @@ def configure_arguments(set_name, platform, variant, source, prefix):
         f"--prefix={prefix}",
         "--disable-everything", "--disable-autodetect", "--disable-network",
         "--disable-programs", "--disable-doc",
-        "--disable-avdevice", "--disable-swscale", "--disable-avfilter", "--disable-swresample",
+        "--disable-avdevice", "--disable-swscale", "--disable-avfilter",
+    ]
+    if not needs_swresample(set_name):
+        arguments.append("--disable-swresample")
+    arguments += [
         "--enable-static", "--disable-shared", "--disable-debug",
         f"--cc={compiler}",
         f"--as={compiler}",
@@ -502,7 +518,8 @@ COMPONENT_PATTERNS = [
     ("Matroska and WebM demuxer", r"^libavformat\.a\((matroska|webm)"),
     ("Ogg demuxer", r"^libavformat\.a\(ogg"),
     ("Flash video demuxer", r"^libavformat\.a\(flv"),
-    ("AVI demuxer", r"^libavformat\.a\(avi"),
+    # avidec only: avio.o and aviobuf.o are libavformat's own reading code.
+    ("AVI demuxer", r"^libavformat\.a\(avidec"),
     ("RealMedia demuxer", r"^libavformat\.a\(rm"),
     ("Musepack demuxers", r"^libavformat\.a\(mpc"),
     ("RIFF and WAVE headers (shared by ASF, AVI, Matroska)", r"^libavformat\.a\(riff"),
@@ -523,6 +540,7 @@ COMPONENT_PATTERNS = [
     ("ADPCM, Nellymoser, and GSM decoders", r"^libavcodec\.a\((adpcm|nelly|gsm|msgsm)"),
     ("libavcodec's core and shared parts", r"^libavcodec\.a\("),
     ("libavformat's core", r"^libavformat\.a\("),
+    ("libswresample (for Opus)", r"^libswresample\.a\("),
     ("libavutil", r"^libavutil\.a\("),
 ]
 
@@ -629,6 +647,14 @@ def compile_and_link(platform, output, defines, include_folder, libraries, map_p
     return output
 
 
+def built_libraries(prefix):
+    """The static libraries a build installed under `prefix`, in the order a
+    static link needs, each before the ones it calls: libavformat, libavcodec,
+    libswresample (when the set needed it), libavutil."""
+    names = ("libavformat.a", "libavcodec.a", "libswresample.a", "libavutil.a")
+    return [Path(prefix) / "lib" / name for name in names if (Path(prefix) / "lib" / name).exists()]
+
+
 def measure(set_name, platform, variant, work):
     """Links the harness with and without one build's libraries, and records in
     measure.json what the libraries add, by size, by object file, and by the
@@ -641,8 +667,7 @@ def measure(set_name, platform, variant, work):
     harness_folder = folder / "harness"
     harness_folder.mkdir(exist_ok=True)
     prefix = folder / "install"
-    # The order a static link needs: a library before the ones it calls.
-    libraries = [prefix / "lib" / name for name in ("libavformat.a", "libavcodec.a", "libavutil.a")]
+    libraries = built_libraries(prefix)
     baseline = compile_and_link(platform, harness_folder / "baseline", ["HARNESS_BASELINE"], None, [],
                                 harness_folder / "baseline.map")
     full = compile_and_link(platform, harness_folder / "harness", [], prefix / "include", libraries,
@@ -698,20 +723,42 @@ RAW_FORMATS = {
 SAMPLE_STRUCT = {"u8": "B", "s16le": "h", "s32le": "i", "f32le": "f", "f64le": "d"}
 
 
-def compare_samples(ours, theirs, raw):
+# The most whole frames (a sample of every channel) one decode may lead the
+# other by: decoders differ by version in whether they drop their start-up
+# delay (AC-3's is 256 samples a channel).
+MAXIMUM_LEAD_FRAMES = 4096
+
+
+def compare_samples(ours, theirs, raw, channels):
     """How the harness's samples `ours` compare with the installed ffmpeg's
-    `theirs`, both raw bytes of the format `raw`: identical, or how many
-    samples each has and the largest difference over the samples both have."""
-    if ours == theirs:
-        return {"identical": True, "samples": len(ours) // struct.calcsize(SAMPLE_STRUCT[raw])}
+    `theirs`, both raw bytes of the format `raw` with `channels` interleaved.
+
+    Identical; or identical once one of them is shifted by a whole number of
+    frames, at most MAXIMUM_LEAD_FRAMES (the lead, in frames, and the largest
+    value of the samples it skips); or else how many samples each has and the
+    largest difference over the samples both have."""
     code = SAMPLE_STRUCT[raw]
     width = struct.calcsize(code)
-    count = min(len(ours), len(theirs)) // width
-    first = struct.unpack_from(f"<{count}{code}", ours)
-    second = struct.unpack_from(f"<{count}{code}", theirs)
-    largest = max((abs(a - b) for a, b in zip(first, second)), default=0)
+    if ours == theirs:
+        return {"identical": True, "samples": len(ours) // width}
+    first = struct.unpack(f"<{len(ours) // width}{code}", ours[:len(ours) // width * width])
+    second = struct.unpack(f"<{len(theirs) // width}{code}", theirs[:len(theirs) // width * width])
+    step = max(channels, 1)
+    for frames in range(1, MAXIMUM_LEAD_FRAMES + 1):
+        shift = frames * step
+        # Theirs leads (holds extra samples first), or ours does.
+        for leader, follower, who in ((second, first, "installed ffmpeg"), (first, second, "harness")):
+            overlap = min(len(leader) - shift, len(follower))
+            if overlap <= 0 or leader[shift:shift + 64] != follower[:64]:
+                continue
+            if leader[shift:shift + overlap] == follower[:overlap]:
+                skipped = max((abs(value) for value in leader[:shift]), default=0)
+                return {"identical": False, "identical_after_lead": True, "leader": who, "lead_frames": frames,
+                        "lead_peak": skipped, "our_samples": len(first), "their_samples": len(second)}
+    count = min(len(first), len(second))
+    largest = max((abs(a - b) for a, b in zip(first[:count], second[:count])), default=0)
     peak = max((abs(value) for value in second), default=0)
-    return {"identical": False, "our_samples": len(ours) // width, "their_samples": len(theirs) // width,
+    return {"identical": False, "our_samples": len(first), "their_samples": len(second),
             "largest_difference": largest, "peak": peak}
 
 
@@ -763,7 +810,8 @@ def decode(set_name, variant, work):
             try:
                 made = subprocess.run(reference, capture_output=True, text=True, timeout=90, check=False)
                 if made.returncode == 0:
-                    result["installed_ffmpeg"] = compare_samples(ours.read_bytes(), theirs.read_bytes(), muxer)
+                    result["installed_ffmpeg"] = compare_samples(ours.read_bytes(), theirs.read_bytes(), muxer,
+                                                                 summary.get("channels", 1))
                 else:
                     result["installed_ffmpeg"] = {"error": made.stderr.strip()[-500:]}
             except subprocess.TimeoutExpired:
@@ -849,7 +897,7 @@ def xcframework(set_name, variant, work):
             print(f"xcframework: {folder.name} was not built", flush=True)
             return None
         joined = out / f"libffmpeg-minimal-{platform}.a"
-        libraries = [str(folder / "install" / "lib" / name) for name in ("libavformat.a", "libavcodec.a", "libavutil.a")]
+        libraries = [str(path) for path in built_libraries(folder / "install")]
         run_text([tool_path("libtool"), "-static", "-o", str(joined)] + libraries)
         arguments += ["-library", str(joined), "-headers", str(folder / "install" / "include")]
     framework = out / f"FFmpegMinimal-{time.strftime('%Y%m%d-%H%M%S')}.xcframework"
