@@ -1774,7 +1774,11 @@ extension LibraryViewModel {
     /// outside the storage work: the substitution rules, from the rules
     /// editor, and the statistics. Such a save writes the data directory
     /// being copied, which the copy may have passed, and is not reported
-    /// saved (`StorageBoundary.isProvisionalSave(of:rewrite:)`). Once the
+    /// saved (`StorageBoundary.isProvisionalSave(of:rewrite:)`), from the
+    /// flushes on (`beginProvisionalSaves()`): a save made while the move
+    /// only waits for other work is copied with the library, so it is
+    /// final, as a quit that does not wait for a move not yet copying must
+    /// find it. Once the
     /// hold is released, however the operation ended, each such file is
     /// saved again as it stands, in the data directory the library lives
     /// in then (`StorageBoundary.rewriteFilesSavedDuringTheMove()`), as
@@ -1828,6 +1832,11 @@ extension LibraryViewModel {
         configService.flushScheduledSave()
         Self.waitForQueuedStatisticsSaves()
         TextMouthPaths.flushLogs()
+        if move != nil {
+            // From here the copy is taken: a rules or statistics save made
+            // before this was written in time to be copied with the library.
+            StorageBoundary.shared.beginProvisionalSaves()
+        }
         if let move, let progress {
             try await copyAndPublish(move, showing: progress)
         }

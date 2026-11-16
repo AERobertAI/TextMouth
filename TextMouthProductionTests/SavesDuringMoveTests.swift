@@ -167,6 +167,72 @@ final class SavesDuringMoveTests: XCTestCase {
         withExtendedLifetime(service) {}
     }
 
+    // MARK: - Only the Copy Is Provisional
+
+    /// A save made while the move only waits for other work is copied with
+    /// the library, so it is final: it settles an earlier failure at once.
+    /// Held back until the move ended, it left a quit, which does not wait
+    /// for a move that has not begun copying, calling saved rules unsaved.
+    func testASaveWhileTheMoveWaitsForOtherWorkIsFinal() async throws {
+        let center = cleanSharedFailureCenter()
+        let world = try makeIntegrationWorld("Saves Move Waiting")
+        keepSubstitutionsFile()
+        let destination = try makeDataDirectoryMoveDestination("RulesSavedWhileTheMoveWaits")
+        let oldFile = TextMouthPaths.substitutionsFile
+        let obstruction = try WriteObstruction.place(at: oldFile)
+        let service = TextSubstitutionService(rules: [])
+        let rule = SubstitutionRule(name: "Saved while waiting", pattern: "kerb", replacement: "curb")
+        service.addRule(rule)
+        XCTAssertTrue(center.hasUnsavedChanges, "the failed save was not reported")
+        obstruction.clear()
+        // Work under way that the move must wait for, held until the move says it waits.
+        let gate = makeGate()
+        let working = expectation(description: "the work under way began")
+        DispatchQueue.global().async {
+            StorageBoundary.shared.perform(.textExtraction) { _ in
+                working.fulfill()
+                gate.wait()
+            }
+        }
+        await fulfillment(of: [working], timeout: 10)
+        let waiting = SaveDuringCopy()
+
+        let outcome = await world.library.moveDataDirectoryReturningOutcome(to: destination) { work in
+            guard work == .textExtraction else { return }
+            service.saveRules()
+            waiting.unsavedChangesAfterTheSave = center.hasUnsavedChanges
+            gate.signal()
+        }
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(
+            waiting.unsavedChangesAfterTheSave, false,
+            "a save made before the copy began was held back, though the copy takes it"
+        )
+        XCTAssertEqual(try Self.rules(in: destination.appendingPathComponent("substitutions.json")), [rule])
+        withExtendedLifetime(service) {}
+    }
+
+    /// A file saved before the publish and again after it is saved again
+    /// once, not once for each place it was written.
+    func testAFileSavedBeforeAndAfterThePublishIsSavedAgainOnce() throws {
+        _ = try makeIntegrationWorld("Saves Move Twice")
+        keepSubstitutionsFile()
+        let moved = try makeDataDirectoryMoveDestination("RulesSavedBeforeAndAfterThePublish")
+        let service = TextSubstitutionService(rules: [])
+        let hold = try StorageBoundary.shared.holdWork(for: .movingDataDirectory)
+        defer { hold.release() }
+        StorageBoundary.shared.beginProvisionalSaves()
+
+        service.addRule(SubstitutionRule(name: "Before", pattern: "a", replacement: "b"))
+        StorageBoundary.shared.publish(root: moved)
+        service.addRule(SubstitutionRule(name: "After", pattern: "c", replacement: "d"))
+        hold.release()
+
+        XCTAssertEqual(StorageBoundary.shared.rewriteFilesSavedDuringTheMove(), 1, "the file was saved again for each place it was written")
+        withExtendedLifetime(service) {}
+    }
+
     // MARK: - Helpers
 
     /// Puts the substitutions file of the data directory in use now back as

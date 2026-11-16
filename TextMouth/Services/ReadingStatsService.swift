@@ -793,7 +793,7 @@ final class ReadingStatsService: ObservableObject {
         let snapshot = stats
         let url = fileURL
         let retry = retryAfterFailure
-        let isProvisional = StorageBoundary.shared.isProvisionalSave(of: url.path) { [weak self] in
+        let isProvisional = StorageBoundary.shared.isProvisionalSave(of: url.lastPathComponent) { [weak self] in
             self?.save()
         }
         Self.saveQueue.async {

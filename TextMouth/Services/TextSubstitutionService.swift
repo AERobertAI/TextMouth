@@ -720,7 +720,7 @@ final class TextSubstitutionService: ObservableObject {
             saveWhileFileInCloud()
             return
         }
-        let isProvisional = StorageBoundary.shared.isProvisionalSave(of: TextMouthPaths.substitutionsFile.path) { [weak self] in
+        let isProvisional = StorageBoundary.shared.isProvisionalSave(of: TextMouthPaths.substitutionsFile.lastPathComponent) { [weak self] in
             self?.saveRules()
         }
         do {

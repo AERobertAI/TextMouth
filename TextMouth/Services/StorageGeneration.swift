@@ -180,9 +180,13 @@ final class StorageBoundary: @unchecked Sendable {
     /// How many times an operation has let held work go, so a caller can
     /// tell whether a release came since it looked (`releases`).
     private var releaseCount = 0
-    /// The files saved while a data-directory move held the work
-    /// (`isProvisionalSave(of:rewrite:)`), by path, each with the save that
-    /// writes it again once the move has ended.
+    /// Whether saves from outside the storage work are provisional now
+    /// (`isProvisionalSave(of:rewrite:)`): from the moment a move has made
+    /// its flushes until it releases the work.
+    private var savesAreProvisional = false
+    /// The files saved while saves were provisional, by the file's name in
+    /// the data directory, each with the save that writes it again once the
+    /// move has ended.
     private var rewritesOwed: [String: @MainActor @Sendable () -> Void] = [:]
     /// The key of this boundary's work depth in each thread's dictionary:
     /// how deep that thread is inside work it is performing here.
@@ -439,6 +443,7 @@ final class StorageBoundary: @unchecked Sendable {
     fileprivate func releaseWork() {
         condition.lock()
         holdReason = nil
+        savesAreProvisional = false
         releaseCount += 1
         let waiters = releaseWaiters
         releaseWaiters.removeAll()
@@ -451,47 +456,67 @@ final class StorageBoundary: @unchecked Sendable {
 
     // MARK: - Saves During a Move
 
+    /// Starts treating saves from outside the storage work as provisional
+    /// (`isProvisionalSave(of:rewrite:)`), until the hold is released. A
+    /// move calls this once it has made its flushes and is about to copy:
+    /// a save made earlier, while the move only waited for other work, is
+    /// in what the copy takes, so it is final. Nothing changes unless a
+    /// move holds the work.
+    @MainActor
+    func beginProvisionalSaves() {
+        condition.lock()
+        defer { condition.unlock() }
+        savesAreProvisional = holdReason == .movingDataDirectory
+    }
+
     /// Whether a save of `file` made now is only provisional, because a
-    /// data-directory move holds the work: the save lands in the data
-    /// directory being copied, which the copy may already have passed, so
-    /// the moved library could miss it. A store that writes its file from
-    /// outside the storage work (the substitution rules from the main
-    /// thread, the statistics on their own queue) asks this when it saves.
-    /// When it answers true, `rewrite` is kept, to run once the move has
-    /// ended (`rewriteFilesSavedDuringTheMove()`), and the store writes as
-    /// it would, but does not report the file saved yet, since it is not
-    /// saved where the library will be. Only the latest `rewrite` for a
-    /// file is kept.
+    /// data-directory move is copying the library (`beginProvisionalSaves()`):
+    /// the save lands in the data directory being copied, which the copy may
+    /// already have passed, so the moved library could miss it. A store that
+    /// writes its file from outside the storage work (the substitution rules
+    /// from the main thread, the statistics on their own queue) asks this
+    /// when it saves. When it answers true, `rewrite` is kept, to run once
+    /// the move has ended (`rewriteFilesSavedDuringTheMove()`), and the
+    /// store writes as it would, but does not report the file saved yet,
+    /// since it is not saved where the library will be. Only the latest
+    /// `rewrite` for a file is kept.
     ///
-    /// Only a move changes the data directory in use; Rebuild Directory and
-    /// a folder edit hold the work but write in the same directory, so a
-    /// save made during them is final.
+    /// Only a move copies the data directory to another. Rebuild Directory
+    /// and a folder edit hold the work but write in the same directory, so a
+    /// save made during them is final. The relocation of a library found
+    /// under another name also publishes a root
+    /// (`LibraryViewModel.useRelocatedDataDirectory`), but to the same
+    /// folder, with no copy, and holds nothing.
     /// - Parameters:
-    ///   - file: The path of the file saved: what a later save of it replaces.
+    ///   - file: The file's name in the data directory, which the data
+    ///     directory's moving does not change: what a later save of it
+    ///     replaces, so each file is written again once.
     ///   - rewrite: The save to make again once the move has ended, which
     ///     writes the file as it stands then, wherever the data directory is.
     @MainActor
     func isProvisionalSave(of file: String, rewrite: @escaping @MainActor @Sendable () -> Void) -> Bool {
         condition.lock()
         defer { condition.unlock() }
-        guard holdReason == .movingDataDirectory else { return false }
+        guard savesAreProvisional else { return false }
         rewritesOwed[file] = rewrite
         return true
     }
 
     /// Makes again each save that was only provisional while a move held
     /// the work (`isProvisionalSave(of:rewrite:)`), each once, in the order
-    /// of their paths. A move calls this after it has released the work, so
+    /// of their names. A move calls this after it has released the work, so
     /// these saves are final: the data directory is then the one the
     /// library lives in, whether the move published its copy or not.
     /// Nothing happens when no save was made during a move.
+    /// - Returns: How many files were saved again.
     @MainActor
-    func rewriteFilesSavedDuringTheMove() {
+    @discardableResult
+    func rewriteFilesSavedDuringTheMove() -> Int {
         condition.lock()
         let owed = rewritesOwed
         rewritesOwed.removeAll()
         condition.unlock()
-        guard !owed.isEmpty else { return }
+        guard !owed.isEmpty else { return 0 }
         DiagnosticLog.event(
             .storage,
             "DATA_DIRECTORY_MOVE: saving \(CountWording.phrase(owed.count, singular: "file", plural: "files")) again, "
@@ -500,6 +525,7 @@ final class StorageBoundary: @unchecked Sendable {
         for file in owed.keys.sorted() {
             owed[file]?()
         }
+        return owed.count
     }
 
     /// The first kind of work under way, in the order of
