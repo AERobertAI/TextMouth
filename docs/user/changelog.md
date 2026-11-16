@@ -16,7 +16,15 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - In Settings, the Text tab has Import Rules… and Export Rules…: a W3C pronunciation lexicon adds its spelling-to-words entries as substitution rules, up to 5000 at a time, and your plain text rules that are on can be saved as one.
 - A refused file now says what to do next for Pages, Keynote, Numbers, WordPerfect, Compiled HTML Help, DjVu, XPS, RAR, and copy-protected audio, for example "Export Pages documents from Pages as Word documents or EPUB books, then import those."
 
+- CUE sheets (.cue) give an audiobook its chapters: a sheet added alone imports the files it names as one book, and a sheet in a folder or ZIP of tracks arranges them. A FLAC file's own CUE sheet block works too. A sheet that runs past its audio is left unused, with a notice.
+- Chapter markers in WAV, AIFF, and CAF files, and CHAPTER comments in Ogg files, become chapters, and the converted .m4a keeps them.
+- Audacity label files (.txt) beside a folder's audio give headings, and a book's headings or bookmarks export as labels.
+- WMA, Speex, Musepack, WebM and Matroska audio, and the sound of AVI, WMV, FLV and other videos import when ffmpeg is installed: TextMouth converts them with it, keeping tags and chapters. Without ffmpeg, the refusal says how to install it.
+- TTA, WavPack, and Monkey's Audio files import with readers built into TextMouth, with no ffmpeg needed.
+- Copy-protected files, such as Audible's .aa and .aax, are refused with "TextMouth cannot open copy-protected files."
+
 ### Listening and editing
+- Save and Export write a book's chapters as markers into WAV, AIFF, and CAF files, and say when a marker could not be written. Export Audio has a checkbox, "Also write the markers as Audacity labels", off each time.
 - Saving or exporting an MP3 after cutting it no longer leaves a short silence of about a tenth of a second at the cut, and no longer sometimes fails with "The edited audio couldn't be written."
 - To remove an old gap from a book saved before, choose Revert to Original in the audio editor, redo the edits, and save.
 - A text book holds less memory while it plays or sits paused: about 15 to 21 MB less for a novel's chapter, which is the next chapter's audio.
@@ -32,8 +40,13 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 - From this version on, TextMouth keeps the keys a later TextMouth adds to a book's row, its record, config.json, library.json, and reading_stats.json when it saves them, so going back to this version and forward again loses nothing.
 
+- Quitting waits up to 10 seconds for queued changes to your feed subscriptions to be written, and says "saving the changes to your feed subscriptions"; a change it gives up on is named in the unsaved-changes prompt.
+- Retry and the saves of statistics, settings, and rules, pressed or due during a data-directory move, a folder edit, or Rebuild Directory, now wait for it and save when it ends, instead of writing into the folder being copied and calling it saved.
+- Return on a feed's episode that is not downloaded now does what VoiceOver-Space does: it downloads the episode and opens it, where it opened the last downloaded episode before. Command-Delete on such a row no longer reaches the nearest book.
+
 ### Smaller and faster
-- The licences of ZIPFoundation, swift-markdown, and swift-cmark are now in the Mac app with the others, and the iPhone app carries the licences of every library it links.
+- The app is 0.45 MB smaller, and text books are read faster: reading a chapter's Markdown takes 46% to 89% less time, and exporting a book as text 47% to 79% less. Every book reads and exports as before.
+- The licences of ZIPFoundation, swift-cmark, and the TTA, WavPack, and Monkey's Audio decoders TextMouth's own readers follow are now in both apps with the others.
 
 ### Caution
 - TextMouth 0.2.1 to 0.4.11 open a library holding a picture or comic book without that book.

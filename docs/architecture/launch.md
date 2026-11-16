@@ -157,12 +157,13 @@ If the request that follows a wait is cancelled here, the Quit Anyway kept for i
 Then the unsaved-changes guard flushes what is pending and, with nothing unsaved or Quit Anyway chosen, lets step 4 answer (UnsavedChangesTerminationGuard.reply(whenQuitting:)).
 
 ### Step 4, the work a quit must not cut off
-<!-- id: step-4-work-quit-must; keys: feed downloads, text re-reads, speech exports, wait limits; src: TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/Services/SpeechExport/SpeechExportsUnderWay.swift -->
+<!-- id: step-4-work-quit-must; keys: feed downloads, feed records, text re-reads, speech exports, wait limits; src: TextMouth/App/QuitHold.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/Services/SpeechExport/SpeechExportsUnderWay.swift -->
 
 Step 4 is the work a quit must not cut off, which is one list of QuitHold.Work (AppDelegate.heldWork), each with a kind, a longest wait, and a phrase for what it is doing:
 - "feed downloads" keep their place, for 3 seconds at most (FeedQuitHold.longestWait), saying "keeping the place of your feed downloads for next time".
 - "text re-reads" finish a book's text read again in another encoding, for 10 seconds at most (TextRereads.longestQuitWait), saying "reading a book's text again in another encoding", or "reading the text of 3 books again in another encoding" when several run.
 - "speech exports" stop with their finished chapters kept, for 5 seconds at most (SpeechExportsUnderWay.longestQuitWait), saying "stopping a speech export with the chapters it finished kept", or "stopping 2 speech exports with the chapters they finished kept" when several run.
+- "feed records" finish the feed changes still queued to write, for 10 seconds at most (FeedStore.longestQuitWait, FeedStore.quitWork(longestWait:)), saying "saving the changes to your feed subscriptions"; one it gives up on is reported as unsaved first (QuitHold.Work.gaveUp), with no Retry.
 - The phrase is read when the quit is asked, not when the work is made, so a count is right.
 
 ### Holding a quit for unfinished work

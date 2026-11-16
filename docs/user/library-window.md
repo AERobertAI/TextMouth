@@ -325,6 +325,7 @@ The Folder Settings sheet shows a plain folder's facts and how listening goes on
 <!-- id: when-file-cannot-be-saved; keys: save failure, full disk, Retry, Dismiss, unsaved changes, quit; src: TextMouth/Views/Library/PersistenceFailureBanner.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouth/App/UnsavedChangesTermination.swift -->
 
 If a file cannot be saved (a full disk or a missing volume, for example), a banner in the Library window says what is unsaved, with Retry and Dismiss buttons.
+A Retry pressed while TextMouth moves its data directory, edits a folder, or rebuilds the directory stays enabled, says when the save will come, and saves once that ends.
 Quitting while something is unsaved asks first.
 
 ## When a folder is deleted or renamed in another window

@@ -17,9 +17,11 @@ Outstanding failed writes.
   - feed records (FeedStore),
   - an import's cleanup of the original file,
   - and a package that a failed library transition's rollback could not put back (`.strandedPackage`, from `LibraryViewModel+BookOperations.moveBack`).
-- A feed's Retry while an operation holds the storage work (a data-directory move, Rebuild Directory, a folder edit, Move to Library, a switch of libraries) does not wait on the main thread or write at once.
-  The failure's reason says when the changes are saved (RetryWaitsForStorageWork, StorageWorkWaitWording), and FeedStore writes the record when the hold ends, in the data directory then in use.
-  FeedStore tracks the feeds whose retry waited (retriesWaiting), and after the last such write PersistenceFailureCenter.announceOutcomeOfWaitingRetry(of:) tells VoiceOver how it went.
+- A Retry while an operation holds the storage work (a data-directory move, Rebuild Directory, a folder edit, Move to Library, a switch of libraries) does not wait on the main thread or write at once.
+  The failure center keeps the retry across the held work and runs it when the hold ends, in the data directory then in use, for statistics, settings, substitution rules, feed records, and a stranded package (whose Retry then acts where the package is).
+  The failure's reason says when the changes are saved (FeedRecordWaitsForStorageWork, FeedWording.recordWaits(for:) for a feed), and PersistenceFailureCenter.announceOutcomeOfWaitingRetry(of:) tells VoiceOver how it went.
+  Retry Saving stays enabled during a move.
+  Quit Anyway during a long Rebuild Directory leaves such a change unsaved, and a change the quit stopped waiting for is reported with no Retry.
 - How others observe it: the Library window's banner shows one row for each failing subsystem, with Retry and Dismiss, and VoiceOver announces a subsystem once when it starts to fail.
   While anything is unsaved, hasUnsavedChanges makes quitting ask first (UnsavedChangesTermination, with Retry, Quit Anyway, and Cancel).
 

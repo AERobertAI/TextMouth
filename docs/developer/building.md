@@ -31,7 +31,7 @@ Run these from the repository root:
 
   The Release build is compiled for size.
   The app's own code takes `-Osize` from project.yml's Release settings.
-  The three Swift packages (ZIPFoundation, swift-markdown, and the swift-cmark it builds on) take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages.
+  The two Swift packages (ZIPFoundation and swift-cmark) take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages.
   So does the vendored SwiftSoup library, whose template in project.yml also sets it in Release (SWIFT_OPTIMIZATION_LEVEL: -Osize).
   The build asks for whole-module mode only for SwiftSoup; for the rest it would make the app 1.15 MB larger.
   The executable is linked without an export trie (`LD_EXPORT_SYMBOLS: NO`, Release only), because nothing links against the app.
@@ -118,7 +118,6 @@ The pieces below are what a measurement of the Release build showed at commit e0
   - The braille helper is 186 KB of the bundle.
 - **The largest pieces.**
   - SwiftSoup is 3.0 MB, 13% of the executable and the largest single piece.
-  - swift-markdown is 0.6 MB.
   - Of the app's own files, `LibraryView` is the largest at 0.36 MB.
 - **The iPhone's code costs little.**
   - `TextMouth/Phone/` is compiled into the Mac app too.

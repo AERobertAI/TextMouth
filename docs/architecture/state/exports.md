@@ -57,7 +57,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   TextMouth/Services/Export/ holds the writers and what they read:
 
 ### The document, the walker, and the first writers
-<!-- id: document-walker-first-writers; keys: ExportDocument, swift-markdown, chapter markers, HTML export, RTF export, Word export, page breaks, BCP 47; src: TextMouth/Services/Export/ExportDocument.swift, TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Services/Export/HTMLExportWriter.swift, TextMouth/Services/Export/RTFExportWriter.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, TextMouth/Services/Export/XHTMLMarkup.swift, TextMouth/Services/Export/XMLEscaping.swift, TextMouth/Parsers/MarkdownMarker.swift -->
+<!-- id: document-walker-first-writers; keys: ExportDocument, MarkdownTree, chapter markers, HTML export, RTF export, Word export, page breaks, BCP 47; src: TextMouth/Services/Export/ExportDocument.swift, TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Services/Export/HTMLExportWriter.swift, TextMouth/Services/Export/RTFExportWriter.swift, TextMouth/Platform/macOS/Services/Export/WordDocExportWriter.swift, TextMouth/Services/Export/XHTMLMarkup.swift, TextMouth/Services/Export/XMLEscaping.swift, TextMouth/Parsers/MarkdownMarker.swift -->
 
 - ExportDocument, the model every writer reads.
   For a writer that asks (EPUB, since 0.4.1) it also says where each chapter begins (chapterStarts, ExportChapterStart).
@@ -66,7 +66,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   The target is a heading annotation of content.md that a converted book carries for a contents entry naming a styled paragraph, an anchor, or a deeper entry of a Kindle book.
   ExportContentsItem is one entry of the contents, a heading or a target.
   All three are read where the reader reads them.
-- ExportDocumentWalker, the one swift-markdown walk of content.md, since Markdown stays the base.
+- ExportDocumentWalker, the one walk of content.md, which reads cmark-gfm's own tree (MarkdownTree), since Markdown stays the base.
   It splits the text into chapters at the markers exactly as the reader does, so text before the first marker is left out, as the reader leaves it out.
   ExportWalkOptions says what the walk keeps besides the words: keepsChapters and keepsPageMarkers, off in .plain (HTML, RTF, Word, and braille get the document they always did) and on in .bookStructure, which a writer asks for in TextExportWriter.walkOptions.
   The decoding of a marker line is MarkdownMarker (Parsers/MarkdownMarker.swift), shared with the reader and the exporters; the walk keeps the words that follow a marker on the same line.
@@ -208,7 +208,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
     - EPUBExportRoundTripTests and EPUBExportRealBooksTests (each of 17 real books exported, imported again with EPUBParser.prepareBook, and compared with the reader's own reading: the words, the pages with the same word before each, the headings), and
     - EPUBCheckTests, which runs `epubcheck` where /opt/homebrew/bin/epubcheck exists, skips where it does not, and fails when it ran and gave no summary.
   - MarkdownMinimalEscapingTests reads every string of one or two characters over a, 1, é, a space, and the 32 ASCII punctuation characters, and every three-character string over the punctuation, a, and a space.
-    It reads them back through swift-markdown as a paragraph, a heading, and a list item, in the plain form and with smart punctuation.
+    It reads them back through MarkdownTree as a paragraph, a heading, and a list item, in the plain form and with smart punctuation.
   - MarkdownExportWriterTests writes each kind of block and run, and walks the file back to the blocks it was written from.
 
 ## Transcripts as captions

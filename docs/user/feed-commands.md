@@ -62,6 +62,8 @@ Close it, then choose Delete Feed… again."; a download that can't be deleted k
 
 For an episode or article:
 - Open, which downloads it first;
+  Return on the selected row does the same as VoiceOver-Space: an episode not downloaded downloads and then opens, a feed's or folder's row opens, and with nothing selected it says so;
+  Command-Delete on an episode not downloaded no longer reaches the nearest book;
 - Download, or Cancel Download while it downloads, and both for one waiting to download by itself,
   where Download downloads it at once, on any network, and Cancel Download leaves it to you, saying, as in "“Ep.
   368” no longer waits to download; it downloads when you choose Download.";
