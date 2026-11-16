@@ -104,9 +104,13 @@ final class PhoneImportWordingTests: XCTestCase {
 
     /// Every extension the import converts is named among the Mac's names
     /// of its formats, never by the capitals fallback, so no refusal says
-    /// "OGG" or "AIFC".
+    /// "OGG" or "AIFC"; those only ffmpeg reads by their names (FMT31).
     func testEveryConvertedExtensionHasAName() {
-        let names: Set<String> = ["Ogg", "Opus", "AC-3", "CAF", "AIFF-C", "AU", "Wave64", "AMR", "3GPP", "MP1", "MP2"]
+        let names: Set<String> = [
+            "Ogg", "Opus", "AC-3", "CAF", "AIFF-C", "AU", "Wave64", "AMR", "3GPP", "MP1", "MP2",
+            "WMA", "WMV video", "Windows Media", "Speex", "Musepack", "WebM", "Matroska", "AVI video", "Flash video",
+            "RealMedia",
+        ]
         for ext in ImportAudioConverter.convertedExtensions {
             let name = PhoneImportRefusal.audioKindName(content: .unknown, fileExtension: ext)
             XCTAssertTrue(names.contains(name), "\(ext) is named \(name)")

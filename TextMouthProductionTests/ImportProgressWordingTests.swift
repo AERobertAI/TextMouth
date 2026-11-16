@@ -290,8 +290,8 @@ final class ImportProgressWordingTests: XCTestCase {
             "No books were found in “Radio.zip”. It holds 176 .ogg files, which TextMouth does not import."
         )
         XCTAssertEqual(
-            found(["wma": 1]),
-            "No books were found in “Radio.zip”. It holds 1 .wma file, which TextMouth does not import."
+            found(["exe": 1]),
+            "No books were found in “Radio.zip”. It holds 1 .exe file, which TextMouth does not import."
         )
         XCTAssertEqual(
             found(["jpg": 10, "": 1, "png": 3]),

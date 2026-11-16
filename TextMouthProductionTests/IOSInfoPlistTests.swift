@@ -104,10 +104,11 @@ final class IOSInfoPlistTests: XCTestCase {
 
     /// The document types the Mac declares and iOS leaves out, by name, and why:
     /// the audio the import converts with afconvert (`ImportAudioConverter`),
-    /// among it the system's type for `.caf`, which ALAC's type names too, and the
+    /// among it the system's type for `.caf`, which ALAC's type names too; the
+    /// audio and video the Mac's installed ffmpeg converts (FMT31); and the
     /// braille files, which need the braille helper.
     private static let refused: Set<String> = [
-        "Ogg Audio", "Audio Converted at Import", "ALAC Audio",
+        "Ogg Audio", "Audio Converted at Import", "Audio and Video Converted with ffmpeg", "ALAC Audio",
         "BRF Braille File", "BRL Braille File", "PEF Braille File",
     ]
 
@@ -116,12 +117,27 @@ final class IOSInfoPlistTests: XCTestCase {
     /// sentence of its own (`PhoneImportRefusal.braille`).
     private static let brailleTypes: Set<String> = ["com.textmouth.brf", "com.textmouth.brl", "org.daisy.pef"]
 
+    /// The types the Mac declares itself for the formats only its installed
+    /// ffmpeg converts (FMT31), which macOS does not: iOS declares none of them,
+    /// and the iPhone refuses those files with a sentence of its own
+    /// (`PhoneImportRefusal.ffmpegAudio`).
+    private static let ffmpegDeclaredTypes: Set<String> = [
+        "com.textmouth.musepack", "com.textmouth.matroska-audio", "com.textmouth.matroska-video", "com.textmouth.webm-audio",
+    ]
+
+    /// Every type the ffmpeg formats' document type names: the system's and the Mac's own.
+    private static let ffmpegTypes: Set<String> = Set([
+        "com.microsoft.windows-media-wma", "com.microsoft.advanced-systems-format", "com.microsoft.windows-media-wmv",
+        "org.webmproject.webm", "public.avi", "com.adobe.flash.video", "com.real.realaudio", "com.real.realmedia",
+        "com.real.realmedia-vbr",
+    ]).union(ffmpegDeclaredTypes)
+
     /// The types only those document types name: what the Mac names and iOS does not.
     private static let refusedTypes: Set<String> = Set([
         "org.xiph.ogg-audio",
         "public.aifc-audio", "com.apple.coreaudio-format", "public.au-audio", "com.sony.wave64", "public.ac3-audio",
         "public.enhanced-ac3-audio", "public.mp2", "org.3gpp.adaptive-multi-rate-audio", "public.3gpp", "public.3gpp2",
-    ]).union(brailleTypes)
+    ]).union(brailleTypes).union(ffmpegTypes)
 
     /// The keys only iOS has, which Scripts/ios/sync-info-plist.py adds.
     private static let iOSOnlyKeys: Set<String> = ["UIBackgroundModes", "UIApplicationSceneManifest"]
@@ -181,12 +197,13 @@ final class IOSInfoPlistTests: XCTestCase {
     // MARK: - Type declarations
 
     /// The imported declarations iOS reads, which tag the extensions of the
-    /// types, are the Mac's less the braille files' (the MOBI type's `.azw3`
-    /// tag is the Mac's own); and the exported ones are the Mac's.
+    /// types, are the Mac's less the braille files' and the ffmpeg formats'
+    /// (the MOBI type's `.azw3` tag is the Mac's own); and the exported ones
+    /// are the Mac's.
     func testTheDeclarationsAreTheMacsLessTheBrailleFiles() throws {
         let mac = try imported(in: macPlist())
         let ios = try imported(in: iosPlist())
-        XCTAssertEqual(Set(ios.keys), Set(mac.keys).subtracting(Self.brailleTypes))
+        XCTAssertEqual(Set(ios.keys), Set(mac.keys).subtracting(Self.brailleTypes).subtracting(Self.ffmpegDeclaredTypes))
         for (identifier, declaration) in ios {
             XCTAssertEqual(NSDictionary(dictionary: declaration), NSDictionary(dictionary: try XCTUnwrap(mac[identifier])), identifier)
         }
@@ -219,7 +236,7 @@ final class IOSInfoPlistTests: XCTestCase {
     }
 
     /// Every type the import declares for itself is declared for iOS too, but
-    /// the braille files', which iOS refuses. The `UTType(identifier)` form
+    /// the braille files' and the ffmpeg formats', which iOS refuses. The `UTType(identifier)` form
     /// answers nil for an undeclared type, and `UTType(importedAs:)` works only
     /// if the app declares it, so a missing one loses a format from the file
     /// picker with no error. The braille types drop out of the picker that way
@@ -245,10 +262,12 @@ final class IOSInfoPlistTests: XCTestCase {
         XCTAssertFalse(ownTypes.isEmpty, "Found no UTType(\"com.textmouth...\") in the import's source")
         XCTAssertEqual(ownTypes.subtracting(iOSDeclared), [], "UTType(\"com.textmouth...\") with no declaration")
 
-        // The import's list itself, as this process builds it.
+        // The import's list itself, as this process builds it. The ffmpeg
+        // formats' own types are found by extension there (FMT31), and iOS
+        // refuses those files, as it refuses braille.
         let used = Set(FileImportService.supportedTypes.map(\.identifier)).intersection(macDeclared)
         XCTAssertEqual(
-            used.subtracting(iOSDeclared).subtracting(Self.brailleTypes), [],
+            used.subtracting(iOSDeclared).subtracting(Self.brailleTypes).subtracting(Self.ffmpegDeclaredTypes), [],
             "In supportedTypes, and not declared for iOS")
     }
 

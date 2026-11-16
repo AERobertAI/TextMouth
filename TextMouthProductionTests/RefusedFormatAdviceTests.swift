@@ -84,8 +84,8 @@ final class RefusedFormatAdviceTests: XCTestCase {
                 + "which TextMouth does not import. TextMouth cannot open copy-protected files."
         )
         XCTAssertEqual(
-            found(["wma": 176]),
-            "No books were found in “Docs.zip”. It holds 176 .wma files, which TextMouth does not import."
+            found(["exe": 176]),
+            "No books were found in “Docs.zip”. It holds 176 .exe files, which TextMouth does not import."
         )
         // Advice for a kind past the named three is still given.
         XCTAssertTrue(found(["a": 9, "b": 8, "c": 7, "d": 6, "xps": 1]).hasSuffix(RefusedFormatAdvice.xps))

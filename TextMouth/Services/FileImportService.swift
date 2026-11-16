@@ -417,9 +417,14 @@ struct ImportedFileMetadata {
     /// The common metadata tags of the audio file at `url`, read through
     /// AVFoundation's asynchronous loading while this thread waits, as an
     /// import runs off the main thread. Reading tags never throws, so the
-    /// empty tags are only the type checker's fallback.
+    /// empty tags are only the type checker's fallback. A file only ffmpeg
+    /// reads is asked of ffprobe with the tool this thread sees (FMT31),
+    /// read here, since the wait's task does not inherit it.
     private static func audioTags(of url: URL) -> AudioMetadata {
-        (try? AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioTagsTimeLimit) { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
+        let ffmpeg = FFmpegAudioConverter.tool
+        return (try? AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioTagsTimeLimit) {
+            await AudioPlaybackService.extractFullMetadata(from: url, ffmpeg: ffmpeg)
+        }) ?? AudioMetadata()
     }
 }
 
@@ -1821,7 +1826,9 @@ enum FileImportService {
     /// the imports of a file, a folder of tracks, a playlist, and an audio
     /// ZIP give, an audiobook's transcript files found beside its audio are
     /// attached once its content reads (`TranscriptPairing.attach`, FMT23),
-    /// and the book returned carries the notice of those that were not.
+    /// and the book returned carries the notice of those that were not,
+    /// after the notice of the tracks a book of several left out because
+    /// only ffmpeg reads them and they can't be converted here.
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
@@ -1835,7 +1842,7 @@ enum FileImportService {
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
-        try convertImportedAudio(
+        let leftOutNotice = try convertImportedAudio(
             of: &staged,
             in: staging,
             keepingOriginals: keepsOriginalsOfConvertedAudio(feedLink: feedLink),
@@ -1847,7 +1854,7 @@ enum FileImportService {
         )
         // A transcript beside the audio goes into the staged package before
         // its record is written; attaching one never fails the import.
-        let notice = pairing.flatMap { TranscriptPairing.attach($0, to: staged, index: content.index) }
+        let transcriptNotice = pairing.flatMap { TranscriptPairing.attach($0, to: staged, index: content.index) }
         let book = staging.published(staged)
 
         try run.begin(.savingRecord, in: staging.directory)
@@ -1855,7 +1862,10 @@ enum FileImportService {
 
         try run.begin(.publishing, in: staging.directory)
         try publish(staging)
-        return ImportedBook(book: book, report: content.report, notice: notice)
+        // The tracks left out of a book of several (review9 finding 2), then
+        // the transcripts not attached, as one message.
+        let notices = [leftOutNotice, transcriptNotice].compactMap { $0 }
+        return ImportedBook(book: book, report: content.report, notice: notices.isEmpty ? nil : notices.joined(separator: " "))
     }
 
     /// What reading a book's content as the reader will produced: the index
@@ -3171,6 +3181,14 @@ enum FileImportService {
         // The formats macOS decodes that the import converts (FMT09), by
         // their extensions' system types where they have one.
         types.append(contentsOf: ImportAudioConverter.coreAudioExtensions.sortedStably().compactMap {
+            UTType(filenameExtension: $0)
+        })
+        // The formats the installed ffmpeg converts (FMT31, FMT32), audio and
+        // video alike, by their extensions' types: the system's, TextMouth's
+        // own declarations, or a type made for the extension (.spx is the
+        // System Profiler's, so its files are offered too, and refused when
+        // they hold no Ogg).
+        types.append(contentsOf: FFmpegAudioConverter.extensions.sortedStably().compactMap {
             UTType(filenameExtension: $0)
         })
         // Video, imported as an audiobook whose sound alone plays (FR03).

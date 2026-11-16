@@ -90,19 +90,21 @@ final class PackageTrackScanTests: XCTestCase {
     // MARK: - The Two Lists
 
     /// The package's list is the audio list without the core-audio formats
-    /// the import converts, and the two together are the audio list: nothing
-    /// falls between. Ogg stays in it, as the library's conversion of Ogg
-    /// books has to find those tracks.
+    /// the import converts and without those the installed ffmpeg converts
+    /// (FMT31), and the three together are the audio list: nothing falls
+    /// between. Ogg stays in it, as the library's conversion of Ogg books has
+    /// to find those tracks.
     func testThePackageListIsTheAudioListWithoutTheCoreAudioFormats() {
         let audio = Set(BookFormat.audio.fileExtensions)
         let package = BookFormat.packageTrackExtensions
+        let convertedFormats = ImportAudioConverter.coreAudioExtensions.union(FFmpegAudioConverter.extensions)
 
-        XCTAssertTrue(package.isDisjoint(with: ImportAudioConverter.coreAudioExtensions))
-        XCTAssertEqual(package.union(audio.intersection(ImportAudioConverter.coreAudioExtensions)), audio)
+        XCTAssertTrue(package.isDisjoint(with: convertedFormats))
+        XCTAssertEqual(package.union(audio.intersection(convertedFormats)), audio)
         for played in ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "mp4", "m4v", "mov", "ogg", "oga", "opus"] {
             XCTAssertTrue(package.contains(played), "\(played) stays a package track")
         }
-        for converted in ["caf", "aifc", "au", "w64", "ac3", "ec3", "mp2", "amr", "3gp"] {
+        for converted in ["caf", "aifc", "au", "w64", "ac3", "ec3", "mp2", "amr", "3gp", "wma", "spx", "mkv", "webm", "avi"] {
             XCTAssertFalse(package.contains(converted), "\(converted) is converted at import")
             XCTAssertTrue(audio.contains(converted), "\(converted) is still accepted by Open Book and an import")
         }

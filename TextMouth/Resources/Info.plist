@@ -294,6 +294,49 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Audio and Video Converted with ffmpeg</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>wma</string>
+				<string>asf</string>
+				<string>wmv</string>
+				<string>spx</string>
+				<string>mpc</string>
+				<string>mp+</string>
+				<string>mpp</string>
+				<string>mka</string>
+				<string>mkv</string>
+				<string>webm</string>
+				<string>weba</string>
+				<string>avi</string>
+				<string>flv</string>
+				<string>ra</string>
+				<string>rm</string>
+				<string>rmvb</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.microsoft.windows-media-wma</string>
+				<string>com.microsoft.advanced-systems-format</string>
+				<string>com.microsoft.windows-media-wmv</string>
+				<string>com.textmouth.musepack</string>
+				<string>com.textmouth.matroska-audio</string>
+				<string>com.textmouth.matroska-video</string>
+				<string>org.webmproject.webm</string>
+				<string>com.textmouth.webm-audio</string>
+				<string>public.avi</string>
+				<string>com.adobe.flash.video</string>
+				<string>com.real.realaudio</string>
+				<string>com.real.realmedia</string>
+				<string>com.real.realmedia-vbr</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>ALAC Audio</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -956,6 +999,92 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>cue</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.musepack</string>
+			<key>UTTypeDescription</key>
+			<string>Musepack Audio</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mpc</string>
+					<string>mp+</string>
+					<string>mpp</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>audio/x-musepack</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.matroska-audio</string>
+			<key>UTTypeDescription</key>
+			<string>Matroska Audio</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mka</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>audio/x-matroska</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.matroska-video</string>
+			<key>UTTypeDescription</key>
+			<string>Matroska Video</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mkv</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>video/x-matroska</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.webm-audio</string>
+			<key>UTTypeDescription</key>
+			<string>WebM Audio</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>weba</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>audio/webm</string>
 				</array>
 			</dict>
 		</dict>

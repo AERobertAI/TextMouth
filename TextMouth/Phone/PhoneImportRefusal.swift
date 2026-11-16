@@ -12,6 +12,10 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     /// Audio the import converts (Ogg, Opus, AC-3, AMR, MP2, CAF, and the
     /// rest of `ImportAudioConverter.convertedExtensions`), named as `kind`.
     case convertedAudio(kind: String)
+    /// Audio or video that only a Mac's installed ffmpeg converts (WMA,
+    /// WebM, Matroska, and the rest of `FFmpegAudioConverter`, FMT31), named
+    /// as `kind`: the phone can start no ffmpeg, and a Mac needs one.
+    case ffmpegAudio(kind: String)
     /// A Word 6 or Word 95 document, which TextMouth's own Word reader
     /// leaves to textutil.
     case wordSixOrNinetyFive
@@ -25,6 +29,8 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
         switch self {
         case let .convertedAudio(kind):
             return PhoneImportWording.convertedAudioRefusal(name, kind: kind)
+        case let .ffmpegAudio(kind):
+            return PhoneImportWording.ffmpegAudioRefusal(name, kind: kind)
         case .wordSixOrNinetyFive:
             return PhoneImportWording.wordSixOrNinetyFiveRefusal(name)
         case .braille:
@@ -52,8 +58,15 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
 
     /// Throws `.convertedAudio`, naming the kind of the first of `sources`,
     /// when there are any: the files an import would convert, which the
-    /// phone can't. Nothing is thrown for none.
+    /// phone can't. When one of them is a file only ffmpeg reads
+    /// (`FFmpegAudioConverter.converts(_:)`), `.ffmpegAudio` is thrown for
+    /// the first such file instead, since a Mac needs ffmpeg for it. Nothing
+    /// is thrown for none.
     static func refuseConversion(of sources: [URL]) throws {
+        if let first = sources.first(where: FFmpegAudioConverter.converts) {
+            let kind = FFmpegImportWording.kindName(of: first, container: FFmpegContainer.of(fileAt: first))
+            throw PhoneImportRefusal.ffmpegAudio(kind: kind)
+        }
         guard let first = sources.first else { return }
         throw PhoneImportRefusal.convertedAudio(kind: audioKindName(of: first))
     }
@@ -90,9 +103,11 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     }
 
     /// The name of the audio format an extension, in lowercase, stands for
-    /// among those the import converts; the extension in capitals for any
-    /// other.
+    /// among those the import converts, those only ffmpeg reads named as
+    /// the Mac names them (`FFmpegImportWording.kindName(forExtension:)`);
+    /// the extension in capitals for any other.
     private static func audioKindName(fileExtension ext: String) -> String {
+        if let ffmpegKind = FFmpegImportWording.kindName(forExtension: ext) { return ffmpegKind }
         switch ext {
         case "ogg", "oga": return "Ogg"
         case "opus": return "Opus"

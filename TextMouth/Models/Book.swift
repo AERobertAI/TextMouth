@@ -113,6 +113,12 @@ enum BookFormat: String, Codable, CaseIterable {
     /// Mac whose afconvert cannot read a format (Ogg before macOS 15.4, for
     /// one) refuses such a file by name at "Converting its audio".
     ///
+    /// The formats only ffmpeg reads (`FFmpegAudioConverter.extensions`:
+    /// Windows Media, Speex, Musepack, Matroska and WebM, AVI, Flash video,
+    /// and RealMedia, FMT31 and FMT32) are converted at import the same way,
+    /// by the installed ffmpeg; a Mac without it refuses them at "Converting
+    /// its audio" with what to install, and the iPhone refuses them.
+    ///
     /// A Word template (.dotx), a macro-enabled document (.docm), and a
     /// macro-enabled template (.dotm) are the same Office Open XML package
     /// as a .docx, only the main part's content type differs, so they share
@@ -143,6 +149,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .audio:
             return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "ogg", "oga", "opus", "mp4", "m4v", "mov"]
                 + ImportAudioConverter.coreAudioExtensions.sortedStably()
+                + FFmpegAudioConverter.extensions.sortedStably()
         // .prc is a Palm database, which a Kindle book of the first
         // generation was named, .azw is an Amazon Kindle book, and .azw3 is
         // one in the newer KF8 format (FMT48); all are read by the book's own
@@ -208,8 +215,14 @@ enum BookFormat: String, Codable, CaseIterable {
     /// holds, and that conversion reads a book's index before converting it,
     /// which needs the book's Ogg tracks found. The reader's guards refuse
     /// an Ogg track by name and by content.
+    ///
+    /// The formats only ffmpeg reads (`FFmpegAudioConverter.extensions`,
+    /// FMT31) are left out too: a package holds the .m4a made from each, and
+    /// no TextMouth before them ever kept one.
     static var packageTrackExtensions: Set<String> {
-        Set(BookFormat.audio.fileExtensions).subtracting(ImportAudioConverter.coreAudioExtensions)
+        Set(BookFormat.audio.fileExtensions)
+            .subtracting(ImportAudioConverter.coreAudioExtensions)
+            .subtracting(FFmpegAudioConverter.extensions)
     }
 
     var isAudio: Bool { self == .audio }

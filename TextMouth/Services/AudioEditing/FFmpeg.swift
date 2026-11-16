@@ -30,12 +30,34 @@ struct FFmpeg: Equatable, Sendable {
         in locations: [String] = standardLocations,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> FFmpeg? {
+        locateProgram(named: "ffmpeg", in: locations, environment: environment).map(FFmpeg.init(executable:))
+    }
+
+    /// The ffprobe that comes with this ffmpeg (FMT31), which the import asks
+    /// what a file holds: the executable named ffprobe in this ffmpeg's own
+    /// folder, as Homebrew and MacPorts install the two side by side; else
+    /// the first in `locations` (by default the standard ones, with
+    /// "ffprobe" for "ffmpeg") or along the PATH in `environment`. Nil when
+    /// there is none. Reads only file metadata; always nil on iOS.
+    func probe(
+        in locations: [String] = FFmpeg.standardLocations.map { ($0 as NSString).deletingLastPathComponent + "/ffprobe" },
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> URL? {
+        let beside = executable.deletingLastPathComponent().appendingPathComponent("ffprobe").path
+        return Self.locateProgram(named: "ffprobe", in: [beside] + locations, environment: environment)
+    }
+
+    /// The first executable file (not a folder) named `name` at one of
+    /// `locations`, then in each folder of the PATH in `environment`; nil
+    /// when there is none. On iOS always nil: an app there may start no
+    /// child process, even in the Simulator, which sees the Mac's own files.
+    private static func locateProgram(named name: String, in locations: [String], environment: [String: String]) -> URL? {
         #if os(macOS)
-        let path = (environment["PATH"] ?? "").split(separator: ":").map { "\($0)/ffmpeg" }
+        let path = (environment["PATH"] ?? "").split(separator: ":").map { "\($0)/\(name)" }
         for candidate in locations + path where FileManager.default.isExecutableFile(atPath: candidate) {
             var isFolder: ObjCBool = false
             guard FileManager.default.fileExists(atPath: candidate, isDirectory: &isFolder), !isFolder.boolValue else { continue }
-            return FFmpeg(executable: URL(fileURLWithPath: candidate))
+            return URL(fileURLWithPath: candidate)
         }
         return nil
         #else

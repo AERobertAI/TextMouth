@@ -54,8 +54,12 @@ enum ImportAudioConverter {
     ]
 
     /// The extensions, in lowercase, of every audio format the import
-    /// converts (FMT09): Ogg's and `coreAudioExtensions`.
-    static let convertedExtensions: Set<String> = oggExtensions.union(coreAudioExtensions)
+    /// converts (FMT09): Ogg's, `coreAudioExtensions`, and those the
+    /// installed ffmpeg converts (`FFmpegAudioConverter.extensions`, FMT31),
+    /// so the reader guards keep all of them from Apple's decoders.
+    static let convertedExtensions: Set<String> = oggExtensions
+        .union(coreAudioExtensions)
+        .union(FFmpegAudioConverter.extensions)
 
     /// The extensions, in lowercase, of files TextMouth writes itself from
     /// its own samples with Apple's encoder and reads back in the app: a
@@ -516,6 +520,14 @@ enum ImportAudioConverter {
 
     /// The `Target` for `info` and `bytes`; see `Target`.
     static func target(for info: SourceInfo, bytes: Int64) -> Target {
+        target(for: info, averageBitRate: Double(bytes) * 8 / info.duration)
+    }
+
+    /// The `Target` for `info` whose lossy codec averages `average` bits a
+    /// second (ignored for a lossless one); see `Target`. The ffmpeg import
+    /// gives its sound stream's own rate (FMT31), since a video file's size
+    /// counts its pictures too.
+    static func target(for info: SourceInfo, averageBitRate average: Double) -> Target {
         if info.isLossless {
             return Target(
                 channels: min(max(info.channels, 1), maximumChannels),
@@ -526,7 +538,6 @@ enum ImportAudioConverter {
         }
         let channels = min(max(info.channels, 1), maximumChannels)
         let rate = sampleRate(for: info.sampleRate)
-        let average = Double(bytes) * 8 / info.duration
         return Target(
             channels: channels,
             sampleRate: rate,
@@ -711,6 +722,21 @@ enum ImportAudioConverter {
         var limits: @Sendable (_ duration: TimeInterval) -> WatchedProcess.Limits
         /// How the watchdog reads the child's resident memory.
         var residentMemory: @Sendable (pid_t) -> Int64?
+        /// What converts the files only ffmpeg reads (FMT31,
+        /// `FFmpegAudioConverter.converts(_:)`), which `convert` hands to it.
+        /// Nil means `FFmpegAudioConverter.tool`, which a test may bind; an
+        /// import reads that on its own thread and sets it here
+        /// (`FileImportService.convertTracks`), since the conversions' tasks
+        /// do not inherit it.
+        var ffmpeg: FFmpegAudioConverter.Tool? = nil
+
+        /// This tool with `ffmpeg` settled: its own, else
+        /// `FFmpegAudioConverter.tool` as the calling thread sees it.
+        func resolvingFFmpeg() -> Tool {
+            var resolved = self
+            resolved.ffmpeg = ffmpeg ?? FFmpegAudioConverter.tool
+            return resolved
+        }
 
         /// Apple's own converter, which reads Ogg through AudioFile and
         /// ExtAudioFile; it converted a 34-minute Vorbis track whole in
@@ -776,14 +802,24 @@ enum ImportAudioConverter {
     /// `AUDIO_CHAPTERS_NOT_KEPT` says why in the debug log. The library's
     /// conversion of an older book's Ogg files keeps none, so that book's
     /// chapters, and the places in it, stay as they were.
+    ///
+    /// A file only ffmpeg reads (`FFmpegAudioConverter.converts(_:)`, FMT31)
+    /// is converted by the installed ffmpeg instead, with `tool.ffmpeg`
+    /// (`FFmpegAudioConverter.convert`), into the same kind of file. ffmpeg
+    /// carries the file's own chapters itself (`-map_chapters 0`), so
+    /// `keepingChapters` asks nothing more of it.
     /// - Throws: `Failure`, or `CancellationError` when the task is
-    ///   cancelled.
+    ///   cancelled; for a file only ffmpeg reads, also
+    ///   `FFmpegAudioConverter.Failure`.
     static func convert(
         _ source: URL,
         naming: Bool = true,
         using tool: Tool = .afconvert,
         keepingChapters: Bool = false
     ) async throws -> Conversion {
+        if FFmpegAudioConverter.converts(source) {
+            return try await FFmpegAudioConverter.convert(source, naming: naming, using: tool.ffmpeg ?? FFmpegAudioConverter.tool)
+        }
         let started = Date()
         let name = source.lastPathComponent
         guard let info = try await inspect(source, using: tool.info) else {
@@ -905,12 +941,28 @@ enum ImportAudioConverter {
     ) async throws {
         var limits = tool.limits(duration)
         limits.maximumOutputBytes = limits.maximumOutputBytes ?? cap
+        try await runConverting(command, named: name, limits: limits, residentMemory: tool.residentMemory, watching: output)
+    }
+
+    /// Runs one converting process, `command`, of a conversion of the file
+    /// named `name`, under `limits` (its output cap included), reading its
+    /// memory with `residentMemory` and watching `output` grow, and turns how
+    /// it ended into success or a `Failure`; a kill is logged
+    /// (`AUDIO_CONVERSION_KILLED`). afconvert's steps and the installed
+    /// ffmpeg (`FFmpegAudioConverter`, FMT31) both run through it.
+    static func runConverting(
+        _ command: (executable: URL, arguments: [String]),
+        named name: String,
+        limits: WatchedProcess.Limits,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64?,
+        watching output: URL
+    ) async throws {
         let outcome = try await WatchedProcess.run(
             command.executable,
             arguments: command.arguments,
             watching: output,
             limits: limits,
-            residentMemory: tool.residentMemory
+            residentMemory: residentMemory
         )
         switch outcome {
         case .exited(status: 0):
@@ -980,9 +1032,10 @@ enum ImportAudioConverter {
     /// Checks the converted file at `url`, made from the file named
     /// `sourceName` lasting `duration` seconds: it must open and decode as
     /// audio (`AudioMediaProbe`), and last as long to within
-    /// `lengthTolerance`.
+    /// `allowedLengthError(for:)`. The ffmpeg import checks its files with it
+    /// too (`FFmpegAudioConverter`, FMT31).
     /// - Throws: `Failure.checkFailed`.
-    private static func check(_ url: URL, against duration: TimeInterval, from sourceName: String) async throws {
+    static func check(_ url: URL, against duration: TimeInterval, from sourceName: String) async throws {
         switch await AudioMediaProbe.duration(of: url) {
         case let .failure(problem):
             throw Failure.checkFailed(fileName: sourceName, reason: problem.reason)

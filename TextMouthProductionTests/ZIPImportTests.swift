@@ -338,7 +338,10 @@ final class ZIPImportTests: XCTestCase {
     /// hidden files or the copies macOS keeps in `__MACOSX`, and its end is
     /// logged whatever it brought. On October 13, 2026 a ZIP of 176 radio
     /// dramas as Ogg files, before TextMouth played Ogg, was extracted,
-    /// searched, and removed with nothing logged or shown.
+    /// searched, and removed with nothing logged or shown. (Windows Media
+    /// Audio was this test's example until November 15, 2026; the installed
+    /// ffmpeg converts it now, so Audible's copy-protected .aax, which
+    /// TextMouth never opens, is.)
     func testABatchWithoutABookCountsWhatItPassedOverAndLogsItsEnd() throws {
         let inner = try makeTemporaryZip(prefix: "NonBookInner", entries: [
             "cover.jpg": Data("jpeg".utf8),
@@ -346,11 +349,11 @@ final class ZIPImportTests: XCTestCase {
         ])
         defer { try? FileManager.default.removeItem(at: inner) }
         let archive = try makeTemporaryZip(prefix: "NonBookOuter", entries: [
-            "Radio/elegy.wma": Data("one".utf8),
-            "Radio/two.WMA": Data("two".utf8),
+            "Radio/elegy.aax": Data("one".utf8),
+            "Radio/two.AAX": Data("two".utf8),
             "Radio/notes.json": Data("{}".utf8),
-            "Radio/.hidden.wma": Data("hidden".utf8),
-            "__MACOSX/Radio/._elegy.wma": Data("apple double".utf8),
+            "Radio/.hidden.aax": Data("hidden".utf8),
+            "__MACOSX/Radio/._elegy.aax": Data("apple double".utf8),
             "Radio/extras.zip": try Data(contentsOf: inner)
         ])
         defer { try? FileManager.default.removeItem(at: archive) }
@@ -358,7 +361,7 @@ final class ZIPImportTests: XCTestCase {
         let result = try FileImportService.importZip(from: archive)
 
         XCTAssertTrue(result.foundNoNewBook)
-        XCTAssertEqual(result.nonBookFiles.countsByExtension, ["wma": 2, "json": 1, "jpg": 1, "": 1])
+        XCTAssertEqual(result.nonBookFiles.countsByExtension, ["aax": 2, "json": 1, "jpg": 1, "": 1])
         // Each log line starts with a timestamp; compare from the tag on.
         let tag = "\(ZipImportResult.finishedLogTag): \(archive.lastPathComponent): "
         let logged = debugLogLines(containing: tag).compactMap { line in
@@ -366,7 +369,7 @@ final class ZIPImportTests: XCTestCase {
         }
         XCTAssertEqual(logged, [
             tag + "imported=0 duplicates=0 failed=0 incomplete=0 cancelled=false "
-                + "notBooks=5 (wma 2, no extension 1, jpg 1, json 1)"
+                + "notBooks=5 (aax 2, no extension 1, jpg 1, json 1)"
         ])
     }
 
