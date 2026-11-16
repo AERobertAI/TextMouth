@@ -125,6 +125,23 @@ enum WatchedProcess {
         throw IOSUnavailable.feature("Converting this kind of file")
     }
 
+    /// Would run `executable` and hand its output to `read` as it comes
+    /// (the Mac's FFmpeg helper, FMT50); on iOS it starts nothing and throws
+    /// `IOSUnavailable`, as `run` does. The parameters match the Mac's. It
+    /// stays above `runCapturingOutput`, which answers instead of throwing
+    /// and comes last (IOSBranchTests reads this file from there on).
+    static func runStreaming<Value: Sendable>(
+        _ executable: URL,
+        arguments: [String],
+        watching output: URL?,
+        limits: Limits,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
+        uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        reading read: (PipeReader) async throws -> Value
+    ) async throws -> (ending: Ending, read: Result<Value, any Error>) {
+        throw IOSUnavailable.feature("Converting this kind of file")
+    }
+
     /// Would run `executable` and return what it prints; on iOS it starts
     /// nothing, and answers that the helper could not start, with nothing
     /// printed. The parameters match the Mac's.
@@ -146,20 +163,5 @@ enum WatchedProcess {
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) async throws -> (outcome: Outcome, output: Data) {
         (outcome: .couldNotStart, output: Data())
-    }
-
-    /// Would run `executable` and hand its output to `read` as it comes
-    /// (the Mac's FFmpeg helper, FMT50); on iOS it starts nothing and throws
-    /// `IOSUnavailable`, as `run` does. The parameters match the Mac's.
-    static func runStreaming<Value: Sendable>(
-        _ executable: URL,
-        arguments: [String],
-        watching output: URL?,
-        limits: Limits,
-        residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
-        uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
-        reading read: (PipeReader) async throws -> Value
-    ) async throws -> (ending: Ending, read: Result<Value, any Error>) {
-        throw IOSUnavailable.feature("Converting this kind of file")
     }
 }
