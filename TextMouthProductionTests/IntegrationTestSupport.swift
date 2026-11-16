@@ -323,6 +323,10 @@ extension XCTestCase {
             statistics.endSession()
             statistics.stats = savedStatistics
             statistics.save()
+            // The save is queued on the statistics' own queue: wait for it,
+            // so it lands before this test ends and not during the next
+            // one, after the world's folders are gone.
+            ReadingStatsService.waitForQueuedSaves()
         }
 
         let notifications = NotificationCenter()
@@ -331,7 +335,7 @@ extension XCTestCase {
             notificationCenter: notifications,
             initializeServices: false,
             userDefaults: makeSandboxedPreferences(label),
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
         let world = IntegrationWorld(folder: folder, settings: settings, notifications: notifications)
         addTeardownBlock { world.closeReaders() }
