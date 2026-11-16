@@ -9,6 +9,25 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 
 - A page that holds only a scanned image is read with the Mac's own text recognition.
 
+## Pictures of pages and comic book archives
+<!-- id: pictures-comic-archives; keys: picture, photo, PNG, TIFF, CBZ, comic, ComicInfo.xml, text recognition; src: TextMouth/Parsers/PageImageReader.swift, TextMouth/Parsers/PageImageDecoder.swift, TextMouth/Parsers/PageImageArchive.swift, TextMouth/Parsers/PageImageText.swift, TextMouth/Models/PageImageWording.swift, TextMouth/Parsers/VisionTextRecognition.swift -->
+
+- A picture of a page (.png, .jpg, .jpeg, .heic, .heif, .tif, .tiff) is read with the Mac's own text recognition, and its words become the book.
+  A TIFF of several pages gives a chapter for each page that has text.
+- A comic book archive (.cbz, a ZIP of pictures) is read the same way, a chapter for each page, in the natural order of the file names ("page2" before "page10").
+  Its ComicInfo.xml, when it has one, gives the title (or the series and number), the writer, which pages to leave out as deleted, the titles of cover pages, and bookmarks.
+  A .cbr, which is a RAR archive, is not read.
+- Text recognition reads the words on a page from top to bottom and left to right.
+  It knows nothing of a comic's panels or speech balloons, so the words of a page of panels may come in another order than the story's.
+- Every picture, TIFF page, and archive picture is a page of the book.
+- The book's title is the file's name, unless ComicInfo.xml gives one.
+- Transparent pictures are laid on white, and on black when nothing is found on white; a photo's orientation is applied.
+- A picture that declares more than 100 megapixels is refused before it is decoded, and a book holds at most 2,000 pages.
+  The Mac decodes a page at up to 16 megapixels, and the iPhone at up to 4.
+- A comic book archive reads each page from the archive without unpacking it, and refuses a page file of more than 64 MB.
+- Pictures among other files in a ZIP of books, in an audiobook's tracks, or in a DAISY archive are not books, and a ZIP holding only pictures imports nothing: rename it to .cbz to read it as a comic.
+- Pictures and comic book archives need TextMouth 0.5.0 or later: an earlier TextMouth opens a library holding one without that book.
+
 ## HTML, Markdown, and plain text files
 <!-- id: html-markdown-plain-text-files; keys: line endings, TXT, .md, .html, .htm, TextFileDecoder; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/PlainTextParser.swift, TextMouth/Parsers/HTMLParser.swift, TextMouth/Parsers/MarkdownParser.swift -->
 

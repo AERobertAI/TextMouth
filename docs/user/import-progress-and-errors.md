@@ -17,6 +17,16 @@ How books are added is in [Adding books](adding-books.md).
 - It then counts the books processed, as in "2 of 100 books processed", with the book under way, by its name in the archive, and the step it is at, as in "Book 3 of 100: “Moby Dick.epub”, reading its text".
 - A single file, or a ZIP holding one book, shows its name and its step the same way, as do a TextMouth package opened from the Finder, from "checking the package" on, and a book made with New from Text, by the title you typed.
 - A package's line says "copying it into the library" while it copies.
+- A picture or comic book archive of several pages counts them as it reads their text, as in "reading its text: 3 of 12 pages", and Cancel stops it before the next page.
+- A picture or archive with no text is refused with "No text was found in this picture." or "No text was found in this comic book archive.", and one of several pages says "No text was found on any of the 3 pages of this picture."
+- When some pages can't be read, the alert says so, as in "Text recognition could not read 1 of 12 pages: page 3 (its picture could not be decoded)."
+- A picture that is too large is refused as in "This picture is 12,000 by 12,000 pixels, larger than the 100 megapixels TextMouth reads in one picture."
+- A picture that is not one is refused with "This file could not be read as a picture.
+  It may be damaged, or another kind of file."
+- An archive that is not a comic is refused with "This file could not be read as a comic book archive.
+  It may be damaged, or another kind of file."
+- An archive with no pictures is refused with "This comic book archive holds no pictures TextMouth can read."
+- The debug log notes a page file that could not be read as COMIC_ZIP_ERROR.
 - A recording saved from the New Recording window is named by its title the same way, its line going quietly once the save ends, since its window says how the save ended.
 - The count's noun agrees with the total, as in "0 of 1 book processed", as it does in the overlay of a text cache update or of Redo Text Extraction, as in "0 of 1 book extracted".
 - A ZIP holding one audiobook also counts the items and bytes extracted while it extracts, as in "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB".
@@ -43,6 +53,19 @@ How books are added is in [Adding books](adding-books.md).
 - For an archive holding no book TextMouth reads, the alert says what the archive holds instead, most files first, as in "No books were found in “Radio.zip”.
   It holds 176 .wma files, which TextMouth does not import."
 - Up to three kinds are named, the rest counted as other files.
+- A kind with advice adds its sentence once, after the ones that name the files.
+  A single refused file gets the same sentence after "Unsupported file format".
+  A folder named like a refused kind, such as an old Pages package, gets it too.
+  - Pages: "Export Pages documents from Pages as Word documents or EPUB books, then import those."
+  - Keynote and Numbers: "Export Keynote presentations from Keynote as PDF files, then import those." and "Export Numbers spreadsheets from Numbers as PDF files, then import those."
+  - WordPerfect (.wpd, .wp): "Save WordPerfect documents as Word documents or HTML files in a program that reads them, such as LibreOffice, then import those."
+  - Compiled HTML Help (.chm): "Convert Compiled HTML Help files to HTML files or PDF files, then import those."
+  - DjVu (.djvu, .djv): "Convert DjVu documents to PDF files, then import those."
+  - XPS (.xps, .oxps): "Convert XPS documents to PDF files, then import those."
+  - RAR comics (.cbr): "Repack the pages of RAR comics as CBZ comics, then import those."
+  - Other RAR archives (.rar): "TextMouth does not open RAR archives.
+    Unpack them, then import what they hold."
+  - Copy-protected audio (.aa, .aax, .aaxc, .m4p): "TextMouth cannot open copy-protected files."
 - The alert waits on screen, and VoiceOver reads it as it appears, so it is never missed as an announcement made while you were in another app could be.
 - One with a failure says so in its alert instead.
 

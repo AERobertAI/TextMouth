@@ -42,7 +42,8 @@ The duplicate question, Replace Existing, and the questions that wait their turn
   - SSML files,
   - Kindle books (.mobi, .prc, .azw, and .azw3, and .kfx, .kfx-zip, .azw8, and .kpf),
   - BRF, BRL, and PEF braille files,
-  - M3U and M3U8 playlists,
+  - M3U, M3U8, PLS, and XSPF playlists,
+  - pictures of pages (.png, .jpg, .jpeg, .heic, .heif, .tif, .tiff) and comic book archives (.cbz), whose words are found by text recognition,
   - MPEG-4, M4V, and QuickTime video files (.mp4, .m4v, and .mov, whose sound alone it plays),
   - the audio formats it converts,
   - and every .xml file,
@@ -147,6 +148,7 @@ The duplicate question, Replace Existing, and the questions that wait their turn
 ## ZIP archives
 <!-- id: zip-archives; keys: archive, Create Folder, batch, textutil, braille helper, cancel; src: TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/FileImportService.swift -->
 
+- A picture inside a ZIP of books, an audiobook's tracks, or a DAISY archive is not a book; a ZIP holding only pictures imports nothing (rename it to .cbz to read it as a comic), and a .cbz inside a ZIP of books imports as a comic.
 - A ZIP of several books imports each of them (an .rtfd folder inside is one book, not its separate files), and TextMouth offers to create a folder for them.
 - The progress overlay's Cancel button stops a ZIP import after the book in progress, or at once when that book is, on the Mac, a Word document older than Word 6 that textutil is converting, or a braille file that the braille helper is translating.
 - In that case textutil or the helper is stopped, that book is not imported, and the alert says after how many books the import stopped.

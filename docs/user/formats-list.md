@@ -31,6 +31,8 @@ Details: [Text, HTML, and PDF files](reads-text-files.md) and [Pages](reads-page
 - Plain text (.txt): text in any common encoding, which TextMouth recognizes or lets you choose, and pages from form feeds; no headings; iPhone: yes; Tested with real files.
 - PDF (.pdf): text, headings from the PDF's outline and font sizes, pages with the PDF's page labels, and recognized text for a scanned page; iPhone: yes; Tested with made samples.
 - SSML (.ssml): text, with the speech markup it holds, and no pages; iPhone: yes; Tested with made samples.
+- Picture (.png, .jpg, .jpeg, .heic, .heif, .tif, .tiff): the words on the page, found by text recognition, with a chapter for each page of a TIFF that has text; iPhone: yes; Tested with made samples.
+- Comic book archive (.cbz): the words on each picture, a chapter for each page, with the title, writer, and cover titles of its ComicInfo.xml; .cbr is not read; iPhone: yes; Tested with made samples.
 
 ## Web pages
 <!-- id: formats-list-web-pages; keys: HTML, XHTML, Safari web archive, webarchive; src: TextMouth/Parsers/HTMLParser.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift -->
@@ -104,6 +106,8 @@ Audio gets its title, author, and duration from its tags, and its chapters, wher
 Details: [Audiobooks](reads-audiobooks.md), [The audiobook manifest](audiobook-manifest.md), and [Transcripts, feeds, and packages](reads-transcripts-and-feeds.md).
 
 - M3U and M3U8 playlist (.m3u, .m3u8): one audiobook of the files it lists, a heading for each, in its order; iPhone: yes; Tested with made samples.
+- PLS playlist (.pls) and XSPF playlist (.xspf): the same, PLS in the order of its file numbers and XSPF with the playlist's title naming the book; iPhone: yes; Tested with made samples.
+- A .pls that is a pronunciation lexicon is refused as a playlist; Import Rules… on the Text tab in Settings reads it (see [Settings](settings.md)).
 - ZIP of audio tracks (.zip): one book with a heading for each track; iPhone: yes, except for tracks that need converting; Tested with made samples.
 - manifest.json in such a ZIP: the book's name and author, the tracks' order and titles, groups, and pauses; iPhone: yes; Tested with made samples.
 - Folder of audio files: one book of its tracks, in their order; iPhone: yes, except for tracks that need converting; Tested with made samples.
@@ -155,6 +159,7 @@ Each refusal names the file and says what to do next (see [Adding books](import-
 
 - A transcript (.vtt, .srt) chosen without its audio: import the audio, open the book, and choose Attach Transcript from the Book menu.
 - Any other file whose extension is none of the above: "Unsupported file format", with the extension.
+- For Pages, Keynote, Numbers, WordPerfect, Compiled HTML Help, DjVu, XPS, and RAR comic and archive files, and copy-protected audio, the refusal adds a sentence of advice (see [Adding books](import-progress-and-errors.md)).
 - An .xml file that is not a DTBook, Word 2003 XML, or a PEF file; and a file with no text to read.
 - A Kindle Create package (.kpf), a Kindle book that is copy-protected or has no flowing text, and a KFX part without its book: told apart, each with its own sentence.
 - A Word 1 or Word 2 document, and a password-protected Word 97-2003, OpenDocument, or PDF file.
