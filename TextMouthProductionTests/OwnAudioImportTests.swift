@@ -405,6 +405,43 @@ final class OwnAudioImportTests: XCTestCase {
         }
     }
 
+    /// The cue sheet in a file's tag gives the source its chapters, each
+    /// track that begins before the audio ends, and a conversion that
+    /// keeps chapters writes them into the .m4a; a file without a sheet has
+    /// none.
+    func testACueSheetInTheTagBecomesChapters() async throws {
+        var tags = OwnAudioTags()
+        XCTAssertEqual(OwnAudioConverter.chapters(in: tags, lasting: 60), [])
+        tags.artist = "Odalys Brennecke"
+        tags.cueSheet = """
+            PERFORMER "Odalys Brennecke"
+            FILE "talk.wav" WAVE
+              TRACK 01 AUDIO
+                TITLE "Morning Crossings"
+                INDEX 01 00:00:00
+              TRACK 02 AUDIO
+                PERFORMER "Ilse Varga"
+                INDEX 01 00:30:00
+              TRACK 03 AUDIO
+                TITLE "After The End"
+                INDEX 01 02:00:00
+            """
+        let placed = OwnAudioConverter.chapters(in: tags, lasting: 60)
+        XCTAssertEqual(placed.map(\.start), [0, 30])
+        XCTAssertEqual(placed.first?.title, "Morning Crossings")
+        XCTAssertEqual(placed.last?.title.contains("Ilse Varga"), true)
+
+        let source = try copySample("wv/tagged16.wv")
+        let described = try OwnAudioConverter.sourceInfo(of: source)
+        XCTAssertEqual(described?.chapters.map(\.title), ["Morning Crossings", "Evening Crossings"])
+        let conversion = try await ImportAudioConverter.convert(source, keepingChapters: true)
+        let kept = await AudioPlaybackService.extractChapters(from: conversion.converted)
+        XCTAssertEqual(kept.map(\.title), ["Morning Crossings", "Evening Crossings"])
+        XCTAssertEqual(kept.first?.startTime ?? -1, 0, accuracy: 0.001)
+        XCTAssertEqual(kept.last?.startTime ?? -1, 0.2, accuracy: 0.01)
+        XCTAssertEqual(try OwnAudioConverter.sourceInfo(of: try copySample("wv/stereo16.wv"))?.chapters, [])
+    }
+
     /// Only the fields a file has become metadata items.
     func testOnlyTheFieldsThereBecomeMetadata() {
         XCTAssertTrue(OwnAudioConverter.metadataItems(for: OwnAudioTags()).isEmpty)

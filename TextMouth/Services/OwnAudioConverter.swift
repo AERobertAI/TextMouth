@@ -100,10 +100,28 @@ enum OwnAudioConverter {
             // a year, as for every other source) is refused as damage before
             // any of it is decoded.
             guard decoder.stream.duration <= AudioFileInfo.maximumPlausibleDuration else { throw OwnAudioError.damaged }
-            return sourceInfo(for: decoder.stream, format: format)
+            var info = sourceInfo(for: decoder.stream, format: format)
+            info.chapters = chapters(in: OwnAudioTagReader.read(bytes), lasting: decoder.stream.duration)
+            return info
         } catch let problem as OwnAudioError {
             throw ImportAudioConverter.Failure.notRead(fileName: url.lastPathComponent, problem: problem)
         }
+    }
+
+    /// The chapters that the cue sheet in `tags` places in a file lasting
+    /// `duration` seconds (an APEv2 `Cuesheet` item, as WavPack's and
+    /// Monkey's Audio's encoders write one): each track that begins in the
+    /// sheet's first file, before the audio ends, titled as a cue sheet's
+    /// tracks are (`CueSheetArrangement.heading(of:author:)`). None without
+    /// a sheet. A conversion that keeps chapters writes them into the .m4a
+    /// (`ImportAudioConverter.convert(_:naming:using:keepingChapters:)`).
+    static func chapters(in tags: OwnAudioTags, lasting duration: TimeInterval) -> [NeroChapterReader.Chapter] {
+        guard !tags.cueSheet.isEmpty else { return [] }
+        let sheet = CueSheet.parse(tags.cueSheet)
+        let author = tags.artist.isEmpty ? sheet.performer : tags.artist
+        return sheet.tracks
+            .filter { $0.fileIndex == 0 && $0.startTime < duration }
+            .map { NeroChapterReader.Chapter(title: CueSheetArrangement.heading(of: $0, author: author), start: $0.startTime) }
     }
 
     /// `stream`, a stream of `format`, as `ImportAudioConverter` describes
