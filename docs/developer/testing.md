@@ -150,6 +150,7 @@ Delete a kept sandbox when you are done with it.
     - that `LiveReadingPositions.liveBookIDs` names the books with a live position as readers report and close.
   - `LookAheadLeadTests` (area `speech`) tests the look-ahead's lead and the long-pause watch as plain rules, with nothing rendered, spoken, or waited for: the lead's floor and growth, `isReached`, and `LongPauseWatch`'s delay, its end, and being watched again.
     `PreRenderedSpeechInvalidationTests` tests the reader's side: nothing renders short of the lead, crossing it asks once, a seek in asks once and a seek back keeps the render, a short chapter renders at once, and a long pause lets the audio go and keeps the speech.
+  - A new stored field needs its key, its encoder line, its entry in StoredKeyScan's schema, and its place in the plain twin that `UnknownKeysTests` holds each hand-written encoder to; a setting added since v0.4.11 goes in `settingsAddedSince0411`.
   - The speech position tick (`publishRenderedPosition`) is tested in `PlaybackLifecyclePolicyTests`, through `SpeechService._setTextForTesting(_:)`, which gives the service a text without rendering any speech:
     - a position that did not move publishes nothing,
     - a stale generation publishes nothing, and

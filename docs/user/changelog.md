@@ -6,7 +6,19 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ## 0.5.0 (November 15, 2026)
 
+### New formats
+- Pictures of pages (.png, .jpg, .jpeg, .heic, .heif, .tif, .tiff) and comic book archives (.cbz) are books: TextMouth reads the words on each page with the Mac's own text recognition, a chapter for each page.
+- Importing one counts the pages, as in "reading its text: 3 of 12 pages", and Cancel stops it before the next page.
+- Text recognition knows nothing of a comic's panels or speech balloons, so the words of a page of panels may come in another order than the story's.
+- A ComicInfo.xml in a comic gives its title, writer, deleted pages, and cover titles. A .cbr (RAR) archive is not read.
+- A picture inside a ZIP of books, an audiobook's tracks, or a DAISY archive is not a book, and a ZIP of only pictures imports nothing: rename it to .cbz.
+- PLS and XSPF playlists (.pls, .xspf) import as an audiobook of the files they list, as M3U playlists do. A .pls that is a pronunciation lexicon is refused, and says to use Import Rules… in Settings.
+- In Settings, the Text tab has Import Rules… and Export Rules…: a W3C pronunciation lexicon adds its spelling-to-words entries as substitution rules, up to 5000 at a time, and your plain text rules that are on can be saved as one.
+- A refused file now says what to do next for Pages, Keynote, Numbers, WordPerfect, Compiled HTML Help, DjVu, XPS, RAR, and copy-protected audio, for example "Export Pages documents from Pages as Word documents or EPUB books, then import those."
+
 ### Listening and editing
+- Saving or exporting an MP3 after cutting it no longer leaves a short silence of about a tenth of a second at the cut, and no longer sometimes fails with "The edited audio couldn't be written."
+- To remove an old gap from a book saved before, choose Revert to Original in the audio editor, redo the edits, and save.
 - A text book holds less memory while it plays or sits paused: about 15 to 21 MB less for a novel's chapter, which is the next chapter's audio.
 - That audio is now made only in the last minutes of the chapter you are in (at least 5 minutes before its end, earlier when the next chapter is long).
 - A book left paused for 5 minutes lets that audio go, and makes it again when you resume near the end.
@@ -18,8 +30,14 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Retry on a feed's unsaved changes, pressed while TextMouth moves its data directory, rebuilds it, or moves books between folders, no longer risks hanging TextMouth or writing into the folder being copied.
 - The row says when the changes will be saved, for example "TextMouth saves them once the move of its data directory ends.", TextMouth saves them itself when that ends, and VoiceOver says "Feed subscriptions saved."
 
+- From this version on, TextMouth keeps the keys a later TextMouth adds to a book's row, its record, config.json, library.json, and reading_stats.json when it saves them, so going back to this version and forward again loses nothing.
+
 ### Smaller and faster
 - The licences of ZIPFoundation, swift-markdown, and swift-cmark are now in the Mac app with the others, and the iPhone app carries the licences of every library it links.
+
+### Caution
+- TextMouth 0.2.1 to 0.4.11 open a library holding a picture or comic book without that book.
+  The book's row and files stay, and 0.5.0 shows it again.
 
 ### Not changed
 - How any book reads or is laid out.

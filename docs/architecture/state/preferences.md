@@ -120,6 +120,7 @@ The config.json mirror.
   ConfigService.saveToDisk, which writes at once, first merges any outside edit not yet handled, writes nothing when the file already holds the same bytes, and reports a failed save to PersistenceFailureCenter.
   Every read leaves dataless files in the cloud: a config.json only in the cloud is neither applied at launch nor written over, with one line in the debug log, until a save finds it on this Mac and merges it as an outside edit.
   While the data directory is unavailable, ConfigService neither reads, writes, nor watches the file; dataDirectoryBecameAvailable then merges it as an outside edit, keeping each setting changed meanwhile, saves it, and watches it again.
+  A top-level key this version does not know is read into ConfigService.AppConfig's unknownKeys and written back ([Keys a later TextMouth adds](package-records.md)).
 - How others observe it: a file-system watcher notices saved edits, tells them from TextMouth's own saves by their bytes, and publishes each once through externalEdits, which SettingsViewModel.applyConfigChanges applies.
   A changed dataDirectoryPath posts dataDirectoryChangeRequested, and LibraryViewModel moves the data directory, unless DataDirectoryRequest finds the folder missing on this Mac or already holding a TextMouth library, as another Mac's path in a library in the cloud would.
   That edit is ignored with one CONFIG_FILE line.

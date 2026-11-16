@@ -32,6 +32,7 @@ bookInfo.json: the book's record, with its metadata (for an EPUB, its publisher,
 - which of its metadata fields you edited by hand, reading position, bookmarks, and per-book settings, written within half a second of each change, and every 30 seconds while the book plays.
 
 It can rebuild a book's library entry if library.json is lost.
+From 0.5.0 on, TextMouth keeps a key a later TextMouth added to a book's record when it saves the book again.
 While a record is only in the cloud, TextMouth neither reads nor writes it, and the book's changes are saved in library.json alone, without waiting, until the record is on this Mac again.
 A downloaded episode's or article's record also names its feed and item, as its row in the feed's index does.
 

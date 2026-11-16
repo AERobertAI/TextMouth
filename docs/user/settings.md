@@ -67,6 +67,22 @@ The Symbols field lists the characters that can form runs; Reset to Default rest
 Only speech changes: the text on screen and on a braille display keeps every symbol.
 A change applies from the next chapter spoken.
 
+## Import and export rules as a pronunciation lexicon
+<!-- id: lexicon-import-export; keys: Import Rules, Export Rules, pronunciation lexicon, PLS, W3C, grapheme, alias, phoneme; src: TextMouth/Views/Settings/SubstitutionsSettingsView.swift, TextMouth/Parsers/PronunciationLexicon.swift, TextMouth/Services/TextSubstitutionService+Lexicon.swift, TextMouth/Models/PronunciationLexiconWording.swift -->
+
+The Text tab's Import Rules… reads a W3C pronunciation lexicon (a .pls file) and adds its spelling-to-words entries after your rules, as plain text rules that match a whole word and ignore case.
+Its hint says the entries go after your rules, and that entries giving only phonetic spellings are set aside.
+An alert titled "Rules Imported" then says what happened, as in "Added 3 rules from “names.pls”.
+It goes on, as needed, with "1 rule was already in your rules." and "2 entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside."
+A rule already among yours is skipped, and a lexicon adds at most 5000 rules at a time, saying how many entries it did not read.
+A file that is not a lexicon, or is larger than 8 MB, ends in an alert titled "Import Failed".
+Export Rules… saves your plain text rules that are on as a lexicon, named "Substitution Rules.pls" at first.
+Rules that use regular expressions, and rules that are off, are left out.
+Its alert, "Rules Exported", counts the rules written and the ones left out.
+When none can be written, it says "There are no rules to export.
+Only plain text rules that are on can be written in a lexicon."
+The iPhone app has no Text tab, so a .pls lexicon is refused there as "not a playlist" without the advice to import it.
+
 ## Reset the text rules
 <!-- id: reset-text-rules; keys: substitutions, substitutions.json, regular expression, $1, Reset to Defaults, pronunciation rules; src: TextMouth/Views/Settings/SubstitutionsSettingsView.swift, TextMouth/Services/TextSubstitutionService.swift -->
 

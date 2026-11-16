@@ -197,3 +197,11 @@ A marker is `MarkdownPageMarker.prefix`, one or more characters that are neither
 With nil (`ReadingFlow.unknownSource`), every attribute of the element is searched, as before.
 `EPUBBlankChapterTests` compares the blank test with the old regular expression on 20,000 random texts, and `PublicationSemanticsTypeNamesTests` the names with the full search.
 
+
+## VisionTextRecognition
+<!-- id: vision-text-recognition; keys: Vision, OCR, text recognition, RecognizedTextLine, scanned PDF, VNRecognizeTextRequest; src: TextMouth/Parsers/VisionTextRecognition.swift, TextMouth/Parsers/PDFTextRecognizer.swift, TextMouth/Parsers/PageImageReader.swift -->
+
+VisionTextRecognition is the one text recognition TextMouth runs: Vision's accurate recognizer with language correction, in the languages Vision reads when none are named.
+A scanned PDF's pages (VisionPDFTextRecognizer) and pictures of pages (PageImageReader) both read through it, so both read text in the same order.
+It returns RecognizedTextLine values, each with a box as fractions of the picture, the origin at the bottom left.
+Error codes that mean recognition cannot run in the process at all (unavailableCodes) are told apart from a failure on one picture.

@@ -51,10 +51,13 @@ From the list to sound: previewing, saving, and exporting edited audio.
   Whatever writes there makes the book's folder again first (AudioEditScratch.make), since a save removes it while an editor edits on, and macOS may empty the Caches folder.
   A stretch of the edited audio whose file macOS removed is made again when next needed (AudioEditSession.restorePurgedStretches, before an edit, a preview, a stretch copied or cut, and an export).
   Callers at once share one rebuild, one made for a list that changed meanwhile is not taken, and of two renders of one stretch at once, the result the first moved into place stands (AudioFilterProcessor).
-  AudioEditComposition makes a timeline an AVMutableComposition, the preview, sample-exact.
-  AudioEditRenderer writes it with AVAssetReader and AVAssetWriter in one pass, writing decoded audio no further than the edits' length, so a compressed take that ends them adds none of its last packet's padding, and MP3 with the LAME built in.
-  The composition is decoded to floats and handed to MP3Encoder buffer by buffer (AudioEditRenderer.renderMP3, along an MP3Route), or, should LAME fail to start, rendered to float PCM and encoded by an installed ffmpeg (FFmpeg.encodeMP3).
-  The AVAssetWriter path and LAME's share the reader and the loop that cuts decoded audio at the edits' end (makeReader, drain).
+  AudioEditComposition makes a timeline an AVMutableComposition, which a preview plays and copies of stored samples go through, never a render: AVFoundation decodes an MP3 wrongly through a composition, silencing about 100 ms at a cut and sometimes shifting the sound after it.
+  AudioEditRenderer decodes a render's edits stretch by stretch (readStretches): one AVAssetReader for each stretch over its own time range, with a run-up of 0.5 s and a run-past of 0.25 s (readRunUp, readRunPast), and its buffers retimed.
+  Every source is opened and checked before the file it would replace is removed.
+  A stretch that decodes short by up to 20 ms (fillableShortfall) is filled with silence, and a longer shortfall fails the render; each stretch hands over exactly its own frames, with a pool and a yield per stretch.
+  It writes with AVAssetWriter in one pass, no further than the edits' length, so a compressed take that ends them adds none of its last packet's padding, and MP3 with the LAME built in.
+  The decoded floats are handed to MP3Encoder buffer by buffer (AudioEditRenderer.renderMP3, along an MP3Route), or, should LAME fail to start, rendered to float PCM and encoded by an installed ffmpeg (FFmpeg.encodeMP3).
+  The AVAssetWriter path and LAME's share readStretches.
 - Who may write it: AudioEditSession, on the main actor, is the edit session the editor window's model works through (the editor window, below).
   It changes the list only through the history store, off the main thread, checking each edit against the audio first (AudioEditError.invalidEdit, a sentence saying why), and holds a use of its book while it is open.
   LibraryViewModel.saveAudioEdits refuses a book open in a reader and runs AudioEditBookRender as storage work (StorageWork.audioEditing) under a use of the book.

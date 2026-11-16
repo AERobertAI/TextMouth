@@ -40,6 +40,7 @@ Owner: the library's row of the replaced copy, which the new copy takes over und
 DuplicateReplacement (Services/DuplicateReplacement.swift) decides what the new copy keeps (carriedBook(replacing:with:places:location:)):
 - the ID, so that what the app keeps by ID stays, such as the place on the reading list;
 - the folder, the place in the folder's manual order, the date added, and when it was last opened and played;
+- the old row's unknown keys, those a later TextMouth added ([Keys a later TextMouth adds](package-records.md)), though not the old package record's;
 - the metadata the user edited by hand (Book.HandEdits, keepHandEditedMetadata(of:)); and,
 - for two books of one kind (areSameKind: both audiobooks, or both read from their text, a DAISY book among them, since BookFormat.isAudio tells them apart), the book's own settings (Book.hasOwnSettings, takeOwnSettings(of:)) and its places (carriedPlaces).
 
