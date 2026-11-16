@@ -22,7 +22,7 @@ Usage (Python 3 standard library only; run from anywhere):
 DERIVED_DATA, then measures the app with the IPA and the link map. It does not take the heavy-work lock itself: on
 this Mac `make ios-size` runs it through Scripts/agents/run_locked.py, and on a GitHub runner there is no lock.
 Exit status: 0 measured (even over the limits: the report says so), 1 the build failed or no app was found, 2 a bad
-command line.
+command line, 3 with --check and the app larger than the strict limit (40 MB; between 30 and 40 MB it says so and exits 0).
 """
 import argparse
 import glob
@@ -296,6 +296,12 @@ def run_build(derived_data, limit_minutes):
         return 124
 
 
+def exit_status(app_bytes, check):
+    """The exit status for a measured app: 3 when `check` is asked and the app is over the strict limit, else 0 (a size
+    between the limits only warns, in the report)."""
+    return 3 if check and app_bytes > STRICT_LIMIT_MB * MEGABYTE else 0
+
+
 def main(argv=None):
     """The command line: `measure`, `build`, or `--selftest`."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
@@ -309,12 +315,14 @@ def main(argv=None):
     measure.add_argument("--top", type=int, default=DEFAULT_TOP)
     measure.add_argument("--json", action="store_true")
     measure.add_argument("--summary", action="store_true", help="print the lines a run's ios-summary.txt carries")
+    measure.add_argument("--check", action="store_true", help="exit 3 when the app is over the strict limit")
     build = sub.add_parser("build", help="build the iPhone app for a device, then measure it")
     build.add_argument("--derived-data", default=str(ROOT / "build" / "ios-size-DerivedData"))
     build.add_argument("--limit-minutes", type=int, default=DEFAULT_BUILD_LIMIT_MINUTES)
     build.add_argument("--top", type=int, default=DEFAULT_TOP)
     build.add_argument("--json", action="store_true")
     build.add_argument("--summary", action="store_true", help="print the lines a run's ios-summary.txt carries")
+    build.add_argument("--check", action="store_true", help="exit 3 when the app is over the strict limit")
     args = parser.parse_args(argv)
     if args.selftest:
         return selftest()
@@ -348,7 +356,7 @@ def main(argv=None):
         print("\n".join(summary_lines(result, label)))
     else:
         print("\n".join(format_report(result, label)))
-    return 0
+    return exit_status(result["app_bytes"], args.check)
 
 
 # ---------------------------------------------------------------------------
@@ -460,6 +468,9 @@ def selftest():
     check("within the 30 MB limit" == verdict(30 * MEGABYTE), "30 MB itself is within the limit")
     check("over the 30 MB limit" in verdict(30 * MEGABYTE + 1), "30 MB and a byte is over the limit")
     check("over the strict 40 MB limit" == verdict(40 * MEGABYTE + 1), "40 MB and a byte is over the strict limit")
+    check(exit_status(40 * MEGABYTE, True) == 0 and exit_status(40 * MEGABYTE + 1, True) == 3
+          and exit_status(40 * MEGABYTE + 1, False) == 0 and exit_status(35 * MEGABYTE, True) == 0,
+          "--check's status is 3 only above the strict limit")
     check(describe(18_453_210) == "18.5 MB (18,453,210 bytes)", f"describe gave {describe(18_453_210)}")
     # The build's argv: the device SDK, unsigned, a link map, the scheme.
     argv = build_command("/x/dd")
