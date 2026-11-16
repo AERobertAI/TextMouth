@@ -44,8 +44,9 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Retry and the saves of statistics, settings, and rules, pressed or due during a data-directory move, a folder edit, or Rebuild Directory, now wait for it and save when it ends, instead of writing into the folder being copied and calling it saved.
 - Return on a feed's episode that is not downloaded now does what VoiceOver-Space does: it downloads the episode and opens it, where it opened the last downloaded episode before. Command-Delete on such a row no longer reaches the nearest book.
 
-### Smaller and faster
-- The app is 0.45 MB smaller, and text books are read faster: reading a chapter's Markdown takes 46% to 89% less time, and exporting a book as text 47% to 79% less. Every book reads and exports as before.
+### Faster
+- Text books are read faster: reading a chapter's Markdown takes 46% to 89% less time, and exporting a book as text 47% to 79% less. Every book reads and exports as before.
+- TextMouth reads Markdown with swift-cmark alone and no longer includes swift-markdown, which saves 0.45 MB. This version's new formats take more than that back: the app is 18.5 MB, about 0.26 MB larger than 0.4.11.
 - The licences of ZIPFoundation, swift-cmark, and the TTA, WavPack, and Monkey's Audio decoders TextMouth's own readers follow are now in both apps with the others.
 
 ### Caution
