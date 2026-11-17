@@ -118,6 +118,12 @@ struct BookExportConversionChoice: Identifiable, Equatable {
 /// and ends with one announcement naming how many items went where, and
 /// anything that could not be exported, in the cloud included.
 ///
+/// A chapter that nests quotes, lists, or emphasis past the reader's limit is
+/// put to the person while the export runs (FR24, `deepChapterPrompt`): write
+/// it as plain paragraphs of its lines, do so for every such chapter of the
+/// export, or cancel the whole export, which ends as Stop does. The export's
+/// thread waits for the answer, and Stop takes the question down as a cancel.
+///
 /// For one text book the dialog also offers its text as spoken audio (FMT43):
 /// the options are made the first time the kind is checked (`speechOptions`),
 /// since that reads the book's whole text for its headings, which no other
