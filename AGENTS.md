@@ -10,9 +10,10 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): the index of the code's parts; read only the pages your task touches.
 - [`.claude/skills/doc-library/SKILL.md`](.claude/skills/doc-library/SKILL.md): find and check a doc section; `doclib affected` for a branch.
 - [`.claude/skills/agent-bbs/SKILL.md`](.claude/skills/agent-bbs/SKILL.md): the message board the agents coordinate through.
+- [`.claude/skills/issue-library/SKILL.md`](.claude/skills/issue-library/SKILL.md): the issue tracker, one file per issue in `Issues/`.
 - [`docs/agents/working-with-agents.md`](docs/agents/working-with-agents.md): the board, and making each train count.
 - [`docs/agents/history.md`](docs/agents/history.md): earlier campaigns' status, and the stories behind these rules.
-- [`TODO-2026-09-04.md`](TODO-2026-09-04.md): the record of every merge, and the open items.
+- [`TODO-2026-09-04.md`](TODO-2026-09-04.md): the record of every merge; the open items are in `Issues/`.
 - [`AGENT-NOTES-2026-10-04.md`](AGENT-NOTES-2026-10-04.md): what agents left unverified; read it before a documentation pass.
 - [`research/README.md`](research/README.md): the research and design documents, each ending in the user's answers.
 - `*.md` is gitignored except README.md, AGENTS.md, ARCHITECTURE.md, CLAUDE.md, and the pages under `docs/`: stage other Markdown with `git add -f`.
@@ -33,7 +34,7 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
   Briefs and `build/` are gitignored and stay on the Mac.
 - Never play, probe, or decode Ogg through Apple's frameworks in a test or an experiment: its Vorbis decoder locked up in `AVPlayer` once and took the Mac down; `make lint-ogg` flags new calls.
 - Only the orchestrator merges into `main`, with `git merge --no-ff` and only after the full hosted suite is green on the merged tree; the project `CLAUDE.md` otherwise forbids merging.
-  Every merge is recorded in the TODO and described in the pages under `docs/` by a documentation pass.
+  Every merge is recorded in the TODO, closes its issues (`record-merge.py --close`), and is described in the pages under `docs/` by a documentation pass.
 - Follow `CLAUDE.md`'s Code Style, Git Workflow, and Accessibility; each commit has a test, and every control is keyboard-operable with every value spoken.
 - No test may trap (no unguarded subscript, force unwrap, over-fulfilled expectation, or unowned capture of a released object), since the user sees a macOS crash dialog for every test host that aborts.
 - No test may play sound aloud or record from a real microphone without an opt-in environment variable.
@@ -47,12 +48,13 @@ The brief names the branch, a task slug, the regions to avoid, the numbered item
 The agent:
 
 1. Makes its branch from `main` (or the team branch its brief names), since a worktree can start on an older commit.
-   It reads this file, its brief, and the documents the brief names.
+   It reads this file, its brief, its issue (`issuelib show ID`), and the documents the brief names.
    It registers on the board as its slug with `python3 .claude/skills/agent-bbs/scripts/bbs.py register <slug> --role "<one line>" --branch <branch> --files <paths or 'quoted globs'>`, then runs `bbs claims` and `bbs read --last 10` for overlaps.
    `bbs protocol` prints the full rules.
 2. Reads its inbox (`bbs inbox <slug> --unread`) before every commit, train request, and report.
    It posts a `commit` notice after each commit (`--topic "$(git log -1 --format='%h %s')"`), a `finding` with `--file <path>` for a problem in files it does not own (never fixing it), and a `question` when a decision touches another agent's work.
    It ends with `done: <branch>` and `bbs release <slug> --all`; posts are short, and the board's topic limit is 200 characters.
+   In `Issues/` it changes only the issue assigned to it: comments, and the status in-progress or blocked (`issuelib comment ID TEXT --as <slug>`).
 3. Tests through the build train and never builds on its own: it commits, runs `make typecheck-tests REF=<commit>`, and queues `python3 -I Scripts/agents/build-train.py request --agent <slug> --branch <branch> --classes <A,B> --areas <x,y>`, naming everything its change could break.
    It waits with one background `python3 -I Scripts/agents/wait-for-result.py --agent <slug>`.
    [Making each train count](docs/agents/working-with-agents.md) in `working-with-agents.md` has the rest; Tests on GitHub Actions in [Testing TextMouth](docs/developer/testing-github.md) says how to read a result.
@@ -89,4 +91,4 @@ The agent:
   - C11's look-ahead near a chapter's end; V04's kept keys; the MP3 edit fix; quitting and moves losing no write; Return on the selected row;
   - tests tried up to three times (RETRIED), and the heavy-work lock first come, first served.
 - Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22 and FR23 and the iCloud store, the audio decoders, C11's follow-ups), and the hand checks there.
-- Open (in the TODO): B12, B13, #5512, a stray settings save announced into `ReaderCloudDownloadTests`, the iPhone Go To sheet's text fields without Dynamic Type, and the leftover items of the format branches' reports.
+- Open: `issuelib list`, the files in `Issues/`.

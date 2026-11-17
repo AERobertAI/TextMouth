@@ -34,7 +34,8 @@ After an agent reports:
   - it puts the merge's `- [x]` entry before the paragraph that begins `**Open follow-ups noted by the September 28 agents**`;
   - it appends a sentence with the suite's exact counts to the long verification paragraph, after the latest "After the … merge: **N tests, S skipped, 0 failures**";
   - it appends open items to the paragraph that begins `**Open follow-ups noted on October 3 afternoon and evening**`;
-  - `--note` in place of `--counts` is for a merge that ran no suite, and `--tick FR09 --hash <merge>` ticks an entry;
+  - `--note` in place of `--counts` is for a merge that ran no suite, and `--tick FR09 --hash <merge>` ticks an entry still in the TODO;
+  - `--close B16 --hash <merge>` closes the issue B16, its file in `Issues/`, at the merge and ticks its pointer line in the TODO;
 - commit the TODO;
 - remove the agent's worktree (`git worktree remove --force --force` and `git worktree prune`);
 - unregister and delete `build/DerivedData-main` when the disk is tight;
