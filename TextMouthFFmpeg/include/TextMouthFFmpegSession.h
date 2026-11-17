@@ -6,8 +6,9 @@
  * targets (FFmpeg for the Mac, FFmpeg_iOS for the iPhone; project.yml). The Mac's helper program
  * (TextMouthFFmpeg/main.c) runs it and writes its records to standard output; the iPhone, which
  * can start no program, calls it inside the app (the Swift module TextMouthFFmpegSession,
- * module.modulemap beside this file). No FFmpeg type appears here, so the app's Swift needs none
- * of FFmpeg's headers.
+ * module.modulemap beside this file), one record a call on a thread of its own, each call within
+ * a time limit that its stop check carries in (FMT54). No FFmpeg type appears here, so the app's
+ * Swift needs none of FFmpeg's headers.
  *
  * How it reads: FFmpeg reads the file only through the session's own callbacks on the
  * descriptor it is given, so no FFmpeg protocol is compiled in and no path or address reaches
@@ -43,10 +44,36 @@ int tmff_session_prepare(void);
    first, and what a confined process still reports (the Debug confinement check compares). */
 int tmff_session_cpu_features(void);
 
+/* Opens `path` for reading as a session reads its file: a regular file only, opened without
+   blocking, so that a FIFO or a device is never waited on, then checked, then made blocking for
+   the reads, and closed on exec. Returns the descriptor, or -1. The Mac's helper opens its file
+   so before it confines itself, and the iPhone's import before it opens a session in the app
+   (FMT54). */
+int tmff_open_regular_file(const char *path);
+
+/* A check a session asks between its steps, and FFmpeg's reading asks through the session's
+   interrupt callback: nonzero to stop, 0 to go on. `context` is what the check was set with.
+   The iPhone's engine gives each call one (InProcessEngine.Call.stopCheck, with the call's
+   context), which turns to stop once the call's time is spent or its import is cancelled. */
+typedef int (*tmff_stop_check)(void *context);
+
 /* Opens the file read from `descriptor` (open for reading, a regular file; it stays the
    caller's to close, after tmff_session_close) with the demuxer named `demuxer`, and chooses
    its sound stream. Returns the session, or NULL with *status set to a TMFF_EXIT_ number. */
 tmff_session *tmff_session_open(int descriptor, const char *demuxer, tmff_session_mode mode, int *status);
+
+/* tmff_session_open, asking `check` with `context` too while it opens the file (NULL: no check,
+   as tmff_session_open asks none); a check that says stop ends the open with TMFF_EXIT_STOPPED.
+   The session keeps asking it afterwards, until tmff_session_set_stop_check changes it. */
+tmff_session *tmff_session_open_checked(int descriptor, const char *demuxer, tmff_session_mode mode,
+                                        tmff_stop_check check, void *context, int *status);
+
+/* Sets the check the session asks from now on, with `context` (NULL: none, as after
+   tmff_session_open): FFmpeg's interrupt callback asks it during the reads, and the session
+   before each step, besides tmff_session_stop's flag. Once it has said stop, the session stays
+   stopped, as after tmff_session_stop. Set it on the thread that calls tmff_session_next, between
+   two calls, never during one. NULL is allowed for `session`, and does nothing. */
+void tmff_session_set_stop_check(tmff_session *session, tmff_stop_check check, void *context);
 
 /* The next record of the stream, header and payload: *bytes points at it until the next call,
    and *length is its length. Returns TMFF_EXIT_DONE, with *length 0 once END has been given, or

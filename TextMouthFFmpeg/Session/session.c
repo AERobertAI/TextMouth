@@ -16,6 +16,11 @@
  * the frames of that form. Only sound that cannot be converted ends the stream
  * (TMFF_EXIT_FORM_CHANGED).
  *
+ * It stops when it is told to (must_stop): by tmff_session_stop from any thread, or by the check
+ * it was given (tmff_session_set_stop_check), which the iPhone's engine turns to stop once a
+ * call's time is spent or its import is cancelled (FMT54). FFmpeg's interrupt callback asks the
+ * same question during its reads, and the session asks it before each packet and each record.
+ *
  * It uses only FFmpeg's documented public API (the headers' documentation, published at
  * https://ffmpeg.org/doxygen/); nothing of FFmpeg's own code is copied here. It grew from the
  * research harness (research/ffmpeg-minimal/harness.c), TextMouth's own.
@@ -23,6 +28,7 @@
  * This file is TextMouth's own, under TextMouth's MIT License.
  */
 #include <errno.h>
+#include <fcntl.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdatomic.h>
@@ -108,8 +114,15 @@ struct tmff_session {
     tmff_session_mode mode;
     int descriptor;
     int64_t size;
-    /* Set by tmff_session_stop from any thread; read by FFmpeg's interrupt callback. */
+    /* Set by tmff_session_stop from any thread, or by must_stop once the check has said stop;
+       read by FFmpeg's interrupt callback and before each step. */
     atomic_int stopped;
+    /* The check the session asks besides the flag, and its context (tmff_session_set_stop_check;
+       NULL: none, as on the Mac). Changed only on the thread that calls tmff_session_next, between
+       its calls, and asked only on that thread, where FFmpeg's interrupt callback runs too (one
+       decoding thread, open_decoder). */
+    tmff_stop_check stop_check;
+    void *stop_context;
 
     AVIOContext *io;
     AVFormatContext *format;
@@ -204,10 +217,23 @@ static int64_t seek_file(void *opaque, int64_t offset, int whence) {
     return position < 0 ? AVERROR(EIO) : (int64_t)position;
 }
 
+/* Whether the session must stop now: tmff_session_stop has been called, or the check it was given
+   says so, which stops it for good (the flag is set), so that every later look agrees. The one
+   question FFmpeg's interrupt callback and every step of the session ask. */
+static int must_stop(tmff_session *session) {
+    if (atomic_load(&session->stopped)) {
+        return 1;
+    }
+    if (session->stop_check && session->stop_check(session->stop_context)) {
+        atomic_store(&session->stopped, 1);
+        return 1;
+    }
+    return 0;
+}
+
 /* FFmpeg's interrupt callback, asked during long reads: nonzero once the session must stop. */
 static int interrupted(void *opaque) {
-    tmff_session *session = opaque;
-    return atomic_load(&session->stopped);
+    return must_stop(opaque);
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -424,7 +450,37 @@ int tmff_session_cpu_features(void) {
     return av_get_cpu_flags();
 }
 
+int tmff_open_regular_file(const char *path) {
+    const int descriptor = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    if (descriptor < 0) {
+        return -1;
+    }
+    struct stat status;
+    if (fstat(descriptor, &status) != 0 || !S_ISREG(status.st_mode)) {
+        close(descriptor);
+        return -1;
+    }
+    const int flags = fcntl(descriptor, F_GETFL);
+    if (flags < 0 || fcntl(descriptor, F_SETFL, flags & ~O_NONBLOCK) < 0) {
+        close(descriptor);
+        return -1;
+    }
+    return descriptor;
+}
+
 tmff_session *tmff_session_open(int descriptor, const char *demuxer_name, tmff_session_mode mode, int *status) {
+    return tmff_session_open_checked(descriptor, demuxer_name, mode, NULL, NULL, status);
+}
+
+void tmff_session_set_stop_check(tmff_session *session, tmff_stop_check check, void *context) {
+    if (session) {
+        session->stop_check = check;
+        session->stop_context = context;
+    }
+}
+
+tmff_session *tmff_session_open_checked(int descriptor, const char *demuxer_name, tmff_session_mode mode,
+                                        tmff_stop_check check, void *context, int *status) {
     int failure = TMFF_EXIT_MEMORY;
     unsigned char *buffer = NULL;
     av_log_set_level(AV_LOG_QUIET);
@@ -439,6 +495,9 @@ tmff_session *tmff_session_open(int descriptor, const char *demuxer_name, tmff_s
     session->stream_index = -1;
     session->stage = STAGE_HEAD;
     atomic_init(&session->stopped, 0);
+    /* The check is asked from the first read on, through the interrupt callback set below. */
+    session->stop_check = check;
+    session->stop_context = context;
 
     struct stat status_of_file;
     if (fstat(descriptor, &status_of_file) != 0 || !S_ISREG(status_of_file.st_mode)) {
@@ -612,7 +671,7 @@ static int next_frame(tmff_session *session) {
 #endif
     int errors_in_a_row = 0;
     for (;;) {
-        if (atomic_load(&session->stopped)) {
+        if (must_stop(session)) {
             return -TMFF_EXIT_STOPPED;
         }
         if (session->decoder_ended) {
@@ -1164,7 +1223,7 @@ int tmff_session_next(tmff_session *session, const unsigned char **bytes, size_t
     if (!session) {
         return TMFF_EXIT_USAGE;
     }
-    if (atomic_load(&session->stopped)) {
+    if (must_stop(session)) {
         session->stage = STAGE_OVER;
         return TMFF_EXIT_STOPPED;
     }
