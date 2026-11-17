@@ -46,7 +46,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - An audio file of 17 to 20 bits is written at 24 bits in the same way.
 
 ### On the iPhone
-- The iPhone still refuses these formats, and its sentence now ends "Add it on your Mac, then send the book here."
+- The iPhone still refuses WMA, Matroska, and the other formats only the Mac's converter reads, and its sentence now ends "Add it on your Mac, then send the book here."
 - The iPhone now reads BRF, BRL, and PEF braille books, translated to print inside the app with the four English braille tables it carries.
 - A braille book that needs one of the Mac's own tables is refused on the iPhone with "“Manuel” needs “fr-bfu-g2.ctb”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have. Add it on your Mac, then send the book here."
 - The iPhone has no Braille settings, no Braille Code pop-up, and no export yet, and it reads every braille book with the Braille tab's defaults.
