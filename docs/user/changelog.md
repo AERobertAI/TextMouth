@@ -4,6 +4,38 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.2 (November 17, 2026)
+
+### Audio that macOS can't read
+- WMA, Speex, Musepack, WebM, Matroska, AVI, Flash video, and RealMedia audio now import with a converter that TextMouth carries inside the app, so nothing needs installing.
+- Before, these formats needed the free program ffmpeg installed with Homebrew, and an import without it said how to install it.
+- TextMouth no longer looks for an ffmpeg on your Mac for the import, so a Mac that has one and a Mac that has none import the same way.
+- The Use ffmpeg for filters switch still covers the audio editor's filters alone, and still uses an ffmpeg you install.
+- The app is 2.5 MB larger, 21.0 MB in all, for the converter.
+- The About window names FFmpeg, which TextMouth's converter is built from, under the GNU Lesser General Public License, and the Licenses folder in the app holds its licence.
+
+### The converter's safety
+- The converter reads a file only after confining itself with macOS's computing-only sandbox: it can read that one file and answer TextMouth, and open no other file, make no network connection, and start no program, whatever the file holds.
+- If macOS will not confine it, it reads nothing, and the import says "TextMouth's converter could not make itself safe before reading “Lecture.wma”, so it did not read the file. Install TextMouth again, then import the file again."
+- A damaged or hostile file that makes the converter stop now ends that file's import with "TextMouth's converter stopped unexpectedly while reading “Lecture.wma”. The file may be damaged." and TextMouth keeps running.
+- A converter that has finished a file but does not end is ended after two seconds without failing the import, and one that writes more than a file should is stopped sooner.
+- The converter is built from FFmpeg 9.0.2 with five fixes for known security problems in it.
+- If TextMouth has lost its converter, which only a damaged copy of the app can, a file says "TextMouth can't convert WMA files because its converter is missing from the app. Install TextMouth again, then import the file again."
+
+### What changed in these imports
+- A CUE sheet over a WMA or Matroska file is now checked against the file's real length, as a sheet over any other audio is.
+- AAC audio of two channels or fewer inside these formats is now decoded and written again as AAC, where before it was copied as it was.
+- Sound whose rate or number of channels changes partway through, such as joined recordings, is now refused with "TextMouth can't convert “Radio.mkv” because its sound changes its rate or its channels partway through."
+- A Musepack file named .mpp is told by its bytes, and no longer by its name, since Microsoft Project uses that name too.
+- A tag longer than 4,096 bytes is cut at that length, and a tag with a damaged letter is left out.
+- A folder whose name has a letter such as é no longer makes TextMouth lose what the Mac's own audio tool says about the files in it.
+
+### On the iPhone
+- The iPhone still refuses these formats, and its sentence now ends "Add it on your Mac, then send the book here."
+
+### Not changed
+- How any other format imports, reads, or plays.
+
 ## 0.5.1 (November 16, 2026)
 
 ### Editing audio
