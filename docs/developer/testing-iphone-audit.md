@@ -30,7 +30,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A finding is accepted only when the app cannot change it, or when it is proven false.
   An `Accepted` value matches the audit's type and the element's label (exactly, or by its start when `labelIsPrefix`), and, for some, Apple's own short description of the finding.
   It is kept with the results, with its reason.
-  There are eight, in four groups.
+  There are eight, in four groups, and a ninth for the phone's SwiftUI text fields (see the next section).
   The Search in Book audit declares one more of its own, in the test (see SearchUITests, below).
   - **Parts iOS draws:**
     - `searchField`: the clipped-text finding on "Search books", because the system's search field clips its placeholder at the largest text sizes, and VoiceOver and braille read it whole.
@@ -60,6 +60,26 @@ Part of [TextMouth's documentation](../../README.md).
       A real fixed font would still name its element and fail.
 - Any other finding fails its test.
   To accept a new kind, add an `Accepted` value with its reason to `TextMouthUITestCase`, and add its reason here.
+
+## The text fields' accepted finding
+<!-- id: text-field-accepted-finding; keys: swiftUITextField, partially unsupported, adjustsFontForContentSizeCategory, A11Y-GOTO, canary, fixed font; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouthiOSTests/PhoneTextFieldScalingTests.swift, TextMouthProductionTests/PhoneFontPolicyTests.swift -->
+
+- `Accepted.swiftUITextField(label)` is the Dynamic Type finding "partially unsupported" on a phone `TextField`.
+  It is used for Go To's Page, Percent, and Time, Sleep Timer's custom minutes, Book Information's four fields, and Search's field.
+- **Why it is accepted.**
+  The text grows, and the audit reads a flag SwiftUI does not set.
+  - `PhoneTextFieldScalingTests` hosts each of those sheets and checks that every input's font has a text style and is at least twice as big at the largest size.
+  - The audit reads UIKit's `adjustsFontForContentSizeCategory`.
+    SwiftUI leaves it off on the UITextField (or, for a field that grows to several lines, the UITextView) it draws.
+    A GitHub run logged it off, in the body text style, for a bare field, one with `selection:`, a number-pad field, and a vertical one.
+  - An Apple DTS engineer says SwiftUI "does not always pass along that specific UIKit-level flag", and that with system fonts "you are doing everything right" (developer.apple.com/forums/thread/828525).
+- **What still fails.**
+  The value matches the kind, the exact label (a start, for Time and for Book Information's hand-edited labels), and the words "partially unsupported".
+  A fixed font, which the audit words "unsupported", fails the audit, and `PhoneFontPolicyTests` refuses `.system(size:` and `.custom(_:fixedSize:` in the phone's source.
+- **When to remove it.**
+  `PhoneTextFieldScalingTests.testSwiftUIStillLeavesTheDynamicTypeSwitchOff` fails once SwiftUI turns the switch on.
+  Then delete the `Accepted` values, their uses in `ScreenOrderUITests` and `SearchUITests`, and the canary.
+- The finding came and went from one launch to the next (A11Y-GOTO), so `testTheGoToSheetAuditHoldsOnEveryLaunch` audits Go To on five launches in a row.
 
 ## Audits that report without failing
 <!-- id: audits-that-report-without-failing; keys: soft audit, report only, XCTAttachment, warning; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LibraryUITests.swift, TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
