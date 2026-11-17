@@ -144,6 +144,44 @@ class GitTests(RepositoryCase):
                          .replace("title: A test bug", "title: A float book's render fails"))
         self.assertEqual(self.run_cli("check")[0], 0)
 
+    def triage_while_the_branch_is_out(self) -> None:
+        """The agent sets in-progress and comments on its branch; main re-triages the issue meanwhile."""
+        self.git("switch", "-q", "-c", "fix/float64-render")
+        with self.on("2026-11-17"):
+            self.assertEqual(self.as_agent("set", "B16", "status", "in-progress")[0], 0)
+            self.assertEqual(self.as_agent("comment", "B16", "Started.")[0], 0)
+        self.commit_all("floatrender: started")
+        self.git("switch", "-q", "main")
+        with self.on("2026-11-18"):
+            self.assertEqual(self.as_orchestrator("set", "B16", "priority", "P1")[0], 0)
+            self.assertEqual(self.as_orchestrator("set", "B16", "labels", "audio, editor")[0], 0)
+            self.assertEqual(self.as_orchestrator("assign", "B16", "floatrender", "--branch", "fix/float64-render-2")[0], 0)
+        self.commit_all("orchestrator: triage")
+
+    def assert_triaged_and_started(self) -> None:
+        """Both sides' header changes are in one header, the comment is whole, and check passes."""
+        text = self.read("Issues/B16.md")
+        expected = (ASSIGNED.replace("status: open", "status: in-progress").replace("priority: P2", "priority: P1")
+                    .replace("labels: audio", "labels: audio, editor").replace("branch: fix/float64-render", "branch: fix/float64-render-2")
+                    .replace("updated: 2026-11-16", "updated: 2026-11-18")) + comment("2026-11-17", "floatrender", "Started.")
+        self.assertEqual(text, expected)
+        self.assertEqual(self.run_cli("check")[:2], (0, ""))
+
+    def test_triage_on_main_while_the_branch_is_out_merges_into_one_header(self) -> None:
+        self.make_repository()
+        self.triage_while_the_branch_is_out()
+        merge = self.merge("fix/float64-render")
+        self.assertEqual(merge.returncode, 0, merge.stdout + merge.stderr)
+        self.assert_triaged_and_started()
+
+    def test_triage_on_main_while_the_branch_is_out_rebases_into_one_header(self) -> None:
+        self.make_repository()
+        self.triage_while_the_branch_is_out()
+        self.git("switch", "-q", "fix/float64-render")
+        rebase = self.git("rebase", "main", check=False)
+        self.assertEqual(rebase.returncode, 0, rebase.stdout + rebase.stderr)
+        self.assert_triaged_and_started()
+
     def test_one_field_changed_both_ways_stops_the_merge_with_markers_in_the_header(self) -> None:
         self.make_repository()
         self.git("switch", "-q", "-c", "fix/float64-render")

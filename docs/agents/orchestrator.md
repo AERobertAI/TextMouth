@@ -55,6 +55,18 @@ The load-sensitive tests are:
 - and the performance baselines, which skip while the Mac is busy.
 
 
+## When an issue file stops a merge
+<!-- id: issue-file-stops-merge; keys: ISSUES_CHECK_FAILED, merge driver, conflict markers, issues-merge-driver, issuelib check; src: Scripts/agents/merge-chain.sh, .claude/skills/issue-library/scripts/issuemerge.py, Makefile -->
+
+`make issues-merge-driver`, run once in the main checkout, defines the merge driver that every worktree and the train's use for `Issues/*.md`; without it an issue file merges as text.
+Two things can still stop a merge at an issue file:
+- A conflict: one header field, one description line, or one older comment changed both ways.
+  The chain aborts it as it aborts any conflict (`UNMERGED` in its log), so merge that branch by hand with `git merge --no-ff --no-commit <branch>`.
+  Between git's markers `current` is main and `other` the branch: keep the right line, delete the markers, and run `issuelib check`, which also names a comment whose line count no longer matches its text.
+  Then commit, and start the chain again with the branches after it.
+- `ISSUES_CHECK_FAILED`: `issuelib check` found a problem on the merged tree that main did not have, such as a `related` or `docs` entry naming what the branch removed, and the chain prints each.
+  Fix it on the branch and merge again, or fix it in the merge commit by hand.
+
 ## Questions for the user
 <!-- id: questions-user; keys: humanQuestions, Answer line, recommended answer, numbered questions; src: -->
 
