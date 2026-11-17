@@ -1077,6 +1077,10 @@ targets:
       # the Mac's tests read too: the book each UI test sends the app.
       - path: TestData/alice.epub
         buildPhase: resources
+      # The Grade 2 braille sample the Mac's tests read too, which
+      # BrailleUITests sends the app (DR34).
+      - path: TestData/format-samples/brf/grade2-short.brf
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthiOSUITests
