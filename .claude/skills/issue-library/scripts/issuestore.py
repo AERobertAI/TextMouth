@@ -71,13 +71,14 @@ class Change:
 
 @dataclass
 class DocSection:
-    """A section of the docs that has a marker: its place, heading, id, and the status and issues it cites."""
+    """A section of the docs that has a marker: its place, heading path, own title, id, and the status and issues it cites."""
 
     path: str
     start: int
     end: int
     heading: str
     section_id: str
+    title: str = ""
     status: Optional[str] = None
     issues: List[str] = field(default_factory=list)
 
@@ -278,7 +279,7 @@ class Store:
                     continue
                 self._doc_sections.append(DocSection(
                     path=page.path, start=section.start, end=section.end, heading=section.heading,
-                    section_id=marker.id, status=getattr(marker, "status", None),
+                    section_id=marker.id, title=section.title, status=getattr(marker, "status", None),
                     issues=list(getattr(marker, "issues", []))))
         return self._doc_sections
 

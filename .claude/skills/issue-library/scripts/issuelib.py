@@ -462,11 +462,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def register_import(add: Any) -> None:
-    """Add ``import-todo`` when its module is present (it moves the TODO's open items once)."""
-    try:
-        import issuetodo  # noqa: E402  (the import's own module, beside this one)
-    except ImportError:
-        return
+    """Add ``import-todo``, which moves the TODO's open items into issue files once (issuetodo.py)."""
+    import issuetodo  # noqa: E402  (the import's own module, beside this one)
     issuetodo.register(add)
 
 
