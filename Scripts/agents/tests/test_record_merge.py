@@ -136,7 +136,7 @@ class CloseTests(RecordMergeCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         issue = self.issue.read_text(encoding="utf-8")
         self.assertEqual(issue, B16.replace("status: in-progress", "status: done").replace("merged:\n", "merged: 6b09b2ee2\n")
-                         + "\n### 2026-11-16, orchestrator\n\nClosed as done: merged in 6b09b2ee2.\n")
+                         + "\n### 2026-11-16, orchestrator, 1 line\n\nClosed as done: merged in 6b09b2ee2.\n")
         text = self.todo.read_text(encoding="utf-8")
         self.assertIn("- [x] **B16** moved to Issues/B16.md\n", text)
         self.assertIn(ENTRY, text)

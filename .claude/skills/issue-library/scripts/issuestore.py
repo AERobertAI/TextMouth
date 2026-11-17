@@ -559,7 +559,7 @@ def check(store: Store) -> List[Tuple[str, Problem]]:
                 backlog.setdefault(issue_id, []).append(item)
     for issue in issues:
         stem = Path(issue.path).stem
-        problems = list(issue.problems) + issuefile.check_values(issue)
+        problems = list(issue.problems) + issuefile.check_values(issue) + issuefile.check_comments(issue)
         if not issueids.is_issue_id(stem):
             problems.append(Problem(0, f"{stem}.md is not named for an ID; only issue files and {README_NAME} belong here"))
         elif issue.issue_id and issue.issue_id != stem:

@@ -25,7 +25,7 @@ The header has one `name: value` line for each field, in this order, with nothin
 - `docs`: the ids of the doc sections it concerns, separated by commas.
 - `labels`: lowercase words, separated by commas.
 
-Each comment is a heading, `### 2026-11-16, author`, and its text below it.
+Each comment is a heading with its date, author, and line count, `### 2026-11-16, author, 3 lines`, and its text below it; `issuelib check` fails a comment with no text, and a count its text does not have.
 A done issue names its merge or a reason, and a wontfix or duplicate one a reason.
 `.claude/skills/issue-library/template.md` is the file a new issue starts from.
 

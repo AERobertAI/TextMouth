@@ -18,9 +18,9 @@ and on a braille display (no tables, and dates written 2026-11-16):
 
     ## Comments
 
-    ### 2026-11-16, orchestrator
+    ### 2026-11-16, orchestrator, 1 line
 
-    One comment: a heading with its date and author, then its text.
+    One comment: a heading with its date, author, and line count, then its text.
 
 The header is the lines between the first two ``---`` lines: one ``name: value``
 line for each name of FIELDS, in that order, with nothing after the colon for an
@@ -78,8 +78,10 @@ AGENT_STATUSES = ("in-progress", "blocked")
 FENCE = "---"
 DESCRIPTION_HEADING = "## Description"
 COMMENTS_HEADING = "## Comments"
-# A comment's heading: its date and its author.
-COMMENT_HEADING = re.compile(r"^### (\d{4}-\d{2}-\d{2}), (\S.*)$")
+# A comment's heading: its date, its author, and how many lines its text has
+# ("### 2026-11-16, floatrender, 3 lines"). The count is a second guard of a merge:
+# a comment whose lines were mixed with another's no longer has its count.
+COMMENT_HEADING = re.compile(r"^### (\d{4}-\d{2}-\d{2}), ([^,]+?)(?:, (\d+) lines?)?\s*$")
 # A line no comment may hold, since it would end the comment or the Comments section.
 _COMMENT_BREAKER = re.compile(r"^#{1,3}(?:\s|$)")
 
@@ -106,12 +108,14 @@ class Problem:
 
 @dataclass
 class Comment:
-    """One comment: the line of its heading, its date and author, and its text without the heading."""
+    """One comment: the line of its heading, its date and author, its text without the heading,
+    and the line count its heading gives (None when it gives none)."""
 
     line: int
     date: str
     author: str
     text: str
+    count: Optional[int] = None
 
 
 @dataclass
@@ -265,7 +269,8 @@ def _read_body(lines: List[str], start: int, issue: Issue) -> None:
             heading = COMMENT_HEADING.match(line)
             if heading:
                 finish()
-                current = Comment(number, heading.group(1), heading.group(2).strip(), "")
+                count = int(heading.group(3)) if heading.group(3) else None
+                current = Comment(number, heading.group(1), heading.group(2).strip(), "", count)
                 text_lines = []
                 if not is_date(current.date):
                     issue.problems.append(Problem(number, f"comment date {current.date} is not a real date"))
@@ -357,6 +362,33 @@ def check_values(issue: Issue) -> List[Problem]:
     return found
 
 
+def line_count(text: str) -> int:
+    """How many lines a comment's text has, from its first line with text to its last."""
+    return len(text.split("\n")) if text else 0
+
+
+def comment_heading(date: str, author: str, text: str) -> str:
+    """A comment's heading: "### 2026-11-16, floatrender, 3 lines" (1 line, for one)."""
+    count = line_count(text)
+    return f"### {date}, {author}, {count} {'line' if count == 1 else 'lines'}"
+
+
+def check_comments(issue: Issue) -> List[Problem]:
+    """What is wrong with the comments: one with no text, and a heading whose line count is missing or wrong."""
+    found: List[Problem] = []
+    for comment in issue.comments:
+        actual = line_count(comment.text)
+        if not actual:
+            found.append(Problem(comment.line, f"the comment of {comment.date} by {comment.author} has no text"))
+        elif comment.count is None:
+            found.append(Problem(comment.line, f"the heading gives no line count: "
+                                               f"'{comment_heading(comment.date, comment.author, comment.text)}'"))
+        elif comment.count != actual:
+            found.append(Problem(comment.line, f"the heading says {comment.count} lines, and the comment has {actual}"
+                                               " (lines of two comments mixed in a merge, or an edit that left the count)"))
+    return found
+
+
 def _status_problems(issue: Issue) -> List[Problem]:
     """The status rules: what a closed issue must say, and what an open one must not hold."""
     status = issue.value("status")
@@ -435,7 +467,8 @@ def with_comment(issue: Issue, date: str, author: str, text: str) -> str:
     if not is_agent_name(author):
         raise IssueFormatError(f"comment author {author!r} is not a name: letters, digits, '.', '_', '-'")
     body = issue.body if issue.body.endswith("\n") else issue.body + "\n"
-    return header_text(issue.fields) + body + f"\n### {date}, {author}\n\n{check_comment_text(text)}\n"
+    trimmed = check_comment_text(text)
+    return header_text(issue.fields) + body + f"\n{comment_heading(date, author, trimmed)}\n\n{trimmed}\n"
 
 
 def fill_template(template: str, path: str, values: Dict[str, str]) -> str:

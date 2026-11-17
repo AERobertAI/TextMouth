@@ -121,7 +121,7 @@ class ChangeTests(IssueCase):
         status, out, _err = self.run_cli("comment", "B16", "Found the cause.\n\nIt is the reader.", "--as", "floatrender")
         self.assertEqual(out, "issuelib: Issues/B16.md: comment by floatrender on 2026-11-16 added (3 lines)\n")
         self.assertEqual(self.read("Issues/B16.md"),
-                         B16 + "\n### 2026-11-16, floatrender\n\nFound the cause.\n\nIt is the reader.\n")
+                         B16 + "\n### 2026-11-16, floatrender, 3 lines\n\nFound the cause.\n\nIt is the reader.\n")
 
     def test_a_comment_that_would_break_the_file_is_refused(self) -> None:
         for text in ("", "## Next"):
@@ -137,7 +137,7 @@ class ChangeTests(IssueCase):
         self.assertIn("status: done\n", closed)
         self.assertIn("merged: 6b09b2ee2\n", closed)
         self.assertIn("updated: 2026-11-17\n", closed)
-        self.assertTrue(closed.endswith("\n### 2026-11-17, orchestrator\n\nClosed as done: merged in 6b09b2ee2.\n"))
+        self.assertTrue(closed.endswith("\n### 2026-11-17, orchestrator, 1 line\n\nClosed as done: merged in 6b09b2ee2.\n"))
         self.assertEqual(self.as_orchestrator("close", "B16", "--merged", "6b09b2ee2")[0], 1)
         status, out, _err = self.as_orchestrator("reopen", "B16", "--reason", "It crashes again on WAVE.")
         self.assertEqual(out, "issuelib: Issues/B16.md: reopened (it was done, merged in 6b09b2ee2)\n")
@@ -145,7 +145,7 @@ class ChangeTests(IssueCase):
         self.assertIn("status: open\n", reopened)
         self.assertIn("merged:\n", reopened)
         self.assertTrue(reopened.endswith(
-            "\n### 2026-11-16, orchestrator\n\nReopened: It crashes again on WAVE. It was done, merged in 6b09b2ee2.\n"))
+            "\n### 2026-11-16, orchestrator, 1 line\n\nReopened: It crashes again on WAVE. It was done, merged in 6b09b2ee2.\n"))
 
     def test_closing_needs_a_merge_or_a_reason(self) -> None:
         cases = [
@@ -169,6 +169,19 @@ class ChangeTests(IssueCase):
         status, _out, err = self.as_orchestrator("set", "B14", "priority", "P1")
         self.assertEqual(status, 2)
         self.assertIn("B14 has no file in Issues/; TODO-2026-09-04.md names it on line 10", err)
+
+    def test_check_fails_an_empty_comment_and_a_wrong_line_count(self) -> None:
+        self.write_tree({"Issues/B16.md": B16 + "\n### 2026-11-16, floatrender, 2 lines\n\nOne line only.\n"
+                                               "\n### 2026-11-17, orchestrator, 1 line\n\n"
+                                               "\n### 2026-11-18, orchestrator\n\nNo count.\n"})
+        status, out, _err = self.run_cli("check")
+        self.assertEqual(status, 1)
+        self.assertEqual(out.splitlines(), [
+            "Issues/B16.md:26: the heading says 2 lines, and the comment has 1 (lines of two comments mixed in a merge, "
+            "or an edit that left the count)",
+            "Issues/B16.md:30: the comment of 2026-11-17 by orchestrator has no text",
+            "Issues/B16.md:33: the heading gives no line count: '### 2026-11-18, orchestrator, 1 line'",
+        ])
 
     def test_a_broken_file_is_refused_until_fixed_by_hand(self) -> None:
         self.write_tree({"Issues/B16.md": B16.replace("status: open\n", "status: open\nstatus: blocked\n")})

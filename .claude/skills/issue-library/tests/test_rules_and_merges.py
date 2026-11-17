@@ -77,7 +77,7 @@ class RuleTests(RepositoryCase):
         self.assertEqual(self.as_agent("set", "B16", "status", "blocked")[0], 0)
         text = self.read("Issues/B16.md")
         self.assertIn("status: blocked\n", text)
-        self.assertTrue(text.endswith("### 2026-11-16, floatrender\n\nWaiting for the reader's fix.\n"))
+        self.assertTrue(text.endswith("### 2026-11-16, floatrender, 1 line\n\nWaiting for the reader's fix.\n"))
 
     def test_on_a_branch_another_agent_may_not_touch_the_issue(self) -> None:
         self.git("switch", "-q", "-c", "fix/rules-save-during-move")
@@ -119,8 +119,8 @@ class MergeTests(RepositoryCase):
         # Main's comment, then the branch's. git shares the blank line both sides began with,
         # so the second heading follows the first comment's text directly, as Markdown allows.
         self.assertEqual(self.read("Issues/B16.md"), ASSIGNED
-                         + "\n### 2026-11-16, orchestrator\n\nFrom main: the user answered.\n"
-                         + "### 2026-11-16, floatrender\n\nFrom the branch.\n")
+                         + "\n### 2026-11-16, orchestrator, 1 line\n\nFrom main: the user answered.\n"
+                         + "### 2026-11-16, floatrender, 1 line\n\nFrom the branch.\n")
         status, out, _err = self.run_cli("show", "B16", "--json")
         self.assertEqual([(c["author"], c["text"]) for c in json.loads(out)["comment_list"]],
                          [("orchestrator", "From main: the user answered."), ("floatrender", "From the branch.")])

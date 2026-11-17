@@ -61,6 +61,16 @@ class ParseTests(unittest.TestCase):
                 found = messages(issuefile.parse("x", text).problems)
                 self.assertTrue(any(expected in message for message in found), f"{name}: {found}")
 
+    def test_a_heading_gives_its_line_count(self) -> None:
+        issue = issuefile.parse("x", B16 + "\n### 2026-11-16, floatrender, 3 lines\n\nOne.\n\nThree.\n"
+                                           "\n### 2026-11-17, the user\n\nNo count.\n")
+        self.assertEqual(issue.problems, [])
+        self.assertEqual([(c.author, c.count) for c in issue.comments], [("floatrender", 3), ("the user", None)])
+        self.assertEqual(issuefile.comment_heading("2026-11-16", "x", "One."), "### 2026-11-16, x, 1 line")
+        self.assertEqual(issuefile.comment_heading("2026-11-16", "x", "One.\n\nThree."), "### 2026-11-16, x, 3 lines")
+        self.assertEqual(messages(issuefile.check_comments(issue)),
+                         ["the heading gives no line count: '### 2026-11-17, the user, 1 line'"])
+
     def test_headings_in_fenced_code_are_text(self) -> None:
         text = B16 + "\n### 2026-11-16, x\n\n```\n## Comments\n# not a heading\n```\n"
         issue = issuefile.parse("x", text)
@@ -135,10 +145,10 @@ class WriteTests(unittest.TestCase):
 
     def test_a_comment_is_appended_and_the_header_is_untouched(self) -> None:
         text = issuefile.with_comment(issuefile.parse("x", B16), "2026-11-17", "floatrender", "\nStarted.\n\n")
-        self.assertEqual(text, B16 + "\n### 2026-11-17, floatrender\n\nStarted.\n")
+        self.assertEqual(text, B16 + "\n### 2026-11-17, floatrender, 1 line\n\nStarted.\n")
         # A second comment goes after the first.
         again = issuefile.with_comment(issuefile.parse("x", text), "2026-11-18", "orchestrator", "Seen.")
-        self.assertEqual(again, text + "\n### 2026-11-18, orchestrator\n\nSeen.\n")
+        self.assertEqual(again, text + "\n### 2026-11-18, orchestrator, 1 line\n\nSeen.\n")
         issue = issuefile.parse("x", again)
         self.assertEqual([c.author for c in issue.comments], ["floatrender", "orchestrator"])
 
