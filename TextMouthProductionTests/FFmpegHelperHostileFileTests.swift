@@ -121,6 +121,49 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
         XCTAssertEqual(unexpected, [])
     }
 
+    /// What the helper makes of the sample `name` of `ffmpeg-edge`: how it ended and, when it
+    /// wrote a whole stream, what the reader says of it (frames and the refusals END counts).
+    private func decodeEdgeSample(_ name: String) async throws -> (ending: WatchedProcess.Ending, frames: UInt64?, refused: [UInt32]) {
+        let helper = try bundledFFmpegHelper()
+        let seconds = TestMachine.allowed(20)
+        let limits = WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
+        let sample = try formatSampleURL("ffmpeg-edge/\(name)")
+        let (ending, bytes) = try await WatchedProcess.runStreaming(
+            helper, arguments: ["decode", "matroska", sample.path], watching: nil, limits: limits
+        ) { pipe -> [UInt8] in
+            var bytes: [UInt8] = []
+            while true {
+                let piece = try await pipe.read(upTo: 1 << 20)
+                if piece.isEmpty { return bytes }
+                bytes += piece
+            }
+        }
+        var stream = FFmpegHelperStream(data: Data(try bytes.get()))
+        do {
+            _ = try await stream.readReport()
+            while try await stream.nextBlock() != nil {}
+        } catch {
+            return (ending, nil, [])
+        }
+        return (ending, stream.framesRead, [stream.refusedPackets, stream.refusedFrames])
+    }
+
+    /// The decoder's error bound (FU-FFMPEG2, MAX_ERRORS_IN_A_ROW = 1,000 in
+    /// session.c), tried with two samples of FLAC in Matroska whose packets
+    /// from the 101st on are refused by the decoder (their sync code is
+    /// zeroed): 900 of the 1,400 in one, 1,200 in the other. What each ends
+    /// as is printed for the run's log.
+    func testTheDecoderErrorBound() async throws {
+        for name in ["flac-900-bad-packets.mka", "flac-1200-bad-packets.mka"] {
+            let result = try await decodeEdgeSample(name)
+            print("FFMPEG_BOUND: \(name): \(result.ending), frames \(String(describing: result.frames)), refused \(result.refused)")
+            switch result.ending.outcome {
+            case let .exited(status): XCTAssertTrue(protocolStatuses.contains(status), name)
+            case .killed: XCTFail("\(name): killed")
+            }
+        }
+    }
+
     /// The import of every damaged copy ends in a conversion or a failure by
     /// name, and leaves nothing behind but the copy and, after a conversion,
     /// its .m4a.
