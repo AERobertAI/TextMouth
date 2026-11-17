@@ -199,6 +199,9 @@ The duplicate question, Replace Existing, and the questions that wait their turn
   [Where TextMouth keeps your library](helper-programs.md) lists what else stops the converter.
 - Cancel kills the conversions at once, and the import ends as a cancelled one.
 - The reasons, with X the track's file name:
+  - "“X” uses 64-bit integer samples, which TextMouth can't play.
+    Convert it to 16-bit or 24-bit integer samples, then import it again."
+    The file is valid, in a form of samples no decoder on the Mac reads: see [Audio whose samples TextMouth can't decode](import-progress-and-errors.md#audio-whose-samples-textmouth-cant-decode).
   - "The audio file X could not be read for converting."
     The Mac's tool could not read the file as audio, or the file's header claims a length that its size cannot hold, or more than a year.
   - "The audio converted from X failed its check: ..." and why: the converted file would not play, or lasts a different time from its source, as in "it lasts 12.0 seconds, not 600.0".

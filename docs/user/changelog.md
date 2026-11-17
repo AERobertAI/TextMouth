@@ -38,6 +38,13 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Return presses Export as Written, and Escape presses Cancel Export, which stops the whole export and leaves the files already written.
 - The Plain Text export does not ask, and still writes such a chapter with the marker comments and backslashes of TextMouth's own text in it.
 
+### Audio in forms TextMouth can't decode
+- A valid audio file whose samples are stored as integers deeper than 32 bits, or as 16-bit or 24-bit floating-point numbers, is no longer called damaged.
+- It says what is wrong instead, as in "“Talk.wav” uses 64-bit integer samples, which TextMouth can't play. Convert it to 16-bit or 24-bit integer samples, then import it again."
+- The same sentence is said for a WAVE, AIFF, or CAF file imported by itself, as a track of a book, or to be converted, and a floating-point one says "16-bit floating-point".
+- A 20-bit CAF file and a 20-bit Apple Lossless file now import, written at 24 bits, which holds every sample; before, the import said "failed its check: its audio cannot be decoded".
+- An audio file of 17 to 20 bits is written at 24 bits in the same way.
+
 ### On the iPhone
 - The iPhone still refuses these formats, and its sentence now ends "Add it on your Mac, then send the book here."
 - The iPhone now reads BRF, BRL, and PEF braille books, translated to print inside the app with the four English braille tables it carries.

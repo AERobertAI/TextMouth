@@ -41,7 +41,8 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 
 - Lossy audio becomes AAC at about its own bit rate: it stays near its size, but a second lossy encoding can lose a little.
 - The rate is the next standard AAC rate at or above the source's average (64 to 192 kbit/s for stereo, half that for mono).
-- Lossless audio that TextMouth converts (PCM in CAF, AIFC, AU, or Wave64; Apple Lossless or FLAC in CAF; Ogg FLAC) becomes Apple Lossless at its own bit depth (16, 20, 24, or 32 bits) and loses nothing.
+- Lossless audio that TextMouth converts (PCM in CAF, AIFC, AU, or Wave64; Apple Lossless or FLAC in CAF; Ogg FLAC) becomes Apple Lossless at its own bit depth (16, 24, or 32 bits, a source of 17 to 24 bits being written at 24) and loses nothing.
+  A 20-bit CAF or Apple Lossless file imports, written at 24 bits.
 - Plain WAV, AIFF, and FLAC files are not converted at all.
 
 ### Channels
@@ -67,6 +68,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - Every other converted format is read by Apple's afinfo tool, which says what the file holds, and then converted by afconvert, each run as a separate process that TextMouth watches (see [Where TextMouth keeps your library](helper-programs.md)).
 - A file of one of them that claims to last more than a year, or a length that its size cannot hold, is refused as unreadable.
 - A Mac that can't read or convert a format refuses a file of it by name when it is imported, and nothing is added.
+- A file that is valid, but whose samples are 64-bit integers or another form no decoder reads, is refused with that form and what to convert it to, not as damaged (see [Adding books](import-progress-and-errors.md#audio-whose-samples-textmouth-cant-decode)).
 
 ## True Audio, WavPack, and Monkey's Audio
 <!-- id: true-audio-wavpack-monkeys-audio; keys: TTA, .tta, WavPack, .wv, .wvc, Monkey's Audio, .ape, hybrid; src: TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift; status: incomplete; issues: DR31 -->
@@ -74,7 +76,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - TextMouth decodes True Audio (.tta), WavPack (.wv), and Monkey's Audio (.ape, version 3.99 and later) with readers of its own, inside the app, so no program has to be installed for them.
 - Each file becomes an .m4a file in the book's package, as the other converted audio does (see above), and holds the source's samples exactly.
   It is Apple Lossless at the source's bit depth, as for other lossless audio.
-  A 20-bit source is written at 24 bits, which holds every sample, and floating-point audio at 24 bits.
+  A source of 17 to 20 bits is written at 24 bits, which holds every sample, and floating-point audio at 24 bits.
 - A file is known by what it holds, not its name, so a TTA file named .mp3 is read as TTA.
 - A WavPack hybrid file (a lossy .wv) with its correction file (.wvc, the same name) beside it is lossless.
   - The .wvc is copied with the .wv, and kept with it when Keep originals of converted audio is on.
