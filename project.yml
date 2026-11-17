@@ -180,6 +180,11 @@ targetTemplates:
         SYSTEM_HEADER_SEARCH_PATHS:
           - $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/include
         OTHER_LIBTOOLFLAGS: $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/lib/libtmffmpeg.a
+        # Plain C with textual includes: session.c needs no Clang module, and with modules on, Xcode
+        # precompiles its system headers and the session's own header (whose folder holds the Swift
+        # side's module map) as modules of this target's own, which a restored runner cache can claim
+        # and lack (train 1117-1219, FMT54: "module file ... not found"). The objects are the same.
+        CLANG_ENABLE_MODULES: NO
         GCC_OPTIMIZATION_LEVEL: s
         # The script reads the repository and writes into OBJROOT, outside what a sandboxed
         # script phase may touch.
