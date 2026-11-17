@@ -11,9 +11,10 @@ enum InProcessEngineWording {
     /// A call abandoned past its limit: "TextMouth stopped the braille
     /// translation because it ran longer than 11 seconds, and won't try
     /// again until TextMouth is opened again." The seconds are whole, rounded
-    /// up, as the Mac's watchdog says them.
+    /// up, as the Mac's watchdog says them, and at least one: a call whose
+    /// time was already spent when it began still ran for some.
     static func abandoned(_ work: String, seconds: TimeInterval) -> String {
-        "TextMouth stopped \(work) because it ran longer than \(CountWording.seconds(Int(seconds.rounded(.up)))), "
+        "TextMouth stopped \(work) because it ran longer than \(CountWording.seconds(max(1, Int(seconds.rounded(.up))))), "
             + "and won't try again until TextMouth is opened again."
     }
 

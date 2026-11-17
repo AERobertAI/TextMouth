@@ -343,11 +343,14 @@ final class InProcessEngineTests: XCTestCase {
             "TextMouth stopped the braille translation because it ran longer than 11 seconds, "
                 + "and won't try again until TextMouth is opened again."
         )
-        XCTAssertEqual(
-            InProcessEngine.Failure.abandoned(work: "the braille translation", limit: 0.5).errorDescription,
-            "TextMouth stopped the braille translation because it ran longer than 1 second, "
-                + "and won't try again until TextMouth is opened again."
-        )
+        // Rounded up, and never "0 seconds", even for a call whose time was spent before it began.
+        for limit: TimeInterval in [0.5, 0] {
+            XCTAssertEqual(
+                InProcessEngine.Failure.abandoned(work: "the braille translation", limit: limit).errorDescription,
+                "TextMouth stopped the braille translation because it ran longer than 1 second, "
+                    + "and won't try again until TextMouth is opened again.", "limit \(limit)"
+            )
+        }
         XCTAssertEqual(
             InProcessEngine.Failure.refused(work: "the braille translation").errorDescription,
             "TextMouth stopped the braille translation earlier because it took too long, "
