@@ -145,7 +145,8 @@ final class ScreenOrderUITests: TextMouthUITestCase {
     /// (`Accepted.swiftUITextField`): their text grows (`PhoneTextFieldScalingTests`), and a fixed font, which the audit
     /// words "unsupported", still fails.
     private func auditTheGoToSheet(_ app: XCUIApplication, screen: String) throws {
-        try audit(app, screen: screen, accepting: [.navigationTitle("Go To"), .barItem("Cancel")] + Accepted.goToFields)
+        let accepted: [Accepted] = [.navigationTitle("Go To"), .barItem("Cancel")] + Accepted.goToFields
+        try audit(app, screen: screen, accepting: accepted)
     }
 
     /// Sleep Timer, with none running: the title, Close, New Timer, the
@@ -223,7 +224,8 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         // Dynamic Type is reported and not failed: the audit flags the
         // read-only rows at the bottom, "Last Opened" and "Word Count" and
         // their values (see Settings).
-        try audit(app, screen: "Book Information sheet", informing: .dynamicType, accepting: [.navigationTitle("Book Information"), .barItem("Cancel"), .barItem("Save")] + Accepted.bookInformationFields)
+        let accepted: [Accepted] = [.navigationTitle("Book Information"), .barItem("Cancel"), .barItem("Save")] + Accepted.bookInformationFields
+        try audit(app, screen: "Book Information sheet", informing: .dynamicType, accepting: accepted)
     }
 
     /// Navigation unit's choice: the title, Cancel, then the Mac's units in
