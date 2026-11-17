@@ -119,7 +119,7 @@ struct BookExportConversionChoice: Identifiable, Equatable {
 /// anything that could not be exported, in the cloud included.
 ///
 /// A chapter that nests quotes, lists, or emphasis past the reader's limit is
-/// put to the person while the export runs (FR24, `deepChapterPrompt`): write
+/// put to the person while the export runs (FR24, `DeepChapterPrompt`): write
 /// it as plain paragraphs of its lines, do so for every such chapter of the
 /// export, or cancel the whole export, which ends as Stop does. The export's
 /// thread waits for the answer, and Stop takes the question down as a cancel.
@@ -217,17 +217,44 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// The speech exports under way, which a quit stops cleanly first.
     private let speechExportsUnderWay: SpeechExportsUnderWay
     /// How the question about a chapter nested too deeply (FR24) is put to
-    /// the person: the app's is an alert, and a test passes a scripted
-    /// answer, so that no test shows one.
-    private let deepChapterPrompt: DeepChapterPrompt
-    #if os(macOS)
-    /// The alert of the app's own prompt, which Stop takes down.
-    private let deepChapterAlert: ExportDeepChapterAlert
-    #endif
+    /// the person; nil where nobody can be asked, when such a chapter fails
+    /// its book's file as it did before the question.
+    private let deepChapterPrompt: DeepChapterPrompt?
 
-    /// Shows the question about a chapter nested too deeply, and returns the
-    /// answer. It runs on the main actor, while the export's thread waits.
-    typealias DeepChapterPrompt = @MainActor @Sendable (ExportDeepChapterQuestion) async -> ExportDeepChapterAnswer
+    /// How the question about a chapter nested too deeply is put to the
+    /// person: shown over the dialog's window, and taken down by Stop. Both
+    /// run on the main actor, while the export's thread waits for the answer.
+    struct DeepChapterPrompt: Sendable {
+        /// Shows `question`, over `window` (the Export dialog's own, if it
+        /// is known), and returns the answer.
+        let ask: @MainActor @Sendable (ExportDeepChapterQuestion, PlatformWindow?) async -> ExportDeepChapterAnswer
+        /// Takes the question down if it is showing, answered as Cancel
+        /// Export.
+        let dismiss: @MainActor @Sendable () -> Void
+
+        /// A prompt that asks through `ask` and is taken down by `dismiss`
+        /// (which a scripted prompt, with nothing on screen, leaves to do
+        /// nothing).
+        init(
+            ask: @escaping @MainActor @Sendable (ExportDeepChapterQuestion, PlatformWindow?) async -> ExportDeepChapterAnswer,
+            dismiss: @escaping @MainActor @Sendable () -> Void = {}
+        ) {
+            self.ask = ask
+            self.dismiss = dismiss
+        }
+    }
+
+    /// Who puts the question about a chapter nested too deeply.
+    enum DeepChapterPrompting {
+        /// The app's way: an alert over the dialog on the Mac, and nobody on
+        /// the iPhone, which has no export.
+        case standard
+        /// Nobody can be asked: such a chapter fails its book's file.
+        case unavailable
+        /// A prompt of the caller's own, which a test scripts so that no
+        /// alert is shown.
+        case custom(DeepChapterPrompt)
+    }
 
     /// The folder an export went to last this session, which the next
     /// dialog starts in.
@@ -263,9 +290,9 @@ final class BookExportModel: ObservableObject, Identifiable {
     ///   - speechExportsUnderWay: Where a speech export says it begins and
     ///     ends, so that a quit stops it cleanly first; the app's own unless a
     ///     test gives one.
-    ///   - deepChapterPrompt: How the question about a chapter nested too
-    ///     deeply is put to the person; nil asks with an alert, on the Mac.
-    ///     A test passes a scripted answer.
+    ///   - deepChapterPrompting: Who puts the question about a chapter nested
+    ///     too deeply; the standard way asks with an alert, on the Mac. A
+    ///     test passes a scripted answer.
     init(
         books: [Book],
         library: LibraryViewModel? = nil,
@@ -276,17 +303,26 @@ final class BookExportModel: ObservableObject, Identifiable {
         speechDefaults: UserDefaults = TextMouthRuntime.current.preferences,
         substitutionService: TextSubstitutionService = .shared,
         speechExportsUnderWay: SpeechExportsUnderWay = .shared,
-        deepChapterPrompt: DeepChapterPrompt? = nil
+        deepChapterPrompting: DeepChapterPrompting = .standard
     ) {
-        #if os(macOS)
-        // The app's prompt is the alert this model owns, so that Stop can take it down.
-        let alert = ExportDeepChapterAlert()
-        deepChapterAlert = alert
-        self.deepChapterPrompt = deepChapterPrompt ?? { await alert.ask($0) }
-        #else
-        // The iPhone has no export, so the question is never put; cancelling is the safe answer.
-        self.deepChapterPrompt = deepChapterPrompt ?? { _ in .cancelExport }
-        #endif
+        switch deepChapterPrompting {
+        case .standard:
+            #if os(macOS)
+            // The alert is this model's own, so that Stop can take it down.
+            let alert = ExportDeepChapterAlert()
+            deepChapterPrompt = DeepChapterPrompt(
+                ask: { question, window in await alert.ask(question, in: window) },
+                dismiss: { alert.dismiss() }
+            )
+            #else
+            // The iPhone has no export and nobody to ask.
+            deepChapterPrompt = nil
+            #endif
+        case .unavailable:
+            deepChapterPrompt = nil
+        case .custom(let prompt):
+            deepChapterPrompt = prompt
+        }
         self.books = books
         self.destination = destination ?? Self.defaultDestination
         self.access = access
@@ -700,9 +736,14 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// ended from `window`. The dialog keeps the summary when anything
     /// could not be exported. An export that ends without its spoken audio
     /// file says too what it kept for the next export.
+    /// `dialog` is the Export dialog's own window, which the question about a
+    /// chapter nested too deeply is shown over (FR24).
     /// - Returns: What the export did; nil when it could not start.
     @discardableResult
-    func export(announcingFrom window: PlatformWindow? = nil) async -> BookExportOutcome? {
+    func export(
+        announcingFrom window: PlatformWindow? = nil,
+        presentingFrom dialog: PlatformWindow? = nil
+    ) async -> BookExportOutcome? {
         guard canExport else { return nil }
         let earlier = (phase: phase, summary: summary)
         let cancellation = BookExportCancellation()
@@ -776,12 +817,17 @@ final class BookExportModel: ObservableObject, Identifiable {
             }
         })
         // A chapter nested too deeply is put to the person (FR24): the export's
-        // thread waits here while the main actor asks, and an export that was
-        // stopped meanwhile does not ask.
-        let prompt = deepChapterPrompt
-        let askAboutDeepChapters: ExportDeepChapterQuestioner.Ask = { question in
-            guard !cancellation.isCancelled else { return .cancelExport }
-            return (try? AsyncBridge.waitForResult { await prompt(question) }) ?? .cancelExport
+        // thread waits while the main actor asks. Stop or Close may come between
+        // the thread's asking and the main actor's turn, when there is no alert
+        // to take down yet, so the main actor looks again before it asks. With
+        // nobody to ask, there is no question and such a chapter fails its file.
+        let askAboutDeepChapters: ExportDeepChapterQuestioner.Ask? = deepChapterPrompt.map { prompt -> ExportDeepChapterQuestioner.Ask in
+            return { question in
+                let answer = try? AsyncBridge.waitForResult {
+                    await Self.put(question, through: prompt, over: dialog, unless: cancellation)
+                }
+                return answer ?? .cancelExport
+            }
         }
         // While spoken audio is made, a quit stops it cleanly first, with its
         // chapters kept, rather than cutting a chapter off midway.
@@ -838,15 +884,30 @@ final class BookExportModel: ObservableObject, Identifiable {
         speechProgress = progress?.fraction == nil ? nil : progress
     }
 
+    /// Puts `question` to the person through `prompt`, over `dialog`, on the
+    /// main actor, unless `cancellation` says the export has stopped: Stop or
+    /// Close may come between the export thread's asking and the main actor's
+    /// turn, when there is no alert yet for `stop()` to take down, and a
+    /// question for a stopped export would then be shown, over the Library
+    /// window if the dialog had closed. A stopped export answers Cancel Export.
+    @MainActor
+    static func put(
+        _ question: ExportDeepChapterQuestion,
+        through prompt: DeepChapterPrompt,
+        over dialog: PlatformWindow?,
+        unless cancellation: BookExportCancellation
+    ) async -> ExportDeepChapterAnswer {
+        guard !cancellation.isCancelled else { return .cancelExport }
+        return await prompt.ask(question, dialog)
+    }
+
     /// Stops the export under way before its next file, or within a moment
     /// while a chapter is spoken or the audio file encoded. A question about a
     /// chapter nested too deeply that is on screen is answered Cancel Export,
     /// so the export, which waits for it, ends too.
     func stop() {
         cancellation?.cancel()
-        #if os(macOS)
-        deepChapterAlert.dismiss()
-        #endif
+        deepChapterPrompt?.dismiss()
     }
 
     // MARK: Books Being Exported

@@ -233,7 +233,7 @@ struct BookExportSheet: View {
         // Phase 0 iOS: a UIKit window has no sheet parent.
         let announcingWindow = window
         #endif
-        guard let outcome = await model.export(announcingFrom: announcingWindow) else { return }
+        guard let outcome = await model.export(announcingFrom: announcingWindow, presentingFrom: window) else { return }
         if BookExportModel.didEverything(outcome) {
             close()
         }
