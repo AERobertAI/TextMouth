@@ -47,7 +47,7 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
   `Scripts/ios/sync-info-plist.py` writes the iOS file from the Mac's, `TextMouth/Resources/Info.plist`, so the two cannot drift apart by hand, and `make check-ios-plist` (`--check`) exits 1 when the iOS file is stale:
   - It leaves out the document types iOS cannot import, with the declaration of any type nothing else names:
     - "Ogg Audio" and "Audio Converted at Import" (the import converts that audio with `afconvert`, which iOS cannot start);
-    - "Audio and Video Converted with ffmpeg" (FMT31), with its types' declarations, since only the Mac's installed ffmpeg converts them;
+    - "Audio and Video Converted with ffmpeg" (FMT31), with its types' declarations, since only the Mac's FFmpeg helper converts them (FMT54);
     - "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is the system's type for `.caf` files too, which are converted the same way, so `.alac` is not offered on iOS either);
     - and the BRF, BRL, and PEF braille files (reading them takes the braille helper).
   - It leaves out the keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which are macOS's, and, until 0.4.2, added `.azw3` to the Kindle MOBI type and its declaration.
@@ -125,7 +125,7 @@ Each of the four closures is a one-line default or argument made into a closure 
 - `IOSUnavailable` (`Platform/iOS/IOSUnavailable.swift`) is what a stand-in throws for work the iPhone app cannot do.
   Its one case, `feature`, takes a phrase that completes "… is not available on iPhone yet", and its description is the full sentence, such as "Converting this kind of file is not available on iPhone yet.", since a person may hear it.
 - The stand-ins phase 1 inherits, by what they stand in for:
-  - Helper programs: WatchedProcess throws `IOSUnavailable` from `run` and `runCapturingOutput` and has no memory reading; OrphanedConversionSweep does nothing.
+  - Helper programs: WatchedProcess throws `IOSUnavailable` from `run`, `runCapturingOutput`, and `runStreaming` and has no memory reading; OrphanedConversionSweep does nothing.
     The only document reading that needs textutil, and so a helper, is a compound-file Word document older than Word 6, which iOS therefore refuses with "Converting this kind of file is not available on iPhone yet."
     Every other document format reads on iOS through TextMouth's own readers, which are shared code with no AppKit and no process: rich text and RTFD, Word 6 to Word 2003, Word, OpenDocument text, Word 2003 XML, MOBI, and KFX (see [Imports](state/imports.md)).
     OpenDocument text and Word 2003 XML read the same on the Mac since 0.4.0, and Word 6 and Word 95 documents since 0.4.1.

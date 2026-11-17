@@ -311,11 +311,12 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   Count the AppKit uses left by compiling, not by searching for `import AppKit`: SwiftUI brings AppKit's names in, and a file that imports it without using it shows no census error, so check strict mode or list the bare imports before calling the census done.
 
 ## What the iPhone's import refuses
-<!-- id: iphone-import-refusals; keys: PhoneImportRefusal, convertedAudio, ffmpegAudio, PhoneImportWording, tracksLeftOut, refuseConversion; src: TextMouth/Phone/PhoneImportRefusal.swift, TextMouth/Phone/PhoneImportWording.swift, TextMouth/Services/FileImportService+AudioConversion.swift -->
+<!-- id: iphone-import-refusals; keys: PhoneImportRefusal, convertedAudio, ffmpegAudio, PhoneImportWording, tracksLeftOut, refuseConversion; src: TextMouth/Phone/PhoneImportRefusal.swift, TextMouth/Phone/PhoneImportWording.swift, TextMouth/Services/FileImportService+AudioConversion.swift; status: incomplete; issues: FMT54 -->
 
 - PhoneImportRefusal is thrown only on iOS (`#if os(iOS)`), where the Mac would start a program or, for TextMouth's own audio readers, still converts: FileImportService.convertImportedAudio finds the tracks the import converts and refuses them by kind.
   - `.convertedAudio` for what afconvert converts (Ogg, AC-3, CAF, and the rest), and for the files TextMouth's own readers decode (TTA, WavPack, Monkey's Audio): the iPhone compiles those readers, but this refusal still stops the import before they run, and the plist leaves their type out.
-  - `.ffmpegAudio` for a file only ffmpeg reads (FFmpegAudioConverter.converts), whose sentence sends the book to a Mac with ffmpeg installed.
+  - `.ffmpegAudio` for a file only FFmpeg reads (FFmpegAudioConverter.converts), whose sentence ends with ffmpegRefusalNextStep, "Add it on your Mac, then send the book here".
+    The iPhone runs no FFmpeg helper until FMT54.
   - `.wordSixOrNinetyFive` and `.braille` for the formats that need textutil and the braille helper.
-- A folder, ZIP, or playlist leaves out the files only ffmpeg reads, with PhoneImportWording.ffmpegTracksLeftOut for its notice, and refuses what is left that needs converting.
+- A folder, ZIP, or playlist leaves out the files only FFmpeg reads, with PhoneImportWording.ffmpegTracksLeftOut for its notice, and refuses what is left that needs converting.
   A book with no other track is refused.

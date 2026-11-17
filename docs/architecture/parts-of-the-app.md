@@ -94,6 +94,14 @@ It uses the tables of the folder it is given: the app's own, or VoiceOver's for 
 Its line protocol with the app, protocol 2, is defined once, in TextMouthBraille/include/TextMouthBrailleProtocol.h.
 The app target copies it into Contents/MacOS, and only BrailleTranslator starts it, under WatchedProcess (see Braille files, in [Imports: braille tables and the translator](state/imports-braille-tables.md)).
 
+## TextMouthFFmpeg, the FFmpeg helper
+<!-- id: ffmpeg-helper-program; keys: FFmpeg, WMA, Matroska, WebM, helper program, C program, libtmffmpeg; src: TextMouthFFmpeg/main.c, TextMouthFFmpeg/Session/session.c, TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h, Scripts/vendor/ffmpeg/build.py, TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift; status: incomplete; issues: FMT54 -->
+
+TextMouthFFmpeg, a folder beside the TextMouth source folder, is the C source of a third program built into the app: the helper that runs FFmpeg 9.0.2 (Scripts/vendor/ffmpeg/build.py builds it, as a static library of the Mac and one of the iPhone) to read the formats macOS cannot.
+Only FFmpegAudioConverter starts it, under WatchedProcess.runStreaming, and it confines itself with a sandbox once its file is open (see [Imports: audio only FFmpeg reads](state/imports-audio-ffmpeg.md)).
+Its protocol with the app is defined once, in TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h.
+The iPhone starts no program, so it will run the same session (TextMouthFFmpeg/Session/session.c) inside the app once FMT54 is built.
+
 ## Concurrency and threads
 <!-- id: concurrency-threads; keys: MainActor, data race, strict concurrency, thread safety, DispatchQueue, async await, deadlock, Swift concurrency; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Services/LogWriter.swift, TextMouth/Services/TextCacheUpdateQueue.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/VoiceCatalog.swift, TextMouth/Services/TranscriptionService.swift, TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Services/RecordingCaptureBackend.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/AudioEditing/AudioEditHistoryStore.swift, TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift, TextMouth/Services/BookManifestEditing.swift, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift, project.yml, TextMouthTests/Package.swift, Scripts/check.sh -->
 
@@ -126,7 +134,7 @@ A feed's fetch, its parse, and a first merge run off it.
 Its records, this Mac's fetch details, and its imports are written on queues of their own.
 The files its after-playing sweep and newest-N rule remove go on the imports' queue (FeedDownloadManager.runBesideImports(_:)), once the records and the feeds' indexes are written on the main actor.
 Audio editing reads, renders (LAME encoding an MP3 within a render), and deletes originals off the main thread, as storage work (StorageWork.audioEditing).
-Each change of a book's edit history is made under one lock (AudioEditHistoryStore), and an installed ffmpeg runs as a child process, never on the main thread.
+Each change of a book's edit history is made under one lock (AudioEditHistoryStore), and the FFmpeg helper and an installed ffmpeg (the editor's filters) run as child processes, never on the main thread.
 The editor window's model runs on the main actor, measuring the edited audio's levels off it, and plays through an AVPlayer.
 
 ### Swift 6 mode and unchecked declarations

@@ -48,6 +48,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
   - [Duplicates](docs/architecture/state/imports-duplicates.md): unanswered duplicates, and Replace Existing.
   - [DAISY 3 books](docs/architecture/state/imports-daisy.md): several DTBook files, and SMIL clocks.
   - [Audio](docs/architecture/state/imports-audio.md): manifests, conversion, playlists, Ogg, and chapters.
+  - [Audio only FFmpeg reads](docs/architecture/state/imports-audio-ffmpeg.md): the helper, its sandbox, and its limits.
   - [Documents textutil reads](docs/architecture/state/imports-textutil.md): web archives, SSML, and DTBooks.
   - [Rich text and Word](docs/architecture/state/imports-rtf-and-word.md): the RTF, Word 97-2003, and Word 6 readers.
   - [DOCX, OpenDocument, and Word 2003 XML](docs/architecture/state/imports-office-xml.md): the readers' policies.
