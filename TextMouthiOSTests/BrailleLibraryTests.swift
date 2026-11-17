@@ -51,18 +51,20 @@ final class BrailleLibraryTests: XCTestCase {
     }
 
     /// `tmb_translate` called once on `engine`, as the app calls it: `input`
-    /// in `mode` with `table` from the bundle's tables folder, with at most
-    /// `maxRecord` characters a record and `maxOutput` bytes of output (0 for
-    /// no cap), told to stop at once when `stops`.
+    /// in `mode` with `table` from the bundle's tables folder, or from
+    /// `folder` when one is given, with at most `maxRecord` characters a
+    /// record and `maxOutput` bytes of output (0 for no cap), told to stop at
+    /// once when `stops`.
     private func call(
         _ input: Data,
         mode: tmb_mode,
         table: String = "en-ueb-g1.ctb",
+        folder tables: String? = nil,
         maxRecord: Int = BrailleTranslator.maximumPieceScalars,
         maxOutput: Int = 0,
         stops: Bool = false
     ) throws -> Outcome {
-        let folder = try XCTUnwrap(BrailleTranslator.Tool.helper.tablesFolder?.path, "the app has no tables folder")
+        let folder = try XCTUnwrap(tables ?? BrailleTranslator.Tool.helper.tablesFolder?.path, "the app has no tables folder")
         let rawMode = mode.rawValue
         return try engine.run(limit: 60) { _ in
             folder.withCString { folder in
@@ -158,7 +160,12 @@ final class BrailleLibraryTests: XCTestCase {
 
     /// Nothing is kept from one call of the library to the next: the four
     /// tables taken in turn, twice over, read the same braille each time as
-    /// each reads it first.
+    /// each reads it first; and a table file written again between two calls
+    /// is compiled again, by its new rules, under the same name. liblouis
+    /// keeps a compiled table by its name until it is freed, so a call that
+    /// left its tables loaded would have the next read by the old rules
+    /// ("a" for dot 1 here, measured on the Mac with the unload taken out;
+    /// the review of November 16's nit).
     func testNothingIsKeptFromOneCallToTheNext() throws {
         let braille = ["\u{2828}\u{2801}\u{2803}\u{2809}\u{2800}\u{2819}\u{2811}\u{280B}", "\u{2820}\u{280B}\u{2815}\u{2817}\u{2800}\u{282E}"]
         var first: [String: [String]] = [:]
@@ -172,6 +179,16 @@ final class BrailleLibraryTests: XCTestCase {
                 }
             }
         }
+
+        let folder = try makeSandboxDirectory("BrailleTableWrittenAgain")
+        let file = folder.appendingPathComponent("probe.ctb")
+        let dotOne = Data((header + record("\u{2801}")).utf8)
+        try "letter a 1\n".write(to: file, atomically: true, encoding: .utf8)
+        let before = try call(dotOne, mode: TMB_MODE_BACK_LIBLOUIS, table: "probe.ctb", folder: folder.path)
+        try "letter b 1\n".write(to: file, atomically: true, encoding: .utf8)
+        let after = try call(dotOne, mode: TMB_MODE_BACK_LIBLOUIS, table: "probe.ctb", folder: folder.path)
+        XCTAssertEqual(String(decoding: before.output, as: UTF8.self), header + record("a"))
+        XCTAssertEqual(String(decoding: after.output, as: UTF8.self), header + record("b"), "the first call's table was kept")
     }
 
     // MARK: - The Library's Own Limits
