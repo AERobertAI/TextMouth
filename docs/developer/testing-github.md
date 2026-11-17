@@ -50,6 +50,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
    The runner image's Xcode 26.0.1 lists the iOS SDKs but says "iOS 26.0 is not installed", so the job first downloads the platform (`xcodebuild -downloadPlatform iOS`, about 3 minutes).
    It uploads `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`.
    A build that does not compile is a result, not a failure of the job.
+   Before the build a stamp of the toolchain empties a restored module cache made on another runner image, and a build that still fails with "has been modified since the module file" is tried once more ([A cache made on another runner image](building-ios.md#a-cache-made-on-another-runner-image)).
 
 ### The iPhone tests
 <!-- id: run-iphone-tests; keys: ios-ui-summary, ios_ui_tests, counts_by_bundle, PARALLEL_WORKERS, result bundle, keyboard preferences, NOT ASKED; src: Scripts/agents/run-ios-ui-tests.py, Scripts/agents/ios_ui_tests.py, TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, project.yml -->
