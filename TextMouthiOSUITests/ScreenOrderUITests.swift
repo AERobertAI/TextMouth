@@ -121,7 +121,32 @@ final class ScreenOrderUITests: TextMouthUITestCase {
            let percent = elements.firstIndex(where: { $0.label == "Percent through the book" }) {
             XCTAssertLessThan(page, percent, "Page is after Percent through the book")
         }
-        try audit(app, screen: "Go To sheet", accepting: [.navigationTitle("Go To"), .barItem("Cancel")])
+        try auditTheGoToSheet(app, screen: "Go To sheet")
+    }
+
+    /// How many times `testTheGoToSheetAuditHoldsOnEveryLaunch` launches the app and audits the Go To sheet. The
+    /// audit's Dynamic Type findings came and went from one launch to the next (A11Y-GOTO: train 1115-1800 failed,
+    /// 1115-1838 passed on the same tree), so a pass is shown over several launches, not one.
+    private static let goToAuditLaunches = 5
+
+    /// The Go To sheet's audit, five launches in a row, each a new process: the same audit as the order test's, which
+    /// must not fail on one launch and pass on the next. A failure names the launch.
+    func testTheGoToSheetAuditHoldsOnEveryLaunch() throws {
+        for launch in 1...Self.goToAuditLaunches {
+            let app = try launchIntoTheReader()
+            _ = try openReaderSheet("Go To", titled: "Go To", waitingFor: "Cancel", in: app)
+            try auditTheGoToSheet(app, screen: "Go To sheet, launch \(launch) of \(Self.goToAuditLaunches)")
+            // One app at a time: the next launch is of the same app.
+            app.terminate()
+        }
+    }
+
+    /// Audits the Go To sheet showing in `app`. The fields' Dynamic Type finding is accepted
+    /// (`Accepted.swiftUITextField`): their text grows (`PhoneTextFieldScalingTests`), and a fixed font, which the audit
+    /// words "unsupported", still fails.
+    private func auditTheGoToSheet(_ app: XCUIApplication, screen: String) throws {
+        let accepted: [Accepted] = [.navigationTitle("Go To"), .barItem("Cancel")] + Accepted.goToFields
+        try audit(app, screen: screen, accepting: accepted)
     }
 
     /// Sleep Timer, with none running: the title, Close, New Timer, the
@@ -151,7 +176,7 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         // stepper's title, "Adjust minutes" (see Settings). The first header,
         // "New Timer", is accepted for contrast: a false positive
         // (`Accepted.firstHeader`).
-        try audit(app, screen: "Sleep Timer sheet", informing: .dynamicType, accepting: [.navigationTitle("Sleep Timer"), .barItem("Close"), .firstHeader("New Timer")])
+        try audit(app, screen: "Sleep Timer sheet", informing: .dynamicType, accepting: [.navigationTitle("Sleep Timer"), .barItem("Close"), .firstHeader("New Timer"), .sleepTimerField])
     }
 
     /// Voice & Speed for a text book: the title, Close, Language, Voice,
@@ -199,7 +224,8 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         // Dynamic Type is reported and not failed: the audit flags the
         // read-only rows at the bottom, "Last Opened" and "Word Count" and
         // their values (see Settings).
-        try audit(app, screen: "Book Information sheet", informing: .dynamicType, accepting: [.navigationTitle("Book Information"), .barItem("Cancel"), .barItem("Save")])
+        let accepted: [Accepted] = [.navigationTitle("Book Information"), .barItem("Cancel"), .barItem("Save")] + Accepted.bookInformationFields
+        try audit(app, screen: "Book Information sheet", informing: .dynamicType, accepting: accepted)
     }
 
     /// Navigation unit's choice: the title, Cancel, then the Mac's units in

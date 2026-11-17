@@ -100,3 +100,7 @@ featureExp/
 
 # Local app icon source archives
 /text_mouth_icon_v*.zip
+
+# Python bytecode, which the tools write when run without -B
+__pycache__/
+*.pyc

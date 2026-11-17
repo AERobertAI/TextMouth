@@ -189,7 +189,7 @@ final class SearchUITests: TextMouthUITestCase {
         // checked there. Clipped text and every other kind still fail here.
         try audit(
             app, screen: "Search in Book sheet", informing: .dynamicType,
-            accepting: [.navigationTitle("Search in Book"), .barItem("Back to Book"), .scrolledPastTheEdge, underTheBar]
+            accepting: [.navigationTitle("Search in Book"), .barItem("Back to Book"), .scrolledPastTheEdge, underTheBar, .searchTextField]
         )
     }
 }
