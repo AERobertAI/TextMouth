@@ -867,6 +867,7 @@ targets:
       - TextMouthProductionTests/BookTextEncodingTests.swift
       - TextMouthProductionTests/BrailleBookPageTests.swift
       - TextMouthProductionTests/BrailleCellsTests.swift
+      - TextMouthProductionTests/BrailleDamagedInputTests.swift
       - TextMouthProductionTests/BrailleEbaeFixesTests.swift
       - TextMouthProductionTests/BrailleEmphasisReadingTests.swift
       - TextMouthProductionTests/BrailleEmphasisRoundTripTests.swift
