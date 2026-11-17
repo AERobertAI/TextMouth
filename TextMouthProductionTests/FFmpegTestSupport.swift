@@ -126,6 +126,10 @@ extension XCTestCase {
         case realHelper
         /// Writes these bytes and exits with this status.
         case write([UInt8], status: Int32)
+        /// Runs the app's own helper to its end, then hangs for this many
+        /// seconds, as a helper that does not exit after writing its whole
+        /// stream.
+        case realHelperThenHang(seconds: Int)
         /// Hangs, writing nothing, for this many seconds.
         case hang(seconds: Int)
         /// Kills itself with SIGKILL, as a crash kills (SIGKILL makes no
@@ -147,6 +151,9 @@ extension XCTestCase {
             switch action {
             case .realHelper:
                 return "exec '\(try bundledFFmpegHelper().path)' \"$@\""
+            case let .realHelperThenHang(seconds):
+                // exec: the sleep is then the process the watchdog follows and ends.
+                return "'\(try bundledFFmpegHelper().path)' \"$@\"; exec /bin/sleep \(seconds)"
             case let .write(bytes, status):
                 let output = folder.appendingPathComponent("\(mode).stream")
                 try Data(bytes).write(to: output)

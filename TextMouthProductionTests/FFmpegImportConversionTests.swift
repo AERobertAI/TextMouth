@@ -177,6 +177,20 @@ final class FFmpegImportConversionTests: XCTestCase {
         }
     }
 
+    /// A helper that has written a whole stream and then does not exit is
+    /// ended once the stream's END has been read, and the import succeeds:
+    /// only the stall limit would have ended it, as a failure.
+    func testAHelperThatHangsAfterAWholeStreamStillImports() async throws {
+        let wma = try source()
+        let (helper, _) = try ffmpegHelperStandIn(decode: .realHelperThenHang(seconds: 60))
+
+        let conversion = try await FFmpegAudioConverter.convert(wma, using: ffmpegTool(helper: helper, seconds: TestMachine.allowed(6)))
+
+        XCTAssertEqual(conversion.converted.lastPathComponent, "tones.m4a")
+        XCTAssertEqual(conversion.duration, 4.0, accuracy: 0.1)
+        XCTAssertEqual(WatchedProcess.runningChildCount, 0)
+    }
+
     /// A source that says no length is taken as long as its converted file
     /// lasts, which must play and last longer than nothing.
     func testASourceOfUnknownLengthTakesTheConvertedLength() async throws {

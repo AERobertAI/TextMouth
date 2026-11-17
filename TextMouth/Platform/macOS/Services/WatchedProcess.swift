@@ -604,6 +604,11 @@ enum WatchedProcess {
         }
     }
 
+    /// How long a child run by `runStreaming` may keep running after its
+    /// reader has returned, in seconds: a helper that has written all it has
+    /// ends in a few milliseconds, so this is generous.
+    static let defaultEndGraceSeconds: TimeInterval = 2
+
     /// Runs `executable` as `run` does, with its standard output a pipe that
     /// `read` reads while it runs (FMT50: the FFmpeg helper's stream, which
     /// the import writes into an .m4a as it comes). The watchdog's stall
@@ -611,6 +616,16 @@ enum WatchedProcess {
     /// kernel's, follow the file `output`, which `read` writes, when there is
     /// one (a probe writes none). When `read` fails, the child is killed at
     /// once. A crash is told from an exit (`Ending.signal`).
+    ///
+    /// A reader that returns has all it wants (the FFmpeg import returns once
+    /// it has read and checked the stream's END record): the child then has
+    /// `endGraceSeconds` to end by itself, and is killed when it does not.
+    /// That kill is not the watchdog's: its `Ending` is a SIGKILL signal,
+    /// never `.killed`, so a helper that hangs after a whole stream costs
+    /// the import nothing, where only the stall limit (a minute) would have
+    /// ended it, as a failure.
+    /// - Parameter endGraceSeconds: how long a child may keep running after
+    ///   `read` has returned, in seconds.
     /// - Returns: How the child ended, and what `read` returned or threw.
     /// - Throws: `CancellationError` when the task is cancelled, which kills
     ///   the child; a task already cancelled starts no child.
@@ -621,6 +636,7 @@ enum WatchedProcess {
         limits: Limits,
         residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        endGraceSeconds: TimeInterval = WatchedProcess.defaultEndGraceSeconds,
         reading read: (PipeReader) async throws -> Value
     ) async throws -> (ending: Ending, read: Result<Value, any Error>) {
         try Task.checkCancellation()
@@ -649,8 +665,21 @@ enum WatchedProcess {
             }
             // A reader that gave up leaves a child that may still be writing:
             // it is killed, rather than left to stall until the watchdog.
-            if case .failure = result { gate.cancel() }
+            // One that returned has all it wants: the child has the grace to
+            // end by itself, then it is killed (not the watchdog's kill, so
+            // no failure) instead of waiting out the stall limit.
+            var endsTheChild: Task<Void, Never>?
+            switch result {
+            case .failure:
+                gate.cancel()
+            case .success:
+                endsTheChild = Task {
+                    try? await Task.sleep(for: .seconds(endGraceSeconds))
+                    if !Task.isCancelled { gate.cancel() }
+                }
+            }
             let ending = await ended
+            endsTheChild?.cancel()
             try Task.checkCancellation()
             return (ending, result)
         } onCancel: {

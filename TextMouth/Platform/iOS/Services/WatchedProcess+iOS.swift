@@ -125,6 +125,10 @@ enum WatchedProcess {
         throw IOSUnavailable.feature("Converting this kind of file")
     }
 
+    /// How long the Mac lets a streaming child run on after its reader has
+    /// returned, in seconds (the same number, so the parameters match).
+    static let defaultEndGraceSeconds: TimeInterval = 2
+
     /// Would run `executable` and hand its output to `read` as it comes
     /// (the Mac's FFmpeg helper, FMT50); on iOS it starts nothing and throws
     /// `IOSUnavailable`, as `run` does. The parameters match the Mac's. It
@@ -137,6 +141,7 @@ enum WatchedProcess {
         limits: Limits,
         residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        endGraceSeconds: TimeInterval = WatchedProcess.defaultEndGraceSeconds,
         reading read: (PipeReader) async throws -> Value
     ) async throws -> (ending: Ending, read: Result<Value, any Error>) {
         throw IOSUnavailable.feature("Converting this kind of file")

@@ -113,6 +113,30 @@ final class WatchedProcessStreamingTests: XCTestCase {
         XCTAssertEqual(ending.outcome, .killed(.wroteTooMuch(bytes: 1_000)))
     }
 
+    /// A reader that returns while its child runs on (a helper that hangs
+    /// after the stream's END) has the child ended once the grace is over,
+    /// by a signal and not by the watchdog, long before the stall limit; a
+    /// child that ends by itself within the grace is left to.
+    func testAChildThatRunsOnAfterTheReaderReturnsIsEndedAfterTheGrace() async throws {
+        let started = Date()
+        // The stall limit would end the sleeping child at 5 seconds, as a failure.
+        let (hung, hungRead) = try await WatchedProcess.runStreaming(
+            shell, arguments: ["-c", "printf done; exec /bin/sleep 30"], watching: nil,
+            limits: limits(TestMachine.allowed(5)), endGraceSeconds: 0.3
+        ) { pipe in try await pipe.read(upTo: 4) }
+        XCTAssertEqual(try hungRead.get(), Array("done".utf8))
+        XCTAssertEqual(hung.signal, SIGKILL, "the child must be ended, by a signal that is not the watchdog's")
+        if case .killed = hung.outcome { XCTFail("the watchdog's kill would fail the import: \(hung)") }
+        XCTAssertLessThan(Date().timeIntervalSince(started), TestMachine.allowed(3), "the stall limit ended it, not the grace")
+        XCTAssertEqual(WatchedProcess.runningChildCount, 0)
+
+        // A child that ends within the grace ends as it chose, with its own status.
+        let (finishing, _) = try await WatchedProcess.runStreaming(
+            shell, arguments: ["-c", "printf done; sleep 0.2; exit 3"], watching: nil, limits: limits(30), endGraceSeconds: 20
+        ) { pipe in try await pipe.read(upTo: 4) }
+        XCTAssertEqual(finishing, WatchedProcess.Ending(outcome: .exited(status: 3)))
+    }
+
     /// Cancelling the task kills the child at once: the task ends in a
     /// cancellation, and no child is left running.
     func testCancellingKillsTheChild() async throws {
