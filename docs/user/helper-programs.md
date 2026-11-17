@@ -50,24 +50,32 @@ afinfo ends with TextMouth in the same three cases as the Ogg converter.
 At each launch TextMouth also stops any afinfo an earlier run left behind, touching only one that is printing into one of those hidden files, and removes those files from the temporary folder when they are more than an hour old.
 The debug log records AFINFO_LEFTOVERS_SWEPT, with how many processes it stopped and how many files it removed, when it did either.
 
-## ffmpeg and ffprobe, for audio macOS cannot read
-<!-- id: ffmpeg-ffprobe-helper-programs; keys: ffmpeg, ffprobe, WMA, Matroska, AUDIO_INFO_KILLED, AUDIO_CONVERSION_KILLED, Homebrew, MacPorts; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
+## TextMouth's own converter, for audio macOS cannot read
+<!-- id: ffmpeg-ffprobe-helper-programs; keys: ffmpeg, FFmpeg, WMA, Matroska, TextMouthFFmpeg, sandbox, AUDIO_CONVERSION_KILLED, AUDIO_DECODER_REFUSED; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FFmpegHelperStream.swift, TextMouth/Models/FFmpegImportWording.swift, TextMouthFFmpeg/main.c, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
-TextMouth converts WMA, Speex, Musepack, WebM, Matroska, AVI, Flash video, and RealMedia audio with the ffmpeg installed on the Mac (see [What TextMouth reads](reads-audiobooks.md)).
-It first asks the ffprobe that comes with it what the file holds, and then runs ffmpeg, each as a separate process that TextMouth watches.
-TextMouth looks for them in Homebrew's folders (/opt/homebrew/bin and /usr/local/bin), in MacPorts' (/opt/local/bin), and then along PATH, since an app opened from the Finder has a PATH that holds none of them.
+TextMouth converts WMA, Speex, Musepack, WebM, Matroska, AVI, Flash video, and RealMedia audio with a converter it carries inside the app, built from FFmpeg, so nothing needs installing (see [What TextMouth reads](reads-audiobooks.md)).
+It is a small program in the app, TextMouthFFmpeg, which TextMouth starts for each file, first to ask what the file holds and then to decode its sound, each as a separate process that TextMouth watches.
+An ffmpeg installed on the Mac, Homebrew's or any other, is not used for the import.
 
-- TextMouth stops ffprobe when it runs longer than 30 seconds plus one more for each 20 MB of the file, or holds more than 512 MB of memory, and reads at most 8 MB of its report.
+- Once it has opened the file, the converter confines itself with macOS's computing-only sandbox: it can compute, read that one file, and write its answer, and nothing else, so it opens no other file, makes no network connection, and starts no program, whatever the file holds.
+  If macOS refuses the sandbox, the converter reads nothing, and the import says "TextMouth's converter could not make itself safe before reading “NAME”, so it did not read the file.
+  Install TextMouth again, then import the file again."
+- TextMouth stops the converter's probe when it runs longer than 30 seconds plus one more for each 20 MB of the file, or holds more than 512 MB of memory.
   The debug log records AUDIO_INFO_KILLED, with the file's name and the reason.
-- TextMouth stops ffmpeg by the converter's rules of its own: more than a minute plus a tenth of the track's length, more than 1 GB of memory, or no growth of its output for a minute.
+- TextMouth stops its decode by the converter's rules of its own: more than a minute plus a tenth of the track's length, more than 1 GB of memory, or no growth of its output for a minute.
+  FFmpeg is also refused any single request for more than 256 MB, and decodes on one thread.
   The debug log records AUDIO_CONVERSION_KILLED, as it does for afconvert.
+- TextMouth looks at the decode four times a second.
+  It also counts the file it writes before each block, so a file that grows too fast is stopped at its cap, not up to a second later.
 - A file that says no length is limited by its size instead: its output may be at most 50 times the file, and no less than 64 MB.
-- ffmpeg is given only the file protocol and the format named from the file's first bytes, so it never guesses a format or opens a web address.
-- When ffprobe can't start, fails, or is stopped, the import says "TextMouth can't read “NAME” as WMA.
-  It may be damaged, or named for another format.", though the file's bytes were recognized.
-  A reinstall of ffmpeg is the cure when every file says so.
-- The Use ffmpeg for filters switch in Settings covers the audio editor's filters only, so the import uses an installed ffmpeg whatever it says.
-- Cancel stops either at once.
+- The converter is given only the file, opened by TextMouth itself, and the format named from the file's first bytes, so it never guesses a format or opens a web address.
+- When the converter finishes a whole file, it has two seconds to end by itself, and TextMouth then ends it without counting that as a failure.
+- A file the converter cannot read says "TextMouth can't read “NAME” as WMA.
+  It may be damaged, or named for another format.", and one that makes it stop says "TextMouth's converter stopped unexpectedly while reading “NAME”.
+  The file may be damaged."
+- A file whose sound the converter decodes with errors is still imported, and the debug log records AUDIO_DECODER_REFUSED, with the file's name and how many packets and frames it refused.
+- The Use ffmpeg for filters switch in Settings covers the audio editor's filters only, and those still run an ffmpeg installed on the Mac when the switch allows (see [Editing audio](editing-audio.md)).
+- Cancel stops the converter at once.
 
 ## textutil, for the oldest Word documents
 <!-- id: textutil-oldest-word-documents; keys: Word 97, .doc, antique documents, import refused; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->

@@ -174,8 +174,8 @@ It says which filters it runs when a chain asks for another.
 A filter given no value for an option it needs is refused, with the filter and the option named and what to give, as in "The equalizer filter needs its frequency: give a number from 0.0001 to 999999."
 A width that makes no usable filter at its frequency is refused too, as in "The equalizer filter's width can't be “5000”: give a narrower width, since this one makes no usable filter at 3000 Hz.".
 With ffmpeg installed (Homebrew's, MacPorts', or one on PATH), Use ffmpeg for filters, in the Audio Editing group and on by default, runs every filter ffmpeg has; the switch's help names where TextMouth found ffmpeg, and without one, a line says that it isn't installed.
-TextMouth bundles nothing of ffmpeg.
-The switch covers filters only: importing WMA, Matroska, and the other formats only ffmpeg reads uses an installed ffmpeg whatever it says (see [What TextMouth reads](reads-audiobooks.md)).
+The converter inside TextMouth has no filters, so the switch never involves it.
+The switch covers filters only: importing WMA, Matroska, and the other formats only ffmpeg reads uses the converter inside TextMouth whatever it says (see [What TextMouth reads](reads-audiobooks.md)).
 Twelve premade presets, such as Remove Rumble, Audiobook Loudness, and Shorten Long Pauses, can be edited, reordered, removed, added to, and reset, in Filter Presets… (below), and work with or without ffmpeg.
 
 ## MP3 without ffmpeg
