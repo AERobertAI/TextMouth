@@ -61,6 +61,7 @@ TODO = """\
 
 - [x] **B12 — A 64-bit float book crashes a render.** Merged 6b09b2ee2, November 16.
 - [ ] **B14 — A save's temporary file can make a move fail.** Found November 16, 2026 by `review-rulesmove`.
+- [ ] **B15 — A valid audio file is called damaged.** Found November 16, 2026 by `review-floatrender`.
 - [x] **B12 (alias B12-OCT) — An update replaces edited text.** Merged 77e798a0, October 21. The audit's C18 waits.
 """
 
