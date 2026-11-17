@@ -142,8 +142,8 @@ final class FFmpegImportRealTests: XCTestCase {
         let info = try XCTUnwrap(read)
         XCTAssertEqual(info.channels, 1)
         XCTAssertEqual(info.sampleRate, 22_050)
-        // 70,272 frames at 22,050 Hz, and the resampler's delay under 0.03 s.
-        XCTAssertEqual(info.duration, 70_272.0 / 22_050, accuracy: 0.06)
+        // 70,272 frames at 22,050 Hz exactly (3.187 s); the .m4a keeps them to a few hundredths.
+        XCTAssertEqual(info.duration, 70_272.0 / 22_050, accuracy: 0.02)
     }
 
     /// The helper reads the samples as the import plans them: the two-track

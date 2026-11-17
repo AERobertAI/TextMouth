@@ -1,5 +1,6 @@
 #!/bin/sh
-# make-form-change-sample.sh: makes TestData/format-samples/mka/mp3-form-changes.mka (FU-FFMPEG2),
+# make-form-change-sample.sh: makes TestData/format-samples/mka/mp3-form-changes.mka (FU-FFMPEG2), and
+# TestData/format-samples/ffmpeg-edge/mp3-ends-in-a-changed-form.mka (its first two stretches only),
 # the sample of sound that changes its form partway: three stretches of MP3 of one second each,
 # 22,050 Hz mono (440 Hz), 44,100 Hz stereo (880 Hz), and 22,050 Hz mono (660 Hz), joined byte
 # for byte and stored in Matroska without encoding them again. A decoder (FFmpeg's mp3float)
@@ -30,3 +31,7 @@ mp3="-c:a libmp3lame -write_xing 0 -id3v2_version 0 -write_id3v1 0"
 "$ffmpeg_tool" $common -f lavfi -i "sine=frequency=660:duration=1:sample_rate=22050" -ac 1 $mp3 -b:a 24k q3.mp3
 cat q1.mp3 q2.mp3 q3.mp3 > joined.mp3
 "$ffmpeg_tool" $common -i joined.mp3 -c copy mp3-form-changes.mka
+# The second sample ends in a stretch of another form than the first, which the session drains from its
+# resampler at the end: the first two stretches only (23,616 and 23,040 frames at 22,050 Hz in all).
+cat q1.mp3 q2.mp3 > joined-ends-changed.mp3
+"$ffmpeg_tool" $common -i joined-ends-changed.mp3 -c copy mp3-ends-in-a-changed-form.mka

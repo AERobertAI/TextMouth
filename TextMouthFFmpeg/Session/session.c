@@ -595,6 +595,13 @@ static int next_frame(tmff_session *session) {
         }
         const int received = avcodec_receive_frame(session->decoder, session->frame);
         if (received == 0) {
+            /* One thread decodes (open_decoder), so the decoder describes the frame it has just
+               given, and its rate is the true one: MP3's first frame after a change of rate comes
+               with the old rate in frame->sample_rate (measured, from 22,050 to 44,100 Hz: a
+               1,152-sample frame labelled 22,050), which would be resampled at the wrong speed. */
+            if (session->decoder->sample_rate > 0 && session->frame->sample_rate != session->decoder->sample_rate) {
+                session->frame->sample_rate = session->decoder->sample_rate;
+            }
             return 1;
         }
         if (received == AVERROR_EOF) {
