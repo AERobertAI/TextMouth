@@ -408,7 +408,9 @@ final class ExportDeepChapterExportTests: XCTestCase {
         let several = ExportDeepChapterQuestion(bookTitle: "Deep Notes", chapter: nil, limit: 128, offersEveryOne: true)
         let longer = ExportDeepChapterAlert.makeAlert(for: several)
         XCTAssertEqual(longer.buttons.map(\.title), ["Export as Written", "Export Every Such Chapter as Written", "Cancel Export"])
-        XCTAssertEqual(longer.buttons[1].accessibilityHelp() ?? "", BookExportDeepChapterWording.exportEveryOneAsWrittenHint)
+        XCTAssertEqual(
+            longer.buttons.dropFirst().first?.accessibilityHelp(), BookExportDeepChapterWording.exportEveryOneAsWrittenHint
+        )
         XCTAssertEqual(longer.buttons.last?.keyEquivalent, "\u{1b}")
     }
 
