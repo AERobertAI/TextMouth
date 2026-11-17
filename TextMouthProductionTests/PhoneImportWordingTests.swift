@@ -60,8 +60,9 @@ final class PhoneImportWordingTests: XCTestCase {
 
     // MARK: - Refusals
 
-    /// The three refusals, each naming the file and the next step, as the
-    /// spec's "What can't be imported" gives them.
+    /// The refusals, each naming the file and the next step, as the spec's
+    /// "What can't be imported" gives them. Braille has none since DR34: the
+    /// iPhone reads it.
     func testRefusalSentences() {
         XCTAssertEqual(
             PhoneImportRefusal.convertedAudio(kind: "Ogg").sentence(naming: "Radio Drama"),
@@ -71,18 +72,14 @@ final class PhoneImportWordingTests: XCTestCase {
             PhoneImportRefusal.wordSixOrNinetyFive.sentence(naming: "Notes"),
             "“Notes” is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet. Add it on your Mac, then send the book here."
         )
-        XCTAssertEqual(
-            PhoneImportRefusal.braille.sentence(naming: "Ledger"),
-            "“Ledger” is a braille file, which TextMouth on iPhone can't read yet. Add it on your Mac, then send the book here."
-        )
     }
 
     /// Without a name, a refusal says "This file", which its error
     /// description is.
     func testRefusalWithoutANameSaysThisFile() {
         XCTAssertEqual(
-            PhoneImportRefusal.braille.errorDescription,
-            "This file is a braille file, which TextMouth on iPhone can't read yet. Add it on your Mac, then send the book here."
+            PhoneImportRefusal.wordSixOrNinetyFive.errorDescription,
+            "This file is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet. Add it on your Mac, then send the book here."
         )
     }
 

@@ -2,7 +2,8 @@ import Foundation
 
 /// Why the iPhone can't import a file yet, thrown on iOS where the Mac would
 /// start a helper program the phone doesn't have: Apple's audio converter,
-/// textutil for a Word 6 or Word 95 document, and the braille translator.
+/// and textutil for a Word 6 or Word 95 document. (Braille, refused here
+/// until November 16, 2026, is translated in the app itself since DR34.)
 ///
 /// The shared import wraps it in an `ImportFailure`, as every failure is,
 /// and on iOS that failure's sentence is this refusal's, naming the file and
@@ -20,8 +21,6 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     /// A Word 6 or Word 95 document, which TextMouth's own Word reader
     /// leaves to textutil.
     case wordSixOrNinetyFive
-    /// A braille book: BRF, BRL, or PEF.
-    case braille
 
     /// The sentence a person hears about the file called `name` (as
     /// `PhoneImportWording.displayName(of:)` gives it), or about "This
@@ -34,8 +33,6 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
             return PhoneImportWording.ffmpegAudioRefusal(name, kind: kind)
         case .wordSixOrNinetyFive:
             return PhoneImportWording.wordSixOrNinetyFiveRefusal(name)
-        case .braille:
-            return PhoneImportWording.brailleRefusal(name)
         }
     }
 
@@ -43,16 +40,6 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     /// `ImportFailure` around the refusal to name the file.
     var errorDescription: String? {
         sentence(naming: nil)
-    }
-
-    // MARK: - Braille
-
-    /// Throws `.braille`: the phone has no braille translator yet, so every
-    /// braille book is refused before it is read. A function rather than a
-    /// bare `throw`, so the reader's code after the call draws no warning
-    /// that it will never run.
-    static func refuseBrailleBook() throws {
-        throw PhoneImportRefusal.braille
     }
 
     // MARK: - Audio
