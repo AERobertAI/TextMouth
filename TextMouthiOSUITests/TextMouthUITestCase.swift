@@ -307,7 +307,8 @@ class TextMouthUITestCase: XCTestCase {
     // MARK: - The Search in Book Sheet
 
     /// The search field's label, which the sheet's order reads.
-    static let searchFieldLabel = "Search text"
+    /// `nonisolated`, since `Accepted.searchTextField` (a nonisolated static) reads it.
+    nonisolated static let searchFieldLabel = "Search text"
 
     /// Launches into the reader (at the text size `textSize`, the default when
     /// none), opens the Search in Book sheet from its button, and types `text`
