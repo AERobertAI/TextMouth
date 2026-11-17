@@ -65,6 +65,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Recordings](docs/architecture/state/recordings.md)
 - [Transcription](docs/architecture/state/transcription.md)
 - [Exports](docs/architecture/state/exports.md)
+  - [A chapter nested too deeply](docs/architecture/state/exports-deep-chapter.md): the question, and the lines as written.
 - [Logs](docs/architecture/state/logs.md)
 - [The hosted-test sandbox](docs/architecture/state/hosted-test-sandbox.md)
 

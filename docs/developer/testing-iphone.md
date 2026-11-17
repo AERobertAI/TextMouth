@@ -61,7 +61,7 @@ Tests that act as a person does find what tests of the parts miss.
   The Mac's schemes do not run them.
   GitHub runs both in one `xcodebuild` run (see [Tests on GitHub Actions](testing-github.md)), so this Mac needs no simulator to run them.
 - `TextMouthiOSTests` is a unit-test bundle hosted in the iPhone app.
-  It has 30 tests of its own, and also compiles 175 of the Mac's test files, listed by path under its `sources` in `project.yml`, so that one file serves both bundles: about 1,980 tests in all.
+  It has 46 tests of its own, and also compiles 189 of the Mac's test files, listed by path under its `sources` in `project.yml`, so that one file serves both bundles: about 2,330 tests in all.
   Neither the Mac's nor the iPhone's tests play, speak, or record anything (`test_run_ios_ui_tests.py` reads every file the target compiles, its own folder and the shared files, and fails if one names an audio framework, a player, or a recorder), so they need no sound variable.
   The check reads names (`SOUND_PATTERN` in `Scripts/agents/ios_ui_tests.py`), so it does not see a call whose name starts with another word, such as `startSpeaking(` or `startPlayback(`.
   A bare `record(` (the feed store's and the log's), `continuation.resume(`, and `resumeIndexWrites(` are not sound.
@@ -71,19 +71,22 @@ Tests that act as a person does find what tests of the parts miss.
   - `PhoneControlButtonTests` (12 tests) tests the reader's UIKit control: its words, its traits, that it is one element, its actions, and its smallest height of 44 points.
   - `IOSRuntimeTests` (4 tests) tests the iOS runtime: that a hosting process runs in a sandbox, that a UI test's launch request does too, that without the request the home is the app's container, and that the library lives in Application Support.
     The two tests that read `PhoneLaunchRequest` are inside `#if DEBUG`, as the type is, so a Release test run has 2 of the 4.
+  - `BrailleLibraryTests` (10 tests) call the braille library in the iPhone app with the bundled tables, and `BrailleBatchLimitsTests` (5) pin that the iPhone's batches read their limits, tables folder, and clock from `BrailleTranslator.tool`, as the Mac's do.
+    `InProcessEngineTests` (16 tests) and the braille tests the iPhone shares with the Mac run on both platforms, fenced only where they differ; `BrailleDamagedInputTests` (4) run on GitHub only.
   - `PhoneTextFieldScalingTests` (5 tests, A11Y-GOTO) hosts the real Go To, Search, Sleep Timer, and Book Information sheets over a stopped reader, and checks that the font of each text field has a text style and grows at least twice at the largest text size.
     A fifth test, a canary, fails when SwiftUI turns UIKit's `adjustsFontForContentSizeCategory` on, which is when the accepted audit finding can go (see [The text fields' accepted finding](testing-iphone-audit.md#the-text-fields-accepted-finding)).
   - `PhoneValueRowTests` (3 tests) measures `PhoneValueRow` at the 12 Dynamic Type sizes: stacked at the 5 accessibility sizes, side by side at the 7 others (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms-phone-interface.md)).
     A third test checks that SwiftUI still has 5 and 7.
 - `TextMouthiOSUITests` is an XCUITest bundle that drives the app from outside, in the simulator.
-  It has 35 tests, of which 13 press Play or type (the 6 of `PlaybackUITests`, 6 of the 7 of `SearchUITests`, all but its empty sheet's, and the Search test of `LargeTextUITests`) and run only where sound is allowed, on GitHub's runner (see In the simulator, sound tests run on GitHub only, below).
+  It has 37 tests, of which 13 press Play or type (the 6 of `PlaybackUITests`, 6 of the 7 of `SearchUITests`, all but its empty sheet's, and the Search test of `LargeTextUITests`) and run only where sound is allowed, on GitHub's runner (see In the simulator, sound tests run on GitHub only, below).
   - Each test launches the app with a library of its own and, usually, a public-domain book sent to it: Alice's Adventures in Wonderland, Project Gutenberg #11, from `TestData/alice.epub` (see PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md)).
   - `ReaderUITests` (4 tests): the reader's order, its first values, 44-point controls, and its audit.
   - `LibraryUITests` (4 tests): the Library's words and order, empty and with a book, and the audit of each.
-  - `ScreenOrderUITests` (10 tests): the order of the Add to Library sheet, Settings, Bookmarks, Headings, Go To, Sleep Timer, the Voice sheet, Book Information, and the navigation unit's choice, with the audit of each.
+  - `ScreenOrderUITests` (11 tests, one of them the Go To audit on five launches): the order of the Add to Library sheet, Settings, Bookmarks, Headings, Go To, Sleep Timer, the Voice sheet, Book Information, and the navigation unit's choice, with the audit of each.
   - `LargeTextUITests` (4 tests): see [LargeTextUITests](testing-iphone-audit.md#largetextuitests).
   - `SearchUITests` (7 tests, 0.4.4; typed; see [SearchUITests](testing-iphone-audit.md#searchuitests)).
   - `PlaybackUITests` (6 tests): see [PlaybackUITests](testing-iphone-audit.md#playbackuitests).
+  - `BrailleUITests` (1 test, DR34): a BRF sent to the app opens in the reader on its print, translated in the app, with nothing pressed or typed.
   - What iOS shows for a button in `.cancellationAction` is in `PhoneSheetButton.swift` and in [The two apps and the platform folders](../architecture/platforms-phone-interface.md).
   - They read what VoiceOver would be given: each element's label, value, and traits, in the order of the accessibility tree, as a depth-first walk of one snapshot.
   - No wait lasts longer than 60 seconds.
@@ -155,7 +158,7 @@ Its helpers are listed beside it (`DOCXTestPackages`, `CollectionTestSupport`, `
 A test that makes sound is never shared: the check in `test_run_ios_ui_tests.py` fails on one, and has a break test with a shared file that plays.
 
 - **A fence** is `#if os(macOS)` around a test the iPhone really differs on, so the Mac still runs it.
-  Twelve tests are fenced, in `BrailleFileCodeTests`, `SoftHyphenEffectTests`, `LeadingArticlesSortTests`, `TextEncodingCatalogTests`, `EPUBStructureFailureTests`, `FolderDuplicateRepairTests`, and `PhoneLaunchRequestTests`.
+  Eight tests are fenced, in `LeadingArticlesSortTests`, `TextEncodingCatalogTests`, `EPUBStructureFailureTests`, `FolderDuplicateRepairTests`, and `PhoneLaunchRequestTests`.
   Each difference and its reason is under Where the iPhone differs in [The two apps and the platform folders](../architecture/platforms.md).
   `BundledLicenseTests` and `UncheckedConcurrencyPolicyTests` (it scans the repository) are left Mac-only.
 - **The type-checks:** `make typecheck-ios-tests` compiles the unit bundle and its shared files for iOS, and takes the lock itself.

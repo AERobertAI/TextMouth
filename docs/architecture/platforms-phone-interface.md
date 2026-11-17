@@ -317,6 +317,8 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - `.convertedAudio` for what afconvert converts (Ogg, AC-3, CAF, and the rest), and for the files TextMouth's own readers decode (TTA, WavPack, Monkey's Audio): the iPhone compiles those readers, but this refusal still stops the import before they run, and the plist leaves their type out.
   - `.ffmpegAudio` for a file only FFmpeg reads (FFmpegAudioConverter.converts), whose sentence ends with ffmpegRefusalNextStep, "Add it on your Mac, then send the book here".
     The iPhone runs no FFmpeg helper until FMT54.
-  - `.wordSixOrNinetyFive` and `.braille` for the formats that need textutil and the braille helper.
+  - `.wordSixOrNinetyFive` for the format that needs textutil.
+  - `.macBrailleTable` for a braille book that needs one of a Mac's own tables, thrown by BrailleBookReader.markdown before anything is read.
+    The iPhone reads other braille books itself (see [The translator on the iPhone](state/imports-braille-tables.md#the-translator-on-the-iphone)).
 - A folder, ZIP, or playlist leaves out the files only FFmpeg reads, with PhoneImportWording.ffmpegTracksLeftOut for its notice, and refuses what is left that needs converting.
   A book with no other track is refused.

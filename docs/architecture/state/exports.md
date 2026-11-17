@@ -75,7 +75,8 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   A chapter that nests past it throws ExportWalkError.nestedTooDeeply(chapter:limit:), naming the chapter by its number, or none for a text with no chapter markers.
   BookExportWording.nestedTooDeeply(chapter:limit:) words it: "Chapter 1 of this book nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't export safely.
   Choose Edit Text, flatten the nesting, and save; then export again."
-  The export names it after the file like any writer's failure, writes nothing for the book, and exports the others (BookExportNestingTests).
+  A walk with no decider, where nobody can be asked, names it after the file like any writer's failure, writes nothing for the book, and exports the others (BookExportNestingTests).
+  A walk with one asks it what to do with the chapter (see [Exports: a chapter nested too deeply](exports-deep-chapter.md)).
 - TextExportWriter, the writer protocol, with the TextExportWriters.all registry, the TextExportConversion erasure, and the dialog's options state (TextExportOptionsState).
 - HTMLExportWriter with XMLEscaping, RTFExportWriter, and WordDocExportWriter, which is Apple's .docFormat from TextMouth's RTF.
   HTMLExportWriter and EPUBExportWriter write their blocks through XHTMLMarkup (Services/Export/XHTMLMarkup.swift), so a heading, a list, or a table is written once.

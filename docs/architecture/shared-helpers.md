@@ -335,7 +335,7 @@ ExportDocumentWalker holds the same limit, through MarkdownTree.read(_:within:in
 Because the count includes lines in code fences and every two columns of indentation, a code line of 129 `>` or of 258 spaces before `- ` blocks an export and an edit too, which is the cost of one limit.
 
 ## AsyncBridge
-<!-- id: asyncbridge; keys: semaphore, timeout, synchronous wait, Task.detached, priority inversion, audio tags; src: TextMouth/Services/AsyncBridge.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/BookContentAnalysisService.swift -->
+<!-- id: asyncbridge; keys: semaphore, timeout, synchronous wait, Task.detached, priority inversion, audio tags; src: TextMouth/Services/AsyncBridge.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/BookContentAnalysisService.swift; status: incomplete; issues: B17 -->
 
 AsyncBridge (Services/AsyncBridge.swift): lets synchronous parsing and analysis wait for async work, such as reading audio through AVFoundation.
 The work runs at the waiter's priority or .medium, whichever is higher (waitPriority(for:)), so no thread waits on work of lower priority (#1581).
@@ -347,3 +347,5 @@ waitForResult(timeLimit:cancelledBy:of:) ends the wait after a limit (ST07):
 Reading an audio file's tags has AsyncBridge.audioTagsTimeLimit (30 seconds; the import's and the reader's try? fall back to empty tags, and Book Info's LibraryBookInfoReader falls back to the metadata the library keeps).
 Analyzing or parsing an audiobook's audio has AsyncBridge.audioAnalysisTimeLimit (5 minutes: BookParser and BookContentAnalysisService).
 Every other user (audio-edit renders, conversions, textutil) keeps no limit, since each can honestly run for an hour and has its own cancel or watchdog.
+A read of a file that passed its limit is remembered (`waitForResult(reading:timeLimit:abandoned:of:)`), and every later read of it is refused with AbandonedEarlier, "TextMouth stopped reading this audio earlier because it took too long, and won't try again until TextMouth is opened again."
+On the iPhone, where switching back to the app does not start it afresh, that remedy is not true: InProcessEngineWording says "closed and opened again" (B17).

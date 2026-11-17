@@ -67,6 +67,7 @@ The source folders:
 - Models: value types and small rule tables, such as Book, BookInfo, Library, BookContentIndex, SettingsPolicy, StoredPreference, and the wording helpers.
 - Parsers: one reader per format, each turning a source file into DocumentContent (chapters, headings, and an index), plus shared readers for archives, packages, and text encodings.
 - Services: everything that owns a file, a queue, or a system resource.
+  - InProcessEngine, which runs a C library inside the app on a thread of its own with a time limit, since the iPhone starts no helper program (see [Imports: braille tables and the translator](state/imports-braille-tables.md));
   - Services/Feeds holds the feed engine, whose FeedCenter.shared LibraryViewModel starts and offers as feeds;
   - Services/AudioEditing the audio editing engine, which works without a window (see [Audio edits](state/audio-edits.md));
   - Services/Export the model, walker, and writers of text export, which the Export dialog's Convert to picker chooses among (see [Exports](state/exports.md));
@@ -87,12 +88,13 @@ The source folders:
   The files directly in Platform (PlatformTypes, PlatformApplication, PlatformControlStyles) are shared by both apps.
 
 ## TextMouthBraille, the braille helper
-<!-- id: braille-helper-program; keys: BRF, translation helper, subprocess, C program, tables folder, braille tables; src: TextMouthBraille/, TextMouthBraille/include/TextMouthBrailleProtocol.h, Vendor/liblouis/, TextMouth/Services/BrailleTranslator.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
+<!-- id: braille-helper-program; keys: BRF, translation helper, subprocess, C program, tables folder, braille tables; src: TextMouthBraille/, TextMouthBraille/TextMouthBrailleLibrary.c, TextMouthBraille/include/TextMouthBrailleProtocol.h, Vendor/liblouis/, TextMouth/Services/BrailleTranslator.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
-TextMouthBraille, a folder beside the TextMouth source folder rather than in it, is the C source of a second program built into the app: the helper that runs liblouis (Vendor/liblouis, which only it links) for braille.
+TextMouthBraille, a folder beside the TextMouth source folder rather than in it, is the C source of a second program built into the app: the helper that runs liblouis (Vendor/liblouis, which only it and the iPhone's braille library link) for braille.
+Its translation is a library, TextMouthBrailleLibrary.c, which main.c wraps and which the iPhone app calls in its own process.
 It uses the tables of the folder it is given: the app's own, or VoiceOver's for one of this Mac's tables.
 Its line protocol with the app, protocol 2, is defined once, in TextMouthBraille/include/TextMouthBrailleProtocol.h.
-The app target copies it into Contents/MacOS, and only BrailleTranslator starts it, under WatchedProcess (see Braille files, in [Imports: braille tables and the translator](state/imports-braille-tables.md)).
+The Mac app target copies it into Contents/MacOS, and only BrailleTranslator starts it, under WatchedProcess (see Braille files, in [Imports: braille tables and the translator](state/imports-braille-tables.md)).
 
 ## TextMouthFFmpeg, the FFmpeg helper
 <!-- id: ffmpeg-helper-program; keys: FFmpeg, WMA, Matroska, WebM, helper program, C program, libtmffmpeg; src: TextMouthFFmpeg/main.c, TextMouthFFmpeg/Session/session.c, TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h, Scripts/vendor/ffmpeg/build.py, TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift; status: incomplete; issues: FMT54 -->

@@ -25,7 +25,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - Any other XML is refused by name.
 
 ## Braille files
-<!-- id: braille-files-read; keys: BRF, BRL, PEF, liblouis, Braille tab, table changed, Book Information; src: TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Models/BrailleTableCatalog.swift -->
+<!-- id: braille-files-read; keys: BRF, BRL, PEF, liblouis, Braille tab, table changed, Book Information; src: TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Models/BrailleTableCatalog.swift; status: incomplete; issues: FR32, FR33 -->
 
 - TextMouth reads BRF files (.brf), BRL files (.brl), and PEF files (.pef).
 - It translates them to print with liblouis, using the braille code chosen in the Braille tab of Settings (see [Settings](settings-braille.md)), and the print becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
@@ -35,6 +35,12 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - When this Mac's tables name no version now, it says the table "may have changed since the book was read with liblouis 3.34.0" instead.
 - A book that recorded no version is never refused for this.
 - Book Info and Speak Info name the code, and Book Information's Braille Code pop-up reads one book again with another braille code (see [The Library window](book-information.md)).
+- The iPhone reads BRF, BRL, and PEF books too, with liblouis inside the app, since an iPhone app can start no helper program.
+  It reads with the four English tables the app carries, as the defaults of the Braille tab choose, and has no Braille tab and no Braille Code pop-up yet.
+  A book that needs one of this Mac's own tables, sent from a Mac, is refused with "“NAME” needs “fr-bfu-g2.ctb”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.
+  Add it on your Mac, then send the book here."
+  The iPhone stops a translation by the same limits as the Mac, and one that runs 5 seconds past its limit is abandoned.
+  Every later translation then says "TextMouth stopped the braille translation earlier because it took too long, and won't try again until TextMouth is closed and opened again."
 
 ### Guessing the braille code when a book is added
 <!-- id: guessing-braille-code-when-book; keys: EBAE, UEB, auto-detect, guessed table, guess switch, Braille tab; src: TextMouth/Parsers/BrailleCodeDetector.swift, TextMouth/Models/BrailleTableOrigin.swift, TextMouth/Views/Settings/BrailleSettingsView.swift -->

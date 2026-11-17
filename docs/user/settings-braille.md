@@ -4,11 +4,12 @@
 Part of [TextMouth's documentation](../../README.md).
 
 ## Braille tab
-<!-- id: braille-tab; keys: brailleTable, brailleFileCode, UEB, English Braille American Edition, grade 2, contracted; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift -->
+<!-- id: braille-tab; keys: brailleTable, brailleFileCode, UEB, English Braille American Edition, grade 2, contracted; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift; status: incomplete; issues: FR32 -->
 
 The Braille tab, between Text and Sounds, chooses the braille code TextMouth reads braille files with and writes braille in (see [What TextMouth reads](reads-daisy-and-braille.md) and [Exporting books](exporting-braille.md)).
 Its one group is headed "Braille", and holds three pop-up buttons, a sentence, and a caption.
 Export's braille options draw the same three pop-ups.
+The iPhone has no Braille tab yet: it reads every braille book with the defaults of this tab, from the four English tables the app carries (see [What TextMouth reads](reads-daisy-and-braille.md)).
 
 ### Language, Braille code, and Contraction
 <!-- id: language-braille-code-contraction; keys: Language pop-up, Braille code pop-up, Contraction pop-up, Grade 1, Grade 2, uncontracted; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift, TextMouth/Models/BrailleTableCatalog.swift -->

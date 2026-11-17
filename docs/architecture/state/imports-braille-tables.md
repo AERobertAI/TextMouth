@@ -48,6 +48,27 @@ It
 
 It reads a record of the helper's .braille-out.txt for each piece, and where a paragraph of more than maximumPieceScalars (4,000) is cut inside an emphasized passage, the passage is written as two passages, each with its own indicators, and read back, the words after the cut come back plain.
 
+### The translator on the iPhone
+<!-- id: translator-in-process-iphone; keys: InProcessEngine, tmb_translate, TextMouthBrailleLibrary, liblouis_iOS, bundled tables, abandoned call, DR34; src: TextMouth/Services/InProcessEngine.swift, TextMouth/Models/InProcessEngineWording.swift, TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/TextMouthBrailleLibrary.c, TextMouthBraille/include/TextMouthBrailleLibrary.h, TextMouth/Phone/PhoneImportRefusal.swift; status: incomplete; issues: FR32, FU02 -->
+
+iOS starts no helper, so the iPhone runs the same translation inside the app (DR34).
+TextMouthBraille/main.c is a thin main around TextMouthBraille/TextMouthBrailleLibrary.c, which both apps build: `tmb_translate` takes a request and gives a response in memory, in the same protocol 2, and unloads every table however a call ends.
+Its iPhone targets in project.yml are liblouis_iOS and TextMouthBrailleLibrary_iOS.
+- The `#if os(iOS)` branch of BrailleTranslator (`translateInProcess`, `check`) sends the same pieces and records, in batches of about 256 KiB (`LibraryBatches`), and joins the answers as the Mac does.
+- Each batch is one call of `BrailleTranslator.libraryEngine`, an InProcessEngine: one thread of its own with an 8 MB stack, calls one at a time.
+  A call is told to stop (`Call.shouldStop`, which the library asks before each record) once its time is spent, or when its import is cancelled.
+- The limits are the tool's (`BrailleTranslator.tool`), as the Mac's watchdog sets them:
+  - a record of at most 4,000 characters (status 4);
+  - the output of each batch, and of the whole book, within the Mac's cap for its input (statuses 8 and 9, in the Mac's words);
+  - the library's time over all the batches within what the Mac allows its helper.
+- A call still running 5 seconds past its limit is abandoned: its thread, which cannot be killed, drops to a lower priority, its caller gets `Failure.abandoned`, and the engine refuses every later call (`Failure.refused`) until TextMouth is closed and opened again.
+  InProcessEngineWording holds both sentences, which end "won't try again until TextMouth is closed and opened again", and IN_PROCESS_CALL_ABANDONED is logged.
+- Only the bundled tables are used, by bare name: the four English tables of Vendor/liblouis/tables, in the app's liblouis folder, with the files they include.
+  `requireBundledTable` throws `Failure.unknownTable` for any other.
+  A book that needs one of a Mac's own tables, or a config.json import table from a Mac, is refused first by `PhoneImportRefusal.macBrailleTable`, in the phone's words.
+- A crash in liblouis, or its exit(3) when memory runs out, ends the app, which the Mac's helper survives (FU02, accepted for now).
+- There is no table choice yet: the iPhone reads with the Braille tab's defaults (FR32).
+
 ### The helper's protocol
 <!-- id: helper-protocol; keys: protocol version, header line, emphasis flags, Clang module, modulemap, exit status 7; src: TextMouthBraille/include/TextMouthBrailleProtocol.h, TextMouthBraille/include/module.modulemap, TextMouthBraille/main.c, TextMouth/Parsers/BrailleEmphasis.swift, project.yml, TextMouthProductionTests/BrailleHelperProtocolTests.swift -->
 

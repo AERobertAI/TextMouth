@@ -91,7 +91,7 @@ The three rebuild paths of MarkdownCacheService and BookContentAnalysisService u
    A BRL has no pages, and its book is read again with the other braille books when braille gains its page reader (PageReaderVersions, in [Text caches](text-caches.md)).
 
 ### The table
-<!-- id: table; keys: braille table setting, stored value, liblouis table, Braille Code pop-up, mac prefix, table choice; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
+<!-- id: table; keys: braille table setting, stored value, liblouis table, Braille Code pop-up, mac prefix, table choice; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift; status: incomplete; issues: FR32, FR33 -->
 
 The table: Book.brailleTable, a stored value (BrailleTableSource) such as "en-ueb-g2.ctb" for a bundled table or "mac:fr-bfu-g2.ctb" for one of this Mac's, which names the "mac:" prefix in one place, in the row and in BookMetadata.brailleTable, is the table the book was imported with.
 FileImportService.importFileWithReport stamps the table that FileImportService.brailleReading(ofImported:) decides: BraillePreferences.importTable(), the Braille setting at that import.
@@ -99,6 +99,8 @@ When the guess applies ([The guess of English Braille, American Edition](imports
 Every later reading uses the stamped table, the cache's rebuild included, so a change of the setting never moves a book's text under its places.
 Only the listener's own choice changes it later: Book Information's Braille Code pop-up reads the book again with another table (TextRereadChoice.brailleTable, in [Text caches](text-caches-rereads-edits.md)), which Replace Existing then carries to a new copy of the same bytes.
 Nil reads as BrailleTableCatalog.defaultTableID.
+On the iPhone the same reading runs inside the app (see [The translator on the iPhone](imports-braille-tables.md#the-translator-on-the-iphone)): BrailleBookReader.markdown first refuses a stored "mac:" table (PhoneImportRefusal.refuseMacBrailleTable).
+The iPhone has no setting or pop-up that changes the table (FR32, FR33).
 The record keeps it (see [Package records](package-records.md)), and so does the removal marker (Retirement markers, in [The library index](library-index.md)).
 
 ### The file code
