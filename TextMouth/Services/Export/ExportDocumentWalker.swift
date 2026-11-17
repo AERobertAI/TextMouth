@@ -21,16 +21,19 @@ enum ExportDocumentWalker {
     /// (`MarkdownCacheService.cacheText(from:at:)`). Bytes that are not UTF-8
     /// throw the error reading the file as text throws; cancelling stops the
     /// walk with `CancellationError`
-    /// (`document(fromMarkdown:book:options:cancellation:)`).
+    /// (`document(fromMarkdown:book:options:deepChapters:cancellation:)`).
     static func document(
         fromContentBytes bytes: Data,
         at url: URL,
         book: ExportBookDetails,
         options: ExportWalkOptions = .plain,
+        deepChapters: ExportDeepChapterDecider? = nil,
         cancellation: BookExportCancellation? = nil
     ) throws -> ExportDocument {
         let markdown = try MarkdownCacheService.cacheText(from: bytes, at: url)
-        return try document(fromMarkdown: markdown, book: book, options: options, cancellation: cancellation)
+        return try document(
+            fromMarkdown: markdown, book: book, options: options, deepChapters: deepChapters, cancellation: cancellation
+        )
     }
 
     /// The document of `markdown`, a content.md, for `book`. The text is split
@@ -49,12 +52,23 @@ enum ExportDocumentWalker {
     /// `MarkupGuard.onLargeStack`, whose stack holds a tree at that limit
     /// however small the stack of the thread that asks (an export's own is
     /// 512 KiB).
+    ///
+    /// A walk given `deepChapters` (FR24) does not refuse a chapter that
+    /// nests past the limit: it asks the decider, which says to write the
+    /// chapter as written (`Walk.blocksAsWritten(of:)`, plain paragraphs of
+    /// its lines, which no writer reads as nesting) or to cancel the export
+    /// (`CancellationError`). A chapter at the limit or under it is walked as
+    /// ever and never asked about.
+    /// - Parameter deepChapters: What to do with a chapter nested too deeply;
+    ///   nil refuses it, as Edit Text's check does.
     /// - Throws: `ExportWalkError.nestedTooDeeply` for the first chapter that
-    ///   nests past the limit, and `CancellationError` when stopped.
+    ///   nests past the limit when there is no decider, and
+    ///   `CancellationError` when stopped or when the decider says to cancel.
     static func document(
         fromMarkdown markdown: String,
         book: ExportBookDetails,
         options: ExportWalkOptions = .plain,
+        deepChapters: ExportDeepChapterDecider? = nil,
         cancellation: BookExportCancellation? = nil
     ) throws -> ExportDocument {
         var sections = MarkdownCacheService.splitChapters(markdown)
@@ -69,24 +83,32 @@ enum ExportDocumentWalker {
         let chapters = sections
         return try MarkupGuard.onLargeStack {
             try walk(
-                chapters, namingThem: hasChapters, book: book, options: options, limits: limits, cancellation: cancellation
+                chapters,
+                namingThem: hasChapters,
+                book: book,
+                options: options,
+                limits: limits,
+                deepChapters: deepChapters,
+                cancellation: cancellation
             )
         }
     }
 
-    /// `document(fromMarkdown:book:options:cancellation:)`'s walk of the
-    /// chapters `sections`, which its caller runs on the big stack. A refusal
-    /// names the chapter by its number when `namingThem`, which is false for a
-    /// text with no chapter markers, whose one section is the whole text.
+    /// `document(fromMarkdown:book:options:deepChapters:cancellation:)`'s walk
+    /// of the chapters `sections`, which its caller runs on the big stack. A
+    /// refusal names the chapter by its number when `namingThem`, which is
+    /// false for a text with no chapter markers, whose one section is the
+    /// whole text.
     private static func walk(
         _ sections: [(title: String, content: String)],
         namingThem: Bool,
         book: ExportBookDetails,
         options: ExportWalkOptions,
         limits: MarkupGuard.Limits,
+        deepChapters: ExportDeepChapterDecider?,
         cancellation: BookExportCancellation?
     ) throws -> ExportDocument {
-        var state = Walk(options: options, limits: limits)
+        var state = Walk(options: options, limits: limits, deepChapters: deepChapters)
         var blocks: [ExportBlock] = []
         var chapterStarts: [ExportChapterStart] = []
         for (index, section) in sections.enumerated() {
@@ -95,7 +117,10 @@ enum ExportDocumentWalker {
                 chapterStarts.append(ExportChapterStart(blockIndex: blocks.count, title: section.title))
             }
             blocks += try state.blocks(
-                ofSectionTitled: section.title, number: namingThem ? index + 1 : nil, content: section.content
+                ofSectionTitled: section.title,
+                number: namingThem ? index + 1 : nil,
+                chaptersAfter: sections.count - index - 1,
+                content: section.content
             )
         }
 
@@ -258,12 +283,16 @@ private struct Walk {
     var isReadingRestOfMarkerLine = false
     /// The limits on nesting every text read is held to.
     let limits: MarkupGuard.Limits
+    /// What to do with a chapter nested past `limits` (FR24); nil refuses it.
+    let deepChapters: ExportDeepChapterDecider?
 
     /// A walk that keeps what `options` ask for, held to `limits`, with no id
-    /// claimed and no page or target met.
-    init(options: ExportWalkOptions, limits: MarkupGuard.Limits) {
+    /// claimed and no page or target met. A chapter nested past the limits is
+    /// left to `deepChapters`, or refused when there is none.
+    init(options: ExportWalkOptions, limits: MarkupGuard.Limits, deepChapters: ExportDeepChapterDecider? = nil) {
         self.options = options
         self.limits = limits
+        self.deepChapters = deepChapters
     }
 
     // MARK: Chapters
@@ -275,12 +304,30 @@ private struct Walk {
     /// and what it is called (`ExportDocument.chapterStarts`), and the writer
     /// that asked names the chapter in its contents without adding words the
     /// book does not have.
-    /// - Parameter number: The chapter's number among the text's chapter
-    ///   markers, from 1, for a refusal to name it; nil for a text with none.
+    ///
+    /// A chapter that nests past the limit, in its own Markdown or in the rest
+    /// of a marker line, is refused, unless the walk has a decider
+    /// (`deepChapters`, FR24): it says to write the chapter as written
+    /// (`blocksAsWritten(of:)`) or to cancel the export.
+    /// - Parameters:
+    ///   - number: The chapter's number among the text's chapter markers, from
+    ///     1, for a refusal or a question to name it; nil for a text with none.
+    ///   - chaptersAfter: How many chapters follow this one, for the question
+    ///     to say whether to offer the same for every such chapter.
     /// - Throws: `ExportWalkError.nestedTooDeeply` when the chapter nests past
-    ///   the limit, in its own Markdown or in the rest of a marker line.
-    mutating func blocks(ofSectionTitled title: String, number: Int?, content: String) throws -> [ExportBlock] {
+    ///   the limit and there is no decider, and `CancellationError` when the
+    ///   decider says to cancel.
+    mutating func blocks(
+        ofSectionTitled title: String,
+        number: Int?,
+        chaptersAfter: Int,
+        content: String
+    ) throws -> [ExportBlock] {
         let walked: [ExportBlock]
+        // The count of pages and targets before the walk, which a walk
+        // abandoned partway (a refusal in the rest of a marker line) must not
+        // leave moved: the ids of the places after it follow the ones kept.
+        let (pagesBefore, targetsBefore) = (pageCount, targetCount)
         do {
             walked = try MarkdownTree.read(content, within: limits) { document in
                 try self.blocks(in: document, nesting: 0, listDepth: 0)
@@ -288,7 +335,20 @@ private struct Walk {
         } catch let refusal as MarkupRefusal {
             // The only refusal a walk of Markdown makes, named for the chapter.
             guard case let .nestedTooDeeply(limit) = refusal else { throw refusal }
-            throw ExportWalkError.nestedTooDeeply(chapter: number, limit: limit)
+            guard let decide = deepChapters else {
+                throw ExportWalkError.nestedTooDeeply(chapter: number, limit: limit)
+            }
+            // A heading id that an abandoned walk claimed stays claimed (only a
+            // refusal in the rest of a marker line comes after a walk has
+            // begun): ids stay unique, and a skipped number harms nothing.
+            (pageCount, targetCount) = (pagesBefore, targetsBefore)
+            switch decide(ExportDeepChapter(number: number, limit: limit, chaptersAfter: chaptersAfter)) {
+            case .writeAsWritten:
+                walked = blocksAsWritten(of: content)
+            case .cancel:
+                // The export stops as Stop stops it: nothing is written.
+                throw CancellationError()
+            }
         }
         var blocks = Self.droppingRedundantTargets(from: walked)
         // Claimed after the blocks are made: they hold no heading, so the
@@ -297,6 +357,48 @@ private struct Walk {
             blocks.insert(.heading(plainHeading(level: 1, title: title)), at: 0)
         }
         return blocks
+    }
+
+    /// The blocks of a chapter exported as it is written (FR24): one plain
+    /// paragraph for each line of `content`, which holds the line's characters
+    /// exactly, every quote mark, list marker, and asterisk kept as the
+    /// character it is, for each writer to escape as it escapes any text.
+    /// Nothing is parsed, so no writer is handed any nesting: a chapter of a
+    /// thousand `>` marks is a paragraph, never a thousand quotes.
+    ///
+    /// Only what is not the book's words is left out, as it is from any walk:
+    /// the spaces and tabs at the ends of a line (a paragraph's indentation
+    /// is no part of its words, and a writer would take four spaces for code),
+    /// a line with nothing else, and TextMouth's own markers at the start of
+    /// a line, which become the places they mark when the walk keeps places
+    /// (`place(of:)`), with the words after them, if any, as the line.
+    private mutating func blocksAsWritten(of content: String) -> [ExportBlock] {
+        var made: [ExportBlock] = []
+        // `isNewline` ends a line at a line feed or a CR LF alike.
+        for rawLine in content.split(whereSeparator: \.isNewline) {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+            let (markers, words) = Self.markers(leading: line)
+            made += markers.compactMap { place(of: $0) }.compactMap(Self.block(ofPlace:))
+            if !words.isEmpty {
+                made.append(.paragraph([ExportRun(words)]))
+            }
+        }
+        return made
+    }
+
+    /// The markers of TextMouth's own that `line` begins with, and the line
+    /// after them with its edges trimmed, as the walk reads a line of an HTML
+    /// block (`blocks(ofHTML:atLevel:nesting:listDepth:)`): the markers and
+    /// the words that follow them, or a marker that is the whole line. A line
+    /// with no marker is all words.
+    private static func markers(leading line: String) -> (markers: [MarkdownMarker], words: String) {
+        if let (markers, rest) = MarkdownMarker.leading(of: line) {
+            return (markers, rest.trimmingCharacters(in: .whitespaces))
+        }
+        if let marker = MarkdownMarker.decode(line) {
+            return ([marker], "")
+        }
+        return ([], line)
     }
 
     /// A heading of `level` whose one plain run is `title`.

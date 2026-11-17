@@ -178,6 +178,13 @@ struct BookExportBookName: Equatable, Sendable {
         id = book.id
         title = book.title
     }
+
+    /// The name `title` of the book whose ID is `id`, for a caller that has
+    /// no `Book` to name, such as a test of the question an export asks.
+    init(id: UUID, title: String) {
+        self.id = id
+        self.title = title
+    }
 }
 
 /// What an export did.
@@ -1224,6 +1231,16 @@ enum BookExportService {
     /// synthesizer, the voice lookup, the power assertion, the disk checks,
     /// and the folder its spoken chapters are kept in, and where its progress
     /// goes. The app passes the live one; tests pass their own.
+    ///
+    /// `askAboutDeepChapters` (FR24) is how the export asks what to do with a
+    /// chapter of a text conversion that nests quotes, lists, or emphasis
+    /// past the reader's limit: it is called on the export's thread, which
+    /// waits for the answer, once for each such chapter until the answer is
+    /// to do the same for every one. The answer is to write the chapter as
+    /// plain paragraphs of its lines, or to cancel the whole export, which
+    /// ends as Stop does (`BookExportOutcome.wasCancelled`) with nothing
+    /// written for that book. Without it, such a chapter fails its book's
+    /// file with `ExportWalkError.nestedTooDeeply`, and the others export.
     static func export(
         _ offers: [BookExportOffer],
         kinds: Set<BookExportKind>,
@@ -1232,7 +1249,8 @@ enum BookExportService {
         access: MaintenanceFileAccess = .live,
         cancellation: BookExportCancellation? = nil,
         progress: (@Sendable (_ done: Int, _ total: Int) -> Void)? = nil,
-        speech: SpeechExportContext = .live
+        speech: SpeechExportContext = .live,
+        askAboutDeepChapters: ExportDeepChapterQuestioner.Ask? = nil
     ) -> BookExportOutcome {
         let (files, booksInCloud) = plan(offers, kinds: kinds, conversions: conversions, in: destination)
         var outcome = BookExportOutcome(destination: destination, booksInCloud: booksInCloud)
@@ -1240,12 +1258,22 @@ enum BookExportService {
         // One token for the whole export, so a conversion has one to check
         // even when the caller passed none.
         let token = cancellation ?? BookExportCancellation()
+        // One questioner for the whole export, so that "every such chapter"
+        // holds for all its books and for no other export.
+        let questioner = askAboutDeepChapters.map { ExportDeepChapterQuestioner(bookCount: offers.count, ask: $0) }
         for (number, planned) in files.enumerated() {
             if token.isCancelled {
                 outcome.wasCancelled = true
                 break
             }
-            write(planned, access: access, cancellation: token, speech: speech, into: &outcome)
+            write(
+                planned,
+                access: access,
+                cancellation: token,
+                speech: speech,
+                deepChapters: questioner?.decider(for: planned.book),
+                into: &outcome
+            )
             // A Stop pressed during this file ended it, and the export too.
             if outcome.wasCancelled { break }
             progress?(number + 1, files.count)
@@ -1260,12 +1288,14 @@ enum BookExportService {
     /// file is then neither exported nor a failure. Whatever fails, nothing is
     /// removed from the folder chosen: the file is made in a scratch folder
     /// and only moved in whole. `speech` is what a speech conversion runs
-    /// with (`export`).
+    /// with (`export`); `deepChapters` decides what a text conversion does
+    /// with a chapter nested too deeply (nil refuses it).
     private static func write(
         _ planned: PlannedFile,
         access: MaintenanceFileAccess,
         cancellation: BookExportCancellation,
         speech: SpeechExportContext,
+        deepChapters: ExportDeepChapterDecider?,
         into outcome: inout BookExportOutcome
     ) {
         let source = planned.file.source.url
@@ -1304,7 +1334,8 @@ enum BookExportService {
                     to: planned.target,
                     access: access,
                     cancellation: cancellation,
-                    speech: speech
+                    speech: speech,
+                    deepChapters: deepChapters
                 )
             }
             outcome.exported.append(planned.target)
@@ -1338,7 +1369,10 @@ enum BookExportService {
     /// hold instead of a walk (`Transcript.exportable(from:)`).
     /// Stop is checked after the read, all through the walk and the writing
     /// or the speaking and the encoding, and once more before the move.
-    /// - Throws: `CancellationError` when stopped; the walk's or the
+    /// A text conversion's walk takes `deepChapters` (FR24): what to do with a
+    /// chapter nested too deeply, which is to refuse it when nil.
+    /// - Throws: `CancellationError` when stopped, or when `deepChapters` says
+    ///   to cancel the export; the walk's or the
     ///   writer's error, or the speech export's (a refusal, such as a
     ///   Personal Voice, or a chapter that could not be spoken or encoded);
     ///   `TranscriptExportError.unusable` for a transcript that can't be
@@ -1351,7 +1385,8 @@ enum BookExportService {
         to target: URL,
         access: MaintenanceFileAccess,
         cancellation: BookExportCancellation,
-        speech: SpeechExportContext
+        speech: SpeechExportContext,
+        deepChapters: ExportDeepChapterDecider?
     ) throws {
         // A chapter list is made from the book's audio and its record, never
         // from the audio's bytes, which are not read whole.
@@ -1375,6 +1410,7 @@ enum BookExportService {
                 at: source,
                 book: book,
                 options: text.walkOptions,
+                deepChapters: deepChapters,
                 cancellation: cancellation
             )
             try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
