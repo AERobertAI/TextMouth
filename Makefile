@@ -286,7 +286,8 @@ release-goldens:
 ## themselves: dry runs, stubbed build tools, canned logs and snippets, copies
 ## of project.yml, no building. It also runs the policy test that no tracked file
 ## holds a path of one Mac (Scripts/agents/tests/test_no_mac_paths.py), with the
-## tests of the helper and the script that fix one
+## tests of the helper and the script that fix one, and the issue tracker's tests
+## (.claude/skills/issue-library/tests), which work only in temporary folders
 check-selftest:
 	@Scripts/check-selftest.sh
 	@Scripts/perf-baselines-selftest.sh
@@ -302,6 +303,7 @@ check-selftest:
 	@python3 Scripts/test/make-corpus.py --selftest
 	@python3 -I -B Scripts/vendor/swiftsoup/test_make_vendor.py
 	@python3 -I -B -m unittest discover -s Scripts/agents/tests -p 'test_*_paths.py'
+	@python3 -I -B -m unittest discover -s .claude/skills/issue-library/tests
 
 ## Run only the hosted tests of some areas (or test classes) in one build,
 ## printing a short summary: make test-area AREAS="feeds bookmarks". The areas
