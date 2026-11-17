@@ -915,6 +915,16 @@ struct DataDirectoryCopyPlan: Equatable {
             // anything asks the file system about it, which could fail for
             // the same reason; an earlier crash's stale one stays in the old
             // folder, untouched, and is not copied.
+            //
+            // The file the save renames it to is copied after the rename only
+            // because of the order of the copy: the two are files of one
+            // folder, copied in name order, and ".dat.nosync..." sorts before
+            // every target TextMouth saves there. A target that sorted before
+            // it (".DS_Store", "-notes") would be copied before the save ended
+            // and left stale in the moved library; the writers that save
+            // outside the storage work are saved again after the move
+            // (`StorageBoundary.isProvisionalSave(of:rewrite:)`).
+            //
             // Never a folder, whatever its name: a library folder may be named
             // like a temporary file, and everything in it would be left out.
             // A name that cannot be looked at (it was renamed away since the
