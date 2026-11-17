@@ -29,7 +29,8 @@
  * How a translation ended. The helper exits with these statuses, and
  * `tmb_translate` reports them in `tmb_response.status`:
  * - 0 done;
- * - 1 the helper's arguments are wrong;
+ * - 1 the helper's arguments are wrong, or `tmb_translate_stream` was given
+ *   a mode it does not translate in (check, which translates nothing);
  * - 2 the table cannot be loaded (no such table in the folder, or it does
  *   not compile);
  * - 3 the input cannot be read;
