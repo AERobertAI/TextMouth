@@ -11,10 +11,11 @@ import merge_ios_shards  # noqa: E402
 import merge_shards  # noqa: E402
 
 
-def build_summary(verdict="PASSED", errors=0, files=0, minutes=5.0, reasons=()):
-    """The text run-ios-build.py writes."""
+def build_summary(verdict="PASSED", errors=0, files=0, minutes=5.0, reasons=(), sizes=()):
+    """The text run-ios-build.py writes (`sizes`: the size lines it adds when the request asks for the app's size)."""
     return "\n".join([f"iOS build: {verdict}", f"Errors in the app: {errors} in {files} files",
-                      "Built: scheme TextMouthiOS (...)", f"Minutes: {minutes}", *[f"Reason: {r}" for r in reasons]]) + "\n"
+                      "Built: scheme TextMouthiOS (...)", f"Minutes: {minutes}", *sizes,
+                      *[f"Reason: {r}" for r in reasons]]) + "\n"
 
 
 def test_summary(verdict="PASSED", unit=(0, 0, 0), ui=(2, 0, 0), seconds=100.0, extra=(), shard=None):
@@ -104,6 +105,22 @@ class JoiningTests(JoinCase):
         self.assertEqual(self.joined("ios-errors.txt"), error + "\nTextMouth/B.swift:3:4: error: worse\n")
         self.assertIn("Errors in the app: 2 in 2 files", self.joined("ios-summary.txt"))
         self.assertTrue(self.joined("ios-ui-summary.txt").startswith("iOS UI tests: NOT RUN\n"))
+
+    def test_the_size_lines_come_through_from_the_first_job_that_has_them(self):
+        sizes = ["Size: iPhone app: 20.0 MB (20,000,000 bytes) in 90 files, within the 30 MB limit.",
+                 "Size detail: 9.0 MB (9,000,000 bytes)  TextMouth"]
+        self.job(1, build_summary(), test_summary())
+        self.job(2, build_summary(sizes=sizes), test_summary())
+        self.job(3, build_summary(sizes=["Size: another job's"]), test_summary())
+        merge_ios_shards.join(self.ios, self.out, 3)
+        joined = self.joined("ios-summary.txt").splitlines()
+        self.assertEqual([line for line in joined if line.startswith("Size")], sizes)
+        self.assertEqual(merge_ios_shards.size_lines(joined), sizes)
+
+    def test_a_request_that_did_not_ask_for_the_size_joins_with_no_size_line(self):
+        self.job(1, build_summary(), test_summary())
+        merge_ios_shards.join(self.ios, self.out, 1)
+        self.assertEqual(merge_ios_shards.size_lines(self.joined("ios-summary.txt").splitlines()), [])
 
     def test_a_job_dealt_no_class_does_not_change_a_pass(self):
         idle = "iOS UI tests: NOT ASKED\nReason: shard 3 of 3 was dealt no iPhone test class\n"

@@ -79,6 +79,7 @@ import github_run  # noqa: E402
 import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
 import ios_ui_tests  # noqa: E402
 import runner_module_cache  # noqa: E402
+import merge_ios_shards  # noqa: E402
 import repo_paths  # noqa: E402
 import runner_skips  # noqa: E402
 import shard  # noqa: E402
@@ -207,6 +208,9 @@ def command_request(args):
         "note": args.note or "",
         "time": datetime.now().isoformat(timespec="seconds"),
     }
+    if args.ios_size:
+        # Asks the train's run on GitHub to also build the iPhone app for a device and measure it (remote trains only).
+        request["ios_size"] = True
     path = QUEUE / f"{int(time.time() * 1000)}-{re.sub(r'[^A-Za-z0-9_-]', '_', args.agent)}.json"
     path.write_text(json.dumps(request, indent=2))
     when = NEXT.read_text().strip() if NEXT.exists() else "when the orchestrator next runs one"
@@ -535,6 +539,9 @@ def remote_run_tests(merged, train_dir):
                "requests": [{"agent": r["agent"], "branch": r["branch"], "head": r["head"]} for r in merged]}
     if interface:
         request["ios_ui_classes"] = interface
+    if any(r.get("ios_size") for r in merged):
+        # One request that asks for the iPhone app's size gives the whole train's run the measurement.
+        request["ios_size"] = True
     (train_dir / "command.txt").write_text("remote: " + json.dumps(request) + "\n")
     head = git("rev-parse", "HEAD", cwd=WORKTREE).stdout.strip()
     # A retry of the same train (without a broken branch) downloads beside the first run's.
@@ -690,6 +697,20 @@ def remote_ios_result(train_dir):
     return count, errors, IOS_BUILD_LABEL
 
 
+def remote_ios_size_lines(train_dir):
+    """The iPhone app's size a remote train's run measured, read from the ios-summary.txt that remote_run_tests copied
+    into `train_dir`: (the headline lines, the detail lines), each without its "Size: " prefix. Both are empty when the
+    request did not ask for the size, or the run left no summary."""
+    try:
+        lines = (train_dir / "ios-summary.txt").read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return [], []
+    sizes = merge_ios_shards.size_lines(lines)
+    return ([line.removeprefix(merge_ios_shards.SIZE_PREFIX) for line in sizes if line.startswith(merge_ios_shards.SIZE_PREFIX)],
+            [line.removeprefix(merge_ios_shards.SIZE_DETAIL_PREFIX) for line in sizes
+             if line.startswith(merge_ios_shards.SIZE_DETAIL_PREFIX)])
+
+
 # What the iPhone tests' lines of a train's result call them: the unit tests and the interface tests, which run together.
 IOS_UI_LABEL = ("iPhone tests on GitHub (unit tests and interface tests, in the iOS Simulator; "
                 "the interface tests press Play and type there)")
@@ -790,6 +811,10 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
     interface_line = ios_ui_line(interface)
     if interface_line:
         summary += [interface_line]
+    # The iPhone app's size, when the request asked for it: the headlines, then the details beneath.
+    size_headlines, size_details = remote_ios_size_lines(train_dir)
+    summary += [f"- iPhone app size: {line}" for line in size_headlines]
+    summary += [f"  - {line}" for line in size_details]
     summary += [""]
     if errors:
         summary += ["## Compile errors", *[f"- {e}" for e in errors], ""]
@@ -849,6 +874,9 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
             if runner_module_cache.stale_cache_only(census[1]):
                 # The board post is what an agent reads first, so it says whose fault the iPhone build's failure is.
                 ios_note += "; the iPhone build failed for the runner's stale module cache, not for your code"
+        if size_headlines:
+            lines += [f"- iPhone app size: {line}" for line in size_headlines]
+            lines += [f"  - the biggest files and libraries: {train_dir / 'summary.md'}"]
         not_run = runner_skips.not_run_lines(request.get("not_run", []))
         if not_run:
             lines += [*not_run, RUN_ON_THE_MAC]
@@ -1079,6 +1107,7 @@ def main(argv):
     request.add_argument("--classes", default="")
     request.add_argument("--areas", default="")
     request.add_argument("--note", default="")
+    request.add_argument("--ios-size", action="store_true", help="have the train's run on GitHub also build the iPhone app for a device (Release, unsigned) and measure it: the app, the IPA, the App Store download, the biggest files, the libraries (about 10 minutes more, once per iPhone job)")
     sub.add_parser("status", help="show waiting requests and the next train")
     run = sub.add_parser("run", help="run one train now")
     run.add_argument("--base", default=DEFAULT_BASE)

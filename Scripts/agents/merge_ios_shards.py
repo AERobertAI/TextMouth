@@ -10,6 +10,8 @@ there were several:
   (and none failed).
   The errors are every job's, once each (ios-errors.txt), counted again; the minutes are the longest job's; each job's reasons
   are kept, with the job named. A job that reported nothing is named, and fails the join.
+  The size lines (run-ios-build.py writes them when the request asks for the app's size, "ios_size") are the first job's
+  that has any: every job builds the same app, so they are the same measurement.
 - ios-ui-summary.txt: the verdict is FAILED if any job's was (or a job reported nothing), else NOT RUN if any was, else PASSED
   if any job ran tests, else NOT ASKED. The Executed line and each bundle's count are the jobs' added up (a bundle no job
   was asked for stays "not asked"); each FAILED, Skipped and Reason line is kept, in job order, with the job named in a Reason.
@@ -31,6 +33,18 @@ EXECUTED = re.compile(r"^Executed (\d+) tests?, with (\d+) tests? skipped and (\
 BUNDLE_COUNT = re.compile(r"^(Unit tests|Interface tests) \((\w+)\): (?:(\d+) ran, (\d+) skipped, (\d+) failed|not asked)$")
 BUILD_ERRORS = re.compile(r"^Errors in the app: (\d+) in (\d+) files$")
 MINUTES = re.compile(r"^Minutes: ([\d.]+)")
+
+
+# What the size lines of an ios-summary.txt start with (Scripts/ios/app-size.py writes them): the headlines (the app, the
+# IPA, the App Store download), then the details (the biggest files, the libraries).
+SIZE_PREFIX = "Size: "
+SIZE_DETAIL_PREFIX = "Size detail: "
+
+
+def size_lines(lines):
+    """The size lines of a summary's `lines`, in their order: the headlines and the details. Empty when the run was not
+    asked for the size (or its device build could not measure it, which a "Size: not measured" line says)."""
+    return [line for line in lines or [] if line.startswith((SIZE_PREFIX, SIZE_DETAIL_PREFIX))]
 
 
 def shard_number(folder):
@@ -85,6 +99,7 @@ def join_build(summaries, errors_by_shard, expected):
     out = [f"iOS build: {verdict}", f"Errors in the app: {len(errors)} in {len(files)} files"]
     out += [built] if built else []
     out += [f"Minutes: {minutes:.1f} (the longest of {expected} jobs)"]
+    out += next((sizes for sizes in (size_lines(lines) for _, lines in sorted(summaries.items())) if sizes), [])
     for number in range(1, expected + 1):
         lines = summaries.get(number)
         if lines is None:

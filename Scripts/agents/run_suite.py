@@ -172,6 +172,16 @@ def report_interface_tests(folder):
         print(f"run_suite:   {failure}", flush=True)
 
 
+def report_ios_size(folder):
+    """Prints the iPhone app's size the remote run measured (a full suite asks for it): the headline lines, then each
+    detail line (the biggest files, the libraries). Prints nothing when the run made no measurement."""
+    headlines, details = _train.remote_ios_size_lines(Path(folder))
+    for line in headlines:
+        print(f"run_suite: iPhone app size: {line}", flush=True)
+    for line in details:
+        print(f"run_suite:   {line}", flush=True)
+
+
 def report_iphone_build(folder):
     """Prints what the remote run's iPhone build (the app and its UI tests, built for the iOS Simulator beside the
     tests) made: its verdict and error count, then the files its errors are in, with how many each holds. Prints nothing
@@ -183,6 +193,7 @@ def report_iphone_build(folder):
         return
     count, errors, label = found
     print(f"run_suite: {label}: {count}", flush=True)
+    report_ios_size(folder)
     per_file = {}
     for error in errors:
         path = error.split(":", 1)[0] if re.match(r"^[^ :]+:\d+:\d+: error", error) else "(no file)"
@@ -208,7 +219,8 @@ def run_remote(name, log, commit, cwd=None):
         # The full suite is long, so it runs as the most shards there are. It names "all" as well as "full" so
         # the runner can deal its classes out: the area "all" is every test of the scheme (11,854 counted in
         # the sources, 11,853 run on the Mac on November 9, 2026), so the shards' classes add up to the suite.
-        request = {"areas": ["all"], "classes": [], "full": True, "shards": shard.MAX_SHARDS,
+        # It also asks for the iPhone app's size (a device build, measured), since this is the release check.
+        request = {"areas": ["all"], "classes": [], "full": True, "shards": shard.MAX_SHARDS, "ios_size": True,
                    "requests": [{"agent": name, "head": commit}]}
         try:
             result = github_run.run_remotely(cwd or os.getcwd(), commit, request, folder,

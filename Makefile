@@ -100,7 +100,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest issues-merge-driver test-area lint-tests lint-a11y lint-ogg lint-docs check-ios-plist check-ios-licenses typecheck-ios typecheck-mac typecheck-tests typecheck-ios-tests typecheck-tests-census mac-projection perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest issues-merge-driver test-area lint-tests lint-a11y lint-ogg lint-docs check-ios-plist check-ios-licenses typecheck-ios typecheck-mac typecheck-tests typecheck-ios-tests typecheck-tests-census mac-projection perf-baselines open xcode help signing-identity ios-size
 
 ## Default: build the app
 all: build
@@ -128,6 +128,7 @@ help:
 	@echo "  make lint-docs  - Check that no doc page has more rule violations than its baseline records (.claude/skills/doc-library/lint-baseline.json)"
 	@echo "  make check-ios-plist - Fail if the iOS Info.plist is not what the Mac's gives (Scripts/ios/sync-info-plist.py --check)"
 	@echo "  make check-ios-licenses - Fail if a library the iPhone app links has no licence in the app (Scripts/ios/check-licenses.py)"
+	@echo "  make ios-size   - Build the iPhone app for a device (Release, unsigned) under the heavy-work lock, then measure it: app, IPA, App Store estimate, biggest files, libraries"
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
 	@echo "  make typecheck-tests - The same for the Mac's hosted test target too, before a train request (REF=commit checks that commit)"
@@ -306,6 +307,15 @@ check-selftest:
 	@python3 -I -B Scripts/vendor/ffmpeg/test_build.py
 	@python3 -I -B -m unittest discover -s Scripts/agents/tests -p 'test_*_paths.py'
 	@python3 -I -B -m unittest discover -s .claude/skills/issue-library/tests
+	@python3 -I -B Scripts/ios/app-size.py --selftest
+
+## Build the iPhone app for a device (Release, unsigned, small code) in its own
+## derived data folder under build/, and measure it the way `make check` measures
+## the Mac app, plus the IPA and the App Store download estimate. The build takes
+## the heavy-work lock, so it waits behind any build or test run already going.
+## IOS_SIZE_ARGS passes options to Scripts/ios/app-size.py build, such as --json.
+ios-size: generate
+	@python3 -I -B Scripts/agents/run_locked.py ios-size python3 -I -B Scripts/ios/app-size.py build --derived-data "$(BUILD_DIR)/ios-size-DerivedData" $(IOS_SIZE_ARGS)
 
 ## Define the merge driver that .gitattributes names for Issues/*.md, in this
 ## repository's config, which every worktree (the train's too) shares; run it once.
