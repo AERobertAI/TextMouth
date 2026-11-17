@@ -68,6 +68,9 @@ final class DataDirectoryCopyTests: XCTestCase {
         try write("a", to: root.appendingPathComponent(".dat.nosync8247.BvENvv"))
         try write("b", to: root.appendingPathComponent(staged))
         try write("c", to: root.appendingPathComponent("Feeds/.dat.nosync1f4c.Zz09aB"))
+        // The other name Foundation gives an atomic write's file.
+        try write("n", to: root.appendingPathComponent("config.json.sb-42f471cf-2CWLTV"))
+        try write("o", to: root.appendingPathComponent("Feeds/index.json.sb-9ABCDEF0-x5R94h"))
         try write("d", to: root.appendingPathComponent("substitutions.json"))
         // Look-alikes the user or another program could have made.
         try write("e", to: root.appendingPathComponent(".dat.nosync"))
@@ -79,6 +82,11 @@ final class DataDirectoryCopyTests: XCTestCase {
         try write("k", to: root.appendingPathComponent(".DS_Store"))
         try write("l", to: root.appendingPathComponent(unknownTarget))
         try write("m", to: root.appendingPathComponent(lowerCase))
+        try write("p", to: root.appendingPathComponent("notes.sb-42f471c-2CWLTV"))
+        try write("q", to: root.appendingPathComponent("notes.sb-42f471cf-2CWLT"))
+        try write("r", to: root.appendingPathComponent("notes.sb-42f471cg-2CWLTV"))
+        try write("s", to: root.appendingPathComponent(".sb-42f471cf-2CWLTV"))
+        try write("t", to: root.appendingPathComponent("notes.sb-42f471cf-2CWLTV-2"))
 
         let paths = try DataDirectoryCopyPlan(of: root).items.map(\.relativePath)
 
@@ -89,8 +97,10 @@ final class DataDirectoryCopyTests: XCTestCase {
             "substitutions.json", ".dat.nosync", ".dat.nosync-notes", ".dat.nosyncXYZ.BvENvv",
             ".dat.nosync8247.short", ".notes.not-a-uuid", "..\(dotDotName)", ".DS_Store",
             unknownTarget, lowerCase,
+            "notes.sb-42f471c-2CWLTV", "notes.sb-42f471cf-2CWLT", "notes.sb-42f471cg-2CWLTV",
+            ".sb-42f471cf-2CWLTV", "notes.sb-42f471cf-2CWLTV-2",
         ])
-        XCTAssertEqual(paths.count, 11, "a name was listed twice or a temporary file was kept")
+        XCTAssertEqual(paths.count, 16, "a name was listed twice or a temporary file was kept")
     }
 
     /// A folder is never a temporary file, however it is named: a library

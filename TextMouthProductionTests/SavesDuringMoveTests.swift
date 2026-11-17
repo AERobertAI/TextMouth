@@ -340,6 +340,21 @@ final class SavesDuringMoveTests: XCTestCase {
     /// there is no such file". It is no item of the copy: the move ends, and
     /// the save's result is in the moved library.
     func testASavesTemporaryFileListedThenRenamedAwayDoesNotFailTheMove() async throws {
+        try await assertATemporaryFileRenamedAwayDoesNotFailTheMove(named: ".dat.nosync8247.Ab12Cd")
+    }
+
+    /// The same for the other name Foundation gives an atomic write's file,
+    /// the one the hosted runner's macOS makes: the target's name, ".sb-",
+    /// eight hexadecimal digits, a dash, and six letters or digits.
+    func testASafeSaveTemporaryFileListedThenRenamedAwayDoesNotFailTheMove() async throws {
+        try await assertATemporaryFileRenamedAwayDoesNotFailTheMove(named: "substitutions.json.sb-42f471cf-2CWLTV")
+    }
+
+    /// Plants the temporary file `name` beside substitutions.json, renames it
+    /// over the file once the copy has listed the data directory, and checks
+    /// the move ends with the save in the moved library and the temporary
+    /// file left out.
+    private func assertATemporaryFileRenamedAwayDoesNotFailTheMove(named name: String) async throws {
         let world = try makeIntegrationWorld("Saves Move Temporary")
         keepSubstitutionsFile()
         let destination = try makeDataDirectoryMoveDestination("TemporaryFileRenamedAway")
@@ -349,7 +364,7 @@ final class SavesDuringMoveTests: XCTestCase {
         // The save under way when the copy lists the data directory: its
         // temporary file, written beside the target.
         let rule = SubstitutionRule(name: "Saved by rename", pattern: "plough", replacement: "plow")
-        let temporary = TextMouthPaths.root.appendingPathComponent(".dat.nosync8247.Ab12Cd")
+        let temporary = TextMouthPaths.root.appendingPathComponent(name)
         try JSONEncoder().encode([rule]).write(to: temporary)
         addTeardownBlock { try? FileManager.default.removeItem(at: temporary) }
         // The save ends once the plan is made and before the first item.
@@ -414,6 +429,7 @@ final class SavesDuringMoveTests: XCTestCase {
         let oldRoot = TextMouthPaths.root
         let stale = [
             ".dat.nosync1a2b.StaLe0",
+            "substitutions.json.sb-1a2b3c4d-StaLe0",
             SaveTemporaryNames.stagedName(for: TranscriptCleanupRuleFile.fileName),
         ].map { oldRoot.appendingPathComponent($0) }
         for file in stale {

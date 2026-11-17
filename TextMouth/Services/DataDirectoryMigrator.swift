@@ -769,19 +769,20 @@ extension DataDirectoryMigrator {
 /// A temporary file is whole or half written, and gone the moment its save
 /// ends: copying it would put a stray file in the new library, and a
 /// listing that names it can find it renamed away before it is reached,
-/// which stopped the move. Two names are made beside the target, inside
+/// which stopped the move. Three names are made beside the target, inside
 /// the data directory:
 /// - Foundation's own, for every `Data.write(to:options: .atomic)` and
 ///   `String.write(to:atomically:encoding:)` (the rules, the statistics,
-///   config.json, library.json, the feeds' files, and the rest): a dot,
-///   "dat.nosync", the writing process's number in hexadecimal (upper case),
-///   a dot, and six letters or digits, as ".dat.nosync1F4C.AbC123". Apple
-///   documents no name: this one was measured on macOS 26.3.1 on
-///   November 16, 2026, where Foundation's newer private way of making the
-///   file (its open-source version tries it first, with this name as the
-///   fallback) was not the one seen. macOS 14 and 15 are unmeasured, so a
-///   canary test (`DataDirectoryCopyTests`) watches what an atomic write
-///   leaves, and fails on a hidden name this does not know;
+///   config.json, library.json, the feeds' files, and the rest). Apple
+///   documents no name, and it differs with the macOS: measured on
+///   November 16, 2026, macOS 26.3.1 makes a dot, "dat.nosync", the writing
+///   process's number in hexadecimal (upper case), a dot, and six letters
+///   or digits, as ".dat.nosync1F4C.AbC123"; the hosted runner's macOS
+///   (Xcode 26.0.1) makes the target's name, ".sb-", eight hexadecimal
+///   digits, a dash, and six letters or digits, as
+///   "config.json.sb-42f471cf-2CWLTV". Both are known. macOS 14 and 15 are
+///   unmeasured, so a canary test (`DataDirectoryCopyTests`) watches what
+///   an atomic write leaves, and fails on a name this does not know;
 /// - TextMouth's own, a file staged whole beside the one it is to become
 ///   and moved into place (`stagedName(for:)`): a dot, the target's name, a
 ///   dot, and a UUID. Only the targets in `stagedTargets` are known, since
@@ -795,7 +796,12 @@ enum SaveTemporaryNames {
     /// What begins every name Foundation gives a temporary file of an
     /// atomic write.
     private static let foundationPrefix = ".dat.nosync"
-    /// How many letters or digits end such a name, after a dot.
+    /// What follows the target's name in the other name Foundation gives a
+    /// temporary file of an atomic write.
+    private static let safeSaveMarker = ".sb-"
+    /// How many hexadecimal digits follow that marker, before a dash.
+    private static let safeSaveProcessDigits = 8
+    /// How many letters or digits end either name, after a dot or a dash.
     private static let foundationSuffixLength = 6
     /// The most digits the writing process's number takes in hexadecimal
     /// (macOS's process numbers stay under 100000, five digits; eight is
@@ -821,7 +827,23 @@ enum SaveTemporaryNames {
     /// what the name is on disk: a caller that lists a folder never takes a
     /// folder for a temporary file.
     static func isTemporary(_ name: String) -> Bool {
-        isFoundationTemporary(name) || isStaged(name)
+        isFoundationTemporary(name) || isSafeSaveTemporary(name) || isStaged(name)
+    }
+
+    /// Whether `name` is a target's name, ".sb-", eight hexadecimal digits,
+    /// a dash, and six letters or digits: the other name Foundation gives an
+    /// atomic write's file.
+    private static func isSafeSaveTemporary(_ name: String) -> Bool {
+        guard let marker = name.range(of: safeSaveMarker, options: .backwards), marker.lowerBound > name.startIndex else {
+            return false
+        }
+        let parts = name[marker.upperBound...].split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 2 else { return false }
+        let process = parts[0], random = parts[1]
+        return process.count == safeSaveProcessDigits
+            && process.allSatisfy { $0.isASCII && $0.isHexDigit }
+            && random.count == foundationSuffixLength
+            && random.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
     }
 
     /// Whether `name` is ".dat.nosync", the process number in hexadecimal,
@@ -922,12 +944,15 @@ struct DataDirectoryCopyPlan: Equatable {
             // folder, untouched, and is not copied.
             //
             // The file the save renames it to is copied after the rename only
-            // because of the order of the copy: the two are files of one
-            // folder, copied in name order, and ".dat.nosync..." sorts before
-            // every target TextMouth saves there. A target that sorted before
-            // it (".DS_Store", "-notes") would be copied before the save ended
-            // and left stale in the moved library; the writers that save
-            // outside the storage work are saved again after the move
+            // by the order of the copy, which is not a guarantee: the two are
+            // files of one folder, copied in name order. ".dat.nosync..." sorts
+            // before every target TextMouth saves there, but "<target>.sb-..."
+            // sorts after its target, and a target that sorted before a
+            // ".dat.nosync..." one (".DS_Store", "-notes") would do so too.
+            // Such a target is copied before the save ended and is left stale
+            // in the moved library, as any save made after its target was
+            // copied is: the writers that save outside the storage work are
+            // saved again after the move
             // (`StorageBoundary.isProvisionalSave(of:rewrite:)`).
             //
             // Never a folder, whatever its name: a library folder may be named
