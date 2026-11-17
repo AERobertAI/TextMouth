@@ -100,7 +100,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest test-area lint-tests lint-a11y lint-ogg lint-docs check-ios-plist check-ios-licenses typecheck-ios typecheck-mac typecheck-tests typecheck-ios-tests typecheck-tests-census mac-projection perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest issues-merge-driver test-area lint-tests lint-a11y lint-ogg lint-docs check-ios-plist check-ios-licenses typecheck-ios typecheck-mac typecheck-tests typecheck-ios-tests typecheck-tests-census mac-projection perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -120,6 +120,7 @@ help:
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
 	@echo "  make release-goldens - Once per release: run the golden tests against a Release build made with testability on, so an optimizer miscompile cannot hide behind the Debug suite (about 15 minutes; pass options through GOLDEN_ARGS)"
 	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, the storage drill script, the version script, and the Scripts/test tools in seconds, without building"
+	@echo "  make issues-merge-driver - Define, once, the merge driver .gitattributes names for Issues/*.md (in the repository's config)"
 	@echo "  make test-area AREAS=\"feeds bookmarks\" - Run only the hosted tests of some areas, in one build, with a short result"
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
 	@echo "  make lint-a11y  - Check the SwiftUI lines this branch adds for accessibility mistakes"
@@ -286,7 +287,8 @@ release-goldens:
 ## themselves: dry runs, stubbed build tools, canned logs and snippets, copies
 ## of project.yml, no building. It also runs the policy test that no tracked file
 ## holds a path of one Mac (Scripts/agents/tests/test_no_mac_paths.py), with the
-## tests of the helper and the script that fix one
+## tests of the helper and the script that fix one, and the issue tracker's tests
+## (.claude/skills/issue-library/tests), which work only in temporary folders
 check-selftest:
 	@Scripts/check-selftest.sh
 	@Scripts/perf-baselines-selftest.sh
@@ -302,6 +304,15 @@ check-selftest:
 	@python3 Scripts/test/make-corpus.py --selftest
 	@python3 -I -B Scripts/vendor/swiftsoup/test_make_vendor.py
 	@python3 -I -B -m unittest discover -s Scripts/agents/tests -p 'test_*_paths.py'
+	@python3 -I -B -m unittest discover -s .claude/skills/issue-library/tests
+
+## Define the merge driver that .gitattributes names for Issues/*.md, in this
+## repository's config, which every worktree (the train's too) shares; run it once.
+## It merges an issue file's header field by field, its description as git would,
+## and each comment whole. Without it git merges them as text, with markers.
+issues-merge-driver:
+	git config merge.issuefile.name "an issue file, merged by its parts"
+	git config merge.issuefile.driver "python3 -I -B .claude/skills/issue-library/scripts/issuelib.py merge-driver %O %A %B %L %P"
 
 ## Run only the hosted tests of some areas (or test classes) in one build,
 ## printing a short summary: make test-area AREAS="feeds bookmarks". The areas

@@ -44,7 +44,7 @@ These are the files agents load to work: `CLAUDE.md`, `AGENTS.md`, briefs, and n
 - Code identifiers go in backticks.
 
 ## Section markers
-<!-- id: docs-rules-section-markers; keys: marker, id, keys, src, HTML comment, marker line; src: .claude/skills/doc-library/scripts/cmd_mark.py, .claude/skills/doc-library/scripts/docmodel.py -->
+<!-- id: docs-rules-section-markers; keys: marker, id, keys, src, status, issues, HTML comment, marker line; src: .claude/skills/doc-library/scripts/cmd_mark.py, .claude/skills/doc-library/scripts/docmodel.py, .claude/skills/doc-library/scripts/cmd_check.py -->
 
 Each section of a reference page starts with one marker line under its heading:
 
@@ -54,6 +54,10 @@ Each section of a reference page starts with one marker line under its heading:
 - `keys`: at most 8 search words a reader might use that the text doesn't, such as a type, a menu command, or another name for the thing.
 - `src`: the repository paths of the code the section describes, separated by commas, so a section leads to its code and a changed file leads back to its sections.
   Every path must exist.
+- `status` and `issues`: `status: incomplete`, or `planned`, for a section that describes something missing, limited, or not built yet, and `issues: DR01, DR02`, the issues in `Issues/` that track it.
+
+A docs pass that describes a limitation, a planned feature, or a known bug marks its section with both, so `doclib incomplete` finds it later.
+`doclib check` fails a status that names no issue, or names one that has no file in `Issues/` or is closed.
 
 ## Where documents live
 <!-- id: docs-rules-where-documents-live; keys: logs, research, humanQuestions, reference pages, changelog, history; src: README.md, ARCHITECTURE.md, TODO-2026-09-04.md, AGENT-NOTES-2026-10-04.md, docs/agents/history.md, docs/user/changelog.md -->

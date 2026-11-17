@@ -42,6 +42,17 @@ The board has teams: a lead, members, a channel addressed `team:NAME`, and a tas
 The tables for teams are additions to the board's file that leave its layout version at 1, so copies of the script from before teams keep working on the shared board.
 A lead can add a worker to its team before the worker registers; the worker joins when it does, and a mistyped name waits with a "did you mean" hint.
 
+## Issues beside the board
+<!-- id: issues-beside-board; keys: issue tracker, issuelib, TODO lib, merge driver, record-merge --close; src: .claude/skills/issue-library/SKILL.md, .claude/skills/issue-library/scripts/issuestore.py, .claude/skills/issue-library/scripts/issuemerge.py, .gitattributes, Issues/README.md, Scripts/agents/record-merge.py, Scripts/agents/merge-chain.sh -->
+
+The board is for live talk while agents work: claims, commits, findings, and questions, and it is purged.
+What must last is an issue: open work with its decisions and history, one file in `Issues/`, kept in git and read with the issue-library skill (`issuelib list`, `show`, `search`).
+The orchestrator files, assigns, and closes issues on main, closing each at its merge with `record-merge.py --close`; an agent, on its own branch, only comments on the issue assigned to it and sets it in-progress or blocked, and the script refuses the rest there, so two branches never take one ID.
+A finding an agent posts on the board becomes an issue when the orchestrator files it.
+Two branches' changes to one issue merge part by part, through the merge driver `.gitattributes` names for `Issues/*.md` and `make issues-merge-driver` defines in the repository's config: the header field by field, the description as git would, and each comment whole, in date order.
+One field changed both ways stops the merge with markers in the header.
+`merge-chain.sh` runs `issuelib check` on each merged tree, beside the docs lint, and fails only a problem that main did not have and that sits in a file the merge changed (`check --new-since`).
+
 ## The board refuses an unmerged script
 <!-- id: board-refuses-unmerged-script; keys: TEXTMOUTH_BBS_DIR, TEXTMOUTH_BBS_ALLOW_UNMERGED, scratch board, changed script; src: .claude/skills/agent-bbs/scripts/bbs.py -->
 
@@ -152,6 +163,7 @@ A simulator run, or a deliberate break proven on a scratch copy, takes the same 
 <!-- id: tests-board-build-train; keys: unittest, discover, board tests, train tests; src: Scripts/agents/run_locked.py, Scripts/agents/run_suite.py, Scripts/agents/copy_phases.py, Scripts/agents/regenerate-project.py, .claude/skills/agent-bbs/tests/test_bbs.py, Scripts/agents/tests/test_build_train.py, Scripts/agents/tests/test_heavy_lock.py, Scripts/agents/tests/test_run_locked.py, Scripts/agents/tests/test_copy_phases.py, Scripts/agents/tests/test_regenerate_project.py, Scripts/agents/tests/test_run_suite_remote.py -->
 
 The board's tests run with `python3 -m unittest discover -s .claude/skills/agent-bbs/tests`, and those of the build train, the heavy-work lock, `run_locked.py`, `run_suite.py`, `copy_phases.py`, and `regenerate-project.py` with `python3 -I -B -m unittest discover -s Scripts/agents/tests`.
+The issue tracker's run with `python3 -I -B -m unittest discover -s .claude/skills/issue-library/tests`, which `make check-selftest` runs.
 
 ## No path of one Mac in a tracked file
 <!-- id: no-mac-paths; keys: main checkout, repo_paths, scrub-mac-paths, home folder, $TMPDIR, session folder, policy test; src: Scripts/agents/repo_paths.py, Scripts/agents/scrub-mac-paths.py, Scripts/agents/tests/test_repo_paths.py, Scripts/agents/tests/test_scrub_mac_paths.py, Scripts/agents/tests/test_no_mac_paths.py, Makefile -->

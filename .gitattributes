@@ -1,0 +1,7 @@
+# Issue files merge by their parts: the header field by field, the description as git
+# would, and each comment whole (`issuelib.py merge-driver`, which `make
+# issues-merge-driver` defines once in the repository's config). Where it is not
+# defined, git merges them as text, with conflict markers (Issues/README.md).
+/Issues/*.md merge=issuefile
+# The folder's README is plain text, merged as git merges any.
+/Issues/README.md merge

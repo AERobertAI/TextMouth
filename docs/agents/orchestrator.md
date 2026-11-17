@@ -16,11 +16,12 @@ The usage script's `binding` window can then be a weekly cap scoped to one model
 Read only the unscoped windows ("5-hour session", "Weekly (all models)"), watch them with `Scripts/agents/usage-watch-unscoped.py <left%>` as a background task, and say in every launch message that the scoped window does not apply, or an agent following the usage rule stops at once.
 
 ## One brief per task
-<!-- id: one-brief-per-task; keys: brief, wave, launch message, origin/main, shared contract, core branch; src: -->
+<!-- id: one-brief-per-task; keys: brief, wave, launch message, origin/main, shared contract, core branch, issuelib assign; src: .claude/skills/issue-library/scripts/issuestore.py -->
 
 - One brief per task, written to `Scripts/agents/briefs/<date>/` and pointed at from the launch message;
 - it names the branch the agent makes its own from (local main or the team branch, by name), since a worktree starts at origin/main, which can be far behind local main;
 - the user's decisions quoted in the brief in their own words;
+- the issue the agent works on, named in the brief, assigned to it on main and committed before the launch (`issuelib assign ID AGENT --branch BRANCH --as orchestrator`), since a branch made before the assignment may not touch the issue until it rebases;
 - waves of three to five agents whose file regions do not overlap, with a shared contract or a first "core" branch when they must share types.
 
 ## After an agent reports
@@ -34,8 +35,9 @@ After an agent reports:
   - it puts the merge's `- [x]` entry before the paragraph that begins `**Open follow-ups noted by the September 28 agents**`;
   - it appends a sentence with the suite's exact counts to the long verification paragraph, after the latest "After the … merge: **N tests, S skipped, 0 failures**";
   - it appends open items to the paragraph that begins `**Open follow-ups noted on October 3 afternoon and evening**`;
-  - `--note` in place of `--counts` is for a merge that ran no suite, and `--tick FR09 --hash <merge>` ticks an entry;
-- commit the TODO;
+  - `--note` in place of `--counts` is for a merge that ran no suite, and `--tick FR09 --hash <merge>` ticks an entry still in the TODO;
+  - `--close B16 --hash <merge>` closes the issue B16, its file in `Issues/`, at the merge and ticks its pointer line in the TODO;
+- commit the TODO, with the issue files `--close` changed in `Issues/`;
 - remove the agent's worktree (`git worktree remove --force --force` and `git worktree prune`);
 - unregister and delete `build/DerivedData-main` when the disk is tight;
 - and post `merged: <branch>` on the board with the new counts so the other agents rebase.
@@ -54,6 +56,19 @@ The load-sensitive tests are:
 - and the performance baselines, which skip while the Mac is busy.
 
 
+## When an issue file stops a merge
+<!-- id: issue-file-stops-merge; keys: ISSUES_CHECK_FAILED, merge driver, conflict markers, issues-merge-driver, issuelib check; src: Scripts/agents/merge-chain.sh, .claude/skills/issue-library/scripts/issuemerge.py, Makefile -->
+
+`make issues-merge-driver`, run once in the main checkout, defines the merge driver that every worktree and the train's use for `Issues/*.md`; without it an issue file merges as text.
+Two things can still stop a merge at an issue file:
+- A conflict: one header field, one description line, or one older comment changed both ways.
+  The chain aborts it as it aborts any conflict (`UNMERGED` in its log), so merge that branch by hand with `git merge --no-ff --no-commit <branch>`.
+  Between git's markers `current` is main and `other` the branch: keep the right line, delete the markers, and run `issuelib check`, which also names a comment whose line count no longer matches its text.
+  Then commit, and start the chain again with the branches after it.
+- `ISSUES_CHECK_FAILED`: `issuelib check` found a problem on the merged tree that main did not have, in a file the merge changed, and the chain prints each.
+  A problem main already had, or one in a file the merge left alone (an issue citing a doc section the branch renamed), does not stop it, and the next `issuelib check` on main names it.
+  Fix it on the branch and merge again, or fix it in the merge commit by hand.
+
 ## Questions for the user
 <!-- id: questions-user; keys: humanQuestions, Answer line, recommended answer, numbered questions; src: -->
 
@@ -69,6 +84,7 @@ When acting on an answer, record the decision in the TODO with the user's words,
 <!-- id: documentation-pass; keys: docs agent, Markdown-only merge, no build, doc-library; src: -->
 
 A documentation pass is its own agent (no build) that edits only the documentation (README.md, ARCHITECTURE.md, and the pages under docs/) from the merged code and the agents' wording, one commit per documented branch.
+It runs `doclib check`, which names each section whose marker still cites an issue that has closed, and updates those sections.
 It is merged without a suite as a Markdown-only merge and recorded in the TODO with a sentence.
 
 ## The docs' checks

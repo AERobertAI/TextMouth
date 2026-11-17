@@ -123,7 +123,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A Markdown file has pages only where it holds page lines (see [Editing a book's text](editing-book-text.md)).
 
 ### Pages in MOBI books
-<!-- id: pages-mobi-books; keys: APNX, .apnx, page list, Kindle page numbers; src: TextMouth/Parsers/MOBIParser.swift -->
+<!-- id: pages-mobi-books; keys: APNX, .apnx, page list, Kindle page numbers; src: TextMouth/Parsers/MOBIParser.swift; status: incomplete; issues: DR13 -->
 
 - Kindle books in the MOBI format have no pages.
 - The Kindle keeps a book's page numbers in a separate .apnx file beside it, which TextMouth does not read yet.

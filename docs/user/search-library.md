@@ -46,7 +46,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Search in Book has the same Match Case checkbox, unchecked unless you check it, with the hint "When checked, a match must have the same capital and small letters as the search text".
 
 ## What is searched
-<!-- id: library-search-what-searched; keys: Markdown marks, feed items, audiobook transcript, cloud books, unreadable books; src: TextMouth/Services/TextSearch/LibrarySearchText.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift, TextMouth/ViewModels/LibrarySearchModel.swift -->
+<!-- id: library-search-what-searched; keys: Markdown marks, feed items, audiobook transcript, cloud books, unreadable books; src: TextMouth/Services/TextSearch/LibrarySearchText.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift, TextMouth/ViewModels/LibrarySearchModel.swift; status: incomplete; issues: DR03, DR06 -->
 
 - Search Library searches the text of each book as the reader shows it: the words of its chapters, without the Markdown marks, the links' addresses, or the page and chapter markers that the book's text file holds.
   A match is therefore a phrase the reader would speak, and opening it goes to those words.
@@ -119,7 +119,7 @@ Part of [TextMouth's documentation](../../README.md).
 - The debug log has one line for each background pass, LIBRARY_SEARCH_PREPARATION, with counts only (see [Where TextMouth keeps your library](this-macs-folders.md)).
 
 ## What Search Library does not do
-<!-- id: library-search-limits; keys: not searched, iPhone, folder search, transcribed audiobook, limitations; src: TextMouth/ViewModels/LibrarySearchModel.swift, TextMouth/ViewModels/ReaderViewModel+LibrarySearch.swift -->
+<!-- id: library-search-limits; keys: not searched, iPhone, folder search, transcribed audiobook, limitations; src: TextMouth/ViewModels/LibrarySearchModel.swift, TextMouth/ViewModels/ReaderViewModel+LibrarySearch.swift; status: incomplete; issues: DR01, DR02, DR04, DR05 -->
 
 - It does not search a feed's articles or episodes, or the text of a book in the cloud that is not on this Mac.
 - On the iPhone, Search in Book has no Match Case checkbox yet, and there is no Search Library screen.
