@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -135,6 +136,23 @@ final class WatchedProcessStreamingTests: XCTestCase {
             shell, arguments: ["-c", "printf done; sleep 0.2; exit 3"], watching: nil, limits: limits(30), endGraceSeconds: 20
         ) { pipe in try await pipe.read(upTo: 4) }
         XCTAssertEqual(finishing, WatchedProcess.Ending(outcome: .exited(status: 3)))
+    }
+
+    /// The watchdog reads the child's memory four times a second by default
+    /// (a runaway decode is seen sooner), as a count of the reads in a run of
+    /// a little over a second shows: once a second would read it once.
+    func testTheMemoryIsReadFourTimesASecond() async throws {
+        XCTAssertEqual(limits(30).pollInterval, 0.25)
+        let reads = OSAllocatedUnfairLock(initialState: 0)
+        let (ending, _) = try await WatchedProcess.runStreaming(
+            URL(fileURLWithPath: "/bin/sleep"), arguments: ["1.3"], watching: nil, limits: limits(TestMachine.allowed(30)),
+            residentMemory: { _ in
+                reads.withLock { $0 += 1 }
+                return 1
+            }
+        ) { pipe in try await Self.readAll(pipe) }
+        XCTAssertEqual(ending.outcome, .exited(status: 0))
+        XCTAssertGreaterThanOrEqual(reads.withLock { $0 }, 3)
     }
 
     /// Cancelling the task kills the child at once: the task ends in a

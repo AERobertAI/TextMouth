@@ -8,7 +8,7 @@ import os
 /// Vorbis decoder spun at 100% CPU inside TextMouth for good, and no
 /// in-process call can be stopped once it does.
 ///
-/// Once a second the watchdog (`Limits`) kills the child, with SIGKILL, when
+/// Four times a second (`Limits.pollInterval`) the watchdog kills the child, with SIGKILL, when
 /// it has run longer than allowed, its resident memory has passed the limit,
 /// the file it writes has not grown for too long, or that file has grown
 /// past its cap. The child's standard
@@ -19,12 +19,12 @@ import os
 /// - the kernel itself ends the child (SIGXCPU) when it has used its CPU
 ///   allowance, `ulimit -t`, even if TextMouth is not watching any more;
 /// - when the output has a cap, the kernel ends the child (SIGXFSZ) the
-///   moment a write would pass it, `ulimit -f`: the watchdog looks once a
-///   second, and a fast writer can put gigabytes on the disk between two
+///   moment a write would pass it, `ulimit -f`: the watchdog looks only
+///   four times a second, and a fast writer can put gigabytes on the disk between two
 ///   looks. That holds only for a child that writes the file itself (`run`):
 ///   a streaming run's child writes a pipe, which `ulimit -f` never limits,
 ///   so there the cap is the watchdog's look at the file the reader writes,
-///   once a second, and the reader's own count before each block it writes
+///   each quarter second, and the reader's own count before each block it writes
 ///   (`FFmpegAudioConverter`);
 /// - a tiny reaper shell kills the child as soon as TextMouth's own process
 ///   is gone, however it went (quit, force-quit, or the memory guard's
@@ -42,8 +42,12 @@ enum WatchedProcess {
         var maximumResidentBytes: Int64
         /// The longest the watched file may go without growing, in seconds.
         var maximumStalledSeconds: TimeInterval
-        /// How often the watchdog looks, in seconds.
-        var pollInterval: TimeInterval = 1
+        /// How often the watchdog looks, in seconds: a quarter of a second,
+        /// so that a child that grows without bound (FFmpeg asking for memory
+        /// at the speed of a decode) is seen well before it has used much
+        /// more than its limit. A look is a `proc_pidinfo` call and a file
+        /// size.
+        var pollInterval: TimeInterval = 0.25
         /// The most processor time the child may use, in seconds, enforced by
         /// the kernel (`ulimit -t`). Nil means four times `maximumSeconds`:
         /// a few cores' work for the whole wall-clock allowance.
@@ -618,7 +622,7 @@ enum WatchedProcess {
     /// the import writes into an .m4a as it comes). The watchdog's stall
     /// clock follows the bytes read from the pipe; its output cap follows
     /// the file `output`, which `read` writes, when there is one (a probe
-    /// writes none), as the watchdog's look at it, once a second. The
+    /// writes none), as the watchdog's look at it, four times a second. The
     /// kernel's file-size limit (`ulimit -f`) never applies here: the child
     /// writes a pipe, not that file, so a reader that writes a file fast
     /// checks the cap itself, as `FFmpegAudioConverter` does. When `read`

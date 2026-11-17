@@ -22,8 +22,9 @@ enum WatchedProcess {
         var maximumResidentBytes: Int64
         /// The longest the watched file may go without growing, in seconds.
         var maximumStalledSeconds: TimeInterval
-        /// How often the watchdog looks, in seconds.
-        var pollInterval: TimeInterval = 1
+        /// How often the watchdog looks, in seconds (a quarter of a second,
+        /// as on the Mac).
+        var pollInterval: TimeInterval = 0.25
         /// The most processor time the child may use, in seconds. Nil means
         /// four times `maximumSeconds`.
         var maximumCPUSeconds: TimeInterval?

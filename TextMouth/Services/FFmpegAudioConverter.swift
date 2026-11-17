@@ -276,7 +276,7 @@ enum FFmpegAudioConverter {
     /// Thrown by the reader of a decode when the .m4a it writes has passed
     /// the output cap (`checkOutputCap(of:against:)`). The helper writes to a
     /// pipe, so the kernel's file-size limit never ends it, and the watchdog
-    /// looks at the file only once a second: this is the count the reader
+    /// looks at the file only four times a second: this is the count the reader
     /// makes itself, before each block it writes.
     struct WroteTooMuch: Error, Equatable, Sendable {
         /// The cap that was passed, in bytes.
