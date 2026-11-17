@@ -12,19 +12,16 @@ import XCTest
 /// A damaged file can crash the helper, and a crash on the development Mac
 /// puts macOS's crash report on the user's screen (the helper ends itself
 /// with _exit on a fatal signal, which should prevent one, but that is not
-/// tried there). So these tests never run in a tree that is merged:
-/// `runsHere` is false, and only a scratch branch, sent to GitHub's runners
-/// by hand (docs/developer/testing.md), sets it true.
+/// tried there). So these tests never run on the development Mac:
+/// `TestMachine.skipUnlessGitHubRunner` skips them there, and every GitHub
+/// train runs them (docs/developer/testing.md).
 final class FFmpegHelperHostileFileTests: XCTestCase {
-    /// Whether these tests run: true only on a scratch branch sent to GitHub
-    /// by hand, never on the development Mac.
-    static let runsHere = false
-
+    /// Skips every test off GitHub's runners: damaged media may crash the
+    /// FFmpeg helper, and a crash on the development Mac puts a crash report
+    /// on the user's screen.
     override func setUpWithError() throws {
         try super.setUpWithError()
-        guard Self.runsHere else {
-            throw XCTSkip("damaged media may crash the FFmpeg helper, so they are read only on GitHub, from a scratch branch")
-        }
+        try TestMachine.skipUnlessGitHubRunner("Damaged media may crash the FFmpeg helper")
     }
 
     /// The samples damaged here.
