@@ -184,6 +184,9 @@ Documents to try:
   `--large` adds three heavy files: a 5 MB Markdown file, a 3 MB text file of one line, and a 40-chapter EPUB.
   One seed makes the same files each time.
   It has no generator yet for rich text, Word 97-2003, OpenDocument, web archive, SSML, or DTBook files, whose samples are in `TestData/format-samples`.
+  The FFmpeg import's audio samples have three scripts of their own, which need an installed ffmpeg and only make the files:
+  They are `Scripts/make-form-change-sample.sh`, `make-big-frame-sample.sh`, and `make-bad-packet-samples.py`.
+  [Formats only ffmpeg reads](testing-formats.md#formats-only-ffmpeg-reads) describes the samples.
 - `Scripts/test/corpus-report.sh <folder> [report.md]` imports a copy of every file in a folder, searched recursively, and writes a Markdown report of what the importers made of each.
   For each file it gives its format, title, author, headings and their levels, text length, first lines, every warning or refusal, and a checksum of its reading text.
   The report is plain words, headings, and bullet lists, written to be read with VoiceOver and a braille display; whether the reading order is right is still for a person to judge.

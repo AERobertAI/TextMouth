@@ -25,7 +25,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### What changed in these imports
 - A CUE sheet over a WMA or Matroska file is now checked against the file's real length, as a sheet over any other audio is.
 - AAC audio of two channels or fewer inside these formats is now decoded and written again as AAC, where before it was copied as it was.
-- Sound whose rate or number of channels changes partway through, such as joined recordings, is now refused with "TextMouth can't convert “Radio.mkv” because its sound changes its rate or its channels partway through."
+- Sound whose rate or number of channels changes partway through, such as joined recordings, is converted to the rate and channels the file begins with, as the installed ffmpeg did before.
+- Only a change by more than TextMouth can follow is refused, with "TextMouth can't convert “Radio.mkv”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."
 - A Musepack file named .mpp is told by its bytes, and no longer by its name, since Microsoft Project uses that name too.
 - A tag longer than 4,096 bytes is cut at that length, and a tag with a damaged letter is left out.
 - A folder whose name has a letter such as é no longer makes TextMouth lose what the Mac's own audio tool says about the files in it.

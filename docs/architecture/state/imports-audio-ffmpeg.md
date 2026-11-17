@@ -43,11 +43,21 @@ The rest of the audio import is in [Imports: audio](imports-audio.md).
   - The decoder's refused packets and frames are logged as AUDIO_DECODER_REFUSED, and the file converts all the same.
 
 ## What is written
-<!-- id: ffmpeg-conversion-plan; keys: plan, Apple Lossless, AAC, writeBlocks, tags, form changed, no length; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Services/OwnAudioConverter.swift; status: incomplete; issues: FU-FFMPEG2 -->
+<!-- id: ffmpeg-conversion-plan; keys: plan, Apple Lossless, AAC, writeBlocks, tags, form changed, no length; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Services/OwnAudioConverter.swift; status: incomplete; issues: FU03 -->
 
 - The plan (FFmpegAudioConverter.plan(for:fileName:)): the session chose the first sound stream the build decodes that the file marks as default, else the first.
   A lossless codec (isLossless(codec:)) becomes Apple Lossless at its depth; anything else, AAC included, is decoded and written again as AAC at its own bit rate (OwnAudioConverter.writeBlocks, the writer TextMouth's own readers use), mixed to stereo when it has more channels.
   The book's tags come from FFmpegReport.bookTags: the title, the artist (or author, or album_artist), the album, the genre, and the date, each cut at 4 KB, and a value holding U+FFFD is missing; stream tags count only for Ogg.
-  A sound that changes its rate or channels partway is refused (TMFF_EXIT_FORM_CHANGED), where the old ffmpeg import converted it (FU-FFMPEG2).
+- Sound that changes its form partway (joined recordings) is converted: the session sends each later frame of another rate, channel layout, or sample format through libswresample into the first frame's form, so the stream keeps one form and END counts the frames of that form.
+  - The first frame after a change of rate takes the decoder's rate, which FFmpeg's MP3 decoder leaves on the frame one step late.
+  - The channel layouts are compared, not only the counts, so 6.0 after 5.1 is converted.
+  - It is refused with TMFF_EXIT_FORM_CHANGED (exit 7, FFmpegImportWording.formChanged) only for a rate more than 16 times the first one's, or a sixteenth of it (MAX_RATE_RATIO), a form that cannot be converted, or more than 1,000 changes away from the first form (MAX_FORM_CHANGES).
+  - A converted frame is at most 16 MiB (MAX_CONVERTED_BYTES): a longer one is fed to the resampler in slices.
+  - The Debug helper's `formcheck` mode (TMFF_MODE_FORMCHECK, no file) runs these bounds on frames made up in memory: the ratio at 16 and 17 to 1 each way, a frame whose conversion would be 268 MB, a frame the resampler holds back, and 1,000 and 1,001 changes.
+- Packets the decoder refuses are skipped and counted in END (AUDIO_DECODER_REFUSED), however many: the guard on errors in a row, MAX_ERRORS_IN_A_ROW, counts errors with no packet between them, which a damaged packet never makes, so no file reaches it.
+  The gap closes: every later chapter mark lands late by its length, and a gap past the check's allowance (a second and half a percent) fails the import as "it lasts ..., not ...".
+  A file with no good packet ends with exit 6 and the damaged sentence.
+  FU03 would fill such a stretch with silence.
+- The edge samples are in TestData/format-samples/ffmpeg-edge (see [Formats only ffmpeg reads](../../developer/testing-formats.md#formats-only-ffmpeg-reads)).
 - Limits on a source with no length: assumedDuration at 6 kbit/s, and an output cap of max(64 MB, 50 times the file) (unknownLengthOutputCap), refused before running when the volume lacks that and downmixReserveBytes.
   A stated length the file's size can't hold is taken as unknown (believedDuration, AUDIO_INFO_IMPLAUSIBLE).

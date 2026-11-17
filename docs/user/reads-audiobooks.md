@@ -95,7 +95,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - The iPhone refuses these formats.
 
 ## Formats only ffmpeg reads
-<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT54, FU-FFMPEG2 -->
+<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT54 -->
 
 - TextMouth converts, as it is imported, the audio of these formats, which macOS cannot read, with the converter it carries inside the app, so nothing needs installing:
   - Windows Media Audio (.wma, .asf), and the sound of Windows Media video (.wmv);
@@ -114,7 +114,8 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   "TextMouth can't read “NAME” as WMA.
   It may be damaged, or named for another format."
 - A file whose sound the converter does not decode is refused with "TextMouth can't convert the sound of “NAME”: it is in a kind of audio TextMouth does not read."
-  One whose sound changes its rate or its channels partway through is refused with "TextMouth can't convert “NAME” because its sound changes its rate or its channels partway through."
+- Sound that changes its rate or its channels partway through, as joined recordings do, is converted to the form the file begins with.
+  Only a change by more than TextMouth can follow is refused, with "TextMouth can't convert “NAME”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."
 - A file that makes the converter stop is refused with "TextMouth's converter stopped unexpectedly while reading “NAME”.
   The file may be damaged."
   The converter confines itself before it reads a file (see [Where TextMouth keeps your library](helper-programs.md)), so a hostile file cannot harm the Mac.
@@ -128,8 +129,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - Up to five files are named, then "and N more".
   - The book is refused only when no other track is left.
 - A feed's episode in one of these formats still fails, as it did before.
-- The iPhone refuses these formats, with this sentence:
-  "“NAME” is in WMA, which TextMouth on iPhone can't play.
+- The iPhone refuses these formats, with "“NAME” is in WMA, which TextMouth on iPhone can't play.
   Add it on your Mac, then send the book here."
 - A file that claims no length is limited by its size: its output may be at most 50 times the file's size, and no less than 64 MB.
   The import refuses it before running when the disk lacks room for that.
