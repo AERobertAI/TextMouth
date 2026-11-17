@@ -18,7 +18,7 @@ description: TextMouth's issue tracker, one Markdown file per issue in Issues/ (
 - `issuelib show ID`: the file as written, then the doc sections whose marker cites it; for an ID only the TODO has, or an alias, its TODO lines.
 - `issuelib search REGEX [--status ...]`: every matching line, `ID:LINE: text`, ignoring case.
 - `issuelib summary`: each status's count, split by priority.
-- `issuelib check`: every file's header, values, and status rules; that `related` and `docs` name something; that no ID is given twice, in `Issues/` or in the TODO, and the TODO's pointers lead to files.
+- `issuelib check [--new-since FILE]`: every file's header, values, comments, and status rules; that `related` and `docs` name something; that no ID is given twice, in `Issues/` or in the TODO, and the TODO's pointers lead to files. With `--new-since`, only problems not in FILE (an earlier `check --json`) and in files changed against HEAD, as `merge-chain.sh` runs it.
 
 ## Writing
 

@@ -50,7 +50,8 @@ What must last is an issue: open work with its decisions and history, one file i
 The orchestrator files, assigns, and closes issues on main, closing each at its merge with `record-merge.py --close`; an agent, on its own branch, only comments on the issue assigned to it and sets it in-progress or blocked, and the script refuses the rest there, so two branches never take one ID.
 A finding an agent posts on the board becomes an issue when the orchestrator files it.
 Two branches' changes to one issue merge part by part, through the merge driver `.gitattributes` names for `Issues/*.md` and `make issues-merge-driver` defines in the repository's config: the header field by field, the description as git would, and each comment whole, in date order.
-One field changed both ways stops the merge with markers in the header, and `merge-chain.sh` runs `issuelib check` on each merged tree, beside the docs lint.
+One field changed both ways stops the merge with markers in the header.
+`merge-chain.sh` runs `issuelib check` on each merged tree, beside the docs lint, and fails only a problem that main did not have and that sits in a file the merge changed (`check --new-since`).
 
 ## The board refuses an unmerged script
 <!-- id: board-refuses-unmerged-script; keys: TEXTMOUTH_BBS_DIR, TEXTMOUTH_BBS_ALLOW_UNMERGED, scratch board, changed script; src: .claude/skills/agent-bbs/scripts/bbs.py -->

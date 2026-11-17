@@ -21,7 +21,9 @@ the branch):
 from __future__ import annotations
 
 import datetime as dt
+import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -223,6 +225,16 @@ class Store:
             return None
         name = self._git("symbolic-ref", "--short", "-q", "HEAD")
         return name.strip() if name and name.strip() else "(no branch)"
+
+    def changed_paths(self) -> Optional[Set[str]]:
+        """The files that differ from HEAD (a merge's staged result included) and new ones; None outside git."""
+        if not self.in_git():
+            return None
+        changed = self._git("diff", "--name-only", "HEAD")
+        added = self._git("ls-files", "--others", "--exclude-standard")
+        if changed is None:
+            return None
+        return set(changed.splitlines()) | set((added or "").splitlines())
 
     def history_numbers(self) -> Dict[str, Set[int]]:
         """The family numbers in every version git has of the TODO; empty outside git."""
@@ -580,6 +592,34 @@ def check(store: Store) -> List[Tuple[str, Problem]]:
         found.extend((issue.path, problem) for problem in problems)
     found.extend(_todo_problems(store, backlog))
     return found
+
+
+def problem_key(path: str, message: str) -> Tuple[str, str]:
+    """What makes two runs' problems the same one: the file and the message, its numbers left out, since lines move."""
+    return path, re.sub(r"\d+", "#", message)
+
+
+def new_problems(store: Store, problems: List[Tuple[str, Problem]], earlier: Path) -> Tuple[List[Tuple[str, Problem]], int]:
+    """The problems not in ``earlier`` (JSON lines from an earlier ``check --json``) and in a file changed against HEAD.
+
+    This is the merge chain's ratchet: main's own problems, and those in files the
+    merge left alone, are not the merge's. A missing or empty ``earlier`` holds none;
+    outside git every file counts as changed. Returns the new problems and how
+    many others were left out.
+    """
+    before = set()
+    if earlier.is_file():
+        for line in earlier.read_text(encoding="utf-8").splitlines():
+            try:
+                data = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(data, dict):
+                before.add(problem_key(str(data.get("path", "")), str(data.get("message", ""))))
+    changed = store.changed_paths()
+    new = [(path, problem) for path, problem in problems
+           if problem_key(path, problem.message) not in before and (changed is None or path in changed)]
+    return new, len(problems) - len(new)
 
 
 def _todo_problems(store: Store, backlog: Dict[str, List[issueids.TodoItem]]) -> List[Tuple[str, Problem]]:

@@ -298,15 +298,22 @@ def priority_text(counts: Dict[str, int]) -> str:
 
 
 def cmd_check(store: Store, args: Any) -> int:
-    """``check``: every problem of the issue files and the TODO's IDs, one per line; 1 when there are any."""
+    """``check``: every problem of the issue files and the TODO's IDs, one per line; 1 when there are any.
+
+    With ``--new-since FILE``, only the problems a merge brings: not in FILE (an
+    earlier ``check --json``) and in a file changed against HEAD.
+    """
     problems = issuestore.check(store)
-    for path, problem in problems:
-        if args.json:
-            print(json.dumps({"path": path, "line": problem.line, "message": problem.message}, ensure_ascii=False))
-        else:
-            print(f"{path}:{problem.line}: {problem.message}" if problem.line else f"{path}: {problem.message}")
-    files = len(store.issue_files())
     plural = issuestore.plural
+    if args.new_since is not None:
+        problems, left_out = issuestore.new_problems(store, problems, args.new_since)
+        print_problems(problems, args.json)
+        noun = plural(len(problems), "problem")
+        print(f"issuelib check: {len(problems) or 'no'} new {noun} in the files changed against HEAD "
+              f"({left_out} others left out: there before, or in files it left alone)", file=sys.stderr)
+        return EXIT_FAIL if problems else EXIT_OK
+    print_problems(problems, args.json)
+    files = len(store.issue_files())
     if problems:
         paths = len({path for path, _ in problems})
         print(f"issuelib check: {len(problems)} {plural(len(problems), 'problem')} in {paths} "
@@ -314,6 +321,15 @@ def cmd_check(store: Store, args: Any) -> int:
         return EXIT_FAIL
     print(f"issuelib check: {files} issue {plural(files, 'file')}, no problems", file=sys.stderr)
     return EXIT_OK
+
+
+def print_problems(problems: List[Any], as_json: bool) -> None:
+    """Print each (file, problem) pair: ``file:line: message``, or a JSON object per line."""
+    for path, problem in problems:
+        if as_json:
+            print(json.dumps({"path": path, "line": problem.line, "message": problem.message}, ensure_ascii=False))
+        else:
+            print(f"{path}:{problem.line}: {problem.message}" if problem.line else f"{path}: {problem.message}")
 
 
 # ---------------------------------------------------------------------------
@@ -427,7 +443,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("pattern", metavar="REGEX")
     filter_options(sub, "all")
     add("summary", cmd_summary, "how many issues each status has, by priority")
-    add("check", cmd_check, "check every issue file and the TODO's IDs")
+    sub = add("check", cmd_check, "check every issue file and the TODO's IDs")
+    sub.add_argument("--new-since", type=Path, metavar="FILE",
+                     help="only problems not in FILE (an earlier check --json) and in files changed against HEAD")
 
     sub = add("new", cmd_new, "file an issue, numbered next in its kind's family", writes=True)
     sub.add_argument("--kind", required=True, choices=issuefile.KINDS)

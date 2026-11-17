@@ -9,6 +9,7 @@ test_merge_driver.py.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from issuelib_case import ASSIGNED, B16, TODO, RepositoryCase
@@ -73,6 +74,41 @@ class RuleTests(RepositoryCase):
         self.git("switch", "-q", "-c", "fix/float64-render")
         self.write_tree({"TODO-2026-09-04.md": TODO, "Issues/B16.md": ASSIGNED}, root=copy)
         self.assertEqual(self.new_issue("A bug in a copy", root=copy)[0], 0)
+
+
+class NewSinceTests(RepositoryCase):
+    """check --new-since: the problems a merge brings, against an earlier check --json, in the files it changed."""
+
+    def test_only_new_problems_in_changed_files_count(self) -> None:
+        broken = ASSIGNED.replace("related: B12", "related: B99")
+        self.make_repository(files={"Issues/B16.md": broken, "Issues/B18.md": broken.replace("id: B16", "id: B18")})
+        # main's problems: B18's only, as if B16's were not there yet (so B16's counts as new).
+        snapshot = self.root / "before.json"
+        snapshot.write_text(json.dumps({"path": "Issues/B18.md", "line": 15,
+                                        "message": "related B99 names no issue file, TODO item, or alias"}) + "\n")
+        # The merge changes B16 (a comment) and adds a broken B17; B18 is left alone.
+        self.as_orchestrator("comment", "B16", "From the merge.")
+        self.write_tree({"Issues/B17.md": broken.replace("id: B16", "id: B17").replace("found-by: orchestrator\n", "")})
+        status, out, err = self.run_cli("check", "--new-since", str(snapshot))
+        self.assertEqual(status, 1)
+        self.assertEqual(out.splitlines(), [
+            "Issues/B16.md:15: related B99 names no issue file, TODO item, or alias",
+            "Issues/B17.md:1: missing field found-by",
+            "Issues/B17.md:14: related B99 names no issue file, TODO item, or alias",
+        ])
+        self.assertIn("3 new problems in the files changed against HEAD (1 others left out", err)
+
+    def test_a_problem_main_had_is_the_same_one_after_its_lines_moved(self) -> None:
+        twice = TODO + "- [x] **B13 — once.**\n- [x] **B13 — twice.**\n"
+        self.make_repository(files={"TODO-2026-09-04.md": twice})
+        snapshot = self.root / "before.json"
+        snapshot.write_text(self.run_cli("check", "--json")[1])
+        self.assertIn("B13 opens 2 items (lines 13 and 14)", snapshot.read_text())
+        # The merge adds an entry above the two, so their line numbers change.
+        self.write_tree({"TODO-2026-09-04.md": twice.replace("## Bugs\n", "## Bugs\n\n- [x] **B11 — new.**\n")})
+        status, out, err = self.run_cli("check", "--new-since", str(snapshot))
+        self.assertEqual((status, out), (0, ""), err)
+        self.assertIn("no new problems in the files changed against HEAD (2 others left out", err)
 
 
 class HistoryTests(RepositoryCase):

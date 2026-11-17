@@ -29,12 +29,13 @@
 # or DOCS_LINT_SKIPPED when the tree has no skill; on DOCS_LINT_FAILED the
 # merge is aborted, the branch is left where it was, and the chain stops.
 #
-# Then, when the merged tree has the issue-library skill, its check runs too
-# (issuelib.py check), since an issue file merged without its driver can keep a
-# header line twice or mix two comments. The log gets ISSUES_CHECK_OK, or
-# ISSUES_CHECK_SKIPPED when the tree has no skill or main failed the check before
-# this merge (a problem the branch did not bring); on ISSUES_CHECK_FAILED the
-# merge is aborted and the chain stops.
+# Then, when the merged tree has the issue-library skill, its check runs too,
+# since an issue file merged without its driver can keep a header line twice or
+# mix two comments. It is a ratchet, as the lint is: the check's problems on main
+# are written down before the merge, and the merged tree fails only on a problem
+# that is new and in a file the merge changed (issuelib.py check --new-since).
+# The log gets ISSUES_CHECK_OK, or ISSUES_CHECK_SKIPPED when the merged tree has
+# no skill; on ISSUES_CHECK_FAILED the merge is aborted and the chain stops.
 #
 # A merge whose changed files all end in .md gets MARKDOWN_ONLY_NO_SUITE: it is
 # committed and the chain goes on to the next branch with no project check and
@@ -121,24 +122,28 @@ lint_docs() {
   return 1
 }
 
-# issues_pass: whether the issue tracker's check passes on the tree as it is now:
-# 0 when it does, 1 when it fails, and 2 when the tree has no issue-library skill.
-issues_pass() {
-  [ -f "$ISSUELIB" ] || return 2
-  python3 -I -B "$ISSUELIB" check > /dev/null 2>&1
+# issues_snapshot: write the issue tracker's problems on the tree as it is now
+# (main, before a merge) to a file, one JSON object a line; the file is empty
+# when the tree has no issue-library skill.
+issues_snapshot() {
+  local snapshot="$1"
+  : > "$snapshot"
+  [ -f "$ISSUELIB" ] || return 0
+  python3 -I -B "$ISSUELIB" check --json > "$snapshot" 2>/dev/null
+  return 0
 }
 
 # check_issues: run the issue tracker's check on the merged, uncommitted tree,
-# given whether main passed it before the merge (issues_pass's status). Logs
-# ISSUES_CHECK_OK, ISSUES_CHECK_SKIPPED, or ISSUES_CHECK_FAILED, which aborts the
-# merge and returns 1.
+# failing only problems not in the snapshot of main and in the files the merge
+# changed. Logs ISSUES_CHECK_OK, ISSUES_CHECK_SKIPPED (no skill in the merged
+# tree), or ISSUES_CHECK_FAILED, which aborts the merge and returns 1.
 check_issues() {
-  local log="$1" main_status="$2" check_output status
-  if [ ! -f "$ISSUELIB" ] || [ "$main_status" != 0 ]; then
+  local log="$1" snapshot="$2" check_output status
+  if [ ! -f "$ISSUELIB" ]; then
     echo ISSUES_CHECK_SKIPPED >> "$log"
     return 0
   fi
-  check_output=$(python3 -I -B "$ISSUELIB" check 2>&1)
+  check_output=$(python3 -I -B "$ISSUELIB" check --new-since "$snapshot" 2>&1)
   status=$?
   echo "$check_output" >> "$log"
   if [ "$status" = 0 ]; then
@@ -161,8 +166,8 @@ merge_and_test() {
   local log="$LOG_DIR/main-after-$slug-merge.log"
   : > "$log"
   echo "=== merging $branch at $(date +%H:%M:%S) ===" >> "$log"
-  issues_pass
-  local main_issues=$?
+  local snapshot="$LOG_DIR/main-before-$slug-issues.json"
+  issues_snapshot "$snapshot"
   merge_without_commit "$branch" "$log"
   local merged=$?
   if [ "$merged" = 2 ]; then
@@ -174,7 +179,7 @@ merge_and_test() {
     summarize "$slug" "$log"
     return 1
   fi
-  if ! check_issues "$log" "$main_issues"; then
+  if ! check_issues "$log" "$snapshot"; then
     summarize "$slug" "$log"
     return 1
   fi

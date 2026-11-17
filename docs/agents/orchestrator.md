@@ -64,7 +64,8 @@ Two things can still stop a merge at an issue file:
   The chain aborts it as it aborts any conflict (`UNMERGED` in its log), so merge that branch by hand with `git merge --no-ff --no-commit <branch>`.
   Between git's markers `current` is main and `other` the branch: keep the right line, delete the markers, and run `issuelib check`, which also names a comment whose line count no longer matches its text.
   Then commit, and start the chain again with the branches after it.
-- `ISSUES_CHECK_FAILED`: `issuelib check` found a problem on the merged tree that main did not have, such as a `related` or `docs` entry naming what the branch removed, and the chain prints each.
+- `ISSUES_CHECK_FAILED`: `issuelib check` found a problem on the merged tree that main did not have, in a file the merge changed, and the chain prints each.
+  A problem main already had, or one in a file the merge left alone (an issue citing a doc section the branch renamed), does not stop it, and the next `issuelib check` on main names it.
   Fix it on the branch and merge again, or fix it in the merge commit by hand.
 
 ## Questions for the user
