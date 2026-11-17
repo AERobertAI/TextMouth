@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 #include "liblouis.h"
@@ -2165,4 +2166,101 @@ tmb_translate_stream(const char *table, tmb_mode mode, FILE *input, FILE *output
 	free(line);
 	free(codes);
 	return status;
+}
+
+/* MARK: - In memory, in the caller's process */
+
+/*
+ * The full path of the table `name` in the folder `folder`, which the caller
+ * frees, or NULL when the two cannot name a table there that liblouis would
+ * load as one: the folder must be an absolute path holding no comma (liblouis
+ * splits a list of tables at commas), the name must be bare
+ * (`tmb_is_bare_table_name`), and the path must be a regular file. liblouis
+ * resolves a table's includes beside the table that includes them first
+ * (resolveSubtable), so the bundle's tables and their includes all come from
+ * this one folder, with no current folder or LOUIS_TABLEPATH, which a process
+ * that is not the helper must not change.
+ */
+static char *
+table_path(const char *folder, const char *name) {
+	struct stat info;
+	size_t length;
+	char *path;
+	if (folder == NULL || name == NULL || folder[0] != '/' || strchr(folder, ',') != NULL ||
+			!tmb_is_bare_table_name(name))
+		return NULL;
+	length = strlen(folder) + strlen(name) + 2;
+	path = malloc(length);
+	if (path == NULL) return NULL;
+	snprintf(path, length, "%s/%s", folder, name);
+	if (stat(path, &info) != 0 || !S_ISREG(info.st_mode)) {
+		free(path);
+		return NULL;
+	}
+	return path;
+}
+
+/*
+ * Translates the request's input with the table loaded from `path` into
+ * `*response`: the input read from memory (fmemopen) and the output written
+ * to memory (open_memstream), through `tmb_translate_stream` within the
+ * request's limits. The output is kept only when the translation is done.
+ */
+static void
+translate_in_memory(const char *path, const tmb_request *request, tmb_response *response) {
+	char *buffer = NULL;
+	size_t size = 0;
+	FILE *input;
+	FILE *output;
+	int status;
+	/* An empty input lacks the protocol's header, as an empty file does
+	   (fmemopen takes no empty buffer). */
+	if (request->input == NULL || request->input_length == 0) {
+		response->status = TMB_EXIT_PROTOCOL;
+		return;
+	}
+	/* Read only: fmemopen's buffer is not const, but "rb" never writes it. */
+	input = fmemopen((void *)request->input, request->input_length, "rb");
+	if (input == NULL) {
+		response->status = TMB_EXIT_INPUT_UNREADABLE;
+		return;
+	}
+	output = open_memstream(&buffer, &size);
+	if (output == NULL) {
+		fclose(input);
+		response->status = TMB_EXIT_OUTPUT;
+		return;
+	}
+	status = tmb_translate_stream(path, request->mode, input, output, &request->limits);
+	fclose(input);
+	/* Closing the stream sets the buffer and its size. */
+	if (fclose(output) != 0 && status == TMB_EXIT_DONE) status = TMB_EXIT_OUTPUT;
+	if (status == TMB_EXIT_DONE) {
+		response->output = buffer;
+		response->output_length = size;
+	} else {
+		free(buffer);
+	}
+	response->status = status;
+}
+
+/*
+ * Translates `request` into `*response` in this process, as the header says:
+ * the table loaded from the request's folder by its full path, the check or
+ * the translation in memory, and every table liblouis loaded freed however it
+ * ends, as a run of the helper ends, so nothing is kept from one call to the
+ * next.
+ */
+void
+tmb_translate(const tmb_request *request, tmb_response *response) {
+	char *path = table_path(request->tables_folder, request->table);
+	memset(response, 0, sizeof *response);
+	if (path == NULL || !tmb_load_table(path))
+		response->status = TMB_EXIT_TABLE;
+	else if (request->mode == TMB_MODE_CHECK)
+		response->status = TMB_EXIT_DONE;
+	else
+		translate_in_memory(path, request, response);
+	tmb_unload_tables();
+	free(path);
 }

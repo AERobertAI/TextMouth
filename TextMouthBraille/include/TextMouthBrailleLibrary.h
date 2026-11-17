@@ -6,8 +6,9 @@
  * The translation is TextMouth's own code around liblouis. The Mac links it
  * into its braille helper program, TextMouthBraille, whose main.c is a thin
  * main around `tmb_translate_stream`, and runs the helper under its watchdog.
- * The iPhone, which may start no helper program, is to call the same code in
- * its own process, with the limits of `tmb_limits`.
+ * The iPhone, which may start no helper program, calls the same code in its
+ * own process through `tmb_translate`, which takes the input and gives the
+ * output in memory, within the limits of `tmb_limits`.
  *
  * Both directions read and write the line protocol of
  * TextMouthBrailleProtocol.h: an input begins with the protocol's header line
@@ -120,5 +121,38 @@ void tmb_unload_tables(void);
  * record by record, so a watchdog watching it sees it grow.
  */
 int tmb_translate_stream(const char *table, tmb_mode mode, FILE *input, FILE *output, const tmb_limits *limits);
+
+/* One call of `tmb_translate`: what to do, with what, within which limits. */
+typedef struct {
+	tmb_mode mode;
+	/* The folder of tables: an absolute path that holds no comma. */
+	const char *tables_folder;
+	/* The table, a bare file name inside that folder, such as "en-ueb-g2.ctb". */
+	const char *table;
+	/* The input, in the protocol, `input_length` bytes; NULL for check. */
+	const char *input;
+	size_t input_length;
+	tmb_limits limits;
+} tmb_request;
+
+/* What `tmb_translate` gives back. */
+typedef struct {
+	/* How the call ended (TMB_EXIT_...). */
+	int status;
+	/* When it is done and the mode translates, the output in the protocol,
+	   `output_length` bytes, which the caller frees with free(); otherwise
+	   NULL and 0. */
+	char *output;
+	size_t output_length;
+} tmb_response;
+
+/*
+ * Translates `request` in memory into `*response`, as one run of the helper
+ * would: loads the table from the folder by its full path (never changing the
+ * process's current folder or its environment), translates the input, and
+ * frees every table liblouis loaded, however it ends. Nothing is kept from
+ * one call to the next.
+ */
+void tmb_translate(const tmb_request *request, tmb_response *response);
 
 #endif /* TEXTMOUTH_BRAILLE_LIBRARY_H */
