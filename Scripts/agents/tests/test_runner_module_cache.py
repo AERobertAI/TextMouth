@@ -202,6 +202,17 @@ class EmptyingTests(CacheTestCase):
         self.assertEqual(removed, list(cache.CACHE_FOLDERS))
         self.assertTrue(self.present("Build/Products"))
 
+    def test_xcode_26s_explicit_swift_modules_are_emptied_by_the_retry_and_by_a_new_toolchain(self):
+        # TL02: train 1116-2122's iPhone build failed both tries on a stale .pcm in this folder (the one the log names).
+        folder = "Build/Intermediates.noindex/SwiftExplicitPrecompiledModules"
+        self.assertIn(folder, cache.CACHE_FOLDERS)
+        self.fill_caches()
+        self.assertEqual(cache.empty_module_caches(self.derived, say=self.lines.append).count(folder), 1)
+        self.assertFalse(self.present(folder))
+        self.fill_caches()
+        self.assertEqual(self.prepare(), "emptied", "no stamp: the same folders go")
+        self.assertFalse(self.present(folder))
+
     def test_a_link_is_removed_as_a_link_and_never_followed(self):
         outside = self.folder / "outside"
         outside.mkdir()
