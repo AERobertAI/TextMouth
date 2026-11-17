@@ -515,25 +515,37 @@ final class FFmpegImportConversionTests: XCTestCase {
 
     // MARK: - The iPhone
 
-    /// The iPhone refuses a file only FFmpeg reads with a sentence of its
-    /// own, naming the format as the Mac does and the Mac as the way, even
-    /// among other files it refuses; Speex in Ogg is Speex.
-    func testTheIPhoneRefusesFFmpegFormatsSayingTheMacConvertsThem() throws {
+    /// The iPhone refuses no file only FFmpeg reads, which it converts in the
+    /// app itself (FMT54): the refusal of what it can't convert lets WMA,
+    /// Speex in Ogg (whatever its name), and the other formats by, and
+    /// refuses an Ogg Vorbis file among them, naming Ogg.
+    func testTheIPhoneRefusesNoFFmpegFormat() throws {
+        let ffmpegFiles = [
+            try source(), try source("spx/tones.spx", named: "Notes.ogg"), try source("mkv/three-tones-flac.mkv", named: "Lecture.mkv"),
+            try source("webm/tones-opus.webm", named: "Talk.webm"), try source("avi/tones-mp3.avi", named: "Clip.avi"),
+            try source("rm/tones.ra", named: "Show.ra"), URL(fileURLWithPath: "/nonexistent/Lecture.wma"),
+        ]
+        XCTAssertNoThrow(try PhoneImportRefusal.refuseConversion(of: ffmpegFiles))
         let ogg = URL(fileURLWithPath: "/nonexistent/Radio Drama.ogg")
-        let wma = URL(fileURLWithPath: "/nonexistent/Lecture.wma")
-        XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: [ogg, wma])) { error in
-            XCTAssertEqual(error as? PhoneImportRefusal, .ffmpegAudio(kind: "WMA"))
+        XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: ffmpegFiles + [ogg])) { error in
+            XCTAssertEqual(error as? PhoneImportRefusal, .convertedAudio(kind: "Ogg"))
         }
-        XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: [try source("spx/tones.spx", named: "Notes.ogg")])) { error in
-            XCTAssertEqual(error as? PhoneImportRefusal, .ffmpegAudio(kind: "Speex"))
+    }
+
+    /// On the iPhone a copy-protected Windows Media file is told as such
+    /// first, in the Mac's own words, before any conversion and before the
+    /// iPhone refuses another file and sends the person to the Mac, which
+    /// could not convert it either (FU-FFMPEG).
+    func testTheIPhoneTellsACopyProtectedFileFirst() throws {
+        let folder = try makeSandboxDirectory("FFmpegProtectedPhone")
+        let locked = folder.appendingPathComponent("Locked.wma")
+        try copyProtectedASF(from: try formatSampleURL("wma/tones-wma1.wma")).write(to: locked)
+        let ogg = URL(fileURLWithPath: "/nonexistent/Radio Drama.ogg")
+        for sources in [[locked], [ogg, locked], [try source(), locked]] {
+            XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: sources)) { error in
+                XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .copyProtected, "\(sources.map(\.lastPathComponent))")
+            }
         }
-        XCTAssertEqual(
-            PhoneImportRefusal.ffmpegAudio(kind: "WMA").sentence(naming: "Lecture"),
-            "“Lecture” is in WMA, which TextMouth on iPhone can't play. Add it on your Mac, then send the book here."
-        )
-        XCTAssertEqual(
-            PhoneImportRefusal.ffmpegAudio(kind: "Matroska").sentence(naming: nil),
-            "This file is in Matroska, which TextMouth on iPhone can't play. Add it on your Mac, then send the book here."
-        )
+        XCTAssertEqual(FFmpegAudioConverter.Failure.copyProtected.errorDescription, "TextMouth cannot open copy-protected files.")
     }
 }

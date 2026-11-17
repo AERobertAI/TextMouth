@@ -250,9 +250,10 @@ final class FFmpegImportPlanTests: XCTestCase {
     }
 
     /// The notice of the tracks a book of several left out (review9 finding
-    /// 2): when the app's converter is missing, on the iPhone, and for files
-    /// that hold no sound, with at most five named; nothing when none was
-    /// left out or the converter is there.
+    /// 2): when the app's converter is missing, and for files that hold no
+    /// sound, with at most five named; nothing when none was left out or the
+    /// converter is there, the Mac's helper or the iPhone's session in the
+    /// app (FMT54), which leaves out only what holds no sound.
     func testTheNoticeOfTracksLeftOut() {
         XCTAssertEqual(
             FFmpegImportWording.tracksLeftOutNotice(
@@ -264,16 +265,15 @@ final class FFmpegImportPlanTests: XCTestCase {
         )
         XCTAssertEqual(
             FFmpegImportWording.tracksLeftOutNotice(
-                needingConverter: PhoneImportWording.ffmpegTracksLeftOut(["Trailer.avi"]),
+                needingConverter: FFmpegImportWording.leftOutNeedingConverter(["Trailer.avi"], located: .inProcess),
                 holdingNoSound: ["a.spx", "b.spx"]
             ),
-            "TextMouth left out “Trailer.avi”, which TextMouth on iPhone can't play. To keep it, import the book on your Mac, "
-                + "then send the book here. TextMouth left out 2 files, “a.spx” and “b.spx”, which hold no sound it can read."
+            "TextMouth left out 2 files, “a.spx” and “b.spx”, which hold no sound it can read."
         )
         XCTAssertNil(FFmpegImportWording.tracksLeftOutNotice(needingConverter: nil, holdingNoSound: []))
         XCTAssertNil(FFmpegImportWording.leftOutNeedingConverter([], located: .missing))
         XCTAssertNil(FFmpegImportWording.leftOutNeedingConverter(["a.avi"], located: .found(URL(fileURLWithPath: "/usr/bin/true"))))
-        XCTAssertNil(PhoneImportWording.ffmpegTracksLeftOut([]))
+        XCTAssertNil(FFmpegImportWording.leftOutNeedingConverter(["a.avi"], located: .inProcess))
         XCTAssertEqual(
             FFmpegImportWording.leftOutFiles((1...7).map { "\($0).wmv" }),
             "7 files, “1.wmv”, “2.wmv”, “3.wmv”, “4.wmv”, “5.wmv”, and 2 more"

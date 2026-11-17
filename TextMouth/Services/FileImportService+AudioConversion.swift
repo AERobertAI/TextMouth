@@ -55,13 +55,12 @@ extension FileImportService {
             // The content decides, not the extension: a track named .m4a may hold Ogg or AC-3.
             let found = try AsyncBridge.waitForResult { try await ImportAudioConverter.tracksNeedingConversion(in: bookURL) }
             guard !found.isEmpty else { return nil }
-            #if os(iOS)
-            // The iPhone has no FFmpeg helper, and no converter at all: what
-            // only FFmpeg reads is left out, and the rest refused, naming the kind.
-            let (sources, notice) = try leavingOutWhatOnlyFFmpegReads(found, from: bookURL) { nil }
-            try PhoneImportRefusal.refuseConversion(of: sources)
-            #else
             let (sources, notice) = try leavingOutWhatOnlyFFmpegReads(found, from: bookURL) { FFmpegAudioConverter.tool.locate() }
+            #if os(iOS)
+            // The iPhone converts what only FFmpeg reads in the app itself
+            // (FMT54), and has no converter for the rest: a copy-protected
+            // file is told first, then the rest refused, naming the kind.
+            try PhoneImportRefusal.refuseConversion(of: sources)
             #endif
             guard !sources.isEmpty else { return notice }
             let unnamed = try convertTracks(sources, inPackage: staging.directory, run: &run)
@@ -75,7 +74,9 @@ extension FileImportService {
             let needed = try AsyncBridge.waitForResult { try await ImportAudioConverter.needsConversion(among: [bookURL]) }
             guard !needed.isEmpty else { return nil }
             #if os(iOS)
-            // iOS has no converter: the book is refused, naming the kind.
+            // The iPhone converts a file only FFmpeg reads in the app itself
+            // (FMT54); any other it has no converter for, and the book is
+            // refused, naming the kind, a copy-protected file told first.
             try PhoneImportRefusal.refuseConversion(of: needed)
             #endif
             let unnamed = try convertTracks([bookURL], inPackage: staging.directory, run: &run)
@@ -99,17 +100,19 @@ extension FileImportService {
     /// finding 2): a stray video in a folder, ZIP, or playlist of MP3s, or a
     /// file merely named like one. Their staged copies are removed, so no
     /// reader or player meets them; what was imported from is never touched.
-    /// `located` says whether this Mac's app has its FFmpeg helper (nil on
-    /// the iPhone), and is asked only when some source is a file only FFmpeg
-    /// reads. A book that would have no track left leaves nothing out, so it
-    /// is refused as a single such file is, with what to do.
+    /// `located` says where the FFmpeg session runs: the Mac app's helper,
+    /// or none when the app is damaged, and on the iPhone the session in the
+    /// app (FMT54), which converts every such file a Mac would. It is asked
+    /// only when some source is a file only FFmpeg reads. A book that would
+    /// have no track left leaves nothing out, so it is refused as a single
+    /// such file is, with what to do.
     /// - Returns: the sources still to convert, and the notice that names
     ///   what was left out (nil when nothing was).
     /// - Throws: the file system's error when a staged copy can't be removed.
     private static func leavingOutWhatOnlyFFmpegReads(
         _ sources: [URL],
         from folder: URL,
-        located: () -> FFmpegAudioConverter.Located?
+        located: () -> FFmpegAudioConverter.Located
     ) throws -> (sources: [URL], notice: String?) {
         let leftOut = FFmpegAudioConverter.tracksToLeaveOut(of: sources, located: located)
         // Paths as the scan spells them, which both lists come from: a
@@ -123,12 +126,7 @@ extension FileImportService {
         let kept = sources.filter { !leaving.contains($0.path) }
         let named = { (files: [URL]) in files.map { AudioBookParser.relativeName(of: $0, in: folder) } }
         let needingNames = named(leftOut.needingConverter)
-        #if os(iOS)
-        // The iPhone's own words: the Mac is the way to keep them.
-        let needing = PhoneImportWording.ffmpegTracksLeftOut(needingNames)
-        #else
         let needing = leftOut.located.flatMap { FFmpegImportWording.leftOutNeedingConverter(needingNames, located: $0) }
-        #endif
         let notice = FFmpegImportWording.tracksLeftOutNotice(needingConverter: needing, holdingNoSound: named(leftOut.holdingNoSound))
         for file in leftOut.all {
             try FileManager.default.removeItem(at: file)

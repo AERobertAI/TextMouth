@@ -153,10 +153,11 @@ final class FFmpegImportSnifferTests: XCTestCase {
     }
 
     /// Which tracks of a book of several are left out (review9 finding 2):
-    /// on the iPhone, or with the app's helper missing, every file only
-    /// FFmpeg reads; with it, only a file whose bytes are of no container it
-    /// reads. MP3 and Ogg Vorbis are never left out, and the helper is looked
-    /// for only when a track is one of its files.
+    /// with the Mac app's helper missing, every file only FFmpeg reads; with
+    /// it, or on the iPhone, whose session is in the app (FMT54), only a file
+    /// whose bytes are of no container it reads. MP3 and Ogg Vorbis are never
+    /// left out, and the session is looked for only when a track is one of
+    /// its files.
     func testWhichTracksABookOfSeveralLeavesOut() throws {
         let folder = try makeSandboxDirectory("FFmpegLeftOut")
         let avi = folder.appendingPathComponent("Trailer.avi")
@@ -171,14 +172,15 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertEqual(missing.needingConverter, [avi])
         XCTAssertEqual(missing.holdingNoSound, [report])
         XCTAssertEqual(missing.located, .missing)
-        let phone = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { nil }
-        XCTAssertEqual(phone.all, [avi, report])
-        XCTAssertNil(phone.located)
+        let inTheApp = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { .inProcess }
+        XCTAssertEqual(inTheApp.all, [report])
+        XCTAssertEqual(inTheApp.located, .inProcess)
+        // The app's own: the Mac's helper, or the iPhone's session in the app.
         let bundled = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { FFmpegAudioConverter.locateBundled() }
         XCTAssertEqual(bundled.all, [report])
         let none = FFmpegAudioConverter.tracksToLeaveOut(of: [mp3, vorbis]) {
-            XCTFail("the helper is looked for only when a track is one of its files")
-            return nil
+            XCTFail("the session is looked for only when a track is one of its files")
+            return .missing
         }
         XCTAssertEqual(none, FFmpegAudioConverter.TracksLeftOut())
     }

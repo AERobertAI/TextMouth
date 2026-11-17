@@ -6,21 +6,20 @@ import Foundation
 /// braille book that needs one of a Mac's own braille tables, which only
 /// that Mac has. (Braille, refused here until November 16, 2026, is
 /// translated in the app itself since DR34, with the tables TextMouth
-/// bundles.)
+/// bundles; and the formats only FFmpeg reads, refused here until November
+/// 17, are converted in the app itself since FMT54, with the FFmpeg
+/// TextMouth links.)
 ///
 /// The shared import wraps it in an `ImportFailure`, as every failure is,
 /// and on iOS that failure's sentence is this refusal's, naming the file and
 /// the next step (`sentence(naming:)`), in place of "Could not import …".
 /// The Mac never throws one: every throw is behind `#if os(iOS)`.
 enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
-    /// Audio the import converts (Ogg, Opus, AC-3, AMR, MP2, CAF, and the
-    /// rest of `ImportAudioConverter.convertedExtensions`), named as `kind`.
+    /// Audio the import converts with Apple's converter on the Mac (Ogg,
+    /// Opus, AC-3, AMR, MP2, CAF, and the rest of
+    /// `ImportAudioConverter.convertedExtensions` but the formats only FFmpeg
+    /// reads), named as `kind`.
     case convertedAudio(kind: String)
-    /// Audio or video that only the Mac's TextMouth converts, with the FFmpeg
-    /// it carries (WMA, WebM, Matroska, and the rest of
-    /// `FFmpegAudioConverter`, FMT31, FMT50), named as `kind`: the phone runs
-    /// no FFmpeg helper.
-    case ffmpegAudio(kind: String)
     /// A Word 6 or Word 95 document, which TextMouth's own Word reader
     /// leaves to textutil.
     case wordSixOrNinetyFive
@@ -39,8 +38,6 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
         switch self {
         case let .convertedAudio(kind):
             return PhoneImportWording.convertedAudioRefusal(name, kind: kind)
-        case let .ffmpegAudio(kind):
-            return PhoneImportWording.ffmpegAudioRefusal(name, kind: kind)
         case .wordSixOrNinetyFive:
             return PhoneImportWording.wordSixOrNinetyFiveRefusal(name)
         case let .macBrailleTable(table):
@@ -67,18 +64,21 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
 
     // MARK: - Audio
 
-    /// Throws `.convertedAudio`, naming the kind of the first of `sources`,
-    /// when there are any: the files an import would convert, which the
-    /// phone can't. When one of them is a file only FFmpeg reads
-    /// (`FFmpegAudioConverter.converts(_:)`), `.ffmpegAudio` is thrown for
-    /// the first such file instead, since the Mac converts it. Nothing is
-    /// thrown for none.
+    /// Throws for the files among `sources`, those an import would convert,
+    /// that the phone can't import, before any is converted; nothing for none:
+    /// - **A copy-protected Windows Media file**, first, with the Mac's own
+    ///   refusal (`FFmpegAudioConverter.Failure.copyProtected`, FU-FFMPEG): no
+    ///   Mac could convert it either, so it is told as such before any other
+    ///   file is refused and before the phone sends anyone to the Mac.
+    /// - **`.convertedAudio`**, naming its kind, for the first file the phone
+    ///   has no converter for: every format the import converts but those
+    ///   only FFmpeg reads (`FFmpegAudioConverter.converts(_:)`), which the
+    ///   app converts itself since FMT54, as the Mac does.
     static func refuseConversion(of sources: [URL]) throws {
-        if let first = sources.first(where: FFmpegAudioConverter.converts) {
-            let kind = FFmpegImportWording.kindName(of: first, container: FFmpegContainer.of(fileAt: first))
-            throw PhoneImportRefusal.ffmpegAudio(kind: kind)
+        if sources.contains(where: { FFmpegAudioConverter.isCopyProtected($0, container: FFmpegContainer.of(fileAt: $0)) }) {
+            throw FFmpegAudioConverter.Failure.copyProtected
         }
-        guard let first = sources.first else { return }
+        guard let first = sources.first(where: { !FFmpegAudioConverter.converts($0) }) else { return }
         throw PhoneImportRefusal.convertedAudio(kind: audioKindName(of: first))
     }
 

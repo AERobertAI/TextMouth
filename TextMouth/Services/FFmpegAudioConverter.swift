@@ -83,7 +83,7 @@ enum FFmpegAudioConverter {
         /// container it reads, such as a System Information report (.spx).
         var holdingNoSound: [URL] = []
         /// What `located` found when it was asked: nil when no file was one
-        /// only FFmpeg reads, or nothing was asked.
+        /// only FFmpeg reads, so nothing was asked.
         var located: Located?
 
         /// Every file left out, those needing the converter first.
@@ -101,12 +101,13 @@ enum FFmpegAudioConverter {
     /// missing; the iPhone's session, in the app, is never missing). A file
     /// of such a container is converted when it can be, and fails the book
     /// if that fails, as any track's conversion does.
-    static func tracksToLeaveOut(of sources: [URL], located: () -> Located?) -> TracksLeftOut {
+    static func tracksToLeaveOut(of sources: [URL], located: () -> Located) -> TracksLeftOut {
         var leftOut = TracksLeftOut()
         let ffmpegFiles = sources.filter(converts)
         guard !ffmpegFiles.isEmpty else { return leftOut }
-        leftOut.located = located()
-        let convertible = leftOut.located?.converts ?? false
+        let found = located()
+        leftOut.located = found
+        let convertible = found.converts
         for file in ffmpegFiles {
             if FFmpegContainer.of(fileAt: file) == nil {
                 leftOut.holdingNoSound.append(file)
