@@ -1,0 +1,28 @@
+---
+id: FMT50
+title: A bundled ffmpeg
+kind: format
+status: open
+priority: P2
+platform: both
+assignee:
+created: 2026-10-17
+updated: 2026-11-16
+found-by: the research of 2026-10-17
+branch:
+merged:
+reason:
+related: FMT31
+docs:
+labels:
+---
+
+## Description
+
+**FMT50 — A bundled ffmpeg.** Difficulty L · Impact 2 · Only if FMT31's formats should work without Homebrew (question 9). Build an ffmpeg executable with only the needed demuxers and decoders, AudioToolbox for AAC, and no GPL or non-free parts; ship it as a separate signed executable in the bundle with its exact source, configure line, and notices (ffmpeg.org's legal checklist), and rebuild it on every ffmpeg security release. About 1.5 to 3 MB, estimated from reports (no build was measured). Measured November 16, 2026 (`research/FFMPEG-MINIMAL-RESEARCH-2026-11-16.md`, FFmpeg 9.0.2): built into the app with --enable-small, WMA only adds 696,304 bytes, WMA and WebM 943,344, and parity with the installed ffmpeg 1,766,688 (over make check's 20 MB); the libraries build for iOS unchanged. Recommended: WMA and WebM from a pinned release built by a script, a helper on the Mac and in the app on the iPhone; the user's questions are in humanQuestions/2026-11-16.md. The user's answers (November 16): build it, with parity on both the Mac and the iPhone, credited; the size limit is 30 MB (make check warns) and 40 MB strict (make check fails). Agent `ffmpegbuild` builds it.
+
+## Comments
+
+### 2026-11-16, issuelib, 1 line
+
+Moved from TODO-2026-09-04.md, line 5883 of the version this import read, where it was an open item; the description is its text as it was.
