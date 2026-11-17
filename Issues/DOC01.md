@@ -2,7 +2,7 @@
 id: DOC01
 title: Pages that mean October's B12 say B12-OCT
 kind: docs
-status: open
+status: in-progress
 priority: P3
 platform: both
 assignee: docspass1116
@@ -29,3 +29,7 @@ The review of tools/issue-library (November 16, 2026, its item 13) found pages t
 `doclib find '\bB12\b'` lists them. The docs pass writes B12-OCT where a page means the October bug.
 
 ## Comments
+
+### 2026-11-16, docspass1116, 1 line
+
+Done on docs/pass-1116: B12-OCT now stands in package-records (Analysis-owned fields), text-caches (How the page reader's version is read), and text-caches-rereads-edits (Edited text, Who may write edited text). The log history.md keeps its November 1 words.

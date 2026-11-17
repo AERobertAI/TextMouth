@@ -49,6 +49,7 @@ Markdown parsed from content.md and Markdown refused for nesting: MarkdownCacheS
 MarkdownCacheService.parseMultiChapterMarkdown, which Edit Text, rebuilds, the pages' re-read, and the exports commit text from, never drops a chapter that is refused and never reads it for a shorter text.
 The chapter keeps its raw Markdown as its text, as the reader shows a file it cannot parse, and one line is logged for the whole parse, MARKDOWN_NESTING_KEPT_RAW, counting the chapters kept raw of all the chapters and naming no title or word (see [Logs](logs.md)).
 MarkdownCacheService.parseMultiChapterMarkdownRefusing, which writeCache calls for a text about to be written to content.md, throws the first refusal instead.
+MarkdownCacheService.parseMultiChapterMarkdownNamingRefusal does the same for Edit Text and throws a RefusedChapter, which carries the refused chapter's number, so the refusal can name it ([Edited text](text-caches-rereads-edits.md)).
 So an import of a file nested too deeply is refused with the guard's sentence before anything is written, no content.md is left behind, and a refused rebuild keeps the old cache.
 Tests: MarkdownNestingTests and MarkdownNestingCacheTests (the import area of Scripts/test/areas.conf).
 
@@ -171,8 +172,8 @@ The page reader's version (PG09): which page reader wrote a book's content.md.
   For a book behind only in its pages (isBehindOnlyInPages) that holds no edit taken, the batch compares the whole content.md, byte for byte, with the book's file read again (pageUpgradeCheck), before it looks for an edit saved while TextMouth was closed.
   A content.md that is the file's text without pages is read again with them.
   The file's text with pages, which a batch stopped before its commit leaves, only has its record stamped.
-  Any other text, which nothing can tell from an edit made before B12, is copied beside content.md as `content.md.edited-<UTC time>` (PageUpgradeCopies, through BookTextEditSessions.keepCopy), logging PAGES_REPLACED_TEXT, and read again with pages, its places relocated.
-  When no copy can be made, it is kept, recorded as edited (Book.editedText, B12) and stamped, logging PAGES_SKIPPED_CHANGED_TEXT.
+  Any other text, which nothing can tell from an edit made before B12-OCT, is copied beside content.md as `content.md.edited-<UTC time>` (PageUpgradeCopies, through BookTextEditSessions.keepCopy), logging PAGES_REPLACED_TEXT, and read again with pages, its places relocated.
+  When no copy can be made, it is kept, recorded as edited (Book.editedText, B12-OCT) and stamped, logging PAGES_SKIPPED_CHANGED_TEXT.
   A book whose file is missing is stamped "+failed", and one whose file could not be read, with pages or without, "+failed-once" and then "+failed" (PageReaderVersions.failureStamp), logging PAGES_SKIPPED_UNREADABLE.
   A read with pages whose textutil run failed never matches: a content.md changed since its record is then left unstamped for the next launch (PAGES_DEFERRED).
   A changed source, or a content.md changed since its record that is not the text with pages, is left to the stale-cache and FR05 checks.

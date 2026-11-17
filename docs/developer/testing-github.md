@@ -50,6 +50,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
    The runner image's Xcode 26.0.1 lists the iOS SDKs but says "iOS 26.0 is not installed", so the job first downloads the platform (`xcodebuild -downloadPlatform iOS`, about 3 minutes).
    It uploads `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`.
    A build that does not compile is a result, not a failure of the job.
+   Before the build a stamp of the toolchain empties a restored module cache made on another runner image, and a build that still fails with "has been modified since the module file" is tried once more ([A cache made on another runner image](building-ios.md#a-cache-made-on-another-runner-image)).
 
 ### The iPhone tests
 <!-- id: run-iphone-tests; keys: ios-ui-summary, ios_ui_tests, counts_by_bundle, PARALLEL_WORKERS, result bundle, keyboard preferences, NOT ASKED; src: Scripts/agents/run-ios-ui-tests.py, Scripts/agents/ios_ui_tests.py, TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, project.yml -->
@@ -277,6 +278,9 @@ The ones named in the skip list are left out there, the others are expected now 
 - **Explained and fixed:**
   - `LibraryFeedMoveToFolderTests` failed on a record save that belonged to another test: a Delete Download test made its own feed engine and stopped it only at teardown, so its last record writes landed after the folders were gone and were announced into the next test that records announcements.
     Every extra engine now comes from `FeedTestWorld.engine(_:on:)` (see [the hosted-test sandbox](../architecture/state/hosted-test-sandbox.md)).
+  - `ReaderCloudDownloadTests` heard "Settings could not be saved: The folder config.json doesn't exist.": an earlier test's settings change left a save waiting 250 milliseconds, and its folders were deleted before it fired.
+    Every settings service a test makes comes from `makeConfigService(fileURL:)` now, whose teardown drops the waiting save, and `ConfigTestWorldTeardownTests` fails for one made another way.
+    The flake was never reproduced, before or after: a test shows the mechanism, and the train after the fix passed (see [the hosted-test sandbox](../architecture/state/hosted-test-sandbox.md)).
   - `LibrarySessionLeaseTests`: a lease ended during a refresh did not wait for the refresh's events; it waits for them now, up to 30 seconds, since the end needs a task-pool thread and the runner has three.
 - **Not left out:** The unexplained ones of the earlier list did not appear in the ten runs after the fixes.
   That list:

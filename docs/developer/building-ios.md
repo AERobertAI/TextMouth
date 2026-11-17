@@ -134,6 +134,27 @@ It names the runner's own architecture (`ARCHS=arm64`), since both would compile
   Actions stays enabled for the repository; the workflow's token needs no setting.
   The workflow lives on `TestBuild` as pushed, so it works before it is merged into main; `gh run list --workflow` looks a file up on the default branch, which is why `github_run.py` finds the run by workflow name and commit instead.
 
+### A cache made on another runner image
+<!-- id: runner-module-cache-stamp; keys: module cache, toolchain stamp, stale module, module.modulemap, ModuleCache.noindex, retry, ImageVersion; src: Scripts/agents/runner_module_cache.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-on-runner.py, Scripts/agents/build-train.py, Scripts/agents/tests/test_bytecode_policy.py -->
+
+GitHub rolls a new macOS image out over days, so a job can restore a build cache that the other image made.
+Clang's module caches in it record the time of the toolchain's `module.modulemap`, and the build fails with "has been modified since the module file", an error that names no file of the repository.
+`Scripts/agents/runner_module_cache.py` is the cure, used by `run-ios-build.py` and `run-on-runner.py` (the Mac shards), on a GitHub runner only:
+
+- Before a build, `prepare` compares the stamp `toolchain-stamp.json` with this runner's.
+  The stamp is kept in the derived-data folder, so it is saved with the cache, and holds the image's version (GitHub's ImageVersion variable), `xcodebuild -version`, and the time of that `module.modulemap`.
+- A missing stamp, a different one, or none of this runner's facts being known empties four folders and writes the new stamp: ModuleCache.noindex, SDKStatCaches.noindex, and Build/Intermediates.noindex/ExplicitPrecompiledModules and PrecompiledHeaders.
+  The compiled objects, the build database, and the package checkouts stay, so this is no clean build.
+- A build that still fails with the error is tried once more, after emptying the same folders, in what is left of its time limit.
+  The iPhone build needs 1 minute left, and a Mac shard 5 minutes and no test suite started.
+- The iPhone build's `ios-summary.txt` then has a `Retried:` line, and a Mac shard's `summary.md` a `Module caches:` line.
+  When every error of the iPhone build is that one, the train's summary and its board post say the runner's module cache was stale and that nothing is to fix in any file.
+- Two limits: Build/Intermediates.noindex/SwiftExplicitPrecompiledModules is not emptied, so a changed module map or header that one of its modules was built from fails both tries.
+  And a Mac shard's second try is given the first try's `-resultBundlePath`, which xcodebuild has refused as already there.
+
+A script that puts its own folder on `sys.path` sets `sys.dont_write_bytecode = True` first, or importing a sibling leaves a `__pycache__` folder in the repository.
+`Scripts/agents/tests/test_bytecode_policy.py` fails for any script under `Scripts/` outside a `tests` folder that does not.
+
 ## Building TextMouthiOS for the simulator
 <!-- id: building-textmouthios-simulator; keys: xcodebuild, simctl, iPhone 17, DerivedData-ios.noindex, xcresult; src: project.yml, TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme, Scripts/agents/run_locked.py, Scripts/agents/run-ios-ui-tests.py, TextMouth/Phone/PhoneLaunchRequest.swift -->
 

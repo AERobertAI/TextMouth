@@ -37,6 +37,7 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
   Every merge is recorded in the TODO, closes its issues (`record-merge.py --close`), and is described in the pages under `docs/` by a documentation pass.
 - Follow `CLAUDE.md`'s Code Style, Git Workflow, and Accessibility; each commit has a test, and every control is keyboard-operable with every value spoken.
 - No test may trap (no unguarded subscript, force unwrap, over-fulfilled expectation, or unowned capture of a released object), since the user sees a macOS crash dialog for every test host that aborts.
+  A test that may crash the host when the code under test is broken (an Objective-C exception raised on purpose, a stack filled) calls `try TestMachine.skipUnlessGitHubRunner(_:)` first, so it runs only on GitHub ([A test that may crash the host](docs/developer/testing.md)).
 - No test may play sound aloud or record from a real microphone without an opt-in environment variable.
 - Clear only TextMouth's own caches: other apps' caches and the user's Trash are theirs.
 - The usage rule in the user's global instructions (wrap up when a limit is nearly spent) holds unless your launch message says the user overrode it; then keep working until the API refuses you, and leave unmerged branches on their worktrees for the reset.
@@ -84,11 +85,8 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.5.0 (tag `v0.5.0`), and the user still runs 0.4.2.
-- 0.5.0 holds, beyond 0.4.11:
-  - new formats: pictures of pages and CBZ (`BookFormat` picture and comic, hence MINOR), CUE sheets, markers, and Audacity labels, PLS and XSPF playlists, pronunciation lexicons, formats read through the installed ffmpeg, and TextMouth's own TTA, WavPack, and Monkey's Audio readers;
-  - Markdown read from cmark's own tree (swift-markdown gone); the Release app is 18.5 MB;
-  - C11's look-ahead near a chapter's end; V04's kept keys; the MP3 edit fix; quitting and moves losing no write; Return on the selected row;
-  - tests tried up to three times (RETRIED), and the heavy-work lock first come, first served.
+- Main is version 0.5.0 (tag `v0.5.0`) plus the merges bound for 0.5.1, and the user still runs 0.4.2.
+- 0.5.0 added many formats (pictures of pages, CBZ, CUE sheets, playlists, lexicons, and ffmpeg's and TextMouth's own audio readers) and read Markdown from cmark's own tree: the Release app is 18.5 MB ([history](docs/agents/history.md)).
+- Done since 0.5.0: B12 (64-bit float books edit), B13 and B14 (a move's saves and temporary files), #5512 (one Markdown nesting limit), Q-flake, the runner's stale module cache, and the issue tracker.
 - Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22 and FR23 and the iCloud store, the audio decoders, C11's follow-ups), and the hand checks there.
 - Open: `issuelib list`, the files in `Issues/`.

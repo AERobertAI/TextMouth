@@ -93,6 +93,7 @@ It is merged without a suite as a Markdown-only merge and recorded in the TODO w
 **The docs' checks:** before each fast-forward of main, run `make lint-docs` on the merged tree.
 After each docs merge, run `python3 -I .claude/skills/doc-library/scripts/doclib.py lint --update-baseline`.
 When main's docs changed under a branch, run it with `--rebuild-baseline` instead, which only the orchestrator runs because it can raise a count.
+`Scripts/agents/merge-chain.sh` also runs the issue tracker's check on each merged tree before it commits, as a ratchet by file: it fails only on a problem that is new and in a file the merge changed ([When an issue file stops a merge](#when-an-issue-file-stops-a-merge)).
 
 ## The end of a campaign
 <!-- id: end-campaign; keys: Where things stand, hand-over, campaign, history.md; src: AGENTS.md, docs/agents/history.md -->
@@ -196,6 +197,8 @@ The test command is made in one place, `Scripts/agents/test_command.py`, which t
 A remote train takes no heavy-work lock, skips the disk check and the iOS census, and shares the train's own lock with a remote suite, since a newer push to `TestBuild` cancels the older run.
 If its push or run fails, it puts every request back in the queue, tells each agent and the orchestrator, and the loop waits 15 minutes before the next try.
 A long request runs as up to four parallel jobs (`Scripts/agents/shard.py` deals the classes out; `merge_shards.py` joins the results into the one artifact the Mac reads), and build products are cached between runs (`restore_mtimes.py`).
+A cache made on another runner image is emptied by a toolchain stamp, and its build is tried once more ([A cache made on another runner image](../developer/building-ios.md#a-cache-made-on-another-runner-image)).
+When every error of a train's iPhone build is "has been modified since the module file", its summary says the runner's module cache was stale, not the branch's code, so nobody chases a file for it.
 The full suite takes about 26 minutes, the iPhone job being the longest part (80 without finishing before the tuning).
 The runner cannot start the audio engine and has other limits, so `Scripts/agents/runner-skips.conf` lists the 14 entries (of about 12,470 tests) it does not run, each with its reason.
 Each remote result says which of an agent's requested tests were among them ("Not run on GitHub, no verdict").

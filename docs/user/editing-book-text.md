@@ -63,9 +63,17 @@ Redo Text Extraction waits in the same words while any book is read again, and R
 ## A save TextMouth can't take
 <!-- id: book-text-save-refused; keys: not UTF-8, no chapter, kept copy, edit not taken; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift -->
 
-A save that isn't UTF-8 text, that leaves no chapter with anything in it, or that the book's record can't take now, isn't taken.
+A save that isn't UTF-8 text, that leaves no chapter with anything in it, that nests a chapter too deeply (below), or that the book's record can't take now, isn't taken.
 VoiceOver says why, and that your edited text was also kept in the book's package as content.md.edited- followed by the date and time.
 Nothing replaces your edit meanwhile: the book keeps the text it had, and opening it shows why in place of the book until you save text TextMouth can take, when that window opens the book with it.
+
+A chapter that nests quotes, lists, or emphasis more than 128 levels deep is a save TextMouth can't take, since an export can't write it.
+No real book comes near it: the deepest nests 12 levels.
+VoiceOver names the chapter by its number: "Text not updated: chapter 2 of the edited text of Deep Notes nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely.
+Flatten it in your editor and save again, or undo the change; until then, the book keeps the text it had."
+A text with no chapter markers says "the edited text of Deep Notes" instead, and the book's own sentence, in place of the book, says "its chapter 2 nests".
+The count includes the lines of a code block, and counts every two columns of indentation as a level, so a code line of 129 ">" marks, or of 258 spaces before "- ", is refused too.
+A book whose text was that deep before, as an earlier TextMouth let it in, opens and reads as it always did, but each save that leaves the chapter as it was is refused until it is flattened, and an export of its text is refused too ([Exporting books](exporting-books.md)).
 
 ## When the book's own file has changed
 <!-- id: book-text-file-changed; keys: book's file changed, read again at next open; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift -->

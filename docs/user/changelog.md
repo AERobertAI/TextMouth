@@ -4,6 +4,32 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.1 (November 16, 2026)
+
+### Editing audio
+- A book whose audio is stored as 64-bit floating point samples can now be edited, saved, and exported. Before, a filter, a save, or an export of such a book could close TextMouth.
+- If the system still refuses to write an edited book's audio, TextMouth keeps running and says so: "The edits couldn't be saved. The edited audio couldn't be written." for a save, and "The audio couldn't be exported." followed by the same sentence for an export.
+- Saving the edits of a 24-bit Apple Lossless or FLAC book no longer lowers it to 16 bits, and a WAVE or AIFF export of one keeps its 24 bits. A 20-bit book is written as 24-bit.
+
+### Moving the library
+- A substitution rule, listening statistics, or filter preset changed while the library is being copied is now saved again in the moved library. Before, it could stay in the old folder, and TextMouth had said it was saved.
+- Changing a setting or saving while the library is copied no longer makes the move fail with a message such as "The file couldn't be opened because there is no such file."
+- A filter preset saved for the first time during a move is no longer missing from the moved library, and a Filter Presets list left open through a move saves into the moved library afterwards.
+
+### Exporting books and editing their text
+- A chapter whose quotes, lists, or emphasis nest more than 128 levels deep no longer closes TextMouth when you export the book.
+  The export writes no file for that book and says which chapter, as in "Chapter 3 of this book nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't export safely.
+  Choose Edit Text, flatten the nesting, and save; then export again."
+  The other books of the export are written.
+- Edit Text refuses a save that would put such a chapter into a book, as it refuses other saves it can't take, and says which chapter.
+  It says "Text not updated: chapter 2 of the edited text of Moby-Dick nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely.
+  Flatten it in your editor and save again, or undo the change; until then, the book keeps the text it had."
+- The count includes the lines of a code block, and counts every two columns of indentation as a level, so a code line of 129 ">" marks, or of 258 spaces before "- ", is refused too.
+  No real book comes near the limit: the deepest nests 12 levels.
+
+### Not changed
+- How any book reads, plays, or is laid out.
+
 ## 0.5.0 (November 16, 2026)
 
 ### New formats

@@ -168,7 +168,7 @@ The user edits it in an editor of their own (Edit Text in Default Editor and Edi
   It also ends when the listener has its file read again in another encoding (LibraryViewModel.readTextAgain pauses the session the same way; see Reading a book again in another encoding, above).
   So a re-read that is refused begins it again and one that goes ahead leaves it ended, with BookTextEditWording.stoppedBookReadAgain in the announcement.
   It also ends when TextMouth quits.
-  The record of an edit taken, for a text book, is Book.editedText (B12): an EditedText, the digest of the content.md the edit left and when it was taken.
+  The record of an edit taken, for a text book, is Book.editedText (B12-OCT): an EditedText, the digest of the content.md the edit left and when it was taken.
   The check that takes the edit sets it (LibraryPersistenceService.saveContentAnalysis(…editedText:)).
   The package record keeps it (BookInfo.state.editedText), so a library rebuilt from its records still keeps the user's text.
   It is an analysis-owned field, which Book.applyContentAnalysis drops once an analysis records a content.md digest other than the edit's, as when Redo Text Extraction wrote the source's text or another edit was taken.
@@ -189,6 +189,11 @@ The user edits it in an editor of their own (Edit Text in Default Editor and Edi
   An edit it can't take (a BookTextEditRefusal; failed covers an audiobook whose audio changed since it was transcribed) is first kept beside content.md as content.md.edited- and the time.
   The copy is made by keepCopy(of:bytes:), through SavedFile.preserveUnusable and LibraryIndexQuarantine under TextMouthPaths.keptTextCopyMarker.
   An earlier copy of the same bytes is used again.
+  A chapter that nests quotes, lists, or emphasis past the reader's limit is one such refusal, since the exports cannot walk it.
+  The check parses through MarkdownCacheService.parseMultiChapterMarkdownNamingRefusal, which throws a RefusedChapter in place of keeping the chapter raw as a read does, and BookTextEditing refuses with .nestedTooDeeply(chapter:limit:).
+  BookTextEditWording names the chapter by its number: "Text not updated: chapter 3 of the edited text of TITLE nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely."
+  Its second sentence says to flatten it in the editor and save again, or undo the change, and that until then the book keeps the text it had.
+  A text with no chapter markers says "the edited text of TITLE", and the held book's reason says "its chapter 3 nests", or "it nests".
   - While an edit not taken stands beside an unchanged source, nothing replaces content.md.
     ReaderViewModel.readContent asks settlePendingEdit(of:), which answers readTaken, readAsUsual, or hold.
     The answer hold throws BookTextEditPending for a text book, which the reader shows in place of the book (loadHeldByTextEdit) until an edit is taken, and leaves out only an audiobook's transcript text, its audio loading and playing as ever.
@@ -199,9 +204,9 @@ The user edits it in an editor of their own (Edit Text in Default Editor and Edi
     BookTextEditSessions.textRebuilt(_:writing:fingerprint:) then makes the written text the session's baseline.
     TranscriptTextLoader.writeText calls it too, for the text of a transcript it writes again (its sessions argument: the app's for the loader's rebuild, none for an install, which pauses the session first), so TextMouth's own rewrite is never taken for the listener's edit.
     For a book no session watches, it keeps the text content.md holds beside it before the rebuild (keepTextSavedWithoutSession(of:replacedBy:), TEXT_EDIT_KEPT).
-    It does so when that isn't what the book's record says TextMouth last wrote or took there, and also when it is an edit taken (Book.editedText, B12), which only Redo Text Extraction replaces.
+    It does so when that isn't what the book's record says TextMouth last wrote or took there, and also when it is an edit taken (Book.editedText, B12-OCT), which only Redo Text Extraction replaces.
     It refuses the rebuild when no copy can be made.
-  - A finished edit is kept by automatic re-reads (B12): BookTextEditSessions.holdsTakenEdit(_:access:) is true when the book records an edit taken (Book.editedText) and content.md still has exactly that edit's digest.
+  - A finished edit is kept by automatic re-reads (B12-OCT): BookTextEditSessions.holdsTakenEdit(_:access:) is true when the book records an edit taken (Book.editedText) and content.md still has exactly that edit's digest.
     It reads nothing of a book that records no edit, and counts a content.md only in the cloud, missing, or unreadable as not matching.
     Then no automatic generation replaces the text: MarkdownCacheService.writeCache throws EditedTextKept before it reads the source, and logs one TEXT_EDIT_KEPT line naming the title only.
     It does so unless replacingEditedText is set, which only Redo Text Extraction (updateTextCache's force) and a re-read in another encoding (readTextAgain) set.

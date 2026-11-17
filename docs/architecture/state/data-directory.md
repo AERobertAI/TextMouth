@@ -34,7 +34,7 @@ Its location, and moving it.
   StorageChoice and StorageWording word the confirmation or the status line.
 
 ### Holding storage work
-<!-- id: holding-storage-work; keys: storage hold, StorageBusyError, Try again, Rebuild Directory, import blocked, feed items set aside; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Models/Library.swift -->
+<!-- id: holding-storage-work; keys: storage hold, StorageBusyError, Try again, Rebuild Directory, import blocked, feed items set aside; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Models/Library.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift -->
 
 - Holding: withStorageWorkHeld(moving:waiting:_:) holds new storage work back (StorageBoundary.holdWork(for:)).
   It waits for the import, text extraction, and book analysis under way (StorageWorkHold.waitForWorkUnderWay), flushes the queued saves and logs, runs the move, and then lets the held work go on under the new generation.
@@ -45,7 +45,12 @@ Its location, and moving it.
   They then move their packages and rewrite their records off the main actor (OffMainWork.runThrowing), VoiceOver hearing what they wait for.
   Each hold says what it is for (StorageHoldReason: moving the data directory, rebuilding it, or moving books between folders), and only one is in place at a time.
   While one is, holdWork(for:) refuses another with a StorageBusyError naming the operation under way, so a refused move, rebuild, or folder edit says what is actually running, as in "TextMouth is moving books between folders.
-  Try again when that finishes."
+  Try again when that finishes.
+- Saves made meanwhile: the substitution rules, the statistics, and the filter presets (audio-filters.json) are written from outside the storage work, so a save of either during the copy would land in the folder being copied, which the copy may have passed.
+  From the end of the move's flushes (StorageBoundary.beginProvisionalSaves()) until the hold is released, such a save is provisional (isProvisionalSave(of:rewrite:)): it is written, but settles no earlier failure, and its rewrite is kept, one for each file's name in the data directory.
+  The filter presets' file is looked up at each save, so a pane left open through the move writes the library in use, and its rewrite keeps the bytes, not the pane.
+  A save made while the move only waits for other work is final, since the copy takes it, and so is one made during Rebuild Directory or a folder edit, which write in the same directory.
+  After the release, however the move ended, rewriteFilesSavedDuringTheMove() saves each such file again once, in the library then in use, and the move waits for the statistics' queue (waitForQueuedStatisticsSaves) when any was saved, so the outcome is judged after the write that settles a failure.
 
 ### Copying and publishing
 <!-- id: copying-publishing; keys: migration, staging folder, copy library, cancel move, rename into place, rmdir; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
@@ -61,6 +66,14 @@ Its location, and moving it.
   It removes nothing but an empty folder, with rmdir, which the kernel refuses once anything is inside, and publishes the copy with one rename (moveItem, which never replaces an item).
   Anything that arrives meanwhile stops the move: the staged copy is deleted, whatever arrived stays, and the data directory in use and its setting stay as they were.
   The library is taken once the wait is over, and nothing should change it during the copy; a change made anyway is kept, its paths rebased.
+  A save's temporary file is no item of the copy (SaveTemporaryNames, in DataDirectoryCopyPlan), since a save made during the copy can rename it away before it is reached, which would stop the move.
+  Three forms are left out, each by its exact shape, and a folder is never left out, whatever its name, since a library folder may begin with a dot:
+  - Foundation's atomic write's, ".dat.nosync", the writing process's number in hexadecimal, a dot, and six letters or digits (macOS 26.3.1);
+  - the other form it makes, the target's name, ".sb-", eight hexadecimal digits, a dash, and six letters or digits (the hosted runner's macOS);
+  - and TextMouth's own, ".<target>.<UUID>", in upper case, for the targets named in stagedTargets only (transcript-cleanup.json), which TranscriptCleanupRuleFile stages through stagedName(for:).
+  A stale one a crash left stays in the old library, uncopied, and a real file that vanishes during the copy still stops the move, naming it.
+  The copy order is no guarantee that a target is copied after its rename (".sb-" sorts after its target); a target copied before a save ended is stale as a save made after its copy is, and the rewrites after the move cover the writers outside the storage work.
+  DataDirectoryCopyTests holds a canary that writes 16 MB atomically in its sandbox, lists the folder meanwhile, and fails on a hidden name this does not know, so a macOS whose names differ shows itself.
 
 ### Leftovers of a move
 <!-- id: leftovers-move; keys: stale staging folder, journal, orphaned copy, launch sweep; src: TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->

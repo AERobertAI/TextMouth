@@ -10,7 +10,9 @@ TextMouth edits an audiobook's audio, a recording's or an imported one's, in an 
 
 Opening the editor:
 
-- Edit Audio… is in a reader's Book menu, after Delete Transcript…, and first among the audio commands of a library row's context menu and its actions in VoiceOver's Actions menu, for one audiobook kept in a package of its own, other than a feed's episode, which can't be edited.
+- Edit Audio… is in a reader's Book menu, after Delete Transcript…, and first among the audio commands of a library row's context menu and its actions in VoiceOver's Actions menu, for one audiobook kept in a package of its own.
+  A feed's episode can't be edited while it belongs to its feed, and says "An episode in its feed can't be edited."
+  Move to Library… makes it a book of the library's own, and so editable.
 - A book of several tracks asks which one to edit, in a pop-up listing them by chapter name: the editor works on one track at a time.
   A book whose manifest plays stretches of its tracks as sections, as a DAISY audiobook's does, can't be edited yet.
 - A book open in a reader is closed there first, VoiceOver saying why, and opens again when the editor closes.
@@ -142,6 +144,12 @@ To remove an old gap from a book saved before, choose Revert to Original, redo t
 A FLAC book becomes Apple Lossless, and any other becomes AAC in .m4a.
 Its chapters, length, and index are measured afresh.
 A book open in a reader can't be saved; close it there first.
+A 24-bit Apple Lossless or FLAC book keeps its 24 bits when saved, and so does a WAVE or AIFF export of it.
+A book of 64-bit floating point samples, which AVFoundation's writers refuse, can be edited, saved, and exported: its samples are written as 32-bit floats, or as 32-bit integers in WAVE and AIFF.
+If AVFoundation still refuses to write the audio, TextMouth goes on, and the editor says why:
+
+- Save says "The edits couldn't be saved." followed by "The edited audio couldn't be written."
+- Export says "The audio couldn't be exported." followed by the same sentence.
 
 ## The original audio
 <!-- id: audio-editor-original-audio; keys: Keep, Don't keep, Keep for days, Storage settings, retention, Audio Info policy; src: TextMouth/Services/AudioEditing/AudioOriginalSweep.swift, TextMouth/Services/AudioEditing/AudioEditingPreferences.swift, TextMouth/Views/Settings/AudioEditingSettingsSection.swift -->
@@ -201,6 +209,7 @@ Export writes the edits as they stand, saved or not, to a new file in any of tho
 
 Settings: "Preview filters before applying" and "Play half a second after each move", in the Audio Editing group of Storage settings, are on by default, and config.json keeps them as audioEditorPreviewsFilters and audioEditorPlaysAfterMoves.
 Filter Presets…, in the same group, lists the presets, to edit, add, reorder, delete, or reset them, each command a button of the preset's row and, when it can act, one of the row's VoiceOver actions and context menu items.
+The presets are saved in the library in use: a preset saved while the library is being moved is saved again in the moved library, even if the list was closed meanwhile, and a list left open through a move writes to the moved library afterwards.
 
 ## Tracks and the manifest
 <!-- id: audio-editor-tracks; keys: manifest order, renamed track, Ogg to m4a; src: TextMouth/Services/AudioEditing/AudioEditBookRender.swift -->

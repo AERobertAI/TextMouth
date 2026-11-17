@@ -245,6 +245,7 @@ To upgrade a package, change its version in `project.yml`, run `make update-pack
 - the version script (see Versions, above);
 - the Python tools in `Scripts/test` (see [Reusable test tools](testing-tools.md));
 - the vendored SwiftSoup's script, `Scripts/vendor/swiftsoup/test_make_vendor.py`;
+- the policy test that no tracked file holds a path of one Mac (see [Working with agents](../agents/working-with-agents.md)), and the issue tracker's tests (`.claude/skills/issue-library/tests`), which work only in temporary folders;
 - that `make build` builds without code coverage and with `-Osize` while `make debug` does not;
 - that `make release-goldens` names its settings and golden classes;
 - that `make install` keeps the dSYMs, running install and uninstall in a sandbox folder, never /Applications;

@@ -193,7 +193,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A field's result is read and its instruction never.
 
 ### What Word 6 and Word 95 reading leaves out
-<!-- id: what-word-6-word-95; keys: headers, footers, comments, pictures, Wingdings, custom note mark; src: TextMouth/Parsers/WordDocumentLegacyText.swift, TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/WordDocumentFonts.swift -->
+<!-- id: what-word-6-word-95; keys: headers, footers, comments, pictures, Wingdings, custom note mark; src: TextMouth/Parsers/WordDocumentLegacyText.swift, TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/WordDocumentFonts.swift; status: incomplete; issues: DR35 -->
 
 - Headers, footers, comments, and pictures are not read.
 - Text typed in Wingdings reads as the letters of its bytes.

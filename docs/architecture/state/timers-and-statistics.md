@@ -199,6 +199,7 @@ Listening checkpoints.
   It knows its episodes, an audiobook Move to Library… made of an episode among them, even once its feed's record is gone, by its package record's feed link, read once without downloading (cameFromAFeed(_:)), and reads any other book's format from the library.
   A kind a later version writes reads as none.
   No save is written while reading_stats.json is only in the cloud ([Files several Macs write](data-directory.md)).
+  A save made while a data-directory move copies the library is provisional, and is made again once the move has ended ([Holding storage work](data-directory.md)).
   ReadingStatsService hears NSWorkspace's will-sleep and did-wake notices.
   Going to sleep checkpoints the open session and keeps a SleepNote, the moment with the awake clock (ProcessInfo.systemUptime, which stops while the Mac sleeps).
   Every credit after it, from the checkpoint timer, a session's end, or the wake's notice, begins no earlier than the wake the awake clock finds.
