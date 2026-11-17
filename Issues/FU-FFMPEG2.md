@@ -26,3 +26,7 @@ labels:
 ### 2026-11-16, issuelib, 1 line
 
 Moved from TODO-2026-09-04.md, line 5441 of the version this import read, where it was an open item; the description is its text as it was.
+
+### 2026-11-17, ffmpegform, 1 line
+
+ffmpegform, branch formats/ffmpeg-form at 4da8ec09f (train 1117-0559 PASSED, Executed 1041 tests, 5 skipped, 0 failures). Done: sound whose rate, channels, or format change partway is converted to the first frame's form with libswresample (mka/mp3-form-changes.mka imports whole at 22,050 Hz mono; only a form that cannot be converted, or over 1,000 changes, still ends with exit 7); tests of a frame over 1 MB split across records (ffmpeg-edge/flac-7.1-24bit-65535.mka) and of a PCM record over 1 MB in the reader; the decoder error bound tried with 900 and 1,200 refused packets (GitHub only): the bound is never reached by a damaged packet, so both import, each counted in END; build.py keeps the release's archive and unpacked source once in build/ffmpeg/ (saves 12.0 MB of archive and 90.4 MB of source for each DerivedData). Still open here: the signal guard self-test, the workflow cache of FFmpeg's build, and the LGPL and App Store question.
