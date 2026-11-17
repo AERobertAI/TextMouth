@@ -129,8 +129,9 @@ typedef struct {
 	const char *tables_folder;
 	/* The table, a bare file name inside that folder, such as "en-ueb-g2.ctb". */
 	const char *table;
-	/* The input, in the protocol, `input_length` bytes; NULL for check. */
-	const char *input;
+	/* The input, in the protocol, `input_length` bytes; NULL for check.
+	   Bytes, so that Swift hands them over as raw memory. */
+	const void *input;
 	size_t input_length;
 	tmb_limits limits;
 } tmb_request;
@@ -142,7 +143,7 @@ typedef struct {
 	/* When it is done and the mode translates, the output in the protocol,
 	   `output_length` bytes, which the caller frees with free(); otherwise
 	   NULL and 0. */
-	char *output;
+	void *output;
 	size_t output_length;
 } tmb_response;
 
