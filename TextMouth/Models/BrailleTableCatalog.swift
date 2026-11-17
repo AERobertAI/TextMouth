@@ -44,7 +44,7 @@ enum BrailleTableSource: Equatable, Hashable, Sendable {
     /// Whether `storedValue` names a Mac table by a bare file name: the
     /// prefix, then a name that is not empty, does not start with a dot, and
     /// holds no slash or comma, as the helper's own check
-    /// (`is_bare_table_name` in `TextMouthBraille/main.c`) requires. Such a
+    /// (`tmb_is_bare_table_name` in `TextMouthBraille/TextMouthBrailleLibrary.c`) requires. Such a
     /// value is kept by the setting even when this Mac no longer has the
     /// table, so that an import refuses it by name rather than reading the
     /// book with another table (`BraillePreferences`).

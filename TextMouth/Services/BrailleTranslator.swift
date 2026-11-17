@@ -299,7 +299,7 @@ enum BrailleTranslator {
     /// liblouis misreads, the helper reads itself where it can tell them
     /// from print, keeping the words liblouis reads (October 24, 2026).
     /// Forward carries only the classes liblouis reads back exactly with
-    /// this table (`check_readable` in `TextMouthBraille/main.c`): UEB's,
+    /// this table (`check_readable` in `TextMouthBraille/TextMouthBrailleLibrary.c`): UEB's,
     /// not EBAE's italic and bold, nor most of this Mac's tables', so with
     /// them an export is plain and read back keeps its words (review E2,
     /// October 21, 2026).

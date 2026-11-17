@@ -842,6 +842,7 @@
 		471947C20BF136F54D23F0EA /* ImportFuzzTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C25416AEFBB90050530860C /* ImportFuzzTests.swift */; };
 		4731FF146778300E43CD55D1 /* MacBrailleTableCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEB869A690FB9C7DBDF4EBF9 /* MacBrailleTableCheck.swift */; };
 		4732D568694FFDD8291694D4 /* PhonePassagePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9AC4A4C6521235CD8777752 /* PhonePassagePolicy.swift */; };
+		474AE681EC8103678EC00558 /* TextMouthBrailleLibrary.c in Sources */ = {isa = PBXBuildFile; fileRef = 5AE038671DC3D0D4C228B6BB /* TextMouthBrailleLibrary.c */; };
 		475D5022F18692E47BAF4F17 /* PhoneReaderControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836E17F65DF12FECC4795CBB /* PhoneReaderControls.swift */; };
 		475E4DCE8A91CF448B2C4BAB /* IOSUnavailable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76A575FECDFA37ECA7E12A27 /* IOSUnavailable.swift */; };
 		478E737CFBF07D31B99F436D /* BrailleFileCodeRecordTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A249FED99EB68F8E36F496 /* BrailleFileCodeRecordTests.swift */; };
@@ -4039,6 +4040,7 @@
 		5A577A544AA9CB047DF069AD /* LibraryCloudTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryCloudTestSupport.swift; sourceTree = "<group>"; };
 		5A5DC82BDA41F5BBA99AF15A /* KFXHostileFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KFXHostileFileTests.swift; sourceTree = "<group>"; };
 		5AC953218AC5A44CE71872C7 /* FeedEndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedEndToEndTests.swift; sourceTree = "<group>"; };
+		5AE038671DC3D0D4C228B6BB /* TextMouthBrailleLibrary.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = TextMouthBrailleLibrary.c; sourceTree = "<group>"; };
 		5B154CF1F2CC17C668B84EE6 /* DOCXParser+Relationships.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DOCXParser+Relationships.swift"; sourceTree = "<group>"; };
 		5B3FFD06EB2569D06263840B /* ReaderRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderRefreshTests.swift; sourceTree = "<group>"; };
 		5B91439A8914A99CACBAE3D3 /* PhoneControlDescription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneControlDescription.swift; sourceTree = "<group>"; };
@@ -4828,6 +4830,7 @@
 		C5EC6DE2B03B1AFA25C1377A /* PhoneAudioEventPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAudioEventPolicy.swift; sourceTree = "<group>"; };
 		C624BF03D515156EA0462401 /* FFmpegReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FFmpegReport.swift; sourceTree = "<group>"; };
 		C634D165B9D1CDF9277CE36E /* Book+OwnSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Book+OwnSettings.swift"; sourceTree = "<group>"; };
+		C649FC1AF1847BF520DA6FA5 /* TextMouthBrailleLibrary.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TextMouthBrailleLibrary.h; sourceTree = "<group>"; };
 		C65B810AC34E9487019258F9 /* PhoneImportPresentations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneImportPresentations.swift; sourceTree = "<group>"; };
 		C665DA2A26B805EE27AFBD0D /* PhoneMoveFeedbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneMoveFeedbackTests.swift; sourceTree = "<group>"; };
 		C67F22AA3696E45373BC65B0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -5660,6 +5663,7 @@
 			isa = PBXGroup;
 			children = (
 				FD619115F066C84E7EE9B31A /* module.modulemap */,
+				C649FC1AF1847BF520DA6FA5 /* TextMouthBrailleLibrary.h */,
 				931BDF29C0B1DA3F0C24E32F /* TextMouthBrailleProtocol.h */,
 			);
 			path = include;
@@ -7477,6 +7481,7 @@
 			isa = PBXGroup;
 			children = (
 				7D8ABAF885921CCC9068372C /* main.c */,
+				5AE038671DC3D0D4C228B6BB /* TextMouthBrailleLibrary.c */,
 				49683AF5C71CB2A838E76370 /* include */,
 			);
 			path = TextMouthBraille;
@@ -10488,6 +10493,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				474AE681EC8103678EC00558 /* TextMouthBrailleLibrary.c in Sources */,
 				8355AC711795D68AA9B503A6 /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

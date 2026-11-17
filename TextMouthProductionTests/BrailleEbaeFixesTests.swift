@@ -2,7 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// The braille helper's fixes of what contracted EBAE's table misreads (November
-/// 13, 2026, `fix_ebae_cells` in `TextMouthBraille/main.c`): found reading a
+/// 13, 2026, `fix_ebae_cells` in `TextMouthBraille/TextMouthBrailleLibrary.c`): found reading a
 /// 2003 transcription of a novel in the old code with liblouis's tables. Every
 /// sample is braille ASCII invented for the test, not a line of any book. Each
 /// test also reads the same cells by liblouis alone (the helper's

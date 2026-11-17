@@ -2,7 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// The braille helper's reading passes (October 24, 2026,
-/// `TextMouthBraille/main.c`): emphasis signs read before liblouis reads the
+/// `TextMouthBraille/TextMouthBrailleLibrary.c`): emphasis signs read before liblouis reads the
 /// braille back.
 ///
 /// **EBAE.** liblouis 3.39.0 reads EBAE's emphasis sign ⠨ before a word as a
