@@ -71,6 +71,11 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   ExportWalkOptions says what the walk keeps besides the words: keepsChapters and keepsPageMarkers, off in .plain (HTML, RTF, Word, and braille get the document they always did) and on in .bookStructure, which a writer asks for in TextExportWriter.walkOptions.
   The decoding of a marker line is MarkdownMarker (Parsers/MarkdownMarker.swift), shared with the reader and the exporters; the walk keeps the words that follow a marker on the same line.
   A target in a table cell is a place before the table; a page that starts in a cell stays in it.
+  The walk holds the reader's nesting limit, 128 quotes or lists and 272 levels of tree ([MarkdownNesting](../shared-helpers.md)), and runs on MarkupGuard.onLargeStack, since content.md is untrusted: Edit Text and a file's own text can put any depth in it.
+  A chapter that nests past it throws ExportWalkError.nestedTooDeeply(chapter:limit:), naming the chapter by its number, or none for a text with no chapter markers.
+  BookExportWording.nestedTooDeeply(chapter:limit:) words it: "Chapter 1 of this book nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't export safely.
+  Choose Edit Text, flatten the nesting, and save; then export again."
+  The export names it after the file like any writer's failure, writes nothing for the book, and exports the others (BookExportNestingTests).
 - TextExportWriter, the writer protocol, with the TextExportWriters.all registry, the TextExportConversion erasure, and the dialog's options state (TextExportOptionsState).
 - HTMLExportWriter with XMLEscaping, RTFExportWriter, and WordDocExportWriter, which is Apple's .docFormat from TextMouth's RTF.
   HTMLExportWriter and EPUBExportWriter write their blocks through XHTMLMarkup (Services/Export/XHTMLMarkup.swift), so a heading, a list, or a table is written once.
@@ -205,6 +210,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
     - EPUBLinkAddressTests,
     - ExportContentsListTests (the structure of skipped levels, and 300 seeded random sequences),
     - ExportDocumentWalkerStructureTests,
+    - ExportDocumentWalkerNestingTests, MarkdownDepthLimitTests, and BookExportNestingTests (the nesting limit, each walk at its edge, and the refusal's sentence; the two that measure a walk's stack run on GitHub only, see [A test that may crash the host](../../developer/testing.md)),
     - EPUBExportRoundTripTests and EPUBExportRealBooksTests (each of 17 real books exported, imported again with EPUBParser.prepareBook, and compared with the reader's own reading: the words, the pages with the same word before each, the headings), and
     - EPUBCheckTests, which runs `epubcheck` where /opt/homebrew/bin/epubcheck exists, skips where it does not, and fails when it ran and gave no summary.
   - MarkdownMinimalEscapingTests reads every string of one or two characters over a, 1, é, a space, and the 32 ASCII punctuation characters, and every three-character string over the punctuation, a, and a space.

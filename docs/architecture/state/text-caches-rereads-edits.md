@@ -189,6 +189,11 @@ The user edits it in an editor of their own (Edit Text in Default Editor and Edi
   An edit it can't take (a BookTextEditRefusal; failed covers an audiobook whose audio changed since it was transcribed) is first kept beside content.md as content.md.edited- and the time.
   The copy is made by keepCopy(of:bytes:), through SavedFile.preserveUnusable and LibraryIndexQuarantine under TextMouthPaths.keptTextCopyMarker.
   An earlier copy of the same bytes is used again.
+  A chapter that nests quotes, lists, or emphasis past the reader's limit is one such refusal, since the exports cannot walk it.
+  The check parses through MarkdownCacheService.parseMultiChapterMarkdownNamingRefusal, which throws a RefusedChapter in place of keeping the chapter raw as a read does, and BookTextEditing refuses with .nestedTooDeeply(chapter:limit:).
+  BookTextEditWording names the chapter by its number: "Text not updated: chapter 3 of the edited text of TITLE nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely."
+  Its second sentence says to flatten it in the editor and save again, or undo the change, and that until then the book keeps the text it had.
+  A text with no chapter markers says "the edited text of TITLE", and the held book's reason says "its chapter 3 nests", or "it nests".
   - While an edit not taken stands beside an unchanged source, nothing replaces content.md.
     ReaderViewModel.readContent asks settlePendingEdit(of:), which answers readTaken, readAsUsual, or hold.
     The answer hold throws BookTextEditPending for a text book, which the reader shows in place of the book (loadHeldByTextEdit) until an edit is taken, and leaves out only an audiobook's transcript text, its audio loading and playing as ever.

@@ -309,7 +309,7 @@ Every character XML 1.0 forbids is left out, but a vertical tab and a form feed,
 The feed, OPML, SSML, and export writers use it (see [Known duplication](known-duplication.md) for the one copy left).
 
 ## MarkdownNesting
-<!-- id: markdownnesting; keys: block quote depth, list depth, stack overflow, nested lists; src: TextMouth/Parsers/MarkdownNesting.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/Export/ExportDocumentWalker.swift -->
+<!-- id: markdownnesting; keys: block quote depth, list depth, stack overflow, nested lists; src: TextMouth/Parsers/MarkdownNesting.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Parsers/MarkdownTree.swift, TextMouth/Models/MarkdownNestingWording.swift -->
 
 MarkdownNesting (Parsers/MarkdownNesting.swift) is the first layer of the guard on Markdown's nesting: one linear pass over a Markdown text's bytes that finds how deep its block quotes and lists can nest:
 - a `>` opens a quote, a list marker a list item, a marker after another on the line a list inside it, each two columns of white space before a quote or marker one more level, a tab four;
@@ -325,7 +325,13 @@ MarkdownDocParser.parseChapter:
 A marker line's rest, which is parsed again, is counted first.
 Every caller goes through parseChapter: BookParser's .md and .txt, EPUB, MOBI, DOCX, DAISY, and content.md.
 Markdown is parsed with cmark-gfm directly (MarkdownTree), which the reader's walk and ExportDocumentWalker both read.
-Inline emphasis nesting is still bounded only by the file's size, and ExportDocumentWalker parses Markdown with no guard (board finding #5512).
+ExportDocumentWalker holds the same limit, through MarkdownTree.read(_:within:insideLevel:_:), so that one limit serves every walk:
+- a text whose quotes and lists pass 128 is refused before anything is parsed, and a tree deeper than 272 levels, which inline emphasis, links, and images also make, is refused before the walk begins, measured with cmark's iterator (MarkdownNode.levels(stopAbove:)), which does not recurse;
+- a table's body rows count one level more, as the reader counts them, which levels(stopAbove:) and PlainTextExtractor.readTable each do, and MarkdownDepthLimitTests pins together;
+- a marker line's rest is counted on top of its HTML block's level (insideLevel), as the reader counts it;
+- the walk runs on MarkupGuard.onLargeStack, whose stack holds a tree at the limit however small the stack of the thread that asks;
+- the refusal is ExportWalkError.nestedTooDeeply(chapter:limit:), naming the chapter by its number, and the phrase of its sentence and of Edit Text's is one, MarkdownNestingWording.nestsTooDeeply(limit:).
+Because the count includes lines in code fences and every two columns of indentation, a code line of 129 `>` or of 258 spaces before `- ` blocks an export and an edit too, which is the cost of one limit.
 
 ## AsyncBridge
 <!-- id: asyncbridge; keys: semaphore, timeout, synchronous wait, Task.detached, priority inversion, audio tags; src: TextMouth/Services/AsyncBridge.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/BookContentAnalysisService.swift -->

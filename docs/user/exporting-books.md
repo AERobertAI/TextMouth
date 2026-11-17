@@ -19,7 +19,10 @@ The kinds are
 - Original recording, a recording as it was made, before any edits;
 - Original audio (before edits), an edited audiobook's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does:
   - one file named after the book, as in "Moby-Dick - Original Audio.mp3", or, for a book of tracks, the edited tracks' originals in a folder of that name;
-- and Transcript, its transcript.json, copied as it is, and, for an audiobook, the transcript's text as Markdown, written as Text as Markdown is (below).
+- and Transcript, with a Convert transcript to pop-up of its own (see [Exporting captions](exporting-captions.md)):
+  - JSON and Markdown, the first choice, copies its transcript.json as it is and, for an audiobook, its text as Markdown, written as Text as Markdown is (below);
+  - a text writer writes the transcript's text;
+  - WebVTT and SubRip write captions.
 
 Kinds that none of the books hold aren't listed.
 VoiceOver starts on the first checkbox, and the first kind that can be exported is checked.
@@ -96,7 +99,8 @@ The choices are Markdown, HTML, RTF, "Word 97-2003 (.doc)", EPUB, BRF, and PEF, 
 <!-- id: export-convert-choice-kept; keys: default format, remembered choice, Markdown default; src: TextMouth/ViewModels/BookExportModel.swift, TextMouth/Views/Export/BookExportSheet.swift -->
 
 Every Export dialog starts on Markdown, so an export that leaves the menu alone gives the Markdown file, named like "Moby-Dick - Text.md", and a dialog keeps the choice made in it until it closes.
-Only a text book's Text as Markdown checkbox has the menu: an audiobook's Transcript has none, and gives its transcript.json byte for byte and its text as Markdown.
+Only a text book's Text as Markdown checkbox has this menu, Convert to.
+An audiobook's Transcript has Convert transcript to, which starts on JSON and Markdown and gives its transcript.json byte for byte and its text as Markdown; its other choices are in [Exporting captions](exporting-captions.md).
 
 ### The checkbox's name when a format is chosen
 <!-- id: export-text-checkbox-name; keys: Text as HTML, no size, checkbox label; src: TextMouth/Models/BookExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift -->
@@ -135,6 +139,17 @@ When the braille translation fails, the sentence is the translator's, as in "Cou
 
 The text is the book's content.md, the Markdown TextMouth reads, with any edits you made in Edit Text (see [Editing a book's text](editing-book-text.md)), before any substitution rules.
 Markdown stays the base: Markdown, HTML, RTF, Word 97-2003, EPUB, BRF, and PEF are each written from it, none copied.
+
+### A chapter nested too deeply
+<!-- id: export-nested-too-deeply; keys: nesting limit, 128 levels, quotes, lists, emphasis, flatten, Edit Text; src: TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Models/MarkdownNestingWording.swift -->
+
+A chapter whose text nests quotes, lists, or emphasis more than 128 levels deep is not exported, to any text format.
+No real book comes near it: the deepest nests 12 levels.
+The export writes no file for that book, says so after its name, and writes the others, as in "Couldn't export Deep Notes - Text.md: Chapter 1 of this book nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't export safely.
+Choose Edit Text, flatten the nesting, and save; then export again."
+A book whose text has no chapter markers says "The text of this book" in place of "Chapter 1 of this book", and the chapter is named by its number, never by its title.
+The count includes the lines of a code block, and counts every two columns of indentation as a level, so a code line of 129 ">" marks, or of 258 spaces before "- ", is refused too.
+Edit Text refuses such a change in the same way ([Editing a book's text](editing-book-text.md)).
 
 ### What every format leaves out
 <!-- id: what-every-format-leaves-out; keys: chapter markers, page lines, raw HTML, alt text; src: TextMouth/Services/Export/ExportDocumentWalker.swift; status: incomplete; issues: DR22 -->

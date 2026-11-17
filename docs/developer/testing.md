@@ -114,7 +114,7 @@ Delete a kept sandbox when you are done with it.
   The performance baselines tests skip too, since their baselines belong to the development Mac's model (so a request for strict baselines checks no baseline on a runner).
 
 ### A test that may crash the host
-<!-- id: test-may-crash-host; keys: skipUnlessGitHubRunner, isGitHubRunner, TEXTMOUTH_TEST_TIME_SCALE, Objective-C exception, stack overflow, crash report, no-crash rule; src: TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/ObjCExceptionTests.swift, TextMouthProductionTests/AudioEditRenderingTests+WideSamples.swift, TextMouthProductionTests/MarkdownDepthLimitTests.swift, TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift, Scripts/agents/run-on-runner.py -->
+<!-- id: test-may-crash-host; keys: skipUnlessGitHubRunner, isGitHubRunner, TEXTMOUTH_TEST_TIME_SCALE, Objective-C exception, stack overflow, crash report, no-crash rule; src: TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/ObjCExceptionTests.swift, TextMouthProductionTests/AudioEditRenderingTests+WideSamples.swift, TextMouthProductionTests/MarkdownDepthLimitTests.swift, TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift, Scripts/agents/run-on-runner.py, TextMouthProductionTests/StackProbe.swift -->
 
 - A test that crashes the test host when the code it checks is broken runs on GitHub's runner only, because a crash on the user's Mac puts macOS's crash report on their screen, and on a runner it is only a failed run.
   Such a test raises an Objective-C exception on purpose with only the code under test to catch it, or fills a thread's stack with a pattern to measure how much of it a walk of a deep tree uses.
@@ -123,6 +123,7 @@ Delete a kept sandbox when you are done with it.
   In the iPhone bundle, which shares the file and runs only on GitHub, it is always true.
 - Its users: the two raising tests of `ObjCExceptionTests` and of `AudioEditRenderingTests+WideSamples`, the stack tests of `MarkdownDepthLimitTests` and `ExportDocumentWalkerNestingTests`.
   The type-select probe uses it too, though for a beep and not a crash.
+  StackProbe (TextMouthProductionTests/StackProbe.swift) measures a walk's stack use instead of surviving an overflow: it runs the code on a thread of 8 MiB whose unused stack it filled with a pattern, and says how far the code wrote past a margin.
   A fix for a crash is shown by a break proof on GitHub: a scratch branch with the fix removed, sent by hand, never run on the Mac.
 
 ### Benchmarks of the performance work

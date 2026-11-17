@@ -49,6 +49,7 @@ Markdown parsed from content.md and Markdown refused for nesting: MarkdownCacheS
 MarkdownCacheService.parseMultiChapterMarkdown, which Edit Text, rebuilds, the pages' re-read, and the exports commit text from, never drops a chapter that is refused and never reads it for a shorter text.
 The chapter keeps its raw Markdown as its text, as the reader shows a file it cannot parse, and one line is logged for the whole parse, MARKDOWN_NESTING_KEPT_RAW, counting the chapters kept raw of all the chapters and naming no title or word (see [Logs](logs.md)).
 MarkdownCacheService.parseMultiChapterMarkdownRefusing, which writeCache calls for a text about to be written to content.md, throws the first refusal instead.
+MarkdownCacheService.parseMultiChapterMarkdownNamingRefusal does the same for Edit Text and throws a RefusedChapter, which carries the refused chapter's number, so the refusal can name it ([Edited text](text-caches-rereads-edits.md)).
 So an import of a file nested too deeply is refused with the guard's sentence before anything is written, no content.md is left behind, and a refused rebuild keeps the old cache.
 Tests: MarkdownNestingTests and MarkdownNestingCacheTests (the import area of Scripts/test/areas.conf).
 
