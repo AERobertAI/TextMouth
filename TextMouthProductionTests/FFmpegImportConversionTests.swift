@@ -241,8 +241,8 @@ final class FFmpegImportConversionTests: XCTestCase {
         try Data(count: 1_000).write(to: file)
         XCTAssertNoThrow(try FFmpegAudioConverter.checkOutputCap(of: file, against: limits), "the cap itself is allowed")
         try Data(count: 1_001).write(to: file)
-        XCTAssertThrowsError(try FFmpegAudioConverter.checkOutputCap(of: file, against: limits)) {
-            XCTAssertEqual(/bin/zsh as? FFmpegAudioConverter.WroteTooMuch, FFmpegAudioConverter.WroteTooMuch(bytes: 1_000))
+        XCTAssertThrowsError(try FFmpegAudioConverter.checkOutputCap(of: file, against: limits)) { error in
+            XCTAssertEqual(error as? FFmpegAudioConverter.WroteTooMuch, FFmpegAudioConverter.WroteTooMuch(bytes: 1_000))
         }
         limits.maximumOutputBytes = nil
         XCTAssertNoThrow(try FFmpegAudioConverter.checkOutputCap(of: file, against: limits), "no cap allows any size")
