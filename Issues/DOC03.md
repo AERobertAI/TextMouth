@@ -5,9 +5,9 @@ kind: docs
 status: open
 priority: P3
 platform: iphone
-assignee:
+assignee: docspass1117
 created: 2026-11-16
-updated: 2026-11-16
+updated: 2026-11-17
 found-by: gotofont
 branch:
 merged:
