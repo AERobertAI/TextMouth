@@ -351,7 +351,7 @@ def cmd_new(store: Store, args: Any) -> int:
         store, kind=args.kind, title=args.title, priority=args.priority, platform=args.platform,
         description=description, as_name=args.as_name, found_by=args.found_by or "",
         related=args.related or [], docs=args.docs or [], labels=args.labels or [],
-        family=args.family or "", issue_id=args.id or "")
+        family=args.family or "", issue_id=args.id or "", on_branch=args.on_branch)
     return finish(change)
 
 
@@ -473,6 +473,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--labels", action="append", metavar="LABEL[,LABEL]")
     sub.add_argument("--family", help="number it in another family, such as PG or DR")
     sub.add_argument("--id", help="file it under this ID, which nothing may have used")
+    sub.add_argument("--on-branch", action="store_true",
+                     help="file it on a branch other than main, only when the orchestrator asks; say the ID on the board")
     sub = add("set", cmd_set, "set one field (status: open, in-progress, or blocked)", writes=True)
     sub.add_argument("id", metavar="ID")
     sub.add_argument("field", metavar="FIELD")

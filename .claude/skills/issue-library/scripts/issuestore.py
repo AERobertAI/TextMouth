@@ -307,15 +307,17 @@ class Store:
 # Who may change what.
 # ---------------------------------------------------------------------------
 
-def permit(store: Store, action: str, as_name: str, issue: Optional[Issue] = None, agent_may: bool = False) -> None:
+def permit(store: Store, action: str, as_name: str, issue: Optional[Issue] = None, agent_may: bool = False,
+           allow_branch: bool = False) -> None:
     """Refuse ``action`` unless the rules above allow it to ``as_name`` on the root's branch.
 
-    ``agent_may`` marks the changes an agent may make to the issue assigned to it.
+    ``agent_may`` marks the changes an agent may make to the issue assigned to it;
+    ``allow_branch`` lets the action happen on any branch (``new --on-branch``).
     """
     if not issuefile.is_agent_name(as_name):
         raise UsageError(f"--as {as_name!r} is not a name: letters, digits, '.', '_', '-'")
     branch = store.branch()
-    if branch is None or branch == MAIN_BRANCH:
+    if branch is None or branch == MAIN_BRANCH or allow_branch:
         return
     if agent_may and issue is not None:
         assignee = issue.value("assignee")
@@ -379,13 +381,18 @@ def _sound(store: Store, issue_id: str) -> Issue:
 
 def new_issue(store: Store, *, kind: str, title: str, priority: str, platform: str, description: str,
               as_name: str, found_by: str = "", related: Iterable[str] = (), docs: Iterable[str] = (),
-              labels: Iterable[str] = (), family: str = "", issue_id: str = "") -> Change:
+              labels: Iterable[str] = (), family: str = "", issue_id: str = "", on_branch: bool = False) -> Change:
     """File a new issue from the template: the next free ID of its family, or ``issue_id`` when given.
 
     The family is the kind's (issueids.FAMILY_OF_KIND) unless ``family`` names
-    another. A given ID must be unused, as must its number.
+    another. A given ID must be unused, as must its number. ``on_branch`` files
+    it on a branch other than main, which only the orchestrator's asking allows:
+    another branch could take the same ID, so the agent says it on the board.
     """
-    permit(store, "filing an issue", as_name)
+    if on_branch:
+        permit(store, "filing an issue", as_name, allow_branch=True)
+    else:
+        permit(store, "filing an issue", as_name)
     _choice("kind", kind)
     _choice("priority", priority)
     _choice("platform", platform)

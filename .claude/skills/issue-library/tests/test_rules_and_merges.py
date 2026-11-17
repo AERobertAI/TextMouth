@@ -47,6 +47,12 @@ class RuleTests(RepositoryCase):
         self.assertEqual(self.read("Issues/B16.md"), ASSIGNED)
         self.assertEqual(sorted(path.name for path in (self.root / "Issues").iterdir()), ["B16.md", "README.md"])
 
+    def test_filing_on_a_branch_needs_on_branch(self) -> None:
+        self.git("switch", "-q", "-c", "tools/x")
+        self.assertEqual(self.new_issue("Left out of a review", "tooling")[0], 1)
+        status, out, err = self.new_issue("Left out of a review", "tooling", "both", "--on-branch")
+        self.assertEqual((status, out), (0, "issuelib: filed Issues/TL01.md: TL01, tooling, P2, both: Left out of a review\n"), err)
+
     def test_on_a_branch_the_assignee_comments_and_sets_in_progress_or_blocked(self) -> None:
         self.git("switch", "-q", "-c", "fix/float64-render")
         self.assertEqual(self.as_agent("set", "B16", "status", "in-progress")[0], 0)
