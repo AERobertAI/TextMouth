@@ -338,8 +338,9 @@ def docs_of(text: str, store: Store, earlier: Dict[str, Dict[str, str]]) -> List
     """The doc sections a review item names in its "Docs:" part.
 
     "as DR04" takes DR04's. A page followed by a section's title takes that
-    section; otherwise the section on that page holding a piece of a sentence the
-    item quotes from it (the quote may be shortened with an ellipsis).
+    section, and every section on that page that holds a piece of a sentence the
+    item quotes from it (a quote may be shortened with an ellipsis), since one
+    limitation can be stated in more than one section.
     """
     part = _DOCS_PART.search(flat(text))
     if part is None:
@@ -355,12 +356,13 @@ def docs_of(text: str, store: Store, earlier: Dict[str, Dict[str, str]]) -> List
         rest = docs[page.end(): pages[number + 1].start() if number + 1 < len(pages) else len(docs)]
         title = _DOCS_TITLE.match(rest)
         chosen = [s.section_id for s in sections if title and s.path == page.group(1) and s.title == title.group(1)]
-        if not chosen:
-            # A piece ends where the quote was cut, so its last mark may differ from the doc's.
-            pieces = [_plain(piece).rstrip(".,;:!? ") for quote in _QUOTE.findall(rest) for piece in _ELISION.split(quote)]
-            pieces = [piece for piece in pieces if len(piece) >= _QUOTE_PIECE]
-            chosen = [section_id for section_id, words in _section_texts(store.root, sections, page.group(1))
-                      if any(piece in words for piece in pieces)][:1]
+        # The quoted sentences after the title. A piece ends where the quote was cut,
+        # so its last mark may differ from the doc's.
+        quotes = _QUOTE.findall(rest[title.end():] if title else rest)
+        pieces = [_plain(piece).rstrip(".,;:!? ") for quote in quotes for piece in _ELISION.split(quote)]
+        pieces = [piece for piece in pieces if len(piece) >= _QUOTE_PIECE]
+        chosen += [section_id for section_id, words in _section_texts(store.root, sections, page.group(1))
+                   if section_id not in chosen and any(piece in words for piece in pieces)]
         found.extend(section_id for section_id in chosen if section_id not in found)
     return found
 

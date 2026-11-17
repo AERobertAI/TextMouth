@@ -299,6 +299,28 @@ class RefusalTests(ImportCase):
         self.assertIn("opens with 2 IDs (B14, B15)", err)
 
 
+class DocsTests(ImportCase):
+    """docs_of: a review item's sections, by title and by every sentence it quotes from the page."""
+
+    def test_every_section_holding_a_quoted_sentence_is_named_with_the_titled_one(self) -> None:
+        self.write_tree({"docs/user/export.md": (
+            "# Export\n<!-- id: export -->\n\n## Convert to\n<!-- id: export-convert -->\n\n"
+            "EPUB: An e-book with the book's headings. It holds no pictures.\n\n"
+            "## What every format leaves out\n<!-- id: export-leaves-out -->\n\nA picture becomes its alternative text.\n\n"
+            "## Where the files go\n<!-- id: export-where -->\n\nThe Downloads folder.\n")})
+        store = issuetodo.issuestore.Store(self.root)
+        text = ('Docs: `docs/user/export.md`, "Convert to": "EPUB: An e-book with the book\'s headings... '
+                'It holds no pictures." and "a picture becomes its alternative text". Code: none.')
+        self.assertEqual(issuetodo.docs_of(text, store, {}), ["export-convert", "export-leaves-out"])
+        # The title alone, and a quote alone, each find their section; "as" takes another item's.
+        self.assertEqual(issuetodo.docs_of('Docs: `docs/user/export.md`, "Where the files go". Code: x.', store, {}),
+                         ["export-where"])
+        self.assertEqual(issuetodo.docs_of('Docs: `docs/user/export.md`: "… becomes its alternative text."', store, {}),
+                         ["export-leaves-out"])
+        self.assertEqual(issuetodo.docs_of("Docs: as DR04. Code: x.", store, {"DR04": {"docs": "export-where"}}),
+                         ["export-where"])
+
+
 class PlatformTests(ImportCase):
     """platform_of: a Platform sentence's first word, then the iPhone named in the title or the text."""
 
