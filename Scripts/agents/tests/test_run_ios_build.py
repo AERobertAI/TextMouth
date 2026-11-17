@@ -409,6 +409,25 @@ class SizeTests(unittest.TestCase):
         self.assertIn("Size: iPhone app: 0.0 MB (5,504 bytes)", summary)
         self.assertNotIn("not measured", summary)
 
+    def test_a_device_build_that_fails_for_any_other_reason_also_runs_once_more(self):
+        # A restored cache that lacks a precompiled module fails "module file ... not found", not the stale-module error.
+        script = ("import os, sys\n"
+                  "flag = sys.argv[1] + '-tried'\n"
+                  "if not os.path.exists(flag):\n"
+                  "    os.makedirs(os.path.dirname(flag), exist_ok=True)\n"
+                  "    open(flag, 'w').close()\n"
+                  "    print('fatal error: module file x.pcm not found: module file not found')\n"
+                  "    sys.exit(65)\n") + FAKE_DEVICE_BUILD
+        summary, _, _ = self.run_main('{"ios_size": true}', script)
+        self.assertIn("Size: iPhone app: 0.0 MB (5,504 bytes)", summary)
+        self.assertIn("the first try failed, so the module caches were emptied and it ran once more", summary)
+
+    def test_a_device_build_that_fails_twice_is_not_measured_and_says_how_it_failed(self):
+        script = "import sys; print('/x/Foo.swift:3:4: error: second try'); sys.exit(65)"
+        summary, out, _ = self.run_main('{"ios_size": true}', script)
+        self.assertIn("Size: not measured: the device build failed (xcodebuild status 65, 1 errors: /x/Foo.swift:3:4: "
+                      "error: second try).", summary)
+
     def test_a_device_build_that_made_no_app_is_not_measured(self):
         summary, _, _ = self.run_main('{"ios_size": true}', "print('** BUILD SUCCEEDED **')")
         self.assertIn("Size: not measured: the device build failed (xcodebuild status 0, 0 errors)", summary)

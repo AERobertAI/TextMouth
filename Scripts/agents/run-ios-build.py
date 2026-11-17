@@ -221,14 +221,18 @@ def device_size_lines(derived_data, out, limit_minutes):
     its last lines are added to ios.log under a heading, since only the files the workflow names are uploaded."""
     app_size = load_app_size()
     log = out / "ios-size.log"
-    # As for the Simulator build: a module cache made on another runner image is emptied first, and a build that still
-    # fails with the stale-module error runs once more with the caches emptied, in what is left of the limit.
+    # As for the Simulator build, a module cache made on another runner image is emptied first. Unlike the Simulator
+    # build, a device build that fails for any reason but its time limit runs once more with the caches emptied, in what
+    # is left of the limit: the first run on a restored cache (44025566537, November 17, 2026) failed with "module file
+    # ... not found" for a precompiled module the restored folder lacked, which the stale-module check does not name, and
+    # a genuine compile error only costs the second try, whose result is the one reported.
     runner_module_cache.prepare(derived_data)
     started = time.monotonic()
     status, timed_out = run_build(device_build_command(derived_data), log, limit_minutes)
     log_text = log.read_text(encoding="utf-8", errors="replace")
     left = limit_minutes - (time.monotonic() - started) / 60
-    if needs_retry(status, timed_out, log_text) and left >= MINIMUM_RETRY_MINUTES:
+    retried = status != 0 and not timed_out and left >= MINIMUM_RETRY_MINUTES
+    if retried:
         runner_module_cache.empty_module_caches(derived_data)
         status, timed_out = run_build(device_build_command(derived_data), log, left)
         log_text = log.read_text(encoding="utf-8", errors="replace")
@@ -244,8 +248,9 @@ def device_size_lines(derived_data, out, limit_minutes):
         return [f"{app_size.SUMMARY_PREFIX}not measured: the device build failed (xcodebuild status {status}, "
                 f"{len(errors)} errors{': ' + errors[0] if errors else ''})."]
     result = app_size.measure_app(app, want_ipa=True, link_map=app_size.find_link_map(derived_data))
+    note = " (the first try failed, so the module caches were emptied and it ran once more)" if retried else ""
     return [*app_size.summary_lines(result),
-            f"{app_size.SUMMARY_DETAIL_PREFIX}the device build and the measuring took {minutes:.1f} minutes."]
+            f"{app_size.SUMMARY_DETAIL_PREFIX}the device build and the measuring took {minutes:.1f} minutes{note}."]
 
 
 def main(argv):
