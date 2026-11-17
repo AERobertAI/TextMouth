@@ -2,7 +2,7 @@
 id: A11Y-GOTO
 title: The iPhone Go To sheet's two text fields don't follow Dynamic Type
 kind: bug
-status: open
+status: done
 priority: P2
 platform: iphone
 assignee:
@@ -10,7 +10,7 @@ created: 2026-11-15
 updated: 2026-11-16
 found-by: train 1115-1800
 branch:
-merged:
+merged: ff2025a64
 reason:
 related:
 docs:
@@ -26,3 +26,7 @@ labels:
 ### 2026-11-16, issuelib, 1 line
 
 Moved from TODO-2026-09-04.md, line 5439 of the version this import read, where it was an open item; the description is its text as it was.
+
+### 2026-11-16, orchestrator, 1 line
+
+Closed as done: merged in ff2025a64.
