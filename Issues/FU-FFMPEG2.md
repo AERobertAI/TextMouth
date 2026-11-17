@@ -2,10 +2,10 @@
 id: FU-FFMPEG2
 title: The bundled FFmpeg's leftovers
 kind: follow-up
-status: in-progress
+status: open
 priority: P2
 platform: mac
-assignee: ffmpegform
+assignee:
 created: 2026-11-16
 updated: 2026-11-17
 found-by: review-ffmpegbuild
@@ -34,3 +34,7 @@ ffmpegform, branch formats/ffmpeg-form at 4da8ec09f (train 1117-0559 PASSED, Exe
 ### 2026-11-17, ffmpegform, 1 line
 
 ffmpegform, review fixes on formats/ffmpeg-form at 7cae22b57 (train 1117-0750 PASSED, Executed 1044 tests, 5 skipped, 0 failures; Mac type-check and iOS strict 0 errors, lint-tests 0 findings). Fix 1: the first frame after a change of rate takes the decoder's rate (70,272 frames from one resampler, not 70,560). Fix 2: tests assert 70,272 +-2, END's count, and each stretch's place within 6 frames; a new sample ends in a converted stretch (46,656); the import test is +-0.02 s; the no-drain (70,256) and lost-frame (69,696) breaks fail them. Fix 3: a rate ratio past 16 to 1 ends with exit 7, a converted frame is capped at 16 MiB (long frames are fed in slices), tested with made-up frames through a Debug-only helper mode (formcheck), with the held-back frame, the layout, and 1,000 and 1,001 changes. Fix 4: the formChanged sentence now says more than TextMouth can follow. Items 5, 6, 8, 9 taken (all-refused sample ends damaged, layouts compared, two-process lock test, helpers and the download fallback). Still open here: the signal guard self-test, the workflow cache, the LGPL and App Store question; filling a refused stretch with silence is a later issue.
+
+### 2026-11-17, orchestrator, 1 line
+
+Part merged 098398533 (formats/ffmpeg-form, full Mac suite 13313/105/0): sound that changes form is converted, bounded at 16 to 1 and 16 MiB a converted frame; the frame over 1 MB, the record over 1 MB, and the refused-packet tests; one shared FFmpeg source in build/ffmpeg/. Still open here: the signal guard's self-test (GitHub only) and a workflow cache of FFmpeg's build (a .github change, for a release push). The LGPL and App Store question moved to QN01, and a refused stretch closing the timeline is FU03.
