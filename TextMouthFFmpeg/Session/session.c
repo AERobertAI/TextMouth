@@ -698,8 +698,8 @@ static int has_the_first_form(const tmff_session *session, const AVFrame *frame)
    that names no loudspeaker) becomes FFmpeg's default layout for that many channels, which may
    itself be unspecified. Returns 0, or a negative AVERROR when the memory is refused. */
 static int make_layout(AVChannelLayout *layout, const AVChannelLayout *wanted) {
+    av_channel_layout_uninit(layout);
     if (wanted->order == AV_CHANNEL_ORDER_UNSPEC) {
-        av_channel_layout_uninit(layout);
         av_channel_layout_default(layout, wanted->nb_channels);
         return 0;
     }
@@ -748,6 +748,7 @@ static int open_resampler(tmff_session *session, const AVFrame *frame) {
         /* Remember the form it takes in, to know the next frame of that form from another. */
         session->swr_rate = frame->sample_rate;
         session->swr_format = frame->format;
+        av_channel_layout_uninit(&session->swr_layout);
         if (av_channel_layout_copy(&session->swr_layout, &frame->ch_layout) != 0) {
             swr_free(&session->swr);
             result = -TMFF_EXIT_MEMORY;
