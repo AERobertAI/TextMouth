@@ -360,45 +360,44 @@ private struct Walk {
     }
 
     /// The blocks of a chapter exported as it is written (FR24): one plain
-    /// paragraph for each line of `content`, which holds the line's characters
-    /// exactly, every quote mark, list marker, and asterisk kept as the
-    /// character it is, for each writer to escape as it escapes any text.
+    /// paragraph for each block of lines between blank lines (`RawChapterLines`),
+    /// its lines apart by a line feed, a hard break in every writer, so that
+    /// a hard-wrapped book does not come out a paragraph to a line.
     /// Nothing is parsed, so no writer is handed any nesting: a chapter of a
-    /// thousand `>` marks is a paragraph, never a thousand quotes.
+    /// thousand `>` marks is a paragraph, never a thousand quotes. Each quote
+    /// and list mark stays the character it is, for the writer to escape as it
+    /// escapes any text.
     ///
-    /// Only what is not the book's words is left out, as it is from any walk:
-    /// the spaces and tabs at the ends of a line (a paragraph's indentation
-    /// is no part of its words, and a writer would take four spaces for code),
-    /// a line with nothing else, and TextMouth's own markers at the start of
-    /// a line, which become the places they mark when the walk keeps places
-    /// (`place(of:)`), with the words after them, if any, as the line.
+    /// What is not the book's words is left out, as it is from any walk, and
+    /// what content.md added to the words is undone: the spaces and tabs at
+    /// the ends of a line (indentation is no part of the words, and a writer
+    /// would take four spaces for code), blank lines, the backslash before each
+    /// punctuation mark that the converters wrote, and TextMouth's own markers,
+    /// found anywhere in a line. A marker that begins a block names a place
+    /// between blocks, as the markers that lead an HTML block do
+    /// (`blocks(ofHTML:atLevel:nesting:listDepth:)`); any other is a run of its
+    /// own at its exact place in the words, as in any paragraph
+    /// (`inlineRuns(of:style:)`); both only where the walk keeps places
+    /// (`place(of:)`).
     private mutating func blocksAsWritten(of content: String) -> [ExportBlock] {
         var made: [ExportBlock] = []
-        // `isNewline` ends a line at a line feed or a CR LF alike.
-        for rawLine in content.split(whereSeparator: \.isNewline) {
-            let line = rawLine.trimmingCharacters(in: .whitespaces)
-            let (markers, words) = Self.markers(leading: line)
-            made += markers.compactMap { place(of: $0) }.compactMap(Self.block(ofPlace:))
-            if !words.isEmpty {
-                made.append(.paragraph([ExportRun(words)]))
+        for paragraph in RawChapterLines.paragraphs(of: content) {
+            made += paragraph.leadingMarkers.compactMap { place(of: $0) }.compactMap(Self.block(ofPlace:))
+            var runs: [ExportRun] = []
+            for piece in paragraph.pieces {
+                switch piece {
+                case let .words(text):
+                    runs.append(ExportRun(text))
+                case let .marker(marker):
+                    if let found = place(of: marker) { runs.append(found) }
+                }
+            }
+            runs = Self.joined(runs)
+            if !runs.isEmpty {
+                made.append(.paragraph(runs))
             }
         }
         return made
-    }
-
-    /// The markers of TextMouth's own that `line` begins with, and the line
-    /// after them with its edges trimmed, as the walk reads a line of an HTML
-    /// block (`blocks(ofHTML:atLevel:nesting:listDepth:)`): the markers and
-    /// the words that follow them, or a marker that is the whole line. A line
-    /// with no marker is all words.
-    private static func markers(leading line: String) -> (markers: [MarkdownMarker], words: String) {
-        if let (markers, rest) = MarkdownMarker.leading(of: line) {
-            return (markers, rest.trimmingCharacters(in: .whitespaces))
-        }
-        if let marker = MarkdownMarker.decode(line) {
-            return ([marker], "")
-        }
-        return ([], line)
     }
 
     /// A heading of `level` whose one plain run is `title`.
