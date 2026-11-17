@@ -38,8 +38,10 @@ Run it from the repository root. Python 3 standard library only.
 import argparse
 import importlib.util
 import json
+import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -215,6 +217,21 @@ def device_build_command(derived_data):
     return load_app_size().build_command(derived_data)
 
 
+def start_device_folder_over(derived_data):
+    """Removes the whole device build folder `derived_data`, so that the build after it starts from nothing, and returns
+    whether it did. It acts only on a GitHub Actions runner and only on a folder named DEVICE_FOLDER (never the
+    Simulator build's folder, never a link followed), and says nothing is done anywhere else. Emptying only the module
+    caches is not enough here: Xcode's build database in the folder still claims the precompiled modules it made, and
+    the build then fails with "module file ... not found" (hand runs 44025566537 and 44039539045, November 17, 2026)."""
+    path = Path(derived_data)
+    if not runner_module_cache.on_github_runner(os.environ) or path.name != DEVICE_FOLDER or path.is_symlink():
+        return False
+    if not path.is_dir():
+        return False
+    shutil.rmtree(path)
+    return True
+
+
 def device_size_lines(derived_data, out, limit_minutes):
     """Builds the Release app for a device into `derived_data`, measures it, and returns the lines for ios-summary.txt:
     the measurement's, or one "Size: not measured" line saying why not. The build's log is kept in `out`/ios-size.log, and
@@ -225,14 +242,18 @@ def device_size_lines(derived_data, out, limit_minutes):
     # build, a device build that fails for any reason but its time limit runs once more with the caches emptied, in what
     # is left of the limit: the first run on a restored cache (44025566537, November 17, 2026) failed with "module file
     # ... not found" for a precompiled module the restored folder lacked, which the stale-module check does not name, and
-    # a genuine compile error only costs the second try, whose result is the one reported.
-    runner_module_cache.prepare(derived_data)
+    # a genuine compile error only costs the second try, whose result is the one reported. The second try starts from an
+    # empty device folder (start_device_folder_over), as a cold build does, which is how the first measuring succeeded.
+    if runner_module_cache.prepare(derived_data) == "emptied":
+        # The stamp was missing or another toolchain's: what is left of the folder cannot be trusted either.
+        start_device_folder_over(derived_data)
     started = time.monotonic()
     status, timed_out = run_build(device_build_command(derived_data), log, limit_minutes)
     log_text = log.read_text(encoding="utf-8", errors="replace")
     left = limit_minutes - (time.monotonic() - started) / 60
     retried = status != 0 and not timed_out and left >= MINIMUM_RETRY_MINUTES
     if retried:
+        start_device_folder_over(derived_data)
         runner_module_cache.empty_module_caches(derived_data)
         status, timed_out = run_build(device_build_command(derived_data), log, left)
         log_text = log.read_text(encoding="utf-8", errors="replace")

@@ -422,6 +422,37 @@ class SizeTests(unittest.TestCase):
         self.assertIn("Size: iPhone app: 0.0 MB (5,504 bytes)", summary)
         self.assertIn("the first try failed, so the module caches were emptied and it ran once more", summary)
 
+    def test_the_second_try_of_a_device_build_starts_from_an_empty_folder_on_a_runner_only(self):
+        # The first try leaves a file in the device folder and fails; the second finds it gone only on a runner.
+        script = ("import os, sys\n"
+                  "marker = os.path.join(sys.argv[1], 'left-by-the-first-try')\n"
+                  "if not os.path.exists(sys.argv[1] + '-tried'):\n"
+                  "    os.makedirs(sys.argv[1], exist_ok=True)\n"
+                  "    open(marker, 'w').close()\n"
+                  "    open(sys.argv[1] + '-tried', 'w').close()\n"
+                  "    sys.exit(65)\n"
+                  "print('second try saw the leftover:', os.path.exists(marker))\n") + FAKE_DEVICE_BUILD
+        for on_runner, expected in (("true", "saw the leftover: False"), ("false", "saw the leftover: True")):
+            # The stamp check is stood in for: it would ask this machine's toolchain, which the test does not need.
+            with mock.patch.dict(ios.os.environ, {"GITHUB_ACTIONS": on_runner}), \
+                    mock.patch.object(ios.runner_module_cache, "prepare", lambda derived: "kept"):
+                _, out, _ = self.run_main('{"ios_size": true}', script)
+            self.assertIn(expected, (out / "ios-size.log").read_text(), f"GITHUB_ACTIONS={on_runner}")
+
+    def test_only_a_folder_named_device_is_ever_removed(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        other = Path(folder.name) / "remote-DerivedData-ios"
+        device = other / "device"
+        device.mkdir(parents=True)
+        with mock.patch.dict(ios.os.environ, {"GITHUB_ACTIONS": "true"}):
+            self.assertFalse(ios.start_device_folder_over(other), "the Simulator build's folder is never removed")
+            self.assertTrue(other.is_dir() and device.is_dir())
+            self.assertTrue(ios.start_device_folder_over(device))
+            self.assertFalse(device.exists() and any(device.iterdir()))
+            self.assertTrue(other.is_dir(), "its parent stays")
+            self.assertFalse(ios.start_device_folder_over(device), "a folder that is already gone is not removed again")
+
     def test_a_device_build_that_fails_twice_is_not_measured_and_says_how_it_failed(self):
         script = "import sys; print('/x/Foo.swift:3:4: error: second try'); sys.exit(65)"
         summary, out, _ = self.run_main('{"ios_size": true}', script)
