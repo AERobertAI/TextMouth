@@ -314,7 +314,10 @@ final class SavesDuringMoveTests: XCTestCase {
             [rule],
             "the moved library does not have what the save wrote"
         )
-        XCTAssertEqual(Self.temporaryNames(in: destination), [], "a temporary file was copied into the moved library")
+        XCTAssertFalse(
+            Self.entryNames(in: destination).contains(temporary.lastPathComponent),
+            "the save's temporary file was copied into the moved library"
+        )
     }
 
     /// A file the user has that vanishes between the listing and its copy is
@@ -357,7 +360,7 @@ final class SavesDuringMoveTests: XCTestCase {
         let oldRoot = TextMouthPaths.root
         let stale = [
             ".dat.nosync1a2b.StaLe0",
-            SaveTemporaryNames.stagedName(for: "substitutions.json"),
+            SaveTemporaryNames.stagedName(for: TranscriptCleanupRuleFile.fileName),
         ].map { oldRoot.appendingPathComponent($0) }
         for file in stale {
             try Data("left by a crash".utf8).write(to: file)
@@ -368,10 +371,26 @@ final class SavesDuringMoveTests: XCTestCase {
         try Data("mine".utf8).write(to: hidden)
         addTeardownBlock { try? FileManager.default.removeItem(at: hidden) }
 
+        // A folder a user may have made, named like a staged file of a target
+        // no save stages: copied with what is in it.
+        let folder = oldRoot.appendingPathComponent(".Old Books.\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("kept".utf8).write(to: folder.appendingPathComponent("Tide Notes.txt"))
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+
         let outcome = await world.library.moveDataDirectoryReturningOutcome(to: destination)
 
         XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
-        XCTAssertEqual(Self.temporaryNames(in: destination), [], "a stale temporary file was copied")
+        // Each stale file's own name, not the matcher's idea of one.
+        let copied = Self.entryNames(in: destination)
+        for file in stale {
+            XCTAssertFalse(copied.contains(file.lastPathComponent), "\(file.lastPathComponent) was copied")
+        }
+        XCTAssertEqual(
+            try Data(contentsOf: destination.appendingPathComponent("\(folder.lastPathComponent)/Tide Notes.txt")),
+            Data("kept".utf8),
+            "a folder named like a temporary file was left out of the copy"
+        )
         for file in stale {
             XCTAssertEqual(
                 try Data(contentsOf: file), Data("left by a crash".utf8),
@@ -386,11 +405,11 @@ final class SavesDuringMoveTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// The names of the saves' temporary files in the folder `folder` and
-    /// the folders in it, at any depth.
-    private static func temporaryNames(in folder: URL) -> [String] {
-        let names = FileManager.default.enumerator(atPath: folder.path)?.allObjects as? [String] ?? []
-        return names.map { ($0 as NSString).lastPathComponent }.filter(SaveTemporaryNames.isTemporary).sorted()
+    /// The name of every item in the folder `folder` and the folders in it,
+    /// at any depth, each without its path.
+    private static func entryNames(in folder: URL) -> Set<String> {
+        let paths = FileManager.default.enumerator(atPath: folder.path)?.allObjects as? [String] ?? []
+        return Set(paths.map { ($0 as NSString).lastPathComponent })
     }
 
     /// Puts the substitutions file of the data directory in use now back as
@@ -455,7 +474,7 @@ private final class SaveDuringCopy {
 /// it and before it copies its first item (B14): the moment a save under
 /// way ends, or a file goes. It runs on the copy's thread, once.
 private final class ChangeBeforeFirstItem: @unchecked Sendable {
-    /// Guards `runs`.
+    /// Guards `count`.
     private let lock = NSLock()
     /// How many times the change was made.
     private var count = 0

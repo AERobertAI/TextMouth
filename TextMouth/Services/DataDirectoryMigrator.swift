@@ -779,7 +779,9 @@ extension DataDirectoryMigrator {
 ///   November 16, 2026);
 /// - TextMouth's own, a file staged whole beside the one it is to become
 ///   and moved into place (`stagedName(for:)`): a dot, the target's name, a
-///   dot, and a UUID.
+///   dot, and a UUID. Only the targets in `stagedTargets` are known, since
+///   a folder the user named ".Old Books.<UUID>" must never be taken for
+///   one (a library folder may begin with a dot).
 ///
 /// `FileManager.replaceItemAt` writes nothing beside its target (measured the
 /// same day), and the caches' ".partial" files live in this Mac's Caches
@@ -795,15 +797,24 @@ enum SaveTemporaryNames {
     /// room to spare, not a licence for other names).
     private static let foundationMostProcessDigits = 8
 
-    /// The name of the file a save of the file named `target` stages whole
-    /// beside it, to move it into place: ".<target>.<UUID>".
+    /// The names of the files that are saved by staging a copy whole and
+    /// moving it into place. Add a file's name here when a writer starts
+    /// to stage it with `stagedName(for:)`; no other name is taken for a
+    /// staged file.
+    static let stagedTargets: Set<String> = [TranscriptCleanupRuleFile.fileName]
+
+    /// The name of the file a save of the file named `target` (one of
+    /// `stagedTargets`) stages whole beside it, to move it into place:
+    /// ".<target>.<UUID>".
     static func stagedName(for target: String) -> String {
         ".\(target).\(UUID().uuidString)"
     }
 
     /// Whether `name` is the name of a save's temporary file, as described
     /// above, and nothing else: a hidden file the user or another program
-    /// made, such as ".DS_Store" or ".dat.nosync", is not.
+    /// made, such as ".DS_Store" or ".dat.nosync", is not. It says nothing of
+    /// what the name is on disk: a caller that lists a folder never takes a
+    /// folder for a temporary file.
     static func isTemporary(_ name: String) -> Bool {
         isFoundationTemporary(name) || isStaged(name)
     }
@@ -821,16 +832,19 @@ enum SaveTemporaryNames {
             && random.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
     }
 
-    /// Whether `name` is a dot, a target's name, a dot, and a UUID: what
-    /// `stagedName(for:)` makes.
+    /// Whether `name` is a dot, the name of one of `stagedTargets`, a dot,
+    /// and a UUID: what `stagedName(for:)` makes for them.
     private static func isStaged(_ name: String) -> Bool {
         // The last dot must come after the first, or there is no target's
         // name between them (and no range to take).
         guard name.hasPrefix("."), let lastDot = name.lastIndex(of: "."), lastDot > name.startIndex else { return false }
-        // At least one character of the target's name between the dots.
-        let target = name[name.index(after: name.startIndex)..<lastDot]
-        let identifier = name[name.index(after: lastDot)...]
-        return !target.isEmpty && UUID(uuidString: String(identifier)) != nil
+        let target = String(name[name.index(after: name.startIndex)..<lastDot])
+        let identifier = String(name[name.index(after: lastDot)...])
+        // The UUID as `stagedName(for:)` writes it, in upper case: a name
+        // in lower case was not made by it.
+        return stagedTargets.contains(target)
+            && identifier == identifier.uppercased()
+            && UUID(uuidString: identifier) != nil
     }
 }
 
@@ -901,8 +915,12 @@ struct DataDirectoryCopyPlan: Equatable {
             // anything asks the file system about it, which could fail for
             // the same reason; an earlier crash's stale one stays in the old
             // folder, untouched, and is not copied.
-            if SaveTemporaryNames.isTemporary(name) { continue }
+            // Never a folder, whatever its name: a library folder may be named
+            // like a temporary file, and everything in it would be left out.
+            // A name that cannot be looked at (it was renamed away since the
+            // listing) is no folder.
             let url = folder.appendingPathComponent(name)
+            if SaveTemporaryNames.isTemporary(name), !isFolder(url, fileManager: fileManager) { continue }
             let path = relativePath.isEmpty ? name : relativePath + "/" + name
             // The item itself, never a link's target.
             let attributes = try fileManager.attributesOfItem(atPath: url.path)
@@ -926,6 +944,13 @@ struct DataDirectoryCopyPlan: Equatable {
             }
         }
         return ordered + others
+    }
+
+    /// Whether the item itself at `url`, never a link's target, is a folder;
+    /// false for anything that cannot be looked at.
+    private static func isFolder(_ url: URL, fileManager: FileManager) -> Bool {
+        let attributes = try? fileManager.attributesOfItem(atPath: url.path)
+        return attributes?[.type] as? FileAttributeType == .typeDirectory
     }
 
     /// Whether the folder at `url` is copied whole: a book's .tmb package,

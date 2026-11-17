@@ -58,9 +58,13 @@ final class DataDirectoryCopyTests: XCTestCase {
     /// the names that only look like one are (B14).
     func testThePlanLeavesOutSavesTemporaryFilesAndKeepsLookAlikes() throws {
         let root = try makeSandboxDirectory("CopyPlanTemporary").appendingPathComponent("Data", isDirectory: true)
-        let staged = SaveTemporaryNames.stagedName(for: "substitutions.json")
+        let staged = SaveTemporaryNames.stagedName(for: TranscriptCleanupRuleFile.fileName)
         // A UUID after two dots has no target's name between them.
         let dotDotName = UUID().uuidString
+        // Names made as no writer makes them: a target no save stages, and a
+        // UUID in lower case.
+        let unknownTarget = ".substitutions.json.\(UUID().uuidString)"
+        let lowerCase = ".\(TranscriptCleanupRuleFile.fileName).\(UUID().uuidString.lowercased())"
         try write("a", to: root.appendingPathComponent(".dat.nosync8247.BvENvv"))
         try write("b", to: root.appendingPathComponent(staged))
         try write("c", to: root.appendingPathComponent("Feeds/.dat.nosync1f4c.Zz09aB"))
@@ -73,6 +77,8 @@ final class DataDirectoryCopyTests: XCTestCase {
         try write("i", to: root.appendingPathComponent(".notes.not-a-uuid"))
         try write("j", to: root.appendingPathComponent("..\(dotDotName)"))
         try write("k", to: root.appendingPathComponent(".DS_Store"))
+        try write("l", to: root.appendingPathComponent(unknownTarget))
+        try write("m", to: root.appendingPathComponent(lowerCase))
 
         let paths = try DataDirectoryCopyPlan(of: root).items.map(\.relativePath)
 
@@ -82,8 +88,30 @@ final class DataDirectoryCopyTests: XCTestCase {
         XCTAssertEqual(Set(paths.dropFirst()), [
             "substitutions.json", ".dat.nosync", ".dat.nosync-notes", ".dat.nosyncXYZ.BvENvv",
             ".dat.nosync8247.short", ".notes.not-a-uuid", "..\(dotDotName)", ".DS_Store",
+            unknownTarget, lowerCase,
         ])
-        XCTAssertEqual(paths.count, 9, "a name was listed twice or a temporary file was kept")
+        XCTAssertEqual(paths.count, 11, "a name was listed twice or a temporary file was kept")
+    }
+
+    /// A folder is never a temporary file, however it is named: a library
+    /// folder may begin with a dot, and a name of a staged file or a
+    /// temporary file of an atomic write leaves out nothing inside it.
+    func testAFolderNamedLikeATemporaryFileIsCopiedWithEverythingInIt() throws {
+        let root = try makeSandboxDirectory("CopyPlanTemporaryFolders").appendingPathComponent("Data", isDirectory: true)
+        let staged = SaveTemporaryNames.stagedName(for: TranscriptCleanupRuleFile.fileName)
+        let foundation = ".dat.nosync8247.BvENvv"
+        let unknownTarget = ".Old Books.\(UUID().uuidString)"
+        try write("book", to: root.appendingPathComponent("\(staged)/Fiction/Tide.tmb/book.txt"))
+        try write("book", to: root.appendingPathComponent("\(foundation)/Atlas.tmb/book.txt"))
+        try write("book", to: root.appendingPathComponent("\(unknownTarget)/Atlas.tmb/book.txt"))
+
+        let paths = try DataDirectoryCopyPlan(of: root).items.map(\.relativePath)
+
+        XCTAssertEqual(Set(paths), [
+            staged, "\(staged)/Fiction", "\(staged)/Fiction/Tide.tmb",
+            foundation, "\(foundation)/Atlas.tmb",
+            unknownTarget, "\(unknownTarget)/Atlas.tmb",
+        ])
     }
 
     // MARK: - Copying
