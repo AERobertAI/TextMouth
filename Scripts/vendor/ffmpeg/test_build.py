@@ -13,6 +13,7 @@ README is what the script writes. make check-selftest runs them:
 The few files they write go into build/test-ffmpeg-build/ (gitignored), overwritten each run;
 nothing is deleted.
 """
+import gzip
 import importlib.util
 import io
 import lzma
@@ -192,8 +193,8 @@ class PathTests(unittest.TestCase):
 class ReleaseTests(unittest.TestCase):
     """The release's unpacking, and the notices the apps ship."""
 
-    def tarball(self, name, members):
-        """A .tar.xz in the scratch folder holding `members` ((name, bytes))."""
+    def tarball(self, name, members, compressed="xz"):
+        """A .tar.xz (or .tar.gz) in the scratch folder holding `members` ((name, bytes))."""
         SCRATCH.mkdir(parents=True, exist_ok=True)
         buffer = io.BytesIO()
         with tarfile.open(fileobj=buffer, mode="w") as archive_file:
@@ -202,7 +203,7 @@ class ReleaseTests(unittest.TestCase):
                 info.size = len(body)
                 archive_file.addfile(info, io.BytesIO(body))
         path = SCRATCH / name
-        path.write_bytes(lzma.compress(buffer.getvalue()))
+        path.write_bytes(lzma.compress(buffer.getvalue()) if compressed == "xz" else gzip.compress(buffer.getvalue()))
         return path
 
     def test_only_the_pinned_release_is_built_from(self):
@@ -227,7 +228,8 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaises(build.BuildError):
                 build.release_tarball(work, given=flipped)
             self.assertEqual(wanted.read_bytes(), b"stale")
-            self.assertEqual(build.release_tarball(work, given=pinned), wanted)
+            found, source = build.release_tarball(work, given=pinned)
+            self.assertEqual((found, source["name"]), (wanted, "ffmpeg.org"))
             self.assertEqual(wanted.read_bytes(), pinned.read_bytes())
 
     def test_a_member_outside_the_release_folder_is_refused(self):
@@ -242,7 +244,9 @@ class ReleaseTests(unittest.TestCase):
             if marker.exists():
                 os.replace(marker, marker.with_name(marker.name + ".stale"))
             with self.assertRaises(build.BuildError, msg=bad):
-                build.unpacked_release(work, path)
+                # The first source is named, as a release from it is: without it the archive
+                # would be refused for not being the release, and the check would go untried.
+                build.unpacked_release(work, path, build.sources()[0])
 
     def test_the_shipped_notices_are_the_releases_own(self):
         for name, digest in RELEASE_NOTICE_DIGESTS.items():
@@ -257,7 +261,113 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn("This software uses libraries from the FFmpeg project under the LGPLv2.1.", text)
         self.assertIn(build.FFMPEG_SHA256, text)
         self.assertIn(build.FFMPEG_URL, text)
+        self.assertIn(build.GITHUB_URL, text)
+        self.assertIn(build.GITHUB_SHA256, text)
         self.assertIn("unmodified", text)
+
+
+class SecondSourceTests(unittest.TestCase):
+    """The release's second place to download from: FFmpeg's mirror on GitHub."""
+
+    def pinned_files(self):
+        """Two small files standing in for the two pinned archives, and the patches of the pins
+        to use them: (first, second, mock context managers)."""
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        first = SCRATCH / "source-first.tar.xz"
+        first.write_bytes(b"the first source's release")
+        second = SCRATCH / "source-second.tar.gz"
+        second.write_bytes(b"the second source's archive!")
+        pins = [
+            mock.patch.object(build, "FFMPEG_SHA256", build.digest_of(first)),
+            mock.patch.object(build, "FFMPEG_TARBALL_BYTES", first.stat().st_size),
+            mock.patch.object(build, "GITHUB_SHA256", build.digest_of(second)),
+            mock.patch.object(build, "GITHUB_TARBALL_BYTES", second.stat().st_size),
+            mock.patch.object(build, "SHARED_DOWNLOADS", None),
+        ]
+        return first, second, pins
+
+    def fresh_work(self, name):
+        """A work folder whose download folder holds only stale files (overwritten, never
+        deleted, so a run is the same after any earlier one), and its path."""
+        work = SCRATCH / name
+        (work / "download").mkdir(parents=True, exist_ok=True)
+        for source in build.sources():
+            (work / "download" / source["file"]).write_bytes(b"stale")
+        return work
+
+    def test_the_github_archive_is_pinned_and_tried_second(self):
+        self.assertEqual(build.GITHUB_URL, f"https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n{build.FFMPEG_VERSION}.tar.gz")
+        self.assertRegex(build.GITHUB_SHA256, r"^[0-9a-f]{64}$")
+        self.assertNotEqual(build.GITHUB_SHA256, build.FFMPEG_SHA256)
+        self.assertGreater(build.GITHUB_TARBALL_BYTES, 1_000_000)
+        names = [source["name"] for source in build.sources()]
+        self.assertEqual(names, ["ffmpeg.org", "github.com"])
+        self.assertEqual([source["url"] for source in build.sources()], [build.FFMPEG_URL, build.GITHUB_URL])
+        self.assertEqual(len({source["file"] for source in build.sources()}), 2, "each is kept under a name of its own")
+
+    def test_the_second_source_is_tried_when_the_first_fails_or_gives_the_wrong_file(self):
+        first, second, pins = self.pinned_files()
+        for first_gives in (None, b"not the release at all"):
+            calls = []
+
+            def download(url, destination, first_gives=first_gives, calls=calls):
+                calls.append(url)
+                if url == build.FFMPEG_URL:
+                    if first_gives is None:
+                        raise build.BuildError("curl: could not connect")
+                    destination.write_bytes(first_gives)
+                else:
+                    destination.write_bytes(second.read_bytes())
+
+            work = self.fresh_work(f"work-second-{len(first_gives or b'')}")
+            with pins[0], pins[1], pins[2], pins[3], pins[4], mock.patch.object(build, "download", download):
+                found, source = build.release_tarball(work)
+            self.assertEqual(calls, [build.FFMPEG_URL, build.GITHUB_URL], first_gives)
+            self.assertEqual((found.name, source["name"]), ("ffmpeg-9.0.2-github.tar.gz", "github.com"))
+            self.assertEqual(found.read_bytes(), second.read_bytes())
+
+    def test_the_second_source_is_not_asked_when_the_first_gives_the_release(self):
+        first, second, pins = self.pinned_files()
+        calls = []
+
+        def download(url, destination):
+            calls.append(url)
+            destination.write_bytes(first.read_bytes())
+
+        with pins[0], pins[1], pins[2], pins[3], pins[4], mock.patch.object(build, "download", download):
+            found, source = build.release_tarball(self.fresh_work("work-first"))
+        self.assertEqual((calls, source["name"]), ([build.FFMPEG_URL], "ffmpeg.org"))
+
+    def test_a_release_no_source_gives_is_refused_naming_each_source(self):
+        first, second, pins = self.pinned_files()
+
+        def download(url, destination):
+            destination.write_bytes(b"neither of the pinned files")
+
+        with pins[0], pins[1], pins[2], pins[3], pins[4], mock.patch.object(build, "download", download):
+            with self.assertRaises(build.BuildError) as caught:
+                build.release_tarball(self.fresh_work("work-neither"))
+        for name in ("ffmpeg.org", "github.com"):
+            self.assertIn(name, str(caught.exception))
+
+    def test_the_github_archive_unpacks_to_the_same_folder_as_the_release(self):
+        # Its one top folder is named for the tag; it is renamed, so both sources give the same
+        # paths (and the same __FILE__ strings in what is built).
+        members = [(f"{build.GITHUB_TOP_FOLDER}/configure", b"#!/bin/sh\n"), (f"{build.GITHUB_TOP_FOLDER}/libavcodec/x.c", b"int x;\n")]
+        path = ReleaseTests.tarball(self, "github-shaped.tar.gz", members, compressed="gz")
+        work = SCRATCH / "work-github"
+        marker = build.unpacked_marker(work)
+        if marker.exists():
+            os.replace(marker, marker.with_name(marker.name + ".stale"))
+        github = next(source for source in build.sources() if source["name"] == "github.com")
+        folder = build.unpacked_release(work, path, github)
+        self.assertEqual(folder.name, f"ffmpeg-{build.FFMPEG_VERSION}")
+        self.assertEqual((folder / "libavcodec" / "x.c").read_bytes(), b"int x;\n")
+        self.assertTrue((folder / "configure").is_file())
+        # A member of the other source's folder is outside this source's.
+        wrong = ReleaseTests.tarball(self, "github-wrong.tar.gz", [(f"ffmpeg-{build.FFMPEG_VERSION}/configure", b"x")], compressed="gz")
+        with self.assertRaises(build.BuildError):
+            build.unpacked_release(SCRATCH / "work-github-wrong", wrong, github)
 
 
 class XcodeTests(unittest.TestCase):

@@ -13,6 +13,11 @@ later".
 The release: FFmpeg 9.0.2, unmodified, from https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
 Its SHA-256: 8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
 It is signed by FFmpeg's release key, fingerprint FCF986EA15E6E293A5644F10B4322F04D67658D8.
+When ffmpeg.org cannot be reached, the build takes FFmpeg's own mirror's archive of the tag n9.0.2
+instead, from https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n9.0.2.tar.gz
+Its SHA-256: 6e374ed621e48faa40639307dff48ba6fe574a509977956d2cce9669b7cc27e9
+The two hold the same files, but for the release's VERSION file, which the tag's archive lacks, and
+git's own files (.gitattributes and .gitignore files), which the tarball lacks.
 
 TextMouth's own source, which is public under the MIT License, holds the script that
 downloads, checks, and builds this release (Scripts/vendor/ffmpeg/build.py), so anyone can

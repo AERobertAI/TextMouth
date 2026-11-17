@@ -24,8 +24,10 @@ Usage:
                      fingerprint pinned below; for whoever changes the pin.
 
 What it builds. The pin below names one FFmpeg release, by its URL, its SHA-256, and its size,
-and the fingerprint of the key that signs FFmpeg's releases. The tarball is downloaded once and
-must match the SHA-256, or nothing is built. FFmpeg's own configure then builds only what
+and the fingerprint of the key that signs FFmpeg's releases, then a second place to download
+the same release (FFmpeg's mirror on GitHub, its archive of the release's tag, with a pin of
+its own), tried when ffmpeg.org gives nothing usable. The archive is downloaded once and must
+match a pin's SHA-256, or nothing is built. FFmpeg's own configure then builds only what
 TextMouth's import reads, the "parity" set of research/FFMPEG-MINIMAL-RESEARCH-2026-11-16.md:
 every container the installed ffmpeg converted at import, with each one's common codecs, all of
 it under the LGPL 2.1 or later (no --enable-gpl, --enable-nonfree, or --enable-version3). It
@@ -48,8 +50,9 @@ platform, this script's RECIPE number, and the compiler's version: a published b
 is the same is kept, and the script ends at once, so an ordinary build of the app pays nothing.
 
 The work folder:
-    WORK/download/ffmpeg-<version>.tar.xz     the release, checked
-    WORK/source/ffmpeg-<version>/             the release, unpacked once
+    WORK/download/ffmpeg-<version>.tar.xz     the release from ffmpeg.org, checked, or
+    WORK/download/ffmpeg-<version>-github.tar.gz   the archive of its tag from GitHub, checked
+    WORK/source/<key>/ffmpeg-<version>/       the release, unpacked once; <key> is of its SHA-256
     WORK/build-<platform>-<key>/              configure, make, and make install's DESTDIR
     WORK/<platform>/include/                  FFmpeg's public headers, and textmouth_ffmpeg_build.h
     WORK/<platform>/lib/libtmffmpeg.a         the merged libraries
@@ -84,7 +87,8 @@ sys.dont_write_bytecode = True
 # ---------------------------------------------------------------------------
 
 # FFmpeg 9.0.2 (September 18, 2026), the newest release on November 16, 2026. To move to a new
-# point release: change these four lines, check its signature (--check-signature, with the key
+# point release: change these four lines and the GITHUB_ pin after them (compare the two trees
+# again, as the comment there says), check its signature (--check-signature, with the key
 # below fetched from ffmpeg.org's download page and a keyserver), run this script, compare the
 # release's LICENSE.md and COPYING.LGPLv2.1 with Vendor/package-licenses/FFmpeg (the script
 # fails when they differ), write the README again (--readme), and run the tests.
@@ -92,6 +96,27 @@ FFMPEG_VERSION = "9.0.2"
 FFMPEG_URL = f"https://ffmpeg.org/releases/ffmpeg-{FFMPEG_VERSION}.tar.xz"
 FFMPEG_SHA256 = "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e"
 FFMPEG_TARBALL_BYTES = 12_040_788
+
+# A second place to download the same release from, tried when ffmpeg.org cannot be reached or
+# gives a file that is not the pin: FFmpeg's own mirror on GitHub, the archive it makes of the
+# release's tag (n9.0.2), with a pin of its own (GitHub makes the archive from the tag, not from
+# the release's tarball, so its bytes and its top folder, FFmpeg-n9.0.2, differ). Compared on
+# November 17, 2026, each unpacked into a new empty folder, the two trees differ only so:
+#   - VERSION (the text "9.0.2") is in ffmpeg.org's tarball alone; RELEASE (the same text) is in both;
+#   - GitHub's archive holds git's own files, which the tarball leaves out: .gitattributes and
+#     25 .gitignore files (the top folder's and those of doc/, doc/doxy/, doc/examples/, ffbuild/,
+#     fftools/resources/, libavcodec/, libavcodec/tests/, libavdevice/, libavdevice/tests/,
+#     libavfilter/, libavfilter/opencl/, libavfilter/tests/, libavfilter/vulkan/, libavformat/,
+#     libavformat/tests/, libavutil/, libavutil/tests/, libswresample/tests/, libswscale/aarch64/,
+#     libswscale/tests/, tests/, tests/api/, tests/checkasm/, and tools/);
+#   - no file the two share differs by a byte (10,398 files).
+# The archive was downloaded twice and was the same both times. A GitHub archive is made on
+# demand, so its bytes are not promised for ever: if GitHub ever changes them, the pin below
+# stops this source with a plain refusal (never a build), and ffmpeg.org's still serves.
+GITHUB_URL = f"https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n{FFMPEG_VERSION}.tar.gz"
+GITHUB_SHA256 = "6e374ed621e48faa40639307dff48ba6fe574a509977956d2cce9669b7cc27e9"
+GITHUB_TARBALL_BYTES = 17_319_950
+GITHUB_TOP_FOLDER = f"FFmpeg-n{FFMPEG_VERSION}"
 
 # The fingerprint of FFmpeg's release signing key ("FFmpeg release signing key
 # <ffmpeg-devel@ffmpeg.org>"), as ffmpeg.org's download page and the Ubuntu keyserver give it.
@@ -325,8 +350,21 @@ def build_environment(work, platform):
 # ---------------------------------------------------------------------------
 
 def tarball_name():
-    """The release tarball's file name."""
+    """The release tarball's file name from ffmpeg.org."""
     return f"ffmpeg-{FFMPEG_VERSION}.tar.xz"
+
+
+def sources():
+    """The places the release is downloaded from, in the order they are tried, each as a dict:
+    its name, its URL, the file name it is kept under in WORK/download, its pin (SHA-256 and
+    size), and the name of the one folder its archive unpacks to. Read from the module's pin when
+    asked, so a test can change the pin."""
+    return [
+        {"name": "ffmpeg.org", "url": FFMPEG_URL, "file": tarball_name(), "sha256": FFMPEG_SHA256,
+         "bytes": FFMPEG_TARBALL_BYTES, "folder": f"ffmpeg-{FFMPEG_VERSION}"},
+        {"name": "github.com", "url": GITHUB_URL, "file": f"ffmpeg-{FFMPEG_VERSION}-github.tar.gz",
+         "sha256": GITHUB_SHA256, "bytes": GITHUB_TARBALL_BYTES, "folder": GITHUB_TOP_FOLDER},
+    ]
 
 
 def digest_of(path):
@@ -338,10 +376,26 @@ def digest_of(path):
     return digest.hexdigest()
 
 
-def is_the_release(path):
-    """Whether `path` is the pinned release: its size and SHA-256 match the pin."""
+def source_of(path):
+    """The source whose pin the file at `path` matches (its size and SHA-256), or None."""
     path = Path(path)
-    return path.is_file() and path.stat().st_size == FFMPEG_TARBALL_BYTES and digest_of(path) == FFMPEG_SHA256
+    if not path.is_file():
+        return None
+    size = path.stat().st_size
+    digest = None
+    for source in sources():
+        if size != source["bytes"]:
+            continue
+        digest = digest or digest_of(path)
+        if digest == source["sha256"]:
+            return source
+    return None
+
+
+def is_the_release(path):
+    """Whether `path` is the pinned release, from any of its sources: its size and SHA-256
+    match a pin."""
+    return source_of(path) is not None
 
 
 def shared_download_folder():
@@ -363,29 +417,45 @@ def shared_download_folder():
 SHARED_DOWNLOADS = shared_download_folder()
 
 
+def is_from(path, source):
+    """Whether the file at `path` is the release as `source` gives it (its pin matches)."""
+    found = source_of(path)
+    return found is not None and found["name"] == source["name"]
+
+
 def release_tarball(work, given=None):
-    """The checked release tarball in WORK/download: `given` when it is the release, else one
-    already in WORK/download or the shared download folder, else a new download. A file that
-    is not the release is never used, and nothing is built from it."""
+    """The checked release archive, and the source it is from: `given` when it is the release,
+    else one already in WORK/download or the shared download folder, else a new download, from
+    each source in turn until one gives the pinned release. A file that is not the release is
+    never used, and nothing is built from it. Returns (path in WORK/download, source)."""
     folder = work / "download"
     folder.mkdir(parents=True, exist_ok=True)
-    wanted = folder / tarball_name()
-    if wanted.is_file() and is_the_release(wanted):
-        return wanted
-    shared = SHARED_DOWNLOADS
-    candidates = [Path(given)] if given else []
-    if shared is not None:
-        candidates.append(shared / tarball_name())
-    for candidate in candidates:
+    for source in sources():
+        if is_from(folder / source["file"], source):
+            return folder / source["file"], source
+    found = [Path(given)] if given else []
+    if SHARED_DOWNLOADS is not None:
+        found += [SHARED_DOWNLOADS / source["file"] for source in sources()]
+    for candidate in found:
         if candidate.is_file():
-            if not is_the_release(candidate):
-                raise BuildError(f"{candidate} is not FFmpeg {FFMPEG_VERSION}'s release: its SHA-256 is not the pin's")
-            copy_replacing(candidate, wanted)
-            return wanted
-    download(FFMPEG_URL, wanted)
-    if not is_the_release(wanted):
-        raise BuildError(f"the download of {FFMPEG_URL} is not the pinned release: its SHA-256 is {digest_of(wanted)}")
-    return wanted
+            source = source_of(candidate)
+            if source is None:
+                raise BuildError(f"{candidate} is not FFmpeg {FFMPEG_VERSION}'s release: its SHA-256 is not a pin's")
+            copy_replacing(candidate, folder / source["file"])
+            return folder / source["file"], source
+    refused = []
+    for source in sources():
+        wanted = folder / source["file"]
+        try:
+            download(source["url"], wanted)
+        except BuildError as error:
+            refused.append(f"{source['name']}: {error}")
+            continue
+        if is_from(wanted, source):
+            return wanted, source
+        refused.append(f"{source['name']}: the download of {source['url']} is not the pinned release: "
+                       f"its SHA-256 is {digest_of(wanted)}")
+    raise BuildError("the release could not be downloaded from any source:\n" + "\n".join(refused))
 
 
 def download(url, destination):
@@ -409,34 +479,47 @@ def copy_replacing(source, destination):
     os.replace(temporary, destination)
 
 
+def unpacked_parent(work):
+    """The folder WORK/source/<key> that holds the unpacked release: one for each release."""
+    key = hashlib.sha256(FFMPEG_SHA256.encode("utf-8")).hexdigest()[:16]
+    return work / "source" / key
+
+
 def unpacked_marker(work):
-    """The file saying WORK/source holds the pinned release unpacked: named by the pin's SHA-256,
-    and written only once every member was checked and extracted."""
-    return work / "source" / f".unpacked-{FFMPEG_SHA256[:16]}"
+    """The file saying the release is unpacked in `unpacked_parent`: written only once every
+    member was checked and extracted."""
+    return unpacked_parent(work) / ".unpacked"
 
 
-def unpacked_release(work, tarball):
-    """The release unpacked in WORK/source/ffmpeg-<version>, unpacking it the first time. Every
-    member must be a file or folder inside that one folder: no absolute name, no "..", and no
-    link or device, since the tarball is a download."""
-    source_root = work / "source"
-    folder = source_root / f"ffmpeg-{FFMPEG_VERSION}"
+def unpacked_release(work, tarball, source=None):
+    """The release unpacked in WORK/source/<key>/ffmpeg-<version>, unpacking it the first time. `source` (from `release_tarball`; found by the file's pin when
+    not given) says the one folder the archive unpacks to, which is renamed to ffmpeg-<version>
+    so that both sources give the same paths. Every member must be a file or folder inside that
+    one folder: no absolute name, no "..", and no link or device, since the tarball is a
+    download."""
+    source = source or source_of(tarball)
+    if source is None:
+        raise BuildError(f"{tarball} is not FFmpeg {FFMPEG_VERSION}'s release: its SHA-256 is not a pin's")
+    parent = unpacked_parent(work)
+    folder = parent / f"ffmpeg-{FFMPEG_VERSION}"
     marker = unpacked_marker(work)
     if marker.is_file() and (folder / "configure").is_file():
         return folder
-    source_root.mkdir(parents=True, exist_ok=True)
-    prefix = f"ffmpeg-{FFMPEG_VERSION}/"
-    with tarfile.open(tarball, "r:xz") as archive:
+    parent.mkdir(parents=True, exist_ok=True)
+    prefix = source["folder"] + "/"
+    with tarfile.open(tarball, "r:*") as archive:
         members = archive.getmembers()
         for member in members:
             name = member.name
-            # The folder itself ("ffmpeg-9.0.2") or something inside it, and nothing above it.
+            # The folder itself or something inside it, and nothing above it.
             if name.startswith("/") or ".." in Path(name).parts or not (name + "/").startswith(prefix):
                 raise BuildError(f"the release holds a file outside its folder: {name!r}")
             if not (member.isfile() or member.isdir()):
                 raise BuildError(f"the release holds something that is not a file or folder: {name!r}")
-        archive.extractall(source_root, members=members)
-    marker.write_text(FFMPEG_SHA256 + "\n", encoding="utf-8")
+        for member in members:
+            member.name = f"ffmpeg-{FFMPEG_VERSION}" + member.name[len(source["folder"]):]
+        archive.extractall(parent, members=members)
+    marker.write_text(f"{FFMPEG_SHA256}\n{source['name']}\n", encoding="utf-8")
     return folder
 
 
@@ -650,8 +733,8 @@ def build(platform, work, tarball=None, jobs=DEFAULT_JOBS):
         print(f"build.py: FFmpeg {FFMPEG_VERSION} for {platform} is up to date ({key[:12]})", flush=True)
         return json.loads((published(work, platform) / "build.json").read_text(encoding="utf-8"))
     started = time.monotonic()
-    release = release_tarball(work, tarball)
-    source = unpacked_release(work, release)
+    release, release_source = release_tarball(work, tarball)
+    source = unpacked_release(work, release, release_source)
     check_release_notices(source)
 
     folder = work / f"build-{platform}-{key[:12]}"
@@ -665,6 +748,7 @@ def build(platform, work, tarball=None, jobs=DEFAULT_JOBS):
     record = {
         "ffmpeg": FFMPEG_VERSION, "sha256": FFMPEG_SHA256, "platform": platform, "key": key,
         "compiler": compiler, "configure": shell_line(arguments), "jobs": jobs,
+        "downloaded_from": release_source["name"],
     }
     print(f"build.py: configuring FFmpeg {FFMPEG_VERSION} for {platform}", flush=True)
     # configure is named by its path relative to the build folder: no absolute path is needed.
@@ -760,6 +844,11 @@ def readme_text():
         f"The release: FFmpeg {FFMPEG_VERSION}, unmodified, from {FFMPEG_URL}",
         f"Its SHA-256: {FFMPEG_SHA256}",
         f"It is signed by FFmpeg's release key, fingerprint {SIGNING_KEY_FINGERPRINT}.",
+        f"When ffmpeg.org cannot be reached, the build takes FFmpeg's own mirror's archive of the tag n{FFMPEG_VERSION}",
+        f"instead, from {GITHUB_URL}",
+        f"Its SHA-256: {GITHUB_SHA256}",
+        "The two hold the same files, but for the release's VERSION file, which the tag's archive lacks, and",
+        "git's own files (.gitattributes and .gitignore files), which the tarball lacks.",
         "",
         "TextMouth's own source, which is public under the MIT License, holds the script that",
         "downloads, checks, and builds this release (Scripts/vendor/ffmpeg/build.py), so anyone can",
