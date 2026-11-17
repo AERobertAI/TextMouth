@@ -39,9 +39,6 @@ sys.dont_write_bytecode = True
 ISSUE_SCRIPTS = Path(__file__).resolve().parents[2] / ".claude" / "skills" / "issue-library" / "scripts"
 # The date --tick writes when --date is not given, as it always has.
 TICK_DATE = "October 7"
-# The months, for a date the TODO's way ("November 16").
-MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August",
-          "September", "October", "November", "December")
 
 ENTRY_ANCHOR = "**Open follow-ups noted by the September 28 agents**"
 FOLLOWUPS_ANCHOR = "**Open follow-ups noted on October 3 afternoon and evening**"
@@ -130,26 +127,12 @@ def issue_library():
 
 
 def iso_date(text, today):
-    """The merge's date as YYYY-MM-DD, from "2026-11-16", "November 16, 2026", or "November 16".
-
-    A date without a year is in `today`'s year, or the year before when that would
-    put it ahead of today (a merge recorded on January 1 for December 31).
-    """
-    text = text.strip()
-    try:
-        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
-            return datetime.date.fromisoformat(text).isoformat()
-        match = re.fullmatch(r"(" + "|".join(MONTHS) + r") (\d{1,2})(?:, (\d{4}))?", text)
-        if match:
-            month, day = MONTHS.index(match.group(1)) + 1, int(match.group(2))
-            year = int(match.group(3)) if match.group(3) else today.year
-            date = datetime.date(year, month, day)
-            if not match.group(3) and date > today:
-                date = datetime.date(year - 1, month, day)
-            return date.isoformat()
-    except ValueError:
-        pass
-    fail(f"--date {text!r} is not a date: write 2026-11-16, November 16, 2026, or November 16")
+    """The merge's date as YYYY-MM-DD, from "2026-11-16", "November 16, 2026", or "November 16" (issuedates.py)."""
+    import issuedates  # noqa: E402  (the issue-library skill's, on the path once issue_library() ran)
+    date = issuedates.parse_date(text, today)
+    if date is None:
+        fail(f"--date {text!r} is not a date: write 2026-11-16, November 16, 2026, or November 16")
+    return date
 
 
 def close_issues(text, todo_path, issues, merge_hash, date_text):
@@ -180,6 +163,7 @@ def close_issues(text, todo_path, issues, merge_hash, date_text):
 
 
 def main():
+    """Read the command line, make every edit in memory, check them all, and only then write the TODO and the issues."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--todo", default=str(Path(__file__).resolve().parents[2] / "TODO-2026-09-04.md"))
     parser.add_argument("--entry", required=True, help="file holding the merge's '- [x]' entry")

@@ -106,6 +106,7 @@ class Store:
     """The issue files, TODO, docs, and git of the checkout at ``root``; ``todo`` names another TODO."""
 
     def __init__(self, root: Path, todo: Optional[Path] = None) -> None:
+        """The checkout at ``root``; ``todo`` names a TODO elsewhere (a copy, or a test's), read in place of the root's."""
         self.root = Path(root)
         self.issues_dir = self.root / ISSUES_DIR
         self.todo_path = Path(todo) if todo is not None else self.root / issueids.TODO_NAME

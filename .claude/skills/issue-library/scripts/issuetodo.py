@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import issuedates
 import issueids
 import issuefile
 import issuestore
@@ -34,10 +35,6 @@ from issuestore import Refused, Store, UsageError
 
 # A line at the left margin that starts a block of its own, so it does not continue an item.
 _BLOCK_START = re.compile(r"^(?:#|[-*+] |\d{1,9}[.)] |>|```|~~~|\||<!--)")
-# A date as the TODO writes one: "November 16, 2026", or "October 3" in the TODO's own year.
-_MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August",
-           "September", "October", "November", "December")
-_DATE = re.compile(r"\b(" + "|".join(_MONTHS) + r") (\d{1,2})(?!\d)(?:, (\d{4}))?")
 # The TODO's own date, in its first lines: "Audit date: September 4, 2026."
 _AUDIT_DATE = re.compile(r"^Audit date: (.*)$", re.M)
 # How far past an item's bold opening its date and finder are looked for, and how far from
@@ -62,7 +59,7 @@ MANUAL_LABEL = "manual"
 # report", "From the ChatGPT docs review of ...", "Requested ...", "The user's wish", "train 1115-1800".
 _BY_AGENT = re.compile(r"\bby `([A-Za-z0-9._-]+)`")
 _FROM_AGENT = re.compile(r"\bFrom `([A-Za-z0-9._-]+)`")
-_FROM_SOURCE = re.compile(r"\bFrom (the [^`(,;.]+?) of (?:" + "|".join(_MONTHS) + r")\b")
+_FROM_SOURCE = re.compile(r"\bFrom (the [^`(,;.]+?) of (?:" + "|".join(issuedates.MONTHS) + r")\b")
 _BY_USER = re.compile(r"\bRequested\b|\bThe user's wish\b")
 _TRAIN = re.compile(r"\b[Tt]rain (\d{4}-\d{4})\b")
 # The priority an item states: the audit's "P1 · Impact 4", the review's "suggested priority P1", or "(low priority)".
@@ -235,30 +232,21 @@ def title_of(text: str) -> str:
     return title[:-1].rstrip() if title.endswith(".") else title
 
 
-def _iso(match: "re.Match[str]", year: int) -> str:
-    """A date match as YYYY-MM-DD, in ``year`` when it names none; "" for an impossible date."""
-    month = _MONTHS.index(match.group(1)) + 1
-    try:
-        return dt.date(int(match.group(3) or year), month, int(match.group(2))).isoformat()
-    except ValueError:
-        return ""
-
-
 def todo_year_and_date(todo: str) -> Tuple[int, str]:
     """The TODO's own year and date, from its "Audit date:" line (the clock's year and "" without one)."""
     found = _AUDIT_DATE.search(todo[:2000])
-    match = _DATE.search(found.group(1)) if found else None
+    match = issuedates.DATE_IN_WORDS.search(found.group(1)) if found else None
     if match and match.group(3):
-        return int(match.group(3)), _iso(match, int(match.group(3)))
+        return int(match.group(3)), issuedates.iso_of(match, int(match.group(3)))
     return dt.date.today().year, ""
 
 
 def created_of(title: str, opening: str, section: str, year: int, todo_date: str) -> str:
     """When an item was written: the first date in its title or opening, else its section's, else the TODO's."""
     for text in (title + " " + opening, section):
-        match = _DATE.search(text)
-        if match and _iso(match, year):
-            return _iso(match, year)
+        match = issuedates.DATE_IN_WORDS.search(text)
+        if match and issuedates.iso_of(match, year):
+            return issuedates.iso_of(match, year)
     return todo_date
 
 
