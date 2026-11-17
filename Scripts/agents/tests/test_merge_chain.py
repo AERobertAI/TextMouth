@@ -1,4 +1,4 @@
-"""Tests of merge-chain.sh: the docs lint before a merge commits, and the Markdown-only merge.
+"""Tests of merge-chain.sh: the docs lint and the issue check before a merge commits, and the Markdown-only merge.
 
 Run with: python3 -I -B -m unittest discover -s Scripts/agents/tests
 
@@ -25,6 +25,7 @@ SKILL = Path(__file__).resolve().parents[3] / ".claude/skills/doc-library"
 
 WRAPPER_PATH = ".claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh"
 DOCLIB_PATH = ".claude/skills/doc-library/scripts/doclib.py"
+ISSUELIB_PATH = ".claude/skills/issue-library/scripts/issuelib.py"
 
 # The build wrapper: records one line, then prints what a green suite prints.
 WRAPPER = """#!/bin/sh
@@ -38,6 +39,13 @@ DOCLIB = '''import os, sys
 with open(os.environ["LINT_RECORD"], "a") as record:
     record.write(" ".join(sys.argv[1:]) + " merge_head=" + str(os.path.exists(".git/MERGE_HEAD")) + "\\n")
 sys.exit(1 if os.path.exists("LINT-FAILS") else 0)
+'''
+
+# The issue check stand-in: records its arguments and whether a merge is in progress, fails on ISSUES-FAIL.
+ISSUELIB = '''import os, sys
+with open(os.environ["ISSUES_RECORD"], "a") as record:
+    record.write(" ".join(sys.argv[1:]) + " merge_head=" + str(os.path.exists(".git/MERGE_HEAD")) + "\\n")
+sys.exit(1 if os.path.exists("ISSUES-FAIL") else 0)
 '''
 
 
@@ -55,6 +63,7 @@ class MergeChainCase(unittest.TestCase):
         self.logs = self.folder / "logs"
         self.suite_record = self.folder / "suite.txt"
         self.lint_record = self.folder / "lint.txt"
+        self.issues_record = self.folder / "issues.txt"
         # An xcodegen that does nothing, found before any real one.
         bin_folder = self.folder / "bin"
         bin_folder.mkdir()
@@ -66,7 +75,7 @@ class MergeChainCase(unittest.TestCase):
             "GIT_AUTHOR_NAME": "chain test", "GIT_AUTHOR_EMAIL": "chain-test@example.invalid",
             "GIT_COMMITTER_NAME": "chain test", "GIT_COMMITTER_EMAIL": "chain-test@example.invalid",
             "MERGE_LOG_DIR": str(self.logs), "SUITE_RECORD": str(self.suite_record),
-            "LINT_RECORD": str(self.lint_record),
+            "LINT_RECORD": str(self.lint_record), "ISSUES_RECORD": str(self.issues_record),
             # The real lint, run in the throwaway repository, must leave no __pycache__ there.
             "PYTHONDONTWRITEBYTECODE": "1",
         })
@@ -91,13 +100,16 @@ class MergeChainCase(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text)
 
-    def make_repo(self, with_doclib=True):
-        """Make the repository: main with the chain script, the stand-ins, a code file, and a page."""
+    def make_repo(self, with_doclib=True, with_issuelib=False, files=None):
+        """Make the repository: main with the chain script, the stand-ins, a code file, a page, and ``files``."""
         self.git("init", "-q", "-b", "main")
         self.write_executable(self.repo / "Scripts/agents/merge-chain.sh", CHAIN.read_text())
         self.write_executable(self.repo / WRAPPER_PATH, WRAPPER)
         if with_doclib:
             self.write_files({DOCLIB_PATH: DOCLIB})
+        if with_issuelib:
+            self.write_files({ISSUELIB_PATH: ISSUELIB})
+        self.write_files(files or {})
         self.write_files({"App.swift": "let a = 1\n", "docs/page.md": "# Page\n\nText.\n"})
         self.git("add", "-A")
         self.git("commit", "-q", "-m", "base")
@@ -135,6 +147,10 @@ class MergeChainCase(unittest.TestCase):
         """The lines the doclib stand-in recorded."""
         return self.lint_record.read_text().splitlines() if self.lint_record.exists() else []
 
+    def issue_checks(self):
+        """The lines the issuelib stand-in recorded."""
+        return self.issues_record.read_text().splitlines() if self.issues_record.exists() else []
+
     def suite_runs(self):
         """How many times the build wrapper stand-in ran."""
         return len(self.suite_record.read_text().splitlines()) if self.suite_record.exists() else 0
@@ -142,6 +158,49 @@ class MergeChainCase(unittest.TestCase):
     def tip(self):
         """main's tip commit."""
         return self.git("rev-parse", "main").strip()
+
+
+class IssueCheckTests(MergeChainCase):
+    """The issue check: run on main and on the uncommitted merge; a problem the branch brings stops it."""
+
+    def test_the_check_runs_before_and_on_the_uncommitted_merge(self):
+        self.make_repo(with_issuelib=True)
+        self.make_branch("code", {"App.swift": "let a = 2\n"})
+        status, out = self.run_chain("code")
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.issue_checks(), ["check merge_head=False", "check merge_head=True"])
+        self.assertIn("ISSUES_CHECK_OK", self.log_text("code"))
+        self.assertIn("ISSUES_CHECK_OK", out, "the summary should show the check's line")
+        self.assertEqual(self.suite_runs(), 1)
+
+    def test_a_problem_the_branch_brings_aborts_the_merge_and_stops_the_chain(self):
+        self.make_repo(with_issuelib=True)
+        self.make_branch("bad", {"ISSUES-FAIL": "", "App.swift": "let a = 3\n"})
+        before = self.tip()
+        status, out = self.run_chain("bad")
+        self.assertEqual(status, 1, out)
+        self.assertIn("CHAIN_STOPPED after bad", out)
+        self.assertEqual(self.tip(), before)
+        self.assertFalse((self.repo / ".git/MERGE_HEAD").exists(), "the merge was left in progress")
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertIn("ISSUES_CHECK_FAILED", self.log_text("bad"))
+        self.assertEqual(self.suite_runs(), 0)
+
+    def test_a_problem_main_had_already_skips_the_check(self):
+        self.make_repo(with_issuelib=True, files={"ISSUES-FAIL": ""})
+        self.make_branch("code", {"App.swift": "let a = 4\n"})
+        status, out = self.run_chain("code")
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.issue_checks(), ["check merge_head=False"])
+        self.assertIn("ISSUES_CHECK_SKIPPED", self.log_text("code"))
+
+    def test_a_tree_without_the_skill_skips_the_check(self):
+        self.make_repo()
+        self.make_branch("code", {"App.swift": "let a = 5\n"})
+        status, out = self.run_chain("code")
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.issue_checks(), [])
+        self.assertIn("ISSUES_CHECK_SKIPPED", self.log_text("code"))
 
 
 class MergeChainTests(MergeChainCase):

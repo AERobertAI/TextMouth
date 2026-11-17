@@ -29,6 +29,13 @@
 # or DOCS_LINT_SKIPPED when the tree has no skill; on DOCS_LINT_FAILED the
 # merge is aborted, the branch is left where it was, and the chain stops.
 #
+# Then, when the merged tree has the issue-library skill, its check runs too
+# (issuelib.py check), since git's union merge of Issues/*.md keeps both sides of
+# a header line two branches changed. The log gets ISSUES_CHECK_OK, or
+# ISSUES_CHECK_SKIPPED when the tree has no skill or main failed the check before
+# this merge (a problem the branch did not bring); on ISSUES_CHECK_FAILED the
+# merge is aborted and the chain stops.
+#
 # A merge whose changed files all end in .md gets MARKDOWN_ONLY_NO_SUITE: it is
 # committed and the chain goes on to the next branch with no project check and
 # no suite, since the docs lint is the check on documentation.
@@ -41,6 +48,7 @@ DERIVED=${MERGE_DERIVED_DATA:-build/DerivedData-main}
 CO_AUTHOR=${MERGE_CO_AUTHOR:-"Claude Opus 5.5 <noreply@anthropic.com>"}
 WRAPPER=.claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh
 DOCLIB=.claude/skills/doc-library/scripts/doclib.py
+ISSUELIB=.claude/skills/issue-library/scripts/issuelib.py
 mkdir -p "$LOG_DIR"
 
 # summarize: print the lines of a merge's log that say how it went. The docs
@@ -49,7 +57,7 @@ mkdir -p "$LOG_DIR"
 summarize() {
   local slug="$1" log="$2"
   echo "--- $slug ---"
-  grep -E "^(DOCS_LINT_|MARKDOWN_ONLY_)" "$log"
+  grep -E "^(DOCS_LINT_|ISSUES_CHECK_|MARKDOWN_ONLY_)" "$log"
   grep -E "UNMERGED|ABORTING|RESOLVED|^[0-9a-f]{7,} |PBXPROJ_|Executed [0-9]+ tests, with|TEST (SUCCEEDED|FAILED)|EXIT=|^Test Case '.*' failed" "$log" | tail -8
 }
 
@@ -113,6 +121,37 @@ lint_docs() {
   return 1
 }
 
+# issues_pass: whether the issue tracker's check passes on the tree as it is now:
+# 0 when it does, 1 when it fails, and 2 when the tree has no issue-library skill.
+issues_pass() {
+  [ -f "$ISSUELIB" ] || return 2
+  python3 -I -B "$ISSUELIB" check > /dev/null 2>&1
+}
+
+# check_issues: run the issue tracker's check on the merged, uncommitted tree,
+# given whether main passed it before the merge (issues_pass's status). Logs
+# ISSUES_CHECK_OK, ISSUES_CHECK_SKIPPED, or ISSUES_CHECK_FAILED, which aborts the
+# merge and returns 1.
+check_issues() {
+  local log="$1" main_status="$2" check_output status
+  if [ ! -f "$ISSUELIB" ] || [ "$main_status" != 0 ]; then
+    echo ISSUES_CHECK_SKIPPED >> "$log"
+    return 0
+  fi
+  check_output=$(python3 -I -B "$ISSUELIB" check 2>&1)
+  status=$?
+  echo "$check_output" >> "$log"
+  if [ "$status" = 0 ]; then
+    echo ISSUES_CHECK_OK >> "$log"
+    return 0
+  fi
+  echo ISSUES_CHECK_FAILED >> "$log"
+  # Say what is wrong; the whole output is in the log.
+  echo "$check_output" | head -20
+  git merge --abort
+  return 1
+}
+
 # merge_and_test: merge one branch with its message file, check the docs lint
 # on the merged tree, commit, then (unless only Markdown changed) regenerate
 # the project if it drifted and run the suite.
@@ -122,6 +161,8 @@ merge_and_test() {
   local log="$LOG_DIR/main-after-$slug-merge.log"
   : > "$log"
   echo "=== merging $branch at $(date +%H:%M:%S) ===" >> "$log"
+  issues_pass
+  local main_issues=$?
   merge_without_commit "$branch" "$log"
   local merged=$?
   if [ "$merged" = 2 ]; then
@@ -130,6 +171,10 @@ merge_and_test() {
   fi
   [ "$merged" = 0 ] || return 1
   if ! lint_docs "$log"; then
+    summarize "$slug" "$log"
+    return 1
+  fi
+  if ! check_issues "$log" "$main_issues"; then
     summarize "$slug" "$log"
     return 1
   fi
