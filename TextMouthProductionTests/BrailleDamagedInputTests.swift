@@ -10,9 +10,14 @@ import XCTest
 /// whose crash would put a crash report on the user's screen; on the iPhone it
 /// runs in the app itself, where a crash ends the app. So these tests run on
 /// GitHub's runners only (`TestMachine.skipUnlessGitHubRunner`; the iPhone's
-/// tests run nowhere else). On the iPhone each test uses a braille engine of
-/// its own, so a hang refuses no other test's braille. The input is seeded
-/// (`SplitMix64`), so a failure can be run again exactly.
+/// tests run nowhere else). On the iPhone each test uses one braille engine
+/// of its own, made in setUp, so a hang refuses no other test's braille, and
+/// after one, the engine refuses the test's later calls instead of starting a
+/// second thread inside liblouis beside the stuck one. A hang under any of
+/// its names (a call abandoned or refused, a run stopped for time) fails the
+/// test, never passes as a refusal in words (the review of November 16,
+/// finding 3). The input is seeded (`SplitMix64`), so a failure can be run
+/// again exactly.
 final class BrailleDamagedInputTests: XCTestCase {
     /// The four tables TextMouth bundles and offers.
     private let offered = ["en-ueb-g1.ctb", "en-ueb-g2.ctb", "en-us-g1.ctb", "en_US.tbl"]
@@ -23,10 +28,19 @@ final class BrailleDamagedInputTests: XCTestCase {
     /// The hosted test root's library index, put back after each test.
     private var sandbox: LibraryIndexSandbox?
 
+    #if os(iOS)
+    /// The braille engine of this test, made in setUp: every call of the
+    /// test, in every loop, goes through it.
+    private var engine: InProcessEngine?
+    #endif
+
     override func setUpWithError() throws {
         try TestMachine.skipUnlessGitHubRunner("This test feeds damaged braille to liblouis")
         work = try makeSandboxDirectory("BrailleDamaged")
         sandbox = try LibraryIndexSandbox.capture()
+        #if os(iOS)
+        engine = InProcessEngine(name: "test-liblouis-damaged", work: "the braille translation")
+        #endif
     }
 
     override func tearDownWithError() throws {
@@ -36,16 +50,34 @@ final class BrailleDamagedInputTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// Runs `body` with braille translated by a braille engine of this test's
-    /// own on the iPhone, so that a hang wedges only it; the Mac's helper runs
-    /// apart from the test host anyway.
+    /// Runs `body` with braille translated by this test's braille engine on
+    /// the iPhone, so that a hang wedges only it; the Mac's helper runs apart
+    /// from the test host anyway.
     private func withOwnEngine<T>(_ body: () throws -> T) throws -> T {
         #if os(iOS)
-        let engine = InProcessEngine(name: "test-liblouis-damaged", work: "the braille translation")
-        return try BrailleTranslator.$engine.withValue(engine, operation: body)
+        return try BrailleTranslator.$engine.withValue(try XCTUnwrap(engine, "setUp made no engine"), operation: body)
         #else
         return try body()
         #endif
+    }
+
+    /// The beginnings of the watchdog's words for a run stopped for time, a
+    /// hang by another name: past its time, its output stalled, or past its
+    /// processor time (`WatchedProcess.KillReason.words`, up to its number).
+    private static let timeStops: [String] = [
+        WatchedProcess.KillReason.tookTooLong(seconds: 1), .madeNoProgress(seconds: 1), .usedTooMuchProcessorTime(seconds: 1),
+    ].map { String($0.words.prefix { !$0.isNumber }) }
+
+    /// Whether `error`, an import's failure or a translation's own, is a hang
+    /// under another name: a call the iPhone's engine abandoned, or refused
+    /// after one, or a run of the Mac's helper stopped for time.
+    private static func isAHang(_ error: any Error) -> Bool {
+        let underlying = (error as? ImportFailure)?.underlying ?? error
+        if underlying is InProcessEngine.Failure { return true }
+        if case let .stopped(reason: reason)? = underlying as? BrailleTranslator.Failure {
+            return timeStops.contains { reason.hasPrefix($0) }
+        }
+        return false
     }
 
     /// `count` random scalars from `scalars`, as a string.
@@ -54,6 +86,38 @@ final class BrailleDamagedInputTests: XCTestCase {
             let range = scalars[Int.random(in: 0..<scalars.count, using: &random)]
             return Unicode.Scalar(UInt32.random(in: range, using: &random))
         }))
+    }
+
+    // MARK: - What Counts as a Hang
+
+    /// The damaged-books test fails on a hang under any of its names, and
+    /// passes a refusal: an abandoned or refused call of the iPhone's engine
+    /// and a run stopped for time are hangs, whether an import's failure
+    /// holds them or not; a run stopped for its output, and a reader's
+    /// refusal, are not.
+    func testAHangUnderAnyNameIsNotARefusal() {
+        let work = "the braille translation"
+        let hangs: [any Error] = [
+            InProcessEngine.Failure.abandoned(work: work, limit: 12),
+            InProcessEngine.Failure.refused(work: work),
+            BrailleTranslator.Failure.stopped(reason: WatchedProcess.KillReason.tookTooLong(seconds: 12).words),
+            BrailleTranslator.Failure.stopped(reason: WatchedProcess.KillReason.madeNoProgress(seconds: 12).words),
+            BrailleTranslator.Failure.stopped(reason: WatchedProcess.KillReason.usedTooMuchProcessorTime(seconds: 48).words),
+        ]
+        let refusals: [any Error] = [
+            BrailleTranslator.Failure.stopped(reason: WatchedProcess.KillReason.wroteTooMuch(bytes: 9_437_184).words),
+            BrailleTranslator.Failure.stopped(reason: WatchedProcess.KillReason.usedTooMuchMemory(bytes: 16_777_216).words),
+            BrailleTranslator.Failure.unknownTable("en-ueb-g1.ctb"),
+            BrailleTranslator.Failure.failed,
+        ]
+        for error in hangs {
+            XCTAssertTrue(Self.isAHang(error), "\(error)")
+            XCTAssertTrue(Self.isAHang(ImportFailure(fileName: "book.brf", step: .readingText, underlying: error)), "\(error)")
+        }
+        for error in refusals {
+            XCTAssertFalse(Self.isAHang(error), "\(error)")
+            XCTAssertFalse(Self.isAHang(ImportFailure(fileName: "book.brf", step: .readingText, underlying: error)), "\(error)")
+        }
     }
 
     // MARK: - Random Cells and Print
@@ -127,6 +191,12 @@ final class BrailleDamagedInputTests: XCTestCase {
                     }
                     XCTAssertEqual(book.format, .braille, id)
                 } catch {
+                    // A hang fails the test, and ends it: no later book should
+                    // wait behind it, nor be refused for it.
+                    guard !Self.isAHang(error) else {
+                        XCTFail("\(id): a hang, not a refusal: \(error)")
+                        return
+                    }
                     // A refusal is fine, in words a listener can hear.
                     let words = (error as? LocalizedError)?.errorDescription ?? ""
                     XCTAssertFalse(words.isEmpty, "\(id): \(error)")
