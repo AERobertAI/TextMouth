@@ -211,15 +211,15 @@ The duplicate question, Replace Existing, and the questions that wait their turn
   - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
 
 ## Importing audio that only ffmpeg reads
-<!-- id: importing-audio-only-ffmpeg-reads; keys: ffmpeg, ffprobe, WMA, left out, Trailer.avi, brew install ffmpeg, Converting its audio; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift -->
+<!-- id: importing-audio-only-ffmpeg-reads; keys: ffmpeg, FFmpeg, WMA, left out, Trailer.avi, converter, Converting its audio; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT54 -->
 
-- Audio in WMA, Speex, Musepack, WebM, Matroska, AVI, Flash video, or RealMedia (see [What TextMouth reads](reads-audiobooks.md)) is converted at the same step, Converting its audio, with the ffmpeg installed on the Mac.
-- A single file of one of them, or a book whose only tracks are of them, is refused when ffmpeg is not installed, with the sentence that says how to install it.
-- A folder, ZIP, or playlist that holds other tracks too leaves out what ffmpeg is needed for, and the alert titled Book Imported names the files:
-  - "TextMouth left out “Trailer.avi”, which needs ffmpeg, a free program that isn't installed on this Mac." followed by how to install it with Homebrew and "then import the book again.";
-  - "TextMouth left out 2 files, “Trailer.avi” and “Intro.wmv”, which need ffmpeg, ..." for several, with at most five named and then "and N more";
+- Audio in WMA, Speex, Musepack, WebM, Matroska, AVI, Flash video, or RealMedia (see [What TextMouth reads](reads-audiobooks.md)) is converted at the same step, Converting its audio, with the converter inside TextMouth, so nothing needs installing.
+- A single file of one of them, or a book whose only tracks are of them, is refused only when TextMouth has lost its converter, with the sentence that says to install TextMouth again.
+- A folder, ZIP, or playlist that holds other tracks too leaves out what the converter is needed for when it is missing, and the alert titled Book Imported names the files:
+  - "TextMouth left out “Trailer.avi”, which needs TextMouth's converter, missing from the app." followed by "Install TextMouth again, then import the book again.";
+  - "TextMouth left out 2 files, “Trailer.avi” and “Intro.wmv”, which need TextMouth's converter, ..." for several, with at most five named and then "and N more";
   - "TextMouth left out “Report.spx”, which holds no sound it can read." for a file named like one of these formats that is none (a System Information report is .spx too).
-- With ffmpeg installed, the sound of a video file in a folder of tracks becomes a track of the book.
+- The sound of a video file in a folder of tracks becomes a track of the book.
 - A track that fails to convert stops the import, as any track does, and the alert says why, in the words of the section above and these:
   - "TextMouth can't read “NAME” as WMA.
     It may be damaged, or named for another format.";

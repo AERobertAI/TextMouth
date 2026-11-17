@@ -95,41 +95,45 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - The iPhone refuses these formats.
 
 ## Formats only ffmpeg reads
-<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift -->
+<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT54, FU-FFMPEG2 -->
 
-- TextMouth converts, as it is imported, the audio of these formats, which macOS cannot read, with the ffmpeg installed on the Mac:
+- TextMouth converts, as it is imported, the audio of these formats, which macOS cannot read, with the converter it carries inside the app, so nothing needs installing:
   - Windows Media Audio (.wma, .asf), and the sound of Windows Media video (.wmv);
   - Speex (.spx), also in an Ogg file named .ogg;
-  - Musepack (.mpc, .mp+, and .mpp);
+  - Musepack (.mpc and .mp+);
   - WebM and Matroska (.webm, .weba, .mka), and the sound of Matroska video (.mkv);
   - the sound of AVI (.avi) and Flash video (.flv);
   - RealAudio and RealMedia (.ra, .rm, .rmvb).
-- TextMouth bundles nothing of ffmpeg.
-  It looks for ffmpeg in Homebrew's and MacPorts' folders and then along PATH, and for the ffprobe that comes with it, which tells it what a file holds.
-- Each file becomes an .m4a file in the book's package, as the other converted audio does (see above): lossless audio becomes Apple Lossless, AAC of at most two channels is copied as it is, and any other audio becomes AAC at about its own bit rate, mixed to stereo when it has more channels.
+- The converter is built from FFmpeg, and an ffmpeg installed on the Mac, Homebrew's or any other, is not used for these.
+  Musepack's rare .mpp is no longer named, since Microsoft Project uses that extension too, but a Musepack file named so is still told by its bytes.
+- Each file becomes an .m4a file in the book's package, as the other converted audio does (see above): lossless audio becomes Apple Lossless, and any other audio, AAC included, becomes AAC at about its own bit rate, mixed to stereo when it has more channels.
 - The file's tags and chapters come along, and its sound stream is the one it marks as its default, else its first.
   A video's picture is dropped, and so is cover art.
   A file with no sound stream is refused with "“NAME” holds no sound to import."
-- Without ffmpeg, the import refuses the file with "To import WMA files, TextMouth needs ffmpeg, a free program that isn't installed on this Mac.
-  Install it with Homebrew by typing brew install ffmpeg in Terminal, then import the file again."
-  With ffmpeg but no ffprobe, the sentence names ffprobe: "To import WMA files, TextMouth needs ffprobe, which comes with ffmpeg but isn't installed on this Mac." and the same advice to install ffmpeg.
 - A file whose bytes are not of the format its name says is refused with this sentence:
   "TextMouth can't read “NAME” as WMA.
   It may be damaged, or named for another format."
-- Copy-protected Windows Media files (including PlayReady's) are refused with "TextMouth cannot open copy-protected files." whether or not ffmpeg is installed.
-- A folder, ZIP, or playlist of tracks leaves out a file that only ffmpeg reads and that can't be converted, rather than refuse the whole book, and the notice names it.
-  - A file left out for want of ffmpeg: "TextMouth left out “Trailer.avi”, which needs ffmpeg, a free program that isn't installed on this Mac."
-    The install advice follows, ending "then import the book again."
+- A file whose sound the converter does not decode is refused with "TextMouth can't convert the sound of “NAME”: it is in a kind of audio TextMouth does not read."
+  One whose sound changes its rate or its channels partway through is refused with "TextMouth can't convert “NAME” because its sound changes its rate or its channels partway through."
+- A file that makes the converter stop is refused with "TextMouth's converter stopped unexpectedly while reading “NAME”.
+  The file may be damaged."
+  The converter confines itself before it reads a file (see [Where TextMouth keeps your library](helper-programs.md)), so a hostile file cannot harm the Mac.
+- Copy-protected Windows Media files (including PlayReady's) are refused with "TextMouth cannot open copy-protected files." before the converter runs.
+- A damaged copy of TextMouth that has lost its converter refuses the file with "TextMouth can't convert WMA files because its converter is missing from the app.
+  Install TextMouth again, then import the file again."
+- A folder, ZIP, or playlist of tracks leaves out a file that only the converter reads and that can't be converted, rather than refuse the whole book, and the notice names it.
+  - A file left out because the converter is missing: "TextMouth left out “Trailer.avi”, which needs TextMouth's converter, missing from the app."
+    The advice follows, ending "then import the book again."
   - A file named for one of these formats whose bytes are of none: "TextMouth left out “Report.spx”, which holds no sound it can read."
   - Up to five files are named, then "and N more".
   - The book is refused only when no other track is left.
 - A feed's episode in one of these formats still fails, as it did before.
 - The iPhone refuses these formats, with this sentence:
   "“NAME” is in WMA, which TextMouth on iPhone can't play.
-  Add it on a Mac with ffmpeg installed, then send the book here."
+  Add it on your Mac, then send the book here."
 - A file that claims no length is limited by its size: its output may be at most 50 times the file's size, and no less than 64 MB.
   The import refuses it before running when the disk lacks room for that.
-  [Where TextMouth keeps your library](helper-programs.md) lists what else stops ffmpeg.
+  [Where TextMouth keeps your library](helper-programs.md) lists what else stops the converter.
 
 ## Chapter lists in Nero format
 <!-- id: chapter-lists-nero-format; keys: Nero chapters, chpl, M4B chapters, untitled chapter; src: TextMouth/Parsers/NeroChapterReader.swift -->
@@ -161,7 +165,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - A label with no text is called "Label" and its number.
   - A .txt file chosen on its own still imports as a text book, and a ZIP holding one still imports as a batch of books.
 - How a sheet or label file arrives is in [Adding books](adding-books.md).
-- A file that ffmpeg converts keeps its own chapters (see [Formats only ffmpeg reads](#formats-only-ffmpeg-reads)).
+- A file that TextMouth's own converter reads keeps its own chapters (see [Formats only ffmpeg reads](#formats-only-ffmpeg-reads)).
 - A sheet or label file whose times run past the end of its audio is left unused, with a notice, and the tracks import without its headings.
 
 ## M3U and M3U8 playlists

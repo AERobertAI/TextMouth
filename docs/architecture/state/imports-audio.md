@@ -26,6 +26,8 @@ So an Ogg file named .m4a, or an MP2 feed episode named .mp3, is converted.
 
 ImportAudioConverter reads a source's facts from OggHeaderReader for Ogg (Vorbis, Opus, or FLAC), and from AudioFileInfo for the rest: afinfo -x -r, run by WatchedProcess.runCapturingOutput, gives the container, codec, channels, sample rate, bit depth, length, and whether it names a channel layout.
 No Apple audio API opens the source in TextMouth's process.
+AudioFileInfo.parse(xml:) first replaces every byte sequence that is not UTF-8 with U+FFFD.
+afinfo prints a path with a letter outside ASCII as bytes that are not UTF-8 in the alert of a property it could not read, and XMLParser would refuse the whole answer for a book in a folder named "Café".
 The plan, plan(for:info:), is leaveAsItIs, convertToAAC, or convertToAppleLossless when the codec keeps every bit (SourceInfo.isLossless: lpcm, alac, flac).
 The target, target(for:bytes:), gives AAC the source's average bit rate (bytes × 8 ÷ duration) rounded up to the next standard rate (bitRate(averaging:channels:accepted:), 64 to 192 kbit/s for stereo, half for mono) at its own sample rate where AAC takes it (sampleRate(for:)).
 It gives Apple Lossless the smallest of 16, 20, 24, or 32 bits that holds the source's samples (24 when the depth is unknown or the samples are floating-point).
@@ -116,7 +118,7 @@ A file the import converts keeps its chapters through the conversion:
 - ImportAudioConverter.keepChapters writes them into the checked .m4a as a chapter track (ChapterTrackWriter, copying the samples as they are, not re-encoding) into a hidden file beside it, checks that file as the conversion was checked, and only then replaces the .m4a.
   A failure of either keeps the .m4a without chapters and logs AUDIO_CHAPTERS_NOT_KEPT with the file's name and an error's domain and code; Stop ends the import, the file as it was.
 - A conversion the library runs on an older book's Ogg files keeps none, so that book's chapters stay as they were.
-- A file ffmpeg converts keeps its own chapters through ffmpeg (-map_chapters 0), so convert returns before keepChapters for it.
+- A file the helper converts keeps its own chapters: FFmpegAudioConverter.convert writes the report's chapter marks with ImportAudioConverter.keepChapters itself (when keepingChapters), so ImportAudioConverter.convert returns before its own call for it.
 
 ## Cue sheets and Audacity label files
 <!-- id: cue-sheets-label-files-import; keys: CueSheet, CueSheetArrangement, arrangeByCueSheets, importCueSheetWithReport, AudacityLabels, FMT24, FMT06, measuredLengths; src: TextMouth/Parsers/CueSheet.swift, TextMouth/Parsers/CueSheetArrangement.swift, TextMouth/Parsers/AudacityLabels.swift, TextMouth/Services/FileImportService+CueSheets.swift, TextMouth/Models/CueSheetWording.swift -->
@@ -130,7 +132,7 @@ A file the import converts keeps its chapters through the conversion:
   - Every file a sheet or label file names is measured first (measuredLengths(of:): a file played as it is by AVFoundation's prober, an Ogg file from its own pages, any other by afinfo in its child process), and a sheet that runs past its audio is left unused with a notice.
   - A track no sheet plays stays a section of its own, and the sections keep Finder's order, each sheet's at its first file's place.
   - A label file (AudacityLabels, a .txt of tab-separated start, end, and text, and nothing else) is a sheet of one audio file, the file of its stem or the only one beside it; a label with no text is titled "Label N".
-  - FFmpeg-only formats are measured by afinfo, which cannot read WMA or Matroska, so a sheet over one is taken to fit and checked after the conversion (follow-up: measure them with ffprobe).
+  - FFmpeg-only formats, which afinfo cannot read, are measured by the helper's probe (FFmpegAudioConverter.length(of:using:)), so a sheet over a WMA or Matroska file is checked like any other.
 - Folder and ZIP imports call arrangeByCueSheets(in:) when AudioManifestLocation.find finds no manifest, and write the sections as a manifest where a new one goes; a manifest.json always wins, and a folder without a sheet is left as it was.
   FileImportService.publishingWithoutSheetsOnMisfit publishes with the sections.
   If the book's parse finds one past its file's end after the conversion (AudioParseError.placesASectionOutsideItsFile), it publishes once more without them, their manifest removed, with CueSheetArrangement.noticeWithoutItsSections.
@@ -160,31 +162,9 @@ A file the import converts keeps its chapters through the conversion:
 - The iPhone compiles the readers, and its import refuses the files (see the iPhone's import refusals).
 
 ## Audio only ffmpeg reads
-<!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, FFmpegReport, TextMouthFFmpeg, ASF, copy protection, FMT31, FMT50; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Services/FFmpegHelperStream.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift -->
+<!-- id: audio-only-ffmpeg-pointer; keys: WMA, Matroska, WebM, FFmpeg; src: TextMouth/Services/FFmpegAudioConverter.swift -->
 
-- Which files: FFmpegAudioConverter.converts(_:) is true for a file in either of two cases, whatever its name.
-  - Its extension is in FFmpegAudioConverter.extensions (16 of them, joined to ImportAudioConverter.convertedExtensions so the reader guards keep them from Apple's decoders).
-  - Its bytes are of a container only ffmpeg reads, as FFmpegContainer.of(fileAt:) tells: ASF, Matroska, FLV, AVI, RealMedia, Musepack 7 and 8, or Speex in Ogg.
-  Ogg of any other codec stays with afconvert, and a file of TextMouth's own readers (OwnAudioConverter.format(of:)) is never ffmpeg's.
-  No failed Apple open ever chooses the path.
-- Dispatch: ImportAudioConverter.convert returns FFmpegAudioConverter.convert first for such a file, before keepChapters, since ffmpeg carries the chapters itself.
-  FFmpegContainer reads only the first bytes (AudioContentSniffer.firstBytes).
-  ASFHeader.isCopyProtected walks the ASF header for the four protection objects, PlayReady's among them: every object at least 24 bytes and inside its parent, at most 10,000 objects, at most 16 MB (maximumHeaderBytes), one nested level.
-  A protected file is refused before any program is asked.
-- The programs: FFmpeg.locate(in:environment:) looks in /opt/homebrew/bin, /usr/local/bin, and /opt/local/bin, then along PATH, and FFmpeg.probe the ffprobe beside it.
-  Both are always nil on iOS.
-  Each runs through WatchedProcess with no shell, every path given as "file:<path>", -protocol_whitelist file, and the demuxer named (-f), so no name is read as a protocol.
-  Limits: ffmpeg a minute plus a tenth of the length, 1 GB, a stall of 60 s; ffprobe 30 s plus the size at 20 MB/s, 512 MB, an 8 MB report (maximumReportBytes).
-- The plan (FFmpegAudioConverter.plan(for:container:fileName:aacEncoder:)): FFprobeReport.chosenAudio is the first usable stream marked default, else the first.
-  AAC of at most two channels is copied; a lossless codec (isLossless(codec:)) becomes Apple Lossless at its depth; anything else AAC at its own bit rate, by aac_at when ffmpeg has Apple's encoder, else aac.
-  Arguments carry the chapters and tags (-map_chapters 0, -map_metadata 0), and stream tags only for Ogg (FFprobeReport.streamTagsToCarry), since Matroska and AVI keep a track's name there.
-  The book's metadata comes from FFprobeReport.tags (AudioPlaybackService.extractFullMetadata): the title, the artist (or author, or album_artist), and the album.
-  A tag holding U+FFFD, as a Latin-1 tag read as UTF-8 does, is not yet treated as missing.
-- Limits on a source with no length: assumedDuration at 6 kbit/s, and an output cap of max(64 MB, 50 times the file) (unknownLengthOutputCap), refused before running when the volume lacks that and downmixReserveBytes.
-  A stated length the file's size can't hold is taken as unknown (believedDuration, AUDIO_INFO_IMPLAUSIBLE).
-- Tracks left out: FFmpegAudioConverter.tracksToLeaveOut(of:located:) names, among a book's several tracks, the files only ffmpeg reads that this Mac can't convert (no ffmpeg or ffprobe, or the iPhone) and those whose bytes are of no container ffmpeg reads.
-  FileImportService.leavingOutWhatOnlyFFmpegReads removes their staged copies and returns the notice (FFmpegImportWording.tracksLeftOutNotice), and the book is refused only when no track is left.
-- Not built (review9 items 6 to 11): a crashed ffprobe's own sentence, tags capped at 4 KB, and "mpp" (Microsoft Project's extension) dropped from the Musepack list.
+The formats macOS cannot read (WMA, Matroska, WebM, and the rest) are converted by the FFmpeg built into the app: see [Imports: audio only FFmpeg reads](imports-audio-ffmpeg.md).
 
 ## Playlists
 <!-- id: playlists; keys: playlist import, .m3u, m3u8, folder book, duplicate playlist, skipped entries, Book Imported alert, streaming playlist; src: TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Parsers/PLSAndXSPFPlaylist.swift, TextMouth/Models/PlaylistImportWording.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Parsers/AudioManifest.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
@@ -254,11 +234,15 @@ WatchedProcess starts a tool as /bin/sh, which sets the kernel's processor-time 
 So the pid it watches, measures, and kills is the tool's own.
 A child the kernel ends at that limit (SIGXCPU) is reported as KillReason.usedTooMuchProcessorTime.
 The same shell also sets the kernel's file-size limit (ulimit -f, whole kilobytes: fileSizeLimitForShell(_:)) from Limits.maximumOutputBytes, and the watchdog kills a child whose watched file passes that cap (KillReason.wroteTooMuch, "its output passed N MB").
-A child the kernel ends at the limit (SIGXFSZ) is reported the same way, since a check once a second let a fast writer put hundreds of megabytes on the disk between two looks.
+A child the kernel ends at the limit (SIGXFSZ) is reported the same way, since the watchdog's look (Limits.pollInterval, 0.25 s for every watched run) still lets a fast writer put hundreds of megabytes on the disk between two looks.
 The call runCapturingOutput(_:arguments:limits:maximumOutputBytes:...) keeps what a child prints (afinfo's).
 Its standard output goes to a new hidden `.<UUID>.watched-output` file in the temporary directory.
 That file is the watched file, capped at maximumOutputBytes (1 MiB unless asked otherwise) and removed however the run ends, by an exit, a kill, a failure to start, or a cancellation.
 Here output is not progress, so the stall clock runs from the child's start, and a child that prints without end still ends at its time limit while one that prints only when it ends (afinfo) is not killed for being silent.
+The call runStreaming(_:arguments:watching:limits:...:reading:) hands what a child writes to its standard output to a reader as it comes, through a pipe (PipeReader), for the FFmpeg helper.
+Nothing is staged in a file, and the kernel's file-size limit never applies, since the child writes a pipe.
+The watched file is the one the reader writes (watching: nil for none), and the reader counts its cap too.
+A reader that fails gets the child killed at once; one that returns has the child end by itself within endGraceSeconds (defaultEndGraceSeconds, 2), else a SIGKILL that is not the watchdog's: its Ending is a signal, never .killed.
 A reason's words (KillReason.words) count its seconds with CountWording.seconds, so a limit of one second reads "1 second".
 The watchdog's clock is ProcessInfo.systemUptime, which never runs backwards, so a sleep or a change of the wall clock never ages a healthy child.
 ChildGate holds the child's pid and whether its task was cancelled under one lock, so a cancellation and the child's start meet in either order and the child is killed all the same, and a task already cancelled starts no child.

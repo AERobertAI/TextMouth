@@ -223,17 +223,24 @@ Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDO
 - Not covered: other programs reading the markers written, cue sheets from the wild, and the labels checkbox with VoiceOver.
 
 ## Formats only ffmpeg reads
-<!-- id: tests-ffmpeg-import; keys: FFmpegImportSnifferTests, FFmpegImportPlanTests, FFmpegImportConversionTests, FFmpegImportRealTests, stand-in ffmpeg, ffprobe JSON, PlayReady; src: TextMouthProductionTests/FFmpegImportSnifferTests.swift, TextMouthProductionTests/FFmpegImportPlanTests.swift, TextMouthProductionTests/FFmpegImportConversionTests.swift, TextMouthProductionTests/FFmpegImportRealTests.swift, TextMouthProductionTests/RefusedFormatAdviceTests.swift -->
+<!-- id: tests-ffmpeg-import; keys: FFmpegImportSnifferTests, FFmpegImportPlanTests, FFmpegHelperStreamTests, FFmpegHelperHostileFileTests, stand-in helper, PlayReady; src: TextMouthProductionTests/FFmpegImportSnifferTests.swift, TextMouthProductionTests/FFmpegImportPlanTests.swift, TextMouthProductionTests/FFmpegImportConversionTests.swift, TextMouthProductionTests/FFmpegImportRealTests.swift, TextMouthProductionTests/FFmpegHelperProtocolTests.swift, TextMouthProductionTests/FFmpegHelperStreamTests.swift, TextMouthProductionTests/FFmpegHelperHostileFileTests.swift, TextMouthProductionTests/FFmpegTestSupport.swift, Scripts/vendor/ffmpeg/test_build.py, TextMouthProductionTests/RefusedFormatAdviceTests.swift -->
 
-- GitHub's runners have no ffmpeg, so every test of the import's logic runs without it, and only FFmpegImportRealTests needs the real one.
+- The app carries its FFmpeg helper (TextMouthFFmpeg), so every test of the import, the real ones too, runs everywhere, on GitHub's runners as on a Mac, and none needs an installed ffmpeg.
 - FFmpegImportSnifferTests tell each sample's container from its first bytes and pin the protection check of ASF files on bytes made in the test, one object at a time, PlayReady's among them.
-- FFmpegImportPlanTests take ffprobe's own JSON for each sample (trimmed) and pin the stream chosen, the tags carried, the encoding, ffmpeg's exact arguments, the limits of a source with no length, and every sentence a listener hears.
-- FFmpegImportConversionTests drive the import through FFmpegAudioConverter.Tool stand-ins: a canned report, /bin/cp copying a finished file, and a sleep that hangs.
-  They cover the tracks a book leaves out, with and without ffmpeg.
-- FFmpegImportRealTests run on a Mac with ffmpeg and ffprobe: each sample becomes an .m4a of the codec its source calls for, with its chapters and tags, as long as its sound.
+- FFmpegHelperStreamTests read streams written by hand (FFmpegTestStream, which spells the protocol's letters and numbers out, so a change to the header that its comment does not follow fails them) and refuse every way a stream can break the protocol, each by name.
+- FFmpegHelperProtocolTests run the real helper on real samples: the stream it writes, the exit status of each refusal, the 4 KB cut of a tag, and the import's Stop.
+  Its Debug-only `confinement` mode proves that the sandbox leaves the open file readable and refuses the hosts file and a network connection.
+- FFmpegImportPlanTests are pure functions of the helper's reports: the target of each sound, the limits of a source with no length, the formats' names, the failure each way a run can end in, and every sentence a listener hears.
+- FFmpegImportConversionTests drive the import through FFmpegAudioConverter.Tool stand-ins, a script in front of the real helper where a run must end otherwise (a probe written by hand, a hang, a crash, an early end, a damaged stream).
+  They cover the tracks a book leaves out, with and without the helper.
+- FFmpegImportRealTests import every sample with the real helper, confined as in the app: each becomes an .m4a of the codec its source calls for, with its chapters and tags, as long as its sound.
   The samples are in TestData/format-samples, among them a WMA 1 and 2, a WMV, an AVI, an FLV, WebM, Matroska with chapters and several tracks, Speex, and RealMedia (.rm).
+- FFmpegHelperHostileFileTests give the helper a damaged copy of every sample (cut, bytes flipped, a stretch zeroed or repeated) and demand an end by the protocol and an import that ends in a conversion or a failure by name.
+  A damaged file could crash the helper, so they run on GitHub only (`TestMachine.skipUnlessGitHubRunner`; see [The hosted test suite](testing.md)).
+- `Scripts/vendor/ffmpeg/test_build.py`, in `make check-selftest`, tests the build script without downloading.
+  It covers the pins and the second source, a release that matches no pin, the patches' order and place in the key, the configure line, and that no path of the building Mac is left in the result.
 - IOSBranchTests and PhoneImportBranchTests pin that the iPhone refuses these files and leaves them out of a book; RefusedFormatAdviceTests pin the copy-protection sentence, with an .aax as its example.
-- Not run anywhere yet: a real PlayReady file and a Musepack sample, since no encoder made one.
+- Not run anywhere yet: a real PlayReady file and a Musepack sample, since no encoder made one; a frame over 1 MB split across records, a PCM record over 1 MB in the reader, and the decoder's error bound, which no sample reaches (FU-FFMPEG2).
 
 ## TextMouth's own TTA, WavPack, and Monkey's Audio readers
 <!-- id: tests-own-audio-readers; keys: OwnAudioTrueAudioTests, OwnAudioWavPackTests, OwnAudioMonkeysAudioTests, OwnAudioTagTests, OwnAudioImportTests, make-own-audio-samples, pcm.tsv, fuzz; src: TextMouthProductionTests/OwnAudioTrueAudioTests.swift, TextMouthProductionTests/OwnAudioWavPackTests.swift, TextMouthProductionTests/OwnAudioMonkeysAudioTests.swift, TextMouthProductionTests/OwnAudioTagTests.swift, TextMouthProductionTests/OwnAudioImportTests.swift, TextMouthProductionTests/OwnAudioSampleSupport.swift, Scripts/make-own-audio-samples.py -->
