@@ -5,11 +5,11 @@ kind: docs
 status: open
 priority: P3
 platform: both
-assignee:
+assignee: docspass1116
 created: 2026-11-16
 updated: 2026-11-16
 found-by: review-issuelib
-branch:
+branch: docs/pass-1116
 merged:
 reason:
 related: DR35
