@@ -33,7 +33,7 @@ Sandboxes left behind.
   A run that crashes leaves its sandbox to the next run's sweep.
 
 ## Config saves a test leaves waiting
-<!-- id: config-saves-test-leaves-waiting; keys: settings tests, isolated settings, debounced save, flaky test, delayed write; src: TextMouth/Services/ConfigService.swift, TextMouthProductionTests/ConfigTestSupport.swift, TextMouthProductionTests/HostedTestObservers.swift -->
+<!-- id: config-saves-test-leaves-waiting; keys: settings tests, isolated settings, debounced save, flaky test, delayed write; src: TextMouth/Services/ConfigService.swift, TextMouthProductionTests/ConfigTestSupport.swift, TextMouthProductionTests/HostedTestObservers.swift, TextMouthProductionTests/ConfigTestWorldTeardownTests.swift, TextMouthProductionTests/IntegrationTestSupport.swift -->
 
 Config saves a test leaves waiting.
 
@@ -41,6 +41,14 @@ Config saves a test leaves waiting.
   As each test ends, it writes a config.json save the test left waiting (ConfigService.flushScheduledSave()), so the save never lands during the next test.
   A test that changes the global settings makes a settings model of its own, makeIsolatedSettings(_:configFile:configWrite:) (TextMouthProductionTests/ConfigTestSupport.swift).
   Its preferences are a sandboxed store, its config.json a file of the test's own, never watched, written as the test chooses, and its notifications its own (REV13).
+- A test's own settings service: every ConfigService a test makes on a file comes from makeConfigService(fileURL:) (ConfigTestSupport.swift), as makeIsolatedSettings and the integration world do.
+  A settings change on such a service leaves a save waiting for 250 milliseconds (scheduleSave()), and the helper's teardown drops it (ConfigService._dropScheduledSaveForTesting()).
+  Nothing in the app calls that: there a quit and a move write a waiting save, and a missing folder is a failure the user must hear.
+  A save that fired after the test's folders were deleted failed with "The folder config.json doesn't exist" and was announced into whichever test ran next.
+  Settings changes are the only source of such a save: a reader's open saves through ConfigService.shared, which ConfigSaveFlush writes.
+  Teardown blocks run last registered first, and the folder's removal has to be registered before the helper's drop: an asynchronous block that ran between the removal and the drop would let the save fire into the missing folder.
+  ConfigTestWorldTeardownTests scans the test folders' sources, the iPhone's too, and fails for a service made any other way, however Swift spells it (testEveryOtherConfigServiceComesFromTheHelper).
+  The integration world's teardown also waits for the statistics' queue (ReadingStatsService.waitForQueuedSaves()), so that write is made inside the test that asked for it.
 
 ## Redraw counts
 <!-- id: redraw-counts; keys: view redraw, render count, SwiftUI performance, unnecessary redraw, lazy list; src: TextMouth/Views/Reader/BookSearchView.swift, TextMouth/Views/ViewBodyCounter.swift -->
