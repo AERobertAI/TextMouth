@@ -629,8 +629,9 @@ targets:
         # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream
         # modules, as the Mac target finds them (the FFmpeg session's module,
         # in the same folder, needs the FFmpeg_iOS dependency to link), and
-        # the braille library's (DR34), beside the protocol's in
-        # TextMouthBraille/include.
+        # the braille library's (DR34), whose map is in
+        # TextMouthBraille/include/TextMouthBrailleLibrary, where Clang looks
+        # for a module of that name on this path.
         SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
     dependencies:
       - package: ZIPFoundation

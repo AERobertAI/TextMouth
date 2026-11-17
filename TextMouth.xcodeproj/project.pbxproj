@@ -4297,6 +4297,7 @@
 		775149D8E97C3F5758230385 /* FolderSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderSafetyTests.swift; sourceTree = "<group>"; };
 		775F37D36743CA401F229592 /* Book+ReadingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Book+ReadingState.swift"; sourceTree = "<group>"; };
 		777297DB0A124216FD277FA5 /* WordDocumentStructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordDocumentStructure.swift; sourceTree = "<group>"; };
+		7808FE2F6EE27C15D973699F /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		7869555A15F80E73B3762EB6 /* DoublePressBindingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoublePressBindingTests.swift; sourceTree = "<group>"; };
 		78A361C04E8213EBFEF10EFB /* AudioEditorTimeMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorTimeMap.swift; sourceTree = "<group>"; };
 		78B91B6D6C2ADEEC23EDD12C /* PhoneFolderSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneFolderSheet.swift; sourceTree = "<group>"; };
@@ -5753,6 +5754,7 @@
 				FD619115F066C84E7EE9B31A /* module.modulemap */,
 				C649FC1AF1847BF520DA6FA5 /* TextMouthBrailleLibrary.h */,
 				931BDF29C0B1DA3F0C24E32F /* TextMouthBrailleProtocol.h */,
+				95B823D2C7AB241D25F3A898 /* TextMouthBrailleLibrary */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -6296,6 +6298,14 @@
 				A9566353F0389A2A9393B2CB /* TextMouthProductionTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		95B823D2C7AB241D25F3A898 /* TextMouthBrailleLibrary */ = {
+			isa = PBXGroup;
+			children = (
+				7808FE2F6EE27C15D973699F /* module.modulemap */,
+			);
+			path = TextMouthBrailleLibrary;
 			sourceTree = "<group>";
 		};
 		95CB16651BB51BCA7C97A2B7 /* App */ = {

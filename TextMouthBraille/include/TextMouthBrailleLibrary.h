@@ -8,7 +8,9 @@
  * main around `tmb_translate_stream`, and runs the helper under its watchdog.
  * The iPhone, which may start no helper program, calls the same code in its
  * own process through `tmb_translate`, which takes the input and gives the
- * output in memory, within the limits of `tmb_limits`.
+ * output in memory, within the limits of `tmb_limits`. Its Swift imports
+ * this header as the Clang module TextMouthBrailleLibrary, whose map is
+ * TextMouthBrailleLibrary/module.modulemap in the folder beside it.
  *
  * Both directions read and write the line protocol of
  * TextMouthBrailleProtocol.h: an input begins with the protocol's header line
