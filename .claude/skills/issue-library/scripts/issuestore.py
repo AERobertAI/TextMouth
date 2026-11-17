@@ -345,6 +345,26 @@ def _choice(name: str, value: str) -> str:
     return value
 
 
+def check_references(store: Store, name: str, entries: List[str]) -> None:
+    """Refuse a ``related`` entry that names no issue file, TODO item, or alias, and a ``docs`` entry that names no doc section.
+
+    ``check`` reports such entries in a file too; refusing them here keeps a typo
+    out of the file in the first place.
+    """
+    if name == "related":
+        known = store.known_ids()
+        for entry in entries:
+            if not issueids.is_issue_id(entry):
+                raise UsageError(f"related {entry!r} is not an ID")
+            if entry not in known:
+                raise Refused(f"related {entry} names no issue file, TODO item, or alias")
+    elif name == "docs":
+        sections = {section.section_id for section in store.doc_sections()}
+        for entry in entries:
+            if entry not in sections:
+                raise Refused(f"docs {entry} names no doc section (doclib find {entry} finds none)")
+
+
 def _sound(store: Store, issue_id: str) -> Issue:
     """The issue ``issue_id``, refused when its layout is broken, since a rewrite could lose what it holds."""
     issue = store.load(issue_id)
@@ -391,6 +411,8 @@ def new_issue(store: Store, *, kind: str, title: str, priority: str, platform: s
         "labels": _normalized("labels", ",".join(labels)),
         "description": description.strip("\n").rstrip(),
     }
+    for name in ("related", "docs"):
+        check_references(store, name, issuefile.split_list(values[name]))
     try:
         text = issuefile.fill_template(store.template(), store.relative(path), values)
     except IssueFormatError as error:
@@ -436,6 +458,7 @@ def set_field(store: Store, issue_id: str, name: str, value: str, as_name: str) 
     permit(store, f"setting {name}", as_name, issue, agent_may=agent_may)
     if name in ("merged", "reason") and not issue.closed:
         raise Refused(f"{name} belongs to a closed issue: close sets it")
+    check_references(store, name, issuefile.split_list(value))
     old = issue.value(name)
     if old == value:
         return Change(store.path_of(issue_id), "", f"{issue.path}: {name} is {value or 'empty'} already", unchanged=True)

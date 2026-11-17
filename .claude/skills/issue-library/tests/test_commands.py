@@ -50,6 +50,17 @@ class FilingTests(IssueCase):
         self.assertEqual(self.new_issue("T", "bug", "mac", "--labels", "Bad Label")[0], 1)
         self.assertFalse((self.root / "Issues/B16.md").exists())
 
+    def test_a_reference_that_names_nothing_is_refused(self) -> None:
+        status, _out, err = self.new_issue("T", "bug", "mac", "--related", "B12, B99")
+        self.assertEqual((status, err), (1, "issuelib: refused: related B99 names no issue file, TODO item, or alias\n"))
+        status, _out, err = self.new_issue("T", "bug", "mac", "--docs", "no-such-section")
+        self.assertEqual(status, 1)
+        self.assertIn("docs no-such-section names no doc section", err)
+        self.assertFalse((self.root / "Issues/B16.md").exists())
+        # An alias and a real section are fine.
+        self.write_tree({"docs/user/x.md": "# X\n<!-- id: x-top -->\n\nText.\n"})
+        self.assertEqual(self.new_issue("T", "bug", "mac", "--related", "B12-OCT", "--docs", "x-top")[0], 0)
+
     def test_the_description_may_come_from_a_file(self) -> None:
         self.write_tree({"desc.txt": "First paragraph.\n\n- a point\n"})
         status, _out, err = self.run_cli("new", "--kind", "bug", "--title", "T", "--platform", "mac",
@@ -102,6 +113,18 @@ class ChangeTests(IssueCase):
                 self.assertEqual(status, expected_status, err)
                 self.assertIn(expected, err)
         self.assertEqual(self.read("Issues/B16.md"), B16)
+
+    def test_set_refuses_a_related_or_docs_entry_that_names_nothing(self) -> None:
+        for name, value, expected in (("related", "B12 B99", "related B99 names no issue file"),
+                                      ("docs", "no-such-section", "docs no-such-section names no doc section")):
+            with self.subTest(name):
+                status, _out, err = self.as_orchestrator("set", "B16", name, value)
+                self.assertEqual(status, 1)
+                self.assertIn(expected, err)
+        self.assertEqual(self.read("Issues/B16.md"), B16)
+        self.write_tree({"docs/user/x.md": "# X\n<!-- id: x-top -->\n\nText.\n"})
+        self.assertEqual(self.as_orchestrator("set", "B16", "docs", "x-top")[0], 0)
+        self.assertIn("docs: x-top\n", self.read("Issues/B16.md"))
 
     def test_set_to_the_same_value_writes_nothing(self) -> None:
         status, out, _err = self.as_orchestrator("set", "B16", "priority", "P2")
