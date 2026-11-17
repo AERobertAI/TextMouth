@@ -67,6 +67,11 @@ class RunnerTestCase(unittest.TestCase):
                    f"sys.exit({status})\n")
         return lambda areas, classes, derived, log, jobs=3, extra=(): [sys.executable, "-I", "-B", "-c", program, str(log)]
 
+    @staticmethod
+    def bundle_in(extra):
+        """The path after -resultBundlePath in the runner's extra arguments ("" when there is none)."""
+        return extra[list(extra).index("-resultBundlePath") + 1] if "-resultBundlePath" in extra else ""
+
     def run_main(self, limit_minutes=5, extra=()):
         """Runs the script's main() on the request; returns (status, stdout)."""
         out = io.StringIO()
@@ -314,20 +319,30 @@ class StaleCacheTests(RunnerTestCase):
 
     def stale_then(self, second_log, second_printed):
         """A command whose first run fails with the stale-module error (and prints a failed summary) and whose later runs
-        write `second_log` and print `second_printed`; each run notes whether the module cache was there when it began."""
+        write `second_log` and print `second_printed`; each run notes whether the module cache was there when it began.
+        It stands in for xcodebuild in one more way: given -resultBundlePath it refuses a bundle that exists already
+        (as xcodebuild does: "Existing file at -resultBundlePath", status 70, nothing run), and otherwise writes a bundle
+        whose Info.plist says which try made it."""
         marker = self.folder / "tried"
         program = ("import os, sys\n"
-                   "log = sys.argv[1]\n"
+                   "log, bundle = sys.argv[1], sys.argv[2]\n"
+                   "if bundle and os.path.exists(bundle):\n"
+                   "    sys.stdout.write('xcodebuild: error: Existing file at -resultBundlePath \"' + bundle + '\"\\n')\n"
+                   "    sys.exit(70)\n"
                    f"cache = {str(self.derived / 'ModuleCache.noindex')!r}\n"
                    f"marker = {str(marker)!r}\n"
                    "again = os.path.exists(marker)\n"
                    "open(marker, 'a').write('x')\n"
+                   "if bundle:\n"
+                   "    os.makedirs(bundle)\n"
+                   "    open(os.path.join(bundle, 'Info.plist'), 'w').write('retry' if again else 'first')\n"
                    f"open(log, 'w').write(({second_log!r} if again else {STALE_LOG!r}) + "
                    "('CACHE ' + ('present' if os.path.exists(cache) else 'gone') + '\\n'))\n"
                    f"sys.stdout.write({second_printed!r} if again else {SUMMARY_FAILED!r})\n"
                    "sys.exit(0 if again else 1)\n")
 
-        return lambda areas, classes, derived, log, jobs=3, extra=(): [sys.executable, "-I", "-B", "-c", program, str(log)]
+        return lambda areas, classes, derived, log, jobs=3, extra=(): [
+            sys.executable, "-I", "-B", "-c", program, str(log), self.bundle_in(extra)]
 
     def run_count(self):
         """How many times the stale_then command ran (each run adds a character to its marker file)."""
@@ -347,6 +362,31 @@ class StaleCacheTests(RunnerTestCase):
         self.assertIn("CACHE gone", log, "the retry began with the module cache emptied")
         self.assertNotIn("has been modified", log, "the log is the retry's")
         self.assertTrue((self.derived / "Build" / "kept.o").exists(), "everything but the module caches is kept")
+
+    def test_the_retry_gets_its_own_result_bundle_and_the_first_tries_is_kept_beside_it(self):
+        # TL01: the first try's bundle made xcodebuild refuse the retry's identical -resultBundlePath (train 1116-2122).
+        with mock.patch.object(test_command, "area_command", self.stale_then(LOG_PASSED, SUMMARY_PASSED)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 0, "the retry ran: xcodebuild's stand-in did not refuse its bundle")
+        self.assertEqual((self.out / "result.xcresult" / "Info.plist").read_text(), "retry",
+                         "result.xcresult, the bundle the workflow uploads, is the retry's")
+        self.assertEqual((self.out / runner.FIRST_TRY_BUNDLE / "Info.plist").read_text(), "first",
+                         "the first try's bundle is kept for diagnosis")
+
+    def test_a_run_that_needed_no_retry_leaves_one_bundle_and_no_first_try_bundle(self):
+        with mock.patch.object(test_command, "area_command", self.stale_then(LOG_PASSED, SUMMARY_PASSED)), \
+                mock.patch.object(runner, "stopped_by_stale_cache", lambda log, timed_out: False):
+            self.run_main()
+        self.assertEqual((self.out / "result.xcresult" / "Info.plist").read_text(), "first")
+        self.assertFalse((self.out / runner.FIRST_TRY_BUNDLE).exists())
+
+    def test_the_bundle_set_aside_takes_a_free_name_and_a_missing_bundle_is_no_problem(self):
+        bundle = self.out / "result.xcresult"
+        self.assertIsNone(runner.set_first_try_bundle_aside(bundle), "no bundle, nothing moved")
+        for expected in (runner.FIRST_TRY_BUNDLE, "result.first-try-2.xcresult", "result.first-try-3.xcresult"):
+            bundle.mkdir(parents=True)
+            self.assertEqual(runner.set_first_try_bundle_aside(bundle), self.out / expected)
+            self.assertFalse(bundle.exists())
 
     def test_the_summary_says_the_run_went_twice_and_why_and_the_trains_reader_still_reads_it(self):
         train = test_command.load_build_train()

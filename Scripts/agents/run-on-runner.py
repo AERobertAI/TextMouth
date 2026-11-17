@@ -220,6 +220,32 @@ def stopped_by_stale_cache(log, timed_out):
     return runner_module_cache.is_stale_module_error(text) and "\nTest Suite " not in "\n" + text
 
 
+# What the first try's result bundle is called once the retry has taken its place (a number follows if that name is taken).
+FIRST_TRY_BUNDLE = "result.first-try.xcresult"
+
+
+def set_first_try_bundle_aside(bundle):
+    """Moves the first try's result bundle `bundle` out of the way and returns where it went, or None when there was
+    none or it could not be moved. xcodebuild refuses a -resultBundlePath that already exists ("Existing file at
+    -resultBundlePath"), so the retry, which gets the same command, could not start while the first try's bundle
+    was there (train 1116-2122). The moved bundle stays beside it for diagnosis, and the retry writes `bundle` itself,
+    which is the one the workflow uploads and the results are read from."""
+    if not bundle.exists():
+        return None
+    target = bundle.with_name(FIRST_TRY_BUNDLE)
+    number = 1
+    while target.exists():
+        # A name taken already (a second retry of the same folder): take the next free one.
+        number += 1
+        target = bundle.with_name(f"result.first-try-{number}.xcresult")
+    try:
+        bundle.rename(target)
+    except OSError as error:
+        print(f"run-on-runner: could not move {bundle.name} aside: {error}", flush=True)
+        return None
+    return target
+
+
 def execute(train, command, sink_log, request, log, limit_minutes):
     """Runs `command` once under the train's watchdog and the time limit; returns (the printed result, whether the time
     limit stopped it). `sink_log` is True for the full suite, whose whole output is its log and whose result is
@@ -306,6 +332,8 @@ def run_tests(train, request, out, limit_minutes):
         print(f"run-on-runner: {runner_module_cache.STALE_MARKER}; emptying the module caches and running once more",
               flush=True)
         runner_module_cache.empty_module_caches(derived)
+        # The retry's command names the same result bundle, which xcodebuild refuses to write over.
+        set_first_try_bundle_aside(out / "result.xcresult")
         output, timed_out = execute(train, command, request["full"], request, log, left)
         output = RETRY_NOTE.format(marker=runner_module_cache.STALE_MARKER) + "\n" + output
     return output, timed_out
