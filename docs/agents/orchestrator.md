@@ -93,6 +93,7 @@ It is merged without a suite as a Markdown-only merge and recorded in the TODO w
 **The docs' checks:** before each fast-forward of main, run `make lint-docs` on the merged tree.
 After each docs merge, run `python3 -I .claude/skills/doc-library/scripts/doclib.py lint --update-baseline`.
 When main's docs changed under a branch, run it with `--rebuild-baseline` instead, which only the orchestrator runs because it can raise a count.
+`Scripts/agents/merge-chain.sh` also runs the issue tracker's check on each merged tree before it commits, as a ratchet by file: it fails only on a problem that is new and in a file the merge changed ([When an issue file stops a merge](#when-an-issue-file-stops-a-merge)).
 
 ## The end of a campaign
 <!-- id: end-campaign; keys: Where things stand, hand-over, campaign, history.md; src: AGENTS.md, docs/agents/history.md -->
