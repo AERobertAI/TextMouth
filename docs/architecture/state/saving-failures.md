@@ -21,6 +21,9 @@ Outstanding failed writes.
   The failure center keeps the retry across the held work and runs it when the hold ends, in the data directory then in use, for statistics, settings, substitution rules, feed records, and a stranded package (whose Retry then acts where the package is).
   The failure's reason says when the changes are saved (FeedRecordWaitsForStorageWork, FeedWording.recordWaits(for:) for a feed), and PersistenceFailureCenter.announceOutcomeOfWaitingRetry(of:) tells VoiceOver how it went.
   Retry Saving stays enabled during a move.
+- A save of the statistics or the substitution rules made while a move copies the library is provisional (StorageBoundary.isProvisionalSave(of:rewrite:), [Holding storage work](data-directory.md)).
+  It is written and a failure is recorded as any other, but its success settles no earlier failure.
+  The save the move makes again after its hold is released does, once the move has waited for the statistics' queue, so an outcome is never judged before it.
   Quit Anyway during a long Rebuild Directory leaves such a change unsaved, and a change the quit stopped waiting for is reported with no Retry.
 - How others observe it: the Library window's banner shows one row for each failing subsystem, with Retry and Dismiss, and VoiceOver announces a subsystem once when it starts to fail.
   While anything is unsaved, hasUnsavedChanges makes quitting ask first (UnsavedChangesTermination, with Retry, Quit Anyway, and Cancel).

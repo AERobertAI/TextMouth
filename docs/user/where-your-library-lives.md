@@ -144,6 +144,8 @@ The new location must be an empty folder or one that does not exist yet.
 If anything else appears there, or the location is changed to lead somewhere else, while the copy is made, the move stops: TextMouth deletes only its own copy, leaves what appeared alone, keeps using the old folder, and says what appeared and where.
 A location that is a symbolic link counts as the folder it leads to, and messages name that folder too.
 The old folder is left where it was.
+A substitution rule or listening statistics changed while the library is copied is saved again once the move is over, in the library then in use: the moved one when the move finishes, the old one when it is cancelled or fails.
+Until then a failed save of the same file is still reported as unsaved.
 
 ### The hidden folder of a move
 <!-- id: hidden-folder-move; keys: migration staging, leftovers, UUID, cleanup at launch; src: TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Models/CloudStorageContract.swift -->

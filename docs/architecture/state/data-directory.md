@@ -34,7 +34,7 @@ Its location, and moving it.
   StorageChoice and StorageWording word the confirmation or the status line.
 
 ### Holding storage work
-<!-- id: holding-storage-work; keys: storage hold, StorageBusyError, Try again, Rebuild Directory, import blocked, feed items set aside; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Models/Library.swift -->
+<!-- id: holding-storage-work; keys: storage hold, StorageBusyError, Try again, Rebuild Directory, import blocked, feed items set aside; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Models/Library.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift -->
 
 - Holding: withStorageWorkHeld(moving:waiting:_:) holds new storage work back (StorageBoundary.holdWork(for:)).
   It waits for the import, text extraction, and book analysis under way (StorageWorkHold.waitForWorkUnderWay), flushes the queued saves and logs, runs the move, and then lets the held work go on under the new generation.
@@ -45,7 +45,11 @@ Its location, and moving it.
   They then move their packages and rewrite their records off the main actor (OffMainWork.runThrowing), VoiceOver hearing what they wait for.
   Each hold says what it is for (StorageHoldReason: moving the data directory, rebuilding it, or moving books between folders), and only one is in place at a time.
   While one is, holdWork(for:) refuses another with a StorageBusyError naming the operation under way, so a refused move, rebuild, or folder edit says what is actually running, as in "TextMouth is moving books between folders.
-  Try again when that finishes."
+  Try again when that finishes.
+- Saves made meanwhile: the substitution rules and the statistics are written from outside the storage work, so a save of either during the copy would land in the folder being copied, which the copy may have passed.
+  From the end of the move's flushes (StorageBoundary.beginProvisionalSaves()) until the hold is released, such a save is provisional (isProvisionalSave(of:rewrite:)): it is written, but settles no earlier failure, and its rewrite is kept, one for each file's name in the data directory.
+  A save made while the move only waits for other work is final, since the copy takes it, and so is one made during Rebuild Directory or a folder edit, which write in the same directory.
+  After the release, however the move ended, rewriteFilesSavedDuringTheMove() saves each such file again once, in the library then in use, and the move waits for the statistics' queue (waitForQueuedStatisticsSaves) when any was saved, so the outcome is judged after the write that settles a failure.
 
 ### Copying and publishing
 <!-- id: copying-publishing; keys: migration, staging folder, copy library, cancel move, rename into place, rmdir; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
