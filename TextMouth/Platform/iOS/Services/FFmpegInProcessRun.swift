@@ -187,7 +187,9 @@ extension FFmpegAudioConverter {
 /// stream: the session opened on the engine at the first piece, one record
 /// for each piece after it, and how the run ended, which
 /// `FFmpegAudioConverter.runInProcess` hands back as the helper's ending.
-/// The reader asks for one piece at a time; the actor keeps that so.
+/// Its reader asks for one piece at a time, awaiting each before the next
+/// (`FFmpegHelperStream`), and the actor keeps the run's state whole across
+/// the threads its awaits resume on.
 private actor InProcessFFmpegRun {
     let file: URL
     let demuxer: String
