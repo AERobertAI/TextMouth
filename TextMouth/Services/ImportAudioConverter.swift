@@ -12,7 +12,9 @@ import Darwin
 /// converted by `afconvert`, both from the Mac itself (the app's oldest
 /// macOS is 14.0): a format that Mac cannot read or convert is refused by
 /// the file's name ("Converting its audio" stops the import, and nothing is
-/// left behind); no other check is needed.
+/// left behind). A file that is valid, but in a form of samples the
+/// converter fails on, is refused by that form, named after the failure
+/// (`Failure.unsupportedSamples`).
 ///
 /// On October 14, 2026 Apple's Vorbis decoder, playing an Ogg track through
 /// AVPlayer at 1.5x, locked up inside AudioToolbox and grew TextMouth to
@@ -181,8 +183,8 @@ enum ImportAudioConverter {
         /// The audio one of TextMouth's own readers decoded could not be
         /// written as an .m4a, for `reason` (an error's domain and code).
         case notWritten(fileName: String, reason: String)
-        /// The file is valid, but its samples are of a form no decoder reads (`AudioSampleForm`, B15): it is not
-        /// damaged, and nothing was run.
+        /// The file is valid, but its samples are of a form no decoder reads (`AudioSampleForm`, B15), and the
+        /// converter failed on it: it is not damaged.
         case unsupportedSamples(fileName: String, form: AudioSampleForm)
 
         var errorDescription: String? {
@@ -409,8 +411,8 @@ enum ImportAudioConverter {
         /// A conversion that keeps chapters writes them into the .m4a's
         /// chapter track (`ChapterTrackWriter`).
         var chapters: [NeroChapterReader.Chapter] = []
-        /// How the samples of linear PCM are stored (`AudioFileInfo.sampleForm`), or nil for other audio: a
-        /// form no decoder reads is refused before the conversion runs (`Failure.unsupportedSamples`, B15).
+        /// How the samples of linear PCM are stored (`AudioFileInfo.sampleForm`), or nil for other audio: when
+        /// the converter fails on a form no decoder reads, the failure names it (`Failure.unsupportedSamples`, B15).
         var sampleForm: AudioSampleForm? = nil
         /// The format, when the file is one that TextMouth's own readers
         /// decode: it is then converted in the app (`OwnAudioConverter`), by
@@ -882,11 +884,6 @@ enum ImportAudioConverter {
             throw Failure.unreadable(fileName: name)
             #endif
         }
-        // A valid file whose samples no decoder reads would fail in the converter with its exit code and no cause
-        // (B15): say what is true of it, from its own description, before anything runs.
-        if let form = info.sampleForm, !form.isDecodable {
-            throw Failure.unsupportedSamples(fileName: name, form: form)
-        }
         // A header can state any sample rate. One that is no number, or past
         // the most a cap counts, is a damaged header, refused as an
         // unreadable one is before the target is worked out from it: a
@@ -910,7 +907,7 @@ enum ImportAudioConverter {
             }
         } catch {
             try? FileManager.default.removeItem(at: staged)
-            throw error
+            throw namingTheForm(in: error, of: info, fileName: name)
         }
         var conversion = Conversion(
             source: source,
@@ -930,6 +927,17 @@ enum ImportAudioConverter {
             }
         }
         return conversion
+    }
+
+    /// `error`, a failure of the conversion of the file `fileName`, or, in its place, `Failure.unsupportedSamples`
+    /// when the converter itself ended in failure (an exit status above zero, not a kill or a start that failed) on
+    /// a source whose own description names a form the decoders do not read (`AudioSampleForm.isDecodable`): the
+    /// file is valid, and the converter's exit code would name no cause (B15). The form is looked at only after the
+    /// converter has failed, so a Mac whose converter reads it never refuses it.
+    private static func namingTheForm(in error: any Error, of info: SourceInfo, fileName: String) -> any Error {
+        guard case .processFailed(_, let status)? = error as? Failure, status > 0,
+              let form = info.sampleForm, !form.isDecodable else { return error }
+        return Failure.unsupportedSamples(fileName: fileName, form: form)
     }
 
     /// Writes `staged` from `source`, described by `info`, as `target`. A

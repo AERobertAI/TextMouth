@@ -181,7 +181,7 @@ final class AudioMediaValidationTests: XCTestCase {
     /// form and is no word of damage (B15), and never imported to play
     /// nothing.
     func testProbeMeasuresBooksOfWideSamples() async throws {
-        let refusedForm = try XCTUnwrap(AudioSampleForm(bits: 64, isFloat: false))
+        let refusedForm = AudioSampleForm(bits: 64, isFloat: false)
         for book in AudioEditRenderingTests.wideBooks {
             let file = try AudioTestFixtures.makeTemporaryDirectory().appendingPathComponent(book.fileName)
             addTeardownBlock { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }

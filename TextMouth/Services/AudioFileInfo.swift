@@ -166,7 +166,7 @@ struct AudioFileInfo: Equatable, Sendable {
         /// The track elements read, relative to the track.
         private static let wantedInTrack: Set<String> = [
             "num_channels", "sample_rate", "format_type", "bit_depth", "duration",
-            "pcm_info/data_type", "source_info/bit_depth",
+            "pcm_info/data_type", "pcm_info/interleaved", "max_packet_size", "source_info/bit_depth",
             "channel_layout", "format_list/format/channel_layout",
         ]
 
@@ -262,6 +262,24 @@ struct AudioFileInfo: Equatable, Sendable {
             }
         }
 
+        /// The form of the first track's linear PCM samples, which are `depth` bits deep and in `channels`
+        /// channels, or nil when afinfo's description is not one to name a form from: its data type is neither
+        /// "integer" nor "float" (an afinfo that words it otherwise would have its floats read as integers), or
+        /// the description is not believed (`AudioSampleForm.init(bits:isFloat:bytesPerFrame:channels:interleaved:)`,
+        /// given the bytes of the track's packet, which for linear PCM is one frame).
+        private func linearSampleForm(depth: Int, channels: Int) -> AudioSampleForm? {
+            guard let dataType = Self.trimmed(values["pcm_info/data_type"]), ["integer", "float"].contains(dataType) else {
+                return nil
+            }
+            return AudioSampleForm(
+                bits: depth,
+                isFloat: dataType == "float",
+                bytesPerFrame: values["max_packet_size"].flatMap(Self.integer),
+                channels: channels,
+                interleaved: Self.trimmed(values["pcm_info/interleaved"]) != "false"
+            )
+        }
+
         /// The facts as an `AudioFileInfo`, or nil when any is missing or
         /// out of range.
         func info() -> AudioFileInfo? {
@@ -272,18 +290,17 @@ struct AudioFileInfo: Equatable, Sendable {
             else { return nil }
             let isLinear = formatID == "lpcm"
             let isFloat = isLinear && Self.trimmed(values["pcm_info/data_type"]) == "float"
+            // Linear PCM's own depth, which a float has too, though `bitsPerSample` keeps none for it.
+            let linearDepth = isLinear ? values["bit_depth"].flatMap(Self.integer) : nil
             let bits: Int?
             if isLinear {
-                bits = isFloat ? nil : values["bit_depth"].flatMap(Self.integer)
+                bits = isFloat ? nil : linearDepth
             } else if formatID == "alac" || formatID == "flac" {
                 bits = values["source_info/bit_depth"].flatMap(Self.integer)
             } else {
                 bits = nil
             }
-            // Linear PCM's own depth, floats' included, with its data type; no other codec has one.
-            let sampleForm = isLinear
-                ? values["bit_depth"].flatMap(Self.integer).flatMap { AudioSampleForm(bits: $0, isFloat: isFloat) }
-                : nil
+            let sampleForm = linearDepth.flatMap { linearSampleForm(depth: $0, channels: channels) }
             return AudioFileInfo(
                 fileType: Self.trimmed(values["file_type"])?.replacingOccurrences(of: "'", with: "") ?? "",
                 formatID: formatID,

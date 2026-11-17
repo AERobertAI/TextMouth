@@ -4,9 +4,10 @@ import os
 
 // MARK: - Problems
 
-/// Why an audio file cannot be played. Each problem completes the sentence
-/// `PackageDamage` speaks for a damaged file: "The file “03.mp3” in this
-/// audiobook is damaged or incomplete: …".
+/// Why an audio file cannot be played. Each problem but the last completes the
+/// sentence `PackageDamage` speaks for a damaged file: "The file “03.mp3” in
+/// this audiobook is damaged or incomplete: …". The last, a valid file whose
+/// samples no decoder reads, has a sentence of its own (`sentence(file:container:original:)`).
 enum AudioMediaProblem: Error, Equatable, Sendable {
     /// AVFoundation cannot open the file as media at all: it is not audio
     /// (a text file named "03.mp3"), or its header is damaged or describes
@@ -39,7 +40,7 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
         case .noAudio: return "it holds no audio that can be played"
         case .cannotDecode: return "its audio cannot be decoded"
         case .endsEarly: return "its audio breaks off before the length the file declares"
-        case .unsupportedSamples: return "its samples are of a form TextMouth cannot decode"
+        case .unsupportedSamples(let form): return AudioSampleFormWording.clause(for: form)
         }
     }
 
@@ -89,6 +90,11 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
 ///    sample; only decoding its end fails. An asset that cannot be read
 ///    this way, as with some protected content that `AVPlayer` may still
 ///    play, skips this check rather than being refused.
+/// 6. A decode that fails at the opening is told as damage, unless the
+///    track's own description names a form of samples the decoders do not
+///    read (`AudioSampleForm.isDecodable`): the file is then valid, and is
+///    refused for that form (`AudioMediaProblem.unsupportedSamples`, B15).
+///    The form is looked at only after the decode has failed.
 ///
 /// The asset asks for precise timing
 /// (`AVURLAssetPreferPreciseDurationAndTimingKey`). Without it, an MP3's
@@ -155,11 +161,6 @@ enum AudioMediaProbe {
         guard isPlayable, let audio = await firstDecodableAudioTrack(of: asset) else {
             return .failure(.noAudio)
         }
-        // A valid file whose samples are of a form no decoder reads (a 64-bit integer WAVE file) is told by its own
-        // description, before any sample is decoded: the decoding check would fail and call it damaged.
-        if let form = await sampleForm(of: audio.track), !form.isDecodable {
-            return .failure(.unsupportedSamples(form))
-        }
         let seconds = CMTimeGetSeconds(duration)
         guard isPlayableLength(seconds) else { return .failure(.noAudio) }
 
@@ -171,7 +172,7 @@ enum AudioMediaProbe {
             let span = start.isFinite && end.isFinite && end > start ? start...end : 0...seconds
             let job = DecodeJob(track: audio.track, asset: asset, span: span)
             if let problem = await decodingProblemOffThePool(job, using: decoding, deadline: deadline) {
-                return .failure(problem)
+                return .failure(await namingTheForm(in: problem, of: audio.track))
             }
         }
         return .success(seconds)
@@ -200,6 +201,16 @@ enum AudioMediaProbe {
             }
         }
         return nil
+    }
+
+    /// `problem`, with the form named when the opening's decode failed (`.cannotDecode`) on a track whose own
+    /// description gives a form the decoders do not read (`AudioSampleForm.isDecodable`): a valid file such as a
+    /// 64-bit integer WAVE file is then refused for its form, not called damaged (B15). The form is looked at only
+    /// after the decode has failed, so a Mac that decodes it never refuses it; any other problem, and a track whose
+    /// form is read or unknown, keeps the problem it had.
+    private static func namingTheForm(in problem: AudioMediaProblem, of track: AVAssetTrack) async -> AudioMediaProblem {
+        guard problem == .cannotDecode, let form = await sampleForm(of: track), !form.isDecodable else { return problem }
+        return .unsupportedSamples(form)
     }
 
     /// The sample form of linear PCM that `track`'s format description gives, or nil when the track is coded audio

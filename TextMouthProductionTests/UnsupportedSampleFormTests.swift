@@ -4,21 +4,21 @@ import XCTest
 
 /// A valid audio file whose samples are of a form TextMouth cannot decode is
 /// told so, never called damaged (B15). The form comes from the file's own
-/// description, before any sample is decoded, on every path: the import's
-/// probe, the parse of a book's files, the import of a single file, and the
-/// conversion of a file the import converts first. Every file is written by
-/// the tests, byte by byte, as tiny as a tone of a second can be; no sound is
-/// played, and the converter and `afinfo` run in child processes, as in the
-/// app.
+/// description and is named only after a decode or a conversion has failed,
+/// on every path: the import's probe, the parse of a book's files, the import
+/// of a single file, and the conversion of a file the import converts first.
+/// Every file is written by the tests, byte by byte, as tiny as a tone of a
+/// second can be; no sound is played, and the converter and `afinfo` run in
+/// child processes, as in the app.
 final class UnsupportedSampleFormTests: XCTestCase {
-    /// A form of samples, from its depth and kind (never zero bits).
+    /// A form of samples, from its depth and kind.
     private static func form(_ bits: Int, float: Bool = false) -> AudioSampleForm {
-        guard let form = AudioSampleForm(bits: bits, isFloat: float) else { preconditionFailure("\(bits) is no depth") }
-        return form
+        AudioSampleForm(bits: bits, isFloat: float)
     }
 
     /// The forms the decoders refuse, each found refused by test on macOS 26
-    /// with a file of it: integers deeper than 32 bits, and floats of 16 bits.
+    /// with a file of it: integers deeper than 32 bits, and floats of 16, 24,
+    /// and 128 bits.
     private static let unsupported: [AudioSampleForm] = [
         form(64), form(48), form(40), form(33), form(16, float: true), form(24, float: true), form(128, float: true),
     ]
@@ -56,14 +56,36 @@ final class UnsupportedSampleFormTests: XCTestCase {
 
     // MARK: - Which Forms
 
-    /// The decoders read integers of 1 to 32 bits and floats of 32 and 64
-    /// bits, and no other form; a description with no depth has no form, and
-    /// coded audio has none of its own.
+    /// The decoders read integers of 8 to 32 bits and floats of 32 and 64
+    /// bits, and no other form; the lists are whole.
     func testAFormIsDecodableWhereTheDecodersReadIt() {
+        XCTAssertEqual(Self.supported.count, 8)
+        XCTAssertEqual(Self.unsupported.count, 7)
         for form in Self.supported { XCTAssertTrue(form.isDecodable, "\(form)") }
         for form in Self.unsupported { XCTAssertFalse(form.isDecodable, "\(form)") }
-        XCTAssertNil(AudioSampleForm(bits: 0, isFloat: false))
-        XCTAssertNil(AudioSampleForm(bits: -8, isFloat: true))
+    }
+
+    /// A description is believed only when its depth is above zero and at
+    /// most 64 bits, and its frame holds that many bits in every channel (in
+    /// one channel's, when the channels are not interleaved); one that does
+    /// not name no form, and the file is left to the damage checks. A frame
+    /// the description does not give is believed.
+    func testADamagedDescriptionNamesNoForm() {
+        func form(bits: Int, bytes: Int?, channels: Int = 1, interleaved: Bool = true) -> AudioSampleForm? {
+            AudioSampleForm(bits: bits, isFloat: false, bytesPerFrame: bytes, channels: channels, interleaved: interleaved)
+        }
+        XCTAssertEqual(form(bits: 64, bytes: 8), Self.form(64))
+        XCTAssertEqual(form(bits: 24, bytes: 6, channels: 2), Self.form(24))
+        XCTAssertEqual(form(bits: 20, bytes: 4), Self.form(20), "a 20-bit sample in a 32-bit container")
+        XCTAssertEqual(form(bits: 48, bytes: nil), Self.form(48), "no frame size given")
+        XCTAssertEqual(form(bits: 16, bytes: 2, channels: 2, interleaved: false), Self.form(16), "one channel's bytes")
+        XCTAssertNil(form(bits: 48, bytes: 2), "a 16-bit frame under a depth corrupted to 48")
+        XCTAssertNil(form(bits: 24, bytes: 3, channels: 2), "two channels of 24 bits need 6 bytes")
+        XCTAssertNil(form(bits: 16, bytes: 2, channels: 2), "interleaved channels need their bytes")
+        XCTAssertNil(form(bits: 65, bytes: 9))
+        XCTAssertNil(form(bits: 4_294_967_295, bytes: nil))
+        XCTAssertNil(form(bits: 0, bytes: nil))
+        XCTAssertNil(form(bits: -8, bytes: nil))
     }
 
     /// A stream description gives its form: its depth and whether its flags
@@ -85,6 +107,14 @@ final class UnsupportedSampleFormTests: XCTestCase {
         )
         XCTAssertNil(AudioSampleForm(description(kAudioFormatMPEG4AAC, bits: 0, flags: 0)))
         XCTAssertNil(AudioSampleForm(description(kAudioFormatLinearPCM, bits: 0, flags: 0)))
+        // A depth that its own frame cannot hold is no form: 48 bits in 2 bytes.
+        var lying = description(kAudioFormatLinearPCM, bits: 48, flags: kAudioFormatFlagIsSignedInteger)
+        lying.mBytesPerFrame = 2
+        XCTAssertNil(AudioSampleForm(lying))
+        // Non-interleaved channels give the bytes of one channel's samples.
+        var planar = description(kAudioFormatLinearPCM, bits: 64, flags: kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsNonInterleaved)
+        planar.mChannelsPerFrame = 2
+        XCTAssertEqual(AudioSampleForm(planar), Self.form(64))
     }
 
     // MARK: - The Words
@@ -95,14 +125,16 @@ final class UnsupportedSampleFormTests: XCTestCase {
         XCTAssertEqual(
             AudioSampleFormWording.refusal(fileName: "Talk.wav", form: Self.form(64)),
             "“Talk.wav” uses 64-bit integer samples, which TextMouth can't play. "
-                + "Convert it to 16-bit or 24-bit, then add it again."
+                + "Convert it to 16-bit or 24-bit integer samples, then import it again."
         )
         XCTAssertEqual(
             AudioSampleFormWording.refusal(fileName: "Disc 2/03.caf", form: Self.form(16, float: true)),
             "“Disc 2/03.caf” uses 16-bit floating-point samples, which TextMouth can't play. "
-                + "Convert it to 16-bit or 24-bit, then add it again."
+                + "Convert it to 16-bit or 24-bit integer samples, then import it again."
         )
-        XCTAssertEqual(AudioSampleFormWording.advice, "Convert it to 16-bit or 24-bit, then add it again.")
+        XCTAssertEqual(
+            AudioSampleFormWording.advice, "Convert it to 16-bit or 24-bit integer samples, then import it again."
+        )
         for form in Self.unsupported {
             let sentence = AudioSampleFormWording.refusal(fileName: "a.wav", form: form)
             XCTAssertFalse(sentence.contains("damaged"), sentence)
@@ -118,7 +150,7 @@ final class UnsupportedSampleFormTests: XCTestCase {
         XCTAssertEqual(
             AudioParseError.unplayableFile(file: "Disc 2/03.wav", problem: unsupported).errorDescription,
             "“Disc 2/03.wav” uses 64-bit integer samples, which TextMouth can't play. "
-                + "Convert it to 16-bit or 24-bit, then add it again."
+                + "Convert it to 16-bit or 24-bit integer samples, then import it again."
         )
         XCTAssertTrue(AudioParseError.unplayableFile(file: "a.wav", problem: unsupported).refusesAValidFile)
         for problem in [AudioMediaProblem.cannotOpen, .noAudio, .cannotDecode, .endsEarly] {
@@ -146,6 +178,29 @@ final class UnsupportedSampleFormTests: XCTestCase {
 
             XCTAssertEqual(outcome, .failure(.unsupportedSamples(form)), "\(form)")
         }
+    }
+
+    /// The form is looked at only after the decode has failed: a decode that
+    /// passes leaves a 64-bit integer file measured (as a Mac that reads such
+    /// samples would), a decode that fails at the opening names the form of a
+    /// file in a form the table refuses and no other, and any other problem
+    /// is left as it is.
+    func testTheFormIsNamedOnlyAfterTheDecodeFails() async throws {
+        let wide = folder.appendingPathComponent("wide.wav")
+        try AudioTestFixtures.writeToneWAVE(to: wide, frames: 8_000, sampleRate: 8_000, bits: 64, isFloat: false)
+        let narrow = folder.appendingPathComponent("narrow.wav")
+        try AudioTestFixtures.writeToneWAVE(to: narrow, frames: 8_000, sampleRate: 8_000, bits: 16, isFloat: false)
+
+        let passing = await AudioMediaProbe.duration(of: wide, decoding: { _ in nil })
+        let wideFailing = await AudioMediaProbe.duration(of: wide, decoding: { _ in .cannotDecode })
+        let narrowFailing = await AudioMediaProbe.duration(of: narrow, decoding: { _ in .cannotDecode })
+        let wideBreakingOff = await AudioMediaProbe.duration(of: wide, decoding: { _ in .endsEarly })
+
+        guard case .success(let seconds) = passing else { return XCTFail("a decode that passes was refused: \(passing)") }
+        XCTAssertEqual(seconds, 1, accuracy: 0.01)
+        XCTAssertEqual(wideFailing, .failure(.unsupportedSamples(Self.form(64))))
+        XCTAssertEqual(narrowFailing, .failure(.cannotDecode), "a 16-bit file is damaged, whatever fails")
+        XCTAssertEqual(wideBreakingOff, .failure(.endsEarly), "only the opening's failure is renamed")
     }
 
     /// A WAVE file of each form the decoders read is measured as before.
@@ -207,7 +262,7 @@ final class UnsupportedSampleFormTests: XCTestCase {
             XCTAssertEqual(
                 error.localizedDescription,
                 "“02.wav” uses 64-bit integer samples, which TextMouth can't play. "
-                    + "Convert it to 16-bit or 24-bit, then add it again."
+                    + "Convert it to 16-bit or 24-bit integer samples, then import it again."
             )
         }
     }
@@ -247,7 +302,7 @@ final class UnsupportedSampleFormTests: XCTestCase {
                 failure.errorDescription,
                 "Could not import “Canal Survey.wav”. Reading its audio failed: "
                     + "“Canal Survey.wav” uses 64-bit integer samples, which TextMouth can't play. "
-                    + "Convert it to 16-bit or 24-bit, then add it again."
+                    + "Convert it to 16-bit or 24-bit integer samples, then import it again."
             )
         }
 
@@ -322,6 +377,48 @@ final class UnsupportedSampleFormTests: XCTestCase {
         }
     }
 
+    /// The form is looked at only after the converter has failed: a converter
+    /// that succeeds on a source in a form the table refuses (a stand-in that
+    /// converts a good file instead, as a newer macOS's would convert the
+    /// file itself) leaves the conversion alone, a converter that fails with
+    /// an exit status names the form, and one that fails to start, or any
+    /// source in a form the table reads, keeps the failure it had.
+    func testTheFormIsNamedOnlyAfterTheConverterFails() async throws {
+        let wide = folder.appendingPathComponent("Wide.caf")
+        try AudioTestFixtures.writeToneCAF64(to: wide, frames: 8_000, sampleRate: 8_000, isFloat: false)
+        let narrow = folder.appendingPathComponent("Narrow.caf")
+        try AudioTestFixtures.writeToneCAF(to: narrow, frames: 8_000, sampleRate: 8_000, bits: 16, isFloat: false)
+        let good = folder.appendingPathComponent("Good.wav")
+        try AudioTestFixtures.writeSilence(to: good, duration: 1)
+
+        // A converter that reads the source: afconvert, run on a good file in its place.
+        var succeeding = ImportAudioConverter.Tool.afconvert
+        succeeding.command = { _, output, info, target in
+            (URL(fileURLWithPath: "/usr/bin/afconvert"),
+             ImportAudioConverter.afconvertArguments(from: good, to: output, info: info, target: target))
+        }
+        let converted = try await ImportAudioConverter.convert(wide, using: succeeding)
+        XCTAssertEqual(converted.duration, 1, accuracy: 0.05)
+
+        // A converter that ends with a status, and one that cannot start.
+        var failing = ImportAudioConverter.Tool.afconvert
+        failing.command = { _, _, _, _ in (URL(fileURLWithPath: "/usr/bin/false"), []) }
+        var missing = ImportAudioConverter.Tool.afconvert
+        missing.command = { _, _, _, _ in (URL(fileURLWithPath: "/usr/bin/no-such-converter"), []) }
+        for (source, tool, expected) in [
+            (wide, failing, ImportAudioConverter.Failure.unsupportedSamples(fileName: "Wide.caf", form: Self.form(64))),
+            (narrow, failing, .processFailed(fileName: "Narrow.caf", status: 1)),
+            (wide, missing, .processFailed(fileName: "Wide.caf", status: -1)),
+        ] {
+            do {
+                _ = try await ImportAudioConverter.convert(source, using: tool)
+                XCTFail("\(source.lastPathComponent) was converted by a converter that fails")
+            } catch let failure as ImportAudioConverter.Failure {
+                XCTAssertEqual(failure, expected, source.lastPathComponent)
+            }
+        }
+    }
+
     /// The refusal of the converter, as the import tells it.
     func testImportingACAFFileOfAnUnsupportedFormSaysSo() throws {
         let source = folder.appendingPathComponent("Radio Play.caf")
@@ -338,7 +435,7 @@ final class UnsupportedSampleFormTests: XCTestCase {
                 failure.errorDescription,
                 "Could not import “Radio Play.caf”. Converting its audio failed: "
                     + "“Radio Play.caf” uses 64-bit integer samples, which TextMouth can't play. "
-                    + "Convert it to 16-bit or 24-bit, then add it again."
+                    + "Convert it to 16-bit or 24-bit integer samples, then import it again."
             )
         }
 

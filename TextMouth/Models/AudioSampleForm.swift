@@ -9,48 +9,75 @@ import Foundation
 /// WAVE or CAF file of 64-bit integers, for one. Such a file is not damaged,
 /// so the import must not say it is. The form comes from the file's own
 /// description (`AudioStreamBasicDescription`, or what `afinfo` prints of it),
-/// before any sample is decoded, so a truly damaged file, which has no
-/// readable description or whose samples fail, is still told as damaged.
+/// but is named only after a decode has failed (`AudioMediaProbe`, the
+/// converter): a Mac that decodes a form the table below refuses is never
+/// refused by it, and a damaged file, whose decode fails for any form, is told
+/// as damaged unless its description names a form the table refuses.
 ///
-/// The forms were decided by test, with a file of each, on macOS 26: Core
+/// The table was decided by test, with a file of each, on macOS 26: Core
 /// Audio's `AVAssetReader` and `afconvert` both refuse (the converter fails
 /// with `'fmt?'`) every integer form deeper than 32 bits (33, 40, 48, and 64
-/// bits, in the WAVE, AIFF, and CAF files tried) and every floating-point form but
-/// 32 and 64 bits (a 16-bit and a 24-bit float), and both read the others: 8,
-/// 12, 16, 20, 24, and 32-bit integers (an odd depth is stored at the next
+/// bits, in the WAVE, AIFF, and CAF files tried) and every floating-point form
+/// but 32 and 64 bits (a 16-bit and a 24-bit float), and both read the others:
+/// 8, 12, 16, 20, 24, and 32-bit integers (an odd depth is stored at the next
 /// one up, `AudioRenderSettings.readableDepth(bits:isFloat:)`), and 32 and
 /// 64-bit floats. A 128-bit or an 8-bit float CAF file does not open as audio
-/// at all, so it is refused by the opening, not by its form.
+/// at all, so it is refused by the opening, not by its form. Integers of fewer
+/// than 8 bits were not tried, and are not in the table.
 struct AudioSampleForm: Equatable, Sendable {
-    /// The bits in one sample, as the file's description gives them: above zero.
+    /// The bits in one sample, as the file's description gives them.
     let bits: Int
     /// Whether the samples are floating-point numbers, not integers.
     let isFloat: Bool
 
-    /// The deepest integer samples the decoders read.
-    static let deepestDecodableIntegerBits = 32
+    /// The depths of integer samples the decoders read.
+    static let decodableIntegerBits = 8...32
     /// The depths of floating-point samples the decoders read.
     static let decodableFloatBits: Set<Int> = [32, 64]
+    /// The deepest sample any file's description is believed to give; a
+    /// larger depth is a damaged description, not a form.
+    static let deepestBelievedBits = 64
 
-    /// The form of `bits`-bit samples, floating-point or integer; nil when
-    /// the depth is not above zero, which no file's description means.
-    init?(bits: Int, isFloat: Bool) {
-        guard bits > 0 else { return nil }
+    /// The form of `bits`-bit samples, floating-point or integer, as a test
+    /// or a caller that has checked the depth already states it.
+    init(bits: Int, isFloat: Bool) {
         self.bits = bits
         self.isFloat = isFloat
     }
 
+    /// The form a file's description gives, or nil when the description is
+    /// not one to name a form from, so that the file is left to the damage
+    /// checks: a depth that is not above zero or is above
+    /// `deepestBelievedBits`, or a frame of `bytesPerFrame` bytes that cannot
+    /// hold `channels` samples of `bits` bits (one channel's, when the
+    /// channels are not `interleaved`). A nil `bytesPerFrame` is one the
+    /// description does not give, which is believed.
+    init?(bits: Int, isFloat: Bool, bytesPerFrame: Int?, channels: Int, interleaved: Bool = true) {
+        guard bits > 0, bits <= Self.deepestBelievedBits else { return nil }
+        if let bytesPerFrame {
+            let bytesPerSample = (bits + 7) / 8
+            guard bytesPerFrame >= bytesPerSample * (interleaved ? max(channels, 1) : 1) else { return nil }
+        }
+        self.init(bits: bits, isFloat: isFloat)
+    }
+
     /// The form a stream description gives; nil for anything but linear PCM
-    /// (coded audio has no sample depth of its own) or a description with
-    /// no depth.
+    /// (coded audio has no sample depth of its own) and for a description
+    /// that names no form (`init(bits:isFloat:bytesPerFrame:channels:interleaved:)`).
     init?(_ description: AudioStreamBasicDescription) {
         guard description.mFormatID == kAudioFormatLinearPCM else { return nil }
-        self.init(bits: Int(description.mBitsPerChannel), isFloat: description.mFormatFlags & kAudioFormatFlagIsFloat != 0)
+        self.init(
+            bits: Int(description.mBitsPerChannel),
+            isFloat: description.mFormatFlags & kAudioFormatFlagIsFloat != 0,
+            bytesPerFrame: Int(description.mBytesPerFrame),
+            channels: Int(description.mChannelsPerFrame),
+            interleaved: description.mFormatFlags & kAudioFormatFlagIsNonInterleaved == 0
+        )
     }
 
     /// Whether the decoders read samples of this form.
     var isDecodable: Bool {
-        isFloat ? Self.decodableFloatBits.contains(bits) : bits <= Self.deepestDecodableIntegerBits
+        isFloat ? Self.decodableFloatBits.contains(bits) : Self.decodableIntegerBits.contains(bits)
     }
 }
 
@@ -60,7 +87,7 @@ struct AudioSampleForm: Equatable, Sendable {
 /// file it converts all come from `refusal(fileName:form:)`.
 enum AudioSampleFormWording {
     /// What a listener can do about it: the sentence that ends every refusal.
-    static let advice = "Convert it to 16-bit or 24-bit, then add it again."
+    static let advice = "Convert it to 16-bit or 24-bit integer samples, then import it again."
 
     /// The form in words a listener knows, as an adjective of "samples":
     /// "64-bit integer", "16-bit floating-point".
@@ -68,9 +95,16 @@ enum AudioSampleFormWording {
         "\(form.bits)-bit \(form.isFloat ? "floating-point" : "integer")"
     }
 
+    /// What is wrong with a form no decoder reads, as a clause for a log or a
+    /// message that names the problem (`AudioMediaProblem.reason`): never said
+    /// to a listener, who hears `refusal(fileName:form:)`.
+    static func clause(for form: AudioSampleForm) -> String {
+        "its samples are \(phrase(for: form)) numbers, which TextMouth cannot decode"
+    }
+
     /// The sentence that refuses the file `fileName`, which is not damaged:
     /// "“Talk.wav” uses 64-bit integer samples, which TextMouth can't play.
-    /// Convert it to 16-bit or 24-bit, then add it again."
+    /// Convert it to 16-bit or 24-bit integer samples, then import it again."
     static func refusal(fileName: String, form: AudioSampleForm) -> String {
         "“\(fileName)” uses \(phrase(for: form)) samples, which TextMouth can't play. \(advice)"
     }
