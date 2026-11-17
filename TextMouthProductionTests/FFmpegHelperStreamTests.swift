@@ -112,6 +112,38 @@ final class FFmpegHelperStreamTests: XCTestCase {
         XCTAssertEqual(wideBlocks, [[-8_388_608, 8_388_607]])
     }
 
+    // MARK: - The Largest PCM Record
+
+    /// A stream of one mono 32-bit float PCM record of `samples` samples.
+    private func streamOfOnePCMRecord(samples: Int) -> [UInt8] {
+        FFmpegTestStream.head() + FFmpegTestStream.info(FFmpegTestStream.wmaInfo)
+            + FFmpegTestStream.pcm32([UInt32](repeating: 0, count: samples)) + FFmpegTestStream.end(frames: UInt64(samples))
+    }
+
+    /// A PCM record of exactly the protocol's 1 MB (1,048,576 bytes, 262,144
+    /// samples of 32 bits) is read whole, and one of a frame more is refused
+    /// as damaged (FU-FFMPEG2): the limit is the protocol's, a record the
+    /// session never writes longer, so a helper that does is not believed, and
+    /// a made-up stream shows it with no helper. The refusal comes before the
+    /// record's bytes are gathered: only its header is in the stream.
+    func testAPCMRecordOverAMegabyteIsRefusedAsDamaged() async throws {
+        let (_, blocks, stream) = try await readAll(streamOfOnePCMRecord(samples: 262_144))
+        XCTAssertEqual(blocks.map(\.count), [262_144])
+        XCTAssertEqual(stream.framesRead, 262_144)
+        let tooLong = await failure(of: streamOfOnePCMRecord(samples: 262_145))
+        XCTAssertEqual(tooLong, .damaged)
+        // Only the header says the length: the reader refuses it without waiting for its bytes.
+        let headerOnly = FFmpegTestStream.head() + FFmpegTestStream.info(FFmpegTestStream.wmaInfo)
+            + Array("PCM ".utf8) + FFmpegTestStream.littleEndian(UInt32(1_048_580))
+        let refusedAtOnce = await failure(of: headerOnly)
+        XCTAssertEqual(refusedAtOnce, .damaged)
+        // A record of another kind is held to the 64 KB of the others, not the PCM limit.
+        let longTag = FFmpegTestStream.head() + FFmpegTestStream.info(FFmpegTestStream.wmaInfo)
+            + Array("TAG ".utf8) + FFmpegTestStream.littleEndian(UInt32(65_537))
+        let tagRefused = await failure(of: longTag)
+        XCTAssertEqual(tagRefused, .damaged)
+    }
+
     // MARK: - Broken Streams
 
     /// A stream of another protocol's version, or one that does not begin

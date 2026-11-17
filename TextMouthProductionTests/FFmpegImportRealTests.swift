@@ -58,6 +58,9 @@ final class FFmpegImportRealTests: XCTestCase {
                      title: "Tones in Matroska", author: "TextMouth tests"),
             // A title of 6,004 bytes, cut at 4 KB, between two characters (the TODO's FU-FFMPEG item).
             Expected(sample: "mka/tones-long-title.mka", codec: "alac", chapters: [longTitleCut], title: longTitleCut, author: "TextMouth Test"),
+            // MP3 whose rate and channels change partway (FU-FFMPEG2): converted whole, in the first form.
+            Expected(sample: "mka/mp3-form-changes.mka", codec: "aac", chapters: ["mp3-form-changes"], title: "mp3-form-changes",
+                     author: Book.unknownAuthor),
             Expected(sample: "webm/tones-opus.webm", codec: "aac", chapters: ["tones-opus"], title: "tones-opus", author: Book.unknownAuthor),
             Expected(sample: "webm/tones-vorbis.weba", codec: "aac", chapters: ["tones-vorbis"], title: "tones-vorbis", author: Book.unknownAuthor),
             Expected(sample: "spx/tones.spx", codec: "aac", chapters: ["tones"], title: "tones", author: Book.unknownAuthor),
@@ -124,6 +127,23 @@ final class FFmpegImportRealTests: XCTestCase {
             }
         }
         XCTAssertEqual(mismatches, [])
+    }
+
+    /// Sound that changes its rate and channels partway is imported whole,
+    /// at the first stretch's rate and channels (FU-FFMPEG2): the sample is
+    /// 22,050 Hz mono, then 44,100 Hz stereo, then 22,050 Hz mono, 3.2 s in
+    /// all, which the import once refused for the change. Its book is a 22,050
+    /// Hz mono .m4a of the whole length.
+    func testSoundThatChangesItsFormIsImportedWholeAtTheFirstForm() async throws {
+        let tool = try bundledFFmpegTool()
+        let copy = try copyOfFormatSample("mka/mp3-form-changes.mka")
+        let conversion = try await FFmpegAudioConverter.convert(copy, using: tool)
+        let read = try await AudioFileInfo.read(conversion.converted)
+        let info = try XCTUnwrap(read)
+        XCTAssertEqual(info.channels, 1)
+        XCTAssertEqual(info.sampleRate, 22_050)
+        // 70,272 frames at 22,050 Hz exactly (3.187 s); the .m4a keeps them to a few hundredths.
+        XCTAssertEqual(info.duration, 70_272.0 / 22_050, accuracy: 0.02)
     }
 
     /// The helper reads the samples as the import plans them: the two-track

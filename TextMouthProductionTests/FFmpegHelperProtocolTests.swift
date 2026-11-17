@@ -97,6 +97,206 @@ final class FFmpegHelperProtocolTests: XCTestCase {
         XCTAssertEqual([stream.refusedPackets, stream.refusedFrames], [0, 0])
     }
 
+    /// The times a signal crosses zero in `samples`: the sign changes, which a
+    /// pure tone has twice for each cycle, so they tell its pitch.
+    private func zeroCrossings(_ samples: ArraySlice<Float>) -> Int {
+        var count = 0
+        var previous: Float?
+        for sample in samples where sample != 0 {
+            if let previous, (previous < 0) != (sample < 0) { count += 1 }
+            previous = sample
+        }
+        return count
+    }
+
+    /// The mono floating-point samples the helper writes for `sample`, and the stream that was
+    /// read (its END has been checked against the frames that came), with the helper's ending.
+    private func decodedMonoFloat(_ sample: String) async throws -> (samples: [Float], stream: FFmpegHelperStream) {
+        let run = try await runHelper(["decode", "matroska", try formatSampleURL(sample).path])
+        XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)), sample)
+        var stream = FFmpegHelperStream(data: Data(run.bytes))
+        let report = try await stream.readReport()
+        XCTAssertEqual([report.sampleRate, report.channels.map(Double.init)], [22_050, 1], sample)
+        XCTAssertEqual(report.sampleFormat, .f32, sample)
+        var samples: [Float] = []
+        while let block = try await stream.nextBlock() {
+            samples += block.map { Float(bitPattern: UInt32(bitPattern: $0)) }
+        }
+        XCTAssertTrue(stream.isFinished, sample)
+        // END counts the frames of the first form, which the reader checked against the frames it got.
+        XCTAssertEqual(UInt64(samples.count), stream.framesRead, sample)
+        XCTAssertEqual([stream.refusedPackets, stream.refusedFrames], [0, 0], sample)
+        return (samples, stream)
+    }
+
+    /// The stretches of sound in `samples`: the first and last frame of each run of frames louder
+    /// than 0.05, runs split by a silence of over 200 frames (the encoder's padding between the
+    /// stretches of the joined samples is that long).
+    private func loudRuns(_ samples: [Float]) -> [ClosedRange<Int>] {
+        var runs: [ClosedRange<Int>] = []
+        var start: Int?
+        var last = 0
+        for (index, sample) in samples.enumerated() {
+            if abs(sample) > 0.05 {
+                start = start ?? index
+                last = index
+            } else if let first = start, index - last > 200 {
+                runs.append(first...last)
+                start = nil
+            }
+        }
+        if let first = start { runs.append(first...last) }
+        return runs
+    }
+
+    /// Whether each run of `found` begins and ends within `tolerance` frames of `expected`'s.
+    private func runs(_ found: [ClosedRange<Int>], match expected: [ClosedRange<Int>], within tolerance: Int) -> Bool {
+        found.count == expected.count && zip(found, expected).allSatisfy {
+            abs($0.lowerBound - $1.lowerBound) <= tolerance && abs($0.upperBound - $1.upperBound) <= tolerance
+        }
+    }
+
+    /// Sound that changes its form partway is converted to the first form,
+    /// not refused (FU-FFMPEG2): `mka/mp3-form-changes.mka` is a second of
+    /// 440 Hz in 22,050 Hz mono, a second of 880 Hz in 44,100 Hz stereo, and
+    /// a second of 660 Hz in 22,050 Hz mono again, joined byte for byte. The
+    /// helper ends with 0 and writes all of it in the first stretch's form
+    /// (22,050 Hz, one channel, floating point), exactly as long as its
+    /// stretches are (23,616 + 23,040 + 23,616 frames, the second at half
+    /// its 46,080 frames), with every stretch at its own pitch and each
+    /// stretch of sound beginning and ending at its measured frame. A resampler set
+    /// for the old rate at a join (the first frame after it comes with the old
+    /// rate), one that is not drained on the return to the first form, and a
+    /// frame lost or repeated each move the length or the join by more than the
+    /// few frames allowed here.
+    func testSoundThatChangesItsFormIsConvertedToTheFirstOne() async throws {
+        let (samples, stream) = try await decodedMonoFloat("mka/mp3-form-changes.mka")
+        XCTAssertEqual(Double(samples.count), 70_272, accuracy: 2, "every stretch, and no frame more")
+        XCTAssertEqual(Double(stream.framesRead), 70_272, accuracy: 2, "END's count")
+        // 440, 880, and 660 Hz cross zero 880, 1,760, and 1,320 times a second; each stretch's
+        // middle (about 0.9 s) is read, clear of the joins, with a margin of 8 %.
+        let pitches: [(name: String, span: Range<Int>, hertz: Double)] = [
+            ("first", 1_000..<22_000, 440), ("second", 25_000..<45_000, 880), ("third", 48_000..<69_000, 660),
+        ]
+        for pitch in pitches {
+            let expected = pitch.hertz * 2 * Double(pitch.span.count) / 22_050
+            let found = Double(zeroCrossings(samples[pitch.span]))
+            XCTAssertEqual(found, expected, accuracy: expected * 0.08, "the \(pitch.name) stretch")
+            XCTAssertGreaterThan(samples[pitch.span].map { abs($0) }.max() ?? 0, 0.05, "the \(pitch.name) stretch is sound")
+        }
+        // Where each stretch of sound begins and ends, as the helper writes them (measured on
+        // the session as it stands; the encoder's padding and the resampler's delay are in it):
+        // a stretch played at the wrong rate, a frame lost or repeated, or a resampler not
+        // drained moves a later one by 16 frames or more, past the 6 allowed.
+        let expected = [1_109...23_151, 24_171...46_216, 47_764...69_808]
+        XCTAssertTrue(runs(loudRuns(samples), match: expected, within: 6), "\(loudRuns(samples))")
+    }
+
+    /// Sound that ends in a stretch of another form than the first is converted to its last frame
+    /// (FU-FFMPEG2): `ffmpeg-edge/mp3-ends-in-a-changed-form.mka` is the 22,050 Hz mono second
+    /// and the 44,100 Hz stereo second only, so the resampler is drained at the end of the sound and
+    /// not on a return to the first form. The helper writes exactly 23,616 + 23,040 frames.
+    func testSoundThatEndsInAChangedFormIsConvertedToItsLastFrame() async throws {
+        let (samples, stream) = try await decodedMonoFloat("ffmpeg-edge/mp3-ends-in-a-changed-form.mka")
+        XCTAssertEqual(Double(samples.count), 46_656, accuracy: 2, "both stretches, whole")
+        XCTAssertEqual(Double(stream.framesRead), 46_656, accuracy: 2, "END's count")
+        // The two stretches of sound, the second to the same frame as in the whole sample, and
+        // the last 0.4 s of the file are its padding: the resampler's last frames are not lost.
+        let expected = [1_109...23_151, 24_171...46_216]
+        XCTAssertTrue(runs(loudRuns(samples), match: expected, within: 6), "\(loudRuns(samples))")
+    }
+
+    /// The bounds of the conversion of sound that changes its form (FU-FFMPEG2), checked on frames
+    /// made up in memory, no file read: the Debug helper's `formcheck` mode (which a Release helper
+    /// does not have) runs each check and writes "name=status frames=N largest=B changes=C" (the
+    /// status the check ended with, the frames it wrote, the most bytes one frame it wrote held,
+    /// and how many resamplers it opened).
+    /// - **The rate ratio:** 16 to 1 is converted, both ways, and 17 to 1 ends with 7 (the sentence
+    ///   for sound that cannot be converted).
+    /// - **The size of a converted frame:** a 65,535-frame frame of 32 channels at 48,000 Hz,
+    ///   converted to 768,000 Hz (268 MB in all), is fed in slices, none holding over 16 MB, and all
+    ///   1,048,560 of its frames (and the first frame's 16) come out.
+    /// - **A held-back frame:** ten frames of 8 samples at twice the rate, each kept whole by the
+    ///   resampler, all come out in the end, as 40 frames.
+    /// - **The layout:** a frame of 6 channels in the layout 6.0 after one in 5.1 is another form
+    ///   (a resampler is opened), and one in 5.1 again is not.
+    /// - **The changes:** 1,000 changes away from the first form and back are converted; the
+    ///   1,001st ends with 7.
+    func testTheBoundsOfTheConversionOnMadeUpFrames() async throws {
+        let run = try await runHelper(["formcheck", "all", "-"])
+        XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
+        /// Each line's status, frames, and largest, by name.
+        var checks: [String: (status: Int, frames: Int, largest: Int, changes: Int)] = [:]
+        for line in String(decoding: run.bytes, as: UTF8.self).split(separator: "\n") {
+            let parts = line.split(whereSeparator: { $0 == "=" || $0 == " " }).map(String.init)
+            guard parts.count == 8, let status = Int(parts[1]), let frames = Int(parts[3]), let largest = Int(parts[5]),
+                  let changes = Int(parts[7]) else {
+                XCTFail("a line that is not name=status frames=N largest=B changes=C: \(line)")
+                continue
+            }
+            checks[parts[0]] = (status, frames, largest, changes)
+        }
+        XCTAssertEqual(Set(checks.keys), ["ratio-up-16", "ratio-up-17", "ratio-down-16", "ratio-down-17", "cap", "held-back", "layout-same", "layout-other", "changes-1000", "changes-1001"])
+        for (name, status) in [("ratio-up-16", 0), ("ratio-up-17", 7), ("ratio-down-16", 0), ("ratio-down-17", 7)] {
+            XCTAssertEqual(checks[name]?.status, status, name)
+        }
+        // 1,152 frames at 8,000 Hz, then 1,152 at 128,000 Hz (72 at 8,000) or the other way (18,432).
+        XCTAssertEqual(Double(checks["ratio-up-16"]?.frames ?? 0), 1_152 + 72, accuracy: 4)
+        XCTAssertEqual(Double(checks["ratio-down-16"]?.frames ?? 0), 1_152 + 18_432, accuracy: 4)
+        let cap = try XCTUnwrap(checks["cap"])
+        XCTAssertEqual(cap.status, 0)
+        XCTAssertLessThanOrEqual(cap.largest, 16 * 1_024 * 1_024, "no converted frame holds over 16 MB")
+        XCTAssertGreaterThan(cap.largest, 1_024 * 1_024, "the check made a long frame, fed in slices")
+        XCTAssertEqual(Double(cap.frames), 16 + 1_048_560, accuracy: 64, "every frame comes out")
+        let held = try XCTUnwrap(checks["held-back"])
+        XCTAssertEqual(held.status, 0)
+        XCTAssertEqual(Double(held.frames), 1_152 + 40, accuracy: 2, "the held-back frames come out in the end")
+        XCTAssertEqual([checks["layout-same"]?.status, checks["layout-same"]?.changes], [0, 0], "5.1 again is the first form")
+        XCTAssertEqual([checks["layout-other"]?.status, checks["layout-other"]?.changes], [0, 1], "6.0 after 5.1 is converted")
+        let changes = try XCTUnwrap(checks["changes-1000"])
+        XCTAssertEqual(changes.status, 0)
+        // 1,152 first, then 1,000 pairs of 576 (converted) and 1,152.
+        XCTAssertEqual(Double(changes.frames), 1_152 + 1_000 * (576 + 1_152), accuracy: 1_000)
+        XCTAssertEqual(changes.changes, 1_000)
+        XCTAssertEqual(checks["changes-1001"]?.status, 7)
+    }
+
+    /// One decoded frame past a PCM record's 1 MB is split across records and
+    /// read back whole (FU-FFMPEG2): `ffmpeg-edge/flac-7.1-24bit-65535.mka` is
+    /// FLAC in blocks of 65,535 samples, 8 channels, 24 bits, so each full block
+    /// decodes to 2,097,120 bytes in the session's 32-bit form. Every record the
+    /// reader takes is within the protocol's 1 MB (it refuses a longer one), the
+    /// records are whole frames, and every one of the 132,000 frames has each
+    /// channel's own constant in its own place, so a split that dropped,
+    /// repeated, or shifted a sample would show.
+    func testAFrameOverAMegabyteIsSplitAcrossRecordsAndReadBackWhole() async throws {
+        let sample = try formatSampleURL("ffmpeg-edge/flac-7.1-24bit-65535.mka")
+        let run = try await runHelper(["decode", "matroska", sample.path])
+        XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
+        var stream = FFmpegHelperStream(data: Data(run.bytes))
+        let report = try await stream.readReport()
+        XCTAssertEqual(report.channels, 8)
+        XCTAssertEqual(report.bitsPerSample, 24)
+        XCTAssertEqual(report.sampleFormat, .s32)
+        // Each channel's constant: its number (1 to 8) times 0.01 of 24-bit full scale, truncated.
+        let constants: [Int32] = [83_886, 167_772, 251_658, 335_544, 419_430, 503_316, 587_202, 671_088]
+        var blocks = 0
+        var wrong = 0
+        while let block = try await stream.nextBlock() {
+            blocks += 1
+            XCTAssertLessThanOrEqual(block.count * 4, 1_048_576, "a record is within the protocol's 1 MB")
+            XCTAssertEqual(block.count % 8, 0, "a record holds whole frames")
+            for (index, sample) in block.enumerated() where sample != constants[index % 8] {
+                wrong += 1
+            }
+        }
+        XCTAssertEqual(wrong, 0, "samples out of their place or changed")
+        XCTAssertEqual(stream.framesRead, 132_000)
+        // Two blocks of 2 MB, each in at least two records, and the 930 frames left over.
+        XCTAssertGreaterThanOrEqual(blocks, 5)
+        XCTAssertTrue(stream.isFinished)
+    }
+
     /// Each refusal is the protocol's exit status, with nothing written: a
     /// missing file, a folder, and a FIFO (never waited on) are unreadable
     /// (2); a demuxer this build has not is 10; a file of another container

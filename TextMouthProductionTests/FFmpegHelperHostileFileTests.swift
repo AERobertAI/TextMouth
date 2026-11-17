@@ -121,6 +121,71 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
         XCTAssertEqual(unexpected, [])
     }
 
+    /// What the helper makes of the sample `name` of `ffmpeg-edge`: how it ended and, when it
+    /// wrote a whole stream, what the reader says of it (frames and the refusals END counts).
+    private func decodeEdgeSample(_ name: String) async throws -> (ending: WatchedProcess.Ending, frames: UInt64?, refused: [UInt32]) {
+        let helper = try bundledFFmpegHelper()
+        let seconds = TestMachine.allowed(20)
+        let limits = WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
+        let sample = try formatSampleURL("ffmpeg-edge/\(name)")
+        let (ending, bytes) = try await WatchedProcess.runStreaming(
+            helper, arguments: ["decode", "matroska", sample.path], watching: nil, limits: limits
+        ) { pipe -> [UInt8] in
+            var bytes: [UInt8] = []
+            while true {
+                let piece = try await pipe.read(upTo: 1 << 20)
+                if piece.isEmpty { return bytes }
+                bytes += piece
+            }
+        }
+        var stream = FFmpegHelperStream(data: Data(try bytes.get()))
+        do {
+            _ = try await stream.readReport()
+            while try await stream.nextBlock() != nil {}
+        } catch {
+            return (ending, nil, [])
+        }
+        return (ending, stream.framesRead, [stream.refusedPackets, stream.refusedFrames])
+    }
+
+    /// The decoder's error bound (FU-FFMPEG2, MAX_ERRORS_IN_A_ROW = 1,000 in
+    /// session.c), tried with two samples of FLAC in Matroska (1,400 packets
+    /// of 16 samples) whose packets from the 101st on are refused by the
+    /// decoder (their sync code is zeroed): 900 of them in one, 1,200 in the
+    /// other. Both end with status 0, with the 500 or the 200 good packets'
+    /// sound whole and each refused packet counted in END, the 1,200 as well as
+    /// the 900: the bound counts the errors the decoder gives for a frame
+    /// with no packet between (a decoder that would be asked for ever), and a
+    /// damaged packet is refused when it is sent, so a run of them, of any
+    /// length, never reaches it, and the file is converted all the same
+    /// (the comment of `FFmpegHelperStream`: damaged sound is converted). The
+    /// run of November 17, 2026 (train 1117-0431) showed both.
+    func testAnyRunOfRefusedPacketsStillGivesTheSoundAroundIt() async throws {
+        for (name, good, refused) in [("flac-900-bad-packets.mka", 500, 900), ("flac-1200-bad-packets.mka", 200, 1_200)] {
+            let result = try await decodeEdgeSample(name)
+            XCTAssertEqual(result.ending, WatchedProcess.Ending(outcome: .exited(status: 0)), name)
+            XCTAssertEqual(result.frames, UInt64(good * 16), "\(name): the packets that decode, whole")
+            XCTAssertEqual(result.refused, [UInt32(refused), 0], "\(name): every refused packet counted")
+        }
+    }
+
+    /// A file in which no packet decodes (`flac-all-bad-packets.mka`: every one of its 1,400
+    /// packets has its sync code zeroed) ends with the helper's status 6, damaged, and the import
+    /// says it is damaged, not that it holds no sound (FU-FFMPEG2): the listener hears that the
+    /// file is broken. Skipping the refused packets of a file that has others is the rule; a file
+    /// with none has nothing to keep.
+    func testAFileOfOnlyRefusedPacketsEndsAsDamaged() async throws {
+        let result = try await decodeEdgeSample("flac-all-bad-packets.mka")
+        XCTAssertEqual(result.ending, WatchedProcess.Ending(outcome: .exited(status: 6)))
+        let copy = try copyOfFormatSample("ffmpeg-edge/flac-all-bad-packets.mka")
+        do {
+            _ = try await FFmpegAudioConverter.convert(copy, using: try bundledFFmpegTool())
+            XCTFail("a file with no sound was imported")
+        } catch let failure as ImportAudioConverter.Failure {
+            XCTAssertEqual(failure, .notRead(fileName: "flac-all-bad-packets.mka", problem: .damaged))
+        }
+    }
+
     /// The import of every damaged copy ends in a conversion or a failure by
     /// name, and leaves nothing behind but the copy and, after a conversion,
     /// its .m4a.

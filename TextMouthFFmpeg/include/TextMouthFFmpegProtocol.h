@@ -42,7 +42,9 @@
  * - PCM holds samples, in whole frames, interleaved by channel, in INFO's sample_format: s16 is
  *   16-bit signed whole numbers, s32 32-bit signed whole numbers of `bits` bits (a 24-bit
  *   sample's value is from -8,388,608 to 8,388,607), and f32 32-bit floating point, from -1 to
- *   1. Only a decode writes them.
+ *   1. Only a decode writes them. Every PCM record has the one form INFO names, from the first to
+ *   the last: sound whose rate, channels, or format change partway is converted to the first
+ *   frame's form (the session's resampler), and END counts the frames of that form.
  * - END closes the stream: the frames written (64 bits), and how many packets and frames the
  *   decoder refused (32 bits each), which a damaged file shows as more than none.
  *
@@ -98,7 +100,7 @@
 #define TMFF_EXIT_NO_SOUND 4         /* the file holds no sound stream */
 #define TMFF_EXIT_NO_DECODER 5       /* its sound is in a codec this build does not decode */
 #define TMFF_EXIT_DAMAGED 6          /* the decoder will not open, or decodes nothing */
-#define TMFF_EXIT_FORM_CHANGED 7     /* the sound changes its rate, channels, or format partway */
+#define TMFF_EXIT_FORM_CHANGED 7     /* the sound changes its rate, channels, or format partway, and cannot be converted to the first form */
 #define TMFF_EXIT_OUTPUT 8           /* the stream cannot be written (the reader is gone) */
 #define TMFF_EXIT_MEMORY 9           /* an allocation was refused */
 #define TMFF_EXIT_NO_DEMUXER 10      /* this build has no demuxer of that name */
@@ -123,5 +125,10 @@
    connection is not made), and "cpu=kept" (the processor features FFmpeg found before the
    confinement are still its belief), exiting TMFF_EXIT_DONE only when all four are so. */
 #define TMFF_MODE_CONFINEMENT "confinement"
+
+/* A fourth mode, which only a Debug build of the helper has (a Release build answers it with
+   TMFF_EXIT_USAGE): it opens no file (its other two arguments are ignored) and writes one line
+   for each check tmff_session_formcheck makes of the conversion of sound that changes its form. */
+#define TMFF_MODE_FORMCHECK "formcheck"
 
 #endif /* TEXTMOUTH_FFMPEG_PROTOCOL_H */
