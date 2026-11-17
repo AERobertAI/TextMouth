@@ -118,6 +118,21 @@ class NewSinceTests(RepositoryCase):
         ])
         self.assertIn("3 new problems in the files changed against HEAD (1 others left out", err)
 
+    def test_a_problem_in_a_file_the_merge_left_alone_is_not_its(self) -> None:
+        # B18 cites a doc section that is gone, which no snapshot lists; the merge changes B16 only.
+        self.make_repository(files={"Issues/B18.md": ASSIGNED.replace("id: B16", "id: B18").replace("docs:", "docs: gone")})
+        snapshot = self.root / "before.json"
+        snapshot.write_text("")
+        self.as_orchestrator("comment", "B16", "From the merge.")
+        status, out, err = self.run_cli("check", "--new-since", str(snapshot))
+        self.assertEqual((status, out), (0, ""), err)
+        self.assertIn("(1 others left out", err)
+        # The same problem in a file the merge changes is the merge's.
+        self.write_tree({"Issues/B16.md": self.read("Issues/B16.md").replace("docs:", "docs: gone")})
+        status, out, _err = self.run_cli("check", "--new-since", str(snapshot))
+        self.assertEqual(status, 1)
+        self.assertEqual(out.splitlines(), ["Issues/B16.md:16: docs gone names no doc section (doclib find gone finds none)"])
+
     def test_a_problem_main_had_is_the_same_one_after_its_lines_moved(self) -> None:
         twice = TODO + "- [x] **B13 — once.**\n- [x] **B13 — twice.**\n"
         self.make_repository(files={"TODO-2026-09-04.md": twice})
