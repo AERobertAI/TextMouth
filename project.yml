@@ -865,8 +865,18 @@ targets:
       - TextMouthProductionTests/BookMetadataUpdateTests.swift
       - TextMouthProductionTests/BookSearchModelTests.swift
       - TextMouthProductionTests/BookTextEncodingTests.swift
+      - TextMouthProductionTests/BrailleBookPageTests.swift
+      - TextMouthProductionTests/BrailleCellsTests.swift
+      - TextMouthProductionTests/BrailleEbaeFixesTests.swift
+      - TextMouthProductionTests/BrailleEmphasisReadingTests.swift
+      - TextMouthProductionTests/BrailleEmphasisRoundTripTests.swift
       - TextMouthProductionTests/BrailleFileCodeRecordTests.swift
       - TextMouthProductionTests/BrailleFileCodeTests.swift
+      - TextMouthProductionTests/BrailleFileReaderTests.swift
+      - TextMouthProductionTests/BrailleImportTests.swift
+      - TextMouthProductionTests/BrailleLayoutTests.swift
+      - TextMouthProductionTests/BraillePageAnalyzerTests.swift
+      - TextMouthProductionTests/BrailleTranslatorTests.swift
       - TextMouthProductionTests/CloudStorageContractTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift
       - TextMouthProductionTests/CollectionTestSupport.swift
@@ -895,6 +905,7 @@ targets:
       - TextMouthProductionTests/FolderDuplicateRepairTests.swift
       - TextMouthProductionTests/FolderPathEquivalenceTests.swift
       - TextMouthProductionTests/FolderSafetyTests.swift
+      - TextMouthProductionTests/FormatSampleFixtures.swift
       - TextMouthProductionTests/HostedTestIsolationSupport.swift
       - TextMouthProductionTests/IOSInfoPlistTests.swift
       - TextMouthProductionTests/ImportConcurrencyTests.swift
@@ -1012,6 +1023,7 @@ targets:
       - TextMouthProductionTests/StorageGenerationWorkTests.swift
       - TextMouthProductionTests/SubstitutionCompositionTests.swift
       - TextMouthProductionTests/TMBNameTests.swift
+      - TextMouthProductionTests/TestDataFiles.swift
       - TextMouthProductionTests/TextAnchorFineWordsTests.swift
       - TextMouthProductionTests/TextAnchorRealReadings.swift
       - TextMouthProductionTests/TextAnchorRecordTests.swift

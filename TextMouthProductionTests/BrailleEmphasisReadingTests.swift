@@ -70,6 +70,8 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         }
     }
 
+    // Mac only: the helper run by a stand-in tool on a table file the catalog lacks; the iPhone compiles only the catalog's tables.
+    #if os(macOS)
     /// What `body` returns with the bundled helper reading braille back by
     /// liblouis alone, without the reading passes, when `liblouisAlone`
     /// (its test-only `back-liblouis`), and loading the table file `file`,
@@ -87,6 +89,7 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         }
         return try BrailleTranslator.$tool.withValue(tool, operation: body)
     }
+    #endif
 
     /// Asserts that each of `samples`, braille ASCII and the print it holds,
     /// reads back as that print with `table`, whatever its emphasis.
@@ -233,6 +236,8 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         XCTAssertFalse(print.first?.hasEmphasis ?? true)
     }
 
+    // Mac only: it reads en-us-g2.ctb by its file name through the helper (withHelper); the other tests read the same passes on the iPhone.
+    #if os(macOS)
     /// BANA's signs never change a word: 3,000 seeded sentences with real
     /// signs in each EBAE table (`BANASentenceGenerator`) read back with
     /// exactly the words liblouis reads alone from the same braille, case
@@ -281,6 +286,7 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             XCTAssertGreaterThan(read.filter(\.hasEmphasis).count, sentences.count * 2 / 3, label)
         }
     }
+    #endif
 
     /// What is no sign reads exactly as liblouis read it before the pass
     /// (main, e110d985): ⠨ inside a number, the decimal point ("3.e" for 3.5,
@@ -358,6 +364,8 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         try assertReads([("..one two three ._+a.b.com_: now", #"*one two three a\.b\.com* now"#)], ebaeUncontracted)
     }
 
+    // Mac only: this Mac's own tables, which the iPhone does not have.
+    #if os(macOS)
     /// The EBAE pass runs only where EBAE's signs mean emphasis. This Mac's
     /// Bharati tables also write italic as ⠨ before a word, but read ⠨ as
     /// the letter "kh", which the pass dropped from every word it began
@@ -380,6 +388,7 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             XCTAssertEqual(print, [sample.readBack], sample.table)
         }
     }
+    #endif
 
     // MARK: - UEB
 

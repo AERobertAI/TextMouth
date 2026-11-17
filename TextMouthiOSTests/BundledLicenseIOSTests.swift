@@ -2,7 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// The licences of the libraries the iPhone app links ship inside the app, as the Mac app's do (BundledLicenseTests):
-/// LAME's, SwiftSoup's, ZIPFoundation's, swift-cmark's, and foliate-js's (the MOBI
+/// liblouis's (since DR34), LAME's, SwiftSoup's, ZIPFoundation's, swift-cmark's, and foliate-js's (the MOBI
 /// reader follows its mobi.js). project.yml's TextMouthiOS target copies each from where the repository keeps it into
 /// `Licenses/<library>` of the app; the app is this bundle's host, so `Bundle.main` is the built iPhone app and the
 /// files are read where a person who unpacked the app would find them. Scripts/ios/check-licenses.py checks the same
@@ -16,6 +16,16 @@ final class BundledLicenseIOSTests: XCTestCase {
         let url = resources.appendingPathComponent("Licenses/\(folder)/\(name)")
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path), "\(name) is not in the app at Licenses/\(folder)")
         return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// liblouis's licence and README are in the app, as in the Mac's, the licence being the GNU Lesser General Public
+    /// License: the iPhone links liblouis since DR34, to translate braille in the app itself.
+    func testLiblouisLicenseShipsWithTheApp() throws {
+        let licence = try licenseText("liblouis", "COPYING.LESSER")
+        XCTAssertTrue(
+            licence.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("GNU LESSER GENERAL PUBLIC LICENSE"),
+            String(licence.prefix(80)))
+        XCTAssertFalse(try licenseText("liblouis", "README").isEmpty)
     }
 
     /// LAME's copying file is the GNU Library General Public License, and its licence note is there too.

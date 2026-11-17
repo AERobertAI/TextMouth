@@ -27,16 +27,23 @@ final class BrailleEbaeFixesTests: XCTestCase {
     /// The braille `ascii` (braille ASCII, a space for the blank cell) read
     /// back to print with `table`, by the helper, as a braille book's paragraph.
     private func read(_ ascii: String, _ table: String, liblouisAlone: Bool = false) throws -> EmphasizedText {
+        let reading = {
+            try BrailleTranslator.translate(
+                [EmphasizedText(self.brailleCells(ascii))], table: table, direction: .brailleToPrint, workingIn: self.work
+            )
+        }
+        #if os(iOS)
+        // The iPhone's library reads by liblouis alone when a test asks; it
+        // runs no helper for a stand-in tool to change (DR34).
+        let print = try BrailleTranslator.$readsByLiblouisAlone.withValue(liblouisAlone, operation: reading)
+        #else
         let helper = BrailleTranslator.Tool.helper
         var tool = helper
         tool.command = { mode, table, input, output in
             helper.command(liblouisAlone && mode == "back" ? "back-liblouis" : mode, table, input, output)
         }
-        let print = try BrailleTranslator.$tool.withValue(tool) {
-            try BrailleTranslator.translate(
-                [EmphasizedText(brailleCells(ascii))], table: table, direction: .brailleToPrint, workingIn: work
-            )
-        }
+        let print = try BrailleTranslator.$tool.withValue(tool, operation: reading)
+        #endif
         return try XCTUnwrap(print.first, "\(table): \(ascii)")
     }
 
