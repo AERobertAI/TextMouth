@@ -91,6 +91,21 @@ final class BrailleEmphasisReadingTests: XCTestCase {
     }
     #endif
 
+    /// What `body` returns with braille read back by liblouis alone, without
+    /// the reading passes, when `liblouisAlone`: on the Mac by the helper's
+    /// test-only `back-liblouis` (`withHelper`, which also loads `file`, when
+    /// given, in place of the table named); on the iPhone by its library's
+    /// (`BrailleTranslator.readsByLiblouisAlone`), which compiles only the
+    /// catalog's tables, so no `file` is given there.
+    private func readingByLiblouis<T>(alone liblouisAlone: Bool, file: String? = nil, _ body: () throws -> T) throws -> T {
+        #if os(iOS)
+        XCTAssertNil(file, "the iPhone loads no table file in place of the table named")
+        return try BrailleTranslator.$readsByLiblouisAlone.withValue(liblouisAlone, operation: body)
+        #else
+        return try withHelper(liblouisAlone: liblouisAlone, file: file, body)
+        #endif
+    }
+
     /// Asserts that each of `samples`, braille ASCII and the print it holds,
     /// reads back as that print with `table`, whatever its emphasis.
     private func assertReadsWords(
@@ -236,23 +251,25 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         XCTAssertFalse(print.first?.hasEmphasis ?? true)
     }
 
-    // Mac only: it reads en-us-g2.ctb by its file name through the helper (withHelper); the other tests read the same passes on the iPhone.
-    #if os(macOS)
     /// BANA's signs never change a word: 3,000 seeded sentences with real
     /// signs in each EBAE table (`BANASentenceGenerator`) read back with
     /// exactly the words liblouis reads alone from the same braille, case
     /// included, as main (e110d985) read them (the helper's test-only
-    /// `back-liblouis`), and at least two in three keep emphasis. Before the
-    /// safety net, the verifier's 24,000 such sentences read other words in
-    /// 52 (October 24, 2026). The third table is en-us-g2.ctb, which
-    /// en_US.tbl includes and TextMouth does not offer, read through the
-    /// bundled helper by its file name.
+    /// `back-liblouis`, the iPhone library's own), and at least two in three
+    /// keep emphasis. Before the safety net, the verifier's 24,000 such
+    /// sentences read other words in 52 (October 24, 2026). On the Mac a third
+    /// table is read too: en-us-g2.ctb, which en_US.tbl includes and
+    /// TextMouth does not offer, through the bundled helper by its file name.
     func testBANAEmphasisReadsLiblouissOwnWords() throws {
-        let tables: [(name: String, file: String?)] = [(ebaeUncontracted, nil), (ebaeContracted, nil), (ebaeContracted, "en-us-g2.ctb")]
+        var tables: [(name: String, file: String?)] = [(ebaeUncontracted, nil), (ebaeContracted, nil)]
+        // Mac only: en-us-g2.ctb by its file name through the helper (withHelper); the iPhone compiles only the catalog's tables.
+        #if os(macOS)
+        tables.append((ebaeContracted, "en-us-g2.ctb"))
+        #endif
         for table in tables {
             let label = table.file ?? table.name
             let pieces = BANASentenceGenerator.pieces
-            let braille = try withHelper(liblouisAlone: false, file: table.file) {
+            let braille = try readingByLiblouis(alone: false, file: table.file) {
                 try BrailleTranslator.translate(pieces, table: table.name, direction: .printToBraille, workingIn: work)
             }
             var generator = BANASentenceGenerator(
@@ -260,10 +277,10 @@ final class BrailleEmphasisReadingTests: XCTestCase {
                 contracted: table.name == ebaeContracted
             )
             let sentences = (0..<3_000).map { _ in EmphasizedText(generator.sentence()) }
-            let read = try withHelper(liblouisAlone: false, file: table.file) {
+            let read = try readingByLiblouis(alone: false, file: table.file) {
                 try BrailleTranslator.translate(sentences, table: table.name, direction: .brailleToPrint, workingIn: work)
             }
-            let alone = try withHelper(liblouisAlone: true, file: table.file) {
+            let alone = try readingByLiblouis(alone: true, file: table.file) {
                 try BrailleTranslator.translate(sentences, table: table.name, direction: .brailleToPrint, workingIn: work)
             }
             // liblouis alone reads an emphasized word that begins with m as
@@ -286,7 +303,6 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             XCTAssertGreaterThan(read.filter(\.hasEmphasis).count, sentences.count * 2 / 3, label)
         }
     }
-    #endif
 
     /// What is no sign reads exactly as liblouis read it before the pass
     /// (main, e110d985): ⠨ inside a number, the decimal point ("3.e" for 3.5,
