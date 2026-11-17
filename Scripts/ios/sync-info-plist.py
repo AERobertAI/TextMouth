@@ -31,10 +31,10 @@ is left out by name, with the declaration of any type nothing else names:
   are converted at import with afconvert. Leaving the type in would offer every
   `.caf`; leaving it out leaves `.alac` unoffered on iOS, which is the lesser
   harm.
-- "BRF Braille File", "BRL Braille File", and "PEF Braille File" (`.brf`,
-  `.brl`, `.pef`), with their type declarations: reading them takes the braille
-  helper program, and humanQuestions/2026-11-03.md says braille fails on iPhone
-  for now. They come back when braille runs on iOS.
+- (Until November 16, 2026, also "BRF Braille File", "BRL Braille File", and
+  "PEF Braille File", which the Mac's braille helper program reads. Since DR34
+  the iPhone translates braille in the app itself, so they are offered as on
+  the Mac, with their type declarations.)
 - The keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which
   are macOS's.
 
@@ -71,9 +71,6 @@ REFUSED = {
     "Audio and Video Converted with ffmpeg",
     "Lossless Audio Read by TextMouth",
     "ALAC Audio",
-    "BRF Braille File",
-    "BRL Braille File",
-    "PEF Braille File",
 }
 
 # The keys of the Mac's plist that mean nothing on iOS.
@@ -103,7 +100,8 @@ def ios_plist(mac):
     result["CFBundleDocumentTypes"] = document_types
 
     # The declaration of a type that a kept document type names stays; one
-    # that only a refused type named (the braille files') goes with it.
+    # that only a refused type named (the formats only ffmpeg reads) goes with
+    # it.
     named = {uti for entry in document_types for uti in entry["LSItemContentTypes"]}
     imported = []
     for declaration in mac["UTImportedTypeDeclarations"]:

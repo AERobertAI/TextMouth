@@ -9,10 +9,11 @@ import Foundation
 /// records (`BrailleFileCode`, braillecodes; North American Braille ASCII
 /// for a book that records none), `BraillePageAnalyzer` finds the headings
 /// and paragraphs, and `BrailleTranslator` turns each block's cells into
-/// print through liblouis in the braille helper, with the table the book
-/// was imported with, and with the emphasis liblouis reads from the
-/// braille's indicators. Both reading paths, the direct parse and the
-/// Markdown cache, call `markdown(of:table:)`, so they read the same text.
+/// print through liblouis (in the Mac's braille helper, and in the iPhone
+/// app itself, DR34), with the table the book was imported with, and with
+/// the emphasis liblouis reads from the braille's indicators. Both reading
+/// paths, the direct parse and the Markdown cache, call
+/// `markdown(of:table:)`, so they read the same text, as both platforms do.
 enum BrailleBookReader {
 
     // MARK: - The kind of file
@@ -163,15 +164,19 @@ enum BrailleBookReader {
     ///   `FileImportError.noTextToRead` when the book has no blocks or no
     ///   print text, `BrailleTranslator.Failure` for a table that is unknown,
     ///   has changed (`requireUnchangedTable(_:recordedVersion:)`), or a
-    ///   translation that fails, and what the file's reading throws.
+    ///   translation that fails, and what the file's reading throws; on the
+    ///   iPhone, `PhoneImportRefusal.macBrailleTable` first for one of a
+    ///   Mac's own tables.
     static func markdown(
         of url: URL, table: String, recordedVersion: String? = nil, fileCode: String? = nil,
         includesPages: Bool = false
     ) throws -> String {
         #if os(iOS)
-        // iOS has no braille helper to translate with, so the book is
-        // refused in the phone's words before a byte of it is read.
-        try PhoneImportRefusal.refuseBrailleBook()
+        // One of a Mac's own tables is refused first, in the phone's words:
+        // the iPhone has none of them, so the version check below and the
+        // translator would both speak of this Mac's tables (the review of
+        // November 16, finding 5).
+        try PhoneImportRefusal.refuseMacBrailleTable(table)
         #endif
         // A book whose Mac table changed is not read again (review R2).
         try requireUnchangedTable(table, recordedVersion: recordedVersion)
@@ -195,9 +200,10 @@ enum BrailleBookReader {
             starts: includesPages && marksItsPages(pages, structure) ? pageStarts(of: structure) : []
         )
 
-        // One run of the helper translates every text, in a working folder
-        // beside the staged package during an import and a temporary one
-        // otherwise, with the emphasis liblouis reads.
+        // One translation reads every text, with the emphasis liblouis reads:
+        // one run of the Mac's helper, in a working folder beside the staged
+        // package during an import and a temporary one otherwise, or the
+        // iPhone's library in its own process, which writes nothing there.
         let printed = try TextutilDocumentReader.withWorkingFolder(for: url) { folder in
             try BrailleTranslator.translate(translation.texts, table: table, direction: .brailleToPrint, workingIn: folder)
         }

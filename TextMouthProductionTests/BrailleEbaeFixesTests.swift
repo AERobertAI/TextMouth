@@ -2,7 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// The braille helper's fixes of what contracted EBAE's table misreads (November
-/// 13, 2026, `fix_ebae_cells` in `TextMouthBraille/main.c`): found reading a
+/// 13, 2026, `fix_ebae_cells` in `TextMouthBraille/TextMouthBrailleLibrary.c`): found reading a
 /// 2003 transcription of a novel in the old code with liblouis's tables. Every
 /// sample is braille ASCII invented for the test, not a line of any book. Each
 /// test also reads the same cells by liblouis alone (the helper's
@@ -27,16 +27,23 @@ final class BrailleEbaeFixesTests: XCTestCase {
     /// The braille `ascii` (braille ASCII, a space for the blank cell) read
     /// back to print with `table`, by the helper, as a braille book's paragraph.
     private func read(_ ascii: String, _ table: String, liblouisAlone: Bool = false) throws -> EmphasizedText {
+        let reading = {
+            try BrailleTranslator.translate(
+                [EmphasizedText(self.brailleCells(ascii))], table: table, direction: .brailleToPrint, workingIn: self.work
+            )
+        }
+        #if os(iOS)
+        // The iPhone's library reads by liblouis alone when a test asks; it
+        // runs no helper for a stand-in tool to change (DR34).
+        let print = try BrailleTranslator.$readsByLiblouisAlone.withValue(liblouisAlone, operation: reading)
+        #else
         let helper = BrailleTranslator.Tool.helper
         var tool = helper
         tool.command = { mode, table, input, output in
             helper.command(liblouisAlone && mode == "back" ? "back-liblouis" : mode, table, input, output)
         }
-        let print = try BrailleTranslator.$tool.withValue(tool) {
-            try BrailleTranslator.translate(
-                [EmphasizedText(brailleCells(ascii))], table: table, direction: .brailleToPrint, workingIn: work
-            )
-        }
+        let print = try BrailleTranslator.$tool.withValue(tool, operation: reading)
+        #endif
         return try XCTUnwrap(print.first, "\(table): \(ascii)")
     }
 

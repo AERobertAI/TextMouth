@@ -62,16 +62,29 @@ final class PhoneImportBranchTests: XCTestCase {
         XCTAssertTrue(Self.isInsideIOSBranch(refusal, of: source))
     }
 
-    /// A braille book is refused on iOS before anything of it is read.
-    func testABrailleBookIsRefusedBeforeItIsRead() throws {
-        let source = try Self.source("Parsers/BrailleBookReader.swift")
-        let refusal = try XCTUnwrap(source.range(of: "try PhoneImportRefusal.refuseBrailleBook()"))
-        let firstRead = try XCTUnwrap(source.range(of: "try requireUnchangedTable(table, recordedVersion: recordedVersion)"))
-        XCTAssertLessThan(refusal.lowerBound, firstRead.lowerBound)
-        XCTAssertTrue(Self.isInsideIOSBranch(refusal, of: source))
-        XCTAssertThrowsError(try PhoneImportRefusal.refuseBrailleBook()) { error in
-            XCTAssertEqual(error as? PhoneImportRefusal, .braille)
-        }
+    /// A braille book is read on iOS as on the Mac (DR34): the braille
+    /// reader's one iPhone branch refuses only a book that needs one of a
+    /// Mac's own tables, which the iPhone lacks (the review of November 16,
+    /// finding 5), and does nothing else; no refusal is braille's own; and
+    /// the translator's iPhone branch translates in the app's own process.
+    func testABrailleBookIsReadOnThePhoneAsOnTheMac() throws {
+        let reader = try Self.source("Parsers/BrailleBookReader.swift")
+        XCTAssertEqual(reader.components(separatedBy: "#if os(iOS)").count - 1, 1, "the braille reader reads otherwise on the phone")
+        let branch = try Self.iOSBranch(after: "static func markdown(", in: reader)
+        let statements = branch.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("//") }
+        XCTAssertEqual(
+            statements, ["try PhoneImportRefusal.refuseMacBrailleTable(table)"],
+            "the braille reader refuses more than a Mac's own table on the phone"
+        )
+        let refusals = try Self.source("Phone/PhoneImportRefusal.swift")
+        XCTAssertFalse(refusals.contains("case braille"), "a refusal is still braille's")
+        let translator = try Self.source("Services/BrailleTranslator.swift")
+        let inProcess = try XCTUnwrap(
+            translator.range(of: "return try translateInProcess(texts, table: table, direction: direction)"),
+            "the translator's iPhone branch is gone"
+        )
+        XCTAssertTrue(Self.isInsideIOSBranch(inProcess, of: translator), "the in-process translation is outside #if os(iOS)")
     }
 
     // MARK: - What an Import Says

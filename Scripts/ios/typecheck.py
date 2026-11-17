@@ -13,7 +13,8 @@ project.yml):
 - iOS: TextMouth/, less TextMouth/Platform/macOS/ and TextMouth/Resources/;
 - macOS: TextMouth/, less TextMouth/Platform/iOS/ and TextMouth/Resources/.
 Both link the C libraries the apps link (LAME and the Objective-C exception
-catcher), so a clean run means the app compiles and links.
+catcher, and on iOS liblouis and the braille library, which the Mac's braille
+helper links instead), so a clean run means the app compiles and links.
 
 With `--tests` (macOS only) the package also holds the Mac's hosted test target,
 TextMouthProductionTests, built with `swift build --target`, so a test file
@@ -243,6 +244,13 @@ def platform_test_flags(platform):
     return ["-F", f"{folder}/Developer/Library/Frameworks", "-I", f"{folder}/Developer/usr/lib"]
 
 
+# The empty folder each of the iPhone's braille C targets names as its public headers (see write_package).
+NO_PUBLIC_HEADERS = "no-public-headers"
+# The name of the iPhone package's C target that builds the braille library (see write_package): any name but the
+# library's own module's, TextMouthBrailleLibrary, which SwiftPM's module of the target's name would clash with.
+BRAILLE_LIBRARY_TARGET = "TextMouthBrailleC"
+
+
 def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()):
     """Writes the probe's Package.swift into `src`; with `tests` (see test_kind), it also
     holds the test target. `skipped_tests` are files of the test target's folder (paths inside it) that the
@@ -260,9 +268,47 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
         extra_flags += ["-whole-module-optimization"]
     flags = "".join(f', "{flag}"' for flag in extra_flags)
     excludes = ", ".join(f'"{e}"' for e in excluded_folders(src, platform))
-    # The braille helper's protocol and the FFmpeg helper's stream are header-only modules, found by their maps.
+    # The braille helper's protocol and the FFmpeg helper's stream are header-only modules, found by their maps,
+    # and so is the braille library's interface, whose map is in the folder named after its module there
+    # (TextMouthBraille/include/TextMouthBrailleLibrary).
     include_flags = (f'"-I", "{src / "TextMouthBraille" / "include"}", '
                      f'"-I", "{src / "TextMouthFFmpeg" / "include"}"')
+    # The iPhone app links liblouis and TextMouth's braille translation, which its BrailleTranslator calls in its own
+    # process (DR34; project.yml's liblouis_iOS and TextMouthBrailleLibrary_iOS); the Mac app links neither, since
+    # its braille helper runs them. Neither target has public headers: each names an empty folder of the copy as
+    # its public headers, since SwiftPM refuses a folder that is not there. SwiftPM still makes each a module of the
+    # target's name, so the library's target is named BRAILLE_LIBRARY_TARGET, never TextMouthBrailleLibrary, the module
+    # the app finds the library's interface by.
+    braille_dependencies = f'\n                "liblouis",\n                "{BRAILLE_LIBRARY_TARGET}",' if platform == "ios" else ""
+    if platform == "ios":
+        for target_folder in ("Vendor/liblouis", "TextMouthBraille"):
+            (src / target_folder / NO_PUBLIC_HEADERS).mkdir(parents=True, exist_ok=True)
+    braille_targets = f"""
+        // liblouis, as project.yml's LiblouisLibrary template builds it.
+        .target(
+            name: "liblouis",
+            path: "Vendor/liblouis",
+            exclude: ["liblouis/liblouis.h.in", "tables"],
+            sources: ["liblouis"],
+            publicHeadersPath: "{NO_PUBLIC_HEADERS}",
+            cSettings: [
+                .define("LIBLOUIS_FOR_TEXTMOUTH", to: "1"),
+                .headerSearchPath("."),
+                .headerSearchPath("include"),
+                .headerSearchPath("liblouis"),
+                .unsafeFlags(["-w", "-Os"]),
+            ]
+        ),
+        // TextMouth's braille translation, as project.yml's TextMouthBrailleLibrary_iOS target builds it.
+        .target(
+            name: "{BRAILLE_LIBRARY_TARGET}",
+            dependencies: ["liblouis"],
+            path: "TextMouthBraille",
+            exclude: ["main.c", "include"],
+            sources: ["TextMouthBrailleLibrary.c"],
+            publicHeadersPath: "{NO_PUBLIC_HEADERS}",
+            cSettings: [.unsafeFlags(["-isystem", "{src / "Vendor" / "liblouis" / "include"}", "-Os"])]
+        ),""" if platform == "ios" else ""
     test_target = f"""
         // The tests of the platform: compiled, never run.
         .testTarget(
@@ -319,14 +365,14 @@ let package = Package(
             path: "Vendor/ObjCExceptionCatcher",
             publicHeadersPath: "include",
             cSettings: [.unsafeFlags(["-fobjc-arc"])]
-        ),
+        ),{braille_targets}
         // The app's sources, as one executable target so that its @main
         // compiles; the braille protocol's header module is found by its map.
         .executableTarget(
             name: "TextMouth",
             dependencies: [
                 "LAME",
-                "ObjCExceptionCatcher",
+                "ObjCExceptionCatcher",{braille_dependencies}
                 "ZIPFoundation",
                 "SwiftSoup",
                 .product(name: "cmark-gfm", package: "cmark"),

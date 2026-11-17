@@ -48,10 +48,24 @@ settingGroups:
   appVersion:
     MARKETING_VERSION: "0.5.1"
     CURRENT_PROJECT_VERSION: "1"
+  # How TextMouth's own braille code in TextMouthBraille/ compiles, in the
+  # Mac's helper and in the iPhone's library alike (DR34): liblouis.h is
+  # liblouis's own header, as a system header, so the warnings of its
+  # comments (five @deprecated commands without a deprecation attribute) are
+  # not shown; TextMouth's own are. Without a header map, which would list it
+  # among the project's own headers and find it there first, "liblouis.h" is
+  # found on this path.
+  brailleCode:
+    SYSTEM_HEADER_SEARCH_PATHS:
+      - $(SRCROOT)/Vendor/liblouis/include
+    USE_HEADERMAP: NO
+    GCC_OPTIMIZATION_LEVEL: s
+    SKIP_INSTALL: YES
 
-# The two C libraries both apps link, each defined once and built for each
+# The C libraries both apps build, each defined once and built for each
 # platform by a target of its own (LAME and LAME_iOS, ObjCExceptionCatcher
-# and ObjCExceptionCatcher_iOS): see the targets below for what each is.
+# and ObjCExceptionCatcher_iOS, liblouis and liblouis_iOS): see the targets
+# below for what each is.
 targetTemplates:
   LAMELibrary:
     type: library.static
@@ -94,6 +108,35 @@ targetTemplates:
           - $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
         CLANG_ENABLE_OBJC_ARC: YES
         SKIP_INSTALL: YES
+  # liblouis 3.39.0, built once for each platform: the Mac's braille helper
+  # links the liblouis target, and the iPhone app links liblouis_iOS (see
+  # the liblouis target for what it is and how it is vendored).
+  LiblouisLibrary:
+    type: library.static
+    # C alone, with no Objective-C class or category for the linker to keep.
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/liblouis/liblouis
+        headerVisibility: project
+        excludes:
+          - liblouis.h.in
+      - path: Vendor/liblouis/config.h
+        headerVisibility: project
+      - path: Vendor/liblouis/include/liblouis.h
+        headerVisibility: project
+    settings:
+      base:
+        PRODUCT_NAME: louis
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/liblouis
+          - $(SRCROOT)/Vendor/liblouis/include
+          - $(SRCROOT)/Vendor/liblouis/liblouis
+        GCC_PREPROCESSOR_DEFINITIONS: LIBLOUIS_FOR_TEXTMOUTH=1
+        GCC_OPTIMIZATION_LEVEL: s
+        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+        SKIP_INSTALL: YES
+        # Its own config.h, never LAME's (see USE_HEADERMAP in LAME's target).
+        USE_HEADERMAP: NO
 
   # FFmpeg 9.0.2 (FMT50), the decoders of the formats macOS and iOS cannot read, and TextMouth's
   # own session around it (TextMouthFFmpeg/Session/session.c, TextMouthFFmpegSession.h): one
@@ -307,7 +350,8 @@ targets:
         # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap),
         # the exception catcher's (Vendor/ObjCExceptionCatcher/include/module.modulemap),
         # the braille helper's protocol (TextMouthBraille/include/module.modulemap),
-        # which the helper's main.c includes too, and the FFmpeg helper's stream
+        # which the helper's translation (TextMouthBraille/TextMouthBrailleLibrary.c)
+        # includes too, and the FFmpeg helper's stream
         # (TextMouthFFmpeg/include/module.modulemap), which its C includes too.
         SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
       # The Release app, which `make build` packages and `make install`
@@ -462,7 +506,8 @@ targets:
   # module is named TextMouth too, so shared code and tests read the same on
   # both. Xcode builds it only once its iOS platform is downloaded (Xcode >
   # Settings > Components); until then Scripts/ios/typecheck.py checks it.
-  # It runs no helper program: iOS lets an app start none.
+  # It runs no helper program: iOS lets an app start none, so the braille
+  # translation the Mac runs in its helper runs inside this app (DR34).
   TextMouthiOS:
     type: application
     platform: iOS
@@ -472,12 +517,32 @@ targets:
         excludes:
           - "Platform/macOS/**"
           - "Resources/**"
+      # liblouis's braille tables (DR34), copied unchanged as one folder into
+      # the app's liblouis/tables, as the Mac app copies them, where the
+      # braille translation reads them in place: the only tables the iPhone
+      # ever compiles.
+      - path: Vendor/liblouis/tables
+        type: folder
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: liblouis
       # The licences of every library the iPhone app links, and of the code
       # its shared readers follow, copied unchanged into the app's Licenses
       # folder, one folder for each, as the Mac app does (see the TextMouth
-      # target). liblouis is not here: the iPhone app links no braille
-      # translator. Scripts/ios/check-licenses.py fails when a linked library
+      # target). Scripts/ios/check-licenses.py fails when a linked library
       # has no entry, or when an entry is not copied from the file it names.
+      # liblouis (DR34) is under the GNU Lesser General Public License 2.1.
+      - path: Vendor/liblouis/COPYING.LESSER
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/liblouis
+      - path: Vendor/liblouis/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/liblouis
       - path: Vendor/lame/COPYING
         buildPhase:
           copyFiles:
@@ -564,7 +629,10 @@ targets:
         CODE_SIGN_STYLE: Automatic
         # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream
         # modules, as the Mac target finds them (the FFmpeg session's module,
-        # in the same folder, needs the FFmpeg_iOS dependency to link).
+        # in the same folder, needs the FFmpeg_iOS dependency to link), and
+        # the braille library's (DR34), whose map is in
+        # TextMouthBraille/include/TextMouthBrailleLibrary, where Clang looks
+        # for a module of that name on this path.
         SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
     dependencies:
       - package: ZIPFoundation
@@ -576,6 +644,10 @@ targets:
         product: cmark-gfm-extensions
       - target: LAME_iOS
       - target: ObjCExceptionCatcher_iOS
+      # The braille translator (DR34): liblouis, and TextMouth's own
+      # translation around it, which the app calls in its own process.
+      - target: liblouis_iOS
+      - target: TextMouthBrailleLibrary_iOS
     # The iPhone app's scheme, committed, so that `xcodebuild test -scheme
     # TextMouthiOS` runs both of its test bundles in the simulator: the one
     # Xcode made by itself held only the UI tests. The Mac's schemes are
@@ -586,10 +658,12 @@ targets:
         - TextMouthiOSUITests
       gatherCoverageData: false
   # liblouis 3.39.0, the braille translator (FMT21), vendored in
-  # Vendor/liblouis and built as a static library that only the braille
+  # Vendor/liblouis and built as a static library that the Mac's braille
   # helper links: liblouis is C that reads untrusted braille and text, it has
-  # had memory-safety bugs, and it is not thread-safe, so it never runs in
-  # TextMouth's own process.
+  # had memory-safety bugs, and it is not thread-safe, so on the Mac it never
+  # runs in TextMouth's own process. The iPhone, which may start no helper,
+  # links its own build of it (liblouis_iOS) and runs it in the app, one call
+  # at a time on a thread of its own, within limits (DR34).
   #
   # Vendor/liblouis holds, unchanged, these files of liblouis's release
   # tarball liblouis-3.39.0.tar.gz, from
@@ -633,33 +707,41 @@ targets:
   # the DEBUG=1 of the Debug configuration, which would turn on liblouis's
   # debugging output.
   liblouis:
-    type: library.static
+    templates:
+      - LiblouisLibrary
     platform: macOS
+  # The iPhone's build of the same library (DR34), from the same template,
+  # which the iPhone app links with TextMouthBrailleLibrary_iOS: iOS lets an
+  # app start no helper program, so its braille runs in the app itself, one
+  # call at a time on a thread of its own, within limits (InProcessEngine,
+  # BrailleTranslator).
+  liblouis_iOS:
+    templates:
+      - LiblouisLibrary
+    platform: iOS
+    deploymentTarget: "26.0"
+  # TextMouth's own braille translation (TextMouthBraille/TextMouthBrailleLibrary.c,
+  # DR34), which the Mac's helper below compiles with its main.c, built for
+  # the iPhone as a static library, which the iPhone app links and calls in
+  # its own process (tmb_translate). Its interface,
+  # TextMouthBraille/include/TextMouthBrailleLibrary.h, is the Clang module
+  # TextMouthBrailleLibrary, found through SWIFT_INCLUDE_PATHS as the
+  # protocol's is.
+  TextMouthBrailleLibrary_iOS:
+    type: library.static
+    platform: iOS
+    deploymentTarget: "26.0"
     # C alone, with no Objective-C class or category for the linker to keep.
     requiresObjCLinking: false
     sources:
-      - path: Vendor/liblouis/liblouis
-        headerVisibility: project
-        excludes:
-          - liblouis.h.in
-      - path: Vendor/liblouis/config.h
-        headerVisibility: project
-      - path: Vendor/liblouis/include/liblouis.h
-        headerVisibility: project
+      - path: TextMouthBraille/TextMouthBrailleLibrary.c
     settings:
+      groups:
+        - brailleCode
       base:
-        PRODUCT_NAME: louis
-        HEADER_SEARCH_PATHS:
-          - $(SRCROOT)/Vendor/liblouis
-          - $(SRCROOT)/Vendor/liblouis/include
-          - $(SRCROOT)/Vendor/liblouis/liblouis
-        GCC_PREPROCESSOR_DEFINITIONS: LIBLOUIS_FOR_TEXTMOUTH=1
-        GCC_OPTIMIZATION_LEVEL: s
-        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
-        SKIP_INSTALL: YES
-        # Its own config.h, never LAME's (see USE_HEADERMAP in LAME's target).
-        USE_HEADERMAP: NO
-  # The braille helper (FMT21): TextMouthBraille/main.c, TextMouth's own
+        PRODUCT_NAME: TextMouthBrailleLibrary
+  # The braille helper (FMT21): TextMouthBraille/main.c around the
+  # translation in TextMouthBraille/TextMouthBrailleLibrary.c, TextMouth's own
   # code, a command-line program that links liblouis and translates one
   # book's paragraphs per run, print to braille or braille to print, with
   # the bundle's own tables. The app runs it under its watchdog
@@ -667,10 +749,11 @@ targets:
   # liblouis costs one run of the helper, never the app. The app target
   # copies it into Contents/MacOS. Optimized for size, and stripped in the
   # Release configuration as the app is. Its line protocol is defined once,
-  # in TextMouthBraille/include/TextMouthBrailleProtocol.h, which main.c
-  # includes by its path beside it and the app imports through the module
-  # map in the same folder (see SWIFT_INCLUDE_PATHS above), so the two sides
-  # cannot disagree about it.
+  # in TextMouthBraille/include/TextMouthBrailleProtocol.h, which the
+  # translation includes by its path beside it and the app imports through
+  # the module map in the same folder (see SWIFT_INCLUDE_PATHS above), so the
+  # two sides cannot disagree about it. The iPhone builds the same
+  # translation as TextMouthBrailleLibrary_iOS (DR34).
   TextMouthBraille:
     type: tool
     platform: macOS
@@ -679,20 +762,12 @@ targets:
     dependencies:
       - target: liblouis
     settings:
+      groups:
+        - brailleCode
       base:
         PRODUCT_NAME: TextMouthBraille
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         CODE_SIGN_IDENTITY: "-"
-        # liblouis.h is liblouis's own header, as a system header, so the
-        # warnings of its comments (five @deprecated commands without a
-        # deprecation attribute) are not shown; main.c's own are. Without a
-        # header map, which would list it among the project's own headers
-        # and find it there first, "liblouis.h" is found on this path.
-        SYSTEM_HEADER_SEARCH_PATHS:
-          - $(SRCROOT)/Vendor/liblouis/include
-        USE_HEADERMAP: NO
-        GCC_OPTIMIZATION_LEVEL: s
-        SKIP_INSTALL: YES
       configs:
         Release:
           DEPLOYMENT_POSTPROCESSING: true
@@ -792,8 +867,19 @@ targets:
       - TextMouthProductionTests/BookMetadataUpdateTests.swift
       - TextMouthProductionTests/BookSearchModelTests.swift
       - TextMouthProductionTests/BookTextEncodingTests.swift
+      - TextMouthProductionTests/BrailleBookPageTests.swift
+      - TextMouthProductionTests/BrailleCellsTests.swift
+      - TextMouthProductionTests/BrailleDamagedInputTests.swift
+      - TextMouthProductionTests/BrailleEbaeFixesTests.swift
+      - TextMouthProductionTests/BrailleEmphasisReadingTests.swift
+      - TextMouthProductionTests/BrailleEmphasisRoundTripTests.swift
       - TextMouthProductionTests/BrailleFileCodeRecordTests.swift
       - TextMouthProductionTests/BrailleFileCodeTests.swift
+      - TextMouthProductionTests/BrailleFileReaderTests.swift
+      - TextMouthProductionTests/BrailleImportTests.swift
+      - TextMouthProductionTests/BrailleLayoutTests.swift
+      - TextMouthProductionTests/BraillePageAnalyzerTests.swift
+      - TextMouthProductionTests/BrailleTranslatorTests.swift
       - TextMouthProductionTests/CloudStorageContractTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift
       - TextMouthProductionTests/CollectionTestSupport.swift
@@ -822,6 +908,7 @@ targets:
       - TextMouthProductionTests/FolderDuplicateRepairTests.swift
       - TextMouthProductionTests/FolderPathEquivalenceTests.swift
       - TextMouthProductionTests/FolderSafetyTests.swift
+      - TextMouthProductionTests/FormatSampleFixtures.swift
       - TextMouthProductionTests/HostedTestIsolationSupport.swift
       - TextMouthProductionTests/IOSInfoPlistTests.swift
       - TextMouthProductionTests/ImportConcurrencyTests.swift
@@ -831,6 +918,7 @@ targets:
       - TextMouthProductionTests/ImportFuzzMutatorTests.swift
       - TextMouthProductionTests/ImportProgressWordingTests.swift
       - TextMouthProductionTests/ImportRefusalTestSupport.swift
+      - TextMouthProductionTests/InProcessEngineTests.swift
       - TextMouthProductionTests/KF8Fixture.swift
       - TextMouthProductionTests/KF8LayoutTests.swift
       - TextMouthProductionTests/KF8ReviewFixTests.swift
@@ -938,6 +1026,7 @@ targets:
       - TextMouthProductionTests/StorageGenerationWorkTests.swift
       - TextMouthProductionTests/SubstitutionCompositionTests.swift
       - TextMouthProductionTests/TMBNameTests.swift
+      - TextMouthProductionTests/TestDataFiles.swift
       - TextMouthProductionTests/TextAnchorFineWordsTests.swift
       - TextMouthProductionTests/TextAnchorRealReadings.swift
       - TextMouthProductionTests/TextAnchorRecordTests.swift
@@ -989,6 +1078,10 @@ targets:
       # Alice's Adventures in Wonderland, Project Gutenberg #11, the sample
       # the Mac's tests read too: the book each UI test sends the app.
       - path: TestData/alice.epub
+        buildPhase: resources
+      # The Grade 2 braille sample the Mac's tests read too, which
+      # BrailleUITests sends the app (DR34).
+      - path: TestData/format-samples/brf/grade2-short.brf
         buildPhase: resources
     settings:
       base:

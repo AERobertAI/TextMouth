@@ -2,7 +2,11 @@ import Foundation
 
 /// Why the iPhone can't import a file yet, thrown on iOS where the Mac would
 /// start a helper program the phone doesn't have: Apple's audio converter,
-/// textutil for a Word 6 or Word 95 document, and the braille translator.
+/// and textutil for a Word 6 or Word 95 document; and why it can't read a
+/// braille book that needs one of a Mac's own braille tables, which only
+/// that Mac has. (Braille, refused here until November 16, 2026, is
+/// translated in the app itself since DR34, with the tables TextMouth
+/// bundles.)
 ///
 /// The shared import wraps it in an `ImportFailure`, as every failure is,
 /// and on iOS that failure's sentence is this refusal's, naming the file and
@@ -20,8 +24,13 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     /// A Word 6 or Word 95 document, which TextMouth's own Word reader
     /// leaves to textutil.
     case wordSixOrNinetyFive
-    /// A braille book: BRF, BRL, or PEF.
-    case braille
+    /// A braille book that needs one of a Mac's own braille tables (a
+    /// stored "mac:" value), named by its file name `table`: a book a Mac
+    /// read, sent in a TextMouth package or a shared library, or the import
+    /// table of a config.json made on a Mac. The iPhone has none of them,
+    /// so the Mac's sentences, which speak of "this Mac's" table, would be
+    /// wrong here (the review of November 16, finding 5).
+    case macBrailleTable(String)
 
     /// The sentence a person hears about the file called `name` (as
     /// `PhoneImportWording.displayName(of:)` gives it), or about "This
@@ -34,8 +43,8 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
             return PhoneImportWording.ffmpegAudioRefusal(name, kind: kind)
         case .wordSixOrNinetyFive:
             return PhoneImportWording.wordSixOrNinetyFiveRefusal(name)
-        case .braille:
-            return PhoneImportWording.brailleRefusal(name)
+        case let .macBrailleTable(table):
+            return PhoneImportWording.macBrailleTableRefusal(name, table: table)
         }
     }
 
@@ -47,12 +56,13 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
 
     // MARK: - Braille
 
-    /// Throws `.braille`: the phone has no braille translator yet, so every
-    /// braille book is refused before it is read. A function rather than a
-    /// bare `throw`, so the reader's code after the call draws no warning
-    /// that it will never run.
-    static func refuseBrailleBook() throws {
-        throw PhoneImportRefusal.braille
+    /// Throws `.macBrailleTable` when `table`, a stored value
+    /// (`BrailleTableSource`), names one of a Mac's own tables; nothing for
+    /// a table TextMouth bundles.
+    static func refuseMacBrailleTable(_ table: String) throws {
+        let (source, fileName) = BrailleTableSource.parse(table)
+        guard source == .mac else { return }
+        throw PhoneImportRefusal.macBrailleTable(fileName)
     }
 
     // MARK: - Audio

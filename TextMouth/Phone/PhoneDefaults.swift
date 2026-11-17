@@ -44,11 +44,13 @@ enum PhoneDefaults {
 
     /// The braille table config.json keeps for the table the preferences read
     /// as: that table when config.json accepts it (a bundled table the bundle
-    /// has, or a Mac table's value), and empty otherwise. The iPhone bundles no
-    /// tables, so the preferences' default, the Mac's "en-ueb-g2.ctb", is
-    /// refused when the file is read, repaired to empty with a log line at
-    /// every launch, and written back as it was. Writing empty, the file's
-    /// "keep the current choice", keeps it quiet.
+    /// has, or a Mac table's value), and empty otherwise. Before the iPhone
+    /// bundled liblouis's tables (DR34), its preferences' default, the Mac's
+    /// "en-ueb-g2.ctb", was refused when the file was read, repaired to empty
+    /// with a log line at every launch, and written back as it was; writing
+    /// empty, the file's "keep the current choice", kept it quiet. Now the
+    /// default is the iPhone's own table too, and a table the bundle lacks is
+    /// still written empty.
     static func configBrailleTable(for stored: String) -> String {
         BrailleTableCatalog.storableValue(stored) ?? ""
     }

@@ -5,7 +5,8 @@ import XCTest
 /// catalog of the ways a BRF or BRL file writes braille cells as characters.
 /// Each seven-bit table is checked by its own facts and against liblouis's
 /// display table for it, vendored unchanged from liblouis 3.39.0 and read
-/// from the app's tables folder, so the test also proves the files ship.
+/// from the app's tables folder, so the test also proves the files ship, in
+/// both apps since the iPhone bundles liblouis's tables too (DR34).
 final class BrailleFileCodeTests: XCTestCase {
     /// The two seven-bit tables, by name for the failure messages.
     private let tables: [(name: String, table: SevenBitBrailleTable)] = [
@@ -101,8 +102,6 @@ final class BrailleFileCodeTests: XCTestCase {
 
     // MARK: - liblouis's Own Tables
 
-    // Mac only: the iPhone app bundles no liblouis display tables (it has no braille helper), so the comparison has nothing to read there.
-    #if os(macOS)
     /// North American Braille ASCII is liblouis's `en-us-brf.dis`, 64 cells
     /// of 64.
     func testNorthAmericanIsLiblouisEnUsBRF() throws {
@@ -111,10 +110,7 @@ final class BrailleFileCodeTests: XCTestCase {
             XCTAssertEqual(SevenBitBrailleTable.northAmerican.byte(forDots: dots), character, "dots \(dots)")
         }
     }
-    #endif
 
-    // Mac only: the iPhone app bundles no liblouis display tables (it has no braille helper), so the comparison has nothing to read there.
-    #if os(macOS)
     /// Eurobraille is liblouis's `de-eurobrl6.dis`, 64 cells of 64.
     func testEurobrailleIsLiblouisDeEurobrl6() throws {
         let cells = try displayCells(of: "de-eurobrl6.dis")
@@ -122,10 +118,7 @@ final class BrailleFileCodeTests: XCTestCase {
             XCTAssertEqual(SevenBitBrailleTable.eurobraille.byte(forDots: dots), character, "dots \(dots)")
         }
     }
-    #endif
 
-    // Mac only: the iPhone app bundles no liblouis display tables (it has no braille helper), so the comparison has nothing to read there.
-    #if os(macOS)
     /// Every character of liblouis's capitals form, `de-eurobrl6u.dis`,
     /// reads as its cell through Eurobraille's aliases, 64 cells of 64.
     func testEurobrailleReadsLiblouisDeEurobrl6u() throws {
@@ -134,7 +127,6 @@ final class BrailleFileCodeTests: XCTestCase {
             XCTAssertEqual(SevenBitBrailleTable.eurobraille.dots(forByte: character), dots, "character \(character)")
         }
     }
-    #endif
 
     /// The six-dot cells of the liblouis display table `name` in the app's
     /// tables folder, as (character, dot value) pairs: exactly 64, one for

@@ -7,7 +7,8 @@ import XCTest
 /// changed how it treats the character and the decision should be looked at again.
 ///
 /// - Search in Book: the word is not found (this class).
-/// - Braille: the soft hyphen becomes a hyphen cell, dots 3-6 (this class, through the real liblouis helper).
+/// - Braille: the soft hyphen becomes a hyphen cell, dots 3-6 (this class, through the real liblouis: the helper on the
+///   Mac, the library in the app on the iPhone).
 /// - Speech: the engine reads it as it reads a hyphen, a longer word with a break in it; that was measured offline
 ///   by `Scripts/agents/probes/speech-soft-hyphen-probe.swift`, which renders audio and plays nothing, and its results
 ///   are recorded at the end of that file (no test renders speech here, so the host is never asked to).
@@ -37,7 +38,8 @@ final class SoftHyphenEffectTests: XCTestCase {
 
     // MARK: - Braille
 
-    /// The braille of `texts` through the real helper, in a scratch folder that is checked empty afterwards.
+    /// The braille of `texts` through the real liblouis (the Mac's helper, or the iPhone's library in the app), with
+    /// a scratch folder as the working folder, checked empty afterwards.
     private func braille(_ texts: [String], table: String) throws -> [String] {
         let work = try makeSandboxDirectory("SoftHyphenBraille")
         let result = try BrailleTranslator.translate(texts, table: table, direction: .printToBraille, workingIn: work)
@@ -45,8 +47,6 @@ final class SoftHyphenEffectTests: XCTestCase {
         return result
     }
 
-    // Mac only: the iPhone app has no liblouis tables (no braille helper), so the table en-ueb-g1.ctb is unknown there.
-    #if os(macOS)
     /// In uncontracted and in contracted English braille, a soft hyphen in a word is written as a hyphen cell,
     /// and nothing else of the word changes (so a listener of a braille display reads "hy-phenation").
     func testASoftHyphenInAWordIsAHyphenInBraille() throws {
@@ -67,5 +67,4 @@ final class SoftHyphenEffectTests: XCTestCase {
             }
         }
     }
-    #endif
 }

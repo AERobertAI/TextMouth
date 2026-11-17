@@ -409,6 +409,9 @@ final class LogContentPolicyTests: XCTestCase {
         // The FFmpeg helper's decoder refused packets or frames of a damaged file it converted all the same
         // (FMT50), with how many of each.
         "AUDIO_DECODER_REFUSED",
+        // A C library's call in the iPhone app abandoned past its time (DR34, `InProcessEngine`), after
+        // which its engine refuses every call until TextMouth is closed and opened again.
+        "IN_PROCESS_CALL_ABANDONED",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was
