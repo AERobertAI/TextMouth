@@ -26,3 +26,7 @@ labels:
 ### 2026-11-16, issuelib, 1 line
 
 Moved from TODO-2026-09-04.md, line 5440 of the version this import read, where it was an open item; the description is its text as it was.
+
+### 2026-11-17, ffmpegfix, 1 line
+
+Nothing of this issue's own list was changed by ffmpegfix; the bundled FFmpeg's work (FMT50) is on the same branch, formats/ffmpeg-bundled; see FMT50's comment.
