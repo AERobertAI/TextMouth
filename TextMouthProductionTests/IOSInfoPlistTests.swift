@@ -174,8 +174,9 @@ final class IOSInfoPlistTests: XCTestCase {
     }
 
     /// The braille files are offered as on the Mac (DR34): their three
-    /// document types, as the Mac declares them, and the declarations of the
-    /// types they name.
+    /// document types, as the Mac declares them, the declarations of the
+    /// types they name, and the three extensions those declarations tag,
+    /// which the file picker and "Open in TextMouth" go by.
     func testTheBrailleFilesAreOfferedAsOnTheMac() throws {
         let ios = try documentTypes(of: iosPlist())
         let mac = try documentTypes(of: macPlist())
@@ -187,6 +188,11 @@ final class IOSInfoPlistTests: XCTestCase {
         for type in Self.brailleTypes {
             XCTAssertNotNil(declared[type], "the iPhone does not declare \(type)")
         }
+        let tagged = Set(Self.brailleTypes.compactMap { declared[$0] }.flatMap { declaration -> [String] in
+            let tags = declaration["UTTypeTagSpecification"] as? [String: Any]
+            return tags?["public.filename-extension"] as? [String] ?? []
+        })
+        XCTAssertEqual(tagged.intersection(["brf", "brl", "pef"]), ["brf", "brl", "pef"], "tagged: \(tagged)")
     }
 
     /// The types iOS goes by (`LSItemContentTypes`): the Mac's less those only a
@@ -225,15 +231,16 @@ final class IOSInfoPlistTests: XCTestCase {
     // MARK: - Type declarations
 
     /// The imported declarations iOS reads, which tag the extensions of the
-    /// types, are the Mac's less the braille files' and the ffmpeg formats'
-    /// (the MOBI type's `.azw3` tag is the Mac's own); and the exported ones
-    /// are the Mac's.
-    func testTheDeclarationsAreTheMacsLessTheBrailleFiles() throws {
+    /// types, are the Mac's less the ffmpeg formats' and those of TextMouth's
+    /// own audio readers, which the iPhone refuses (the braille files' are
+    /// there since DR34, and the MOBI type's `.azw3` tag is the Mac's own); and
+    /// the exported ones are the Mac's.
+    func testTheDeclarationsAreTheMacsLessTheRefusedFormats() throws {
         let mac = try imported(in: macPlist())
         let ios = try imported(in: iosPlist())
         XCTAssertEqual(
             Set(ios.keys),
-            Set(mac.keys).subtracting(Self.brailleTypes).subtracting(Self.ffmpegDeclaredTypes).subtracting(Self.ownReaderTypes))
+            Set(mac.keys).subtracting(Self.ffmpegDeclaredTypes).subtracting(Self.ownReaderTypes))
         for (identifier, declaration) in ios {
             XCTAssertEqual(NSDictionary(dictionary: declaration), NSDictionary(dictionary: try XCTUnwrap(mac[identifier])), identifier)
         }
@@ -266,25 +273,24 @@ final class IOSInfoPlistTests: XCTestCase {
     }
 
     /// Every type the import declares for itself is declared for iOS too, but
-    /// the braille files' and the ffmpeg formats', which iOS refuses. The `UTType(identifier)` form
-    /// answers nil for an undeclared type, and `UTType(importedAs:)` works only
-    /// if the app declares it, so a missing one loses a format from the file
-    /// picker with no error. The braille types drop out of the picker that way
-    /// on purpose.
-    func testEveryTypeTheImportNamesIsDeclaredButTheBrailleFiles() throws {
+    /// the ffmpeg formats' and those of TextMouth's own audio readers, which
+    /// the iPhone refuses. The `UTType(identifier)` form answers nil for an
+    /// undeclared type, and `UTType(importedAs:)` works only if the app
+    /// declares it, so a missing one loses a format from the file picker with
+    /// no error. The braille types are declared since DR34, so the braille
+    /// files are in the picker as on the Mac.
+    func testEveryTypeTheImportNamesIsDeclared() throws {
         let macDeclared = try declaredIdentifiers(in: macPlist())
         let iOSDeclared = try declaredIdentifiers(in: iosPlist())
         let source = try supportedTypesSource()
 
         let named = macDeclared.filter { source.contains("\"\($0)\"") }
         XCTAssertFalse(named.isEmpty, "Found none of the Mac's declared types in the import's source")
-        XCTAssertEqual(named.subtracting(iOSDeclared), Self.brailleTypes, "Named by the import, and not declared for iOS")
+        XCTAssertEqual(named.subtracting(iOSDeclared), [], "Named by the import, and not declared for iOS")
 
         let importedAs = try matches(of: #"UTType\(importedAs: "([^"]+)""#, in: source)
         XCTAssertFalse(importedAs.isEmpty, "Found no UTType(importedAs:) in the import's source")
-        XCTAssertEqual(
-            importedAs.subtracting(iOSDeclared).subtracting(Self.brailleTypes), [],
-            "UTType(importedAs:) with no declaration")
+        XCTAssertEqual(importedAs.subtracting(iOSDeclared), [], "UTType(importedAs:) with no declaration")
 
         // A UTType("com.textmouth...") is nil without its declaration, and drops
         // out of the file picker in silence (F33).
@@ -294,22 +300,22 @@ final class IOSInfoPlistTests: XCTestCase {
 
         // The import's list itself, as this process builds it. The ffmpeg
         // formats' own types are found by extension there (FMT31), and iOS
-        // refuses those files, as it refuses braille.
+        // refuses those files, as it refuses the own readers' audio.
         let used = Set(FileImportService.supportedTypes.map(\.identifier)).intersection(macDeclared)
         XCTAssertEqual(
-            used.subtracting(iOSDeclared).subtracting(Self.brailleTypes).subtracting(Self.ffmpegDeclaredTypes)
-                .subtracting(Self.ownReaderTypes), [],
+            used.subtracting(iOSDeclared).subtracting(Self.ffmpegDeclaredTypes).subtracting(Self.ownReaderTypes), [],
             "In supportedTypes, and not declared for iOS")
     }
 
     /// What iOS cannot read is not offered: through no type it names, no
     /// extension its declarations tag, and no extension its document types
-    /// list, are Ogg, the converted audio, `.caf`, ALAC, or the braille files.
+    /// list, are Ogg, the converted audio, `.caf`, or ALAC. (The braille files
+    /// are offered since DR34: `testTheBrailleFilesAreOfferedAsOnTheMac`.)
     func testWhatNeedsAProgramIOSCannotStartIsNotOffered() throws {
         let ios = try iosPlist()
         let named = try namedTypes(of: ios)
         XCTAssertTrue(named.isDisjoint(with: Self.refusedTypes))
-        let refusedExtensions = ImportAudioConverter.convertedExtensions.union(["caf", "alac", "brf", "brl", "pef"])
+        let refusedExtensions = ImportAudioConverter.convertedExtensions.union(["caf", "alac"])
         let tagged = Set(try imported(in: ios).values.flatMap { declaration -> [String] in
             let tags = declaration["UTTypeTagSpecification"] as? [String: Any]
             return tags?["public.filename-extension"] as? [String] ?? []
