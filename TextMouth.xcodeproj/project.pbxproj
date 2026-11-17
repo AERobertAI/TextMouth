@@ -287,6 +287,7 @@
 		173A8F88FB10536C1910BE3F /* XMLElementIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB993DD8F76E4D22FAD82C8 /* XMLElementIndex.swift */; };
 		17AEA5CB9A8461751EA785CC /* LibraryViewEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39D2C2C358F62A2E8054CFD /* LibraryViewEditorSheet.swift */; };
 		17B95ACBBE538E715A38E81B /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 719AC48A584BF96E3ED98D0B /* IntegrationTests.swift */; };
+		17D42323324DAD0BBF174D51 /* BrailleBatchLimitsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A523F6984E97540D38D57A5D /* BrailleBatchLimitsTests.swift */; };
 		17F2763C601266B4C1ED0FA9 /* AudioEditRenderer+MP3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917CE421208BB6ED1AF64A9C /* AudioEditRenderer+MP3.swift */; };
 		1800DB69EAA4D033338AA509 /* MonkeysAudioDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4C9C2DBB7C299D9E1B8699A /* MonkeysAudioDecoder.swift */; };
 		1801467EF9587955C6209A3B /* CloudMaintenanceCacheBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A56A3FF118A8BDA0E6B9B5D /* CloudMaintenanceCacheBatchTests.swift */; };
@@ -4643,6 +4644,7 @@
 		A455D116536C3301E5E4CC68 /* PackageFileEditing+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PackageFileEditing+iOS.swift"; sourceTree = "<group>"; };
 		A4D5D7CA6B82157A5E734B92 /* LibraryViewModel+LibraryFetch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+LibraryFetch.swift"; sourceTree = "<group>"; };
 		A51AF28A53AC924297718DAA /* OwnAudioImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnAudioImportTests.swift; sourceTree = "<group>"; };
+		A523F6984E97540D38D57A5D /* BrailleBatchLimitsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleBatchLimitsTests.swift; sourceTree = "<group>"; };
 		A5281BF84421866D59B5B434 /* ConfigSaveCoalescingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigSaveCoalescingTests.swift; sourceTree = "<group>"; };
 		A53ACFB9E755A166658211D0 /* TranscriptionWording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionWording.swift; sourceTree = "<group>"; };
 		A5490C21E4774B0FE1B3A9A7 /* PhoneMemoryPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneMemoryPolicyTests.swift; sourceTree = "<group>"; };
@@ -6430,6 +6432,7 @@
 		A9AD9136887DAA73C4DFB6F4 /* TextMouthiOSTests */ = {
 			isa = PBXGroup;
 			children = (
+				A523F6984E97540D38D57A5D /* BrailleBatchLimitsTests.swift */,
 				EEE7FBA347D8D8016E2E58CF /* BrailleLibraryTests.swift */,
 				1F079361B918656A01F316F6 /* BundledLicenseIOSTests.swift */,
 				34B0442FD52D68E570EB0145 /* IOSRuntimeTests.swift */,
@@ -8541,6 +8544,7 @@
 				6C0ED4591C6AD90D26D033D3 /* BookMetadataUpdateTests.swift in Sources */,
 				F52C0D1ACC88C0E1D55ABE27 /* BookSearchModelTests.swift in Sources */,
 				5C1A349AF42F0EEC6A7308E1 /* BookTextEncodingTests.swift in Sources */,
+				17D42323324DAD0BBF174D51 /* BrailleBatchLimitsTests.swift in Sources */,
 				40B4CE0348ACE4C9D9DC8FD2 /* BrailleBookPageTests.swift in Sources */,
 				562A7E81A4713D607848F3AD /* BrailleCellsTests.swift in Sources */,
 				7A82B7EB92F82C1B4C3664D4 /* BrailleDamagedInputTests.swift in Sources */,

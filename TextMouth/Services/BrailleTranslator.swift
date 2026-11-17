@@ -476,9 +476,10 @@ enum BrailleTranslator {
     static func check(table: String, workingIn folder: URL, measure: RunMeasure? = nil) throws {
         try requireOfferedTable(table)
         #if os(iOS)
-        // The library loads the table in this process and translates nothing.
+        // The library loads the table in this process and translates nothing,
+        // within the tool's time for a check, as the Mac's helper does.
         try requireBundledTable(table)
-        _ = try runLibrary(direction: nil, table: table, input: Data(), seconds: limits(for: nil, bytes: 0).maximumSeconds)
+        _ = try runLibrary(direction: nil, table: table, input: Data(), seconds: tool.limits(nil, 0).maximumSeconds)
         #else
         // The watchdog needs a file to watch; a check writes none, so an
         // empty one stands in.
@@ -783,8 +784,10 @@ enum BrailleTranslator {
     /// the protocol's header of its own, and the translations of their
     /// records, in order (DR34).
     ///
-    /// Its limits are the Mac's watchdog's (`limits(for:bytes:)`) as nearly as
-    /// one process allows:
+    /// Its limits are the tool's (`BrailleTranslator.tool`, read once, on the
+    /// caller's thread, as `runHelper` reads it), which in the app are the
+    /// Mac's watchdog's (`limits(for:bytes:)`), kept as nearly as one process
+    /// allows; a test binds a stand-in tool with tight ones:
     /// - **A record** holds at most `maximumPieceScalars` characters, as
     ///   every piece does; the library refuses a longer one (status 4).
     /// - **The output** of a batch may grow at most to the Mac's cap on the
@@ -800,6 +803,8 @@ enum BrailleTranslator {
     private struct LibraryBatches {
         let table: String
         let direction: Direction
+        /// The tool's limits for a run in a direction on so many bytes.
+        private let limits: @Sendable (Direction?, Int64) -> WatchedProcess.Limits
         /// The records of the batch being made, with no header.
         private var batch = Data()
         /// How many records `batch` holds.
@@ -814,10 +819,12 @@ enum BrailleTranslator {
         /// The translations of the records sent so far, in order.
         private var translated: [EmphasizedText] = []
 
-        /// The batches of a translation in `direction` with `table`.
+        /// The batches of a translation in `direction` with `table`, within
+        /// the limits of the tool in force on the caller's thread.
         init(table: String, direction: Direction) {
             self.table = table
             self.direction = direction
+            self.limits = BrailleTranslator.tool.limits
         }
 
         /// Adds the record of `piece`, and sends the batch once it holds
@@ -841,14 +848,14 @@ enum BrailleTranslator {
             guard batchRecords > 0 else { return }
             let mode = direction.rawValue
             inputBytes += Int64(batch.count)
-            // The Mac's limits for the whole input so far.
-            let soFar = BrailleTranslator.limits(for: direction, bytes: inputBytes)
+            // The limits for the whole input so far.
+            let soFar = limits(direction, inputBytes)
             var input = BrailleTranslator.headerLine
             input.append(batch)
             let (output, seconds) = try BrailleTranslator.runLibrary(
                 direction: direction, table: table, input: input,
                 seconds: max(0, soFar.maximumSeconds - librarySeconds),
-                maximumOutputBytes: BrailleTranslator.limits(for: direction, bytes: Int64(input.count)).maximumOutputBytes ?? 0,
+                maximumOutputBytes: limits(direction, Int64(input.count)).maximumOutputBytes ?? 0,
                 timeAllowed: soFar.maximumSeconds
             )
             librarySeconds += seconds
@@ -895,12 +902,15 @@ enum BrailleTranslator {
         timeAllowed: TimeInterval? = nil
     ) throws -> (output: Data, seconds: TimeInterval) {
         let mode = direction?.rawValue ?? "check"
-        // The engine and the import's cancellation are read here, on the
-        // caller's thread: the engine's thread inherits no task-locals.
+        // The engine, the tool, and the import's cancellation are read here,
+        // on the caller's thread: the engine's thread inherits no
+        // task-locals.
         let engine = BrailleTranslator.engine
+        let tool = BrailleTranslator.tool
         let cancellation = ImportCancellation.current
-        // The bundle's own tables, read in place (`Tool.helper`).
-        guard let folder = Tool.helper.tablesFolder?.path else {
+        // The tool's tables, read in place: the bundle's in the app
+        // (`Tool.helper`).
+        guard let folder = tool.tablesFolder?.path else {
             throw logged(.failed, mode, table, "the bundled tables are missing")
         }
         let libraryMode: UInt32
@@ -911,13 +921,16 @@ enum BrailleTranslator {
         }
         let outcome: LibraryOutcome
         do {
+            // The library's own time, by the tool's clock, on the engine's
+            // thread, so that no wait behind another call is in it.
+            let uptime = tool.uptime
             outcome = try engine.run(limit: seconds, cancelledBy: cancellation) { call in
-                let started = ProcessInfo.processInfo.systemUptime
+                let started = uptime()
                 var result = callLibrary(
                     mode: libraryMode, folder: folder, table: table, input: input,
                     maximumOutputBytes: maximumOutputBytes, call: call
                 )
-                result.seconds = ProcessInfo.processInfo.systemUptime - started
+                result.seconds = uptime() - started
                 return result
             }
         } catch let failure as InProcessEngine.Failure {
