@@ -68,7 +68,11 @@ enum { PCM_RECORD_TARGET = 256 * 1024 };
 #define WAVE_CHANNEL_BITS 0x3FFFFull
 
 /* The most errors in a row the decoder may give without a frame between: past them the file is
-   damaged, rather than a decoder that answers every call with an error being asked for ever. */
+   damaged, rather than a decoder that answers every call with an error being asked for ever. It
+   counts the errors of avcodec_receive_frame with no request for a packet between them, which a
+   damaged packet never makes (the decoder refuses it when it is sent, and is then asked for the
+   next): any number of damaged packets are counted in END and skipped, as the tests of
+   FFmpegHelperHostileFileTests show with 900 and with 1,200 of them. */
 enum { MAX_ERRORS_IN_A_ROW = 1000 };
 
 /* The most times the sound may change its form: past them the file is refused

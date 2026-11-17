@@ -149,18 +149,23 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
     }
 
     /// The decoder's error bound (FU-FFMPEG2, MAX_ERRORS_IN_A_ROW = 1,000 in
-    /// session.c), tried with two samples of FLAC in Matroska whose packets
-    /// from the 101st on are refused by the decoder (their sync code is
-    /// zeroed): 900 of the 1,400 in one, 1,200 in the other. What each ends
-    /// as is printed for the run's log.
-    func testTheDecoderErrorBound() async throws {
-        for name in ["flac-900-bad-packets.mka", "flac-1200-bad-packets.mka"] {
+    /// session.c), tried with two samples of FLAC in Matroska (1,400 packets
+    /// of 16 samples) whose packets from the 101st on are refused by the
+    /// decoder (their sync code is zeroed): 900 of them in one, 1,200 in the
+    /// other. Both end with status 0, with the 500 or the 200 good packets'
+    /// sound whole and each refused packet counted in END, the 1,200 as well as
+    /// the 900: the bound counts the errors the decoder gives for a frame
+    /// with no packet between (a decoder that would be asked for ever), and a
+    /// damaged packet is refused when it is sent, so a run of them, of any
+    /// length, never reaches it, and the file is converted all the same
+    /// (the comment of `FFmpegHelperStream`: damaged sound is converted). The
+    /// run of November 17, 2026 (train 1117-0431) showed both.
+    func testAnyRunOfRefusedPacketsStillGivesTheSoundAroundIt() async throws {
+        for (name, good, refused) in [("flac-900-bad-packets.mka", 500, 900), ("flac-1200-bad-packets.mka", 200, 1_200)] {
             let result = try await decodeEdgeSample(name)
-            print("FFMPEG_BOUND: \(name): \(result.ending), frames \(String(describing: result.frames)), refused \(result.refused)")
-            switch result.ending.outcome {
-            case let .exited(status): XCTAssertTrue(protocolStatuses.contains(status), name)
-            case .killed, .couldNotStart: XCTFail("\(name): \(result.ending)")
-            }
+            XCTAssertEqual(result.ending, WatchedProcess.Ending(outcome: .exited(status: 0)), name)
+            XCTAssertEqual(result.frames, UInt64(good * 16), "\(name): the packets that decode, whole")
+            XCTAssertEqual(result.refused, [UInt32(refused), 0], "\(name): every refused packet counted")
         }
     }
 
