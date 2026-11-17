@@ -159,7 +159,7 @@ extension XCTestCase {
 /// ignores (the DAISY audio books, downloaded separately); nil when
 /// neither has it. The archive is only ever read.
 func testDataArchiveIfPresent(_ name: String) -> URL? {
-    let ownCopy = URL(fileURLWithPath: testFilePath(name))
+    let ownCopy = URL(fileURLWithPath: dataFilePath(name))
     let mainCheckoutCopy = mainCheckoutRoot(of: thisCheckoutRoot).map {
         $0.appendingPathComponent("TestData", isDirectory: true).appendingPathComponent(name)
     }
@@ -169,8 +169,8 @@ func testDataArchiveIfPresent(_ name: String) -> URL? {
 }
 
 /// The root of the checkout this file was compiled in: the folder two
-/// levels above this source file, where `testFileURL` in
-/// LegacyScenarioHarness.swift finds TestData.
+/// levels above this source file, where `dataFileURL` in
+/// TestDataFiles.swift finds TestData.
 private let thisCheckoutRoot = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .deletingLastPathComponent()

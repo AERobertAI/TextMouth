@@ -371,7 +371,7 @@ final class LegacyPDFParserTests: XCTestCase {
 
     /// The URL of an optional `TestData` fixture, skipping the test when the file is missing.
     private func fixture(_ name: String) throws -> URL {
-        let url = URL(fileURLWithPath: testFilePath(name))
+        let url = URL(fileURLWithPath: dataFilePath(name))
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw XCTSkip("Missing fixture \(name)")
         }
