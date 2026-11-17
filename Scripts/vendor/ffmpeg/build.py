@@ -26,8 +26,9 @@ Usage:
 What it builds. The pin below names one FFmpeg release, by its URL, its SHA-256, and its size,
 and the fingerprint of the key that signs FFmpeg's releases, then a second place to download
 the same release (FFmpeg's mirror on GitHub, its archive of the release's tag, with a pin of
-its own), tried when ffmpeg.org gives nothing usable. The archive is downloaded once and must
-match a pin's SHA-256, or nothing is built. FFmpeg's own configure then builds only what
+its own), tried when ffmpeg.org gives nothing usable, and five upstream patches (PATCHES), each
+pinned by its SHA-256 and applied to the unpacked release. The archive is downloaded once and
+must match a pin's SHA-256, or nothing is built. FFmpeg's own configure then builds only what
 TextMouth's import reads, the "parity" set of research/FFMPEG-MINIMAL-RESEARCH-2026-11-16.md:
 every container the installed ffmpeg converted at import, with each one's common codecs, all of
 it under the LGPL 2.1 or later (no --enable-gpl, --enable-nonfree, or --enable-version3). It
@@ -46,13 +47,16 @@ find no home folder, checkout, temporary folder, or work folder in the archive o
 or the build fails.
 
 When it builds again. Each build has a key, the SHA-256 of the pin, the configure line, the
-platform, this script's RECIPE number, and the compiler's version: a published build whose key
-is the same is kept, and the script ends at once, so an ordinary build of the app pays nothing.
+platform, this script's RECIPE number, the compiler's version, and the patches: a published build
+whose key is the same is kept, and the script ends at once, so an ordinary build of the app pays
+nothing, and a change of the patches rebuilds.
 
 The work folder:
     WORK/download/ffmpeg-<version>.tar.xz     the release from ffmpeg.org, checked, or
     WORK/download/ffmpeg-<version>-github.tar.gz   the archive of its tag from GitHub, checked
-    WORK/source/<key>/ffmpeg-<version>/       the release, unpacked once; <key> is of its SHA-256
+    WORK/source/<key>/ffmpeg-<version>/       the release, unpacked and patched once; <key> is
+                                              of the release's SHA-256 and the patches, so a
+                                              changed list of patches unpacks afresh
     WORK/build-<platform>-<key>/              configure, make, and make install's DESTDIR
     WORK/<platform>/include/                  FFmpeg's public headers, and textmouth_ffmpeg_build.h
     WORK/<platform>/lib/libtmffmpeg.a         the merged libraries
@@ -88,7 +92,7 @@ sys.dont_write_bytecode = True
 
 # FFmpeg 9.0.2 (September 18, 2026), the newest release on November 16, 2026. To move to a new
 # point release: change these four lines and the GITHUB_ pin after them (compare the two trees
-# again, as the comment there says), check its signature (--check-signature, with the key
+# again, as the comment there says), drop the PATCHES the release includes, check its signature (--check-signature, with the key
 # below fetched from ffmpeg.org's download page and a keyserver), run this script, compare the
 # release's LICENSE.md and COPYING.LGPLv2.1 with Vendor/package-licenses/FFmpeg (the script
 # fails when they differ), write the README again (--readme), and run the tests.
@@ -117,6 +121,26 @@ GITHUB_URL = f"https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n{FFMPEG_VERSI
 GITHUB_SHA256 = "6e374ed621e48faa40639307dff48ba6fe574a509977956d2cce9669b7cc27e9"
 GITHUB_TARBALL_BYTES = 17_319_950
 GITHUB_TOP_FOLDER = f"FFmpeg-n{FFMPEG_VERSION}"
+
+# The fixes of FFmpeg's development branch applied to 9.0.2's source before it is built: the five
+# CVEs that NVD lists as open in 9.0.2, each fixed on the development branch by the commit NVD
+# cites. Each is that commit as GitHub gives it (https://github.com/FFmpeg/FFmpeg/commit/<hash>.patch),
+# kept unchanged in Scripts/vendor/ffmpeg/patches/<hash>.patch and pinned here by its SHA-256, and
+# applied in this order, with no fuzz, to the unpacked source: one that does not apply fails the
+# build. They are part of every build's key, so changing them rebuilds. The licence notices say
+# so (the README of Vendor/package-licenses/FFmpeg and the app's Credits).
+#
+# DROP THESE when FFmpeg 9.0.3 (or a later release) is the pin and includes the five commits:
+# empty PATCHES, delete the folder, and let the README say "unmodified" again (the follow-up
+# issue FU01 says the same).
+PATCHES = [
+    # (commit, the CVE it fixes, SHA-256 of the patch file)
+    ("968e9e948ed8c9ba90dbc875e60b843c755cf4ba", "CVE-2026-125104", "6e3c7995b54e7e2de339943c742857fc86183780abff662001ab512dbfd57ff7"),
+    ("5d59b7c45d7142bddd13ddc8891e72c5c7dc991b", "CVE-2026-125171", "11dcff0ca39589a65dab61f843b2505a9667a98e4cc1e59ae7000dd63dee7ec0"),
+    ("7145d13201c9f9c5253f40295714faa4f4ada1a0", "CVE-2026-125182", "70e16648e035f26e6f940f088e313ea3d7027c22fd8801973ece85b8582f5d30"),
+    ("972fe1ccd326538fe9a6b5d5094b7880b5443429", "CVE-2026-125221", "c186bd41f88746877d429613fdbdafa37d18442953092b6af664db3e24b63031"),
+    ("90f5e61a1da2dcc0050169af8ca593530f26071b", "CVE-2026-125224", "aa28951df1335a46ed12f2324f0bd54a0bb530e1c07e7b62274b96e29079b0fe"),
+]
 
 # The fingerprint of FFmpeg's release signing key ("FFmpeg release signing key
 # <ffmpeg-devel@ffmpeg.org>"), as ffmpeg.org's download page and the Ubuntu keyserver give it.
@@ -209,6 +233,9 @@ REPOSITORY = HERE.parent.parent.parent
 # LICENSE.md and COPYING.LGPLv2.1, unchanged, and the README this script writes.
 NOTICES_FOLDER = REPOSITORY / "Vendor" / "package-licenses" / "FFmpeg"
 RELEASE_NOTICES = ["LICENSE.md", "COPYING.LGPLv2.1"]
+
+# The upstream patches (PATCHES), each kept as it came from GitHub, named by its commit.
+PATCHES_FOLDER = HERE / "patches"
 
 
 class BuildError(RuntimeError):
@@ -479,20 +506,55 @@ def copy_replacing(source, destination):
     os.replace(temporary, destination)
 
 
+def patches_digest():
+    """One SHA-256 for the whole list of patches and their order, "none" for no patches: part of
+    the folder an unpacked tree is in and of every build's key."""
+    if not PATCHES:
+        return "none"
+    return hashlib.sha256(json.dumps(PATCHES).encode("utf-8")).hexdigest()
+
+
 def unpacked_parent(work):
-    """The folder WORK/source/<key> that holds the unpacked release: one for each release."""
-    key = hashlib.sha256(FFMPEG_SHA256.encode("utf-8")).hexdigest()[:16]
+    """The folder WORK/source/<key> that holds the unpacked, patched release: one for each
+    release and list of patches, so a changed list unpacks afresh and never lands on a tree the
+    old list patched."""
+    key = hashlib.sha256(f"{FFMPEG_SHA256} {patches_digest()}".encode("utf-8")).hexdigest()[:16]
     return work / "source" / key
 
 
 def unpacked_marker(work):
-    """The file saying the release is unpacked in `unpacked_parent`: written only once every
-    member was checked and extracted."""
+    """The file saying the release is unpacked and patched in `unpacked_parent`: written only
+    once every member was checked and extracted and every patch applied."""
     return unpacked_parent(work) / ".unpacked"
 
 
+def apply_patches(folder):
+    """Applies each pinned patch, in order, to the unpacked release in `folder`. Each patch file
+    must be the pinned one (SHA-256), and must apply with no fuzz and no rejected hunk, or the
+    build fails. Returns the commits applied."""
+    applied = []
+    for commit, cve, digest in PATCHES:
+        path = PATCHES_FOLDER / f"{commit}.patch"
+        if not path.is_file():
+            raise BuildError(f"{path} is missing: the patch of {commit} ({cve})")
+        if digest_of(path) != digest:
+            raise BuildError(f"{path} is not the pinned patch of {commit} ({cve}): its SHA-256 is {digest_of(path)}")
+        try:
+            result = subprocess.run(
+                ["/usr/bin/patch", "-p1", "--batch", "--forward", "-F0", "-d", str(folder), "-i", str(path)],
+                capture_output=True, text=True, timeout=SHORT_SECONDS, check=False)
+        except (OSError, subprocess.SubprocessError) as error:
+            raise BuildError(f"patch could not run for {commit} ({cve}): {error}") from error
+        if result.returncode != 0:
+            raise BuildError(f"the patch of {commit} ({cve}) does not apply cleanly to FFmpeg {FFMPEG_VERSION}:\n"
+                             f"{(result.stdout + result.stderr).strip()[-2000:]}")
+        applied.append(commit)
+    return applied
+
+
 def unpacked_release(work, tarball, source=None):
-    """The release unpacked in WORK/source/<key>/ffmpeg-<version>, unpacking it the first time. `source` (from `release_tarball`; found by the file's pin when
+    """The release unpacked in WORK/source/<key>/ffmpeg-<version> and patched, unpacking and
+    patching it the first time. `source` (from `release_tarball`; found by the file's pin when
     not given) says the one folder the archive unpacks to, which is renamed to ffmpeg-<version>
     so that both sources give the same paths. Every member must be a file or folder inside that
     one folder: no absolute name, no "..", and no link or device, since the tarball is a
@@ -519,7 +581,9 @@ def unpacked_release(work, tarball, source=None):
         for member in members:
             member.name = f"ffmpeg-{FFMPEG_VERSION}" + member.name[len(source["folder"]):]
         archive.extractall(parent, members=members)
-    marker.write_text(f"{FFMPEG_SHA256}\n{source['name']}\n", encoding="utf-8")
+    applied = apply_patches(folder)
+    marker.write_text(f"{FFMPEG_SHA256}\n{source['name']}\n" + "".join(f"{commit}\n" for commit in applied),
+                      encoding="utf-8")
     return folder
 
 
@@ -542,7 +606,7 @@ def build_key(platform, compiler):
     """The key of a build: the SHA-256 of everything that decides what it makes."""
     described = {
         "version": FFMPEG_VERSION, "sha256": FFMPEG_SHA256, "recipe": RECIPE, "platform": platform,
-        "configure": configure_arguments(platform), "compiler": compiler,
+        "configure": configure_arguments(platform), "compiler": compiler, "patches": patches_digest(),
     }
     return hashlib.sha256(json.dumps(described, sort_keys=True).encode("utf-8")).hexdigest()
 
@@ -748,7 +812,7 @@ def build(platform, work, tarball=None, jobs=DEFAULT_JOBS):
     record = {
         "ffmpeg": FFMPEG_VERSION, "sha256": FFMPEG_SHA256, "platform": platform, "key": key,
         "compiler": compiler, "configure": shell_line(arguments), "jobs": jobs,
-        "downloaded_from": release_source["name"],
+        "downloaded_from": release_source["name"], "patches": [commit for commit, _, _ in PATCHES],
     }
     print(f"build.py: configuring FFmpeg {FFMPEG_VERSION} for {platform}", flush=True)
     # configure is named by its path relative to the build folder: no absolute path is needed.
@@ -825,6 +889,25 @@ def xcode_settings(environment):
 # The notices
 # ---------------------------------------------------------------------------
 
+def patches_notice():
+    """The lines of the README that say what TextMouth changed in the release, as the LGPL asks
+    of a changed library: that it applies no patch ("unmodified"), or each patch by its upstream
+    commit, the CVE it fixes, and the SHA-256 of the file kept in Scripts/vendor/ffmpeg/patches."""
+    if not PATCHES:
+        return ["TextMouth does not change the release: it is built as FFmpeg published it.", ""]
+    lines = [
+        f"TextMouth changes the release in one way: FFmpeg {FFMPEG_VERSION} with {len(PATCHES)} upstream patches. Each is a commit",
+        "of FFmpeg's own development branch (https://github.com/FFmpeg/FFmpeg/commit/<commit>.patch), kept",
+        "unchanged in Scripts/vendor/ffmpeg/patches/<commit>.patch, and applied, in this order, to the",
+        "unpacked release by Scripts/vendor/ffmpeg/build.py before FFmpeg is built. Each fixes a CVE that the",
+        f"National Vulnerability Database lists as open in {FFMPEG_VERSION}; the patches are dropped when a release includes them.",
+        "",
+    ]
+    for commit, cve, digest in PATCHES:
+        lines += [f"{cve}: {commit}", f"    SHA-256 of the patch file: {digest}"]
+    return lines + [""]
+
+
 def readme_text():
     """The README both apps ship in Licenses/FFmpeg: what FFmpeg is in TextMouth, its licence,
     the release and where it comes from, that it is unchanged, and each configure line."""
@@ -841,7 +924,7 @@ def readme_text():
         "--enable-nonfree, or --enable-version3, and its summary says \"License: LGPL version 2.1 or",
         "later\".",
         "",
-        f"The release: FFmpeg {FFMPEG_VERSION}, unmodified, from {FFMPEG_URL}",
+        f"The release: FFmpeg {FFMPEG_VERSION}, from {FFMPEG_URL}",
         f"Its SHA-256: {FFMPEG_SHA256}",
         f"It is signed by FFmpeg's release key, fingerprint {SIGNING_KEY_FINGERPRINT}.",
         f"When ffmpeg.org cannot be reached, the build takes FFmpeg's own mirror's archive of the tag n{FFMPEG_VERSION}",
@@ -850,6 +933,7 @@ def readme_text():
         "The two hold the same files, but for the release's VERSION file, which the tag's archive lacks, and",
         "git's own files (.gitattributes and .gitignore files), which the tarball lacks.",
         "",
+        *patches_notice(),
         "TextMouth's own source, which is public under the MIT License, holds the script that",
         "downloads, checks, and builds this release (Scripts/vendor/ffmpeg/build.py), so anyone can",
         "build the app with a changed FFmpeg. The configure line of each platform, run by that",

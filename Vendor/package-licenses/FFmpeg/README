@@ -10,7 +10,7 @@ this file). No part of FFmpeg under the GPL is built: configure was not given --
 --enable-nonfree, or --enable-version3, and its summary says "License: LGPL version 2.1 or
 later".
 
-The release: FFmpeg 9.0.2, unmodified, from https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
+The release: FFmpeg 9.0.2, from https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
 Its SHA-256: 8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
 It is signed by FFmpeg's release key, fingerprint FCF986EA15E6E293A5644F10B4322F04D67658D8.
 When ffmpeg.org cannot be reached, the build takes FFmpeg's own mirror's archive of the tag n9.0.2
@@ -18,6 +18,23 @@ instead, from https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n9.0.2.tar.gz
 Its SHA-256: 6e374ed621e48faa40639307dff48ba6fe574a509977956d2cce9669b7cc27e9
 The two hold the same files, but for the release's VERSION file, which the tag's archive lacks, and
 git's own files (.gitattributes and .gitignore files), which the tarball lacks.
+
+TextMouth changes the release in one way: FFmpeg 9.0.2 with 5 upstream patches. Each is a commit
+of FFmpeg's own development branch (https://github.com/FFmpeg/FFmpeg/commit/<commit>.patch), kept
+unchanged in Scripts/vendor/ffmpeg/patches/<commit>.patch, and applied, in this order, to the
+unpacked release by Scripts/vendor/ffmpeg/build.py before FFmpeg is built. Each fixes a CVE that the
+National Vulnerability Database lists as open in 9.0.2; the patches are dropped when a release includes them.
+
+CVE-2026-125104: 968e9e948ed8c9ba90dbc875e60b843c755cf4ba
+    SHA-256 of the patch file: 6e3c7995b54e7e2de339943c742857fc86183780abff662001ab512dbfd57ff7
+CVE-2026-125171: 5d59b7c45d7142bddd13ddc8891e72c5c7dc991b
+    SHA-256 of the patch file: 11dcff0ca39589a65dab61f843b2505a9667a98e4cc1e59ae7000dd63dee7ec0
+CVE-2026-125182: 7145d13201c9f9c5253f40295714faa4f4ada1a0
+    SHA-256 of the patch file: 70e16648e035f26e6f940f088e313ea3d7027c22fd8801973ece85b8582f5d30
+CVE-2026-125221: 972fe1ccd326538fe9a6b5d5094b7880b5443429
+    SHA-256 of the patch file: c186bd41f88746877d429613fdbdafa37d18442953092b6af664db3e24b63031
+CVE-2026-125224: 90f5e61a1da2dcc0050169af8ca593530f26071b
+    SHA-256 of the patch file: aa28951df1335a46ed12f2324f0bd54a0bb530e1c07e7b62274b96e29079b0fe
 
 TextMouth's own source, which is public under the MIT License, holds the script that
 downloads, checks, and builds this release (Scripts/vendor/ffmpeg/build.py), so anyone can

@@ -86,8 +86,9 @@ final class BundledLicenseTests: XCTestCase {
     /// FFmpeg's notices are in the app (FMT50): the release's own LICENSE.md
     /// and COPYING.LGPLv2.1, the GNU Lesser General Public License 2.1, and
     /// the README of Scripts/vendor/ffmpeg/build.py, which names the release,
-    /// its source and SHA-256, that it is unmodified, and the configure line,
-    /// as FFmpeg's legal checklist asks.
+    /// its source and SHA-256, the five upstream patches it applies (each by
+    /// its commit and CVE), and the configure line, as FFmpeg's legal
+    /// checklist asks of a changed library.
     func testFFmpegLicenseShipsWithTheApp() throws {
         let licence = try licenseText("FFmpeg", "COPYING.LGPLv2.1")
         XCTAssertTrue(licence.contains("GNU LESSER GENERAL PUBLIC LICENSE"), String(licence.prefix(80)))
@@ -95,7 +96,12 @@ final class BundledLicenseTests: XCTestCase {
         XCTAssertTrue(try licenseText("FFmpeg", "LICENSE.md").hasPrefix("# License"))
         let readme = try licenseText("FFmpeg", "README")
         for words in ["This software uses libraries from the FFmpeg project under the LGPLv2.1.",
-                      "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz", "unmodified",
+                      "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz", "FFmpeg 9.0.2 with 5 upstream patches",
+                      "CVE-2026-125104: 968e9e948ed8c9ba90dbc875e60b843c755cf4ba",
+                      "CVE-2026-125171: 5d59b7c45d7142bddd13ddc8891e72c5c7dc991b",
+                      "CVE-2026-125182: 7145d13201c9f9c5253f40295714faa4f4ada1a0",
+                      "CVE-2026-125221: 972fe1ccd326538fe9a6b5d5094b7880b5443429",
+                      "CVE-2026-125224: 90f5e61a1da2dcc0050169af8ca593530f26071b",
                       "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e", "--disable-everything"] {
             XCTAssertTrue(readme.contains(words), words)
         }

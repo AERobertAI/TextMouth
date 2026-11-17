@@ -263,7 +263,18 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn(build.FFMPEG_URL, text)
         self.assertIn(build.GITHUB_URL, text)
         self.assertIn(build.GITHUB_SHA256, text)
-        self.assertIn("unmodified", text)
+        # The README says the release is changed, and how: each patch by its commit, CVE, and digest.
+        self.assertNotIn("unmodified", text)
+        self.assertIn(f"FFmpeg {build.FFMPEG_VERSION} with {len(build.PATCHES)} upstream patches", text)
+        for commit, cve, digest in build.PATCHES:
+            self.assertIn(f"{cve}: {commit}", text)
+            self.assertIn(digest, text)
+
+    def test_the_readme_of_no_patches_says_the_release_is_unchanged(self):
+        with mock.patch.object(build, "PATCHES", []):
+            text = build.readme_text()
+        self.assertIn("TextMouth does not change the release", text)
+        self.assertNotIn("upstream patches", text)
 
 
 class SecondSourceTests(unittest.TestCase):
@@ -360,14 +371,123 @@ class SecondSourceTests(unittest.TestCase):
         if marker.exists():
             os.replace(marker, marker.with_name(marker.name + ".stale"))
         github = next(source for source in build.sources() if source["name"] == "github.com")
-        folder = build.unpacked_release(work, path, github)
+        with mock.patch.object(build, "PATCHES", []):
+            folder = build.unpacked_release(work, path, github)
         self.assertEqual(folder.name, f"ffmpeg-{build.FFMPEG_VERSION}")
         self.assertEqual((folder / "libavcodec" / "x.c").read_bytes(), b"int x;\n")
         self.assertTrue((folder / "configure").is_file())
         # A member of the other source's folder is outside this source's.
         wrong = ReleaseTests.tarball(self, "github-wrong.tar.gz", [(f"ffmpeg-{build.FFMPEG_VERSION}/configure", b"x")], compressed="gz")
-        with self.assertRaises(build.BuildError):
+        with mock.patch.object(build, "PATCHES", []), self.assertRaises(build.BuildError):
             build.unpacked_release(SCRATCH / "work-github-wrong", wrong, github)
+
+
+class PatchTests(unittest.TestCase):
+    """The five upstream patches applied to the release."""
+
+    # The fixes of FFmpeg's development branch that NVD cites for the CVEs open in 9.0.2.
+    EXPECTED = [
+        ("968e9e948ed8c9ba90dbc875e60b843c755cf4ba", "CVE-2026-125104"),
+        ("5d59b7c45d7142bddd13ddc8891e72c5c7dc991b", "CVE-2026-125171"),
+        ("7145d13201c9f9c5253f40295714faa4f4ada1a0", "CVE-2026-125182"),
+        ("972fe1ccd326538fe9a6b5d5094b7880b5443429", "CVE-2026-125221"),
+        ("90f5e61a1da2dcc0050169af8ca593530f26071b", "CVE-2026-125224"),
+    ]
+
+    # A one-line patch of a made-up file, in the form GitHub gives (git's unified diff).
+    TINY_PATCH = (
+        "From 0123456789abcdef0123456789abcdef01234567 Mon Sep 17 00:00:00 2001\n"
+        "Subject: [PATCH] a test\n\n---\n a.c | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n\n"
+        "diff --git a/a.c b/a.c\n--- a/a.c\n+++ b/a.c\n@@ -1,3 +1,3 @@\n line one\n-line two\n+line two, patched\n line three\n"
+    )
+
+    def patch_folder(self, name, patches):
+        """A scratch folder of patch files ((file name, text)) and the pins naming them: (folder, pins)."""
+        folder = SCRATCH / name
+        folder.mkdir(parents=True, exist_ok=True)
+        pins = []
+        for commit, text in patches:
+            (folder / f"{commit}.patch").write_text(text, encoding="utf-8")
+            pins.append((commit, "CVE-0000-0", build.digest_of(folder / f"{commit}.patch")))
+        return folder, pins
+
+    def tree(self, name):
+        """A scratch tree holding a.c, the file TINY_PATCH changes."""
+        folder = SCRATCH / name
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "a.c").write_text("line one\nline two\nline three\n", encoding="utf-8")
+        return folder
+
+    def test_the_five_fixes_are_pinned_in_order_by_their_digests(self):
+        self.assertEqual([(commit, cve) for commit, cve, _ in build.PATCHES], self.EXPECTED)
+        for commit, cve, digest in build.PATCHES:
+            path = build.PATCHES_FOLDER / f"{commit}.patch"
+            self.assertTrue(path.is_file(), path)
+            self.assertRegex(digest, r"^[0-9a-f]{64}$")
+            self.assertEqual(build.digest_of(path), digest, f"{commit} ({cve}) is not the pinned file")
+
+    def test_the_patches_are_applied_in_order_and_are_part_of_the_key(self):
+        folder, pins = self.patch_folder("patches-ok", [("a" * 40, self.TINY_PATCH)])
+        tree = self.tree("tree-ok")
+        with mock.patch.object(build, "PATCHES", pins), mock.patch.object(build, "PATCHES_FOLDER", folder):
+            self.assertEqual(build.apply_patches(tree), ["a" * 40])
+            with_patch = build.build_key("macosx", "clang 1")
+        self.assertEqual((tree / "a.c").read_text(encoding="utf-8"), "line one\nline two, patched\nline three\n")
+        # Another list of patches, or none, is another build, and another unpacked folder.
+        with mock.patch.object(build, "PATCHES", []):
+            none = build.build_key("macosx", "clang 1")
+            none_folder = build.unpacked_parent(SCRATCH / "work-keys")
+        with mock.patch.object(build, "PATCHES", pins):
+            self.assertEqual(build.build_key("macosx", "clang 1"), with_patch)
+            self.assertNotEqual(build.unpacked_parent(SCRATCH / "work-keys"), none_folder)
+        self.assertNotEqual(with_patch, none)
+        self.assertNotEqual(build.patches_digest(), "none")
+
+    def test_the_order_of_the_patches_changes_the_key(self):
+        forward = build.build_key("macosx", "clang 1")
+        with mock.patch.object(build, "PATCHES", list(reversed(build.PATCHES))):
+            self.assertNotEqual(build.build_key("macosx", "clang 1"), forward)
+
+    def test_a_patch_that_does_not_apply_fails_the_build(self):
+        folder, pins = self.patch_folder("patches-bad", [("b" * 40, self.TINY_PATCH)])
+        tree = self.tree("tree-bad")
+        (tree / "a.c").write_text("another file\nentirely\nwith no match\n", encoding="utf-8")
+        with mock.patch.object(build, "PATCHES", pins), mock.patch.object(build, "PATCHES_FOLDER", folder):
+            with self.assertRaises(build.BuildError) as caught:
+                build.apply_patches(tree)
+        self.assertIn("does not apply cleanly", str(caught.exception))
+        self.assertIn("b" * 40, str(caught.exception))
+
+    def test_a_patch_that_is_not_the_pinned_file_is_refused_before_it_is_applied(self):
+        folder, pins = self.patch_folder("patches-changed", [("c" * 40, self.TINY_PATCH)])
+        (folder / f"{'c' * 40}.patch").write_text(self.TINY_PATCH.replace("patched", "pwned"), encoding="utf-8")
+        tree = self.tree("tree-changed")
+        with mock.patch.object(build, "PATCHES", pins), mock.patch.object(build, "PATCHES_FOLDER", folder):
+            with self.assertRaises(build.BuildError) as caught:
+                build.apply_patches(tree)
+        self.assertIn("not the pinned patch", str(caught.exception))
+        self.assertEqual((tree / "a.c").read_text(encoding="utf-8"), "line one\nline two\nline three\n")
+
+    def test_a_missing_patch_file_is_refused(self):
+        folder, pins = self.patch_folder("patches-missing", [])
+        with mock.patch.object(build, "PATCHES", [("d" * 40, "CVE-0000-0", "0" * 64)]), \
+                mock.patch.object(build, "PATCHES_FOLDER", folder):
+            with self.assertRaises(build.BuildError):
+                build.apply_patches(self.tree("tree-missing"))
+
+    def test_the_patches_apply_cleanly_to_the_release_in_a_scratch_copy_when_it_is_at_hand(self):
+        # The real proof, when the release is in the shared download folder: unpack it and patch
+        # it (in WORK-sized scratch), every one of the five applying with no fuzz.
+        shared = build.SHARED_DOWNLOADS
+        release = shared / build.tarball_name() if shared is not None else None
+        if release is None or not build.is_the_release(release):
+            self.skipTest("FFmpeg's release is not in the shared download folder")
+        work = SCRATCH / "work-real-patches"
+        folder = build.unpacked_release(work, release, build.sources()[0])
+        self.assertTrue(build.unpacked_marker(work).is_file())
+        marker = build.unpacked_marker(work).read_text(encoding="utf-8").split()
+        self.assertEqual(marker[2:], [commit for commit, _, _ in build.PATCHES])
+        self.assertTrue((folder / "libavcodec" / "cook.c").is_file())
 
 
 class XcodeTests(unittest.TestCase):
