@@ -227,6 +227,19 @@ class ReadingTests(IssueCase):
         self.assertTrue(out.startswith("Issues/FR01.md\n---\nid: FR01\n"))
         self.assertTrue(out.endswith("\n## Comments\n\nNo doc section cites FR01.\n"))
 
+    def test_show_and_close_name_the_doc_sections_that_cite_the_issue(self) -> None:
+        self.write_tree({"docs/user/wishes.md": "# Wishes\n<!-- id: wishes -->\n\n## Not yet\n"
+                                                "<!-- id: wishes-not-yet; status: planned; issues: B17, FR01 -->\n\nA wish.\n"})
+        out = self.run_cli("show", "FR01")[1]
+        self.assertTrue(out.endswith("Doc sections that cite FR01: 1\n"
+                                     "docs/user/wishes.md:4-7  Not yet  wishes-not-yet, status planned\n"), out)
+        data = json.loads(self.run_cli("show", "FR01", "--json")[1])
+        self.assertEqual(data["cited_by"], [{"path": "docs/user/wishes.md", "start": 4, "end": 7, "heading": "Not yet",
+                                             "id": "wishes-not-yet", "status": "planned"}])
+        out = self.run_cli("close", "FR01", "--reason", "the user withdrew it", "--status", "wontfix", "--as", "orchestrator")[1]
+        self.assertEqual(out.splitlines()[1], "issuelib: docs/user/wishes.md:4 (wishes-not-yet, status planned) cites FR01: "
+                                              "the next docs pass updates that section")
+
     def test_show_finds_an_id_or_an_alias_that_only_the_todo_has(self) -> None:
         out = self.run_cli("show", "B12")[1]
         self.assertTrue(out.startswith("B12 has no file in Issues/; TODO-2026-09-04.md names it:\n"))

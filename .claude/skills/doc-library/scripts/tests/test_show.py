@@ -186,9 +186,15 @@ class ShowTests(DocLibCase):
         self.assertEqual(data, {
             "path": "docs/user/feeds.md", "start": 6, "end": 9, "span_end": 10,
             "heading": "Subscribing", "title": "Subscribing", "level": 2, "id": "feeds-subscribe",
-            "keys": ["Add Feed", "subscribe"], "src": [{"path": "TextMouth/Feeds.swift", "exists": True}, {"path": "gone.swift", "exists": False}],
+            "keys": ["Add Feed", "subscribe"], "status": None, "issues": [],
+            "src": [{"path": "TextMouth/Feeds.swift", "exists": True}, {"path": "gone.swift", "exists": False}],
             "lines": FEEDS.splitlines()[5:9], "truncated": False,
         })
+
+    def test_json_gives_a_marked_sections_status_and_issues(self) -> None:
+        self.write_tree({"docs/user/limits.md": "# Limits\n<!-- id: limits; status: planned; issues: DR04, DR05 -->\n\nNot yet.\n"})
+        data = json.loads(self.run_cli("show", "limits", "--json")[1])
+        self.assertEqual((data["status"], data["issues"]), ("planned", ["DR04", "DR05"]))
 
     def test_json_for_a_section_without_a_marker_and_for_a_truncated_one(self) -> None:
         data = json.loads(self.run_cli("show", "docs/user/feeds.md#Subscribing again", "--json")[1])

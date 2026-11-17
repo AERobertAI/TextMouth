@@ -77,6 +77,7 @@ def json_object(page: Page, section: Section, show_all: bool, sources: List[Tupl
         "path": page.path, "start": section.start, "end": section.end, "span_end": section.span_end,
         "heading": section.heading, "title": section.title, "level": section.level,
         "id": marker.id if marker else None, "keys": marker.keys if marker else [],
+        "status": marker.status if marker else None, "issues": marker.issues if marker else [],
         "src": [{"path": path, "exists": exists} for path, exists in sources], "lines": lines, "truncated": last < section.end,
     }
 

@@ -6,6 +6,11 @@ may carry a *marker*, the comment line under its heading that names it:
 
     <!-- id: epub-headings; keys: EPUB, nav document, NCX; src: TextMouth/Parsers/EPUBParser.swift -->
 
+A section that describes something missing, limited, or not built yet also says so,
+with the issues (``Issues/<ID>.md``) that track it:
+
+    <!-- id: library-search-limits; keys: ...; status: incomplete; issues: DR01, DR02 -->
+
 The parser knows only as much Markdown as the project's docs use: ATX headings, fenced
 and indented code, HTML comments, tables, block quotes, lists, thematic breaks, and
 front matter. Setext headings and reference definitions are not recognised.
@@ -20,7 +25,7 @@ import bisect
 import fnmatch
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
@@ -141,12 +146,17 @@ def lint_pages(root: Path) -> List[str]:
 # What an id looks like: lowercase words joined by single hyphens.
 ID_SHAPE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 # The fields a marker may hold.
-MARKER_FIELDS = ("id", "keys", "src")
+MARKER_FIELDS = ("id", "keys", "src", "status", "issues")
+# The statuses a section may give itself: it describes something missing or limited
+# (incomplete), or something not built yet (planned). ``doclib check`` makes each name
+# the open issues that track it.
+MARKER_STATUSES = ("incomplete", "planned")
 
 
 @dataclass
 class Marker:
-    """A parsed marker line: the id, the search words, the code paths, and what is wrong with it."""
+    """A parsed marker line: the id, the search words, the code paths, the status and the
+    issues that track it, and what is wrong with it."""
 
     line: int
     raw: str
@@ -154,6 +164,8 @@ class Marker:
     keys: List[str]
     src: List[str]
     errors: List[str]
+    status: Optional[str] = None
+    issues: List[str] = field(default_factory=list)
 
 
 def _split_list(value: str) -> List[str]:
@@ -201,8 +213,15 @@ def parse_marker(line_number: int, text: str) -> Optional[Marker]:
                     marker.errors.append(f"id not lowercase words joined by hyphens: {value!r}")
         elif name == "keys":
             marker.keys = _split_list(value)
-        else:
+        elif name == "src":
             marker.src = _split_list(value)
+        elif name == "status":
+            if value in MARKER_STATUSES:
+                marker.status = value
+            else:
+                marker.errors.append(f"status not {' or '.join(MARKER_STATUSES)}: {value!r}")
+        else:
+            marker.issues = _split_list(value)
     return marker
 
 

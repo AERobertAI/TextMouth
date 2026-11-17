@@ -29,6 +29,10 @@ description: Find, show, and check the sections of TextMouth's docs and memory f
 - `doclib split-check OLD NEW... [--files-to-src] [--loose] [--update-baseline]`: whether the NEW pages hold OLD's words in order (OLD may be `REF:PATH`, or several joined by commas); `--loose` compares words without their case and end punctuation, outside code; the last option hands the OLD pages' counts to the new ones.
 - `doclib reflow PAGE [--check]` (writes): one sentence per line, word for word.
 - `doclib mark PAGE [--dry-run]` (writes): a marker under each heading without one: a suggested id and src, and empty keys.
+- `doclib incomplete [--issue ID] [--status incomplete|planned]`: the sections whose marker gives a `status` and the `issues` that track it.
+- `doclib check`: fails a section's status that names no issue, or names one that has no file in `Issues/` or is closed.
+
+A docs pass that describes a limitation, a planned feature, or a known bug adds `status: incomplete` (or `planned`) and `issues: ID, ID` to that section's marker, so `incomplete` finds it later.
 
 `make lint-docs` runs the lint against main, and `Scripts/agents/merge-chain.sh` runs it before every merge.
 The tests: `python3 -m unittest discover -s .claude/skills/doc-library/scripts/tests`.

@@ -218,6 +218,25 @@ class MarkerTests(unittest.TestCase):
         self.assertTrue(any("without a colon" in e and "oops" in e for e in marker.errors))
         self.assertEqual(marker.keys, ["a"])  # the first of a repeated field wins
 
+    def test_a_status_and_the_issues_that_track_it(self) -> None:
+        marker = parse_marker(3, "<!-- id: search-limits; keys: a; status: incomplete; issues: DR01, DR02 -->")
+        assert marker is not None
+        self.assertEqual((marker.status, marker.issues, marker.errors), ("incomplete", ["DR01", "DR02"], []))
+        marker = parse_marker(3, "<!-- id: later; status: planned; issues: FR22 -->")
+        assert marker is not None
+        self.assertEqual((marker.status, marker.issues, marker.errors), ("planned", ["FR22"], []))
+        # A marker without them has neither.
+        marker = parse_marker(3, "<!-- id: plain -->")
+        assert marker is not None
+        self.assertEqual((marker.status, marker.issues), (None, []))
+
+    def test_a_status_must_be_incomplete_or_planned(self) -> None:
+        for value in ("done", "Incomplete", ""):
+            marker = parse_marker(1, f"<!-- id: a; status: {value}; issues: B16 -->")
+            assert marker is not None
+            self.assertIsNone(marker.status, value)
+            self.assertEqual(marker.errors, [f"status not incomplete or planned: {value!r}"], value)
+
     def test_an_empty_id_is_no_id(self) -> None:
         marker = parse_marker(1, "<!-- id: ; keys: a -->")
         assert marker is not None
