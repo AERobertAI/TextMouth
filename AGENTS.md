@@ -37,6 +37,7 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
   Every merge is recorded in the TODO, closes its issues (`record-merge.py --close`), and is described in the pages under `docs/` by a documentation pass.
 - Follow `CLAUDE.md`'s Code Style, Git Workflow, and Accessibility; each commit has a test, and every control is keyboard-operable with every value spoken.
 - No test may trap (no unguarded subscript, force unwrap, over-fulfilled expectation, or unowned capture of a released object), since the user sees a macOS crash dialog for every test host that aborts.
+  A test that may crash the host when the code under test is broken (an Objective-C exception raised on purpose, a stack filled) calls `try TestMachine.skipUnlessGitHubRunner(_:)` first, so it runs only on GitHub ([A test that may crash the host](docs/developer/testing.md)).
 - No test may play sound aloud or record from a real microphone without an opt-in environment variable.
 - Clear only TextMouth's own caches: other apps' caches and the user's Trash are theirs.
 - The usage rule in the user's global instructions (wrap up when a limit is nearly spent) holds unless your launch message says the user overrode it; then keep working until the API refuses you, and leave unmerged branches on their worktrees for the reset.

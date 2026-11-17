@@ -215,7 +215,9 @@ PackageFileEditing (Platform/macOS/Services/PackageFileEditing.swift) holds what
 - and the announcements kept until it does.
 
 ## ObjCException.catching
-<!-- id: objcexception-catching; keys: NSException, try catch, Objective-C bridge, crash guard; src: TextMouth/Services/ObjCException.swift -->
+<!-- id: objcexception-catching; keys: NSException, try catch, Objective-C bridge, crash guard, ObjCException.making, Raised; src: TextMouth/Services/ObjCException.swift -->
 
 ObjCException.catching(_:) (Services/ObjCException.swift) runs a framework call that may raise an Objective-C exception and returns it, so a raise cannot end the app.
 It wraps the ObjCExceptionCatcher static library in Vendor/, built as LAME is, with a module map; it is the only Swift file that imports it (B08).
+ObjCException.making(_:) runs a call that makes a value through an API that raises for arguments it refuses (the initializers of AVAssetWriterInput and AVAssetReaderAudioMixOutput do, for a sample depth they don't take), and throws ObjCException.Raised instead.
+Raised holds the exception's name and reason, and its summary is `<name>: <reason>` for the debug log and for AudioEditError.renderFailed ([The sample depth of a render](state/audio-edits.md)).

@@ -76,6 +76,26 @@ From the list to sound: previewing, saving, and exporting edited audio.
 - How others observe it: the book's row and record take its new file, fingerprint, length, chapters, and index, with an AUDIO_EDITS_SAVED line; the reading text kept for it is dropped, and a transcript made of the old audio no longer matches its fingerprints, so it is stale.
   AudioEditSession.export writes the edits as they stand, saved or not, to a new file in an AudioExportFormat, MP3 among them without ffmpeg, leaving the book's file alone.
 
+### The sample depth of a render
+<!-- id: render-sample-depth; keys: 64-bit float, bit depth, readableDepth, AVAssetWriterInput, 24-bit, FLAC, Apple Lossless, renderFailed; src: TextMouth/Services/AudioEditing/AudioEditRenderer.swift, TextMouth/Services/AudioEditing/AudioFilterProcessor.swift, TextMouth/Services/AudioEditing/AudioEditError.swift, TextMouth/Services/ObjCException.swift, TextMouth/Services/OwnAudioConverter.swift; status: incomplete; issues: B15 -->
+
+How a render keeps the depth of the audio it starts from, and what it does with one AVFoundation refuses.
+
+- Owner: AudioRenderSettings (AudioEditRenderer.swift), made from the book's own format by make.
+  AVFoundation's readers and writers take integer samples of 8, 16, 24, and 32 bits (acceptedIntegerDepths) and 32-bit floats, and raise an Objective-C exception for any other depth, which ends the app.
+  AudioRenderSettings.readableDepth(bits:isFloat:) keeps those, takes an integer depth between two (12 or 20 bits) up to the next, and makes everything else (a 64-bit float, a 64-bit integer, a depth not known) a 32-bit float.
+  AudioRenderSettings.pcm(_:_:bits:isFloat:) is the one place a render's PCM settings are made, for each format's own (make) and a filter's float CAF (floatCAF), so no reader or writer is given a depth it refuses.
+- WAVE and AIFF: AVAssetWriter writes integers only, so a float book becomes 32-bit integers there, and an integer book keeps its depth, to 32 bits.
+  A 64-bit float book edits, previews, saves, and exports in every format.
+- Lossless books: Apple Lossless and FLAC report 0 bits a channel, and give the depth of their source in their format flags instead (storedIntegerDepth(of:), 1 for 16 bits to 4 for 32).
+  A saved Apple Lossless book keeps its depth, 20 bits written as 24 (OwnAudioConverter.writtenBitDepth(forAppleLossless:)), and a WAVE or AIFF export of one keeps it too.
+  The flags of a FLAC file were checked only on a made-up description, not on a real file.
+- Copies as stored: a render copies samples as the book stores them (canCopySamples) only when its caller asked for no settings, so a filter's input, a stretch copied or cut, and ffmpeg's MP3 intermediate, which ask for floatCAF, are decoded to 32-bit floats even from a 64-bit float book.
+- Raised exceptions: makingWithoutRaising wraps the writer's inputs, stored and decoded, and the reader's output in ObjCException.making, so a raise becomes AudioEditError.renderFailed, named by its summary for the debug log.
+  Save's message (AudioEditorWording.saveFailed) and Export's (exportFailed) both end with the reason, AudioEditError.renderFailed's sentence "The edited audio couldn't be written" and its full stop.
+  A failed Save removes its staged file.
+- Limit: a 64-bit integer CAF cannot be decoded by AVFoundation, so the import refuses it as damaged, a sentence that is false for a valid file (B15).
+
 ## MP3 files TextMouth writes
 <!-- id: mp3-files-textmouth-writes; keys: LAME, ID3 tag, chapter frames, gapless, iTunSMPB, libmp3lame, bit rate, MP3 encoder; src: TextMouth/Services/MP3/MP3Encoder.swift, TextMouth/Services/MP3/MP3Tag.swift, TextMouth/Services/AudioEditing/AudioEditRenderer+MP3.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Parsers/AudioMediaProbe.swift, Vendor/lame, project.yml -->
 

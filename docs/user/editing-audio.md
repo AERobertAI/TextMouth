@@ -10,7 +10,9 @@ TextMouth edits an audiobook's audio, a recording's or an imported one's, in an 
 
 Opening the editor:
 
-- Edit Audio… is in a reader's Book menu, after Delete Transcript…, and first among the audio commands of a library row's context menu and its actions in VoiceOver's Actions menu, for one audiobook kept in a package of its own, other than a feed's episode, which can't be edited.
+- Edit Audio… is in a reader's Book menu, after Delete Transcript…, and first among the audio commands of a library row's context menu and its actions in VoiceOver's Actions menu, for one audiobook kept in a package of its own.
+  A feed's episode can't be edited while it belongs to its feed, and says "An episode in its feed can't be edited."
+  Move to Library… makes it a book of the library's own, and so editable.
 - A book of several tracks asks which one to edit, in a pop-up listing them by chapter name: the editor works on one track at a time.
   A book whose manifest plays stretches of its tracks as sections, as a DAISY audiobook's does, can't be edited yet.
 - A book open in a reader is closed there first, VoiceOver saying why, and opens again when the editor closes.
@@ -142,6 +144,12 @@ To remove an old gap from a book saved before, choose Revert to Original, redo t
 A FLAC book becomes Apple Lossless, and any other becomes AAC in .m4a.
 Its chapters, length, and index are measured afresh.
 A book open in a reader can't be saved; close it there first.
+A 24-bit Apple Lossless or FLAC book keeps its 24 bits when saved, and so does a WAVE or AIFF export of it.
+A book of 64-bit floating point samples, which AVFoundation's writers refuse, can be edited, saved, and exported: its samples are written as 32-bit floats, or as 32-bit integers in WAVE and AIFF.
+If AVFoundation still refuses to write the audio, TextMouth goes on, and the editor says why:
+
+- Save says "The edits couldn't be saved." followed by "The edited audio couldn't be written."
+- Export says "The audio couldn't be exported." followed by the same sentence.
 
 ## The original audio
 <!-- id: audio-editor-original-audio; keys: Keep, Don't keep, Keep for days, Storage settings, retention, Audio Info policy; src: TextMouth/Services/AudioEditing/AudioOriginalSweep.swift, TextMouth/Services/AudioEditing/AudioEditingPreferences.swift, TextMouth/Views/Settings/AudioEditingSettingsSection.swift -->
