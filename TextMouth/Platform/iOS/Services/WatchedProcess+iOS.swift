@@ -112,6 +112,14 @@ enum WatchedProcess {
     /// There are never any running children on iOS, so there is nothing to end.
     static func terminateAll() {}
 
+    /// How many children are running: none, ever, on iOS (a copy of the
+    /// Mac's member, which the tests both platforms share ask).
+    static var runningChildCount: Int { 0 }
+
+    /// How many children have been started: none, ever, on iOS (a copy of
+    /// the Mac's member, which the tests both platforms share ask).
+    static var launchCount: Int { 0 }
+
     /// Would run `executable` under a watchdog; on iOS it starts nothing and
     /// throws `IOSUnavailable`, which callers report as a failed conversion.
     /// The parameters match the Mac's so callers compile unchanged.
@@ -132,9 +140,12 @@ enum WatchedProcess {
 
     /// Would run `executable` and hand its output to `read` as it comes
     /// (the Mac's FFmpeg helper, FMT50); on iOS it starts nothing and throws
-    /// `IOSUnavailable`, as `run` does. The parameters match the Mac's. It
-    /// stays above `runCapturingOutput`, which answers instead of throwing
-    /// and comes last (IOSBranchTests reads this file from there on).
+    /// `IOSUnavailable`, as `run` does. The parameters match the Mac's, so
+    /// the shared `FFmpegAudioConverter.runSession` compiles here, though the
+    /// iPhone never reaches this: it runs the FFmpeg session in the app
+    /// itself (`FFmpegAudioConverter.runInProcess`, FMT54). It stays above
+    /// `runCapturingOutput`, which answers instead of throwing and comes last
+    /// (IOSBranchTests reads this file from there on).
     static func runStreaming<Value: Sendable>(
         _ executable: URL,
         arguments: [String],

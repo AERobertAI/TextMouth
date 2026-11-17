@@ -739,6 +739,7 @@
 		3E97B1DE3A1A93A6E1C0B1AF /* TextAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE33C70E9656A474AE748067 /* TextAnchor.swift */; };
 		3E9D534A7F786D9F72B33B00 /* XMLInputGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3277B50DE3523B5780546251 /* XMLInputGuard.swift */; };
 		3EB0DD48CBF1F425DD240738 /* CountWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9078D938630C13A93F8B97 /* CountWording.swift */; };
+		3EB3F169CC5206A95FCA0277 /* FFmpegInProcessRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = A83172C10078D66CAF2BA6AE /* FFmpegInProcessRun.swift */; };
 		3EE0F1C05C6CC84151E61438 /* FeedRefresherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B37FEF360310FC570790EB7 /* FeedRefresherTests.swift */; };
 		3EF74CE16ACCA6087A9676B8 /* PhoneEscapePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9D50565AD592A078295B3E /* PhoneEscapePolicy.swift */; };
 		3F103075D680447E585E7FBC /* TimerCoalescing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240E013707FD3F48B2692781 /* TimerCoalescing.swift */; };
@@ -1451,6 +1452,7 @@
 		7A82B7EB92F82C1B4C3664D4 /* BrailleDamagedInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E703E7F0CFF7D581148F1421 /* BrailleDamagedInputTests.swift */; };
 		7A99BF5F9B00D7E5F96D9453 /* TranscriptionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A596C67BDFEECE72CCE2AB19 /* TranscriptionSheet.swift */; };
 		7A99D9183C2EC0D69BDB0B87 /* TextutilDocumentReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47A3A805FE596CCC8861E67 /* TextutilDocumentReader.swift */; };
+		7AB96A38B8F3E477BB69814F /* COPYING.LGPLv2.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 190B40326E8C98883EAC357D /* COPYING.LGPLv2.1 */; };
 		7AEBCAAD6B350CED59914A7A /* VoiceOverAnnouncer+Collecting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C97DE2EC575F0B8EE0ED389 /* VoiceOverAnnouncer+Collecting.swift */; };
 		7AF17A35D89E1A6DF95DCC91 /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 754BAD37BDE7F016FC1595AC /* util.c */; };
 		7B03ABFA358297106C6A989F /* FFmpegReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C624BF03D515156EA0462401 /* FFmpegReport.swift */; };
@@ -1574,6 +1576,7 @@
 		85AF599A1761328A01B5AA35 /* ArchiveEntryReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A26EC3B039D5E06FE05A5D7 /* ArchiveEntryReaderTests.swift */; };
 		85BA35D5BD9F2503360EBE45 /* TextExportWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05E2889F3175EB0B213D978F /* TextExportWriter.swift */; };
 		85CF18665CA217FA4E8465FD /* UnicodeScalar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE0DF87EB691D9E9F61E5BA /* UnicodeScalar.swift */; };
+		85E30854452E64CDCDBCB408 /* README in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6749C6691B4A73B73B0A05BC /* README */; };
 		85FC565F42CC418BBDD1DA7E /* AudioEditorLauncher+Describe.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA5F2E646198C8BB45FDE47C /* AudioEditorLauncher+Describe.swift */; };
 		860D857B478388B58512A9F8 /* NodeTraversor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83AD7CE4CACD552B6D1F7E57 /* NodeTraversor.swift */; };
 		862AE31770BCB224EBD7D908 /* BookManifestEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5783AD76BC904EFC296FAC29 /* BookManifestEditing.swift */; };
@@ -2661,6 +2664,8 @@
 		E1FE2E911EED96F61EA20CA0 /* PageImageWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = F42FE322534EC88FF75F875C /* PageImageWording.swift */; };
 		E200D1D30B6C6B065939CF3E /* AudioSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B14263B41C4B092A93FE5A0 /* AudioSegment.swift */; };
 		E20951DD9556655BDAEEB10F /* LogLocationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A032994EBB456338FC8BD586 /* LogLocationTests.swift */; };
+		E21749596728B705A0F34017 /* LICENSE.md in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9FC0A45EFB314CE76C988AA5 /* LICENSE.md */; };
+		E21823221EE40AC8F5AEFDEC /* libFFmpeg_iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 92711D55ACB5EEDB4B851F25 /* libFFmpeg_iOS.a */; };
 		E2609B7D16191D0BCA2843AF /* FeedCenter+DeleteFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F604CDA5834182F9A3C46D5 /* FeedCenter+DeleteFeed.swift */; };
 		E2732B6BD3B2371D6EF0616D /* SpeechVoiceWarmUpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EAC2B4ED1C8ED9B69A02B6 /* SpeechVoiceWarmUpTests.swift */; };
 		E274F5632486D5CEEBCD3C23 /* ReaderViewModel+ReadingList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D2B5D8B391062F01A32DB06 /* ReaderViewModel+ReadingList.swift */; };
@@ -3134,6 +3139,13 @@
 			remoteGlobalIDString = ABE08E5F63184414C4EA7C17;
 			remoteInfo = SwiftSoup_iOS;
 		};
+		CFFA837A29135741083E13D9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 89F82D94D897820417C98192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D0AB768BE610D67D76B90042;
+			remoteInfo = FFmpeg_iOS;
+		};
 		DB93629ED6B154C6282AEAE4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 89F82D94D897820417C98192 /* Project object */;
@@ -3154,14 +3166,127 @@
 		0AABD80E61E84073ACA0DB62 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/MonkeysAudio;
+			dstPath = "Licenses/foliate-js";
 			dstSubfolderSpec = 7;
 			files = (
-				63226C27B2F3926F3C2FDEC5 /* License.txt in CopyFiles */,
+				90056498A62AF125B0A40193 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		1110009E1C26377EA9791632 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/ZIPFoundation;
+			dstSubfolderSpec = 7;
+			files = (
+				3370DE8FDC01A3938CD98B7E /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C95A964EBB5395E1F896244 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/liblouis;
+			dstSubfolderSpec = 7;
+			files = (
+				6A2194EEB02426EF8CA8ED1F /* COPYING.LESSER in CopyFiles */,
+				7F7F033846B83E56E2E332D4 /* README in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		22F87EE1CD8EE45ABFA905DA /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/TrueAudio;
+			dstSubfolderSpec = 7;
+			files = (
+				AB4BEB5B8C2E800487E3E266 /* COPYRIGHT in CopyFiles */,
+				9982A0233B5090F0D459A278 /* README in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		38646AF7EBDB1D27AC1D1A34 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/SwiftSoup;
+			dstSubfolderSpec = 7;
+			files = (
+				8DC4D0E2FA5CA1FD85E21A03 /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		43D860587E3D34D99DBE20EE /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/MonkeysAudio;
+			dstSubfolderSpec = 7;
+			files = (
+				ACDB2675941A5C0E4C7BBD53 /* License.txt in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6B0B86279E79DE3F37623761 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/ZIPFoundation;
+			dstSubfolderSpec = 7;
+			files = (
+				B53CF54032772DDA4A07FE3E /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		722FBEEA65BD1330BA160782 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/SwiftSoup;
+			dstSubfolderSpec = 7;
+			files = (
+				8060835D3173CF79D3AAC057 /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9084BB8B81525DF351B483C8 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "Licenses/swift-cmark";
+			dstSubfolderSpec = 7;
+			files = (
+				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/LAME;
+			dstSubfolderSpec = 7;
+			files = (
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9F57258FDEE304E9FBEBBDF0 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = liblouis;
+			dstSubfolderSpec = 7;
+			files = (
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A39FC5304C4E02A9AD636B71 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/WavPack;
+			dstSubfolderSpec = 7;
+			files = (
+				97915D3B357764DFC5D554AB /* COPYING in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A8EA7A5970473F9D2BA7FBC3 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Licenses/FFmpeg;
@@ -3173,125 +3298,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		1C95A964EBB5395E1F896244 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/swift-cmark";
-			dstSubfolderSpec = 7;
-			files = (
-				484B3DE040DF28FFE1FF2B1A /* COPYING in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		22F87EE1CD8EE45ABFA905DA /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/MonkeysAudio;
-			dstSubfolderSpec = 7;
-			files = (
-				ACDB2675941A5C0E4C7BBD53 /* License.txt in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		38646AF7EBDB1D27AC1D1A34 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/foliate-js";
-			dstSubfolderSpec = 7;
-			files = (
-				90056498A62AF125B0A40193 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		43D860587E3D34D99DBE20EE /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/WavPack;
-			dstSubfolderSpec = 7;
-			files = (
-				97915D3B357764DFC5D554AB /* COPYING in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		6B0B86279E79DE3F37623761 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = liblouis;
-			dstSubfolderSpec = 7;
-			files = (
-				3A51785A5917A4A480610B55 /* tables in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		722FBEEA65BD1330BA160782 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
-			dstSubfolderSpec = 7;
-			files = (
-				71E909A75CB244D9B2F34D62 /* COPYING in CopyFiles */,
-				73E1650B261DC0EF550E5219 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9084BB8B81525DF351B483C8 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
-			dstSubfolderSpec = 7;
-			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/SwiftSoup;
-			dstSubfolderSpec = 7;
-			files = (
-				8DC4D0E2FA5CA1FD85E21A03 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9F57258FDEE304E9FBEBBDF0 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/ZIPFoundation;
-			dstSubfolderSpec = 7;
-			files = (
-				3370DE8FDC01A3938CD98B7E /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A39FC5304C4E02A9AD636B71 /* CopyFiles */ = {
+		AEEC52048DCF4B83D3509FCE /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "Licenses/foliate-js";
 			dstSubfolderSpec = 7;
 			files = (
 				58D60DB0C519A04521146FE2 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A8EA7A5970473F9D2BA7FBC3 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = liblouis;
-			dstSubfolderSpec = 7;
-			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AEEC52048DCF4B83D3509FCE /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/ZIPFoundation;
-			dstSubfolderSpec = 7;
-			files = (
-				B53CF54032772DDA4A07FE3E /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3331,53 +3344,64 @@
 		C5522D8A663C635367E6426B /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/SwiftSoup;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				8060835D3173CF79D3AAC057 /* LICENSE in CopyFiles */,
+				71E909A75CB244D9B2F34D62 /* COPYING in CopyFiles */,
+				73E1650B261DC0EF550E5219 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C91BEB2BE96CF7A4E3259148 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "Licenses/swift-cmark";
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		CC116469FE973F113685AE31 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = Licenses/MonkeysAudio;
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				63226C27B2F3926F3C2FDEC5 /* License.txt in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D926A4A859020D8D1509B2F2 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/TrueAudio;
+			dstPath = "Licenses/swift-cmark";
 			dstSubfolderSpec = 7;
 			files = (
-				AB4BEB5B8C2E800487E3E266 /* COPYRIGHT in CopyFiles */,
-				9982A0233B5090F0D459A278 /* README in CopyFiles */,
+				484B3DE040DF28FFE1FF2B1A /* COPYING in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		E59FEE7CCC021127BD65AEAA /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = Licenses/FFmpeg;
 			dstSubfolderSpec = 7;
 			files = (
-				6A2194EEB02426EF8CA8ED1F /* COPYING.LESSER in CopyFiles */,
-				7F7F033846B83E56E2E332D4 /* README in CopyFiles */,
+				7AB96A38B8F3E477BB69814F /* COPYING.LGPLv2.1 in CopyFiles */,
+				E21749596728B705A0F34017 /* LICENSE.md in CopyFiles */,
+				85E30854452E64CDCDBCB408 /* README in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FF0E856FCEDDA3C191BC39A0 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = liblouis;
+			dstSubfolderSpec = 7;
+			files = (
+				3A51785A5917A4A480610B55 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4686,6 +4710,7 @@
 		A80D23A5796A6C246C5175AF /* ChapterSpeechCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterSpeechCache.swift; sourceTree = "<group>"; };
 		A810DCCD9601E84B1747AC4B /* PhoneScreenSleep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneScreenSleep.swift; sourceTree = "<group>"; };
 		A8209EC908EA77F34EB1E60C /* EPUBLinkAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBLinkAddress.swift; sourceTree = "<group>"; };
+		A83172C10078D66CAF2BA6AE /* FFmpegInProcessRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FFmpegInProcessRun.swift; sourceTree = "<group>"; };
 		A84BE9B78D9C1C6E2F61740A /* BrailleFileCodeChoiceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleFileCodeChoiceModel.swift; sourceTree = "<group>"; };
 		A874D2DD0E43640538D44FA1 /* ReaderViewModel+LibrarySearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+LibrarySearch.swift"; sourceTree = "<group>"; };
 		A88B4E4C5B5004A83405BCAC /* Collector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collector.swift; sourceTree = "<group>"; };
@@ -5405,6 +5430,7 @@
 				49C94FE35C07B21493B2F446 /* libObjCExceptionCatcher_iOS.a in Frameworks */,
 				58D35EA3E46928B2B08C6E46 /* libliblouis_iOS.a in Frameworks */,
 				CABA6B7CE60A1FA586767A78 /* libTextMouthBrailleLibrary_iOS.a in Frameworks */,
+				E21823221EE40AC8F5AEFDEC /* libFFmpeg_iOS.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5923,6 +5949,7 @@
 			children = (
 				C3C3CF5196B3AF9A5D75DBFB /* BookManifestEditor+iOS.swift */,
 				CE36E771AEC1AE0627D219E0 /* BookTextEditor+iOS.swift */,
+				A83172C10078D66CAF2BA6AE /* FFmpegInProcessRun.swift */,
 				A5A993330A84D654AA879827 /* NowPlayingService+iOS.swift */,
 				2FE2E24A36B41467A8AC5916 /* NSAccessibilityPriorityLevel+iOS.swift */,
 				EBA8B1EFB5EC9719217CD99F /* OrphanedConversionSweep+iOS.swift */,
@@ -8107,6 +8134,7 @@
 				6B0B86279E79DE3F37623761 /* CopyFiles */,
 				AEEC52048DCF4B83D3509FCE /* CopyFiles */,
 				1C95A964EBB5395E1F896244 /* CopyFiles */,
+				FF0E856FCEDDA3C191BC39A0 /* CopyFiles */,
 				BAC07B34CF68D2587F4A0963 /* Frameworks */,
 			);
 			buildRules = (
@@ -8117,6 +8145,7 @@
 				8D7849B734869E39F9DDCB37 /* PBXTargetDependency */,
 				3BBE700E21462007B6BC1C0C /* PBXTargetDependency */,
 				6E8D7BB66262DC91D8A6A4B5 /* PBXTargetDependency */,
+				633D3C3BAB759AA99532B355 /* PBXTargetDependency */,
 			);
 			name = TextMouthiOS;
 			packageProductDependencies = (
@@ -10973,6 +11002,7 @@
 				50E45AD036104384871EBA02 /* FFmpegContainer.swift in Sources */,
 				D8CBCDEB9E0AB1A51DE3A0FA /* FFmpegHelperStream.swift in Sources */,
 				0081731CB3199111D48C2A53 /* FFmpegImportWording.swift in Sources */,
+				3EB3F169CC5206A95FCA0277 /* FFmpegInProcessRun.swift in Sources */,
 				7BFF9775A4FF2EE2A5BA0EED /* FFmpegReport.swift in Sources */,
 				1EC5D0E30AEA2331E3592C90 /* FLACCueSheetReader.swift in Sources */,
 				28740A9046BA48A9DAC4517D /* Feed.swift in Sources */,
@@ -11699,6 +11729,11 @@
 			isa = PBXTargetDependency;
 			target = 89A20E15F28F20A628786993 /* liblouis_iOS */;
 			targetProxy = 2FF88E20DFFC13CA1E7AFD9C /* PBXContainerItemProxy */;
+		};
+		633D3C3BAB759AA99532B355 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D0AB768BE610D67D76B90042 /* FFmpeg_iOS */;
+			targetProxy = CFFA837A29135741083E13D9 /* PBXContainerItemProxy */;
 		};
 		6E8D7BB66262DC91D8A6A4B5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

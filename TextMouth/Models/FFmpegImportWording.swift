@@ -179,12 +179,13 @@ enum FFmpegImportWording {
     /// missing from the app (`located` is `.missing`): "TextMouth left out
     /// “Trailer.avi”, which needs TextMouth's converter, missing from the
     /// app. Install TextMouth again, then import the book again." Nil for no
-    /// names, or when the converter is there.
+    /// names, or when the converter is there: the Mac's helper, or the
+    /// iPhone's session in the app (FMT54), which is never missing.
     static func leftOutNeedingConverter(_ names: [String], located: FFmpegAudioConverter.Located) -> String? {
         guard !names.isEmpty else { return nil }
         let needs = names.count == 1 ? "needs" : "need"
         switch located {
-        case .found:
+        case .found, .inProcess:
             return nil
         case .missing:
             return "TextMouth left out \(leftOutFiles(names)), which \(needs) TextMouth's converter, missing from the app. "
