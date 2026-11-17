@@ -831,6 +831,7 @@ targets:
       - TextMouthProductionTests/ImportFuzzMutatorTests.swift
       - TextMouthProductionTests/ImportProgressWordingTests.swift
       - TextMouthProductionTests/ImportRefusalTestSupport.swift
+      - TextMouthProductionTests/InProcessEngineTests.swift
       - TextMouthProductionTests/KF8Fixture.swift
       - TextMouthProductionTests/KF8LayoutTests.swift
       - TextMouthProductionTests/KF8ReviewFixTests.swift
