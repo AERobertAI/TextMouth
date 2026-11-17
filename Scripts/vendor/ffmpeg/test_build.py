@@ -20,8 +20,10 @@ import lzma
 import os
 import shlex
 import struct
+import subprocess
 import sys
 import tarfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -610,6 +612,87 @@ class SharedSourceTests(unittest.TestCase):
         self.assertEqual(held[1:], ["opened", "released"])
         # The lock is a file beside the key's folder in the shared folder, shared by every checkout.
         self.assertEqual(Path(held[0]).parent, root / "source")
+
+    # What the process that unpacks does in test_a_second_process_waits_for_the_first_and_never_opens_the_archive:
+    # it loads build.py, unpacks the archive with the shared folders in `root`, and takes its time inside the lock
+    # (apply_patches is slow), after writing a file that says it holds it. Arguments: build.py, root, archive,
+    # the work folder, the signal file, and the SHA-256 and size of the archive, as the pin.
+    UNPACKER = """
+import importlib.util, sys, time
+from pathlib import Path
+from unittest import mock
+path, root, archive, work, signal, digest, size = sys.argv[1:8]
+spec = importlib.util.spec_from_file_location("ffmpeg_build", path)
+build = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(build)
+build.SHARED_ROOT, build.SHARED_DOWNLOADS, build.SHARED_SOURCES = Path(root), Path(root) / "download", Path(root) / "source"
+build.FFMPEG_SHA256, build.FFMPEG_TARBALL_BYTES, build.PATCHES = digest, int(size), []
+real = build.apply_patches
+def slow(folder):
+    Path(signal).write_text("holding")
+    time.sleep(2.0)
+    return real(folder)
+build.apply_patches = slow
+build.unpacked_release(Path(work), Path(archive), build.sources()[0])
+"""
+
+    def test_a_second_process_waits_for_the_first_and_never_opens_the_archive(self):
+        # Two processes at once, as two checkouts building together are: one unpacks (slowly, in the
+        # lock), and the other asks for the same release meanwhile. It must wait for the lock, find
+        # the marker the first wrote, and return the folder without opening the archive: a second
+        # unpacking over a tree the first (or a build of it) is using would break it. A marker
+        # written after the lock was let go, or no second look inside the lock, fails this.
+        path, source, pins = self.release("shared-two-processes.tar.xz")
+        root = SCRATCH / "shared-two-processes"
+        # A signal file of a name no earlier run used, so that one left behind is never mistaken for this run's.
+        signal = SCRATCH / f"shared-two-processes-signal-{os.urandom(6).hex()}"
+        with pins[0], pins[1], pins[2]:
+            digest, size = build.FFMPEG_SHA256, build.FFMPEG_TARBALL_BYTES
+            first = subprocess.Popen([sys.executable, "-I", "-B", "-c", self.UNPACKER, str(HERE / "build.py"), str(root), str(path),
+                                      str(SCRATCH / "work-two-first"), str(signal), digest, str(size)],
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            try:
+                deadline = time.monotonic() + 60
+                while not signal.exists():
+                    if first.poll() is not None:  # (not an f-string in assertIsNone: communicate() would wait for it to end)
+                        self.fail(f"the first process ended early: {first.communicate()}")
+                    self.assertLess(time.monotonic(), deadline, "the first process never took the lock")
+                    time.sleep(0.05)
+                # The first holds the lock now, and is slow. The second, here, asks for the same release.
+                with mock.patch.object(build, "SHARED_ROOT", root), mock.patch.object(build, "SHARED_DOWNLOADS", root / "download"), \
+                        mock.patch.object(build, "SHARED_SOURCES", root / "source"), \
+                        mock.patch.object(build.tarfile, "open", side_effect=AssertionError("the second process unpacked too")):
+                    started = time.monotonic()
+                    folder = build.unpacked_release(SCRATCH / "work-two-second", path, source)
+                    waited = time.monotonic() - started
+            finally:
+                output = first.communicate(timeout=60)
+            self.assertEqual(first.returncode, 0, output)
+            self.assertGreater(waited, 0.5, "the second process did not wait for the lock")
+            self.assertTrue((folder / "configure").is_file())
+            self.assertTrue((folder.parent / ".unpacked").is_file(), "the first process wrote its marker")
+            self.assertEqual(folder.parent.parent, root / "source")
+
+    def test_an_unwritable_shared_download_folder_falls_back_to_the_work_folder(self):
+        # A shared folder that cannot be made (here, under a file) is not a failure: this build keeps its own.
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        blocker = SCRATCH / "blocks-a-folder"
+        blocker.write_text("a file", encoding="utf-8")
+        work = SCRATCH / "work-unwritable"
+        with mock.patch.object(build, "SHARED_DOWNLOADS", blocker / "download"), mock.patch.object(build, "SHARED_SOURCES", blocker / "source"):
+            self.assertEqual(build.download_folder(work), work / "download")
+            self.assertEqual(build.sources_folder(work), work / "source")
+
+    def test_the_archive_already_in_the_download_folder_is_hashed_once(self):
+        path, source, pins = self.release("shared-hashed-once.tar.xz")
+        root, shared = self.shared("shared-hashed-once")
+        work = SCRATCH / "work-hashed-once"
+        with pins[0], pins[1], pins[2], shared[0], shared[1], shared[2]:
+            build.release_tarball(work, given=path)
+            with mock.patch.object(build, "digest_of", wraps=build.digest_of) as hashing:
+                found, _ = build.release_tarball(work)
+            self.assertEqual(found.parent, root / "download")
+            self.assertEqual(hashing.call_count, 1, "the 12 MB archive is read once to be checked")
 
     def test_without_a_shared_folder_the_source_and_the_archive_are_kept_in_the_work_folder(self):
         path, source, pins = self.release("shared-none.tar.xz")

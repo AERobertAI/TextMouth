@@ -477,8 +477,14 @@ def exclusive(lock_path):
 
 def download_folder(work):
     """The folder the release's archive is kept and looked for in: the shared one when there is
-    one, else WORK/download."""
-    return SHARED_DOWNLOADS if SHARED_DOWNLOADS is not None else work / "download"
+    one that can be made, else WORK/download."""
+    if SHARED_DOWNLOADS is not None:
+        try:
+            SHARED_DOWNLOADS.mkdir(parents=True, exist_ok=True)
+            return SHARED_DOWNLOADS
+        except OSError:  # Not writable: this build keeps its own, as it did before the folder was shared.
+            pass
+    return work / "download"
 
 
 def sources_folder(work):
@@ -517,12 +523,14 @@ def release_tarball(work, given=None):
                 return folder / source["file"], source
         return None
 
-    if kept():
-        return kept()
+    found = kept()
+    if found:
+        return found
     with exclusive(folder / ".download.lock"):
         # Another build may have put the release there while this one waited for the lock.
-        if kept():
-            return kept()
+        found = kept()
+        if found:
+            return found
         if given and Path(given).is_file():
             source = source_of(given)
             if source is None:
