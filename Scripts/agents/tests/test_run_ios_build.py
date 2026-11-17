@@ -62,6 +62,17 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(ios.parse_errors(log, RUNNER_ROOT),
                          ["error: Unable to find a destination matching the provided destination specifier:"])
 
+    def test_the_swift_frontends_unknown_location_error_is_an_error_without_a_file(self):
+        # Train 1116-2122's stale-module errors came as "<unknown>:0: error: ..." and the build was reported as ending
+        # "with no error line".
+        log = ("<unknown>:0: error: file '/r/TextMouthBraille/include/module.modulemap' has been modified since the module "
+               "file '/r/dd/SwiftExplicitPrecompiledModules/A.pcm' was built: size changed (was 383, now 849)\n"
+               "<unknown>:0: note: please rebuild precompiled file '/r/dd/SwiftExplicitPrecompiledModules/A.pcm'\n")
+        errors = ios.parse_errors(log, RUNNER_ROOT)
+        self.assertEqual(len(errors), 1, errors)
+        self.assertTrue(errors[0].startswith("error: file '/r/TextMouthBraille/include/module.modulemap' has been modified"))
+        self.assertTrue(ios.runner_module_cache.stale_cache_only(errors), "all of them are the stale cache's")
+
     def test_a_path_outside_the_repository_stays_whole(self):
         log = "/Users/runner/Library/Foo.swift:2:3: error: bad\n"
         self.assertEqual(ios.parse_errors(log, RUNNER_ROOT), ["/Users/runner/Library/Foo.swift:2:3: error: bad"])
@@ -208,6 +219,10 @@ class RetryTests(unittest.TestCase):
         (self.derived / "ModuleCache.noindex" / "old.pcm").write_text("x")
         (self.derived / "Build" / "Products").mkdir(parents=True)
         (self.derived / "Build" / "Products" / "kept.o").write_text("x")
+        # Xcode 26's explicitly built Swift modules, which a stale build of train 1116-2122 failed on (TL02).
+        self.explicit = self.derived / "Build" / "Intermediates.noindex" / "SwiftExplicitPrecompiledModules"
+        self.explicit.mkdir(parents=True)
+        (self.explicit / "Stale-ABC.pcm").write_text("x")
         self.limits = []
 
     def fake_build(self, first, second):
@@ -252,6 +267,7 @@ class RetryTests(unittest.TestCase):
         self.assertEqual(files["ios-errors.txt"], "", "only the retry's errors count")
         # Everything but the module caches is kept: this is not a clean build.
         self.assertTrue((self.derived / "Build" / "Products" / "kept.o").exists())
+        self.assertFalse(self.explicit.exists(), "the retry emptied the explicitly built Swift modules too")
 
     def test_the_summary_says_the_retry_happened_and_why(self):
         _, files, printed = self.run_main(self.fake_build(STALE_ERROR, "** TEST BUILD SUCCEEDED **"))
