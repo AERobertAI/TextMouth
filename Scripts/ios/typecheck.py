@@ -244,6 +244,10 @@ def platform_test_flags(platform):
     return ["-F", f"{folder}/Developer/Library/Frameworks", "-I", f"{folder}/Developer/usr/lib"]
 
 
+# The empty folder each of the iPhone's braille C targets names as its public headers (see write_package).
+NO_PUBLIC_HEADERS = "no-public-headers"
+
+
 def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()):
     """Writes the probe's Package.swift into `src`; with `tests` (see test_kind), it also
     holds the test target. `skipped_tests` are files of the test target's folder (paths inside it) that the
@@ -268,8 +272,12 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
     # The iPhone app links liblouis and TextMouth's braille translation, which its BrailleTranslator calls in its own
     # process (DR34; project.yml's liblouis_iOS and TextMouthBrailleLibrary_iOS); the Mac app links neither, since
     # its braille helper runs them. Neither target has public headers, so SwiftPM makes no module of its own beside
-    # the map the app finds the interface by.
+    # the map the app finds the interface by: each names an empty folder of the copy as its public headers, since
+    # SwiftPM refuses a folder that is not there.
     braille_dependencies = '\n                "liblouis",\n                "TextMouthBrailleLibrary",' if platform == "ios" else ""
+    if platform == "ios":
+        for target_folder in ("Vendor/liblouis", "TextMouthBraille"):
+            (src / target_folder / NO_PUBLIC_HEADERS).mkdir(parents=True, exist_ok=True)
     braille_targets = f"""
         // liblouis, as project.yml's LiblouisLibrary template builds it.
         .target(
@@ -277,7 +285,7 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
             path: "Vendor/liblouis",
             exclude: ["liblouis/liblouis.h.in", "tables"],
             sources: ["liblouis"],
-            publicHeadersPath: "no-public-headers",
+            publicHeadersPath: "{NO_PUBLIC_HEADERS}",
             cSettings: [
                 .define("LIBLOUIS_FOR_TEXTMOUTH", to: "1"),
                 .headerSearchPath("."),
@@ -293,7 +301,7 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
             path: "TextMouthBraille",
             exclude: ["main.c", "include"],
             sources: ["TextMouthBrailleLibrary.c"],
-            publicHeadersPath: "no-public-headers",
+            publicHeadersPath: "{NO_PUBLIC_HEADERS}",
             cSettings: [.unsafeFlags(["-isystem", "{src / "Vendor" / "liblouis" / "include"}", "-Os"])]
         ),""" if platform == "ios" else ""
     test_target = f"""

@@ -240,7 +240,12 @@ class PackageTests(TypecheckTestsCase):
             self.assertIn(f'.target(\n            name: "{name}"', ios)
             self.assertIn(f'"{name}",', app, f"the iPhone app does not depend on {name}")
         self.assertIn('exclude: ["main.c", "include"]', ios, "the helper's main is built into the iPhone's library")
-        self.assertIn('publicHeadersPath: "no-public-headers"', ios)
+        self.assertIn(f'publicHeadersPath: "{typecheck.NO_PUBLIC_HEADERS}"', ios)
+        # SwiftPM refuses a public-headers folder that is not there, so the iPhone's package makes each one, empty.
+        for folder in ("Vendor/liblouis", "TextMouthBraille"):
+            headers = self.src / folder / typecheck.NO_PUBLIC_HEADERS
+            self.assertTrue(headers.is_dir(), headers)
+            self.assertEqual(list(headers.iterdir()), [], headers)
         mac = self.package(tests=False)
         self.assertNotIn("liblouis", mac)
         self.assertNotIn("TextMouthBrailleLibrary", mac)
