@@ -14,7 +14,7 @@ description: TextMouth's issue tracker, one Markdown file per issue in Issues/ (
 
 ## Reading
 
-- `issuelib list [--status S,S|all] [--priority P] [--kind K] [--platform X] [--assignee NAME|none] [--label L]`: one issue per line by priority, `ID P1 status platform [assignee]: title`; open, in-progress, and blocked unless `--status` says otherwise.
+- `issuelib list [--status S,S|all] [--priority P] [--kind K] [--platform X] [--assignee NAME|none] [--label L]`: one issue per line by priority, `ID P1 status platform [assignee]: title`; open, in-progress, and blocked unless `--status` says otherwise. `--platform iphone` (or `mac`) includes the issues filed for both; `--platform both`, only those.
 - `issuelib show ID`: the file as written, then the doc sections whose marker cites it; for an ID only the TODO has, or an alias, its TODO lines.
 - `issuelib search REGEX [--status ...]`: every matching line, `ID:LINE: text`, ignoring case.
 - `issuelib summary`: each status's count, split by priority.

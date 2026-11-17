@@ -79,6 +79,8 @@ _PRIORITY = (
 _PLATFORM_SENTENCE = re.compile(r"\bPlatform: ([^.]*)")
 _IPHONE = re.compile(r"\biPhone\b|\biOS\b|Platform/iOS")
 _MAC = re.compile(r"\bMac\b|\bmacOS\b")
+# What the first word of a "Platform:" sentence says: "Mac (the iPhone has no export)" is mac.
+_PLATFORM_WORDS = {"both": "both", "iphone": "iphone", "ios": "iphone", "mac": "mac", "macos": "mac"}
 # The docs a review item names: "Docs: `docs/user/x.md`, "Section": "a sentence"", or
 # "Docs: as DR04" ("Docs and code: as DR24"). Each page runs to the next page it names.
 _DOCS_PART = re.compile(r"\bDocs(?: and code)?: (.*?)(?:\bCode:|$)")
@@ -296,13 +298,16 @@ def priority_of(opening: str) -> str:
 
 
 def platform_of(title: str, text: str) -> str:
-    """mac, iphone, or both: a "Platform:" sentence first, then the iPhone in the title, then in the text."""
+    """mac, iphone, or both: a "Platform:" sentence's first word, else the iPhone in the title, else in the text.
+
+    Only the first word counts, since what follows explains it: "Mac (the iPhone
+    has no export)" is mac, and "iPhone (a parity gap; the Mac has it)" iphone.
+    """
     sentence = _PLATFORM_SENTENCE.search(text)
-    if sentence:
-        words = sentence.group(1).strip()
-        if words.lower().startswith("both") or (_IPHONE.search(words) and _MAC.search(words)):
-            return "both"
-        return "iphone" if _IPHONE.search(words) else "mac"
+    words = sentence.group(1).split() if sentence else []
+    first = words[0].strip(".,;:()").lower() if words else ""
+    if first in _PLATFORM_WORDS:
+        return _PLATFORM_WORDS[first]
     if _IPHONE.search(title):
         return "both" if _MAC.search(title) else "iphone"
     return "both" if _IPHONE.search(text) else "mac"

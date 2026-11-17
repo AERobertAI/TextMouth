@@ -155,10 +155,13 @@ def matches(issue: Issue, args: Any) -> bool:
     statuses = args.status if args.status else list(OPEN_STATUSES)
     if "all" not in statuses and issue.value("status") not in statuses:
         return False
-    for name in ("priority", "kind", "platform"):
+    for name in ("priority", "kind"):
         wanted = getattr(args, name, None)
         if wanted and issue.value(name) not in wanted:
             return False
+    platforms = getattr(args, "platform", None)
+    if platforms and not concerns(issue.value("platform"), platforms):
+        return False
     assignee = getattr(args, "assignee", None)
     if assignee is not None:
         if assignee == "none" and issue.value("assignee"):
@@ -169,6 +172,11 @@ def matches(issue: Issue, args: Any) -> bool:
     if label and label not in issue.values("labels"):
         return False
     return True
+
+
+def concerns(platform: str, wanted: List[str]) -> bool:
+    """Whether an issue filed for ``platform`` concerns one of ``wanted``: one filed for both concerns mac and iphone."""
+    return platform in wanted or (platform == "both" and any(name in ("mac", "iphone") for name in wanted))
 
 
 def cmd_list(store: Store, args: Any) -> int:
@@ -414,7 +422,8 @@ def filter_options(parser: argparse.ArgumentParser, default_status: str) -> None
                         metavar="S[,S]", help=f"statuses to show, or all (default: {default_status})")
     parser.add_argument("--priority", type=choice_list(issuefile.PRIORITIES), metavar="P[,P]")
     parser.add_argument("--kind", type=choice_list(issuefile.KINDS), metavar="K[,K]")
-    parser.add_argument("--platform", type=choice_list(issuefile.PLATFORMS), metavar="X[,X]")
+    parser.add_argument("--platform", type=choice_list(issuefile.PLATFORMS), metavar="X[,X]",
+                        help="mac or iphone includes the issues filed for both; both, only those")
     parser.add_argument("--assignee", metavar="NAME", help="an agent's name, or none for the unassigned")
     parser.add_argument("--label", metavar="LABEL")
     parser.add_argument("--width", type=width_type, default=DEFAULT_WIDTH,

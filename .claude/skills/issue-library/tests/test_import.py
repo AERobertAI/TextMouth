@@ -72,9 +72,9 @@ These checks have **not** been performed. Record the OS version.
 
 ## From the ChatGPT docs review (November 16)
 
-- [ ] **DR01 — Search Library on the iPhone.** From the ChatGPT docs review of November 16, 2026 (suggested priority P1; list items 1 and 2). Docs: `docs/user/search-library.md`, "What Search Library does not do": "there is no Search Library screen." Platform: iPhone (a parity gap). Related: DR02.
+- [ ] **DR01 — Search Library on the iPhone.** From the ChatGPT docs review of November 16, 2026 (suggested priority P1; list items 1 and 2). Docs: `docs/user/search-library.md`, "What Search Library does not do": "there is no Search Library screen." Platform: iPhone (a parity gap; the Mac has it). Related: DR02.
 - [ ] **DR02 — Search one folder.** From the ChatGPT docs review of November 16, 2026 (suggested priority P2; list item 3). Docs: as DR01. Platform: Mac, then the iPhone with DR01. Related: DR01.
-- [ ] **DR03 — A quoted sentence.** From the ChatGPT docs review of November 16, 2026 (suggested priority P3). Docs: `docs/user/search-library.md`: "… a feed's articles are not searched." Platform: Mac.
+- [ ] **DR03 — A quoted sentence.** From the ChatGPT docs review of November 16, 2026 (suggested priority P3). Docs: `docs/user/search-library.md`: "… a feed's articles are not searched." Platform: Mac (the iPhone has no search).
 """
 
 # The docs page the review items name.
@@ -190,7 +190,7 @@ class ImportTests(ImportCase):
             "PG14": ("feature", "P2", "mac", "the research of 2026-10-21", "2026-10-21", "PG02", "", ""),
             "V06": ("feature", "P2", "mac", "the plan of 2026-10-23", "2026-10-23", "B12-OCT", "", ""),
             "DR01": ("feature", "P1", "iphone", "the ChatGPT docs review", "2026-11-16", "DR02", "library-search-limits", ""),
-            "DR02": ("feature", "P2", "both", "the ChatGPT docs review", "2026-11-16", "DR01", "library-search-limits", ""),
+            "DR02": ("feature", "P2", "mac", "the ChatGPT docs review", "2026-11-16", "DR01", "library-search-limits", ""),
             "DR03": ("feature", "P3", "mac", "the ChatGPT docs review", "2026-11-16", "", "library-search-what-searched", ""),
         }
         names = ("kind", "priority", "platform", "found-by", "created", "related", "docs", "labels")
@@ -297,6 +297,24 @@ class RefusalTests(ImportCase):
         status, _out, err = self.run_import()
         self.assertEqual(status, 1)
         self.assertIn("opens with 2 IDs (B14, B15)", err)
+
+
+class PlatformTests(ImportCase):
+    """platform_of: a Platform sentence's first word, then the iPhone named in the title or the text."""
+
+    def test_the_first_word_of_the_platform_sentence_decides(self) -> None:
+        cases = {
+            "Platform: Mac (the iPhone has no export).": "mac",
+            "Platform: Mac (the audio editor is not on the iPhone).": "mac",
+            "Platform: iPhone (a parity gap; the Mac reads them).": "iphone",
+            "Platform: both (the MOBI reader is shared).": "both",
+            "Platform: Mac, then the iPhone with DR01.": "mac",
+            "Nothing said; the iPhone refuses it.": "both",
+            "Nothing said of either.": "mac",
+        }
+        for text, expected in cases.items():
+            self.assertEqual(issuetodo.platform_of("A title", text), expected, text)
+        self.assertEqual(issuetodo.platform_of("The iPhone Go To sheet", "Its fields."), "iphone")
 
 
 class ExtentTests(ImportCase):
