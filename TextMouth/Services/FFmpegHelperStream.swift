@@ -14,7 +14,8 @@ private import TextMouthFFmpegProtocol
 /// limits, so a helper that writes nonsense costs a failed import, never the
 /// app's memory: a record longer than its kind allows, of an unknown kind, or
 /// out of its order; more tags or chapters than the protocol writes; samples
-/// that are not whole frames; and an END that counts other frames than came.
+/// that are not whole frames, or no samples at all (the session never writes
+/// an empty PCM record); and an END that counts other frames than came.
 struct FFmpegHelperStream {
     /// Why the stream could not be read.
     enum StreamError: Error, Equatable, Sendable {
@@ -245,7 +246,9 @@ struct FFmpegHelperStream {
             switch record.kind {
             case UInt32(TMFF_RECORD_PCM):
                 let block = try Self.samples(of: record.payload, format: format, channels: channels)
-                guard !block.isEmpty else { continue }
+                // The session never writes a PCM record with no samples, so
+                // an empty one means the stream is not what the session wrote.
+                guard !block.isEmpty else { throw StreamError.damaged }
                 framesRead += UInt64(block.count / channels)
                 return block
             case UInt32(TMFF_RECORD_END):
@@ -265,6 +268,8 @@ struct FFmpegHelperStream {
     /// A PCM record's samples as `Int32`s: 16-bit numbers widened, 32-bit
     /// numbers and floats' bit patterns as they are.
     /// - Throws: `StreamError.damaged` when the payload is not whole frames.
+    ///   An empty payload is whole frames of none, and returns no samples;
+    ///   `nextBlock()` refuses it.
     static func samples(of payload: [UInt8], format: FFmpegReport.SampleFormat, channels: Int) throws -> [Int32] {
         let width = format == .s16 ? 2 : 4
         guard channels > 0, payload.count % (width * channels) == 0 else { throw StreamError.damaged }

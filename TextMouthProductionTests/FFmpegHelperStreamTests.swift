@@ -127,7 +127,8 @@ final class FFmpegHelperStreamTests: XCTestCase {
 
     /// Every way a stream breaks the protocol is refused as damaged: a
     /// record longer than its kind allows, a kind the protocol has not, a
-    /// sample before INFO, samples that are not whole frames, an END that
+    /// sample before INFO, samples that are not whole frames, a PCM record with
+    /// no samples (the session never writes one), an END that
     /// counts other frames than came, a tag with no key's end, a chapter too
     /// short for its times, and more tags than the session writes.
     func testDamagedStreamsAreRefused() async {
@@ -142,6 +143,9 @@ final class FFmpegHelperStreamTests: XCTestCase {
             ("an unknown kind", head + info + FFmpegTestStream.record("XYZW", []) + FFmpegTestStream.end(frames: 0)),
             ("samples before INFO", head + FFmpegTestStream.pcm16([1]) + info + FFmpegTestStream.end(frames: 1)),
             ("half a frame", head + stereo16 + FFmpegTestStream.pcm16([1, 2, 3]) + FFmpegTestStream.end(frames: 1)),
+            ("an empty PCM record", head + info + FFmpegTestStream.pcm32([]) + FFmpegTestStream.end(frames: 0)),
+            ("an empty PCM record between two", head + info + FFmpegTestStream.pcm32([7]) + FFmpegTestStream.pcm32([])
+                + FFmpegTestStream.pcm32([8]) + FFmpegTestStream.end(frames: 2)),
             ("an END that counts wrong", head + info + FFmpegTestStream.pcm32([0, 0]) + FFmpegTestStream.end(frames: 3)),
             ("a tag with no end to its key", head + info + FFmpegTestStream.record("TAG ", Array("title".utf8)) + FFmpegTestStream.end(frames: 0)),
             ("a chapter too short", head + info + FFmpegTestStream.record("CHAP", [0, 0, 0]) + FFmpegTestStream.end(frames: 0)),
