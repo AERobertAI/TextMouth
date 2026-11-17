@@ -236,7 +236,7 @@ class PackageTests(TypecheckTestsCase):
         typecheck.write_package(self.src, self.folder / "pkgs", "ios", "26.0")
         ios = (self.src / "Package.swift").read_text()
         app = ios.split(".executableTarget(")[1]
-        for name in ("liblouis", "TextMouthBrailleLibrary"):
+        for name in ("liblouis", typecheck.BRAILLE_LIBRARY_TARGET):
             self.assertIn(f'.target(\n            name: "{name}"', ios)
             self.assertIn(f'"{name}",', app, f"the iPhone app does not depend on {name}")
         self.assertIn('exclude: ["main.c", "include"]', ios, "the helper's main is built into the iPhone's library")
@@ -248,7 +248,9 @@ class PackageTests(TypecheckTestsCase):
             self.assertEqual(list(headers.iterdir()), [], headers)
         mac = self.package(tests=False)
         self.assertNotIn("liblouis", mac)
-        self.assertNotIn("TextMouthBrailleLibrary", mac)
+        self.assertNotIn(typecheck.BRAILLE_LIBRARY_TARGET, mac)
+        # SwiftPM makes a module of each C target's name, so the library's target must not be named as its module is.
+        self.assertNotEqual(typecheck.BRAILLE_LIBRARY_TARGET, "TextMouthBrailleLibrary")
 
 
 class SummaryTests(TypecheckTestsCase):

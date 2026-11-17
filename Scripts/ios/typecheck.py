@@ -246,6 +246,9 @@ def platform_test_flags(platform):
 
 # The empty folder each of the iPhone's braille C targets names as its public headers (see write_package).
 NO_PUBLIC_HEADERS = "no-public-headers"
+# The name of the iPhone package's C target that builds the braille library (see write_package): any name but the
+# library's own module's, TextMouthBrailleLibrary, which SwiftPM's module of the target's name would clash with.
+BRAILLE_LIBRARY_TARGET = "TextMouthBrailleC"
 
 
 def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()):
@@ -271,10 +274,11 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
                      f'"-I", "{src / "TextMouthFFmpeg" / "include"}"')
     # The iPhone app links liblouis and TextMouth's braille translation, which its BrailleTranslator calls in its own
     # process (DR34; project.yml's liblouis_iOS and TextMouthBrailleLibrary_iOS); the Mac app links neither, since
-    # its braille helper runs them. Neither target has public headers, so SwiftPM makes no module of its own beside
-    # the map the app finds the interface by: each names an empty folder of the copy as its public headers, since
-    # SwiftPM refuses a folder that is not there.
-    braille_dependencies = '\n                "liblouis",\n                "TextMouthBrailleLibrary",' if platform == "ios" else ""
+    # its braille helper runs them. Neither target has public headers: each names an empty folder of the copy as
+    # its public headers, since SwiftPM refuses a folder that is not there. SwiftPM still makes each a module of the
+    # target's name, so the library's target is named BRAILLE_LIBRARY_TARGET, never TextMouthBrailleLibrary, the module
+    # the app finds the library's interface by.
+    braille_dependencies = f'\n                "liblouis",\n                "{BRAILLE_LIBRARY_TARGET}",' if platform == "ios" else ""
     if platform == "ios":
         for target_folder in ("Vendor/liblouis", "TextMouthBraille"):
             (src / target_folder / NO_PUBLIC_HEADERS).mkdir(parents=True, exist_ok=True)
@@ -296,7 +300,7 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
         ),
         // TextMouth's braille translation, as project.yml's TextMouthBrailleLibrary_iOS target builds it.
         .target(
-            name: "TextMouthBrailleLibrary",
+            name: "{BRAILLE_LIBRARY_TARGET}",
             dependencies: ["liblouis"],
             path: "TextMouthBraille",
             exclude: ["main.c", "include"],
