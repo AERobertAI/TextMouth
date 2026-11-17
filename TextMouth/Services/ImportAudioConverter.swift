@@ -181,6 +181,9 @@ enum ImportAudioConverter {
         /// The audio one of TextMouth's own readers decoded could not be
         /// written as an .m4a, for `reason` (an error's domain and code).
         case notWritten(fileName: String, reason: String)
+        /// The file is valid, but its samples are of a form no decoder reads (`AudioSampleForm`, B15): it is not
+        /// damaged, and nothing was run.
+        case unsupportedSamples(fileName: String, form: AudioSampleForm)
 
         var errorDescription: String? {
             switch self {
@@ -204,6 +207,8 @@ enum ImportAudioConverter {
                 return OwnAudioWording.sentence(for: problem, fileName: fileName)
             case let .notWritten(fileName, reason):
                 return "The audio converted from \(fileName) could not be written (\(reason))."
+            case let .unsupportedSamples(fileName, form):
+                return AudioSampleFormWording.refusal(fileName: fileName, form: form)
             }
         }
     }
@@ -404,6 +409,9 @@ enum ImportAudioConverter {
         /// A conversion that keeps chapters writes them into the .m4a's
         /// chapter track (`ChapterTrackWriter`).
         var chapters: [NeroChapterReader.Chapter] = []
+        /// How the samples of linear PCM are stored (`AudioFileInfo.sampleForm`), or nil for other audio: a
+        /// form no decoder reads is refused before the conversion runs (`Failure.unsupportedSamples`, B15).
+        var sampleForm: AudioSampleForm? = nil
         /// The format, when the file is one that TextMouth's own readers
         /// decode: it is then converted in the app (`OwnAudioConverter`), by
         /// no child process. Nil for every other source.
@@ -476,7 +484,7 @@ enum ImportAudioConverter {
         return SourceInfo(
             sampleRate: facts.sampleRate, channels: facts.channels, duration: facts.duration,
             formatID: facts.formatID, bitsPerSample: facts.bitsPerSample, isLossless: facts.isLossless,
-            hasChannelLayout: facts.hasChannelLayout, chapters: facts.markerChapters
+            hasChannelLayout: facts.hasChannelLayout, chapters: facts.markerChapters, sampleForm: facts.sampleForm
         )
     }
 
@@ -873,6 +881,11 @@ enum ImportAudioConverter {
             #else
             throw Failure.unreadable(fileName: name)
             #endif
+        }
+        // A valid file whose samples no decoder reads would fail in the converter with its exit code and no cause
+        // (B15): say what is true of it, from its own description, before anything runs.
+        if let form = info.sampleForm, !form.isDecodable {
+            throw Failure.unsupportedSamples(fileName: name, form: form)
         }
         // A header can state any sample rate. One that is no number, or past
         // the most a cap counts, is a damaged header, refused as an

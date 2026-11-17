@@ -41,6 +41,10 @@ struct AudioFileInfo: Equatable, Sendable {
     /// at `sampleRate`, in afinfo's order. The import keeps them as the
     /// chapters of the file it converts (`ImportAudioConverter.SourceInfo`).
     var markers: [Marker] = []
+    /// How the samples of linear PCM are stored, as afinfo's bit depth and data type say, floating-point depths
+    /// included (`bitsPerSample` has none for floats); nil for any other codec, and for linear PCM that names no
+    /// depth. The import refuses a form no decoder reads before it converts (`AudioSampleForm`, B15).
+    var sampleForm: AudioSampleForm? = nil
 
     /// One marker afinfo lists.
     struct Marker: Equatable, Sendable {
@@ -276,6 +280,10 @@ struct AudioFileInfo: Equatable, Sendable {
             } else {
                 bits = nil
             }
+            // Linear PCM's own depth, floats' included, with its data type; no other codec has one.
+            let sampleForm = isLinear
+                ? values["bit_depth"].flatMap(Self.integer).flatMap { AudioSampleForm(bits: $0, isFloat: isFloat) }
+                : nil
             return AudioFileInfo(
                 fileType: Self.trimmed(values["file_type"])?.replacingOccurrences(of: "'", with: "") ?? "",
                 formatID: formatID,
@@ -285,7 +293,8 @@ struct AudioFileInfo: Equatable, Sendable {
                 bitsPerSample: bits.flatMap { $0 > 0 ? $0 : nil },
                 isFloat: isFloat,
                 hasChannelLayout: Self.hasChannelLayout(values["channel_layout"], values["format_list/format/channel_layout"]),
-                markers: markers
+                markers: markers,
+                sampleForm: sampleForm
             )
         }
 

@@ -269,4 +269,107 @@ final class UnsupportedSampleFormTests: XCTestCase {
                           failure.errorDescription ?? "no description")
         }
     }
+
+    // MARK: - The Conversion
+
+    /// What `afinfo` says of a file's samples is the file's own form: every
+    /// depth and kind the tests write, floats included.
+    func testAfinfoGivesTheFormOfALinearPCMFile() async throws {
+        // A 128-bit float CAF file does not open at all, so afinfo gives no form for it.
+        for form in Self.unsupported + Self.supported where form.bits != 128 {
+            let file = folder.appendingPathComponent("\(form.bits)-\(form.isFloat ? "float" : "integer").caf")
+            try AudioTestFixtures.writeToneCAF(to: file, frames: 8_000, sampleRate: 8_000, bits: form.bits, isFloat: form.isFloat)
+
+            let facts = try await AudioFileInfo.read(file)
+
+            XCTAssertEqual(facts?.sampleForm, form, "\(form)")
+        }
+    }
+
+    /// A file that is no linear PCM has no form: its codec decides.
+    func testCodedAudioHasNoSampleForm() async throws {
+        let file = folder.appendingPathComponent("Coded.m4a")
+        try AudioTestFixtures.writeAACSilence(to: file)
+
+        let facts = try await AudioFileInfo.read(file)
+
+        XCTAssertNotNil(facts)
+        XCTAssertNil(facts?.sampleForm)
+    }
+
+    /// A CAF file of each unsupported form is refused before anything is
+    /// converted, with the form named and no exit code, and the source is
+    /// untouched and nothing is left beside it.
+    func testTheConverterRefusesEachUnsupportedFormByName() async throws {
+        for form in Self.unsupported where form.bits != 128 {
+            let name = "\(form.bits)-\(form.isFloat ? "float" : "integer").caf"
+            let source = folder.appendingPathComponent(name)
+            try AudioTestFixtures.writeToneCAF(to: source, frames: 8_000, sampleRate: 8_000, bits: form.bits, isFloat: form.isFloat)
+            let sourceBytes = try Data(contentsOf: source)
+            let before = OggTestFixtures.names(in: folder)
+
+            do {
+                _ = try await ImportAudioConverter.convert(source)
+                XCTFail("\(name) was converted")
+            } catch let failure as ImportAudioConverter.Failure {
+                XCTAssertEqual(failure, .unsupportedSamples(fileName: name, form: form), name)
+                XCTAssertEqual(failure.errorDescription, AudioSampleFormWording.refusal(fileName: name, form: form), name)
+            }
+
+            XCTAssertEqual(try Data(contentsOf: source), sourceBytes, name)
+            XCTAssertEqual(OggTestFixtures.names(in: folder), before, name)
+        }
+    }
+
+    /// The refusal of the converter, as the import tells it.
+    func testImportingACAFFileOfAnUnsupportedFormSaysSo() throws {
+        let source = folder.appendingPathComponent("Radio Play.caf")
+        try AudioTestFixtures.writeToneCAF64(to: source, frames: 8_000, sampleRate: 8_000, isFloat: false)
+        let libraryBefore = OggTestFixtures.names(in: TextMouthPaths.libraryDir)
+
+        do {
+            let imported = try FileImportService.importFileWithReport(from: source)
+            importedPackages.append(imported.book.tmbDirectory)
+            XCTFail("A CAF file of 64-bit integers imported")
+        } catch let failure as ImportFailure {
+            XCTAssertEqual(failure.step.activity, "Converting its audio")
+            XCTAssertEqual(
+                failure.errorDescription,
+                "Could not import “Radio Play.caf”. Converting its audio failed: "
+                    + "“Radio Play.caf” uses 64-bit integer samples, which TextMouth can't play. "
+                    + "Convert it to 16-bit or 24-bit, then add it again."
+            )
+        }
+
+        XCTAssertEqual(OggTestFixtures.names(in: TextMouthPaths.libraryDir), libraryBefore)
+    }
+
+    /// A CAF file of each form the decoders read still converts, to Apple
+    /// Lossless of the source's length: the refusal takes only what fails.
+    func testTheConverterStillConvertsEachSupportedForm() async throws {
+        for form in Self.supported {
+            let name = "\(form.bits)-\(form.isFloat ? "float" : "integer").caf"
+            let source = folder.appendingPathComponent(name)
+            try AudioTestFixtures.writeToneCAF(to: source, frames: 8_000, sampleRate: 8_000, bits: form.bits, isFloat: form.isFloat)
+
+            let conversion = try await ImportAudioConverter.convert(source)
+
+            XCTAssertEqual(conversion.duration, 1, accuracy: 0.05, name)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: conversion.converted.path), name)
+        }
+    }
+
+    /// A damaged CAF file is still told as unreadable for converting: it has
+    /// no description to name a form from.
+    func testADamagedCAFFileIsStillUnreadable() async throws {
+        let source = folder.appendingPathComponent("Damaged.caf")
+        try (Data("caff".utf8) + Data(count: 64)).write(to: source)
+
+        do {
+            _ = try await ImportAudioConverter.convert(source)
+            XCTFail("A damaged CAF file was converted")
+        } catch let failure as ImportAudioConverter.Failure {
+            XCTAssertEqual(failure, .unreadable(fileName: "Damaged.caf"))
+        }
+    }
 }
