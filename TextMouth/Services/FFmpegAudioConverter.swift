@@ -278,7 +278,7 @@ enum FFmpegAudioConverter {
             }
         case .inProcess:
             #if os(iOS)
-            return try await runInProcess(mode, of: file, as: container, limits: limits, using: tool, reading: read)
+            return try await runInProcess(mode, of: file, demuxer: container.demuxer, limits: limits, using: tool, reading: read)
             #else
             // The Mac never runs FFmpeg in its own process, which is not sandboxed: only its helper does.
             throw Failure.helperMissing(kind: kind)

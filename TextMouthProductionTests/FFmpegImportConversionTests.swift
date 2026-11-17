@@ -2,13 +2,16 @@ import XCTest
 @testable import TextMouth
 
 /// The FFmpeg import's conversions and imports (FMT31, FMT32, FMT50), through
-/// the helper the app carries, TextMouthFFmpeg, which every build of the app
-/// holds, on GitHub's runners too. A stand-in script stands in front of it
-/// (`ffmpegHelperStandIn`) where a test needs a run to end otherwise: a probe
-/// written by hand, a hang, a crash, an early end, a damaged stream. What each
-/// refusal says and when it comes, what is left behind (nothing), and a whole
-/// import of a file and of a folder through the import's own path.
-/// `FFmpegImportRealTests` imports every sample with the helper alone.
+/// the session the app carries: on the Mac the helper TextMouthFFmpeg, which
+/// every build of the app holds, on GitHub's runners too, and on the iPhone
+/// the same session in the app itself (FMT54), so each test asks the same of
+/// both. A stand-in stands in front of it (`ffmpegHelperStandIn`: a script on
+/// the Mac, a session on the iPhone) where a test needs a run to end
+/// otherwise: a probe written by hand, a hang, a crash, an early end, a
+/// damaged stream. What each refusal says and when it comes, what is left
+/// behind (nothing), and a whole import of a file and of a folder through the
+/// import's own path. `FFmpegImportRealTests` imports every sample with the
+/// session alone. Shared with the iPhone's unit bundle.
 @MainActor
 final class FFmpegImportConversionTests: XCTestCase {
     /// A copy of the sample `sample` named `name`, in a folder of its own.
@@ -45,9 +48,9 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: wma), before)
         XCTAssertEqual(conversion.duration, 3.999)
         XCTAssertEqual(try standInCalls(log), ["probe asf", "decode asf"])
-        let info = try await AudioFileInfo.read(conversion.converted)
-        XCTAssertEqual(info?.formatID.trimmingCharacters(in: .whitespaces), "aac")
-        XCTAssertEqual(info?.channels, 1)
+        let entry = try M4ASampleEntry.read(conversion.converted)
+        XCTAssertEqual(entry?.codec, "aac")
+        XCTAssertEqual(entry?.channels, 1)
         let tags = await AudioPlaybackService.extractFullMetadata(from: conversion.converted)
         XCTAssertEqual([tags.title, tags.artist], ["Three Tones", "TextMouth Test"])
     }
@@ -144,12 +147,10 @@ final class FFmpegImportConversionTests: XCTestCase {
             if case .killed(fileName: "tones.wma", _)? = error as? ImportAudioConverter.Failure { return true }
             return false
         }
-        let cases: [(String, StandInAction, StandInAction, (any Error) -> Bool)] = [
+        var cases: [(String, StandInAction, StandInAction, (any Error) -> Bool)] = [
             ("a probe that hangs", .hang(seconds: 30), .realHelper, killed),
             ("a decode that hangs", .realHelper, .hang(seconds: 30), killed),
             ("a decode that crashes", .realHelper, .write(partial, status: 70),
-             { ($0 as? FFmpegAudioConverter.Failure) == .crashed(fileName: "tones.wma") }),
-            ("a decode killed by a signal", .realHelper, .killItself,
              { ($0 as? FFmpegAudioConverter.Failure) == .crashed(fileName: "tones.wma") }),
             ("a decode that ends too soon", .realHelper, .write(partial, status: 0),
              { ($0 as? FFmpegAudioConverter.Failure) == .endedEarly(fileName: "tones.wma") }),
@@ -165,6 +166,11 @@ final class FFmpegImportConversionTests: XCTestCase {
                  return false
              }),
         ]
+        #if os(macOS)
+        // A helper killed by a signal is the Mac's alone: a crash in the iPhone app ends the app.
+        cases.append(("a decode killed by a signal", .realHelper, .killItself,
+                      { ($0 as? FFmpegAudioConverter.Failure) == .crashed(fileName: "tones.wma") }))
+        #endif
         for (name, probe, decode, isExpected) in cases {
             let wma = try source()
             let (helper, _) = try ffmpegHelperStandIn(probe: probe, decode: decode)
@@ -182,6 +188,10 @@ final class FFmpegImportConversionTests: XCTestCase {
     /// A helper that has written a whole stream and then does not exit is
     /// ended once the stream's END has been read, and the import succeeds:
     /// only the stall limit would have ended it, as a failure.
+    ///
+    /// Fenced to the Mac: in the iPhone app the session ends at END by
+    /// itself, with no program to outlive its stream (FMT54).
+    #if os(macOS)
     func testAHelperThatHangsAfterAWholeStreamStillImports() async throws {
         let wma = try source()
         let (helper, _) = try ffmpegHelperStandIn(decode: .realHelperThenHang(seconds: 60))
@@ -192,6 +202,7 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(conversion.duration, 4.0, accuracy: 0.1)
         XCTAssertEqual(WatchedProcess.runningChildCount, 0)
     }
+    #endif
 
     /// A decode whose .m4a passes the output cap is stopped by the reader's
     /// own check before the next block, not by the watchdog's look once a

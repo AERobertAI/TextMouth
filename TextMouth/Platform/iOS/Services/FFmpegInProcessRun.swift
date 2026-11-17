@@ -131,11 +131,11 @@ extension FFmpegAudioConverter {
     /// TextMouth is closed and opened again."
     static let sessionEngine = InProcessEngine(name: "FFmpeg", work: "the audio conversion")
 
-    /// Runs the session on `file`, read as `container`, in `mode`, in this
-    /// process on the tool's engine (FMT54), handing `read` its stream one
-    /// record a piece, and returns how the run ended as the Mac's helper's
-    /// run would (`WatchedProcess.runStreaming`), with what `read` returned
-    /// or threw:
+    /// Runs the session on `file`, read with the demuxer named `demuxer`
+    /// (`FFmpegContainer.demuxer`), in `mode`, in this process on the tool's
+    /// engine (FMT54), handing `read` its stream one record a piece, and
+    /// returns how the run ended as the Mac's helper's run would
+    /// (`WatchedProcess.runStreaming`), with what `read` returned or threw:
     /// - **The stream.** The first piece opens the session, and each piece
     ///   after it is the session's next record, so `FFmpegHelperStream`
     ///   checks every record as it checks the helper's.
@@ -162,13 +162,13 @@ extension FFmpegAudioConverter {
     static func runInProcess<Value: Sendable>(
         _ mode: SessionMode,
         of file: URL,
-        as container: FFmpegContainer,
+        demuxer: String,
         limits: WatchedProcess.Limits,
         using tool: Tool,
         reading read: (_ nextPiece: @escaping () async throws -> [UInt8]) async throws -> Value
     ) async throws -> (ending: WatchedProcess.Ending, read: Result<Value, any Error>) {
         try Task.checkCancellation()
-        let run = InProcessFFmpegRun(file: file, demuxer: container.demuxer, mode: mode, limits: limits, tool: tool)
+        let run = InProcessFFmpegRun(file: file, demuxer: demuxer, mode: mode, limits: limits, tool: tool)
         let result: Result<Value, any Error>
         do {
             result = .success(try await read { try await run.nextPiece() })

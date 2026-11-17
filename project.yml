@@ -928,7 +928,15 @@ targets:
       - TextMouthProductionTests/EndOfBookRuleTests.swift
       - TextMouthProductionTests/ExportContentsListTests.swift
       - TextMouthProductionTests/ExtractionReportTests.swift
+      - TextMouthProductionTests/FFmpegHelperHostileFileTests.swift
+      - TextMouthProductionTests/FFmpegHelperProtocolTests.swift
+      - TextMouthProductionTests/FFmpegHelperStreamTests.swift
+      - TextMouthProductionTests/FFmpegImportConversionTests.swift
+      - TextMouthProductionTests/FFmpegImportPlanTests.swift
+      - TextMouthProductionTests/FFmpegImportRealTests.swift
+      - TextMouthProductionTests/FFmpegImportSnifferTests.swift
       - TextMouthProductionTests/FFmpegMetadataTests.swift
+      - TextMouthProductionTests/FFmpegTestSupport.swift
       - TextMouthProductionTests/FinishedBookModelTests.swift
       - TextMouthProductionTests/FolderDuplicateRepairTests.swift
       - TextMouthProductionTests/FolderPathEquivalenceTests.swift

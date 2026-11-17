@@ -1,28 +1,22 @@
 import XCTest
 @testable import TextMouth
 
-/// The FFmpeg helper the app carries, TextMouthFFmpeg (FMT50), read as the
-/// app reads it: the stream it writes (TextMouthFFmpegProtocol.h), the exit
-/// status of each refusal, the 4 KB cut of a tag, and the import's Stop,
-/// which kills it. Every file here is a real sample or no file at all:
-/// damaged media, which could crash the helper, are read only on GitHub
-/// (`FFmpegHelperHostileFileTests`).
+/// The FFmpeg session the app carries (FMT50), read as the app reads it: the
+/// stream it writes (TextMouthFFmpegProtocol.h), the exit status of each
+/// refusal, the 4 KB cut of a tag, and the import's Stop, which ends it. On
+/// the Mac the session runs in the helper, TextMouthFFmpeg; on the iPhone in
+/// the app itself (FMT54), where each test reads the same stream and the same
+/// statuses. Every file here is a real sample or no file at all: damaged
+/// media, which could crash the session, are read only on GitHub
+/// (`FFmpegHelperHostileFileTests`). Shared with the iPhone's unit bundle.
 final class FFmpegHelperProtocolTests: XCTestCase {
-    /// Runs the app's helper with `arguments`, under limits of a few seconds,
-    /// and returns how it ended and everything it wrote.
+    /// Runs the app's session as the helper's command line `arguments` asks,
+    /// under limits of a few seconds, and returns how it ended and everything
+    /// it wrote (`runFFmpegHelper`).
     private func runHelper(_ arguments: [String]) async throws -> (ending: WatchedProcess.Ending, bytes: [UInt8]) {
-        let helper = try bundledFFmpegHelper()
         let seconds = TestMachine.allowed(20)
         let limits = WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
-        let (ending, read) = try await WatchedProcess.runStreaming(helper, arguments: arguments, watching: nil, limits: limits) { pipe in
-            var bytes: [UInt8] = []
-            while true {
-                let piece = try await pipe.read(upTo: 1 << 16)
-                if piece.isEmpty { return bytes }
-                bytes += piece
-            }
-        }
-        return (ending, try read.get())
+        return try await runFFmpegHelper(try bundledFFmpegHelper(), arguments, limits: limits)
     }
 
     /// Once its file is open the helper confines itself (the pure-computation
@@ -33,6 +27,11 @@ final class FFmpegHelperProtocolTests: XCTestCase {
     /// Release helper does not have) says so, and exits 0 only when all
     /// four are as they must be; the decode tests that follow it in this
     /// class and `FFmpegImportRealTests` show FFmpeg works confined.
+    ///
+    /// Fenced to the Mac: the confinement is the helper program's own
+    /// (`sandbox_init`), and the iPhone runs the session inside the app,
+    /// whose own sandbox iOS gives it (FMT54).
+    #if os(macOS)
     func testTheHelperConfinesItselfOnceItsFileIsOpen() async throws {
         let wma = try formatSampleURL("wma/tones-wma1.wma")
         let run = try await runHelper(["confinement", "asf", wma.path])
@@ -44,6 +43,7 @@ final class FFmpegHelperProtocolTests: XCTestCase {
         XCTAssertEqual(refused.ending, WatchedProcess.Ending(outcome: .exited(status: 2)))
         XCTAssertEqual(refused.bytes, [])
     }
+    #endif
 
     /// The decoder is opened with one thread, set before `avcodec_open2`: FFmpeg's
     /// default is one too, but only a line of the session's own keeps it so, and
@@ -222,6 +222,10 @@ final class FFmpegHelperProtocolTests: XCTestCase {
     ///   (a resampler is opened), and one in 5.1 again is not.
     /// - **The changes:** 1,000 changes away from the first form and back are converted; the
     ///   1,001st ends with 7.
+    ///
+    /// Fenced to the Mac: `formcheck` is the Debug helper program's mode, and the iPhone
+    /// compiles the same session.c, whose conversion it checks, with no program to ask.
+    #if os(macOS)
     func testTheBoundsOfTheConversionOnMadeUpFrames() async throws {
         let run = try await runHelper(["formcheck", "all", "-"])
         XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
@@ -260,6 +264,7 @@ final class FFmpegHelperProtocolTests: XCTestCase {
         XCTAssertEqual(changes.changes, 1_000)
         XCTAssertEqual(checks["changes-1001"]?.status, 7)
     }
+    #endif
 
     /// One decoded frame past a PCM record's 1 MB is split across records and
     /// read back whole (FU-FFMPEG2): `ffmpeg-edge/flac-7.1-24bit-65535.mka` is
@@ -301,22 +306,24 @@ final class FFmpegHelperProtocolTests: XCTestCase {
     /// missing file, a folder, and a FIFO (never waited on) are unreadable
     /// (2); a demuxer this build has not is 10; a file of another container
     /// is not recognized (3); a wrong mode or count of arguments is a usage
-    /// error (1).
+    /// error (1). The iPhone's session in the app ends each of the first five
+    /// as the helper does; the usage errors are of the helper's command line,
+    /// which the iPhone has not, so they are the Mac's alone.
     func testEachRefusalHasItsExitStatus() async throws {
         let folder = try makeSandboxDirectory("FFmpegRefusals")
         let fifo = folder.appendingPathComponent("pipe.wma")
         XCTAssertEqual(mkfifo(fifo.path, 0o600), 0)
         let wma = try formatSampleURL("wma/tones-wma1.wma").path
-        let cases: [([String], Int32)] = [
+        var cases: [([String], Int32)] = [
             (["probe", "asf", folder.appendingPathComponent("missing.wma").path], 2),
             (["probe", "asf", folder.path], 2),
             (["decode", "asf", fifo.path], 2),
             (["probe", "nosuchdemuxer", wma], 10),
             (["probe", "asf", try formatSampleURL("mp3-chapters/three-tones.mp3").path], 3),
-            (["play", "asf", wma], 1),
-            (["probe", "asf"], 1),
-            ([], 1),
         ]
+        #if os(macOS)
+        cases += [(["play", "asf", wma], 1), (["probe", "asf"], 1), ([], 1)]
+        #endif
         let started = Date()
         for (arguments, status) in cases {
             let run = try await runHelper(arguments)

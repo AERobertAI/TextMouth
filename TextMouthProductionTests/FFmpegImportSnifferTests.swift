@@ -22,6 +22,7 @@ final class FFmpegImportSnifferTests: XCTestCase {
             ("webm/tones-vorbis.weba", .matroska),
             ("mka/tones-2tracks.mka", .matroska),
             ("mka/tones-5.1-ac3.mka", .matroska),
+            ("mka/tones-aac.mka", .matroska),
             ("mkv/three-tones-flac.mkv", .matroska),
             ("avi/tones-mp3.avi", .avi),
             ("flv/tones-aac.flv", .flv),
@@ -220,6 +221,25 @@ final class FFmpegImportSnifferTests: XCTestCase {
             "com.real.realmedia-vbr",
         ])
         XCTAssertFalse((type["LSItemContentTypes"] as? [String] ?? []).contains("com.apple.systemprofiler.document"))
+    }
+
+    /// Each extension ffmpeg converts but .spx (the System Profiler's on the
+    /// Mac) has, in this process, a type its document type names, so the
+    /// system offers TextMouth for such a file: on the Mac in Finder, and on
+    /// the iPhone in "Open in TextMouth" (FMT54), where only the types a
+    /// document type names count, never its extensions. A type of the
+    /// system's that this system did not declare would be made up for the
+    /// extension, and named by none.
+    func testEachFFmpegExtensionHasATypeItsDocumentTypeNames() throws {
+        let named = Set(try XCTUnwrap(documentType(listing: "wma"))["LSItemContentTypes"] as? [String] ?? [])
+        var unnamed: [String] = []
+        for ext in FFmpegAudioConverter.extensions.subtracting(["spx"]).sorted() {
+            let type = UTType(filenameExtension: ext)
+            if !named.contains(type?.identifier ?? "") {
+                unnamed.append("\(ext): \(type?.identifier ?? "none") (declared: \(type?.isDeclared ?? false))")
+            }
+        }
+        XCTAssertEqual(unnamed, [])
     }
 
     /// The Open panel offers every extension ffmpeg converts, by the type

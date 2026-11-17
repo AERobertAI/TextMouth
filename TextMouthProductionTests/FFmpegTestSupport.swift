@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -104,47 +105,85 @@ enum FFmpegTestStream {
 
 // MARK: - The Helper, Real and Stood In
 
+#if os(macOS)
+/// What runs TextMouth's FFmpeg session in a test, on the Mac: the helper
+/// program at this path, the app's own (`bundledFFmpegHelper()`) or a
+/// stand-in script (`ffmpegHelperStandIn`).
+typealias FFmpegTestHelper = URL
+#else
+/// What runs TextMouth's FFmpeg session in a test, on the iPhone, which runs
+/// the session in the app itself (FMT54): what an in-process run opens, the
+/// session linked into the app (`bundledFFmpegHelper()`) or a stand-in
+/// (`ffmpegHelperStandIn`).
+struct FFmpegTestHelper: Sendable {
+    /// What the run opens on the engine.
+    let open: InProcessSessionOpener
+}
+#endif
+
 /// Why a test of the FFmpeg helper could not start.
 enum FFmpegTestError: Error {
     /// The app holds no FFmpeg helper, which every build of it does.
     case noHelper
+    /// The iPhone was asked for one of the helper's command lines that only
+    /// its program reads (a usage error, or a Debug mode).
+    case notASession([String])
 }
 
 extension XCTestCase {
-    /// The FFmpeg helper the app carries (Contents/MacOS/TextMouthFFmpeg of
-    /// the test host, which is the app). Every build of the app has it, on
-    /// GitHub's runners too, so a test that finds none fails.
-    /// - Throws: `FFmpegTestError.noHelper` when there is none.
-    func bundledFFmpegHelper() throws -> URL {
+    /// TextMouth's own FFmpeg session, as the app runs it: on the Mac the
+    /// helper the app carries (Contents/MacOS/TextMouthFFmpeg of the test
+    /// host, which is the app), which every build has, on GitHub's runners
+    /// too, so a test that finds none fails; on the iPhone the session
+    /// linked into the app (FMT54).
+    /// - Throws: `FFmpegTestError.noHelper` when the Mac's app has none.
+    func bundledFFmpegHelper() throws -> FFmpegTestHelper {
+        #if os(macOS)
         guard case let .found(helper) = FFmpegAudioConverter.locateBundled() else { throw FFmpegTestError.noHelper }
         return helper
+        #else
+        return FFmpegTestHelper(open: LinkedFFmpegSession.open)
+        #endif
     }
 
     /// What a stand-in helper does when it is asked to probe or to decode.
-    enum StandInAction {
-        /// Runs the app's own helper, as the import would.
+    enum StandInAction: Sendable {
+        /// Runs the app's own session, as the import would.
         case realHelper
-        /// Writes these bytes and exits with this status.
+        /// Writes these bytes and ends with this status: the helper's exit
+        /// status, or on the iPhone the session's.
         case write([UInt8], status: Int32)
+        /// Hangs, writing nothing, for this many seconds: the Mac's helper
+        /// sleeps, which the watchdog's kill ends; the iPhone's session waits,
+        /// asking the call's stop check as FFmpeg's reading asks the
+        /// interrupt callback, and stops once told to.
+        case hang(seconds: Int)
+        #if os(macOS)
         /// Runs the app's own helper to its end, then hangs for this many
         /// seconds, as a helper that does not exit after writing its whole
-        /// stream.
+        /// stream. The Mac's alone: in the iPhone app the session simply
+        /// ends at END, with no program to outlive it.
         case realHelperThenHang(seconds: Int)
-        /// Hangs, writing nothing, for this many seconds.
-        case hang(seconds: Int)
         /// Kills itself with SIGKILL, as a crash kills (SIGKILL makes no
-        /// crash report, so it is safe on this Mac).
+        /// crash report, so it is safe on this Mac). The Mac's alone: a crash
+        /// in the iPhone app ends the app.
         case killItself
+        #endif
     }
 
-    /// A stand-in for the FFmpeg helper: a shell script in this test's
-    /// sandbox that does `probe` for the helper's probe and `decode` for its
-    /// decode, and appends its first two arguments (the mode and the
-    /// demuxer) to the log file it returns, so a test can see what was asked.
-    func ffmpegHelperStandIn(probe: StandInAction = .realHelper, decode: StandInAction = .realHelper) throws -> (helper: URL, log: URL) {
+    /// A stand-in for the FFmpeg session that does `probe` for the probe and
+    /// `decode` for the decode, and appends "mode demuxer" (its first two
+    /// arguments, as the helper's command line has them) to the log file it
+    /// returns, so a test can see what was asked. On the Mac it is a shell
+    /// script in this test's sandbox; on the iPhone, a session that an
+    /// in-process run opens (FMT54).
+    func ffmpegHelperStandIn(probe: StandInAction = .realHelper, decode: StandInAction = .realHelper)
+        throws -> (helper: FFmpegTestHelper, log: URL)
+    {
         let folder = try makeSandboxDirectory("FFmpegStandIn")
         let log = folder.appendingPathComponent("calls.log")
         try Data().write(to: log)
+        #if os(macOS)
         /// The shell lines that do `action`, writing its bytes to a file of
         /// their own named for `mode`.
         func lines(_ action: StandInAction, mode: String) throws -> String {
@@ -178,6 +217,20 @@ extension XCTestCase {
         try Data(script.utf8).write(to: helper)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: helper.path)
         return (helper, log)
+        #else
+        let open: InProcessSessionOpener = { file, demuxer, mode, call in
+            FFmpegStandInLog.append("\(mode.argument) \(demuxer)", to: log)
+            switch mode == .probe ? probe : decode {
+            case .realHelper:
+                return LinkedFFmpegSession.open(file, demuxer: demuxer, mode: mode, call: call)
+            case let .write(bytes, status):
+                return (session: WrittenStandInSession(bytes: bytes, status: status), status: 0)
+            case let .hang(seconds):
+                return (session: HangingStandInSession(seconds: seconds), status: 0)
+            }
+        }
+        return (FFmpegTestHelper(open: open), log)
+        #endif
     }
 
     /// The calls a stand-in made, one "mode demuxer" line each.
@@ -185,13 +238,23 @@ extension XCTestCase {
         try String(contentsOf: log, encoding: .utf8).split(separator: "\n").map(String.init)
     }
 
-    /// The FFmpeg tool with `helper` (none: a missing helper), the
-    /// watchdog's limits at `seconds` for everything when given, and a volume
-    /// of `available` free bytes, or one that says nothing of its space
-    /// (nil), so no test depends on the disk it runs on.
-    func ffmpegTool(helper: URL?, seconds: TimeInterval? = nil, available: Int64? = nil) -> FFmpegAudioConverter.Tool {
+    /// The FFmpeg tool with `helper` (none: a missing helper, which only a
+    /// damaged Mac app has, but whose refusal both platforms share), the
+    /// limits at `seconds` for everything when given, and a volume of
+    /// `available` free bytes, or one that says nothing of its space (nil),
+    /// so no test depends on the disk it runs on. On the iPhone each tool
+    /// has an engine of its own, so a test that abandons a call refuses no
+    /// other test's conversions.
+    func ffmpegTool(helper: FFmpegTestHelper?, seconds: TimeInterval? = nil, available: Int64? = nil) -> FFmpegAudioConverter.Tool {
         var tool = FFmpegAudioConverter.Tool.bundled
+        #if os(macOS)
         tool.locate = { helper.map { .found($0) } ?? .missing }
+        #else
+        let converts = helper != nil
+        tool.locate = { converts ? .inProcess : .missing }
+        if let helper { tool.openSession = helper.open }
+        tool.engine = InProcessEngine(name: "FFmpeg test", work: FFmpegAudioConverter.sessionEngine.work)
+        #endif
         if let seconds {
             let limits = WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
             tool.limits = { _ in limits }
@@ -201,9 +264,172 @@ extension XCTestCase {
         return tool
     }
 
-    /// The tool with the app's own helper, and a volume that says nothing of
-    /// its space.
+    /// The tool with the app's own session, and a volume that says nothing
+    /// of its space.
     func bundledFFmpegTool() throws -> FFmpegAudioConverter.Tool {
         ffmpegTool(helper: try bundledFFmpegHelper())
+    }
+
+    /// Runs the session as the helper's command line asks, `[mode, demuxer,
+    /// path]`, on `helper` under `limits`, and returns how it ended and every
+    /// byte of its stream: on the Mac the helper program under the watchdog;
+    /// on the iPhone the session in the app, on an engine of its own (FMT54),
+    /// which ends as the helper would. The helper's other command lines (a
+    /// usage error, a Debug mode) are its program's alone.
+    /// - Throws: `FFmpegTestError.notASession` on the iPhone for those.
+    func runFFmpegHelper(_ helper: FFmpegTestHelper, _ arguments: [String], limits: WatchedProcess.Limits) async throws
+        -> (ending: WatchedProcess.Ending, bytes: [UInt8])
+    {
+        /// Reads every piece of the stream into one array.
+        func everything(_ nextPiece: () async throws -> [UInt8]) async throws -> [UInt8] {
+            var bytes: [UInt8] = []
+            while true {
+                let piece = try await nextPiece()
+                if piece.isEmpty { return bytes }
+                bytes += piece
+            }
+        }
+        #if os(macOS)
+        let (ending, read) = try await WatchedProcess.runStreaming(helper, arguments: arguments, watching: nil, limits: limits) { pipe in
+            try await everything { try await pipe.read(upTo: 1 << 16) }
+        }
+        return (ending, try read.get())
+        #else
+        let modes: [String: FFmpegAudioConverter.SessionMode] = ["probe": .probe, "decode": .decode]
+        guard arguments.count == 3, let mode = modes[arguments[0]] else { throw FFmpegTestError.notASession(arguments) }
+        let (ending, read) = try await FFmpegAudioConverter.runInProcess(
+            mode, of: URL(fileURLWithPath: arguments[2]), demuxer: arguments[1], limits: limits, using: ffmpegTool(helper: helper)
+        ) { nextPiece in
+            try await everything(nextPiece)
+        }
+        return (ending, try read.get())
+        #endif
+    }
+}
+
+#if os(iOS)
+// MARK: - The iPhone's Stand-In Sessions (FMT54)
+
+/// The log of a stand-in session's calls, written as the Mac's stand-in
+/// script appends to its own.
+enum FFmpegStandInLog {
+    /// Appends `line` and a line feed to the file at `log`.
+    static func append(_ line: String, to log: URL) {
+        guard let handle = try? FileHandle(forWritingTo: log) else { return }
+        defer { try? handle.close() }
+        _ = try? handle.seekToEnd()
+        try? handle.write(contentsOf: Data((line + "\n").utf8))
+    }
+}
+
+/// A stand-in session that gives `bytes`, all of it as one record, then ends
+/// with `status`, as the Mac's stand-in script `cat`s its stream and exits
+/// with it: 0 ends the stream cleanly, whatever it held.
+final class WrittenStandInSession: InProcessFFmpegSession {
+    private let bytes: [UInt8]
+    private let status: Int32
+    /// Whether the bytes have been given.
+    private let given = OSAllocatedUnfairLock(initialState: false)
+
+    init(bytes: [UInt8], status: Int32) {
+        self.bytes = bytes
+        self.status = status
+    }
+
+    /// The bytes first, when there are any, then the end with `status`.
+    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+        let first = given.withLock { given in
+            defer { given = true }
+            return !given
+        }
+        if first, !bytes.isEmpty { return (0, bytes) }
+        return (status, [])
+    }
+
+    func close() {}
+}
+
+/// A stand-in session that hangs for `seconds`, writing nothing, but asks the
+/// call's stop check every 10 milliseconds, as FFmpeg's reading asks the
+/// session's interrupt callback, and ends with the session's stop (status 11)
+/// once told to; one never told ends cleanly with nothing, as a helper's
+/// `sleep` exits 0.
+final class HangingStandInSession: InProcessFFmpegSession {
+    private let seconds: Int
+
+    init(seconds: Int) {
+        self.seconds = seconds
+    }
+
+    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+        let end = DispatchTime.now() + .seconds(seconds)
+        while !call.shouldStop, DispatchTime.now() < end { usleep(10_000) }
+        return (call.shouldStop ? 11 : 0, [])
+    }
+
+    func close() {}
+}
+#endif
+
+// MARK: - The Converted File
+
+/// What an .m4a's first sound track holds, read from its bytes: the codec of
+/// its sample entry ("aac" for 'mp4a', "alac" for 'alac', as afinfo names
+/// them, or the entry's four letters), its channels, and its sample rate.
+/// The tests the iPhone shares may name no Apple audio framework
+/// (Scripts/agents/ios_ui_tests.py), and the Mac's afinfo is a program the
+/// iPhone has not, so the file's boxes are read: moov, trak, mdia, minf,
+/// stbl, stsd, and its first entry, an AudioSampleEntry of ISO 14496-12.
+struct M4ASampleEntry: Equatable {
+    let codec: String
+    let channels: Int
+    let sampleRate: Double
+
+    /// The entry of the first sound track ('soun') of the .m4a at `url`;
+    /// nil when it has none, or its boxes are not what an .m4a holds.
+    static func read(_ url: URL) throws -> M4ASampleEntry? {
+        let bytes = [UInt8](try Data(contentsOf: url))
+        guard let movie = child("moov", of: bytes[...]) else { return nil }
+        for track in children("trak", of: movie) {
+            guard let media = child("mdia", of: track), let handler = child("hdlr", of: media),
+                  handler.count >= 12, String(decoding: handler.dropFirst(8).prefix(4), as: UTF8.self) == "soun",
+                  let table = child("minf", of: media).flatMap({ child("stbl", of: $0) }),
+                  let descriptions = child("stsd", of: table), descriptions.count >= 8 + 36 else { continue }
+            // stsd: a version and flags (4 bytes), the entry count (4), then the first entry: its size (4) and
+            // type (4), 6 reserved bytes, a data reference index (2), 8 reserved, then its channels (2), sample
+            // size (2), 4 more, and its sample rate in 16.16 fixed point (4).
+            let entry = descriptions.dropFirst(8)
+            let type = String(decoding: entry.dropFirst(4).prefix(4), as: UTF8.self)
+            let channels = Int(number(entry, at: 24, bytes: 2))
+            let rate = Double(number(entry, at: 32, bytes: 4) >> 16)
+            let codec = ["mp4a": "aac", "alac": "alac"][type] ?? type
+            return M4ASampleEntry(codec: codec, channels: channels, sampleRate: rate)
+        }
+        return nil
+    }
+
+    /// The big-endian number of `count` bytes at `offset` of `bytes` (counted from its start).
+    private static func number(_ bytes: ArraySlice<UInt8>, at offset: Int, bytes count: Int) -> UInt64 {
+        bytes.dropFirst(offset).prefix(count).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
+    }
+
+    /// The payloads of the boxes of type `type` among the boxes `bytes` holds, in order.
+    private static func children(_ type: String, of bytes: ArraySlice<UInt8>) -> [ArraySlice<UInt8>] {
+        var found: [ArraySlice<UInt8>] = []
+        var offset = bytes.startIndex
+        while offset + 8 <= bytes.endIndex {
+            let size = Int(number(bytes[offset...], at: 0, bytes: 4))
+            guard size >= 8, offset + size <= bytes.endIndex else { break }
+            if String(decoding: bytes[(offset + 4)..<(offset + 8)], as: UTF8.self) == type {
+                found.append(bytes[(offset + 8)..<(offset + size)])
+            }
+            offset += size
+        }
+        return found
+    }
+
+    /// The payload of the first box of type `type` among those `bytes` holds.
+    private static func child(_ type: String, of bytes: ArraySlice<UInt8>) -> ArraySlice<UInt8>? {
+        children(type, of: bytes).first
     }
 }

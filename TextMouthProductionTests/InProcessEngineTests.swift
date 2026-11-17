@@ -408,14 +408,14 @@ final class InProcessEngineTests: XCTestCase {
     func testCancellingTheTaskTellsTheWorkToStop() throws {
         let engine = makeEngine()
         let started = DispatchSemaphore(value: 0)
-        let task = Task {
-            try await engine.runForTask(limit: 60) { call in
-                started.signal()
-                let start = DispatchTime.now()
-                while !call.shouldStop, Self.seconds(since: start) < 20 { usleep(1_000) }
-                return Self.seconds(since: start)
-            }
+        // The work, made outside the task: the seconds it ran before it was told to stop.
+        let work: @Sendable (InProcessEngine.Call) -> TimeInterval = { call in
+            started.signal()
+            let start = DispatchTime.now()
+            while !call.shouldStop, Self.seconds(since: start) < 20 { usleep(1_000) }
+            return Self.seconds(since: start)
         }
+        let task = Task { try await engine.runForTask(limit: 60, work) }
         XCTAssertEqual(started.wait(timeout: .now() + 30), .success, "the work never started")
         task.cancel()
         let elapsed = try XCTUnwrap(try value(of: task)?.get())

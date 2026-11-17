@@ -15,6 +15,13 @@ import XCTest
 /// tried there). So these tests never run on the development Mac:
 /// `TestMachine.skipUnlessGitHubRunner` skips them there, and every GitHub
 /// train runs them (docs/developer/testing.md).
+///
+/// The iPhone runs the same session in the app itself (FMT54), where a crash
+/// ends the app, its test host here, and a hang is abandoned by the engine:
+/// so on the iPhone these tests show, on GitHub alone (where the iPhone's
+/// tests always run), that no damaged copy crashes or hangs the session in
+/// the app, and that each ends by the protocol's statuses or its limits.
+/// Shared with the iPhone's unit bundle.
 final class FFmpegHelperHostileFileTests: XCTestCase {
     /// Skips every test off GitHub's runners: damaged media may crash the
     /// FFmpeg helper, and a crash on the development Mac puts a crash report
@@ -27,7 +34,7 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
     /// The samples damaged here.
     private let samples = [
         "wma/tones.wma", "wma/tones-wma1.wma", "wma/three-tones-chapters.wma", "wmv/tones.wmv", "avi/tones-mp3.avi",
-        "flv/tones-aac.flv", "mkv/three-tones-flac.mkv", "mka/tones-5.1-ac3.mka", "mka/tones-2tracks.mka",
+        "flv/tones-aac.flv", "mkv/three-tones-flac.mkv", "mka/tones-5.1-ac3.mka", "mka/tones-aac.mka", "mka/tones-2tracks.mka",
         "webm/tones-opus.webm", "webm/tones-vorbis.weba", "spx/tones.spx", "rm/tones.ra",
     ]
 
@@ -94,17 +101,15 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
                 let copy = folder.appendingPathComponent("copy." + original.pathExtension)
                 try Data(bytes).write(to: copy)
                 for mode in ["probe", "decode"] {
-                    let (ending, _) = try await WatchedProcess.runStreaming(
-                        helper, arguments: [mode, container.demuxer, copy.path], watching: nil, limits: limits
-                    ) { pipe -> Int in
-                        var total = 0
-                        while true {
-                            let piece = try await pipe.read(upTo: 1 << 20)
-                            if piece.isEmpty { return total }
-                            total += piece.count
-                        }
-                    }
                     let name = "\(sample), \(damage), \(mode)"
+                    let ending: WatchedProcess.Ending
+                    do {
+                        ending = try await runFFmpegHelper(helper, [mode, container.demuxer, copy.path], limits: limits).ending
+                    } catch {
+                        // The iPhone's engine abandoned a call that hung past its limit: not an ending by the protocol.
+                        unexpected.append("\(name): \(error)")
+                        continue
+                    }
                     switch ending.outcome {
                     case .killed:
                         break
@@ -128,17 +133,8 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
         let seconds = TestMachine.allowed(20)
         let limits = WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
         let sample = try formatSampleURL("ffmpeg-edge/\(name)")
-        let (ending, bytes) = try await WatchedProcess.runStreaming(
-            helper, arguments: ["decode", "matroska", sample.path], watching: nil, limits: limits
-        ) { pipe -> [UInt8] in
-            var bytes: [UInt8] = []
-            while true {
-                let piece = try await pipe.read(upTo: 1 << 20)
-                if piece.isEmpty { return bytes }
-                bytes += piece
-            }
-        }
-        var stream = FFmpegHelperStream(data: Data(try bytes.get()))
+        let (ending, bytes) = try await runFFmpegHelper(helper, ["decode", "matroska", sample.path], limits: limits)
+        var stream = FFmpegHelperStream(data: Data(bytes))
         do {
             _ = try await stream.readReport()
             while try await stream.nextBlock() != nil {}
