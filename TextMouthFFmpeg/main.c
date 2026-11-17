@@ -29,9 +29,11 @@
  * helper that cannot confine itself reads nothing and ends with TMFF_EXIT_NOT_CONFINED. What
  * FFmpeg needs after it is checked, not assumed: allocation, threads, and the clock are
  * allowed; it opens no file once running (the session reads the held descriptor through its
- * own callbacks); and a random seed comes from getentropy, which the profile allows, with no
- * need of /dev/urandom. A Debug build also has a third mode, TMFF_MODE_CONFINEMENT, that
- * proves what is refused (confinement_report below).
+ * own callbacks); a random seed (av_get_random_seed) is still given, measured; and the
+ * processor's features, which FFmpeg reads from sysctl, the sandbox refuses, so they are
+ * asked first (tmff_session_prepare), as measured: asked after, FFmpeg found fewer. A Debug
+ * build also has a third mode, TMFF_MODE_CONFINEMENT, that proves what is refused and what is
+ * kept (confinement_report below).
  *
  * It must never end in a crash report, which on the Mac puts a dialog on the user's screen: every
  * signal that would end it with one ends it with _exit instead, on a stack of its own so that a
@@ -158,7 +160,7 @@ static int write_answer(const char *name, const char *answer) {
    address is EPERM). Returns TMFF_EXIT_DONE when all three are as a confined helper has them,
    TMFF_EXIT_NOT_CONFINED when any is not, and TMFF_EXIT_OUTPUT when the answers cannot be
    written. */
-static int confinement_report(int descriptor) {
+static int confinement_report(int descriptor, int prepared_features) {
     unsigned char byte;
     const int readable = pread(descriptor, &byte, 1, 0) == 1;
     errno = 0;
@@ -181,12 +183,15 @@ static int confinement_report(int descriptor) {
         socket_refused = connect(network, (const struct sockaddr *)&loopback, sizeof loopback) < 0 && errno == EPERM;
         close(network);
     }
+    /* The processor's features, found before the confinement, are still what FFmpeg believes. */
+    const int features_kept = prepared_features != 0 && tmff_session_cpu_features() == prepared_features;
     if (write_answer("input", readable ? "readable" : "unreadable") != 0
         || write_answer("hosts", hosts_refused ? "refused" : "opened") != 0
-        || write_answer("socket", socket_refused ? "refused" : "connected") != 0) {
+        || write_answer("socket", socket_refused ? "refused" : "connected") != 0
+        || write_answer("cpu", features_kept ? "kept" : "lost") != 0) {
         return TMFF_EXIT_OUTPUT;
     }
-    return readable && hosts_refused && socket_refused ? TMFF_EXIT_DONE : TMFF_EXIT_NOT_CONFINED;
+    return readable && hosts_refused && socket_refused && features_kept ? TMFF_EXIT_DONE : TMFF_EXIT_NOT_CONFINED;
 }
 #endif
 
@@ -197,6 +202,7 @@ int main(int argc, char **argv) {
         return TMFF_EXIT_USAGE;
     }
     tmff_session_mode mode;
+    int prepared_features;
 #ifdef DEBUG
     int only_confinement = 0;
 #endif
@@ -216,6 +222,9 @@ int main(int argc, char **argv) {
     if (descriptor < 0) {
         return TMFF_EXIT_UNREADABLE;
     }
+    /* What FFmpeg asks the system for once (the processor's features) is asked before the
+       confinement, which would refuse it. */
+    prepared_features = tmff_session_prepare();
     /* The one file is open: from here the helper can do nothing but compute and write. */
     if (confine_process() != 0) {
         close(descriptor);
@@ -223,7 +232,7 @@ int main(int argc, char **argv) {
     }
 #ifdef DEBUG
     if (only_confinement) {
-        const int answer = confinement_report(descriptor);
+        const int answer = confinement_report(descriptor, prepared_features);
         close(descriptor);
         return answer;
     }

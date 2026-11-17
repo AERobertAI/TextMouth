@@ -119,8 +119,9 @@
 /* A third mode, which only a Debug build of the helper has (a Release build answers it with
    TMFF_EXIT_USAGE): it confines itself as a run does, then tries what the confinement must
    refuse, and writes one line for each, "input=readable" (the file it opened is still read),
-   "hosts=refused" (the system's hosts file is not opened), and "socket=refused" (a network
-   connection is not made), exiting TMFF_EXIT_DONE only when all three are so. */
+   "hosts=refused" (the system's hosts file is not opened), "socket=refused" (a network
+   connection is not made), and "cpu=kept" (the processor features FFmpeg found before the
+   confinement are still its belief), exiting TMFF_EXIT_DONE only when all four are so. */
 #define TMFF_MODE_CONFINEMENT "confinement"
 
 #endif /* TEXTMOUTH_FFMPEG_PROTOCOL_H */

@@ -34,6 +34,7 @@
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <libavutil/channel_layout.h>
+#include <libavutil/cpu.h>
 #include <libavutil/dict.h>
 #include <libavutil/mem.h>
 #include <libavutil/samplefmt.h>
@@ -370,6 +371,14 @@ static int open_decoder(tmff_session *session) {
         return error == AVERROR(ENOMEM) ? TMFF_EXIT_MEMORY : TMFF_EXIT_DAMAGED;
     }
     return 0;
+}
+
+int tmff_session_prepare(void) {
+    return av_get_cpu_flags();
+}
+
+int tmff_session_cpu_features(void) {
+    return av_get_cpu_flags();
 }
 
 tmff_session *tmff_session_open(int descriptor, const char *demuxer_name, tmff_session_mode mode, int *status) {

@@ -28,14 +28,15 @@ final class FFmpegHelperProtocolTests: XCTestCase {
     /// Once its file is open the helper confines itself (the pure-computation
     /// sandbox): the file it holds still reads, and the hosts file is not
     /// opened and no network connection is made, both refused by the sandbox
-    /// (EPERM). The Debug helper's own proof of it (`confinement`, which a
+    /// (EPERM), and the processor features FFmpeg found before it (which its
+    /// sysctl calls could not find after) are kept. The Debug helper's own proof of it (`confinement`, which a
     /// Release helper does not have) says so, and exits 0 only when all
-    /// three are as they must be; the decode tests that follow it in this
+    /// four are as they must be; the decode tests that follow it in this
     /// class and `FFmpegImportRealTests` show FFmpeg works confined.
     func testTheHelperConfinesItselfOnceItsFileIsOpen() async throws {
         let wma = try formatSampleURL("wma/tones-wma1.wma")
         let run = try await runHelper(["confinement", "asf", wma.path])
-        XCTAssertEqual(String(decoding: run.bytes, as: UTF8.self), "input=readable\nhosts=refused\nsocket=refused\n")
+        XCTAssertEqual(String(decoding: run.bytes, as: UTF8.self), "input=readable\nhosts=refused\nsocket=refused\ncpu=kept\n")
         XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
         // It opens its file first: a file that cannot be opened is unreadable, not unconfined.
         let missing = try makeSandboxDirectory("FFmpegConfinement").appendingPathComponent("missing.wma")

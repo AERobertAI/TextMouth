@@ -32,6 +32,17 @@ typedef enum {
     TMFF_SESSION_DECODE = 1,
 } tmff_session_mode;
 
+/* Does, once, what FFmpeg asks the system for and remembers, before the process confines itself
+   (main.c: the pure-computation sandbox refuses the system's sysctl, which FFmpeg's detection of
+   the processor's features reads: asked afterwards it finds fewer, and decodes with slower
+   code). Returns the features found, a nonzero number on this build's processors. Calling it
+   again is harmless. */
+int tmff_session_prepare(void);
+
+/* The processor features FFmpeg now believes in: what tmff_session_prepare found when it came
+   first, and what a confined process still reports (the Debug confinement check compares). */
+int tmff_session_cpu_features(void);
+
 /* Opens the file read from `descriptor` (open for reading, a regular file; it stays the
    caller's to close, after tmff_session_close) with the demuxer named `demuxer`, and chooses
    its sound stream. Returns the session, or NULL with *status set to a TMFF_EXIT_ number. */
