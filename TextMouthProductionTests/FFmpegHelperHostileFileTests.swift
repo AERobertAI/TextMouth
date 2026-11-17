@@ -169,6 +169,23 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
         }
     }
 
+    /// A file in which no packet decodes (`flac-all-bad-packets.mka`: every one of its 1,400
+    /// packets has its sync code zeroed) ends with the helper's status 6, damaged, and the import
+    /// says it is damaged, not that it holds no sound (FU-FFMPEG2): the listener hears that the
+    /// file is broken. Skipping the refused packets of a file that has others is the rule; a file
+    /// with none has nothing to keep.
+    func testAFileOfOnlyRefusedPacketsEndsAsDamaged() async throws {
+        let result = try await decodeEdgeSample("flac-all-bad-packets.mka")
+        XCTAssertEqual(result.ending, WatchedProcess.Ending(outcome: .exited(status: 6)))
+        let copy = try copyOfFormatSample("ffmpeg-edge/flac-all-bad-packets.mka")
+        do {
+            _ = try await FFmpegAudioConverter.convert(copy, using: try bundledFFmpegTool())
+            XCTFail("a file with no sound was imported")
+        } catch let failure as ImportAudioConverter.Failure {
+            XCTAssertEqual(failure, .notRead(fileName: "flac-all-bad-packets.mka", problem: .damaged))
+        }
+    }
+
     /// The import of every damaged copy ends in a conversion or a failure by
     /// name, and leaves nothing behind but the copy and, after a conversion,
     /// its .m4a.

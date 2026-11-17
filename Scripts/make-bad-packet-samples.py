@@ -9,6 +9,7 @@ constant level, which FLAC stores in 12 bytes a packet. In each, a run of packet
 decoder refuses each of them (an invalid sync code) and the container is unchanged:
   flac-900-bad-packets.mka    900 refused packets, fewer than the bound
   flac-1200-bad-packets.mka   1,200 refused packets, more than the bound
+  flac-all-bad-packets.mka    every one of the 1,400 refused (from the first packet): no sound at all
 
 Needs an ffmpeg and ffprobe (Homebrew's); they only make the samples. The damaged samples are
 read only by TextMouth's own bundled FFmpeg, and only on GitHub's runners (a damaged file could
@@ -20,9 +21,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-# The first bad packet's index, and how many each sample has.
-FIRST_BAD = 100
-SAMPLES = {"flac-900-bad-packets.mka": 900, "flac-1200-bad-packets.mka": 1200}
+# Each sample: the index of its first bad packet, and how many bad packets it has.
+SAMPLES = {
+    "flac-900-bad-packets.mka": (100, 900),
+    "flac-1200-bad-packets.mka": (100, 1200),
+    "flac-all-bad-packets.mka": (0, 1400),
+}
 # Bytes between a packet's position (ffprobe's pos: just past its block's id and size) and its
 # payload: the block's track number (1 byte), timecode (2), and flags (1).
 BLOCK_HEADER = 4
@@ -49,9 +53,9 @@ def main(folder):
     positions = [int(line.split("=")[1]) for line in listing.splitlines() if line.startswith("pos=")]
     assert len(positions) == 1400, len(positions)
     original = base.read_bytes()
-    for name, count in SAMPLES.items():
+    for name, (start, count) in SAMPLES.items():
         damaged = bytearray(original)
-        for position in positions[FIRST_BAD:FIRST_BAD + count]:
+        for position in positions[start:start + count]:
             assert damaged[position + BLOCK_HEADER] == 0xFF, "not a FLAC frame's sync code"
             damaged[position + BLOCK_HEADER] = 0x00
         (folder / name).write_bytes(bytes(damaged))
