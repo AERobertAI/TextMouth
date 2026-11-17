@@ -32,9 +32,6 @@ import issuefile
 import issuestore
 from issuestore import Refused, Store, UsageError
 
-# The start of an open item, and the pointer an imported one leaves.
-_OPEN_ITEM = re.compile(r"^- \[ \] ")
-_POINTER = re.compile(r"^- \[[ xX]\] \*\*[^*\s]+\*\* moved to Issues/")
 # A line at the left margin that starts a block of its own, so it does not continue an item.
 _BLOCK_START = re.compile(r"^(?:#|[-*+] |\d{1,9}[.)] |>|```|~~~|\||<!--)")
 # A date as the TODO writes one: "November 16, 2026", or "October 3" in the TODO's own year.
@@ -172,7 +169,7 @@ def find_entries(text: str) -> List[TodoEntry]:
             continue
         if line.startswith("## "):
             section, section_line = line[3:].strip(), index + 1
-        if _OPEN_ITEM.match(line) and not _POINTER.match(line):
+        if issueids.is_open_item(line):
             end = _item_end(lines, index)
             entry = TodoEntry(index + 1, end + 1, lines[index:end + 1], section, section_line)
             ids, _asides, _title = issueids.parse_opening(line[len("- [ ] **"):]) if line.startswith("- [ ] **") else ([], [], -1)
@@ -527,7 +524,7 @@ def _rewritten_todo(lines: List[str], entries: List[TodoEntry]) -> str:
             out.append(lines[index - 1])
             index += 1
             continue
-        out.append(f"- [ ] **{entry.owner}** moved to {issuestore.ISSUES_DIR}/{entry.owner}.md")
+        out.append(issueids.pointer_line(entry.owner))
         index = entry.end + 1
     return "\n".join(out)
 
@@ -541,8 +538,8 @@ def _prove(plan: Plan, store: Store) -> None:
             raise Refused(f"the words of the item on line {entry.start} would not all reach {entry.owner}'s file")
     original = store.todo_text().split("\n")
     moved = {number for entry in plan.entries for number in range(entry.start, entry.end + 1)}
-    kept = [line for line in plan.todo.split("\n") if not _POINTER.match(line)]
-    expected = [line for number, line in enumerate(original, 1) if number not in moved and not _POINTER.match(line)]
+    kept = [line for line in plan.todo.split("\n") if not issueids.POINTER.match(line)]
+    expected = [line for number, line in enumerate(original, 1) if number not in moved and not issueids.POINTER.match(line)]
     if kept != expected:
         raise Refused("the TODO would change beyond the moved items' lines")
 

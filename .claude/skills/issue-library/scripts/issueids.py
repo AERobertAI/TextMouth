@@ -147,8 +147,9 @@ MERGE_RECORD_SECTION = "Completed fixes"
 # A list item whose text starts in bold, as every TODO item does: its indent, its box, its text.
 _OPENING = re.compile(r"^( *)- (?:\[([ xX])\] )?\*\*(.*)$")
 
-# The line an imported item leaves in the TODO: "- [ ] **B14** moved to Issues/B14.md".
-_POINTER = re.compile(r"^- \[([ xX])\] \*\*([^*\s]+)\*\* moved to Issues/([^\s]+)\.md\b")
+# The line an imported item leaves in the TODO, "- [ ] **B14** moved to Issues/B14.md", ticked
+# once its issue is closed: its box, the ID it names, and the file it leads to.
+POINTER = re.compile(r"^- \[([ xX])\] \*\*([^*\s]+)\*\* moved to Issues/([^\s]+)\.md\b")
 
 # What may follow an opening's IDs and asides: a dash or colon before the title, a period,
 # a comma, or the end of the bold run. Anything else ("FR03 follow-ups") is no opening.
@@ -266,7 +267,7 @@ def scan_todo(text: str) -> List[TodoItem]:
         if heading:
             section = heading.group(1).strip()
             continue
-        pointer = _POINTER.match(line)
+        pointer = POINTER.match(line)
         if pointer:
             items.append(TodoItem(line=number, indent=0, checked=pointer.group(1) != " ",
                                   ids=[pointer.group(2)], section=section, pointer=True,
@@ -290,6 +291,44 @@ def scan_todo(text: str) -> List[TodoItem]:
                               ids=ids, section=section, aliases=aliases,
                               title_start=prefix + title_start))
     return items
+
+
+def pointer_line(issue_id: str, closed: bool = False) -> str:
+    """The TODO's line for an item moved to its issue file, its box ticked once the issue is closed."""
+    return f"- [{'x' if closed else ' '}] **{issue_id}** moved to Issues/{issue_id}.md"
+
+
+def set_pointers(text: str, issue_id: str, closed: bool) -> Tuple[str, int]:
+    """``text`` with each pointer line of ``issue_id`` ticked (or unticked), and how many it has."""
+    lines = text.split("\n")
+    count = 0
+    for index, line in enumerate(lines):
+        match = POINTER.match(line)
+        if match and match.group(2) == issue_id and match.group(3) == issue_id:
+            lines[index] = pointer_line(issue_id, closed) + line[match.end():]
+            count += 1
+    return "\n".join(lines), count
+
+
+def is_open_item(line: str) -> bool:
+    """Whether a TODO line opens an open item at the margin that is not a pointer to an issue file."""
+    return line.startswith("- [ ] ") and not POINTER.match(line)
+
+
+def open_item_lines(text: str) -> List[int]:
+    """The lines (1-based) of the TODO's open items that are not pointers, outside fenced code."""
+    found: List[int] = []
+    fence = ""
+    for number, line in enumerate(text.split("\n"), 1):
+        stripped = line.lstrip()
+        if fence:
+            if stripped.startswith(fence):
+                fence = ""
+        elif stripped.startswith("```") or stripped.startswith("~~~"):
+            fence = stripped[:3]
+        elif is_open_item(line):
+            found.append(number)
+    return found
 
 
 def todo_ids(items: Iterable[TodoItem]) -> Set[str]:

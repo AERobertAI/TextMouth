@@ -18,11 +18,11 @@ description: TextMouth's issue tracker, one Markdown file per issue in Issues/ (
 - `issuelib show ID`: the file as written, then the doc sections whose marker cites it; for an ID only the TODO has, or an alias, its TODO lines.
 - `issuelib search REGEX [--status ...]`: every matching line, `ID:LINE: text`, ignoring case.
 - `issuelib summary`: each status's count, split by priority.
-- `issuelib check [--new-since FILE]`: every file's header, values, comments, and status rules; that `related` and `docs` name something; that no ID is given twice, in `Issues/` or in the TODO, and the TODO's pointers lead to files. With `--new-since`, only problems not in FILE (an earlier `check --json`) and in files changed against HEAD, as `merge-chain.sh` runs it.
+- `issuelib check [--new-since FILE]`: every file's header, values, comments, and status rules; that `related` and `docs` name something; that no ID is given twice, in `Issues/` or in the TODO; that the TODO's pointers lead to files whose status their box agrees with; and that no open item is left in the TODO. With `--new-since`, only problems not in FILE (an earlier `check --json`) and in files changed against HEAD, as `merge-chain.sh` runs it.
 
 ## Writing
 
-Each command changes one file, prints one line saying what it did, and takes `--as NAME`, the name it acts and comments under.
+Each command changes one file, prints one line saying what it did, and takes `--as NAME`, the name it acts and comments under; `close` and `reopen` also tick and untick the issue's pointer line in the TODO.
 
 - `issuelib new --kind K --title T --platform X (--description TEXT | --file F) [--priority P] [--found-by WHO] [--related IDS] [--docs IDS] [--labels L] [--family F | --id ID]`: files the next free ID of the kind's family (bug B, feature FR, format FMT, follow-up FU, test Q, tooling TL, docs DOC, question QN).
 - `issuelib set ID FIELD VALUE...`: one field, and `updated`; status only to open, in-progress, or blocked.

@@ -377,6 +377,9 @@ def cmd_close(store: Store, args: Any) -> int:
     change = issuestore.close(store, args.id, args.as_name, merged=args.merged or "", reason=args.reason or "",
                               status=args.status, date=args.date or "")
     finish(change)
+    pointer = issuestore.pointer_change(store, args.id, closed=True)
+    if pointer is not None:
+        finish(pointer)
     for section in store.sections_citing(args.id):
         print(f"issuelib: {section.path}:{section.start} ({section.section_id}, status {section.status or 'none'}) "
               f"cites {args.id}: the next docs pass updates that section")
@@ -384,8 +387,10 @@ def cmd_close(store: Store, args: Any) -> int:
 
 
 def cmd_reopen(store: Store, args: Any) -> int:
-    """``reopen ID --reason TEXT``: open a closed issue again."""
-    return finish(issuestore.reopen(store, args.id, args.reason, args.as_name))
+    """``reopen ID --reason TEXT``: open a closed issue again, and untick its pointer line in the TODO."""
+    finish(issuestore.reopen(store, args.id, args.reason, args.as_name))
+    pointer = issuestore.pointer_change(store, args.id, closed=False)
+    return finish(pointer) if pointer is not None else EXIT_OK
 
 
 def cmd_merge_driver(args: Any) -> int:

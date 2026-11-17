@@ -187,6 +187,14 @@ class CloseTests(RecordMergeCase):
         self.assertEqual(self.todo.read_text(encoding="utf-8"), TODO)
         self.assertEqual(self.issue.read_text(encoding="utf-8"), done)
 
+    def test_an_issue_with_no_pointer_line_is_closed_and_said_so(self):
+        self.todo.write_text(TODO.replace("- [ ] **B16** moved to Issues/B16.md\n", ""), encoding="utf-8")
+        result = self.record("--close", "B16", "--hash", "6b09b2ee2")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines()[-1],
+                         "record-merge: B16 has no pointer line in TODO-2026-09-04.md, so only its issue file changed")
+        self.assertIn("status: done\n", self.issue.read_text(encoding="utf-8"))
+
     def test_two_issues_close_at_one_merge(self):
         (self.root / "Issues" / "B17.md").write_text(B16.replace("id: B16", "id: B17"), encoding="utf-8")
         result = self.record("--close", "B16", "--close", "B17", "--hash", "6b09b2ee2")

@@ -564,6 +564,16 @@ def reopen(store: Store, issue_id: str, reason: str, as_name: str) -> Change:
     return Change(store.path_of(issue_id), text, f"{issue.path}: reopened ({was[0].lower() + was[1:]})")
 
 
+def pointer_change(store: Store, issue_id: str, closed: bool) -> Optional[Change]:
+    """The TODO with ``issue_id``'s pointer lines ticked (or unticked), or None when it has none to change."""
+    text = store.todo_text()
+    new_text, count = issueids.set_pointers(text, issue_id, closed)
+    if not count or new_text == text:
+        return None
+    said = "ticked" if closed else "unticked"
+    return Change(store.todo_path, new_text, f"{store.todo_path.name}: {issue_id}'s pointer line {said}")
+
+
 def write(change: Change) -> None:
     """Write one change's file (nothing for an unchanged one)."""
     if change.unchanged:
@@ -615,7 +625,8 @@ def check(store: Store) -> List[Tuple[str, Problem]]:
             if entry not in section_ids:
                 problems.append(Problem(line, f"docs {entry} names no doc section (doclib find {entry} finds none)"))
         found.extend((issue.path, problem) for problem in problems)
-    found.extend(_todo_problems(store, backlog))
+    statuses = {Path(issue.path).stem: issue.value("status") for issue in issues}
+    found.extend(_todo_problems(store, backlog, statuses))
     return found
 
 
@@ -647,23 +658,31 @@ def new_problems(store: Store, problems: List[Tuple[str, Problem]], earlier: Pat
     return new, len(problems) - len(new)
 
 
-def _todo_problems(store: Store, backlog: Dict[str, List[issueids.TodoItem]]) -> List[Tuple[str, Problem]]:
-    """The TODO's own ID problems: pointers that lead nowhere, an alias given twice, and IDs that name two items."""
+def _todo_problems(store: Store, backlog: Dict[str, List[issueids.TodoItem]],
+                   statuses: Dict[str, str]) -> List[Tuple[str, Problem]]:
+    """The TODO's own problems: pointers that lead nowhere or whose box disagrees with their issue, open items
+    left in it, an alias given twice, and IDs that name two items."""
     found: List[Tuple[str, Problem]] = []
     name = store.todo_path.name
-    files = {path.stem for path in store.issue_files()}
     seen_aliases: Dict[str, int] = {}
     for item in store.todo_items():
         if item.pointer:
             target = item.target
             if item.ids[0] != target:
                 found.append((name, Problem(item.line, f"the pointer of {item.ids[0]} leads to {target}.md")))
-            elif target not in files:
+            elif target not in statuses:
                 found.append((name, Problem(item.line, f"{target} moved to {ISSUES_DIR}/{target}.md, which does not exist")))
+            elif item.checked != (statuses[target] in issuefile.CLOSED):
+                state = "ticked" if item.checked else "not ticked"
+                found.append((name, Problem(item.line, f"{target}'s pointer is {state}, but {target} is {statuses[target]} "
+                                                       "(issuelib close and reopen tick and untick it)")))
         for alias in item.aliases:
             if alias in seen_aliases:
                 found.append((name, Problem(item.line, f"alias {alias} is given on line {seen_aliases[alias]} too")))
             seen_aliases.setdefault(alias, item.line)
+    for line in issueids.open_item_lines(store.todo_text()):
+        found.append((name, Problem(line, f"an open item left in {name}: open work is an issue "
+                                          "(issuelib new on main, or import-todo)")))
     for issue_id, items in sorted(backlog.items(), key=lambda pair: issueids.sort_key(pair[0])):
         plain = [item for item in items if not item.aliases]
         if len(plain) > 1:

@@ -174,6 +174,16 @@ class ChangeTests(IssueCase):
         self.assertTrue(reopened.endswith(
             "\n### 2026-11-16, orchestrator, 1 line\n\nReopened: It crashes again on WAVE. It was done, merged in 6b09b2ee2.\n"))
 
+    def test_close_ticks_the_pointer_line_and_reopen_unticks_it(self) -> None:
+        self.write_tree({"TODO-2026-09-04.md": TODO + "- [ ] **B16** moved to Issues/B16.md\n"})
+        out = self.as_orchestrator("close", "B16", "--status", "wontfix", "--reason", "The user withdrew it.")[1]
+        self.assertEqual(out.splitlines()[1], "issuelib: TODO-2026-09-04.md: B16's pointer line ticked")
+        self.assertTrue(self.read("TODO-2026-09-04.md").endswith("- [x] **B16** moved to Issues/B16.md\n"))
+        out = self.as_orchestrator("reopen", "B16", "--reason", "The user wants it after all.")[1]
+        self.assertEqual(out.splitlines()[1], "issuelib: TODO-2026-09-04.md: B16's pointer line unticked")
+        self.assertTrue(self.read("TODO-2026-09-04.md").endswith("- [ ] **B16** moved to Issues/B16.md\n"))
+        self.assertEqual(self.run_cli("check")[0], 0)
+
     def test_closing_needs_a_merge_or_a_reason(self) -> None:
         cases = [
             ((), 2, "needs --merged HASH or --reason TEXT"),
@@ -313,6 +323,19 @@ class CheckTests(IssueCase):
         self.write_tree({"TODO-2026-09-04.md": TODO, "Issues/B16.md": B16, "Issues/README.md": "# Issues\n"})
         status, out, err = self.run_cli("check")
         self.assertEqual((status, out, err), (0, "", "issuelib check: 1 issue file, no problems\n"))
+
+    def test_a_pointers_box_must_agree_with_its_issue_and_no_open_item_is_left_in_the_todo(self) -> None:
+        done = B16.replace("id: B16", "id: B17").replace("status: open", "status: done").replace("merged:", "merged: abc1234")
+        todo = TODO + ("- [x] **B16** moved to Issues/B16.md\n- [ ] **B17** moved to Issues/B17.md\n"
+                       "- [ ] **B18 — added by hand.**\n- [ ] A row with no ID.\n")
+        self.write_tree({"TODO-2026-09-04.md": todo, "Issues/B16.md": B16, "Issues/B17.md": done})
+        out = self.run_cli("check")[1]
+        self.assertEqual(out.splitlines(), [
+            "TODO-2026-09-04.md:13: B16's pointer is ticked, but B16 is open (issuelib close and reopen tick and untick it)",
+            "TODO-2026-09-04.md:14: B17's pointer is not ticked, but B17 is done (issuelib close and reopen tick and untick it)",
+            "TODO-2026-09-04.md:15: an open item left in TODO-2026-09-04.md: open work is an issue (issuelib new on main, or import-todo)",
+            "TODO-2026-09-04.md:16: an open item left in TODO-2026-09-04.md: open work is an issue (issuelib new on main, or import-todo)",
+        ])
 
     def test_each_kind_of_problem_is_reported(self) -> None:
         todo = TODO + "- [ ] **B16 — the same ID again.**\n- [ ] **B17** moved to Issues/B17.md\n" \

@@ -155,9 +155,10 @@ def iso_date(text, today):
 def close_issues(text, todo_path, issues, merge_hash, date_text):
     """Close each issue at the merge, and tick its pointer lines in `text`.
 
-    Returns the TODO's new text and the issue files' changes, written by the
-    caller only once everything has passed; fails on the first issue that cannot
-    close (missing, closed already, or a file the skill refuses to change).
+    Returns the TODO's new text, the issue files' changes, and the lines to print
+    (one for an issue that has no pointer line), written by the caller only once
+    everything has passed; fails on the first issue that cannot close (missing,
+    closed already, or a file the skill refuses to change).
     """
     issuestore = issue_library()
     store = issuestore.Store(todo_path.resolve().parent, todo=todo_path.resolve())
@@ -168,11 +169,12 @@ def close_issues(text, todo_path, issues, merge_hash, date_text):
                    for issue_id in issues]
     except (issuestore.UsageError, issuestore.Refused) as error:
         fail(f"--close: {error}")
+    notes = []
     for issue_id in issues:
-        pointer = re.compile(r"^- \[ \] (\*\*" + re.escape(issue_id) + r"\*\* moved to Issues/" + re.escape(issue_id)
-                             + r"\.md)$", re.MULTILINE)
-        text = pointer.sub(r"- [x] \1", text)
-    return text, changes
+        text, count = issuestore.issueids.set_pointers(text, issue_id, closed=True)
+        if not count:
+            notes.append(f"{issue_id} has no pointer line in {todo_path.name}, so only its issue file changed")
+    return text, changes, notes
 
 
 def main():
@@ -209,14 +211,16 @@ def main():
         text = append_followups(text, Path(args.followups).read_text(encoding="utf-8"))
     if args.tick:
         text = tick(text, args.tick, args.hash, args.date if args.date is not None else TICK_DATE)
-    changes = []
+    changes, notes = [], []
     if args.close:
-        text, changes = close_issues(text, path, args.close, args.hash, args.date)
+        text, changes, notes = close_issues(text, path, args.close, args.hash, args.date)
     path.write_text(text, encoding="utf-8")
     for change in changes:
         change.path.write_text(change.text, encoding="utf-8")
     print(f"record-merge: recorded in {path.name}" + (f"; ticked {args.tick}" if args.tick else "")
           + "".join(f"; {change.message}" for change in changes))
+    for note in notes:
+        print(f"record-merge: {note}")
 
 
 if __name__ == "__main__":
