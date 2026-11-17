@@ -33,6 +33,11 @@ _spec = importlib.util.spec_from_file_location("ffmpeg_build", HERE / "build.py"
 build = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(build)
 
+# These tests never unpack into the main checkout's shared source folder: each test that unpacks
+# keeps its source under its own scratch work folder, and the tests of the sharing (SharedSourceTests)
+# set a scratch folder of their own.
+build.SHARED_SOURCES = None
+
 # Where these tests write: a fixed, gitignored folder, overwritten each run.
 SCRATCH = build.REPOSITORY / "build" / "test-ffmpeg-build"
 
@@ -124,10 +129,14 @@ class PinAndConfigureTests(unittest.TestCase):
                 self.assertNotEqual(mac, build.build_key("macosx", "clang 1"), name)
         self.assertEqual(mac, build.build_key("macosx", "clang 1"))
 
-    def test_the_wrapper_maps_the_work_folder_away(self):
+    def test_the_wrapper_maps_the_work_folder_and_the_source_folder_away(self):
         text = build.compiler_wrapper_text()
         self.assertIn('-ffile-prefix-map="$TMFF_BUILD_ROOT"=.', text)
         self.assertIn('-fdebug-prefix-map="$TMFF_BUILD_ROOT"=.', text)
+        # The source's folder may be outside the work folder (the shared one), and is named the
+        # same wherever it is, so what is built does not change with it.
+        self.assertIn('-ffile-prefix-map="$TMFF_SOURCE_ROOT"=./source', text)
+        self.assertIn('-fdebug-prefix-map="$TMFF_SOURCE_ROOT"=./source', text)
         self.assertTrue(text.startswith("#!/bin/sh\n"))
 
 
@@ -488,6 +497,148 @@ class PatchTests(unittest.TestCase):
         marker = build.unpacked_marker(work).read_text(encoding="utf-8").split()
         self.assertEqual(marker[2:], [commit for commit, _, _ in build.PATCHES])
         self.assertTrue((folder / "libavcodec" / "cook.c").is_file())
+
+
+class SharedSourceTests(unittest.TestCase):
+    """One copy of FFmpeg's release and its unpacked source, shared by every build folder of a Mac
+    (FU-FFMPEG2): a second build in another DerivedData unpacks and copies nothing."""
+
+    def release(self, name):
+        """A tiny archive of a release with the one folder `ffmpeg-<version>` holding a configure
+        script, and the source that names it, with the pins made to stand for it: (path, source, pins)."""
+        # A member that differs each run makes each run's archive another pin, so a folder an
+        # earlier run left in the scratch folder is never taken for this run's.
+        path = ReleaseTests.tarball(self, name, [(f"ffmpeg-{build.FFMPEG_VERSION}/configure", b"#!/bin/sh\n"),
+                                                  (f"ffmpeg-{build.FFMPEG_VERSION}/libavutil/x.c", b"int x;\n"),
+                                                  (f"ffmpeg-{build.FFMPEG_VERSION}/RUN", os.urandom(8).hex().encode("ascii"))])
+        pins = [
+            mock.patch.object(build, "FFMPEG_SHA256", build.digest_of(path)),
+            mock.patch.object(build, "FFMPEG_TARBALL_BYTES", path.stat().st_size),
+            mock.patch.object(build, "PATCHES", []),
+        ]
+        return path, build.sources()[0], pins
+
+    def shared(self, name):
+        """A scratch folder standing for build/ffmpeg of the main checkout, and the patches that put
+        it in the module's place (download and source folders in it)."""
+        root = SCRATCH / name
+        return root, [
+            mock.patch.object(build, "SHARED_ROOT", root),
+            mock.patch.object(build, "SHARED_DOWNLOADS", root / "download"),
+            mock.patch.object(build, "SHARED_SOURCES", root / "source"),
+        ]
+
+    def test_the_shared_folders_are_the_main_checkouts_build_ffmpeg(self):
+        # Unpatched, as the module found them: the archives and the unpacked sources are siblings
+        # in one folder, which is the main checkout's (test_repo_paths.py holds it to git's).
+        original = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(original)
+        if original.SHARED_ROOT is None:
+            self.skipTest("not in a git checkout")
+        self.assertEqual(original.SHARED_DOWNLOADS, original.SHARED_ROOT / "download")
+        self.assertEqual(original.SHARED_SOURCES, original.SHARED_ROOT / "source")
+        self.assertEqual(original.SHARED_ROOT.parts[-2:], ("build", "ffmpeg"))
+
+    def test_a_second_build_folder_unpacks_nothing_and_keeps_no_copy(self):
+        path, source, pins = self.release("shared-release.tar.xz")
+        root, shared = self.shared("shared-one")
+        first, second = SCRATCH / "work-shared-first", SCRATCH / "work-shared-second"
+        with pins[0], pins[1], pins[2], shared[0], shared[1], shared[2]:
+            marker = build.unpacked_marker(first)
+            # The marker of an earlier run, if there was one, is moved aside (never deleted), so
+            # the first build below really unpacks.
+            if marker.exists():
+                os.replace(marker, marker.with_name(marker.name + ".earlier"))
+            folder = build.unpacked_release(first, path, source)
+            self.assertEqual(folder.parent.parent, root / "source", "the source is in the shared folder")
+            self.assertEqual((folder / "libavutil" / "x.c").read_bytes(), b"int x;\n")
+            # The second build folder, another DerivedData, is handed the same folder, and the
+            # archive is not even opened: nothing is unpacked, so nothing is written.
+            with mock.patch.object(build.tarfile, "open", side_effect=AssertionError("unpacked again")):
+                again = build.unpacked_release(second, path, source)
+            self.assertEqual(again, folder)
+            # Neither work folder holds a copy of the source.
+            self.assertFalse((first / "source").exists())
+            self.assertFalse((second / "source").exists())
+            # The archive is kept in the shared download folder, and a second build uses it where
+            # it is: nothing is copied into its work folder.
+            kept, kept_source = build.release_tarball(first, given=path)
+            self.assertEqual(kept.parent, root / "download")
+            with mock.patch.object(build, "copy_replacing", side_effect=AssertionError("copied")), \
+                    mock.patch.object(build, "download", side_effect=AssertionError("downloaded")):
+                found, found_source = build.release_tarball(second)
+            self.assertEqual((found, found_source["name"]), (kept, kept_source["name"]))
+            self.assertFalse((second / "download").exists())
+
+    def test_the_source_folder_is_keyed_by_the_release_and_the_patches(self):
+        path, source, pins = self.release("shared-keyed.tar.xz")
+        root, shared = self.shared("shared-keyed")
+        with pins[0], pins[1], pins[2], shared[0], shared[1], shared[2]:
+            plain = build.unpacked_parent(SCRATCH / "work-keyed-a")
+            self.assertEqual(plain, build.unpacked_parent(SCRATCH / "work-keyed-b"), "any build folder, one source")
+            with mock.patch.object(build, "PATCHES", [("e" * 40, "CVE-0000-0", "0" * 64)]):
+                patched = build.unpacked_parent(SCRATCH / "work-keyed-a")
+        # Another list of patches unpacks beside it, never over it.
+        self.assertNotEqual(plain, patched)
+        self.assertEqual(plain.parent, patched.parent)
+
+    def test_the_unpacking_holds_a_lock_so_two_checkouts_never_unpack_over_each_other(self):
+        path, source, pins = self.release("shared-locked.tar.xz")
+        root, shared = self.shared("shared-locked")
+        work = SCRATCH / "work-shared-locked"
+        held = []
+
+        @build.contextlib.contextmanager
+        def watching(lock_path):
+            """Stands in for the lock: notes that it was held while the archive was read."""
+            held.append(str(lock_path))
+            yield
+            held.append("released")
+
+        with pins[0], pins[1], pins[2], shared[0], shared[1], shared[2]:
+            marker = build.unpacked_marker(work)
+            if marker.exists():
+                os.replace(marker, marker.with_name(marker.name + ".earlier"))
+            real_open = build.tarfile.open
+
+            def opening(*arguments, **keywords):
+                held.append("opened")
+                return real_open(*arguments, **keywords)
+
+            with mock.patch.object(build, "exclusive", watching), mock.patch.object(build.tarfile, "open", opening):
+                build.unpacked_release(work, path, source)
+        self.assertEqual(held[1:], ["opened", "released"])
+        # The lock is a file beside the key's folder in the shared folder, shared by every checkout.
+        self.assertEqual(Path(held[0]).parent, root / "source")
+
+    def test_without_a_shared_folder_the_source_and_the_archive_are_kept_in_the_work_folder(self):
+        path, source, pins = self.release("shared-none.tar.xz")
+        work = SCRATCH / "work-shared-none"
+        with pins[0], pins[1], pins[2], mock.patch.object(build, "SHARED_DOWNLOADS", None), \
+                mock.patch.object(build, "SHARED_SOURCES", None):
+            marker = build.unpacked_marker(work)
+            if marker.exists():
+                os.replace(marker, marker.with_name(marker.name + ".earlier"))
+            kept, _ = build.release_tarball(work, given=path)
+            folder = build.unpacked_release(work, kept, source)
+        self.assertEqual(kept.parent, work / "download")
+        self.assertEqual(folder.parent.parent, work / "source")
+
+    def test_an_archive_an_earlier_build_kept_in_its_work_folder_is_taken_over(self):
+        # A DerivedData from before the folder was shared holds the archive; it is copied into the
+        # shared folder once, and not downloaded again.
+        path, source, pins = self.release("shared-older.tar.xz")
+        root, shared = self.shared("shared-older")
+        work = SCRATCH / "work-shared-older"
+        with pins[0], pins[1], pins[2], shared[0], shared[1], shared[2]:
+            (work / "download").mkdir(parents=True, exist_ok=True)
+            (work / "download" / source["file"]).write_bytes(path.read_bytes())
+            # Anything else in the work folder's download folder that is not the release is passed over.
+            (work / "download" / build.sources()[1]["file"]).write_bytes(b"stale")
+            with mock.patch.object(build, "download", side_effect=AssertionError("downloaded")):
+                found, found_source = build.release_tarball(work)
+            self.assertEqual(found.parent, root / "download")
+            self.assertEqual(found.read_bytes(), path.read_bytes())
 
 
 class XcodeTests(unittest.TestCase):

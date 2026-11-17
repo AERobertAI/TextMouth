@@ -51,12 +51,21 @@ platform, this script's RECIPE number, the compiler's version, and the patches: 
 whose key is the same is kept, and the script ends at once, so an ordinary build of the app pays
 nothing, and a change of the patches rebuilds.
 
-The work folder:
-    WORK/download/ffmpeg-<version>.tar.xz     the release from ffmpeg.org, checked, or
-    WORK/download/ffmpeg-<version>-github.tar.gz   the archive of its tag from GitHub, checked
-    WORK/source/<key>/ffmpeg-<version>/       the release, unpacked and patched once; <key> is
+The shared folder. The release's archive and its unpacked source are the same for every
+checkout and every build folder of a Mac, so they are kept once, in build/ffmpeg/ of the main
+checkout (git's common directory names it, from any worktree), and every build reads them there:
+    SHARED/download/ffmpeg-<version>.tar.xz   the release from ffmpeg.org, checked, or
+    SHARED/download/ffmpeg-<version>-github.tar.gz   the archive of its tag from GitHub, checked
+    SHARED/source/<key>/ffmpeg-<version>/     the release, unpacked and patched once; <key> is
                                               of the release's SHA-256 and the patches, so a
-                                              changed list of patches unpacks afresh
+                                              changed list of patches unpacks afresh, beside
+                                              the old one, and two checkouts never unpack over
+                                              each other (a lock is held while one does)
+FFmpeg is built outside its source (configure runs in the build folder), so the shared source is
+only read: a second build folder unpacks nothing and copies nothing. Outside a git checkout
+there is no shared folder, and the same names are under WORK instead.
+
+The work folder:
     WORK/build-<platform>-<key>/              configure, make, and make install's DESTDIR
     WORK/<platform>/include/                  FFmpeg's public headers, and textmouth_ffmpeg_build.h
     WORK/<platform>/lib/libtmffmpeg.a         the merged libraries
@@ -70,6 +79,7 @@ FFmpeg's code is not read or copied here: only its release is downloaded, checke
 and its documentation (configure --help) names the options used.
 """
 import argparse
+import contextlib
 import fcntl
 import hashlib
 import json
@@ -290,15 +300,18 @@ def compiler_wrapper_text():
     """The text of the compiler wrapper the configure line names (tmff-cc).
 
     It runs Xcode's clang, which finds the SDK through SDKROOT (the script sets it), and maps
-    TMFF_BUILD_ROOT, the work folder, to "." in every path the compiler writes (__FILE__, and
-    debug information, though none is made), so no folder of the building Mac reaches the
-    libraries.
+    TMFF_BUILD_ROOT, the work folder, to "." and TMFF_SOURCE_ROOT, the folder the release is
+    unpacked in (the shared one, or WORK/source), to "./source" in every path the compiler writes
+    (__FILE__, and debug information, though none is made), so no folder of the building Mac
+    reaches the libraries, and the paths are the same wherever the source is kept.
     """
     return (
         "#!/bin/sh\n"
         "# Written by Scripts/vendor/ffmpeg/build.py: the compiler FFmpeg's configure line names.\n"
-        "# It maps the work folder (TMFF_BUILD_ROOT) away in every path the compiler writes.\n"
-        'exec xcrun clang -ffile-prefix-map="$TMFF_BUILD_ROOT"=. -fdebug-prefix-map="$TMFF_BUILD_ROOT"=. "$@"\n'
+        "# It maps the work folder (TMFF_BUILD_ROOT) and the unpacked source's folder (TMFF_SOURCE_ROOT)\n"
+        "# away in every path the compiler writes.\n"
+        'exec xcrun clang -ffile-prefix-map="$TMFF_BUILD_ROOT"=. -fdebug-prefix-map="$TMFF_BUILD_ROOT"=. '
+        '-ffile-prefix-map="$TMFF_SOURCE_ROOT"=./source -fdebug-prefix-map="$TMFF_SOURCE_ROOT"=./source "$@"\n'
     )
 
 
@@ -357,12 +370,13 @@ def compiler_version():
 def build_environment(work, platform):
     """The environment configure and make run in: a clean one, so that nothing Xcode exports to
     a build phase (deployment targets, flags, architectures) reaches FFmpeg's build. It holds
-    PATH with the wrapper's folder first, SDKROOT, the wrapper's TMFF_BUILD_ROOT, and the few
-    variables a shell and Xcode's tools need."""
+    PATH with the wrapper's folder first, SDKROOT, the wrapper's TMFF_BUILD_ROOT and
+    TMFF_SOURCE_ROOT, and the few variables a shell and Xcode's tools need."""
     environment = {
         "PATH": f"{work / 'bin'}:/usr/bin:/bin:/usr/sbin:/sbin",
         "SDKROOT": sdk_path(platform),
         "TMFF_BUILD_ROOT": str(work),
+        "TMFF_SOURCE_ROOT": str(sources_folder(work)),
         "LANG": "C",
         "LC_ALL": "C",
     }
@@ -425,23 +439,58 @@ def is_the_release(path):
     return source_of(path) is not None
 
 
-def shared_download_folder():
-    """The download folder every checkout of this Mac shares, in the main checkout's build/
-    folder (git's common directory names it), or None outside a git checkout. Only read: a
-    release found there is copied into the work folder."""
+def shared_root():
+    """The folder every checkout of this Mac shares for FFmpeg's release, in the main checkout's
+    build/ folder (git's common directory names it), or None outside a git checkout."""
     sys.path.insert(0, str(REPOSITORY / "Scripts" / "agents"))
     try:
         import repo_paths  # noqa: E402  (imported by path, after sys.path is set)
-        return repo_paths.main_checkout(REPOSITORY) / "build" / "ffmpeg" / "download"
+        return repo_paths.main_checkout(REPOSITORY) / "build" / "ffmpeg"
     except Exception:  # Not a git checkout, or git cannot run: there is no shared folder.
         return None
     finally:
         sys.path.pop(0)
 
 
-# The download folder every checkout of this Mac shares, whichever worktree the script runs from
-# (Scripts/agents/tests/test_repo_paths.py holds it to the main checkout's); None outside a checkout.
-SHARED_DOWNLOADS = shared_download_folder()
+# The folders every checkout of this Mac shares, whichever worktree the script runs from
+# (Scripts/agents/tests/test_repo_paths.py holds them to the main checkout's); None outside a
+# checkout. The archives of the release are kept in SHARED_DOWNLOADS, its unpacked source in
+# SHARED_SOURCES (one folder for each release and list of patches, `unpacked_parent`).
+SHARED_ROOT = shared_root()
+SHARED_DOWNLOADS = SHARED_ROOT / "download" if SHARED_ROOT is not None else None
+SHARED_SOURCES = SHARED_ROOT / "source" if SHARED_ROOT is not None else None
+
+
+@contextlib.contextmanager
+def exclusive(lock_path):
+    """Holds an exclusive lock on the file `lock_path` (made if it is missing, and never deleted)
+    while the block runs, so two builds, from any checkout, never write the same folder at once."""
+    lock_path = Path(lock_path)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "w", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def download_folder(work):
+    """The folder the release's archive is kept and looked for in: the shared one when there is
+    one, else WORK/download."""
+    return SHARED_DOWNLOADS if SHARED_DOWNLOADS is not None else work / "download"
+
+
+def sources_folder(work):
+    """The folder the unpacked releases are kept in: the shared one when there is one that can be
+    made, else WORK/source."""
+    if SHARED_SOURCES is not None:
+        try:
+            SHARED_SOURCES.mkdir(parents=True, exist_ok=True)
+            return SHARED_SOURCES
+        except OSError:  # Not writable: this build keeps its own, as it did before the folder was shared.
+            pass
+    return work / "source"
 
 
 def is_from(path, source):
@@ -452,37 +501,54 @@ def is_from(path, source):
 
 def release_tarball(work, given=None):
     """The checked release archive, and the source it is from: `given` when it is the release,
-    else one already in WORK/download or the shared download folder, else a new download, from
-    each source in turn until one gives the pinned release. A file that is not the release is
-    never used, and nothing is built from it. Returns (path in WORK/download, source)."""
-    folder = work / "download"
+    else one already in the download folder (`download_folder`: the shared one, else WORK/download),
+    else a copy kept in WORK/download by a build before the folder was shared, else a new
+    download, from each source in turn until one gives the pinned release. A file that is not the
+    release is never used, and nothing is built from it. The download folder is locked while a
+    file is put in it, so two builds never write the same file. Returns (the archive's path in
+    the download folder, source)."""
+    folder = download_folder(work)
     folder.mkdir(parents=True, exist_ok=True)
-    for source in sources():
-        if is_from(folder / source["file"], source):
-            return folder / source["file"], source
-    found = [Path(given)] if given else []
-    if SHARED_DOWNLOADS is not None:
-        found += [SHARED_DOWNLOADS / source["file"] for source in sources()]
-    for candidate in found:
-        if candidate.is_file():
-            source = source_of(candidate)
+
+    def kept():
+        """The release already in the download folder, as (path, source), or None."""
+        for source in sources():
+            if is_from(folder / source["file"], source):
+                return folder / source["file"], source
+        return None
+
+    if kept():
+        return kept()
+    with exclusive(folder / ".download.lock"):
+        # Another build may have put the release there while this one waited for the lock.
+        if kept():
+            return kept()
+        if given and Path(given).is_file():
+            source = source_of(given)
             if source is None:
-                raise BuildError(f"{candidate} is not FFmpeg {FFMPEG_VERSION}'s release: its SHA-256 is not a pin's")
-            copy_replacing(candidate, folder / source["file"])
+                raise BuildError(f"{given} is not FFmpeg {FFMPEG_VERSION}'s release: its SHA-256 is not a pin's")
+            copy_replacing(given, folder / source["file"])
             return folder / source["file"], source
-    refused = []
-    for source in sources():
-        wanted = folder / source["file"]
-        try:
-            download(source["url"], wanted)
-        except BuildError as error:
-            refused.append(f"{source['name']}: {error}")
-            continue
-        if is_from(wanted, source):
-            return wanted, source
-        refused.append(f"{source['name']}: the download of {source['url']} is not the pinned release: "
-                       f"its SHA-256 is {digest_of(wanted)}")
-    raise BuildError("the release could not be downloaded from any source:\n" + "\n".join(refused))
+        # What an earlier build kept in its own work folder (when that is not the download folder).
+        for older in sources():
+            candidate = work / "download" / older["file"]
+            source = source_of(candidate) if candidate.parent != folder else None
+            if source is not None:
+                copy_replacing(candidate, folder / source["file"])
+                return folder / source["file"], source
+        refused = []
+        for source in sources():
+            wanted = folder / source["file"]
+            try:
+                download(source["url"], wanted)
+            except BuildError as error:
+                refused.append(f"{source['name']}: {error}")
+                continue
+            if is_from(wanted, source):
+                return wanted, source
+            refused.append(f"{source['name']}: the download of {source['url']} is not the pinned release: "
+                           f"its SHA-256 is {digest_of(wanted)}")
+        raise BuildError("the release could not be downloaded from any source:\n" + "\n".join(refused))
 
 
 def download(url, destination):
@@ -515,11 +581,11 @@ def patches_digest():
 
 
 def unpacked_parent(work):
-    """The folder WORK/source/<key> that holds the unpacked, patched release: one for each
-    release and list of patches, so a changed list unpacks afresh and never lands on a tree the
-    old list patched."""
+    """The folder <source folder>/<key> that holds the unpacked, patched release (`sources_folder`:
+    the shared one, else WORK/source): one for each release and list of patches, so a changed
+    list unpacks afresh and never lands on a tree the old list patched."""
     key = hashlib.sha256(f"{FFMPEG_SHA256} {patches_digest()}".encode("utf-8")).hexdigest()[:16]
-    return work / "source" / key
+    return sources_folder(work) / key
 
 
 def unpacked_marker(work):
@@ -568,22 +634,27 @@ def unpacked_release(work, tarball, source=None):
     if marker.is_file() and (folder / "configure").is_file():
         return folder
     parent.mkdir(parents=True, exist_ok=True)
-    prefix = source["folder"] + "/"
-    with tarfile.open(tarball, "r:*") as archive:
-        members = archive.getmembers()
-        for member in members:
-            name = member.name
-            # The folder itself or something inside it, and nothing above it.
-            if name.startswith("/") or ".." in Path(name).parts or not (name + "/").startswith(prefix):
-                raise BuildError(f"the release holds a file outside its folder: {name!r}")
-            if not (member.isfile() or member.isdir()):
-                raise BuildError(f"the release holds something that is not a file or folder: {name!r}")
-        for member in members:
-            member.name = f"ffmpeg-{FFMPEG_VERSION}" + member.name[len(source["folder"]):]
-        archive.extractall(parent, members=members)
-    applied = apply_patches(folder)
-    marker.write_text(f"{FFMPEG_SHA256}\n{source['name']}\n" + "".join(f"{commit}\n" for commit in applied),
-                      encoding="utf-8")
+    # One build unpacks at a time (the folder may be every checkout's), and the next to hold the
+    # lock finds it done.
+    with exclusive(parent.with_name(parent.name + ".lock")):
+        if marker.is_file() and (folder / "configure").is_file():
+            return folder
+        prefix = source["folder"] + "/"
+        with tarfile.open(tarball, "r:*") as archive:
+            members = archive.getmembers()
+            for member in members:
+                name = member.name
+                # The folder itself or something inside it, and nothing above it.
+                if name.startswith("/") or ".." in Path(name).parts or not (name + "/").startswith(prefix):
+                    raise BuildError(f"the release holds a file outside its folder: {name!r}")
+                if not (member.isfile() or member.isdir()):
+                    raise BuildError(f"the release holds something that is not a file or folder: {name!r}")
+            for member in members:
+                member.name = f"ffmpeg-{FFMPEG_VERSION}" + member.name[len(source["folder"]):]
+            archive.extractall(parent, members=members)
+        applied = apply_patches(folder)
+        marker.write_text(f"{FFMPEG_SHA256}\n{source['name']}\n" + "".join(f"{commit}\n" for commit in applied),
+                          encoding="utf-8")
     return folder
 
 
@@ -856,14 +927,8 @@ def build(platform, work, tarball=None, jobs=DEFAULT_JOBS):
 
 def build_locked(platform, work, tarball=None, jobs=DEFAULT_JOBS):
     """`build`, holding the work folder's lock, so two builds never write the same folder."""
-    work = Path(work)
-    work.mkdir(parents=True, exist_ok=True)
-    with open(work / ".lock", "w", encoding="utf-8") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        try:
-            return build(platform, work, tarball, jobs)
-        finally:
-            fcntl.flock(lock, fcntl.LOCK_UN)
+    with exclusive(Path(work) / ".lock"):
+        return build(platform, work, tarball, jobs)
 
 
 # ---------------------------------------------------------------------------

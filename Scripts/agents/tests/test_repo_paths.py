@@ -58,7 +58,9 @@ TOOLS = {
         "MAIN_CHECKOUT": main,
         "DEFAULT_SOURCE": main / "build" / "DerivedData" / "SourcePackages" / "checkouts" / "SwiftSoup"},
     "vendor/ffmpeg/build.py": lambda main, home: {
-        "SHARED_DOWNLOADS": main / "build" / "ffmpeg" / "download"},
+        "SHARED_ROOT": main / "build" / "ffmpeg",
+        "SHARED_DOWNLOADS": main / "build" / "ffmpeg" / "download",
+        "SHARED_SOURCES": main / "build" / "ffmpeg" / "source"},
 }
 
 # The program a subprocess runs to load a tool by its path and print the named module attributes as JSON.
