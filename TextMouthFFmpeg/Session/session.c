@@ -19,7 +19,8 @@
  * It stops when it is told to (must_stop): by tmff_session_stop from any thread, or by the check
  * it was given (tmff_session_set_stop_check), which the iPhone's engine turns to stop once a
  * call's time is spent or its import is cancelled (FMT54). FFmpeg's interrupt callback asks the
- * same question during its reads, and the session asks it before each packet and each record.
+ * same question during its reads, and the session asks it once the open has found the streams
+ * (FFmpeg can finish a step it was told to stop), before each packet, and before each record.
  *
  * It uses only FFmpeg's documented public API (the headers' documentation, published at
  * https://ffmpeg.org/doxygen/); nothing of FFmpeg's own code is copied here. It grew from the
@@ -541,6 +542,14 @@ tmff_session *tmff_session_open_checked(int descriptor, const char *demuxer_name
     error = avformat_find_stream_info(session->format, NULL);
     if (error < 0) {
         failure = open_failure(session, error);
+        goto failed;
+    }
+    /* FFmpeg can finish a step whose interrupt callback said stop as if it had not been told
+       (train 1117-1406: an ASF file opened whole on the iPhone after its check had said stop), so
+       once FFmpeg has read the header and found the streams, the session asks itself: an open
+       told to stop ends stopped, as the header promises, before any decoder is opened. */
+    if (must_stop(session)) {
+        failure = TMFF_EXIT_STOPPED;
         goto failed;
     }
     const int chosen = choose_stream(session->format);

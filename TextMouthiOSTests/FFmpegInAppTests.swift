@@ -78,19 +78,23 @@ final class FFmpegInAppTests: XCTestCase {
     }
 
     /// FFmpeg asks the session's stop check while it reads a file's header and
-    /// finds its streams, through the session's interrupt callback: a check
-    /// that says stop from its first ask ends the open itself with the
-    /// session's stop (11), before any record, where nothing of the session's
-    /// own asks; one that never says stop is asked and the file opens. So a
-    /// call's time limit reaches FFmpeg's own reading, as the engine's
-    /// `Call.stopCheck` does in the app.
+    /// finds its streams, through the session's interrupt callback, and the
+    /// session asks it once more itself when FFmpeg is done, since FFmpeg can
+    /// finish a step it was told to stop (train 1117-1406: this file opened
+    /// whole after its check had said stop). So a check that says stop from
+    /// its first ask ends the open itself with the session's stop (11), before
+    /// any record; one that never says stop is asked by FFmpeg as well as by
+    /// the session, more than once, and the file opens. A call's time limit
+    /// reaches FFmpeg's own reading, as the engine's `Call.stopCheck` does in
+    /// the app.
     func testFFmpegsInterruptCallbackAsksTheStopCheckWhileTheFileOpens() throws {
         let stopped = try open("wma/tones-wma1.wma", demuxer: "asf", stopping: true)
         XCTAssertEqual(stopped.status, TMFF_EXIT_STOPPED, "a check that says stop did not stop the open")
         XCTAssertGreaterThan(stopped.asks, 0)
         let opened = try open("wma/tones-wma1.wma", demuxer: "asf", stopping: false)
         XCTAssertEqual(opened.status, TMFF_EXIT_DONE)
-        XCTAssertGreaterThan(opened.asks, 0, "FFmpeg never asked the check while the file opened")
+        // The session's own ask is one: any more were FFmpeg's.
+        XCTAssertGreaterThan(opened.asks, 1, "FFmpeg never asked the check while the file opened")
     }
 
     /// The session asks its check before each record of a decode, and a check
