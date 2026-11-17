@@ -59,7 +59,7 @@ Analysis-owned fields.
 
 - Owner: the content analysis.
   Book.ContentAnalysisFields travel together with the content index.
-  They are the word and character counts, the audio duration, the content index version, the cache format version, the text cache fingerprint, the record of an edit taken (Book.editedText, B12), and the page reader that wrote content.md (Book.pageReaderVersion, PG09).
+  They are the word and character counts, the audio duration, the content index version, the cache format version, the text cache fingerprint, the record of an edit taken (Book.editedText, B12-OCT), and the page reader that wrote content.md (Book.pageReaderVersion, PG09).
   The cache, its fingerprint, and the page reader are described in [Text caches and content indexes](text-caches.md), and the edit taken in [Edited text](text-caches-rereads-edits.md).
   Book.applyContentAnalysis drops editedText once an analysis records a content.md digest other than the edit's, and leaves pageReaderVersion as it is, since only a generation says which page reader wrote the text.
 - Who may write it: LibraryPersistenceService.saveContentAnalysis merges a finished analysis into the book's latest durable state, on the metadata queue: the snapshot still waiting there, or else the record on disk.
