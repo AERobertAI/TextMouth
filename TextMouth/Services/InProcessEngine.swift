@@ -32,11 +32,14 @@ import os
 ///   that, which an iPhone app gets when it is closed, not when it is only
 ///   switched back to.
 ///
-/// Each C library gets an engine of its own (braille's is
-/// `BrailleTranslator.libraryEngine`), made with the phrase its sentences
-/// name its work by. FFmpeg's iPhone half is to run its calls through another
-/// one, passing `Call.stopCheck` and `Call.context` as its interrupt
-/// callback, so nothing here is copied.
+/// Each C library gets an engine of its own, made with the phrase its
+/// sentences name its work by: braille's is
+/// `BrailleTranslator.libraryEngine`, and FFmpeg's is
+/// `FFmpegAudioConverter.sessionEngine` (FMT54), whose session asks
+/// `Call.stopCheck` with `Call.context` from FFmpeg's interrupt callback and
+/// before each of its steps. A caller in Swift concurrency, as FFmpeg's
+/// import is, uses `runForTask(limit:_:)`, which waits off the cooperative
+/// threads and follows the task's cancellation.
 final class InProcessEngine: Sendable {
     // MARK: Failures
 
@@ -113,8 +116,9 @@ final class InProcessEngine: Sendable {
 
         /// `shouldStop` as a C function: 1 to stop and 0 to go on, for the
         /// call whose `context` it is given, and 0 for none. It has the shape
-        /// of the braille library's `should_stop` and of FFmpeg's interrupt
-        /// callback, so a C library asks it between its steps.
+        /// of the braille library's `should_stop` and of the FFmpeg session's
+        /// stop check (`tmff_stop_check`, which FFmpeg's interrupt callback
+        /// asks), so a C library asks it between its steps.
         static var stopCheck: @convention(c) (UnsafeMutableRawPointer?) -> Int32 {
             { context in
                 guard let context else { return 0 }
@@ -255,6 +259,38 @@ final class InProcessEngine: Sendable {
             throw Failure.refused(work: work)
         case .abandoned:
             throw Failure.abandoned(work: work, limit: call.limit)
+        }
+    }
+
+    /// `run(limit:cancelledBy:_:)` for a caller in Swift concurrency (FMT54:
+    /// FFmpeg's session, which the iPhone's import reads from a task).
+    ///
+    /// - **The wait.** The caller is waited for on a dispatch thread, never
+    ///   on one of Swift's cooperative threads, which a call that runs to its
+    ///   limit and its grace would otherwise hold all that time.
+    /// - **The task's cancellation.** It stands for an import's Cancel: once
+    ///   the task is cancelled, `shouldStop` turns true and the call has its
+    ///   grace to return before it is abandoned.
+    /// - **A task cancelled already.** The call still runs, told to stop from
+    ///   its first step, so work that only frees what an earlier call made
+    ///   still runs.
+    /// - Throws: `Failure.abandoned` and `Failure.refused`, as
+    ///   `run(limit:cancelledBy:_:)` does; never `CancellationError`, since
+    ///   the work decides what a stopped call gives back.
+    func runForTask<Value: Sendable>(
+        limit: TimeInterval,
+        _ body: @escaping @Sendable (Call) -> Value
+    ) async throws -> Value {
+        // The task's cancellation, in the form `run` takes an import's.
+        let cancellation = ImportCancellation()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    continuation.resume(with: Result { try self.run(limit: limit, cancelledBy: cancellation, body) })
+                }
+            }
+        } onCancel: {
+            cancellation.cancel()
         }
     }
 

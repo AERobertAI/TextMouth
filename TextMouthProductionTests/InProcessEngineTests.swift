@@ -7,8 +7,9 @@ import XCTest
 /// call at a time on one thread with the helper's stack, each call's limit
 /// and its import's Cancel told through `shouldStop` and its C form, a call
 /// past its time abandoned at the lowest priority, and every call refused
-/// after it until TextMouth is closed and opened again. Shared with the
-/// iPhone's unit bundle.
+/// after it until TextMouth is closed and opened again; and the same from a
+/// task (`runForTask`, FMT54), which waits off Swift's cooperative threads and
+/// follows the task's cancellation. Shared with the iPhone's unit bundle.
 ///
 /// Every wait has a limit: each call runs on a queue of its own and is waited
 /// for at most 30 seconds, and work made to hang waits on a gate that the
@@ -42,6 +43,28 @@ final class InProcessEngineTests: XCTestCase {
         }
         guard done.wait(timeout: .now() + seconds) == .success else {
             XCTFail("the call did not return within \(seconds) seconds", file: file, line: line)
+            return nil
+        }
+        return box.withLock { $0 }
+    }
+
+    /// What `task` ended with, waited for on this thread for at most
+    /// `seconds`; nil, with a failure, when it took longer.
+    private func value<Value: Sendable>(
+        of task: Task<Value, Error>,
+        within seconds: TimeInterval = 30,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Result<Value, Error>? {
+        let box = OSAllocatedUnfairLock<Result<Value, Error>?>(initialState: nil)
+        let done = DispatchSemaphore(value: 0)
+        Task {
+            let result = await task.result
+            box.withLock { $0 = result }
+            done.signal()
+        }
+        guard done.wait(timeout: .now() + seconds) == .success else {
+            XCTFail("the task did not end within \(seconds) seconds", file: file, line: line)
             return nil
         }
         return box.withLock { $0 }
@@ -367,6 +390,97 @@ final class InProcessEngineTests: XCTestCase {
         let result = outcome { try engine.run(limit: 0.2) { _ in "ran" } }
         XCTAssertEqual(try result?.get(), "ran")
         XCTAssertFalse(engine.hasAbandonedACall)
+    }
+
+    // MARK: - From a Task (FMT54)
+
+    /// A call from a task runs its work on the engine's thread, with its name,
+    /// and gives back the work's value.
+    func testACallFromATaskRunsOnTheEnginesThreadAndGivesBackItsValue() async throws {
+        let engine = makeEngine()
+        let (name, value) = try await engine.runForTask(limit: 30) { _ in (Thread.current.name ?? "", 42) }
+        XCTAssertEqual(name, "TextMouth test")
+        XCTAssertEqual(value, 42)
+    }
+
+    /// Cancelling the task tells the work to stop at once, long before its
+    /// limit, and the call gives back what the work gave, unabandoned.
+    func testCancellingTheTaskTellsTheWorkToStop() throws {
+        let engine = makeEngine()
+        let started = DispatchSemaphore(value: 0)
+        let task = Task {
+            try await engine.runForTask(limit: 60) { call in
+                started.signal()
+                let start = DispatchTime.now()
+                while !call.shouldStop, Self.seconds(since: start) < 20 { usleep(1_000) }
+                return Self.seconds(since: start)
+            }
+        }
+        XCTAssertEqual(started.wait(timeout: .now() + 30), .success, "the work never started")
+        task.cancel()
+        let elapsed = try XCTUnwrap(try value(of: task)?.get())
+        XCTAssertLessThan(elapsed, TestMachine.allowed(5), "the task's cancellation did not reach the work")
+        XCTAssertFalse(engine.hasAbandonedACall)
+    }
+
+    /// A task cancelled already still runs its call, so work that frees what
+    /// an earlier call made still runs, told to stop from its first step.
+    func testACallFromACancelledTaskStillRunsToldToStop() async throws {
+        let engine = makeEngine(grace: 0.2)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await engine.runForTask(limit: 60) { call in call.shouldStop }
+        }
+        let stoppedAtOnce = try await task.value
+        XCTAssertTrue(stoppedAtOnce)
+        XCTAssertFalse(engine.hasAbandonedACall)
+    }
+
+    /// Work that hangs past its limit and the grace is abandoned for a task as
+    /// for a thread, and the engine refuses the next call.
+    func testACallFromATaskPastItsLimitIsAbandonedAndTheNextRefused() async throws {
+        let engine = makeEngine(grace: 0.2)
+        let gate = makeGate()
+        do {
+            _ = try await engine.runForTask(limit: 0.2) { _ in gate.wait(timeout: .now() + 30) == .success }
+            XCTFail("a call past its limit and the grace returned")
+        } catch {
+            XCTAssertEqual(error as? InProcessEngine.Failure, .abandoned(work: work, limit: 0.2))
+        }
+        do {
+            _ = try await engine.runForTask(limit: 30) { _ in true }
+            XCTFail("a call after an abandoned one ran")
+        } catch {
+            XCTAssertEqual(error as? InProcessEngine.Failure, .refused(work: work))
+        }
+    }
+
+    /// Calls from many more tasks than the machine has cores, each waiting for
+    /// the one engine thread, hold none of Swift's cooperative threads: a task
+    /// started after them all still runs at once. A wait on a cooperative
+    /// thread would starve it until the calls ended.
+    func testCallsFromTasksWaitOffTheCooperativeThreads() throws {
+        let engine = makeEngine()
+        let gate = makeGate()
+        let started = DispatchSemaphore(value: 0)
+        let waiting = 4 * ProcessInfo.processInfo.activeProcessorCount
+        let tasks = (0..<waiting).map { index in
+            Task {
+                try await engine.runForTask(limit: 60) { _ in
+                    if index == 0 { started.signal() }
+                    _ = gate.wait(timeout: .now() + 30)
+                    return index
+                }
+            }
+        }
+        XCTAssertEqual(started.wait(timeout: .now() + 30), .success, "the first call never started")
+        let ran = DispatchSemaphore(value: 0)
+        Task { ran.signal() }
+        XCTAssertEqual(ran.wait(timeout: .now() + TestMachine.allowed(5)), .success, "a task was starved by calls waiting")
+        // Every call runs once the gate opens: one signal for each, as each takes the thread in turn.
+        for _ in 0..<waiting { gate.signal() }
+        let values = tasks.map { (try? value(of: $0)?.get()) ?? -1 }
+        XCTAssertEqual(values, Array(0..<waiting), "the calls did not all end with their own values")
     }
 
     // MARK: - The Words
