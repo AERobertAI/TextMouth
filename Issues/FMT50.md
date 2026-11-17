@@ -5,11 +5,11 @@ kind: format
 status: open
 priority: P2
 platform: both
-assignee:
+assignee: ffmpegfix
 created: 2026-10-17
-updated: 2026-11-16
+updated: 2026-11-17
 found-by: the research of 2026-10-17
-branch:
+branch: formats/ffmpeg-bundled
 merged:
 reason:
 related: FMT31

@@ -5,11 +5,11 @@ kind: follow-up
 status: open
 priority: P2
 platform: both
-assignee:
+assignee: ffmpegfix
 created: 2026-11-15
-updated: 2026-11-16
+updated: 2026-11-17
 found-by: ffmpegimport
-branch:
+branch: formats/ffmpeg-bundled
 merged:
 reason:
 related:
