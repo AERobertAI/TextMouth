@@ -353,7 +353,8 @@ final class ExportDeepChapterExportTests: XCTestCase {
         let announcements = AnnouncementCapture()
         defer { announcements.stop() }
 
-        let outcome = try XCTUnwrap(await model.export())
+        let exported = await model.export()
+        let outcome = try XCTUnwrap(exported)
 
         XCTAssertEqual(
             log.questions,
@@ -376,7 +377,8 @@ final class ExportDeepChapterExportTests: XCTestCase {
         let announcements = AnnouncementCapture()
         defer { announcements.stop() }
 
-        let outcome = try XCTUnwrap(await model.export())
+        let exported = await model.export()
+        let outcome = try XCTUnwrap(exported)
 
         XCTAssertTrue(outcome.wasCancelled)
         XCTAssertEqual(outcome.exported, [])
