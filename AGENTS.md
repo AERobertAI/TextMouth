@@ -85,8 +85,8 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.5.0 (tag `v0.5.0`) plus the merges bound for 0.5.1, and the user still runs 0.4.2.
-- 0.5.0 added many formats (pictures of pages, CBZ, CUE sheets, playlists, lexicons, and ffmpeg's and TextMouth's own audio readers) and read Markdown from cmark's own tree: the Release app is 18.5 MB ([history](docs/agents/history.md)).
-- Done since 0.5.0: B12 (64-bit float books edit), B13 and B14 (a move's saves and temporary files), #5512 (one Markdown nesting limit), Q-flake, the runner's stale module cache, and the issue tracker.
+- Main is version 0.5.1 (tag `v0.5.1`) plus the merges bound for 0.5.2, and the user still runs 0.4.2.
+- 0.5.1 fixed B12 (64-bit float books edit), B13 and B14 (a move's saves and temporary files), #5512 (one Markdown nesting limit), and Q-flake, and added the issue tracker.
+- Done since 0.5.1: FFmpeg 9.0.2 built into a sandboxed helper on the Mac, so Homebrew's ffmpeg is no longer used (FMT50; the Release app is 21.0 MB); `make ios-size`; the runner's stale-cache retry (TL01, TL02); and A11Y-GOTO's accepted finding.
 - Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22 and FR23 and the iCloud store, the audio decoders, C11's follow-ups), and the hand checks there.
-- Open: `issuelib list`, the files in `Issues/`.
+- Open: `issuelib list`, the files in `Issues/`, among them FFmpeg on the iPhone (FMT54), FFmpeg's leftovers (FU-FFMPEG2, FU01), and the iPhone's size in `make check` (TL05).
