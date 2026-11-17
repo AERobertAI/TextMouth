@@ -1,0 +1,4 @@
+# Issue files take both sides' lines where two branches change the same place, so two
+# branches' comments on one issue merge without a conflict. A header line that both
+# branches changed is then kept twice, which `issuelib.py check` reports (Issues/README.md).
+/Issues/*.md merge=union

@@ -67,6 +67,8 @@ fastlane/test_output
 # The documentation's pages (README.md and ARCHITECTURE.md index them)
 !docs/**/*.md
 !docs/getting-started.txt
+# The issue files (Issues/README.md says what they hold)
+!/Issues/*.md
 
 # Claude Code
 .claude/
