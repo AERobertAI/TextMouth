@@ -361,6 +361,10 @@ static int open_decoder(tmff_session *session) {
         return TMFF_EXIT_DAMAGED;
     }
     session->decoder->pkt_timebase = stream->time_base;
+    /* One thread, so that every frame is decoded on the thread whose signal guard the helper set
+       up (a fault on a decoding thread of FFmpeg's own would not meet it), and no thread's stack
+       is left out of the helper's memory count. Set before avcodec_open2, which starts threads. */
+    session->decoder->thread_count = 1;
     const int error = avcodec_open2(session->decoder, codec, NULL);
     if (error < 0) {
         return error == AVERROR(ENOMEM) ? TMFF_EXIT_MEMORY : TMFF_EXIT_DAMAGED;

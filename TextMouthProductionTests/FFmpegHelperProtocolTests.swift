@@ -25,6 +25,19 @@ final class FFmpegHelperProtocolTests: XCTestCase {
         return (ending, try read.get())
     }
 
+    /// The decoder is opened with one thread, set before `avcodec_open2`: FFmpeg's
+    /// default is one too, but only a line of the session's own keeps it so, and
+    /// the helper's signal guard covers the thread it decodes on. No decoder of
+    /// this build shows its thread count to a test, so the session's source is
+    /// read: the setting comes first, then the call that starts the threads.
+    func testTheDecoderIsOpenedWithOneThread() throws {
+        let path = AppSourceFile.folder.deletingLastPathComponent().appendingPathComponent("TextMouthFFmpeg/Session/session.c")
+        let source = try String(contentsOf: path, encoding: .utf8)
+        let setting = try XCTUnwrap(source.range(of: "decoder->thread_count = 1;"), "the decoder's thread count is not set")
+        let opening = try XCTUnwrap(source.range(of: "avcodec_open2("), "the decoder is not opened")
+        XCTAssertLessThan(setting.lowerBound, opening.lowerBound, "the thread count must be set before the decoder opens")
+    }
+
     /// The probe of a WMA file is the protocol's stream: HEAD of version 1,
     /// INFO of the file's one WMA 1 stream, its tags and three chapters, and
     /// an END of no frames; the helper exits 0.
