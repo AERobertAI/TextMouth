@@ -350,7 +350,8 @@ targets:
         # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap),
         # the exception catcher's (Vendor/ObjCExceptionCatcher/include/module.modulemap),
         # the braille helper's protocol (TextMouthBraille/include/module.modulemap),
-        # which the helper's main.c includes too, and the FFmpeg helper's stream
+        # which the helper's translation (TextMouthBraille/TextMouthBrailleLibrary.c)
+        # includes too, and the FFmpeg helper's stream
         # (TextMouthFFmpeg/include/module.modulemap), which its C includes too.
         SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
       # The Release app, which `make build` packages and `make install`
