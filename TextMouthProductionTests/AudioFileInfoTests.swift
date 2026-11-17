@@ -164,6 +164,49 @@ final class AudioFileInfoTests: XCTestCase {
         XCTAssertTrue(info.isLossless)
     }
 
+    /// Linear PCM's sample form (B15) is named only from a data type afinfo
+    /// words as "integer" or "float", with the depth beside it, floats' too;
+    /// a data type it words otherwise, or leaves out, gives no form, so that a
+    /// float is never read as an integer.
+    func testTheSampleFormNeedsADataTypeOfIntegerOrFloat() throws {
+        func form(_ bitDepth: String, _ extra: String) throws -> AudioSampleForm? {
+            try XCTUnwrap(AudioFileInfo.parse(xml: xml(tracks: track(bitDepth: bitDepth, extra: extra)))).sampleForm
+        }
+        XCTAssertEqual(try form("64", pcmInfo("integer")), AudioSampleForm(bits: 64, isFloat: false))
+        XCTAssertEqual(try form("64", pcmInfo("float")), AudioSampleForm(bits: 64, isFloat: true))
+        XCTAssertEqual(try form("16", pcmInfo("float")), AudioSampleForm(bits: 16, isFloat: true))
+        XCTAssertNil(try form("64", pcmInfo("fixed-point")), "a data type of another word")
+        XCTAssertNil(try form("64", ""), "no pcm_info")
+        XCTAssertNil(try form("64", "<pcm_info><endianness>little</endianness></pcm_info>"), "no data type")
+        let coded = try XCTUnwrap(AudioFileInfo.parse(xml: xml(tracks: track(
+            format: "alac", bitDepth: nil,
+            extra: "<source_info><data_type>integer</data_type><bit_depth>20</bit_depth></source_info>"
+        ))))
+        XCTAssertNil(coded.sampleForm, "a lossless codec has no form of its own")
+    }
+
+    /// A depth is believed only when it is at most 64 bits and the track's
+    /// packet (a frame, for linear PCM) holds that many bits in every
+    /// channel; otherwise no form is named and the file is left to the damage
+    /// checks.
+    func testTheSampleFormIsNotNamedFromADepthItsFrameCannotHold() throws {
+        func form(_ bitDepth: String, packet: String?, channels: String = "1", interleaved: Bool = true) throws -> AudioSampleForm? {
+            let packetLine = packet.map { "<max_packet_size units=\"bytes\">\($0)</max_packet_size>" } ?? ""
+            let pcm = "<pcm_info><data_type>integer</data_type><interleaved>\(interleaved)</interleaved></pcm_info>"
+            return try XCTUnwrap(AudioFileInfo.parse(xml: xml(
+                tracks: track(channels: channels, bitDepth: bitDepth, extra: pcm + packetLine)
+            ))).sampleForm
+        }
+        XCTAssertEqual(try form("64", packet: "8"), AudioSampleForm(bits: 64, isFloat: false))
+        XCTAssertEqual(try form("24", packet: "6", channels: "2"), AudioSampleForm(bits: 24, isFloat: false))
+        XCTAssertEqual(try form("48", packet: nil), AudioSampleForm(bits: 48, isFloat: false), "no packet size is believed")
+        XCTAssertEqual(try form("16", packet: "2", channels: "2", interleaved: false), AudioSampleForm(bits: 16, isFloat: false))
+        XCTAssertNil(try form("48", packet: "2"), "a 16-bit frame under a depth corrupted to 48")
+        XCTAssertNil(try form("16", packet: "2", channels: "2"), "two interleaved channels need four bytes")
+        XCTAssertNil(try form("128", packet: "16"), "deeper than 64 bits")
+        XCTAssertNil(try form("4294967295", packet: nil))
+    }
+
     /// AC-3 nests a `format_list` whose `format` elements have their own
     /// channels and sample rate (changed here to be told apart): the
     /// track's own are the ones taken. A lossy codec has no bit depth.

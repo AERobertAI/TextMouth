@@ -2035,8 +2035,11 @@ enum FileImportService {
     /// understands. A single file that cannot be analyzed is described as
     /// playback describes it ("is damaged, unreadable, or not an audio
     /// file"), because AVFoundation's own words ("Operation Stopped") do not
-    /// say what is wrong. A folder's errors already name its problem.
+    /// say what is wrong. A folder's errors already name its problem, and so
+    /// does the refusal of a valid file whose samples no decoder reads (B15),
+    /// which is no damage and is told as it is.
     private static func describedAudioFailure(_ error: any Error, of book: Book) -> any Error {
+        if (error as? AudioParseError)?.refusesAValidFile == true { return error }
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: book.filePath, isDirectory: &isDirectory),
               !isDirectory.boolValue else { return error }

@@ -4,9 +4,10 @@ import os
 
 // MARK: - Problems
 
-/// Why an audio file cannot be played. Each problem completes the sentence
-/// `PackageDamage` speaks for a damaged file: "The file “03.mp3” in this
-/// audiobook is damaged or incomplete: …".
+/// Why an audio file cannot be played. Each problem but the last completes the
+/// sentence `PackageDamage` speaks for a damaged file: "The file “03.mp3” in
+/// this audiobook is damaged or incomplete: …". The last, a valid file whose
+/// samples no decoder reads, has a sentence of its own (`sentence(file:container:original:)`).
 enum AudioMediaProblem: Error, Equatable, Sendable {
     /// AVFoundation cannot open the file as media at all: it is not audio
     /// (a text file named "03.mp3"), or its header is damaged or describes
@@ -23,15 +24,37 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
     /// as a copy or download that stopped partway leaves an MPEG-4 file:
     /// its index still lists every sample, but the last ones are missing.
     case endsEarly
+    /// The file is valid, and says in its own header that its samples are of
+    /// a form TextMouth cannot decode (B15), a 64-bit integer WAVE file for
+    /// one. It is not damaged, so it is never told as damaged
+    /// (`sentence(file:container:original:)`).
+    case unsupportedSamples(AudioSampleForm)
 
     /// What is wrong, as the end of the sentence "The file … is damaged or
-    /// incomplete: …".
+    /// incomplete: …". The last problem is no damage, and is never told so
+    /// (`sentence(file:container:original:)`); its clause is for a log or a
+    /// failure message that names the problem, not for a listener.
     var reason: String {
         switch self {
         case .cannotOpen: return "it cannot be opened as audio"
         case .noAudio: return "it holds no audio that can be played"
         case .cannotDecode: return "its audio cannot be decoded"
         case .endsEarly: return "its audio breaks off before the length the file declares"
+        case .unsupportedSamples(let form): return AudioSampleFormWording.clause(for: form)
+        }
+    }
+
+    /// The sentence that tells a listener about the file `file`: the damage
+    /// sentence every damaged file gets, with `container` and `original` as
+    /// `PackageDamage.message` takes them, or, for a valid file whose samples
+    /// cannot be decoded, the sentence that names their form and says what to
+    /// do (`AudioSampleFormWording`).
+    func sentence(file: String, container: String, original: String) -> String {
+        switch self {
+        case .unsupportedSamples(let form):
+            return AudioSampleFormWording.refusal(fileName: file, form: form)
+        case .cannotOpen, .noAudio, .cannotDecode, .endsEarly:
+            return PackageDamage.message(file: file, reason: reason, container: container, original: original)
         }
     }
 }
@@ -67,6 +90,11 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
 ///    sample; only decoding its end fails. An asset that cannot be read
 ///    this way, as with some protected content that `AVPlayer` may still
 ///    play, skips this check rather than being refused.
+/// 6. A decode that fails at the opening is told as damage, unless the
+///    track's own description names a form of samples the decoders do not
+///    read (`AudioSampleForm.isDecodable`): the file is then valid, and is
+///    refused for that form (`AudioMediaProblem.unsupportedSamples`, B15).
+///    The form is looked at only after the decode has failed.
 ///
 /// The asset asks for precise timing
 /// (`AVURLAssetPreferPreciseDurationAndTimingKey`). Without it, an MP3's
@@ -144,7 +172,7 @@ enum AudioMediaProbe {
             let span = start.isFinite && end.isFinite && end > start ? start...end : 0...seconds
             let job = DecodeJob(track: audio.track, asset: asset, span: span)
             if let problem = await decodingProblemOffThePool(job, using: decoding, deadline: deadline) {
-                return .failure(problem)
+                return .failure(await namingTheForm(in: problem, of: audio.track))
             }
         }
         return .success(seconds)
@@ -170,6 +198,29 @@ enum AudioMediaProbe {
             guard let (isDecodable, timeRange) = try? await track.load(.isDecodable, .timeRange) else { continue }
             if isDecodable {
                 return (track, timeRange)
+            }
+        }
+        return nil
+    }
+
+    /// `problem`, with the form named when the opening's decode failed (`.cannotDecode`) on a track whose own
+    /// description gives a form the decoders do not read (`AudioSampleForm.isDecodable`): a valid file such as a
+    /// 64-bit integer WAVE file is then refused for its form, not called damaged (B15). The form is looked at only
+    /// after the decode has failed, so a Mac that decodes it never refuses it; any other problem, and a track whose
+    /// form is read or unknown, keeps the problem it had.
+    private static func namingTheForm(in problem: AudioMediaProblem, of track: AVAssetTrack) async -> AudioMediaProblem {
+        guard problem == .cannotDecode, let form = await sampleForm(of: track), !form.isDecodable else { return problem }
+        return .unsupportedSamples(form)
+    }
+
+    /// The sample form of linear PCM that `track`'s format description gives, or nil when the track is coded audio
+    /// or its description cannot be read (a damaged file is then left to the decoding check).
+    private static func sampleForm(of track: AVAssetTrack) async -> AudioSampleForm? {
+        guard let descriptions = try? await track.load(.formatDescriptions) else { return nil }
+        for description in descriptions {
+            if let stream = CMAudioFormatDescriptionGetStreamBasicDescription(description)?.pointee,
+               let form = AudioSampleForm(stream) {
+                return form
             }
         }
         return nil

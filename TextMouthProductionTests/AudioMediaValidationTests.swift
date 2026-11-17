@@ -177,9 +177,11 @@ final class AudioMediaValidationTests: XCTestCase {
     /// imports: the probe measures it, its samples decode to the end, and
     /// AVFoundation says it plays. A 64-bit integer CAF, which AVFoundation
     /// can't convert (its decode check failed with "failed to determine
-    /// suitable PCM converter"), is refused as damaged, with a problem, and
-    /// never imported to play nothing.
+    /// suitable PCM converter"), is refused, with a problem that names its
+    /// form and is no word of damage (B15), and never imported to play
+    /// nothing.
     func testProbeMeasuresBooksOfWideSamples() async throws {
+        let refusedForm = AudioSampleForm(bits: 64, isFloat: false)
         for book in AudioEditRenderingTests.wideBooks {
             let file = try AudioTestFixtures.makeTemporaryDirectory().appendingPathComponent(book.fileName)
             addTeardownBlock { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }
@@ -197,7 +199,7 @@ final class AudioMediaValidationTests: XCTestCase {
                     XCTFail("\(book) was accepted, not refused")
                     continue
                 }
-                XCTAssertEqual(problem, .cannotDecode, "\(book)")
+                XCTAssertEqual(problem, .unsupportedSamples(refusedForm), "\(book)")
             }
         }
     }

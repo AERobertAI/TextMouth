@@ -12,7 +12,9 @@ import Darwin
 /// converted by `afconvert`, both from the Mac itself (the app's oldest
 /// macOS is 14.0): a format that Mac cannot read or convert is refused by
 /// the file's name ("Converting its audio" stops the import, and nothing is
-/// left behind); no other check is needed.
+/// left behind). A file that is valid, but in a form of samples the
+/// converter fails on, is refused by that form, named after the failure
+/// (`Failure.unsupportedSamples`).
 ///
 /// On October 14, 2026 Apple's Vorbis decoder, playing an Ogg track through
 /// AVPlayer at 1.5x, locked up inside AudioToolbox and grew TextMouth to
@@ -181,6 +183,9 @@ enum ImportAudioConverter {
         /// The audio one of TextMouth's own readers decoded could not be
         /// written as an .m4a, for `reason` (an error's domain and code).
         case notWritten(fileName: String, reason: String)
+        /// The file is valid, but its samples are of a form no decoder reads (`AudioSampleForm`, B15), and the
+        /// converter failed on it: it is not damaged.
+        case unsupportedSamples(fileName: String, form: AudioSampleForm)
 
         var errorDescription: String? {
             switch self {
@@ -204,6 +209,8 @@ enum ImportAudioConverter {
                 return OwnAudioWording.sentence(for: problem, fileName: fileName)
             case let .notWritten(fileName, reason):
                 return "The audio converted from \(fileName) could not be written (\(reason))."
+            case let .unsupportedSamples(fileName, form):
+                return AudioSampleFormWording.refusal(fileName: fileName, form: form)
             }
         }
     }
@@ -266,21 +273,33 @@ enum ImportAudioConverter {
     /// Whether a file that `afinfo` describes by `formatID` (its first
     /// track's codec) and `fileType` (its container) plays as it is: AAC
     /// (`aac `, `aach`, `aacp`) in MPEG-4, QuickTime, or ADTS; Apple Lossless
-    /// (`alac`) in MPEG-4 or QuickTime; MP3 (`.mp3`) in MPEG audio, MPEG-4,
-    /// or QuickTime. Every other codec or container is converted. A nil
-    /// `fileType` (the container is not known) asks about the codec alone.
-    static func playsAsIs(formatID: String, fileType: String?) -> Bool {
+    /// (`alac`) in MPEG-4 or QuickTime, unless it holds a 20-bit source
+    /// (`unreadableAppleLosslessBits`, with `bitsPerSample`); MP3 (`.mp3`) in
+    /// MPEG audio, MPEG-4, or QuickTime. Every other codec or container is
+    /// converted. A nil `fileType` (the container is not known) asks about the
+    /// codec alone.
+    static func playsAsIs(formatID: String, fileType: String?, bitsPerSample: Int? = nil) -> Bool {
         let mpeg4Containers: Set<String> = ["m4af", "m4bf", "mp4f", "qt", "moov"]
         let containers: Set<String>
         switch formatID.trimmingCharacters(in: .whitespaces) {
         case "aac", "aach", "aacp": containers = mpeg4Containers.union(["adts"])
-        case "alac": containers = mpeg4Containers
+        case "alac":
+            // AVAssetReader cannot read Apple Lossless of a 20-bit source (the probe would call the file
+            // damaged), so it is converted, written at 24 bits (`appleLosslessBitDepth(forBitsPerSample:)`).
+            if bitsPerSample == unreadableAppleLosslessBits { return false }
+            containers = mpeg4Containers
         case ".mp3": containers = mpeg4Containers.union(["mpg3"])
         default: return false
         }
         guard let fileType else { return true }
         return containers.contains(fileType.trimmingCharacters(in: .whitespaces).lowercased())
     }
+
+    /// The bit depth of the source an Apple Lossless file may hold that
+    /// AVAssetReader cannot read, so that the file is converted rather than
+    /// played as it is (`playsAsIs`): 20, the depth `afconvert` and
+    /// AVFoundation's writer used to write (B15).
+    static let unreadableAppleLosslessBits = 20
 
     /// The files among `files` that the import converts, in their order: by
     /// their extension and bytes (`verdict(for:)`), and, for those the bytes
@@ -314,7 +333,7 @@ enum ImportAudioConverter {
     /// that the import converts; false when it cannot read the file.
     private static func isConvertedByWhatItHolds(_ url: URL, using tool: AudioFileInfo.Tool) async throws -> Bool {
         guard let facts = try await AudioFileInfo.read(url, using: tool) else { return false }
-        return !playsAsIs(formatID: facts.formatID, fileType: facts.fileType)
+        return !playsAsIs(formatID: facts.formatID, fileType: facts.fileType, bitsPerSample: facts.bitsPerSample)
     }
 
     /// The tracks of the folder `folder` that the import converts, by
@@ -404,6 +423,9 @@ enum ImportAudioConverter {
         /// A conversion that keeps chapters writes them into the .m4a's
         /// chapter track (`ChapterTrackWriter`).
         var chapters: [NeroChapterReader.Chapter] = []
+        /// How the samples of linear PCM are stored (`AudioFileInfo.sampleForm`), or nil for other audio: when
+        /// the converter fails on a form no decoder reads, the failure names it (`Failure.unsupportedSamples`, B15).
+        var sampleForm: AudioSampleForm? = nil
         /// The format, when the file is one that TextMouth's own readers
         /// decode: it is then converted in the app (`OwnAudioConverter`), by
         /// no child process. Nil for every other source.
@@ -440,7 +462,8 @@ enum ImportAudioConverter {
                 // Like needsConversion(among:), the codec decides MPEG-4 and unrecognized
                 // content; a file that cannot be read at all keeps its extension's answer.
                 let isReadable = AudioContentSniffer.firstBytes(of: source, upTo: 1) != nil
-                converts = isReadable && !playsAsIs(formatID: info.formatID, fileType: nil)
+                converts = isReadable
+                    && !playsAsIs(formatID: info.formatID, fileType: nil, bitsPerSample: info.bitsPerSample)
             }
         }
         guard converts else { return .leaveAsItIs }
@@ -476,7 +499,7 @@ enum ImportAudioConverter {
         return SourceInfo(
             sampleRate: facts.sampleRate, channels: facts.channels, duration: facts.duration,
             formatID: facts.formatID, bitsPerSample: facts.bitsPerSample, isLossless: facts.isLossless,
-            hasChannelLayout: facts.hasChannelLayout, chapters: facts.markerChapters
+            hasChannelLayout: facts.hasChannelLayout, chapters: facts.markerChapters, sampleForm: facts.sampleForm
         )
     }
 
@@ -503,25 +526,28 @@ enum ImportAudioConverter {
     }
 
     /// The Apple Lossless bit depth that holds a source of `bits` bits a
-    /// sample: 16, 20, 24, or 32, the smallest that fits; 24 when the depth
-    /// is unknown or the samples are floating-point numbers (nil).
+    /// sample: 16, 24, or 32, the smallest that fits; 24 when the depth is
+    /// unknown or the samples are floating-point numbers (nil). A source of
+    /// 17 to 20 bits is written at 24, which holds every sample exactly:
+    /// AVAssetReader cannot read the 20-bit Apple Lossless file that
+    /// afconvert and AVFoundation's writer make, so the import's own check
+    /// refused it as undecodable (train 1117-0431, B15).
     static func appleLosslessBitDepth(forBitsPerSample bits: Int?) -> Int {
         guard let bits else { return 24 }
         switch bits {
         case ...16: return 16
-        case ...20: return 20
         case ...24: return 24
         default: return 32
         }
     }
 
     /// The flag afconvert takes after `alac/` for an Apple Lossless bit
-    /// depth: 1, 2, 3, or 4 for 16, 20, 24, or 32 bits. Without it afconvert
+    /// depth (`appleLosslessBitDepth(forBitsPerSample:)`): 1, 3, or 4 for 16,
+    /// 24, or 32 bits (2 is 20 bits, never asked for). Without it afconvert
     /// writes 32-bit samples, five times the size of a 16-bit source's.
     static func appleLosslessFlag(forBitDepth depth: Int) -> Int {
         switch depth {
         case 16: return 1
-        case 20: return 2
         case 24: return 3
         default: return 4
         }
@@ -607,11 +633,10 @@ enum ImportAudioConverter {
 
     /// The bit depth of the stereo PCM file that step 1 of a downmix writes
     /// for `target`: 16 bits for AAC, which keeps no more; for Apple
-    /// Lossless the depth of its samples, 24 for a depth of 20 (PCM has no
-    /// 20-bit form), so nothing is lost.
+    /// Lossless the depth of its samples (`appleLosslessBitDepth`, which is
+    /// never 20, a depth PCM has no form of).
     static func downmixBitDepth(for target: Target) -> Int {
-        guard let depth = target.appleLosslessBitDepth else { return 16 }
-        return depth == 20 ? 24 : depth
+        target.appleLosslessBitDepth ?? 16
     }
 
     /// The free space a downmix of a track lasting `duration` seconds,
@@ -897,7 +922,7 @@ enum ImportAudioConverter {
             }
         } catch {
             try? FileManager.default.removeItem(at: staged)
-            throw error
+            throw namingTheForm(in: error, of: info, fileName: name)
         }
         var conversion = Conversion(
             source: source,
@@ -917,6 +942,17 @@ enum ImportAudioConverter {
             }
         }
         return conversion
+    }
+
+    /// `error`, a failure of the conversion of the file `fileName`, or, in its place, `Failure.unsupportedSamples`
+    /// when the converter itself ended in failure (an exit status above zero, not a kill or a start that failed) on
+    /// a source whose own description names a form the decoders do not read (`AudioSampleForm.isDecodable`): the
+    /// file is valid, and the converter's exit code would name no cause (B15). The form is looked at only after the
+    /// converter has failed, so a Mac whose converter reads it never refuses it.
+    private static func namingTheForm(in error: any Error, of info: SourceInfo, fileName: String) -> any Error {
+        guard case .processFailed(_, let status)? = error as? Failure, status > 0,
+              let form = info.sampleForm, !form.isDecodable else { return error }
+        return Failure.unsupportedSamples(fileName: fileName, form: form)
     }
 
     /// Writes `staged` from `source`, described by `info`, as `target`. A

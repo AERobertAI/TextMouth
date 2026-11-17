@@ -706,6 +706,14 @@ enum AudioParseError: LocalizedError, Equatable {
         earlierStart: TimeInterval
     )
 
+    /// Whether the error refuses a valid file for the form of its samples
+    /// (`AudioMediaProblem.unsupportedSamples`, B15), which no word of damage
+    /// may describe.
+    var refusesAValidFile: Bool {
+        if case .unplayableFile(_, .unsupportedSamples) = self { return true }
+        return false
+    }
+
     /// What a listener can do about a section that does not fit its file:
     /// the sentence that ends every such message.
     static let mismatchAdvice = "The book's navigation does not match its audio; get a fresh copy and import it again."
@@ -717,13 +725,9 @@ enum AudioParseError: LocalizedError, Equatable {
         case .unsupportedFormat: return "Unsupported audio format."
         case .invalidSegment: return "An audio section refers to a missing file or an invalid time range."
         case .unplayableFile(let file, let problem):
-            // Damage is described as it is for every other kind of book.
-            return PackageDamage.message(
-                file: file,
-                reason: problem.reason,
-                container: "this audiobook",
-                original: "the book"
-            )
+            // Damage is described as it is for every other kind of book; a valid file whose samples
+            // cannot be decoded is told its form instead (B15).
+            return problem.sentence(file: file, container: "this audiobook", original: "the book")
         // Times are written as they are spoken ("1 hour, 3 minutes"), which
         // reads the same on screen, aloud, and in braille; "1:03:00" can be
         // heard as a time of day.

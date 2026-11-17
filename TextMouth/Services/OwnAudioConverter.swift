@@ -23,12 +23,13 @@ enum OwnAudioConverter {
     /// The most frames handed to the encoder in one buffer.
     static let framesPerAppend = 32_768
 
-    /// The Apple Lossless bit depth the writer is asked for when the target
-    /// says `depth`: the same, but 24 for 20. AVFoundation's writer makes a
-    /// 20-bit file whose audio the media check then cannot decode (train
-    /// 1115-2137, a 20-bit WavPack file), and 24 bits hold every 20-bit
-    /// sample exactly, as a downmix's PCM does
-    /// (`ImportAudioConverter.downmixBitDepth`).
+    /// The Apple Lossless bit depth a book's own file is rewritten at when it
+    /// holds `depth` bits a sample: the same, but 24 for 20. AVFoundation's
+    /// writer makes a 20-bit file whose audio the media check cannot decode
+    /// (train 1115-2137), and 24 bits hold every 20-bit sample exactly. An
+    /// import never makes a 20-bit file now (`ImportAudioConverter.
+    /// appleLosslessBitDepth(forBitsPerSample:)` widens it), but a book
+    /// imported before may hold one, which the audio editor reads this way.
     static func writtenBitDepth(forAppleLossless depth: Int) -> Int {
         depth == 20 ? 24 : depth
     }
@@ -206,7 +207,7 @@ enum OwnAudioConverter {
         let settings = AudioRenderSettings(
             format: target.appleLosslessBitDepth == nil ? .aacM4A : .alacM4A,
             sampleRate: target.sampleRate, channels: target.channels, bitRate: target.bitRate,
-            bitsPerSample: target.appleLosslessBitDepth.map(writtenBitDepth(forAppleLossless:)) ?? 16, isFloat: false
+            bitsPerSample: target.appleLosslessBitDepth ?? 16, isFloat: false
         )
         let description = try pcmDescription(sampleRate: stream.sampleRate, channels: target.channels, container: container)
 

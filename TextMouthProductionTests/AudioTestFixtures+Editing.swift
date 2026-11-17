@@ -128,20 +128,29 @@ extension AudioTestFixtures {
     /// AVAssetWriter won't write a WAVE file in, and AVAssetReader's
     /// outputs, which take 8, 16, 24, and 32 bits only, refuse to be given.
     static func writeToneFloat64WAVE(to url: URL, frames: Int, sampleRate: Double) throws {
+        try writeToneWAVE(to: url, frames: frames, sampleRate: sampleRate, bits: 64, isFloat: true)
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// a WAVE file of `bits`-bit samples, floating-point (format tag 3) or
+    /// integer (tag 1), the header and every sample written here byte by byte:
+    /// a depth, such as 64 or 48 bits, that no AVFoundation writer makes. A
+    /// float of a depth but 32 and 64 (a 16-bit float, which only some Macs
+    /// have a Swift type for) holds silence: such a file is meant to be
+    /// refused by its header, whose samples are never read.
+    static func writeToneWAVE(to url: URL, frames: Int, sampleRate: Double, bits: Int, isFloat: Bool) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        var samples = Data()
-        for sample in tone(frames: frames, sampleRate: sampleRate) {
-            samples.append(littleEndianBytes(Double(sample).bitPattern))
-        }
+        let samples = toneSamples(frames: frames, sampleRate: sampleRate, bits: bits, isFloat: isFloat)
+        let bytesPerFrame = (bits + 7) / 8
         // The "fmt " chunk: 16 bytes, as a float WAVE file of one or two
         // channels needs no more.
         var format = Data()
-        format.append(littleEndianBytes(UInt16(3)))                   // IEEE floating point
+        format.append(littleEndianBytes(UInt16(isFloat ? 3 : 1)))     // IEEE floating point, or integer PCM
         format.append(littleEndianBytes(UInt16(1)))                   // one channel
         format.append(littleEndianBytes(UInt32(sampleRate)))          // frames a second
-        format.append(littleEndianBytes(UInt32(sampleRate) * 8))      // bytes a second
-        format.append(littleEndianBytes(UInt16(8)))                   // bytes a frame
-        format.append(littleEndianBytes(UInt16(64)))                  // bits a sample
+        format.append(littleEndianBytes(UInt32(sampleRate) * UInt32(bytesPerFrame))) // bytes a second
+        format.append(littleEndianBytes(UInt16(bytesPerFrame)))       // bytes a frame
+        format.append(littleEndianBytes(UInt16(bits)))                // bits a sample
         var file = Data("RIFF".utf8)
         file.append(littleEndianBytes(UInt32(4 + 8 + format.count + 8 + samples.count)))
         file.append(Data("WAVEfmt ".utf8))
@@ -159,25 +168,28 @@ extension AudioTestFixtures {
     /// wrote a file of 64-bit floats as 32-bit floats, and refused one of
     /// 64-bit integers.
     static func writeToneCAF64(to url: URL, frames: Int, sampleRate: Double, isFloat: Bool) throws {
+        try writeToneCAF(to: url, frames: frames, sampleRate: sampleRate, bits: 64, isFloat: isFloat)
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// a CAF file of `bits`-bit samples, floats or integers (little-endian, a
+    /// full-scale integer being 2^(bits-1)), written byte by byte. As for
+    /// `writeToneWAVE(to:frames:sampleRate:bits:isFloat:)`, a float of a
+    /// depth but 32 and 64 holds silence.
+    static func writeToneCAF(to url: URL, frames: Int, sampleRate: Double, bits: Int, isFloat: Bool) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        var samples = Data()
-        for sample in tone(frames: frames, sampleRate: sampleRate) {
-            if isFloat {
-                samples.append(littleEndianBytes(Double(sample).bitPattern))
-            } else {
-                samples.append(littleEndianBytes(Int64(Double(sample) * 9_223_372_036_854_775_808.0)))
-            }
-        }
+        let samples = toneSamples(frames: frames, sampleRate: sampleRate, bits: bits, isFloat: isFloat)
+        let bytesPerFrame = (bits + 7) / 8
         // The "desc" chunk: the stream description, big-endian as every
         // CAF field is, flagged little-endian (2) and float (1) or neither.
         var description = Data()
         description.append(bigEndianBytes(sampleRate.bitPattern))
         description.append(Data("lpcm".utf8))
         description.append(bigEndianBytes(UInt32(isFloat ? 3 : 2)))
-        description.append(bigEndianBytes(UInt32(8)))                 // bytes a packet
+        description.append(bigEndianBytes(UInt32(bytesPerFrame)))     // bytes a packet
         description.append(bigEndianBytes(UInt32(1)))                 // frames a packet
         description.append(bigEndianBytes(UInt32(1)))                 // one channel
-        description.append(bigEndianBytes(UInt32(64)))                // bits a sample
+        description.append(bigEndianBytes(UInt32(bits)))              // bits a sample
         var file = Data("caff".utf8)
         file.append(bigEndianBytes(UInt16(1)))                        // version
         file.append(bigEndianBytes(UInt16(0)))                        // flags
@@ -189,6 +201,29 @@ extension AudioTestFixtures {
         file.append(bigEndianBytes(UInt32(0)))
         file.append(samples)
         try file.write(to: url)
+    }
+
+    /// The samples of `tone(frames:sampleRate:)` as `bits`-bit little-endian
+    /// numbers, one after another: 32 and 64-bit floats as they are, any other
+    /// float as silence, and integers scaled so that full scale is
+    /// 2^(bits-1), in as many bytes as the depth needs.
+    private static func toneSamples(frames: Int, sampleRate: Double, bits: Int, isFloat: Bool) -> Data {
+        let bytesPerSample = (bits + 7) / 8
+        var samples = Data()
+        for sample in tone(frames: frames, sampleRate: sampleRate) {
+            if isFloat {
+                switch bits {
+                case 32: samples.append(littleEndianBytes(sample.bitPattern))
+                case 64: samples.append(littleEndianBytes(Double(sample).bitPattern))
+                default: samples.append(Data(count: bytesPerSample))
+                }
+            } else {
+                // The low bytes of the two's-complement integer are its samples' bytes, least significant first.
+                let scaled = Int64(Double(sample) * pow(2, Double(bits - 1)))
+                samples.append(littleEndianBytes(scaled).prefix(bytesPerSample))
+            }
+        }
+        return samples
     }
 
     /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
