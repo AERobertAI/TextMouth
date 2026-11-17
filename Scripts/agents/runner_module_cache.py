@@ -48,9 +48,15 @@ STAMP_NAME = "toolchain-stamp.json"
 #   SDKStatCaches.noindex                                the SDK's stat caches, which record file times too
 #   Build/Intermediates.noindex/ExplicitPrecompiledModules   the modules Xcode 26 builds explicitly for each target
 #   Build/Intermediates.noindex/PrecompiledHeaders       precompiled headers, which embed the modules they were built with
+#   Build/Intermediates.noindex/SwiftExplicitPrecompiledModules   the .pcm files Xcode 26's Swift driver builds explicitly
+#                                                        for each module a target imports: the SDK's and toolchain's (a new
+#                                                        toolchain makes them stale) and the repository's own (TextMouthBraille's
+#                                                        module.modulemap changing in size left train 1116-2122's iPhone build
+#                                                        failing on both tries, since this folder was not emptied)
 # Xcode makes each again when it is missing, and the build database re-runs a step whose output is gone.
 CACHE_FOLDERS = ("ModuleCache.noindex", "SDKStatCaches.noindex",
                  "Build/Intermediates.noindex/ExplicitPrecompiledModules",
+                 "Build/Intermediates.noindex/SwiftExplicitPrecompiledModules",
                  "Build/Intermediates.noindex/PrecompiledHeaders")
 # Where the toolchain's module.modulemap is, inside the developer directory (DEVELOPER_DIR, as the workflow selects Xcode).
 MODULEMAP_IN_DEVELOPER_DIR = "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/clang/include/module.modulemap"
