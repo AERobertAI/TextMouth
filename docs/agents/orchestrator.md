@@ -16,11 +16,12 @@ The usage script's `binding` window can then be a weekly cap scoped to one model
 Read only the unscoped windows ("5-hour session", "Weekly (all models)"), watch them with `Scripts/agents/usage-watch-unscoped.py <left%>` as a background task, and say in every launch message that the scoped window does not apply, or an agent following the usage rule stops at once.
 
 ## One brief per task
-<!-- id: one-brief-per-task; keys: brief, wave, launch message, origin/main, shared contract, core branch; src: -->
+<!-- id: one-brief-per-task; keys: brief, wave, launch message, origin/main, shared contract, core branch, issuelib assign; src: .claude/skills/issue-library/scripts/issuestore.py -->
 
 - One brief per task, written to `Scripts/agents/briefs/<date>/` and pointed at from the launch message;
 - it names the branch the agent makes its own from (local main or the team branch, by name), since a worktree starts at origin/main, which can be far behind local main;
 - the user's decisions quoted in the brief in their own words;
+- the issue the agent works on, named in the brief, assigned to it on main and committed before the launch (`issuelib assign ID AGENT --branch BRANCH --as orchestrator`), since a branch made before the assignment may not touch the issue until it rebases;
 - waves of three to five agents whose file regions do not overlap, with a shared contract or a first "core" branch when they must share types.
 
 ## After an agent reports
@@ -36,7 +37,7 @@ After an agent reports:
   - it appends open items to the paragraph that begins `**Open follow-ups noted on October 3 afternoon and evening**`;
   - `--note` in place of `--counts` is for a merge that ran no suite, and `--tick FR09 --hash <merge>` ticks an entry still in the TODO;
   - `--close B16 --hash <merge>` closes the issue B16, its file in `Issues/`, at the merge and ticks its pointer line in the TODO;
-- commit the TODO;
+- commit the TODO, with the issue files `--close` changed in `Issues/`;
 - remove the agent's worktree (`git worktree remove --force --force` and `git worktree prune`);
 - unregister and delete `build/DerivedData-main` when the disk is tight;
 - and post `merged: <branch>` on the board with the new counts so the other agents rebase.

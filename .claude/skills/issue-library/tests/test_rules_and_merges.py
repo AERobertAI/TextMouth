@@ -63,6 +63,20 @@ class RuleTests(RepositoryCase):
         self.assertIn("B16 is assigned to floatrender, not rulesmove", err)
         self.assertIn("post anything else on the board", err)
 
+    def test_a_branch_made_before_the_assignment_may_touch_the_issue_only_after_a_rebase(self) -> None:
+        self.write_tree({"Issues/B17.md": B16.replace("id: B16", "id: B17")})
+        self.commit_all("B17, not yet assigned")
+        self.git("switch", "-q", "-c", "fix/early")
+        status, _out, err = self.as_agent("comment", "B17", "Started.")
+        self.assertEqual(status, 1)
+        self.assertIn("B17 is assigned to no one, not floatrender", err)
+        self.git("switch", "-q", "main")
+        self.assertEqual(self.as_orchestrator("assign", "B17", "floatrender", "--branch", "fix/early")[0], 0)
+        self.commit_all("orchestrator: B17 to floatrender")
+        self.git("switch", "-q", "fix/early")
+        self.git("rebase", "-q", "main")
+        self.assertEqual(self.as_agent("comment", "B17", "Started.")[0], 0)
+
     def test_a_detached_head_is_no_branch_and_so_not_main(self) -> None:
         self.git("switch", "-q", "--detach")
         status, _out, err = self.new_issue("A bug")
