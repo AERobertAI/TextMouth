@@ -382,9 +382,10 @@ final class HangingStandInSession: InProcessFFmpegSession {
 /// iPhone has not, so the file's boxes are read (ISO 14496-12): moov, trak,
 /// mdia (its hdlr names the sound track, its mdhd's time scale is the
 /// rate), minf, stbl, stsd, and its first entry. An AudioSampleEntry's own
-/// channel count is the standard's fixed 2, so the channels come from the
-/// codec's own configuration: AAC's AudioSpecificConfig, inside the esds box's
-/// descriptors (ISO 14496-1 and 14496-3), and Apple Lossless's
+/// channel count need not be the sound's (the standard gives it a template
+/// value of 2, and AVFoundation writes 2 for mono), so the channels come from
+/// the codec's own configuration: AAC's AudioSpecificConfig, inside the esds
+/// box's descriptors (ISO 14496-1 and 14496-3), and Apple Lossless's
 /// ALACSpecificConfig, in its alac box.
 struct M4ASampleEntry: Equatable {
     let codec: String
