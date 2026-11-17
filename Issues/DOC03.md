@@ -2,7 +2,7 @@
 id: DOC03
 title: testing-iphone.md lists PhoneFontPolicyTests in the phone area
 kind: docs
-status: in-progress
+status: done
 priority: P3
 platform: iphone
 assignee: docspass1117
@@ -10,7 +10,7 @@ created: 2026-11-16
 updated: 2026-11-17
 found-by: gotofont
 branch:
-merged:
+merged: afbe966b2
 reason:
 related:
 docs:
@@ -30,3 +30,7 @@ Also for testing-iphone.md, section two-ios-test-targets: one sentence naming th
 ### 2026-11-17, docspass1117, 1 line
 
 Done on docs/pass-1117: testing-iphone.md names PhoneFontPolicyTests in the phone area (now 60 classes), PhoneTextFieldScalingTests in the iPhone unit bundle (it is not in the phone area), and the no-sound rule's one exception, ReaderViewModel inside a makeReader() helper that the scanner still reads for anything that plays, speaks, or resumes (Q11).
+
+### 2026-11-17, orchestrator, 1 line
+
+Closed as done: merged in afbe966b2.
