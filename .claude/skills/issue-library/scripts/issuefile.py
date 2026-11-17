@@ -29,11 +29,13 @@ colons; the list fields hold their entries separated by commas.
 
 Two branches that each add a comment to one issue both add lines at the file's end.
 ``.gitattributes`` gives these files git's union merge, which keeps both sides'
-lines there instead of stopping at a conflict. So a comment changes no line of the
-header, not even ``updated``: ``updated`` is the date a header field last changed,
-and each comment carries its own date. A header line that two branches change
-differently is kept twice by that merge, and ``parse`` reports the field as given
-twice, which ``issuelib check`` (and the merge chain) then fails on.
+lines there instead of stopping at a conflict (git shares the blank line both
+comments begin with, so the second heading follows the first comment's text, which
+Markdown reads the same). So a comment changes no line of the header, not even
+``updated``: ``updated`` is the date a header field last changed, and each comment
+carries its own date. A header line that two branches change differently is kept
+twice by that merge, and ``parse`` reports the field as given twice, which
+``issuelib check`` then fails on.
 
 This module only reads and builds text; ``issuestore`` reads and writes the files.
 """
