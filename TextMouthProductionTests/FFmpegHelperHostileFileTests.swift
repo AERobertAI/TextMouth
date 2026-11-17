@@ -159,7 +159,7 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
             print("FFMPEG_BOUND: \(name): \(result.ending), frames \(String(describing: result.frames)), refused \(result.refused)")
             switch result.ending.outcome {
             case let .exited(status): XCTAssertTrue(protocolStatuses.contains(status), name)
-            case .killed: XCTFail("\(name): killed")
+            case .killed, .couldNotStart: XCTFail("\(name): \(result.ending)")
             }
         }
     }
