@@ -21,6 +21,18 @@
  * Exit status: the TMFF_EXIT_ numbers of TextMouthFFmpegProtocol.h. Nothing is printed but the
  * stream; FFmpeg's own log is silenced, and the app discards standard error.
  *
+ * Confinement: FFmpeg is C that parses what an attacker may have written, so once the helper
+ * has opened its one input file it confines itself with the system's pure-computation sandbox
+ * (sandbox_init, kSBXProfilePureComputation): from then on it can compute, read the descriptor
+ * it already holds, and write its standard output, and nothing else. It opens no file, makes
+ * no network connection, and starts no program, whatever FFmpeg does with a hostile file. A
+ * helper that cannot confine itself reads nothing and ends with TMFF_EXIT_NOT_CONFINED. What
+ * FFmpeg needs after it is checked, not assumed: allocation, threads, and the clock are
+ * allowed; it opens no file once running (the session reads the held descriptor through its
+ * own callbacks); and a random seed comes from getentropy, which the profile allows, with no
+ * need of /dev/urandom. A Debug build also has a third mode, TMFF_MODE_CONFINEMENT, that
+ * proves what is refused (confinement_report below).
+ *
  * It must never end in a crash report, which on the Mac puts a dialog on the user's screen: every
  * signal that would end it with one ends it with _exit instead, on a stack of its own so that a
  * stack overflow does too (TMFF_EXIT_CRASHED), and the processor-time limit's SIGXCPU the same
@@ -32,11 +44,17 @@
  */
 #include <errno.h>
 #include <fcntl.h>
+#include <sandbox.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef DEBUG
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#endif
 
 #include "include/TextMouthFFmpegProtocol.h"
 #include "include/TextMouthFFmpegSession.h"
@@ -108,6 +126,70 @@ static int open_regular_file(const char *path) {
     return descriptor;
 }
 
+/* Confines the process to computing, reading the descriptors it already holds, and writing its
+   standard output (the system's pure-computation sandbox, which nothing undoes); 0, or -1 when
+   the system refuses. sandbox_init and sandbox_free_error are deprecated, though they are the
+   one interface that is not a private profile language, and the warning is silenced for these
+   two calls only. */
+static int confine_process(void) {
+    char *message = NULL;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    const int result = sandbox_init(kSBXProfilePureComputation, SANDBOX_NAMED, &message);
+    if (message) {
+        sandbox_free_error(message);
+    }
+#pragma clang diagnostic pop
+    return result == 0 ? 0 : -1;
+}
+
+#ifdef DEBUG
+/* Writes "<name>=<answer>\n" to standard output; 0, or -1 when the write fails. */
+static int write_answer(const char *name, const char *answer) {
+    char line[64];
+    const int length = snprintf(line, sizeof line, "%s=%s\n", name, answer);
+    return length > 0 ? write_all((const unsigned char *)line, (size_t)length) : -1;
+}
+
+/* The Debug-only proof of the confinement, run after confine_process (TMFF_MODE_CONFINEMENT):
+   writes whether the descriptor opened before it still reads, whether the hosts file is refused
+   (EPERM, which only the sandbox gives: a missing file or a closed door would not), and whether
+   a network connection is refused (a socket can still be made, but connecting to the loopback
+   address is EPERM). Returns TMFF_EXIT_DONE when all three are as a confined helper has them,
+   TMFF_EXIT_NOT_CONFINED when any is not, and TMFF_EXIT_OUTPUT when the answers cannot be
+   written. */
+static int confinement_report(int descriptor) {
+    unsigned char byte;
+    const int readable = pread(descriptor, &byte, 1, 0) == 1;
+    errno = 0;
+    const int hosts = open("/etc/hosts", O_RDONLY);
+    const int hosts_refused = hosts < 0 && errno == EPERM;
+    if (hosts >= 0) {
+        close(hosts);
+    }
+    int socket_refused = 0;
+    const int network = socket(AF_INET, SOCK_STREAM, 0);
+    if (network < 0) {
+        socket_refused = errno == EPERM;
+    } else {
+        struct sockaddr_in loopback;
+        memset(&loopback, 0, sizeof loopback);
+        loopback.sin_family = AF_INET;
+        loopback.sin_port = htons(9);
+        loopback.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        errno = 0;
+        socket_refused = connect(network, (const struct sockaddr *)&loopback, sizeof loopback) < 0 && errno == EPERM;
+        close(network);
+    }
+    if (write_answer("input", readable ? "readable" : "unreadable") != 0
+        || write_answer("hosts", hosts_refused ? "refused" : "opened") != 0
+        || write_answer("socket", socket_refused ? "refused" : "connected") != 0) {
+        return TMFF_EXIT_OUTPUT;
+    }
+    return readable && hosts_refused && socket_refused ? TMFF_EXIT_DONE : TMFF_EXIT_NOT_CONFINED;
+}
+#endif
+
 /* Reads the arguments, runs the session, and writes its records. Returns the exit status. */
 int main(int argc, char **argv) {
     install_guards();
@@ -115,10 +197,18 @@ int main(int argc, char **argv) {
         return TMFF_EXIT_USAGE;
     }
     tmff_session_mode mode;
+#ifdef DEBUG
+    int only_confinement = 0;
+#endif
     if (strcmp(argv[1], TMFF_MODE_PROBE) == 0) {
         mode = TMFF_SESSION_PROBE;
     } else if (strcmp(argv[1], TMFF_MODE_DECODE) == 0) {
         mode = TMFF_SESSION_DECODE;
+#ifdef DEBUG
+    } else if (strcmp(argv[1], TMFF_MODE_CONFINEMENT) == 0) {
+        mode = TMFF_SESSION_PROBE;
+        only_confinement = 1;
+#endif
     } else {
         return TMFF_EXIT_USAGE;
     }
@@ -126,6 +216,18 @@ int main(int argc, char **argv) {
     if (descriptor < 0) {
         return TMFF_EXIT_UNREADABLE;
     }
+    /* The one file is open: from here the helper can do nothing but compute and write. */
+    if (confine_process() != 0) {
+        close(descriptor);
+        return TMFF_EXIT_NOT_CONFINED;
+    }
+#ifdef DEBUG
+    if (only_confinement) {
+        const int answer = confinement_report(descriptor);
+        close(descriptor);
+        return answer;
+    }
+#endif
     int status = TMFF_EXIT_DONE;
     tmff_session *session = tmff_session_open(descriptor, argv[2], mode, &status);
     if (!session) {

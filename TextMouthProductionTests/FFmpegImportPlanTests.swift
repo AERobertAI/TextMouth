@@ -163,7 +163,7 @@ final class FFmpegImportPlanTests: XCTestCase {
     /// sentence, and any other the converter's code.
     func testEachExitStatusHasItsFailure() {
         let limits = WatchedProcess.Limits(maximumSeconds: 10, maximumResidentBytes: 1, maximumStalledSeconds: 10)
-        let words = [Int32](arrayLiteral: 2, 3, 4, 5, 6, 7, 9, 70, 71, 1, 8, 10, 99).map {
+        let words = [Int32](arrayLiteral: 2, 3, 4, 5, 6, 7, 9, 12, 70, 71, 1, 8, 10, 99).map {
             FFmpegAudioConverter.failure(forExitStatus: $0, fileName: "Lecture.wma", kind: "WMA", limits: limits).localizedDescription
         }
         XCTAssertEqual(words, [
@@ -174,6 +174,8 @@ final class FFmpegImportPlanTests: XCTestCase {
             "The audio file Lecture.wma is damaged, so it could not be converted.",
             "TextMouth can't convert “Lecture.wma” because its sound changes its rate or its channels partway through.",
             "Converting Lecture.wma was stopped because it needed more memory than it may use.",
+            "TextMouth's converter could not make itself safe before reading “Lecture.wma”, so it did not read the file. "
+                + "Install TextMouth again, then import the file again.",
             "TextMouth's converter stopped unexpectedly while reading “Lecture.wma”. The file may be damaged.",
             "Converting Lecture.wma was stopped because it used more than 40 seconds of processor time.",
             "Converting Lecture.wma failed (the converter ended with code 1).",
@@ -200,6 +202,9 @@ final class FFmpegImportPlanTests: XCTestCase {
         XCTAssertNil(failure(.init(outcome: .exited(status: 9), signal: 9), .success(1)))
         XCTAssertEqual(failure(.init(outcome: .killed(.madeNoProgress(seconds: 60))), .success(1)),
                        "\(ImportAudioConverter.Failure.killed(fileName: "a.wma", reason: "its output did not grow for 60 seconds"))")
+        // The reader's own stop at the output cap is the kill the watchdog would have made.
+        XCTAssertEqual(failure(.init(outcome: .exited(status: 9), signal: 9), .failure(FFmpegAudioConverter.WroteTooMuch(bytes: 5_242_880))),
+                       "\(ImportAudioConverter.Failure.killed(fileName: "a.wma", reason: "its output passed 5 MB"))")
         XCTAssertEqual(failure(.init(outcome: .exited(status: 0)), early), "\(FFmpegAudioConverter.Failure.endedEarly(fileName: "a.wma"))")
         XCTAssertEqual(failure(.init(outcome: .exited(status: 3)), early),
                        "\(FFmpegAudioConverter.Failure.notRecognized(fileName: "a.wma", kind: "WMA"))")
@@ -292,6 +297,9 @@ final class FFmpegImportPlanTests: XCTestCase {
              "TextMouth can't convert the sound of “Clip.avi”: it is in a kind of audio TextMouth does not read."),
             (.formChanged(fileName: "Radio.mkv"),
              "TextMouth can't convert “Radio.mkv” because its sound changes its rate or its channels partway through."),
+            (.notConfined(fileName: "Lecture.wma"),
+             "TextMouth's converter could not make itself safe before reading “Lecture.wma”, so it did not read the file. "
+                + "Install TextMouth again, then import the file again."),
             (.crashed(fileName: "Lecture.wma"),
              "TextMouth's converter stopped unexpectedly while reading “Lecture.wma”. The file may be damaged."),
             (.endedEarly(fileName: "Lecture.wma"),

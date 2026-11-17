@@ -98,7 +98,8 @@ final class FFmpegImportConversionTests: XCTestCase {
 
     /// A file whose bytes are not of its name's format is refused as such
     /// before anything runs; so is one the helper's demuxer refuses (its exit
-    /// status 3); and one that holds no sound (status 4) says so.
+    /// status 3); and one that holds no sound (status 4) says so, as a helper
+    /// that could not confine itself (status 12) says that.
     func testAFileThatIsNotWhatItsNameSaysIsRefused() async throws {
         let folder = try makeSandboxDirectory("FFmpegNotRecognized")
         let fake = folder.appendingPathComponent("Fake.wma")
@@ -115,6 +116,7 @@ final class FFmpegImportConversionTests: XCTestCase {
         let cases: [(Int32, FFmpegAudioConverter.Failure)] = [
             (3, .notRecognized(fileName: "tones.wma", kind: "WMA")), (4, .noSound(fileName: "tones.wma")),
             (5, .soundNotDecoded(fileName: "tones.wma")), (7, .formChanged(fileName: "tones.wma")),
+            (12, .notConfined(fileName: "tones.wma")),
         ]
         for (status, expected) in cases {
             let wma = try source()

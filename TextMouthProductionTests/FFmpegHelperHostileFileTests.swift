@@ -32,7 +32,7 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
     ]
 
     /// The exit statuses of TextMouthFFmpegProtocol.h.
-    private let protocolStatuses: Set<Int32> = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 70, 71]
+    private let protocolStatuses: Set<Int32> = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 70, 71]
 
     /// A random number generator with a seed, so a failure names a copy that
     /// can be made again (xorshift64*).

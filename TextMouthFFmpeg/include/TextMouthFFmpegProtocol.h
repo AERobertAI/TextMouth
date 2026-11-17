@@ -103,6 +103,7 @@
 #define TMFF_EXIT_MEMORY 9           /* an allocation was refused */
 #define TMFF_EXIT_NO_DEMUXER 10      /* this build has no demuxer of that name */
 #define TMFF_EXIT_STOPPED 11         /* the session was told to stop */
+#define TMFF_EXIT_NOT_CONFINED 12    /* the helper could not confine itself, so it read nothing */
 #define TMFF_EXIT_CRASHED 70         /* a fatal signal (the helper ends itself, with no crash report) */
 #define TMFF_EXIT_PROCESSOR_TIME 71  /* the processor time limit's signal, SIGXCPU */
 
@@ -114,5 +115,12 @@
 /* The helper's two modes, its first argument: what the file holds, or that and its sound. */
 #define TMFF_MODE_PROBE "probe"
 #define TMFF_MODE_DECODE "decode"
+
+/* A third mode, which only a Debug build of the helper has (a Release build answers it with
+   TMFF_EXIT_USAGE): it confines itself as a run does, then tries what the confinement must
+   refuse, and writes one line for each, "input=readable" (the file it opened is still read),
+   "hosts=refused" (the system's hosts file is not opened), and "socket=refused" (a network
+   connection is not made), exiting TMFF_EXIT_DONE only when all three are so. */
+#define TMFF_MODE_CONFINEMENT "confinement"
 
 #endif /* TEXTMOUTH_FFMPEG_PROTOCOL_H */

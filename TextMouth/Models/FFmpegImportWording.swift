@@ -118,6 +118,16 @@ enum FFmpegImportWording {
         "TextMouth's converter stopped unexpectedly while reading “\(fileName)”. The file may be damaged."
     }
 
+    /// Why a file was not imported when the converter could not confine
+    /// itself before reading it, which it always does, so a file it reads
+    /// cannot harm the Mac (FMT50's confinement): "TextMouth's converter could
+    /// not make itself safe before reading “Lecture.wma”, so it did not read
+    /// the file. Install TextMouth again, then import the file again."
+    static func notConfined(fileName: String) -> String {
+        "TextMouth's converter could not make itself safe before reading “\(fileName)”, so it did not read the file. "
+            + reinstallAdvice()
+    }
+
     /// Why a file was not imported when the converter ended, with no error,
     /// before the end of its sound: "TextMouth's converter stopped before the
     /// end of “Lecture.wma”, so it could not be imported."
