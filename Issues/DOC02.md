@@ -2,7 +2,7 @@
 id: DOC02
 title: DR35's limitation is also stated in the Word 6 and Word 95 section, which no marker cites
 kind: docs
-status: open
+status: in-progress
 priority: P3
 platform: both
 assignee: docspass1116

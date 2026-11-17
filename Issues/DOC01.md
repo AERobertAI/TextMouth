@@ -2,7 +2,7 @@
 id: DOC01
 title: Pages that mean October's B12 say B12-OCT
 kind: docs
-status: open
+status: in-progress
 priority: P3
 platform: both
 assignee: docspass1116
