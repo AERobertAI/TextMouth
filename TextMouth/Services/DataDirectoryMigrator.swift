@@ -774,9 +774,14 @@ extension DataDirectoryMigrator {
 /// - Foundation's own, for every `Data.write(to:options: .atomic)` and
 ///   `String.write(to:atomically:encoding:)` (the rules, the statistics,
 ///   config.json, library.json, the feeds' files, and the rest): a dot,
-///   "dat.nosync", the writing process's number in hexadecimal, a dot, and
-///   six letters or digits, as ".dat.nosync1f4c.AbC123" (measured on
-///   November 16, 2026);
+///   "dat.nosync", the writing process's number in hexadecimal (upper case),
+///   a dot, and six letters or digits, as ".dat.nosync1F4C.AbC123". Apple
+///   documents no name: this one was measured on macOS 26.3.1 on
+///   November 16, 2026, where Foundation's newer private way of making the
+///   file (its open-source version tries it first, with this name as the
+///   fallback) was not the one seen. macOS 14 and 15 are unmeasured, so a
+///   canary test (`DataDirectoryCopyTests`) watches what an atomic write
+///   leaves, and fails on a hidden name this does not know;
 /// - TextMouth's own, a file staged whole beside the one it is to become
 ///   and moved into place (`stagedName(for:)`): a dot, the target's name, a
 ///   dot, and a UUID. Only the targets in `stagedTargets` are known, since

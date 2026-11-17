@@ -114,6 +114,42 @@ final class DataDirectoryCopyTests: XCTestCase {
         ])
     }
 
+    /// The canary for `SaveTemporaryNames`: an atomic write's temporary file
+    /// has a name the matcher knows. Foundation documents none (it was
+    /// measured on one macOS), so a version that names it otherwise fails
+    /// here, and the copy's plan would meet a file that vanishes. Skipped when
+    /// the write left no file to see, which says nothing either way.
+    func testAnAtomicWritesTemporaryFileHasANameTheCopyKnows() throws {
+        let folder = try makeSandboxDirectory("CopyTemporaryCanary")
+        let target = folder.appendingPathComponent("target.bin")
+        // Large enough that the temporary file is on disk for a few
+        // milliseconds, which a listing in a loop catches.
+        let bytes = Data(count: 16 * 1024 * 1024)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            for _ in 0..<8 { try? bytes.write(to: target, options: .atomic) }
+            finished.signal()
+        }
+
+        // Every name the folder held, listed until the writes end (with a
+        // limit of 30 seconds, which a hung disk would reach).
+        var seen = Set<String>()
+        let deadline = Date().addingTimeInterval(30)
+        var done = false
+        while !done, Date() < deadline {
+            done = finished.wait(timeout: .now()) == .success
+            seen.formUnion((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [])
+        }
+        XCTAssertTrue(done, "the writes did not end in 30 seconds")
+
+        let others = seen.subtracting([target.lastPathComponent])
+        try XCTSkipIf(others.isEmpty, "no temporary file was seen beside the target")
+        XCTAssertEqual(
+            others.filter { !SaveTemporaryNames.isTemporary($0) }.sorted(), [],
+            "an atomic write left a file under a name the copy plan does not know: the plan would meet it vanish"
+        )
+    }
+
     // MARK: - Copying
 
     /// Each package is copied with one copy of the whole package, and each
