@@ -51,7 +51,7 @@ The library's sheets: the folder edits and the Book Info a Library window asks i
   The key and typing helpers of these tests live in TextMouthProductionTests/AccessibilityTestSupport.swift (#1241).
   So do handleQueuedCallbacks(), which returns once the main queue has run what was queued before it, and control(labelled:in:), which finds a hosted control by its label and lists the labels there are when it finds none.
   The helper startTurningTheRunLoop(_:) is in FeedUITestSupport.swift.
-  The legacy scenario files (TextMouthProductionTests/LegacyScenarioHarness.swift and the files beside it) have no canImport(TextMouth) conditionals, and the harness's testFileURL(_:) builds the TestData path for them.
+  The legacy scenario files (TextMouthProductionTests/LegacyScenarioHarness.swift and the files beside it) have no canImport(TextMouth) conditionals, and dataFileURL(_:) in TestDataFiles.swift builds the TestData path for them (requireFile(_:) is its throwing form).
 
 ## Book Information's Text Encoding pop-up
 <!-- id: book-info-text-encoding-popup; keys: charset, encoding guess, mojibake, Shift JIS, code page, reread alert, text encoding menu; src: TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/ViewModels/TextEncodingChoiceModel.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouthProductionTests/TextEncodingPopUpTests.swift, TextMouth/ViewModels/BookRereadChoosing.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/ViewModels/BrailleFileCodeChoiceModel.swift -->

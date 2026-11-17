@@ -4,9 +4,10 @@
 Part of [TextMouth's documentation](../../README.md).
 
 ## What the Export dialog lists
-<!-- id: export-dialog-kinds; keys: export kinds, checkbox, Original file, Keep originals of converted audio, .rtfd, transcript.json; src: TextMouth/Models/BookExportWording.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Views/Export/BookExportSheet.swift -->
+<!-- id: export-dialog-kinds; keys: export kinds, checkbox, Original file, Keep originals of converted audio, .rtfd, transcript.json; src: TextMouth/Models/BookExportWording.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Views/Export/BookExportSheet.swift; status: incomplete; issues: FR31 -->
 
-The Export dialog lists what the books hold: a checkbox for each kind, labelled with its size and with its number of files when there are several, or, for several books, with how many of them hold it, as in "Original file, 1.2 MB", "Audio, 12 files, 340 MB", or "Audio, 2 books, 680 MB".
+The iPhone has no Export dialog yet.
+The Export dialog on the Mac lists what the books hold: a checkbox for each kind, labelled with its size and with its number of files when there are several, or, for several books, with how many of them hold it, as in "Original file, 1.2 MB", "Audio, 12 files, 340 MB", or "Audio, 2 books, 680 MB".
 The kinds are
 - Audio, an audiobook's file or its tracks;
 - Headings, an audiobook's headings as one file, with a Convert headings to pop-up that chooses CUE sheet (the first choice) or Audacity labels; listed only for a book of more than one heading;

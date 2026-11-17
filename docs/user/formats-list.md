@@ -72,15 +72,16 @@ Details: [What TextMouth reads: EPUB and word-processor documents](what-textmout
 - Flat OpenDocument (.fodt) and OpenOffice 1.x (.sxw) files are not read.
 
 ## DAISY and braille books
-<!-- id: formats-list-daisy-braille; keys: DAISY, DTBook, NIMAS, BRF, BRL, PEF, braille; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift; status: incomplete; issues: DR34 -->
+<!-- id: formats-list-daisy-braille; keys: DAISY, DTBook, NIMAS, BRF, BRL, PEF, braille; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift; status: incomplete; issues: FR32, FR33 -->
 
 Details: [DAISY and braille books](reads-daisy-and-braille.md).
 
 - DAISY 2.02 and 3 book (a folder, a ZIP, ncc.html, a .opf package file, or .daisy): text, headings, pages, and the narration where it has audio; iPhone: yes; Tested with real files.
 - DTBook on its own (.xml whose root element is dtbook) and a NIMAS package: text, headings, and pages, read as a DAISY book; iPhone: yes; Tested with made samples.
-- BRF braille file (.brf): the text, translated back from braille by liblouis, in the braille code that TextMouth guesses or you choose, with pages; iPhone: no; Tested with made samples.
-- BRL braille file (.brl): the same, with no pages, since it has no page layout; iPhone: no; Basic, since its layout was inferred from a guide and not checked against real files.
-- PEF braille file (.pef): the same, with pages; iPhone: no; Tested with made samples.
+- BRF braille file (.brf): the text, translated back from braille by liblouis, in the braille code that TextMouth guesses or you choose, with pages; iPhone: yes, with the four English tables the app carries; Tested with made samples.
+- BRL braille file (.brl): the same, with no pages, since it has no page layout; iPhone: yes, as BRF; Basic, since its layout was inferred from a guide and not checked against real files.
+- PEF braille file (.pef): the same, with pages; iPhone: yes, as BRF; Tested with made samples.
+- The iPhone reads braille books with the defaults of the Braille tab, and has no Braille settings or Braille Code pop-up yet, and a book that needs one of a Mac's own tables is refused there (see [DAISY and braille books](reads-daisy-and-braille.md)).
 
 ## Audiobooks and other sound
 <!-- id: formats-list-audio; keys: MP3, M4B, M4A, WAV, FLAC, Ogg, MP4, converted audio; src: TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Parsers/AudioContentSniffer.swift, TextMouth/Parsers/NeroChapterReader.swift; status: incomplete; issues: FMT54 -->
@@ -170,4 +171,4 @@ Each refusal names the file and says what to do next (see [Adding books](import-
 - A Kindle Create package (.kpf), a Kindle book that is copy-protected or has no flowing text, and a KFX part without its book: told apart, each with its own sentence.
 - A Word 1 or Word 2 document, and a password-protected Word 97-2003, OpenDocument, or PDF file.
 - A document, web archive, SSML file, DTBook, or Kindle book of more than 64 MB.
-- On the iPhone, Ogg and the other converted audio, braille files, and a Word document older than Word 6.
+- On the iPhone, Ogg and the other converted audio, and a Word document older than Word 6.

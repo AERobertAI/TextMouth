@@ -101,7 +101,7 @@ At each launch TextMouth also stops any textutil an earlier run left behind, tou
 The debug log records TEXTUTIL_LEFTOVERS_SWEPT, with how many processes it stopped and how many folders it removed, when it did either.
 
 ## TextMouthBraille, the braille helper
-<!-- id: textmouthbraille-braille-helper; keys: liblouis, braille translation, print to braille, helper limits, Mac tables; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthBraille/main.c -->
+<!-- id: textmouthbraille-braille-helper; keys: liblouis, braille translation, print to braille, helper limits, Mac tables; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthBraille/main.c; status: incomplete; issues: FU02 -->
 
 TextMouth translates between print and braille with liblouis, which runs in TextMouthBraille, a helper program of TextMouth's own inside the app, also as a separate process that TextMouth watches (see [What TextMouth reads](reads-daisy-and-braille.md)).
 TextMouth stops it:
@@ -120,6 +120,11 @@ Neither line holds any text of a book.
 The debug log also records BRAILLE_MAC_TABLE_REFUSED when the check of one of this Mac's tables refuses it, with the table's name, as "mac:" and its file name, and the reason in the refusal's words (see [Settings](settings-braille.md)).
 A check that could not run is not logged so, and the line holds no text of a book.
 Cancel in the import overlay stops it at once.
+The iPhone can start no program, so it runs the same translation, liblouis 3.39.0, inside the app, one call at a time on a thread of its own.
+It keeps the Mac's limits as nearly as one process allows: its batches read the same limits on time and output, and a call still running 5 seconds past its limit is abandoned, since nothing in an app can stop one of its threads.
+A translation abandoned so says "TextMouth stopped the braille translation because it ran longer than N seconds, and won't try again until TextMouth is closed and opened again.", with N its limit in seconds.
+Every translation after it says "TextMouth stopped the braille translation earlier because it took too long, and won't try again until TextMouth is closed and opened again."
+A crash in liblouis, which the Mac's helper survives, would end the iPhone app (FU02).
 
 ### Where the braille helper writes
 <!-- id: where-braille-helper-writes; keys: braille-in, braille-out, scratch files, temporary folder; src: TextMouth/Services/BrailleTranslator.swift -->

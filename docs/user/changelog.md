@@ -32,6 +32,11 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### On the iPhone
 - The iPhone still refuses these formats, and its sentence now ends "Add it on your Mac, then send the book here."
+- The iPhone now reads BRF, BRL, and PEF braille books, translated to print inside the app with the four English braille tables it carries.
+- A braille book that needs one of the Mac's own tables is refused on the iPhone with "“Manuel” needs “fr-bfu-g2.ctb”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have. Add it on your Mac, then send the book here."
+- The iPhone has no Braille settings, no Braille Code pop-up, and no export yet, and it reads every braille book with the Braille tab's defaults.
+- A braille translation that runs far past its time limit is stopped, and the iPhone then says "TextMouth stopped the braille translation earlier because it took too long, and won't try again until TextMouth is closed and opened again." until you close TextMouth and open it again.
+- The iPhone app is 0.5 MB larger, for liblouis and its tables.
 
 ### Not changed
 - How any other format imports, reads, or plays.

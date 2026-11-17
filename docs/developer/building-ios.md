@@ -4,7 +4,7 @@
 Part of [TextMouth's documentation](../../README.md).
 
 ## The iOS app
-<!-- id: ios-app; keys: TextMouthiOS target, second app target, LAME_iOS, ObjCExceptionCatcher_iOS, Platform/iOS, scheme; src: project.yml, TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme, TextMouth/Platform/iOS/Info.plist -->
+<!-- id: ios-app; keys: TextMouthiOS target, second app target, LAME_iOS, liblouis_iOS, Platform/iOS, scheme; src: project.yml, TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme, TextMouth/Platform/iOS/Info.plist -->
 
 project.yml defines two apps over one source folder.
 `TextMouth` is the Mac app, which every other target and command on this page builds.
@@ -12,9 +12,10 @@ project.yml defines two apps over one source folder.
 
 - It compiles the TextMouth source folder less `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`, so it compiles the files both apps share and `TextMouth/Platform/iOS/`.
 - It is the product TextMouth, with the module name TextMouth, for iOS 26.0, and has a bundle identifier of its own, `com.textmouth.TextMouth.iOS`.
-  It takes the same two Swift packages (ZIPFoundation and swift-cmark), the vendored SwiftSoup through its own library target, SwiftSoup_iOS, and its own builds of the two C libraries it links, `LAME_iOS` and `ObjCExceptionCatcher_iOS`.
+  It takes the same two Swift packages (ZIPFoundation and swift-cmark), the vendored SwiftSoup through its own library target, SwiftSoup_iOS, and its own builds of the four C libraries it links.
+  They are `LAME_iOS`, `ObjCExceptionCatcher_iOS`, `liblouis_iOS`, and TextMouthBrailleLibrary_iOS (the braille translation, DR34).
   The file project.yml defines each library, SwiftSoup included, once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
-- It has no helper program, since iOS lets an app start none, and no braille helper or liblouis.
+- It has no helper program, since iOS lets an app start none, so it runs liblouis inside the app (see [The translator on the iPhone](../architecture/state/imports-braille-tables.md#the-translator-on-the-iphone)).
 - It is the iPhone app: the Library, the reader, Settings, and importing, built from research/IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)).
   Nothing has run on a phone.
 - Its scheme, `TextMouthiOS`, is committed.
@@ -30,7 +31,7 @@ The three make targets run the scripts in `Scripts/ios`.
 They read a commit, so run them on committed work.
 Each reads the commit as it was when it started (`Scripts/ios/typecheck.py` takes a `git archive` of it), not the working tree: commit first, and start the check again after a later commit.
 
-- **`make typecheck-ios`** copies the committed sources of HEAD into a work folder of its own, writes a Swift package around them, and builds it with SwiftPM and the iOS SDK, for iOS 26.0, compiling the sources the iOS app compiles and linking the two C libraries.
+- **`make typecheck-ios`** copies the committed sources of HEAD into a work folder of its own, writes a Swift package around them, and builds it with SwiftPM and the iOS SDK, for iOS 26.0, compiling the sources the iOS app compiles and linking its four C libraries.
   It never changes the repository.
   A clean run means the iOS app's sources compile and link; because it builds a package of its own and not the Xcode target, it does not test the target's build settings.
   It takes about two minutes once it has the lock.
@@ -97,7 +98,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
 It names the runner's own architecture (`ARCHS=arm64`), since both would compile every file twice.
   It writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
   A request that says `"ios": false` leaves it out.
-  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`: about 1,980 tests, 30 its own and the rest the Mac's, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
+  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`: about 2,330 tests, 46 its own and the rest the Mac's, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
   It does so when the request asks for them (every full suite, the phone area, or a class of either bundle).
   The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: no iPhone test of either bundle needs a simulator on this Mac.
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.

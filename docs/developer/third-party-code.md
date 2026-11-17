@@ -14,7 +14,7 @@ The licence files of all ten ship inside the Mac app, in Contents/Resources/Lice
 - Licenses/swift-cmark holds COPYING;
 - Licenses/TrueAudio holds COPYRIGHT and README, Licenses/WavPack holds COPYING, and Licenses/MonkeysAudio holds License.txt: the notices of the decoders TextMouth's own TTA, WavPack, and Monkey's Audio readers are ported from.
 
-Both apps ship the same folders except liblouis, whose braille translator it does not link, and FFmpeg, which the iPhone app does not link yet (FMT54).
+Both apps ship the same folders except FFmpeg's, which the iPhone app does not link yet (FMT54).
 The file project.yml copies them from Vendor, never into the repository a second time, so each stays its author's own text.
 The package and decoder licences are in Vendor/package-licenses, unchanged from their sources.
 BundledLicenseTests and BundledLicenseIOSTests check that they reach the built apps.
@@ -36,7 +36,7 @@ TextMouth writes MP3 with it (see [Editing audio](../user/editing-audio.md)).
 - The licence asks that a copy of the app given to anyone else carry this notice and the licence's text, which the app carries in Licenses/LAME (above).
 
 ## liblouis, the braille translator
-<!-- id: liblouis-braille-translator; keys: liblouis, braille translator, TextMouthBraille, liblouis.h.in, UCS-4, LGPL 2.1, VoiceOver braille tables; src: project.yml, Vendor/liblouis/COPYING.LESSER, Vendor/liblouis/AUTHORS, Vendor/liblouis/config.h, Vendor/liblouis/include/liblouis.h, TextMouthBraille/main.c, TextMouthProductionTests/BrailleFileCodeTests.swift -->
+<!-- id: liblouis-braille-translator; keys: liblouis, braille translator, TextMouthBraille, liblouis.h.in, UCS-4, LGPL 2.1, VoiceOver braille tables; src: project.yml, Vendor/liblouis/COPYING.LESSER, Vendor/liblouis/AUTHORS, Vendor/liblouis/config.h, Vendor/liblouis/include/liblouis.h, TextMouthBraille/main.c, TextMouthProductionTests/BrailleFileCodeTests.swift; status: incomplete; issues: FU02, QN01 -->
 
 liblouis 3.39.0, the open-source braille translator and back-translator, by John J. Boyer, its founder, and the liblouis contributors (Vendor/liblouis/AUTHORS), under the GNU Lesser General Public License, version 2.1 or any later version, whose text is Vendor/liblouis/COPYING.LESSER.
 TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and braille books](../user/reads-daisy-and-braille.md) and [Exporting braille files](../user/exporting-braille.md)).
@@ -56,9 +56,10 @@ TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and
   No translation table includes them, so the helper never loads them; they are bundled with the tables folder (Vendor/liblouis/tables, into Contents/Resources/liblouis/tables), 6,793 bytes.
 - TextMouth adds two files of its own: config.h, in place of the one liblouis's configure script writes, and include/liblouis.h, the release's liblouis.h.in with its one substitution made, 32-bit wide characters (UCS-4), so every Unicode character and braille cell fits.
   Nothing of the release was run (not configure, make, or any script), and nothing from liblouis's tools/ folder, which is GPL 3, is used.
-- project.yml builds it as a static library that only the TextMouthBraille helper links, so liblouis runs only in that helper and never in TextMouth's own process.
+- project.yml builds it as a static library that the TextMouthBraille helper links, so on the Mac liblouis runs only in that helper and never in TextMouth's own process.
+  The iPhone app links its own build, liblouis_iOS, and runs it in the app, since iOS starts no helper: a crash in it would end the app (FU02).
   It is C that reads untrusted braille and text, it has had memory-safety bugs, and it is not thread-safe (see Braille files, in [Imports: braille tables and the translator](../architecture/state/imports-braille-tables.md)).
-  Static linking suits the licence, as it does LAME's: the app's whole source, liblouis's included, is in the repository, so `make build` builds the app from that source, and the app can be rebuilt with a changed liblouis.
+  Static linking suits the licence while only the source is published, as it does LAME's (QN01 asks what a binary needs): the app's whole source, liblouis's included, is in the repository, so `make build` builds the app from that source, and the app can be rebuilt with a changed liblouis.
 - To update it, replace those files from a newer release, make include/liblouis.h again from its liblouis.h.in, compare config.h with what the new sources read, and run `make check`.
 - The licence asks that a copy of the app given to anyone else carry the licence's text, which the app carries in Licenses/liblouis (above).
 - TextMouth also reads, but does not include, VoiceOver's own liblouis tables on the Mac (liblouis 3.34.0 on macOS 26.3, which the Mac records as LGPL 2.1).
