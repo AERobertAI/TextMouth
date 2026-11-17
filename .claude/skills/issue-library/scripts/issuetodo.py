@@ -405,6 +405,13 @@ def renamed_ids(store: Store, year: int, todo_date: str) -> Dict[str, Tuple[str,
 # Building the plan, checking it, and writing it.
 # ---------------------------------------------------------------------------
 
+def _relate(facts: Dict[str, str], issue_id: str) -> None:
+    """Add ``issue_id`` to the end of an issue's related IDs, once."""
+    related = issuefile.split_list(facts["related"])
+    if issue_id not in related:
+        facts["related"] = issuefile.join_list(related + [issue_id])
+
+
 def rows_text(entry: TodoEntry, todo_lines: List[str]) -> str:
     """ID-less rows as their owner's description holds them: the section's title, its opening paragraphs, the rows."""
     intro: List[str] = []
@@ -479,6 +486,12 @@ def plan_import(store: Store, as_name: str) -> Plan:
         if entry.rows:
             descriptions[entry.owner].append(rows_text(entry, todo_lines))
             spans[entry.owner].append((entry.start, entry.end))
+            # The other open items the rows' section names share them ("for A01/P09/Q05"),
+            # so each and the owner name one another, and closing one does not hide the rows.
+            for other in issueids.ids_in(entry.section):
+                if other != entry.owner and other in plan.facts:
+                    _relate(plan.facts[entry.owner], other)
+                    _relate(plan.facts[other], entry.owner)
     for issue_id, facts in plan.facts.items():
         facts["lines"] = spans_text(spans[issue_id])
     template = store.template()

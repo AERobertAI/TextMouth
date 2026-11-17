@@ -179,8 +179,8 @@ class ImportTests(ImportCase):
         self.assertEqual(status, 0, err)
         # id: kind, priority, platform, found-by, created, related, docs, labels.
         expected = {
-            "P09": ("test", "P1", "mac", "the code audit of 2026-09-04", "2026-09-04", "", "", "manual"),
-            "A01": ("test", "P1", "mac", "the code audit of 2026-09-04", "2026-09-04", "", "", "manual"),
+            "P09": ("test", "P1", "mac", "the code audit of 2026-09-04", "2026-09-04", "A01", "", "manual"),
+            "A01": ("test", "P1", "mac", "the code audit of 2026-09-04", "2026-09-04", "P09", "", "manual"),
             "FR02": ("feature", "P2", "mac", "the user", "2026-10-03", "", "", ""),
             "FR16": ("feature", "P3", "mac", "the user", "2026-10-13", "FR15", "", ""),
             "B14": ("bug", "P2", "mac", "review-rulesmove", "2026-11-16", "", "", ""),
