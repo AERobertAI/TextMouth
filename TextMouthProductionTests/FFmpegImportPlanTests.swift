@@ -324,5 +324,17 @@ final class FFmpegImportPlanTests: XCTestCase {
                 .localizedDescription,
             "The audio converted from Talk.webm failed its check: it lasts no time."
         )
+        // The iPhone's FFmpeg engine (FMT54) says its two sentences of its own work, which a listener hears after
+        // the import's words: a call abandoned past its time, and every one refused after it.
+        XCTAssertEqual(
+            InProcessEngine.Failure.abandoned(work: FFmpegImportWording.inAppWork, limit: 61.2).errorDescription,
+            "TextMouth stopped the audio conversion because it ran longer than 62 seconds, "
+                + "and won't try again until TextMouth is closed and opened again."
+        )
+        XCTAssertEqual(
+            InProcessEngine.Failure.refused(work: FFmpegImportWording.inAppWork).errorDescription,
+            "TextMouth stopped the audio conversion earlier because it took too long, "
+                + "and won't try again until TextMouth is closed and opened again."
+        )
     }
 }

@@ -126,10 +126,11 @@ extension FFmpegAudioConverter {
     /// thread of its own, since iOS lets an app start no helper program. A
     /// call past its time is abandoned, and every later conversion is refused
     /// until TextMouth is closed and opened again, in the engine's sentences
-    /// (`InProcessEngineWording`): "TextMouth stopped the audio conversion
-    /// because it ran longer than 62 seconds, and won't try again until
-    /// TextMouth is closed and opened again."
-    static let sessionEngine = InProcessEngine(name: "FFmpeg", work: "the audio conversion")
+    /// (`InProcessEngineWording`, with `FFmpegImportWording.inAppWork`):
+    /// "TextMouth stopped the audio conversion because it ran longer than 62
+    /// seconds, and won't try again until TextMouth is closed and opened
+    /// again."
+    static let sessionEngine = InProcessEngine(name: "FFmpeg", work: FFmpegImportWording.inAppWork)
 
     /// Runs the session on `file`, read with the demuxer named `demuxer`
     /// (`FFmpegContainer.demuxer`), in `mode`, in this process on the tool's

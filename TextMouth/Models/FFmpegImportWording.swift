@@ -159,6 +159,13 @@ enum FFmpegImportWording {
     /// audio converted from Talk.webm failed its check: it lasts no time."
     static let convertedFileIsSilent = "it lasts no time"
 
+    /// What the iPhone's FFmpeg engine names its work by in its two sentences
+    /// (FMT54, `InProcessEngineWording`), for a call abandoned past its time
+    /// and for every one refused after it: "TextMouth stopped the audio
+    /// conversion because it ran longer than 62 seconds, and won't try again
+    /// until TextMouth is closed and opened again."
+    static let inAppWork = "the audio conversion"
+
     // MARK: - Tracks Left Out of a Book
 
     /// The most left-out files a notice names; "and 3 more" counts the rest.
