@@ -379,8 +379,13 @@ final class HangingStandInSession: InProcessFFmpegSession {
 /// them, or the entry's four letters), its channels, and its sample rate.
 /// The tests the iPhone shares may name no Apple audio framework
 /// (Scripts/agents/ios_ui_tests.py), and the Mac's afinfo is a program the
-/// iPhone has not, so the file's boxes are read: moov, trak, mdia, minf,
-/// stbl, stsd, and its first entry, an AudioSampleEntry of ISO 14496-12.
+/// iPhone has not, so the file's boxes are read (ISO 14496-12): moov, trak,
+/// mdia (its hdlr names the sound track, its mdhd's time scale is the
+/// rate), minf, stbl, stsd, and its first entry. An AudioSampleEntry's own
+/// channel count is the standard's fixed 2, so the channels come from the
+/// codec's own configuration: AAC's AudioSpecificConfig, inside the esds box's
+/// descriptors (ISO 14496-1 and 14496-3), and Apple Lossless's
+/// ALACSpecificConfig, in its alac box.
 struct M4ASampleEntry: Equatable {
     let codec: String
     let channels: Int
@@ -394,19 +399,98 @@ struct M4ASampleEntry: Equatable {
         for track in children("trak", of: movie) {
             guard let media = child("mdia", of: track), let handler = child("hdlr", of: media),
                   handler.count >= 12, String(decoding: handler.dropFirst(8).prefix(4), as: UTF8.self) == "soun",
+                  let rate = child("mdhd", of: media).flatMap(timeScale(ofMediaHeader:)),
                   let table = child("minf", of: media).flatMap({ child("stbl", of: $0) }),
                   let descriptions = child("stsd", of: table), descriptions.count >= 8 + 36 else { continue }
-            // stsd: a version and flags (4 bytes), the entry count (4), then the first entry: its size (4) and
-            // type (4), 6 reserved bytes, a data reference index (2), 8 reserved, then its channels (2), sample
-            // size (2), 4 more, and its sample rate in 16.16 fixed point (4).
+            // stsd: a version and flags (4 bytes) and the entry count (4), then the first entry: its size (4) and
+            // type (4), 6 reserved bytes, a data reference index (2), and the AudioSampleEntry's 20 bytes, then
+            // the entry's own boxes.
             let entry = descriptions.dropFirst(8)
+            let size = Int(number(entry, at: 0, bytes: 4))
             let type = String(decoding: entry.dropFirst(4).prefix(4), as: UTF8.self)
-            let channels = Int(number(entry, at: 24, bytes: 2))
-            let rate = Double(number(entry, at: 32, bytes: 4) >> 16)
-            let codec = ["mp4a": "aac", "alac": "alac"][type] ?? type
-            return M4ASampleEntry(codec: codec, channels: channels, sampleRate: rate)
+            let boxes = entry.dropFirst(36).prefix(max(0, size - 36))
+            switch type {
+            case "mp4a":
+                return M4ASampleEntry(codec: "aac", channels: child("esds", of: boxes).flatMap(aacChannels) ?? 0, sampleRate: rate)
+            case "alac":
+                return M4ASampleEntry(codec: "alac", channels: child("alac", of: boxes).flatMap(alacChannels) ?? 0, sampleRate: rate)
+            default:
+                return M4ASampleEntry(codec: type, channels: 0, sampleRate: rate)
+            }
         }
         return nil
+    }
+
+    /// The time scale of an mdhd payload, the track's sample rate in an
+    /// .m4a: after a version and flags (4 bytes), two times of 4 bytes, or of
+    /// 8 in version 1.
+    private static func timeScale(ofMediaHeader header: ArraySlice<UInt8>) -> Double? {
+        let offset = header.first == 1 ? 20 : 12
+        guard header.count >= offset + 4 else { return nil }
+        return Double(number(header, at: offset, bytes: 4))
+    }
+
+    /// The channel configuration of the AudioSpecificConfig in an esds
+    /// payload: after its version and flags, the ES descriptor (tag 3), its
+    /// DecoderConfigDescriptor (tag 4), and that one's DecoderSpecificInfo (tag
+    /// 5), whose first bits are the audio object type (5, or 11 when they say
+    /// 31), the frequency index (4, and 24 more when it says 15), and the
+    /// channel configuration (4).
+    private static func aacChannels(_ esds: ArraySlice<UInt8>) -> Int? {
+        var reader = DescriptorReader(bytes: Array(esds.dropFirst(4)))
+        guard reader.enter(tag: 3) else { return nil }
+        reader.skip(2)  // ES_ID
+        guard let flags = reader.byte() else { return nil }
+        if flags & 0x80 != 0 { reader.skip(2) }  // streamDependenceFlag: dependsOn_ES_ID
+        if flags & 0x40 != 0 { reader.skip(Int(reader.byte() ?? 0)) }  // URL_Flag: a URL of that length
+        if flags & 0x20 != 0 { reader.skip(2) }  // OCRstreamFlag: OCR_ES_Id
+        guard reader.enter(tag: 4) else { return nil }
+        reader.skip(13)  // objectTypeIndication, streamType, bufferSizeDB, maxBitrate, avgBitrate
+        guard reader.enter(tag: 5) else { return nil }
+        let config = (0..<8).reduce(UInt64(0)) { bits, _ in bits << 8 | UInt64(reader.byte() ?? 0) }
+        var position = 5
+        if config >> 59 == 31 { position += 6 }
+        let frequencyIndex = (config >> (60 - position)) & 0xF
+        position += 4
+        if frequencyIndex == 15 { position += 24 }
+        return Int((config >> (60 - position)) & 0xF)
+    }
+
+    /// The channels of an alac payload: after a version and flags (4 bytes),
+    /// the ALACSpecificConfig's frame length (4), compatible version, bit
+    /// depth, and three tuning bytes (5), then the channels (1).
+    private static func alacChannels(_ alac: ArraySlice<UInt8>) -> Int? {
+        alac.count >= 14 ? Int(number(alac, at: 13, bytes: 1)) : nil
+    }
+
+    /// Reads ISO 14496-1's descriptors one byte at a time.
+    private struct DescriptorReader {
+        let bytes: [UInt8]
+        var position = 0
+
+        /// The next byte, or nil past the end.
+        mutating func byte() -> UInt8? {
+            guard position < bytes.count else { return nil }
+            defer { position += 1 }
+            return bytes[position]
+        }
+
+        /// Skips `count` bytes.
+        mutating func skip(_ count: Int) {
+            position += count
+        }
+
+        /// Enters the descriptor here, which must be of `tag`: its tag, then
+        /// its size in one to four bytes of seven bits each, the high bit
+        /// saying that another follows. False for another tag or a short read.
+        mutating func enter(tag: UInt8) -> Bool {
+            guard byte() == tag else { return false }
+            for _ in 0..<4 {
+                guard let next = byte() else { return false }
+                if next & 0x80 == 0 { return true }
+            }
+            return true
+        }
     }
 
     /// The big-endian number of `count` bytes at `offset` of `bytes` (counted from its start).
@@ -414,15 +498,26 @@ struct M4ASampleEntry: Equatable {
         bytes.dropFirst(offset).prefix(count).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
     }
 
-    /// The payloads of the boxes of type `type` among the boxes `bytes` holds, in order.
+    /// The payloads of the boxes of type `type` among the boxes `bytes` holds,
+    /// in order. A box's size is its first four bytes, or, when they say 1,
+    /// the eight after its type (AVFoundation writes mdat so), or, when they
+    /// say 0, the rest of what holds it.
     private static func children(_ type: String, of bytes: ArraySlice<UInt8>) -> [ArraySlice<UInt8>] {
         var found: [ArraySlice<UInt8>] = []
         var offset = bytes.startIndex
         while offset + 8 <= bytes.endIndex {
-            let size = Int(number(bytes[offset...], at: 0, bytes: 4))
-            guard size >= 8, offset + size <= bytes.endIndex else { break }
+            var size = Int(number(bytes[offset...], at: 0, bytes: 4))
+            var header = 8
+            if size == 1 {
+                guard offset + 16 <= bytes.endIndex else { break }
+                size = Int(clamping: number(bytes[offset...], at: 8, bytes: 8))
+                header = 16
+            } else if size == 0 {
+                size = bytes.endIndex - offset
+            }
+            guard size >= header, size <= bytes.endIndex - offset else { break }
             if String(decoding: bytes[(offset + 4)..<(offset + 8)], as: UTF8.self) == type {
-                found.append(bytes[(offset + 8)..<(offset + size)])
+                found.append(bytes[(offset + header)..<(offset + size)])
             }
             offset += size
         }
