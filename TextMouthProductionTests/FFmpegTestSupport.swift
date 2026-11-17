@@ -220,7 +220,8 @@ extension XCTestCase {
         #else
         let open: InProcessSessionOpener = { file, demuxer, mode, call in
             FFmpegStandInLog.append("\(mode.argument) \(demuxer)", to: log)
-            switch mode == .probe ? probe : decode {
+            let action = mode == .probe ? probe : decode
+            switch action {
             case .realHelper:
                 return LinkedFFmpegSession.open(file, demuxer: demuxer, mode: mode, call: call)
             case let .write(bytes, status):

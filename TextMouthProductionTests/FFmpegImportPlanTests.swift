@@ -216,7 +216,9 @@ final class FFmpegImportPlanTests: XCTestCase {
                            "\(FFmpegAudioConverter.Failure.unreadableStream(fileName: "a.wma"))")
         }
         XCTAssertEqual(failure(.init(outcome: .exited(status: 9), signal: 9), .failure(CancellationError())), "\(CancellationError())")
-        let own = ImportAudioConverter.Failure.notWritten(fileName: "a.wma", reason: "AVFoundationErrorDomain -11800")
+        // A writer's error by its domain and code; the domain is a made-up one, since the iPhone's unit tests may
+        // name no audio framework, not even in a string (Scripts/agents/ios_ui_tests.py).
+        let own = ImportAudioConverter.Failure.notWritten(fileName: "a.wma", reason: "TestWriterErrorDomain -11800")
         XCTAssertEqual(failure(.init(outcome: .exited(status: 9), signal: 9), .failure(own)), "\(own)")
     }
 

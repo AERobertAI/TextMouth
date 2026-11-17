@@ -127,19 +127,6 @@ final class FFmpegInAppTests: XCTestCase {
 
     // MARK: - A Call That Hangs
 
-    /// A stand-in session whose records never come and which never asks the
-    /// stop check, as FFmpeg would be stuck inside a decoder: it waits on
-    /// `gate`, which the test opens when it ends.
-    private final class StuckSession: InProcessFFmpegSession {
-        let gate: DispatchSemaphore
-        init(gate: DispatchSemaphore) { self.gate = gate }
-        func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
-            _ = gate.wait(timeout: .now() + 30)
-            return (TMFF_EXIT_DONE, [])
-        }
-        func close() {}
-    }
-
     /// The tool of a test whose decode is stuck: the app's own session for
     /// the probe, a `StuckSession` for the decode, an engine with `grace`
     /// seconds before it abandons a call, and `seconds` for every limit.
@@ -212,26 +199,6 @@ final class FFmpegInAppTests: XCTestCase {
 
     // MARK: - The Run's Time
 
-    /// A stand-in session whose every record moves a scripted clock on by
-    /// `step` seconds, and which keeps each call's limit and counts its
-    /// closes: a stream of small PCM-free records, never ending by itself.
-    private final class ClockSession: InProcessFFmpegSession {
-        let clock: OSAllocatedUnfairLock<TimeInterval>
-        let step: TimeInterval
-        let limits = OSAllocatedUnfairLock<[TimeInterval]>(initialState: [])
-        let closes = OSAllocatedUnfairLock(initialState: 0)
-        init(clock: OSAllocatedUnfairLock<TimeInterval>, step: TimeInterval) {
-            self.clock = clock
-            self.step = step
-        }
-        func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
-            limits.withLock { $0.append(call.limit) }
-            clock.withLock { $0 += step }
-            return (TMFF_EXIT_DONE, FFmpegTestStream.head())
-        }
-        func close() { closes.withLock { $0 += 1 } }
-    }
-
     /// The run's whole time is the limit's, counted from its start by the
     /// tool's clock over every call and the reader's work between them, as
     /// the watchdog counts a helper's: each call may take no more than the
@@ -280,4 +247,47 @@ final class FFmpegInAppTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(started), TestMachine.allowed(5))
         XCTAssertFalse(engine.hasAbandonedACall, "a call that asks its check was abandoned")
     }
+}
+
+// MARK: - The Stand-In Sessions of These Tests
+
+/// A stand-in session whose records never come and which never asks the stop
+/// check, as FFmpeg would be stuck inside a decoder: it waits on `gate`, which
+/// the test opens when it ends.
+private final class StuckSession: InProcessFFmpegSession {
+    let gate: DispatchSemaphore
+
+    init(gate: DispatchSemaphore) {
+        self.gate = gate
+    }
+
+    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+        _ = gate.wait(timeout: .now() + 30)
+        return (TMFF_EXIT_DONE, [])
+    }
+
+    func close() {}
+}
+
+/// A stand-in session whose every record moves a scripted clock on by `step`
+/// seconds, and which keeps each call's limit and counts its closes: a stream
+/// of HEAD records, never ending by itself.
+private final class ClockSession: InProcessFFmpegSession {
+    let clock: OSAllocatedUnfairLock<TimeInterval>
+    let step: TimeInterval
+    let limits = OSAllocatedUnfairLock<[TimeInterval]>(initialState: [])
+    let closes = OSAllocatedUnfairLock(initialState: 0)
+
+    init(clock: OSAllocatedUnfairLock<TimeInterval>, step: TimeInterval) {
+        self.clock = clock
+        self.step = step
+    }
+
+    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+        limits.withLock { $0.append(call.limit) }
+        clock.withLock { $0 += step }
+        return (TMFF_EXIT_DONE, FFmpegTestStream.head())
+    }
+
+    func close() { closes.withLock { $0 += 1 } }
 }
