@@ -124,8 +124,9 @@ class Issue:
     ``fields`` holds the first value of each field the header gives, ``field_lines``
     the line each came from, and ``body`` everything after the header's closing
     line, exactly as it was; ``comments_line`` is the line of ``## Comments`` (0
-    without one). ``problems`` names what is wrong with the layout (the header,
-    the headings, the comments); the values are checked by ``check_values``.
+    without one), and ``text`` the whole file as read. ``problems`` names what is
+    wrong with the layout (the header, the headings, the comments); the values are
+    checked by ``check_values``.
     """
 
     path: str
@@ -137,6 +138,7 @@ class Issue:
     comments: List[Comment] = field(default_factory=list)
     description: str = ""
     comments_line: int = 0
+    text: str = ""
 
     def value(self, name: str) -> str:
         """A field's value, or "" when the header lacks it."""
@@ -298,7 +300,7 @@ def _read_body(lines: List[str], start: int, issue: Issue) -> None:
 def parse(path: str, text: str) -> Issue:
     """Read an issue file's text; ``path`` names it in problems ("Issues/B16.md")."""
     lines = text.split("\n")
-    issue = Issue(path=path, fields={}, field_lines={}, body="", body_line=1)
+    issue = Issue(path=path, fields={}, field_lines={}, body="", body_line=1, text=text)
     start = _read_header(lines, issue)
     issue.body_line = start + 1
     issue.body = "\n".join(lines[start:])
@@ -460,17 +462,18 @@ def check_comment_text(text: str) -> str:
 def with_comment(issue: Issue, date: str, author: str, text: str) -> str:
     """The file's text with one comment added at its end, and nothing else changed.
 
-    The comment is a blank line, its heading, a blank line, and its text, so the
-    lines before it stay as they were, and the merge driver finds it whole.
+    The comment is a blank line, its heading, a blank line, and its text, added to
+    the file's text as it was read: no line before it changes, the header's
+    spacing included, and the merge driver finds it whole.
     """
     _require_sound(issue)
     if not is_date(date):
         raise IssueFormatError(f"comment date {date!r} is not a date written YYYY-MM-DD")
     if not is_agent_name(author):
         raise IssueFormatError(f"comment author {author!r} is not a name: letters, digits, '.', '_', '-'")
-    body = issue.body if issue.body.endswith("\n") else issue.body + "\n"
+    original = issue.text if issue.text.endswith("\n") else issue.text + "\n"
     trimmed = check_comment_text(text)
-    return header_text(issue.fields) + body + f"\n{comment_heading(date, author, trimmed)}\n\n{trimmed}\n"
+    return original + f"\n{comment_heading(date, author, trimmed)}\n\n{trimmed}\n"
 
 
 def fill_template(template: str, path: str, values: Dict[str, str]) -> str:

@@ -152,6 +152,12 @@ class WriteTests(unittest.TestCase):
         issue = issuefile.parse("x", again)
         self.assertEqual([c.author for c in issue.comments], ["floatrender", "orchestrator"])
 
+    def test_a_comment_leaves_every_line_before_it_as_it_was(self) -> None:
+        # Spacing a hand edit left in the header, which a rebuilt header would lose.
+        odd = B16.replace("title: A test bug", "title: A test bug ").replace("labels: audio", "labels:   audio")
+        text = issuefile.with_comment(issuefile.parse("x", odd), "2026-11-17", "floatrender", "Seen.")
+        self.assertEqual(text, odd + "\n### 2026-11-17, floatrender, 1 line\n\nSeen.\n")
+
     def test_a_comment_needs_text_and_no_heading_that_would_end_it(self) -> None:
         issue = issuefile.parse("x", B16)
         for text in ("", "  \n", "Text.\n## Next part", "### 2026-11-16, someone else", "# Title"):
