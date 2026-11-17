@@ -278,6 +278,60 @@ final class SavesDuringMoveTests: XCTestCase {
         XCTAssertFalse(center.hasUnsavedChanges)
     }
 
+    // MARK: - The Filter Presets Follow the Move (B14 review)
+
+    /// The filter presets are saved from Settings, outside the storage work,
+    /// as the rules are. A first preset saved once the copy has passed the
+    /// top of the data directory has no file to be copied, so the moved
+    /// library used to lack it, the preset left only in the old folder (with
+    /// the temporary file of its save listed, the move used to fail instead).
+    /// The move saves it again in the moved library.
+    func testAFilterPresetSavedWhileTheLibraryIsCopiedIsInTheMovedLibrary() async throws {
+        let world = try makeIntegrationWorld("Saves Move Presets")
+        keepFile(TextMouthPaths.audioFiltersFile)
+        // No file yet, as at a first save; the teardown puts back any that was.
+        try? FileManager.default.removeItem(at: TextMouthPaths.audioFiltersFile)
+        let destination = try makeDataDirectoryMoveDestination("PresetSavedDuringMove")
+        let oldFile = TextMouthPaths.audioFiltersFile
+        // The pane, opened before the move, with no presets file yet.
+        let library = AudioFilterPresetLibrary()
+        XCTAssertTrue(library.standsInForMissingFile, "a presets file was already there")
+        let during = SaveDuringCopy()
+
+        let outcome = await DataDirectoryMigrator.$copyObserver.withValue(
+            during.observer(saving: { _ = try? library.add(name: "Phone Line", chain: "highpass=f=300") })
+        ) {
+            await world.library.moveDataDirectoryReturningOutcome(to: destination)
+        }
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(during.saves, 1, "the save during the copy did not run")
+        let moved = AudioFilterPresetLibrary(url: destination.appendingPathComponent(AudioFilterPresetLibrary.fileName))
+        XCTAssertEqual(moved.presets.last?.name, "Phone Line", "the moved library does not have the preset saved while it was copied")
+        XCTAssertFalse(moved.standsInForMissingFile)
+        XCTAssertEqual(AudioFilterPresetLibrary(url: oldFile).presets.last?.name, "Phone Line", "the library the move began in lost it")
+    }
+
+    /// A pane left open through a move saves in the library then in use: its
+    /// file is looked up at each save, not kept from when the pane opened.
+    func testAFilterPresetSavedAfterAMoveIsSavedInTheNewDataDirectory() async throws {
+        let world = try makeIntegrationWorld("Saves Move Presets After")
+        keepFile(TextMouthPaths.audioFiltersFile)
+        // No file yet, as at a first save; the teardown puts back any that was.
+        try? FileManager.default.removeItem(at: TextMouthPaths.audioFiltersFile)
+        let destination = try makeDataDirectoryMoveDestination("PresetSavedAfterMove")
+        let oldFile = TextMouthPaths.audioFiltersFile
+        let library = AudioFilterPresetLibrary()
+        let outcome = await world.library.moveDataDirectoryReturningOutcome(to: destination)
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+
+        try library.add(name: "Radio Voice", chain: "highpass=f=200")
+
+        let moved = AudioFilterPresetLibrary(url: destination.appendingPathComponent(AudioFilterPresetLibrary.fileName))
+        XCTAssertEqual(moved.presets.last?.name, "Radio Voice", "the preset was not saved in the new data directory")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldFile.path), "the preset was saved in the old data directory")
+    }
+
     // MARK: - A Save's Temporary File Never Fails the Move (B14)
 
     /// A save writes a temporary file beside its target and renames it into
@@ -417,7 +471,12 @@ final class SavesDuringMoveTests: XCTestCase {
     /// the rules a test saves never reach the next test, which shares the
     /// sandbox's data directory and would copy them into its own move.
     private func keepSubstitutionsFile() {
-        let file = TextMouthPaths.substitutionsFile
+        keepFile(TextMouthPaths.substitutionsFile)
+    }
+
+    /// Puts `file` back as it is now (or leaves none, when there is none)
+    /// when the test ends, as `keepSubstitutionsFile()` does for the rules.
+    private func keepFile(_ file: URL) {
         let original = try? Data(contentsOf: file)
         addTeardownBlock {
             if let original {

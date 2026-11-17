@@ -42,15 +42,25 @@ final class AudioFilterPresetLibrary: ObservableObject {
     /// The tag of the debug log's lines about the file.
     nonisolated static let logTag = "AUDIO_FILTERS_FILE"
 
-    /// The file.
-    private let url: URL
+    /// The file a test chose, or nil for the data directory's own, which is
+    /// looked up at each read and write: a Filter Presets pane stays open
+    /// through a data-directory move, and its next save belongs in the
+    /// library then in use, not in the one it began in.
+    private let chosenURL: URL?
     /// How the file is read: without downloading it, unless a test stands
     /// in a reader of its own.
     private let reader: SavedFile.Reader
 
-    /// The presets of the file at `url`, read at once through `reader`.
-    init(url: URL = TextMouthPaths.audioFiltersFile, reader: @escaping SavedFile.Reader = SavedFile.readWithoutDownloading) {
-        self.url = url
+    /// The file, where the library lives now unless a test chose one.
+    private var url: URL {
+        chosenURL ?? TextMouthPaths.audioFiltersFile
+    }
+
+    /// The presets of the file at `url`, read at once through `reader`. With
+    /// no `url`, the file is the data directory's own, wherever the data
+    /// directory is when it is read or written.
+    init(url: URL? = nil, reader: @escaping SavedFile.Reader = SavedFile.readWithoutDownloading) {
+        self.chosenURL = url
         self.reader = reader
         presets = Self.standard
         load()
@@ -246,10 +256,37 @@ final class AudioFilterPresetLibrary: ObservableObject {
         }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try encoder.encode(File(version: Self.currentVersion, presets: edited)).write(to: url, options: .atomic)
+        let bytes = try encoder.encode(File(version: Self.currentVersion, presets: edited))
+        try Self.write(bytes, to: url)
         presets = edited
         standsInForMissingFile = false
+        // A save made while a data-directory move copies the library lands in
+        // the folder being copied, which the copy may have passed (a first
+        // save, which has no file to be copied, is missed whole). The move
+        // writes these bytes again once it has ended, in the library then in
+        // use, as it does for the rules (`StorageBoundary.isProvisionalSave`).
+        // The bytes, not this library, are kept: its pane may be closed by
+        // then. A file a test chose is no part of any data directory.
+        if chosenURL == nil {
+            _ = StorageBoundary.shared.isProvisionalSave(of: Self.fileName) {
+                do {
+                    try Self.write(bytes, to: TextMouthPaths.audioFiltersFile)
+                } catch {
+                    DiagnosticLog.event(
+                        .storage,
+                        "\(Self.logTag): could not save \(Self.fileName) again after the data directory moved: "
+                            + TranscriptStore.describe(error)
+                    )
+                }
+            }
+        }
+    }
+
+    /// Writes `bytes` atomically to the file at `url`, making its folder
+    /// first.
+    private static func write(_ bytes: Data, to url: URL) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try bytes.write(to: url, options: .atomic)
     }
 }
 
