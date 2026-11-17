@@ -97,6 +97,12 @@ enum BookTextEditWording {
         case .noChapters:
             return "Text not updated: the edited text of \(bookTitle) has no chapter left with anything in it. "
                 + "Undo the change in your editor and save again; until then, the book keeps the text it had."
+        case .nestedTooDeeply(let chapter, let limit):
+            // The chapter is named by its number: its title is the book's text.
+            let subject = chapter.map { "chapter \($0) of the edited text of \(bookTitle)" } ?? "the edited text of \(bookTitle)"
+            return "Text not updated: \(subject) \(MarkdownNestingWording.nestsTooDeeply(limit: limit)), "
+                + "which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change; "
+                + "until then, the book keeps the text it had."
         case .sourceChanged:
             return "Text not updated: the original file of \(bookTitle) changed too, "
                 + "so TextMouth reads the book's text from that file again the next time the book opens."
@@ -157,6 +163,10 @@ enum BookTextEditWording {
         case .noChapters:
             return "it has no chapter left with anything in it. Undo the change in your editor and save again, "
                 + "and \(outcome)."
+        case .nestedTooDeeply(let chapter, let limit):
+            let subject = chapter.map { "its chapter \($0)" } ?? "it"
+            return "\(subject) \(MarkdownNestingWording.nestsTooDeeply(limit: limit)), which TextMouth can't read safely. "
+                + "Flatten it in your editor and save again, or undo the change, and \(outcome)."
         case .sourceChanged:
             return "the book's own file changed too. Open the book again to read its text from that file."
         case .transcriptChanged:

@@ -22,7 +22,7 @@ enum MarkdownDocParser {
     /// lists are counted before anything is built (`MarkdownNesting`) and
     /// refused past `deepestNesting`; and the parse, the walk, and the release
     /// of the tree all run on `MarkupGuard.onLargeStack`, the walk stopping at
-    /// the limit on the tree (`PlainTextExtractor.deepestTree`: the limit's
+    /// the limit on the tree (`MarkdownNesting.deepestTree(under:)`: the limit's
     /// own `deepestTree` when set, else twice `deepestNesting` and 16 more,
     /// 272 levels by default).
     ///
@@ -167,18 +167,11 @@ private struct PlainTextExtractor {
         String(decoding: bytes, as: UTF8.self)
     }
 
-    /// The deepest tree the walk reads, the document at level 1. A list takes
-    /// two levels (the list and its item), so the limit on the count of
-    /// containers (`deepestNesting`) allows twice as many levels of tree, and a
-    /// few more for the paragraph, its emphasis, and its text. A test that sets
-    /// `Limits.deepestTree` lifts the count and sees the walk refuse.
+    /// The deepest tree the walk reads, the document at level 1: the limit
+    /// every walk of Markdown shares (`MarkdownNesting.deepestTree(under:)`).
     private var deepestTree: Int {
-        limits.deepestTree ?? (2 * min(limits.deepestNesting, Int.max / 4) + Self.levelsBeyondContainers)
+        MarkdownNesting.deepestTree(under: limits)
     }
-
-    /// The levels a tree has beyond its containers: the document, a paragraph or
-    /// heading, and some emphasis and a link around the text.
-    private static let levelsBeyondContainers = 16
 
     // MARK: Levels
 
@@ -358,6 +351,8 @@ private struct PlainTextExtractor {
     /// the body: a level of their own that held nothing else. The count of
     /// levels keeps that shape, so a tree at the limit is refused exactly
     /// where it was: the body is a level entered even with no row in it.
+    /// `MarkdownNode.levels(stopAbove:)` counts the same body level, for
+    /// the walks that do not count their own.
     private mutating func readTable(_ table: MarkdownNode) {
         separateBlock()
         var row = table.firstChild

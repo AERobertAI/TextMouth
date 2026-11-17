@@ -67,6 +67,52 @@ enum MarkdownTree {
         defer { cmark_node_free(root) }
         return try body(MarkdownNode(root))
     }
+
+    /// `read(_:smartPunctuation:_:)` for a text that is untrusted: it hands
+    /// the tree to `body` only when the text nests no deeper than `limits`
+    /// allow, which keeps `body`, a walk that calls itself once for each
+    /// level of the tree, from overflowing its stack. It is the limit the
+    /// reader holds, in the two layers the reader has (see `MarkdownNesting`),
+    /// for a walk that does not count its own levels as the reader's does
+    /// (`PlainTextExtractor.enterLevel`); the export walk is one:
+    /// - the text's block quotes and lists are counted before anything is
+    ///   parsed, and refused past `deepestNesting`;
+    /// - the tree's own depth, which inline nesting (emphasis, links, images)
+    ///   can also make, is measured with cmark's iterator
+    ///   (`MarkdownNode.levels(stopAbove:)`), which does not recurse, and
+    ///   refused past `MarkdownNesting.deepestTree(under:)`. cmark has built
+    ///   the whole tree by then (it builds and frees in loops, so a deep tree
+    ///   costs memory and time, not stack), but no walk has begun.
+    ///
+    /// - Parameters:
+    ///   - limits: The limits in force; the caller reads `MarkupGuard.limits`
+    ///     before it leaves its task for a thread.
+    ///   - level: The level of the tree the text is read inside, the document
+    ///     at 1: the level of the HTML block whose rest the text is, which the
+    ///     reader counts on top of (`PlainTextExtractor.readHTMLBlock`), so
+    ///     that the text's own document, which is not a level of the walk,
+    ///     adds none.
+    /// - Throws: `MarkupRefusal.nestedTooDeeply` when the text nests past a
+    ///   layer's limit, and whatever `body` throws.
+    static func read<Result>(
+        _ markdown: String,
+        within limits: MarkupGuard.Limits,
+        insideLevel level: Int = 1,
+        _ body: (MarkdownNode) throws -> Result
+    ) throws -> Result {
+        guard !MarkdownNesting.isDeeper(markdown, than: limits.deepestNesting) else {
+            throw MarkupRefusal.nestedTooDeeply(limit: limits.deepestNesting)
+        }
+        // The text's levels, less its document, and the levels above it, are
+        // the tree the walk reads: at most `deepestTree`.
+        let deepestTree = MarkdownNesting.deepestTree(under: limits) - (level - 1)
+        return try read(markdown) { document in
+            guard document.levels(stopAbove: deepestTree) <= deepestTree else {
+                throw MarkupRefusal.nestedTooDeeply(limit: limits.deepestNesting)
+            }
+            return try body(document)
+        }
+    }
 }
 
 // MARK: - A Node of the Tree
@@ -198,6 +244,66 @@ struct MarkdownNode {
     /// The number an ordered list starts at; 0 for any other node.
     var listStart: Int {
         Int(cmark_node_get_list_start(pointer))
+    }
+
+    /// How many levels the tree under this node has, this node at level 1, a
+    /// leaf (a text, say) one level below its container. Counted as the
+    /// reader's walk counts its levels (`MarkdownDocParser`), which are those
+    /// of the tree swift-markdown built: there a table held a head and a
+    /// body, and the body held the rows, so a body row, and everything in it,
+    /// is one level deeper than cmark has it (the reader's own count is
+    /// `PlainTextExtractor.readTable`; each says it of the other, and
+    /// `MarkdownDepthLimitTests` pins them together).
+    ///
+    /// The count is made by cmark's iterator, which keeps its place in the
+    /// tree and does not call itself, so a tree of any depth is measured on
+    /// any stack, and it stops as soon as a level passes `limit`, so a tree
+    /// is never walked for more than the limit allows. The count is exact up
+    /// to `limit` and more than `limit` beyond it.
+    /// - Parameter limit: The depth the caller refuses past.
+    func levels(stopAbove limit: Int) -> Int {
+        guard let iterator = cmark_iter_new(pointer) else { return 0 }
+        defer { cmark_iter_free(iterator) }
+        // The containers entered and not left, outermost first. The iterator
+        // gives a leaf no exit, so a node is dropped when the next one met is
+        // not inside it, which also drops each container left.
+        var open: [UnsafeMutablePointer<cmark_node>] = []
+        // How many of those are body rows, which count one more level each.
+        var bodyRows = 0
+        var deepest = 0
+        while true {
+            let event = cmark_iter_next(iterator)
+            guard event != CMARK_EVENT_DONE, let node = cmark_iter_get_node(iterator) else { break }
+            guard event == CMARK_EVENT_ENTER else { continue }
+            let parent = cmark_node_parent(node)
+            while let top = open.last, top != parent {
+                if MarkdownNode(top).isBodyRow { bodyRows -= 1 }
+                open.removeLast()
+            }
+            let isBodyRow = MarkdownNode(node).isBodyRow
+            if isBodyRow { bodyRows += 1 }
+            deepest = max(deepest, open.count + 1 + bodyRows)
+            if deepest > limit { return deepest }
+            open.append(node)
+        }
+        return deepest
+    }
+
+    /// The node's level in its tree, the root at 1: how many nodes there are
+    /// from the root down to it, itself included.
+    var level: Int {
+        var level = 1
+        var ancestor = cmark_node_parent(pointer)
+        while let above = ancestor {
+            level += 1
+            ancestor = cmark_node_parent(above)
+        }
+        return level
+    }
+
+    /// Whether the node is a row of a table's body, not its header row.
+    private var isBodyRow: Bool {
+        kind == .tableRow
     }
 
     /// A link's address or an image's source, or nil when it has none.

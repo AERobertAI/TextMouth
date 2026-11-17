@@ -24,6 +24,15 @@ enum BookTextEditRefusal: Equatable, Sendable {
     case notText
     /// It no longer holds a chapter with anything in it.
     case noChapters
+    /// A chapter of it nests block quotes, lists, or emphasis more than
+    /// `limit` levels deep (`MarkupGuard.Limits.deepestNesting`), past what
+    /// the reader and the export walk can read without overflowing their
+    /// stacks. `chapter` is the number, from 1 among its chapter markers, of
+    /// the first chapter that does (nil for a text with no chapter markers),
+    /// so that the user can find it: a text that was already too deep before
+    /// the edit is refused for the chapter it was too deep in. The book keeps
+    /// its earlier text, as for any refused edit.
+    case nestedTooDeeply(chapter: Int?, limit: Int)
     /// The book's own file changed too since the edit began, so the book's
     /// text is read from that file again, as any stale text cache is
     /// rebuilt (TODO T07).
@@ -985,7 +994,26 @@ final class BookTextEditSessions: Sendable {
         guard let text = try? MarkdownCacheService.cacheText(from: bytes, at: cacheURL) else {
             return refuse(.notText, tag: "TEXT_EDIT_REFUSED", "content.md is not UTF-8 text")
         }
-        let parsed = MarkdownCacheService.parseMultiChapterMarkdown(text, bookTitle: book.title, bookAuthor: book.author)
+        // The text is read as the reader reads it, but a chapter nested past
+        // the reader's limit is refused, not kept raw as a read keeps it: an
+        // edit taken for it would be a text the exports cannot walk.
+        let parsed: DocumentContent
+        do {
+            parsed = try MarkdownCacheService.parseMultiChapterMarkdownNamingRefusal(
+                text, bookTitle: book.title, bookAuthor: book.author
+            )
+        } catch let refused as MarkdownCacheService.RefusedChapter {
+            guard case let .nestedTooDeeply(limit)? = refused.refusal as? MarkupRefusal else {
+                return refuse(.failed(refused.refusal.localizedDescription), tag: "TEXT_EDIT_REFUSED", refused.refusal.localizedDescription)
+            }
+            return refuse(
+                .nestedTooDeeply(chapter: refused.number, limit: limit),
+                tag: "TEXT_EDIT_REFUSED",
+                "a chapter of content.md nests more than \(limit) levels deep"
+            )
+        } catch {
+            return refuse(.failed(error.localizedDescription), tag: "TEXT_EDIT_REFUSED", error.localizedDescription)
+        }
         guard parsed.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) else {
             return refuse(.noChapters, tag: "TEXT_EDIT_REFUSED", "content.md holds no chapter with anything in it")
         }

@@ -794,11 +794,41 @@ enum MarkdownCacheService {
         bookAuthor: String,
         contentIndex: BookContentIndex? = nil
     ) throws -> DocumentContent {
+        do {
+            return try parseMultiChapterMarkdownNamingRefusal(
+                markdown, bookTitle: bookTitle, bookAuthor: bookAuthor, contentIndex: contentIndex
+            )
+        } catch let refused as RefusedChapter {
+            throw refused.refusal
+        }
+    }
+
+    /// `parseMultiChapterMarkdownRefusing` for a caller that tells the user
+    /// where the refused chapter is (Edit Text): the same parse, but the error
+    /// names the chapter.
+    /// - Throws: `RefusedChapter` for the first chapter that nests too deeply.
+    static func parseMultiChapterMarkdownNamingRefusal(
+        _ markdown: String,
+        bookTitle: String,
+        bookAuthor: String,
+        contentIndex: BookContentIndex? = nil
+    ) throws -> DocumentContent {
         let parsed = parseChapters(
             markdown, bookTitle: bookTitle, bookAuthor: bookAuthor, contentIndex: contentIndex
         )
-        if let refusal = parsed.firstRefusal { throw refusal }
+        if let refused = parsed.firstRefusal { throw refused }
         return parsed.content
+    }
+
+    /// A chapter of a cached Markdown file that the reader refused, and why:
+    /// what Edit Text needs to say which chapter, by its number (a title is
+    /// the book's text, which a log may not hold).
+    struct RefusedChapter: Error {
+        /// The chapter's number among the file's chapter markers, from 1;
+        /// nil for a file with no chapter markers.
+        let number: Int?
+        /// The reader's refusal (`MarkupRefusal.nestedTooDeeply`).
+        let refusal: Error
     }
 
     /// What parsing a cached Markdown file gave: the content (a refused
@@ -808,8 +838,9 @@ enum MarkdownCacheService {
         var content: DocumentContent
         /// How many of the chapters were refused and kept as written.
         var refusedCount = 0
-        /// The first refusal, which an import throws.
-        var firstRefusal: Error?
+        /// The first refusal and the chapter it was for, which an import
+        /// and Edit Text throw.
+        var firstRefusal: RefusedChapter?
     }
 
     /// The shared work of both parsers above: split `markdown` at its chapter
@@ -823,24 +854,26 @@ enum MarkdownCacheService {
     ) -> ParsedChapters {
         let sections = splitChapters(markdown)
         var refusedCount = 0
-        var firstRefusal: Error?
+        var firstRefusal: RefusedChapter?
 
         /// The chapter `text` parses to, or its raw text when it is refused.
-        func chapter(of text: String, titled title: String) -> Chapter {
+        /// `number` is the chapter's place among the chapter markers, from 1,
+        /// for the refusal to name; nil for a text without markers.
+        func chapter(of text: String, titled title: String, number: Int?) -> Chapter {
             do {
                 return try MarkdownDocParser.parseChapter(markdown: text, title: title, includeNavigationHeadings: true)
             } catch {
                 // The parser refuses only what nests too deeply, but whatever it
                 // threw, a chapter is never dropped: it stays as written.
                 refusedCount += 1
-                firstRefusal = firstRefusal ?? error
+                firstRefusal = firstRefusal ?? RefusedChapter(number: number, refusal: error)
                 return Chapter(title: title, text: text, headings: [])
             }
         }
 
         if sections.isEmpty {
             // No chapter markers — treat entire file as single chapter
-            let single = chapter(of: markdown, titled: bookTitle)
+            let single = chapter(of: markdown, titled: bookTitle, number: nil)
             let content = DocumentContent(
                 title: documentTitle(of: [single], bookTitle: bookTitle),
                 author: bookAuthor,
@@ -851,8 +884,8 @@ enum MarkdownCacheService {
         }
 
         var chapters: [Chapter] = []
-        for section in sections {
-            var ch = chapter(of: section.content, titled: section.title)
+        for (index, section) in sections.enumerated() {
+            var ch = chapter(of: section.content, titled: section.title, number: index + 1)
             // Use the chapter marker title, falling back to what the parser found
             if !section.title.isEmpty {
                 ch.title = section.title
