@@ -30,6 +30,13 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A tag longer than 4,096 bytes is cut at that length, and a tag with a damaged letter is left out.
 - A folder whose name has a letter such as é no longer makes TextMouth lose what the Mac's own audio tool says about the files in it.
 
+### Exporting books
+- When an export meets a chapter that nests quotes, lists, or emphasis more than 128 levels deep, it now asks what to do, in an alert over the Export dialog, where before it refused that book's file.
+- The alert says "Chapter 2 of Deep Notes nests too deeply", and its buttons are Export as Written, Export Every Such Chapter as Written, and Cancel Export.
+- Export as Written writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, in Markdown, HTML, RTF, Word 97-2003, EPUB, BRF, and PEF, and exports everything else as usual.
+- Return presses Export as Written, and Escape presses Cancel Export, which stops the whole export and leaves the files already written.
+- The Plain Text export does not ask, and still writes such a chapter with the marker comments and backslashes of TextMouth's own text in it.
+
 ### On the iPhone
 - The iPhone still refuses these formats, and its sentence now ends "Add it on your Mac, then send the book here."
 - The iPhone now reads BRF, BRL, and PEF braille books, translated to print inside the app with the four English braille tables it carries.

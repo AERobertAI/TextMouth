@@ -142,15 +142,36 @@ The text is the book's content.md, the Markdown TextMouth reads, with any edits 
 Markdown stays the base: Markdown, HTML, RTF, Word 97-2003, EPUB, BRF, and PEF are each written from it, none copied.
 
 ### A chapter nested too deeply
-<!-- id: export-nested-too-deeply; keys: nesting limit, 128 levels, quotes, lists, emphasis, flatten, Edit Text; src: TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Models/MarkdownNestingWording.swift -->
+<!-- id: export-nested-too-deeply; keys: nesting limit, Export as Written, Cancel Export, quotes, lists, emphasis, flatten, Edit Text; src: TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/ExportDeepChapter.swift, TextMouth/Models/BookExportDeepChapterWording.swift, TextMouth/Parsers/RawChapterLines.swift, TextMouth/Platform/macOS/Views/Export/ExportDeepChapterAlert.swift, TextMouth/Models/MarkdownNestingWording.swift; status: incomplete; issues: B16 -->
 
-A chapter whose text nests quotes, lists, or emphasis more than 128 levels deep is not exported, to any text format.
+A chapter whose text nests quotes, lists, or emphasis more than 128 levels deep can't be exported with its structure, to any text format but Plain Text.
 No real book comes near it: the deepest nests 12 levels.
-The export writes no file for that book, says so after its name, and writes the others, as in "Couldn't export Deep Notes - Text.md: Chapter 1 of this book nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't export safely.
-Choose Edit Text, flatten the nesting, and save; then export again."
-A book whose text has no chapter markers says "The text of this book" in place of "Chapter 1 of this book", and the chapter is named by its number, never by its title.
-The count includes the lines of a code block, and counts every two columns of indentation as a level, so a code line of 129 ">" marks, or of 258 spaces before "- ", is refused too.
-Edit Text refuses such a change in the same way ([Editing a book's text](editing-book-text.md)).
+The count includes the lines of a code block, and counts every two columns of indentation as a level, so a code line of 129 ">" marks, or of 258 spaces before "- ", counts too.
+Edit Text refuses such a change ([Editing a book's text](editing-book-text.md)).
+
+When the export reaches such a chapter, it stops and asks, in an alert over the Export dialog.
+VoiceOver reads the alert's title, its message, and each button's hint as it opens.
+- The title is "Chapter 2 of Deep Notes nests too deeply", or "The text of Deep Notes nests too deeply" for a book whose text has no chapter markers.
+  The chapter is named by its number, never by its title.
+- The message says "Chapter 2 of Deep Notes nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't export with its structure." and what each button does.
+- **Export as Written**, which Return presses, writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.
+- **Export Every Such Chapter as Written** does the same for every such chapter of this export without asking again.
+  It is offered only while more chapters, or more text files, follow.
+- **Cancel Export**, which Escape presses, stops the whole export: nothing more is written, and the files already written stay.
+  It ends as Stop does, so the book's text file is not written either.
+  Stop, or closing the dialog, while the alert is open answers it so.
+
+What as written means:
+- The lines between two blank lines are one paragraph, joined by line breaks, so a book whose source was hard-wrapped does not become a paragraph for each line.
+- Each line is trimmed of the spaces and tabs at its ends, and blank lines are dropped.
+- The backslashes TextMouth's importers write before punctuation are taken out, so the words read as they were.
+- TextMouth's own page and heading markers are no words: a page marker keeps its place where the format keeps pages, and its comment is not written.
+  Another HTML comment stays as words.
+- Nothing nests: a chapter of a thousand ">" marks is one paragraph holding them.
+
+The Plain Text export never asks: it writes a deep chapter's text as it is, with its marker comments and backslashes left in (B16).
+An export that can't ask, with no one to ask, says "Couldn't export Deep Notes - Text.md: Chapter 1 of this book nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't export safely.
+Choose Edit Text, flatten the nesting, and save; then export again." for that book, and writes the others.
 
 ### What every format leaves out
 <!-- id: what-every-format-leaves-out; keys: chapter markers, page lines, raw HTML, alt text; src: TextMouth/Services/Export/ExportDocumentWalker.swift; status: incomplete; issues: DR22 -->
