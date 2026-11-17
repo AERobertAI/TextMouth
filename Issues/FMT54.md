@@ -5,7 +5,7 @@ kind: format
 status: open
 priority: P2
 platform: iphone
-assignee:
+assignee: phoneffmpeg
 created: 2026-11-17
 updated: 2026-11-17
 found-by: FMT50's merge
