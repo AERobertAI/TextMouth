@@ -164,11 +164,20 @@ enum BrailleBookReader {
     ///   `FileImportError.noTextToRead` when the book has no blocks or no
     ///   print text, `BrailleTranslator.Failure` for a table that is unknown,
     ///   has changed (`requireUnchangedTable(_:recordedVersion:)`), or a
-    ///   translation that fails, and what the file's reading throws.
+    ///   translation that fails, and what the file's reading throws; on the
+    ///   iPhone, `PhoneImportRefusal.macBrailleTable` first for one of a
+    ///   Mac's own tables.
     static func markdown(
         of url: URL, table: String, recordedVersion: String? = nil, fileCode: String? = nil,
         includesPages: Bool = false
     ) throws -> String {
+        #if os(iOS)
+        // One of a Mac's own tables is refused first, in the phone's words:
+        // the iPhone has none of them, so the version check below and the
+        // translator would both speak of this Mac's tables (the review of
+        // November 16, finding 5).
+        try PhoneImportRefusal.refuseMacBrailleTable(table)
+        #endif
         // A book whose Mac table changed is not read again (review R2).
         try requireUnchangedTable(table, recordedVersion: recordedVersion)
         // A book whose braille file characters this TextMouth lacks is

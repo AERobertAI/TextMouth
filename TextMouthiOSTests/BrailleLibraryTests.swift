@@ -216,6 +216,32 @@ final class BrailleLibraryTests: XCTestCase {
         XCTAssertEqual(try BrailleTranslator.translate(["\u{2801}"], table: grade1, direction: .brailleToPrint, workingIn: work), ["a"])
     }
 
+    // MARK: - A Mac's Own Tables
+
+    /// A braille book that needs one of a Mac's own tables is refused first,
+    /// in the phone's words, whether a Mac read it with that table under a
+    /// recorded liblouis version or not, and so is an import whose table is
+    /// one (from a config.json made on a Mac): never in the Mac's sentences
+    /// about "this Mac's" table, nor as a table TextMouth lacks.
+    func testABookNeedingAMacsTableIsRefusedInThePhonesWords() throws {
+        let sample = try copyOfFormatSample("brf/grade2-short.brf")
+        for version in ["3.34.0", nil] as [String?] {
+            XCTAssertThrowsError(
+                try BrailleBookReader.markdown(of: sample, table: "mac:fr-bfu-g2.ctb", recordedVersion: version)
+            ) {
+                XCTAssertEqual($0 as? PhoneImportRefusal, .macBrailleTable("fr-bfu-g2.ctb"), version ?? "no version")
+            }
+        }
+        let refusal = PhoneImportWording.macBrailleTableRefusal(
+            PhoneImportWording.displayName(ofFileNamed: "grade2-short.brf"), table: "fr-bfu-g2.ctb"
+        )
+        XCTAssertThrowsError(
+            try BraillePreferences.$tableForImports.withValue("mac:fr-bfu-g2.ctb") { try importedForTest(sample) }
+        ) {
+            XCTAssertEqual(($0 as? LocalizedError)?.errorDescription, refusal)
+        }
+    }
+
     // MARK: - Refused Until TextMouth Is Closed and Opened Again
 
     /// Once a braille engine has abandoned a call, every braille translation

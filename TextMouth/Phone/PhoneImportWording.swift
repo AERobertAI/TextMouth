@@ -126,6 +126,16 @@ enum PhoneImportWording {
         "\(subject(name)) is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet. \(refusalNextStep)"
     }
 
+    /// The refusal of a braille book that needs one of a Mac's own braille
+    /// tables, `table` by its file name: "“Manuel” needs “fr-bfu-g2.ctb”,
+    /// one of a Mac's own braille tables, which TextMouth on iPhone doesn't
+    /// have. Add it on your Mac, then send the book here." The Mac has the
+    /// table and reads the braille; the book it sends brings its text.
+    static func macBrailleTableRefusal(_ name: String?, table: String) -> String {
+        "\(subject(name)) needs “\(table)”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have. "
+            + refusalNextStep
+    }
+
     /// A refusal's subject: the name in quotation marks, or "This file"
     /// when no name is known.
     private static func subject(_ name: String?) -> String {

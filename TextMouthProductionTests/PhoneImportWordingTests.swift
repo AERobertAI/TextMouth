@@ -72,6 +72,22 @@ final class PhoneImportWordingTests: XCTestCase {
             PhoneImportRefusal.wordSixOrNinetyFive.sentence(naming: "Notes"),
             "“Notes” is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet. Add it on your Mac, then send the book here."
         )
+        XCTAssertEqual(
+            PhoneImportRefusal.macBrailleTable("fr-bfu-g2.ctb").sentence(naming: "Manuel"),
+            "“Manuel” needs “fr-bfu-g2.ctb”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have. "
+                + "Add it on your Mac, then send the book here."
+        )
+    }
+
+    /// Only one of a Mac's own braille tables is refused, by its file name;
+    /// a bundled table passes.
+    func testOnlyAMacsOwnBrailleTableIsRefused() {
+        XCTAssertThrowsError(try PhoneImportRefusal.refuseMacBrailleTable("mac:fr-bfu-g2.ctb")) {
+            XCTAssertEqual($0 as? PhoneImportRefusal, .macBrailleTable("fr-bfu-g2.ctb"))
+        }
+        for bundled in ["en-ueb-g2.ctb", "en_US.tbl"] {
+            XCTAssertNoThrow(try PhoneImportRefusal.refuseMacBrailleTable(bundled), bundled)
+        }
     }
 
     /// Without a name, a refusal says "This file", which its error
