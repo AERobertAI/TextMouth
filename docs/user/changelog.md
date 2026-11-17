@@ -25,7 +25,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### What changed in these imports
 - A CUE sheet over a WMA or Matroska file is now checked against the file's real length, as a sheet over any other audio is.
 - AAC audio of two channels or fewer inside these formats is now decoded and written again as AAC, where before it was copied as it was.
-- Sound whose rate or number of channels changes partway through, such as joined recordings, is now refused with "TextMouth can't convert “Radio.mkv” because its sound changes its rate or its channels partway through."
+- Sound whose rate or number of channels changes partway through, such as joined recordings, is converted to the rate and channels the file begins with, as the installed ffmpeg did before.
+- Only a change by more than TextMouth can follow is refused, with "TextMouth can't convert “Radio.mkv”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."
 - A Musepack file named .mpp is told by its bytes, and no longer by its name, since Microsoft Project uses that name too.
 - A tag longer than 4,096 bytes is cut at that length, and a tag with a damaged letter is left out.
 - A folder whose name has a letter such as é no longer makes TextMouth lose what the Mac's own audio tool says about the files in it.
@@ -36,6 +37,13 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Export as Written writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, in Markdown, HTML, RTF, Word 97-2003, EPUB, BRF, and PEF, and exports everything else as usual.
 - Return presses Export as Written, and Escape presses Cancel Export, which stops the whole export and leaves the files already written.
 - The Plain Text export does not ask, and still writes such a chapter with the marker comments and backslashes of TextMouth's own text in it.
+
+### Audio in forms TextMouth can't decode
+- A valid audio file whose samples are stored as integers deeper than 32 bits, or as 16-bit or 24-bit floating-point numbers, is no longer called damaged.
+- It says what is wrong instead, as in "“Talk.wav” uses 64-bit integer samples, which TextMouth can't play. Convert it to 16-bit or 24-bit integer samples, then import it again."
+- The same sentence is said for a WAVE, AIFF, or CAF file imported by itself, as a track of a book, or to be converted, and a floating-point one says "16-bit floating-point".
+- A 20-bit CAF file and a 20-bit Apple Lossless file now import, written at 24 bits, which holds every sample; before, the import said "failed its check: its audio cannot be decoded".
+- An audio file of 17 to 20 bits is written at 24 bits in the same way.
 
 ### On the iPhone
 - The iPhone still refuses these formats, and its sentence now ends "Add it on your Mac, then send the book here."

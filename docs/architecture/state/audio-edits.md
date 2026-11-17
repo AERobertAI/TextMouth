@@ -77,7 +77,7 @@ From the list to sound: previewing, saving, and exporting edited audio.
   AudioEditSession.export writes the edits as they stand, saved or not, to a new file in an AudioExportFormat, MP3 among them without ffmpeg, leaving the book's file alone.
 
 ### The sample depth of a render
-<!-- id: render-sample-depth; keys: 64-bit float, bit depth, readableDepth, AVAssetWriterInput, 24-bit, FLAC, Apple Lossless, renderFailed; src: TextMouth/Services/AudioEditing/AudioEditRenderer.swift, TextMouth/Services/AudioEditing/AudioFilterProcessor.swift, TextMouth/Services/AudioEditing/AudioEditError.swift, TextMouth/Services/ObjCException.swift, TextMouth/Services/OwnAudioConverter.swift; status: incomplete; issues: B15 -->
+<!-- id: render-sample-depth; keys: 64-bit float, bit depth, readableDepth, AVAssetWriterInput, 24-bit, FLAC, Apple Lossless, renderFailed; src: TextMouth/Services/AudioEditing/AudioEditRenderer.swift, TextMouth/Services/AudioEditing/AudioFilterProcessor.swift, TextMouth/Services/AudioEditing/AudioEditError.swift, TextMouth/Services/ObjCException.swift, TextMouth/Services/OwnAudioConverter.swift-->
 
 How a render keeps the depth of the audio it starts from, and what it does with one AVFoundation refuses.
 
@@ -94,7 +94,9 @@ How a render keeps the depth of the audio it starts from, and what it does with 
 - Raised exceptions: makingWithoutRaising wraps the writer's inputs, stored and decoded, and the reader's output in ObjCException.making, so a raise becomes AudioEditError.renderFailed, named by its summary for the debug log.
   Save's message (AudioEditorWording.saveFailed) and Export's (exportFailed) both end with the reason, AudioEditError.renderFailed's sentence "The edited audio couldn't be written" and its full stop.
   A failed Save removes its staged file.
-- Limit: a 64-bit integer CAF cannot be decoded by AVFoundation, so the import refuses it as damaged, a sentence that is false for a valid file (B15).
+- Apple Lossless is written at 16, 24, or 32 bits: ImportAudioConverter.appleLosslessBitDepth(forBitsPerSample:) writes 17 to 24 bits at 24, since AVAssetReader cannot read the 20-bit file afconvert and AVFoundation's writer make.
+  OwnAudioConverter.writtenBitDepth(forAppleLossless:) stays for the editor, which meets books imported at 20 bits before.
+- A 64-bit integer CAF, which AVFoundation cannot decode, is refused on import by its form, not as damaged (see Probing an audio file's duration in [Imports: audio](imports-audio.md)).
 
 ## MP3 files TextMouth writes
 <!-- id: mp3-files-textmouth-writes; keys: LAME, ID3 tag, chapter frames, gapless, iTunSMPB, libmp3lame, bit rate, MP3 encoder; src: TextMouth/Services/MP3/MP3Encoder.swift, TextMouth/Services/MP3/MP3Tag.swift, TextMouth/Services/AudioEditing/AudioEditRenderer+MP3.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Parsers/AudioMediaProbe.swift, Vendor/lame, project.yml -->

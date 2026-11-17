@@ -102,7 +102,7 @@ Run these from the repository root:
 - `make help` lists these targets.
 
 ## The FFmpeg build
-<!-- id: ffmpeg-build; keys: FFmpeg, build.py, libtmffmpeg.a, Build FFmpeg, FFmpegLibrary, tmff-cc, configure, patches; src: Scripts/vendor/ffmpeg/build.py, Scripts/vendor/ffmpeg/test_build.py, Scripts/vendor/ffmpeg/patches/, project.yml, Scripts/check.sh; status: incomplete; issues: FMT54, FU-FFMPEG2, FU01 -->
+<!-- id: ffmpeg-build; keys: FFmpeg, build.py, libtmffmpeg.a, Build FFmpeg, FFmpegLibrary, tmff-cc, configure, patches; src: Scripts/vendor/ffmpeg/build.py, Scripts/vendor/ffmpeg/test_build.py, Scripts/vendor/ffmpeg/patches/, project.yml, Scripts/check.sh; status: incomplete; issues: FMT54, FU01 -->
 
 FFmpeg is not in the repository.
 The targets FFmpeg and FFmpeg_iOS (the template FFmpegLibrary of project.yml) each run a build phase, Build FFmpeg, which calls `Scripts/vendor/ffmpeg/build.py --xcode`.
@@ -114,19 +114,25 @@ They then merge the result, `libtmffmpeg.a`, into the library they link, which t
 - **It downloads from** ffmpeg.org first, then FFmpeg's GitHub archive of the tag n9.0.2, which has a SHA-256 of its own.
   The two trees differ only in files the tag's archive holds and the release lacks (git's own) and one file the release holds (VERSION); a comment in build.py names each.
   GitHub does not promise an archive's bytes: if they change, that source fails its pin and ffmpeg.org still serves.
-  A file that matches no pin is never built, and a tarball found in `build/ffmpeg/download` of the main checkout is copied, so every worktree of a Mac shares one download.
+  A file that matches no pin is never built.
 - **The patches** are five upstream commits, kept unchanged in `Scripts/vendor/ffmpeg/patches/` and pinned by SHA-256 in `PATCHES`, are applied in order, with no fuzz, to the unpacked release, and are part of every build's key.
   Drop them when 9.0.3 holds them (FU01).
-- **The work folder** is `$OBJROOT/FFmpeg`, inside DerivedData, so GitHub's cache keeps it:
+- **The shared folder** holds the release's archive and its unpacked, patched source, once for every checkout and build folder of a Mac, in `build/ffmpeg/` of the main checkout (git's common directory names it, from any worktree):
   - `download/` holds the tarballs;
-  - `source/<key>/ffmpeg-<version>/` holds the release unpacked and patched once, where the key is of the release's SHA-256 and the patches, so a changed list of patches unpacks afresh;
+  - `source/<key>/ffmpeg-<version>/` holds the release unpacked and patched once, where the key is of the release's SHA-256 and the patches, so a changed list of patches unpacks afresh, beside the old one.
+  FFmpeg is built outside its source, so the shared source is only read: a second build folder unpacks and downloads nothing, which saves about 102 MB (12 MB of archive and 90 MB of source) for each.
+  A lock is held while one build unpacks, and the lock is looked at again inside, so two checkouts never unpack over each other.
+  An archive or source an older build kept in its own work folder is taken over once.
+  Where the shared folder can't be written, or there is no git checkout, the same names are under the work folder instead.
+  The archive is hashed once.
+- **The work folder** is `$OBJROOT/FFmpeg`, inside DerivedData, so GitHub's cache keeps it:
   - `build-<platform>-<key>/` holds configure and make;
   - `<platform>/include` and `<platform>/lib/libtmffmpeg.a` are what the targets read, with `build.json` and `key` written last.
   The script deletes nothing: it writes fixed folders and replaces only its own published files.
 - **A build again** happens when the key changes; it holds the pin, the configure line, the platform, the script's RECIPE number, the compiler's version, and the patches.
   A build with the same key ends in 0.16 s; a cold build took about 34 s on the development Mac and 1.5 to 2 minutes on a GitHub runner.
-  Each DerivedData keeps about 150 MB for it, 125 MB of which is the tarball and the unpacked source (FU-FFMPEG2 would share them).
-- **No path of this Mac** is in the result: the compiler is a wrapper, `tmff-cc`, that maps the work folder away, and the build fails when `strings` finds a home folder, checkout, temporary folder, or work folder in the archive or the headers; `make check` repeats the test on the app.
+- **No path of this Mac** is in the result: the compiler is a wrapper, `tmff-cc`, that maps the work folder and the shared source away.
+  The build fails when `strings` finds a home folder, checkout, temporary folder, or work folder in the archive or the headers, and `make check` repeats the test on the app.
 - `python3 -I -B Scripts/vendor/ffmpeg/build.py --readme` writes the notice both apps ship, and `test_build.py` (in `make check-selftest`) tests the script without downloading.
 
 ## The Mac app's size

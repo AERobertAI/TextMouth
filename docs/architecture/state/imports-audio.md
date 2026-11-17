@@ -30,33 +30,41 @@ AudioFileInfo.parse(xml:) first replaces every byte sequence that is not UTF-8 w
 afinfo prints a path with a letter outside ASCII as bytes that are not UTF-8 in the alert of a property it could not read, and XMLParser would refuse the whole answer for a book in a folder named "Café".
 The plan, plan(for:info:), is leaveAsItIs, convertToAAC, or convertToAppleLossless when the codec keeps every bit (SourceInfo.isLossless: lpcm, alac, flac).
 The target, target(for:bytes:), gives AAC the source's average bit rate (bytes × 8 ÷ duration) rounded up to the next standard rate (bitRate(averaging:channels:accepted:), 64 to 192 kbit/s for stereo, half for mono) at its own sample rate where AAC takes it (sampleRate(for:)).
-It gives Apple Lossless the smallest of 16, 20, 24, or 32 bits that holds the source's samples (24 when the depth is unknown or the samples are floating-point).
+It gives Apple Lossless the smallest of 16, 24, or 32 bits that holds the source's samples (appleLosslessBitDepth(forBitsPerSample:): 24 for 17 to 20 bits too, and when the depth is unknown or the samples are floating-point).
+A 20-bit Apple Lossless file is no longer played as it is: playsAsIs(formatID:fileType:bitsPerSample:) converts it, since AVAssetReader cannot read one.
 Arguments from afconvertArguments(from:to:info:target:) never pass -c, since afconvert refuses it for AAC above stereo.
 AudioMediaProbe, AudioEditBase.load, and the transcriber refuse every format the import converts by ImportAudioConverter.isNeverDecodedInApp(_:), a converted extension other than TextMouth's own CAF or a file that begins with OggS (AudioContentSniffer.isOgg(at:)).
 AudioPlaybackService.metadataAsset(for:) asks isConvertedAtImport, by extension alone, since an import reads a source before it converts it.
 OggConversionProgress.markFailed keeps a failed book from being tried again before the next launch (B09).
 
 ## Probing an audio file's duration
-<!-- id: probing-audio-file-duration; keys: audio duration, unplayable audio, AVAssetReader, decode check, header length, hung read, Swift concurrency pool; src: TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/ImportAudioConverter.swift -->
+<!-- id: probing-audio-file-duration; keys: audio duration, unplayable audio, AVAssetReader, decode check, header length, hung read, Swift concurrency pool; src: TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Models/AudioSampleForm.swift -->
 
 AudioMediaProbe.duration(of:) (Parsers/AudioMediaProbe.swift) tells how long an audio file plays or why it cannot be played, and decodes the opening and the last second of its track to confirm its header.
 AudioBookParser and BookContentAnalysisService reach it through AudioMediaProber, and ImportAudioConverter directly.
 Since 0.4.5 that decoding check runs on a concurrent dispatch queue of its own, never in Swift's concurrency pool, where a read that never returned (AVAssetReaderOutput.copyNextSampleBuffer() on a GitHub runner) held one of its few threads for good.
 The probe waits for it 60 seconds at most (decodeDeadline): then the check's readers are told to stop (AVAssetReader.cancelReading()) and the file passes on its header's length.
 The deadline holds the check's job weakly, so a check that answers frees the file's asset and readers at once.
+A decode that fails at the opening is told as damage, unless the track's own description names a form of samples the decoders do not read (AudioSampleForm.isDecodable, B15): then the problem is .unsupportedSamples.
+The form is looked at only after the decode has failed, and only for linear PCM, so a Mac that decodes a form never refuses it, and a description that is not believed (a depth past 64 bits, or a frame too small for its channels) leaves the file to the damage checks.
+The table was decided by test on macOS 26: integers of 8, 12, 16, 20, 24, and 32 bits and floats of 32 and 64 bits read; integers of 33, 40, 48, and 64 bits and floats of 16 and 24 bits are refused.
+AudioMediaProblem.sentence(file:container:original:) says it with AudioSampleFormWording.refusal, where the other problems complete the damage sentence.
+The sentence is "“Talk.wav” uses 64-bit integer samples, which TextMouth can't play.
+  Convert it to 16-bit or 24-bit integer samples, then import it again.", and a float says "16-bit floating-point".
+FileImportService.describedAudioFailure passes the refusal through for a single file (AudioParseError.refusesAValidFile), and AudioBookParser says it for a track.
 
 ## Audio of more than two channels
 <!-- id: audio-more-than-two-channels; keys: surround, 5.1, downmix, stereo, channel layout, centre channel, afconvert --mix, disk space; src: TextMouth/Services/ImportAudioConverter.swift -->
 
 Audio of more than two channels (maximumChannels is 2) takes two steps (write(_:to:info:target:using:)):
-- downmixArguments writes a hidden stereo CAF ("`.<UUID>.audio-downmix.caf`", linear PCM, 16 bits for AAC and the lossless depth, 24 for 20, with -c 2 --mix, because without --mix afconvert drops channels by position and a PCM source's centre came out silent), and
+- downmixArguments writes a hidden stereo CAF ("`.<UUID>.audio-downmix.caf`", linear PCM, 16 bits for AAC and the lossless depth (24 for 17 to 20 bits), with -c 2 --mix, because without --mix afconvert drops channels by position and a PCM source's centre came out silent), and
 - afconvertArguments encodes that file, which is removed as soon as the second step ends.
 
 Before the first step the volume's free space must hold the PCM file and a 512 MB reserve (downmixBytesNeeded(duration:target:), Failure.notEnoughSpace), and a source of more than two channels that names no layout is refused (Failure.unlabelledChannels).
 Apple's normalized mix puts the centre in both channels about 10.7 dB down for PCM and 13.7 dB down for AC-3, measured on macOS 26.3.1.
 
 ## What watches a conversion
-<!-- id: what-watches-conversion; keys: watchdog, time limit, output cap, stall, afconvert limits, afinfo limits, lying header, converted file check; src: TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AudioFileInfo.swift, TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
+<!-- id: what-watches-conversion; keys: watchdog, time limit, output cap, stall, afconvert limits, afinfo limits, lying header, converted file check; src: TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AudioFileInfo.swift, TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Models/AudioSampleForm.swift -->
 
 What watches a conversion: afconvert gets
 
@@ -70,6 +78,8 @@ The expected output is the AAC rate times the length, 320 kbit/s where the encod
 AudioFileInfo.read(_:using:) gets 30 seconds plus one for each 20 MB, 512 MiB, and a cap of 1 MiB on what afinfo prints.
 It believes a length only up to a year and only as far as the file's bits at the codec's lowest bit rate allow (isPlausible(inFileOfBytes:), logged as AUDIO_INFO_IMPLAUSIBLE), so a lying header cannot lift the time limit or the cap.
 A file it cannot read is Failure.unreadable.
+AudioFileInfo.sampleForm names the form of linear PCM from afinfo's bit_depth and data_type (only "integer" or "float"), with max_packet_size and interleaved to check the frame holds the channels.
+When afconvert itself ends with a status above zero on a source whose form no decoder reads, ImportAudioConverter.convert throws Failure.unsupportedSamples (the same sentence) in place of "the converter ended with code N"; a kill or a failure to start keeps its own failure.
 AUDIO_CONVERSION_KILLED (in place of OGG_CONVERSION_KILLED) and AUDIO_INFO_KILLED are storage events.
 The converted file is written under "`.<UUID>.audio-conversion.m4a`", checked by AudioMediaProbe (it plays, and lasts as long as its source to within allowedLengthError(for:), a second and half a percent), and only then named.
 
@@ -150,7 +160,7 @@ A file the import converts keeps its chapters through the conversion:
 - The import: these files always convert (their extensions are in ImportAudioConverter.ownReaderExtensions and convertedExtensions), and one under another name is caught by its bytes; FFmpegAudioConverter.converts(_:) says no for them.
   OwnAudioConverter.sourceInfo(of:) reads the header, refuses a length past a year as damaged, and returns the chapters of an APEv2 Cuesheet item (chapters(in:lasting:), by CueSheet and CueSheetArrangement.heading).
   OwnAudioConverter.write decodes block by block (framesPerAppend) into an AVAssetWriter that sees only PCM made here.
-  A lossless source is written as Apple Lossless at its depth, a 20-bit one at 24 (writtenBitDepth, since the writer's 20-bit files fail the media check), a float at 24, and a hybrid WavPack file without its .wvc as AAC.
+  A lossless source is written as Apple Lossless at its depth, a source of 17 to 20 bits at 24 (appleLosslessBitDepth, since the writer's 20-bit files fail the media check), a float at 24, and a hybrid WavPack file without its .wvc as AAC.
   More than two channels are mixed to stereo (OwnAudioSamples.stereo).
 - The .wvc: OwnAudioConverter.companion(of:) finds it by name beside the .wv; the import copies it with its file, ImportAudioConverter.removeSources removes it with its source, and the kept originals move it beside its file.
   A damaged .wvc ends in OwnAudioError.companionDamaged, whose sentence names it.

@@ -107,6 +107,19 @@ How books are added is in [Adding books](adding-books.md).
 - A folder of tracks or a playlist is checked before the first track is copied: TextMouth adds up the tracks' sizes and refuses the import unless the disk would keep its reserve of 1 GB free (the one the archives use) once they were copied, with the same sentence and nothing written.
   A track on the same APFS disk as the library counts as nothing, since the copy shares its bytes with the original, so a big folder on the library's own disk is not refused for room its copy will not take.
 
+### Audio whose samples TextMouth can't decode
+<!-- id: audio-samples-cannot-decode; keys: 64-bit, floating-point, WAVE, CAF, AIFF, samples, Convert it; src: TextMouth/Models/AudioSampleForm.swift, TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AudioFileInfo.swift, TextMouth/Services/FileImportService.swift -->
+
+- A valid audio file whose samples are stored in a form that no decoder on the Mac reads is not called damaged: it is refused with its form, as in "“Talk.wav” uses 64-bit integer samples, which TextMouth can't play.
+  Convert it to 16-bit or 24-bit integer samples, then import it again."
+- The refused forms are integers deeper than 32 bits (33, 40, 48, and 64) and floating-point samples of 16 or 24 bits, which the sentence names as "16-bit floating-point".
+  Integers of 8, 12, 16, 20, 24, and 32 bits and floating-point samples of 32 and 64 bits import.
+- A WAVE, AIFF, or CAF file imported by itself, as a track of a book, or to be converted says the same.
+- The form is named only after the file has failed to decode, so a Mac that reads it imports it.
+- A file that is damaged, or whose header names no believable depth, still hears the damage sentence.
+- An 8-bit or a 128-bit floating-point CAF file does not open as audio at all, and says "The audio file X could not be read for converting."
+- The iPhone gives a WAVE or AIFF file this sentence, and a CAF file there still says "Converting this kind of file is not available on iPhone yet."
+
 ### Documents TextMouth's own readers can't read
 <!-- id: documents-textmouth-own-readers-cant; keys: rtf, rtfd, Word 97-2003, OpenDocument, Word 2003 XML, textutil, damaged, unreadable; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/TextutilSourceCheck.swift -->
 

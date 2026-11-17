@@ -41,7 +41,8 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 
 - Lossy audio becomes AAC at about its own bit rate: it stays near its size, but a second lossy encoding can lose a little.
 - The rate is the next standard AAC rate at or above the source's average (64 to 192 kbit/s for stereo, half that for mono).
-- Lossless audio that TextMouth converts (PCM in CAF, AIFC, AU, or Wave64; Apple Lossless or FLAC in CAF; Ogg FLAC) becomes Apple Lossless at its own bit depth (16, 20, 24, or 32 bits) and loses nothing.
+- Lossless audio that TextMouth converts (PCM in CAF, AIFC, AU, or Wave64; Apple Lossless or FLAC in CAF; Ogg FLAC) becomes Apple Lossless at its own bit depth (16, 24, or 32 bits, a source of 17 to 24 bits being written at 24) and loses nothing.
+  A 20-bit CAF or Apple Lossless file imports, written at 24 bits.
 - Plain WAV, AIFF, and FLAC files are not converted at all.
 
 ### Channels
@@ -67,6 +68,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - Every other converted format is read by Apple's afinfo tool, which says what the file holds, and then converted by afconvert, each run as a separate process that TextMouth watches (see [Where TextMouth keeps your library](helper-programs.md)).
 - A file of one of them that claims to last more than a year, or a length that its size cannot hold, is refused as unreadable.
 - A Mac that can't read or convert a format refuses a file of it by name when it is imported, and nothing is added.
+- A file that is valid, but whose samples are 64-bit integers or another form no decoder reads, is refused with that form and what to convert it to, not as damaged (see [Adding books](import-progress-and-errors.md#audio-whose-samples-textmouth-cant-decode)).
 
 ## True Audio, WavPack, and Monkey's Audio
 <!-- id: true-audio-wavpack-monkeys-audio; keys: TTA, .tta, WavPack, .wv, .wvc, Monkey's Audio, .ape, hybrid; src: TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift; status: incomplete; issues: DR31 -->
@@ -74,7 +76,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - TextMouth decodes True Audio (.tta), WavPack (.wv), and Monkey's Audio (.ape, version 3.99 and later) with readers of its own, inside the app, so no program has to be installed for them.
 - Each file becomes an .m4a file in the book's package, as the other converted audio does (see above), and holds the source's samples exactly.
   It is Apple Lossless at the source's bit depth, as for other lossless audio.
-  A 20-bit source is written at 24 bits, which holds every sample, and floating-point audio at 24 bits.
+  A source of 17 to 20 bits is written at 24 bits, which holds every sample, and floating-point audio at 24 bits.
 - A file is known by what it holds, not its name, so a TTA file named .mp3 is read as TTA.
 - A WavPack hybrid file (a lossy .wv) with its correction file (.wvc, the same name) beside it is lossless.
   - The .wvc is copied with the .wv, and kept with it when Keep originals of converted audio is on.
@@ -95,7 +97,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - The iPhone refuses these formats.
 
 ## Formats only ffmpeg reads
-<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT54, FU-FFMPEG2 -->
+<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT54 -->
 
 - TextMouth converts, as it is imported, the audio of these formats, which macOS cannot read, with the converter it carries inside the app, so nothing needs installing:
   - Windows Media Audio (.wma, .asf), and the sound of Windows Media video (.wmv);
@@ -114,7 +116,8 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   "TextMouth can't read “NAME” as WMA.
   It may be damaged, or named for another format."
 - A file whose sound the converter does not decode is refused with "TextMouth can't convert the sound of “NAME”: it is in a kind of audio TextMouth does not read."
-  One whose sound changes its rate or its channels partway through is refused with "TextMouth can't convert “NAME” because its sound changes its rate or its channels partway through."
+- Sound that changes its rate or its channels partway through, as joined recordings do, is converted to the form the file begins with.
+  Only a change by more than TextMouth can follow is refused, with "TextMouth can't convert “NAME”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."
 - A file that makes the converter stop is refused with "TextMouth's converter stopped unexpectedly while reading “NAME”.
   The file may be damaged."
   The converter confines itself before it reads a file (see [Where TextMouth keeps your library](helper-programs.md)), so a hostile file cannot harm the Mac.
@@ -128,8 +131,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - Up to five files are named, then "and N more".
   - The book is refused only when no other track is left.
 - A feed's episode in one of these formats still fails, as it did before.
-- The iPhone refuses these formats, with this sentence:
-  "“NAME” is in WMA, which TextMouth on iPhone can't play.
+- The iPhone refuses these formats, with "“NAME” is in WMA, which TextMouth on iPhone can't play.
   Add it on your Mac, then send the book here."
 - A file that claims no length is limited by its size: its output may be at most 50 times the file's size, and no less than 64 MB.
   The import refuses it before running when the disk lacks room for that.

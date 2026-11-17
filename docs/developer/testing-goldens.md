@@ -117,6 +117,7 @@ The real files are from the LibreOffice core repository's test data, under MPL-2
   - the 16 files of the `doc6` folder, from POI and LibreOffice, of Word 6 and Word 95.
 
 Each downloaded file was fetched into a folder of its own and read by a script run with `python3 -I`.
+The audio samples made on this Mac for the FFmpeg import (`mka/mp3-form-changes.mka` and the folder `ffmpeg-edge`) are in the same list, with the three `Scripts/make-*sample*` scripts that make them, described in [Formats only ffmpeg reads](testing-formats.md#formats-only-ffmpeg-reads).
 
 ## DOCX tests built in code
 <!-- id: docx-tests-built-code; keys: DOCXParser, w:vanish, endnotes, text frame; src: TextMouthProductionTests/DOCXTestPackages.swift, TextMouthProductionTests/DOCXHiddenTextTests.swift, TextMouthProductionTests/DOCXNotesTests.swift, TextMouthProductionTests/DOCXTextBoxTests.swift, TextMouthProductionTests/DOCXEmphasisTests.swift, TextMouthProductionTests/DOCXRealFileTests.swift -->
