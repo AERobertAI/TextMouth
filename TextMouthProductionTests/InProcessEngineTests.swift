@@ -467,13 +467,14 @@ final class InProcessEngineTests: XCTestCase {
         let tasks = (0..<waiting).map { index in
             Task {
                 try await engine.runForTask(limit: 60) { _ in
-                    if index == 0 { started.signal() }
+                    // Whichever call the engine takes first says so: the tasks queue their calls in no set order.
+                    started.signal()
                     _ = gate.wait(timeout: .now() + 30)
                     return index
                 }
             }
         }
-        XCTAssertEqual(started.wait(timeout: .now() + 30), .success, "the first call never started")
+        XCTAssertEqual(started.wait(timeout: .now() + 30), .success, "no call ever started")
         let ran = DispatchSemaphore(value: 0)
         Task { ran.signal() }
         XCTAssertEqual(ran.wait(timeout: .now() + TestMachine.allowed(5)), .success, "a task was starved by calls waiting")
