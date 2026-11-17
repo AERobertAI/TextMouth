@@ -731,8 +731,8 @@ enum BrailleTranslator {
     /// and TextMouth's translation around it, called in the app one at a
     /// time on a thread of their own, since iOS lets an app start no helper
     /// program. A call past its time is abandoned, and every later
-    /// translation is refused until TextMouth is opened again, in the
-    /// engine's sentences (`InProcessEngineWording`).
+    /// translation is refused until TextMouth is closed and opened again, in
+    /// the engine's sentences (`InProcessEngineWording`).
     static let libraryEngine = InProcessEngine(name: "liblouis", work: "the braille translation")
 
     /// The engine translations run on: `libraryEngine`, unless a test binds

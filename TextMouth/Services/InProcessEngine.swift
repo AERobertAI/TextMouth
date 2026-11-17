@@ -21,12 +21,16 @@ import os
 ///   each record) stops in time by itself.
 /// - **Abandoned past its time.** A call still running `grace` seconds after
 ///   it should have stopped is abandoned: its thread cannot be killed, so it
-///   is left where it is, and its caller gets `Failure.abandoned` at once.
-/// - **Refused until TextMouth is opened again.** After an abandoned call the
-///   library's state could be anything, and the thread is taken, so the
-///   engine runs nothing more: the calls waiting behind it, and every call
-///   made later, fail at once with `Failure.refused`, whose sentence says so
-///   (`InProcessEngineWording`).
+///   is left where it is, at the lowest priority, so that the rest of the app
+///   (a book's audio playing in the background among it) goes first; and its
+///   caller gets `Failure.abandoned` at once.
+/// - **Refused until TextMouth is closed and opened again.** After an
+///   abandoned call the library's state could be anything, and the thread is
+///   taken, so the engine runs nothing more: the calls waiting behind it, and
+///   every call made later, fail at once with `Failure.refused`, whose
+///   sentence says so (`InProcessEngineWording`). Only a new process clears
+///   that, which an iPhone app gets when it is closed, not when it is only
+///   switched back to.
 ///
 /// Each C library gets an engine of its own (braille's is
 /// `BrailleTranslator.libraryEngine`), made with the phrase its sentences
@@ -162,6 +166,9 @@ final class InProcessEngine: Sendable {
         var abandoned = false
         /// Whether the engine is gone, which ends its idle thread.
         var closed = false
+        /// The engine's thread, as the bit pattern of its pthread, once it
+        /// runs (0 before): `abandon(_:)` lowers its priority by it.
+        var thread: UInt = 0
         /// The calls not yet begun, in the order they were made.
         var queue: [Job] = []
     }
@@ -300,6 +307,9 @@ final class InProcessEngine: Sendable {
             }
             guard stillRunning else { return nil }
             engine.abandoned = true
+            // The thread is still in the call, and cannot leave it without
+            // this lock, so its pthread is valid here.
+            Self.lowerToTheLowestPriority(engine.thread)
             let waiting = engine.queue
             engine.queue.removeAll()
             return waiting
@@ -313,9 +323,26 @@ final class InProcessEngine: Sendable {
             .import,
             "IN_PROCESS_CALL_ABANDONED: \(name): a call ran past its limit of "
                 + "\(CountWording.seconds(Int(call.limit.rounded(.up)))) and was abandoned, "
-                + "\(refused.count) waiting refused; no more calls until TextMouth is opened again"
+                + "\(refused.count) waiting refused, its thread at the lowest priority; "
+                + "no more calls until TextMouth is closed and opened again"
         )
         return true
+    }
+
+    /// Lowers the thread whose pthread has the bit pattern `thread` to the
+    /// lowest priority of its scheduling policy, the documented minimum
+    /// (`sched_get_priority_min`): an abandoned call may spin inside its
+    /// library for as long as the app runs, and must not take a core from
+    /// anything else. A thread's QoS can be set only by the thread itself,
+    /// and macOS refuses the background policy for another thread
+    /// (`THREAD_BACKGROUND_POLICY`, KERN_INVALID_ARGUMENT, measured on
+    /// November 16, 2026), so the priority is set through its pthread, which
+    /// takes it out of its QoS class as well. Nothing happens for 0.
+    private static func lowerToTheLowestPriority(_ thread: UInt) {
+        guard let pthread = pthread_t(bitPattern: thread) else { return }
+        var parameters = sched_param()
+        parameters.sched_priority = sched_get_priority_min(SCHED_OTHER)
+        _ = pthread_setschedparam(pthread, SCHED_OTHER, &parameters)
     }
 
     // MARK: The Thread
@@ -332,6 +359,9 @@ final class InProcessEngine: Sendable {
     /// happen under one lock, which `abandon(_:)` takes too.
     private func startThread() {
         let thread = Thread { [state, jobsWaiting] in
+            // Its pthread, for `abandon(_:)`, before any call is taken.
+            let me = UInt(bitPattern: pthread_self())
+            state.withLock { $0.thread = me }
             var finished: Call?
             while true {
                 if finished == nil { jobsWaiting.wait() }

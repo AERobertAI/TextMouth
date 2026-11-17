@@ -216,19 +216,19 @@ final class BrailleLibraryTests: XCTestCase {
         XCTAssertEqual(try BrailleTranslator.translate(["\u{2801}"], table: grade1, direction: .brailleToPrint, workingIn: work), ["a"])
     }
 
-    // MARK: - Refused Until TextMouth Is Opened Again
+    // MARK: - Refused Until TextMouth Is Closed and Opened Again
 
     /// Once a braille engine has abandoned a call, every braille translation
     /// and check is refused at once, in the engine's own sentence, and an
     /// import of a braille book fails with it after the import's words.
-    func testAfterAnAbandonedCallBrailleIsRefusedUntilTheAppIsOpenedAgain() throws {
+    func testAfterAnAbandonedCallBrailleIsRefusedUntilTheAppIsClosedAndOpenedAgain() throws {
         let wedged = InProcessEngine(name: "test-liblouis-wedged", work: "the braille translation", grace: 0.1)
         let gate = makeGate()
         XCTAssertThrowsError(try wedged.run(limit: 0.1) { _ in _ = gate.wait(timeout: .now() + 30) })
         XCTAssertTrue(wedged.hasAbandonedACall)
 
         let refusal = "TextMouth stopped the braille translation earlier because it took too long, "
-            + "and won't try again until TextMouth is opened again."
+            + "and won't try again until TextMouth is closed and opened again."
         try BrailleTranslator.$engine.withValue(wedged) {
             XCTAssertThrowsError(
                 try BrailleTranslator.translate(["\u{2801}"], table: grade1, direction: .brailleToPrint, workingIn: work)

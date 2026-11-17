@@ -6,8 +6,9 @@ import XCTest
 /// inside the app, with plain Swift work standing in for the library: one
 /// call at a time on one thread with the helper's stack, each call's limit
 /// and its import's Cancel told through `shouldStop` and its C form, a call
-/// past its time abandoned, and every call refused after it until TextMouth
-/// is opened again. Shared with the iPhone's unit bundle.
+/// past its time abandoned at the lowest priority, and every call refused
+/// after it until TextMouth is closed and opened again. Shared with the
+/// iPhone's unit bundle.
 ///
 /// Every wait has a limit: each call runs on a queue of its own and is waited
 /// for at most 30 seconds, and work made to hang waits on a gate that the
@@ -51,6 +52,14 @@ final class InProcessEngineTests: XCTestCase {
         var id: UInt64 = 0
         pthread_threadid_np(nil, &id)
         return id
+    }
+
+    /// The scheduling priority of the thread that calls it.
+    private static func ownPriority() -> Int32 {
+        var policy: Int32 = 0
+        var parameters = sched_param()
+        pthread_getschedparam(pthread_self(), &policy, &parameters)
+        return parameters.sched_priority
     }
 
     /// The seconds since `start`.
@@ -257,7 +266,7 @@ final class InProcessEngineTests: XCTestCase {
 
     /// Once a call has been abandoned, every later call is refused at once,
     /// and its work never runs, even after the hung work has ended.
-    func testAfterAnAbandonedCallEveryCallIsRefusedUntilTheAppIsOpenedAgain() throws {
+    func testAfterAnAbandonedCallEveryCallIsRefusedUntilTheAppIsClosedAndOpenedAgain() throws {
         let engine = makeEngine(grace: 0.1)
         let gate = makeGate()
         let ranLater = OSAllocatedUnfairLock(initialState: false)
@@ -314,6 +323,34 @@ final class InProcessEngineTests: XCTestCase {
         XCTAssertFalse(waitingRan.withLock { $0 }, "the waiting call's work ran")
     }
 
+    /// An abandoned call's thread, which may spin inside its library for as
+    /// long as the app runs, drops to the lowest priority of its policy the
+    /// moment it is abandoned, from the priority it ran at before.
+    func testAnAbandonedCallsThreadDropsToTheLowestPriority() throws {
+        let engine = makeEngine(grace: 0.1)
+        let gate = makeGate()
+        let seen = OSAllocatedUnfairLock<(before: Int32, after: Int32)?>(initialState: nil)
+        let reported = DispatchSemaphore(value: 0)
+        let first = outcome {
+            try engine.run(limit: 0.1) { _ in
+                let before = Self.ownPriority()
+                _ = gate.wait(timeout: .now() + 30)
+                seen.withLock { $0 = (before, Self.ownPriority()) }
+                reported.signal()
+            }
+        }
+        XCTAssertThrowsError(try first?.get()) { error in
+            XCTAssertEqual(error as? InProcessEngine.Failure, .abandoned(work: work, limit: 0.1))
+        }
+        // The hung work ends now and says what it saw of its own thread.
+        gate.signal()
+        XCTAssertEqual(reported.wait(timeout: .now() + 30), .success, "the abandoned work never ended")
+        let priorities = try XCTUnwrap(seen.withLock { $0 })
+        let lowest = sched_get_priority_min(SCHED_OTHER)
+        XCTAssertGreaterThan(priorities.before, lowest, "the engine's thread began at the lowest priority")
+        XCTAssertEqual(priorities.after, lowest, "the abandoned call's thread kept priority \(priorities.after)")
+    }
+
     /// A call's time counts from its own start, not from when it was made:
     /// one that waits behind a long call longer than its own limit and the
     /// grace still runs, and is not abandoned.
@@ -336,25 +373,26 @@ final class InProcessEngineTests: XCTestCase {
 
     /// Each failure's sentence names the engine's work, the limit in whole
     /// seconds rounded up, and that nothing is tried again until TextMouth is
-    /// opened again.
+    /// closed and opened again: an iPhone app only switched back to keeps its
+    /// process, and so its abandoned call.
     func testTheSentencesNameTheWorkAndTheLimit() {
         XCTAssertEqual(
             InProcessEngine.Failure.abandoned(work: "the braille translation", limit: 10.2).errorDescription,
             "TextMouth stopped the braille translation because it ran longer than 11 seconds, "
-                + "and won't try again until TextMouth is opened again."
+                + "and won't try again until TextMouth is closed and opened again."
         )
         // Rounded up, and never "0 seconds", even for a call whose time was spent before it began.
         for limit: TimeInterval in [0.5, 0] {
             XCTAssertEqual(
                 InProcessEngine.Failure.abandoned(work: "the braille translation", limit: limit).errorDescription,
                 "TextMouth stopped the braille translation because it ran longer than 1 second, "
-                    + "and won't try again until TextMouth is opened again.", "limit \(limit)"
+                    + "and won't try again until TextMouth is closed and opened again.", "limit \(limit)"
             )
         }
         XCTAssertEqual(
             InProcessEngine.Failure.refused(work: "the braille translation").errorDescription,
             "TextMouth stopped the braille translation earlier because it took too long, "
-                + "and won't try again until TextMouth is opened again."
+                + "and won't try again until TextMouth is closed and opened again."
         )
     }
 }
