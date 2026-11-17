@@ -25,3 +25,7 @@ The import marks only the sections that hold an item's quoted sentences, so this
 On main, the docs pass adds DR35 to that section's marker (`status: incomplete; issues: DR35`), and `issuelib set DR35 docs` adds the section to DR35's docs.
 
 ## Comments
+
+### 2026-11-16, docspass1116, 1 line
+
+Done on docs/pass-1116: the section what-word-6-word-95 (What Word 6 and Word 95 reading leaves out) now says status: incomplete; issues: DR35. The orchestrator still runs issuelib set DR35 docs on main to add the section to DR35's docs line (a branch may not).
