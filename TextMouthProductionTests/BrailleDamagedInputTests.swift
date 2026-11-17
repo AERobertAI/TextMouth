@@ -85,10 +85,11 @@ final class BrailleDamagedInputTests: XCTestCase {
             0x5D0...0x6FF, 0x900...0x97F, 0x2000...0x2BFF, 0x2800...0x28FF, 0x3040...0x30FF, 0x4E00...0x4E80,
             0x1F300...0x1F6FF,
         ]
-        let texts = (0..<120).map { _ in
+        let texts = try (0..<120).map { _ in
             let text = randomText(Int.random(in: 1...400, using: &random), from: ranges, using: &random)
             let emphasis = text.unicodeScalars.map { _ in BrailleEmphasis(rawValue: UInt8.random(in: 0...31, using: &random)) }
-            return EmphasizedText(text, emphasis: emphasis)
+            // One flag set for each scalar, so the text always takes them.
+            return try XCTUnwrap(EmphasizedText(text, emphasis: emphasis), "the emphasis does not fit its text")
         }
         for table in offered {
             let braille = try withOwnEngine {

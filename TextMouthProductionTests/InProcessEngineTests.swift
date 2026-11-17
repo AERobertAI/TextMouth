@@ -11,20 +11,10 @@ import XCTest
 ///
 /// Every wait has a limit: each call runs on a queue of its own and is waited
 /// for at most 30 seconds, and work made to hang waits on a gate that the
-/// test opens when it ends, so no thread is left stuck.
+/// test opens when it ends (`makeGate()`), so no thread is left stuck.
 final class InProcessEngineTests: XCTestCase {
     /// The phrase the test engines name their work by.
     private let work = "the test work"
-
-    /// Gates that hung work waits on; each is opened when its test ends.
-    private var gates: [DispatchSemaphore] = []
-
-    override func tearDown() {
-        // Let every hung work end, so its thread is not left waiting.
-        for gate in gates { gate.signal() }
-        gates = []
-        super.tearDown()
-    }
 
     // MARK: - Helpers
 
@@ -32,14 +22,6 @@ final class InProcessEngineTests: XCTestCase {
     /// time is abandoned.
     private func makeEngine(grace: TimeInterval = 5) -> InProcessEngine {
         InProcessEngine(name: "test", work: work, grace: grace)
-    }
-
-    /// A gate that hung work waits on, opened when the test ends; work that
-    /// waits on it gives up after 30 seconds whatever happens.
-    private func makeGate() -> DispatchSemaphore {
-        let gate = DispatchSemaphore(value: 0)
-        gates.append(gate)
-        return gate
     }
 
     /// What `body` gave, run on a queue of its own and waited for at most

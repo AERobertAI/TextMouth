@@ -12,7 +12,8 @@ import XCTest
 /// the rest) show that the iPhone reads as the Mac reads; these test what is
 /// the iPhone's own. Every call of the library goes through an engine, one
 /// call at a time, as the app's do; a test that hangs or wedges an engine uses
-/// one of its own, so the app's `BrailleTranslator.libraryEngine` is never
+/// one of its own (its hung work waits on `makeGate()`, opened when the test
+/// ends), so the app's `BrailleTranslator.libraryEngine` is never
 /// refused for the tests after it. They run on GitHub's simulator only, as
 /// every iPhone test does, so damaged input never reaches liblouis on the
 /// development Mac.
@@ -26,20 +27,11 @@ final class BrailleLibraryTests: XCTestCase {
     /// The engine the direct calls of the library go through.
     private let engine = InProcessEngine(name: "test-liblouis", work: "the braille translation")
 
-    /// Gates that hung work waits on, opened when the test ends.
-    private var gates: [DispatchSemaphore] = []
-
     /// A working folder for the calls that take one; the iPhone writes nothing in it.
     private var work = URL(fileURLWithPath: "/var/empty", isDirectory: true)  // replaced in setUp
 
     override func setUpWithError() throws {
         work = try makeSandboxDirectory("BrailleLibrary")
-    }
-
-    override func tearDown() {
-        for gate in gates { gate.signal() }
-        gates = []
-        super.tearDown()
     }
 
     // MARK: - Helpers
@@ -100,27 +92,6 @@ final class BrailleLibraryTests: XCTestCase {
     /// The status `call` gave, for a table of expected statuses.
     private func status(_ input: String, _ mode: tmb_mode, table: String = "en-ueb-g1.ctb", maxRecord: Int = 4_000) throws -> Int {
         Int(try call(Data(input.utf8), mode: mode, table: table, maxRecord: maxRecord).status)
-    }
-
-    /// A gate for hung work, opened when the test ends; work that waits on it
-    /// gives up after 30 seconds whatever happens.
-    private func makeGate() -> DispatchSemaphore {
-        let gate = DispatchSemaphore(value: 0)
-        gates.append(gate)
-        return gate
-    }
-
-    /// A random number generator with a seed, so a failure can be run again
-    /// exactly (SplitMix64).
-    private struct SeededGenerator: RandomNumberGenerator {
-        var state: UInt64
-        mutating func next() -> UInt64 {
-            state &+= 0x9E37_79B9_7F4A_7C15
-            var z = state
-            z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
-            z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
-            return z ^ (z >> 31)
-        }
     }
 
     // MARK: - The Bundled Tables
@@ -314,7 +285,7 @@ final class BrailleLibraryTests: XCTestCase {
     /// pattern, read back with each table, each in one record. Seeded, so a
     /// failure can be run again.
     func testRandomDamagedInputNeverEndsTheApp() throws {
-        var random = SeededGenerator(state: 20_261_116)
+        var random = SplitMix64(seed: 20_261_116)
         let modes = [TMB_MODE_FORWARD, TMB_MODE_BACK, TMB_MODE_BACK_LIBLOUIS]
         for round in 0..<300 {
             var input = Data(header.utf8)
