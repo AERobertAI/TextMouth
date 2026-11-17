@@ -102,12 +102,15 @@ enum FFmpegImportWording {
         "TextMouth can't convert the sound of “\(fileName)”: it is in a kind of audio TextMouth does not read."
     }
 
-    /// Why a file was not imported whose sound changes its rate, channels,
-    /// or form partway through, which TextMouth does not convert: "TextMouth
-    /// can't convert “Radio.mkv” because its sound changes its rate or its
-    /// channels partway through."
+    /// Why a file was not imported whose sound changes its rate or its
+    /// channels partway through by more than TextMouth can follow: a rate
+    /// more than 16 times the first one's or a sixteenth of it, a form that
+    /// cannot be converted, or more than 1,000 changes. A sound that changes
+    /// less is converted (FU-FFMPEG2): "TextMouth can't convert “Radio.mkv”:
+    /// its sound changes its rate or its channels partway through, by more
+    /// than TextMouth can follow."
     static func formChanged(fileName: String) -> String {
-        "TextMouth can't convert “\(fileName)” because its sound changes its rate or its channels partway through."
+        "TextMouth can't convert “\(fileName)”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."
     }
 
     /// Why a file was not imported when the converter stopped unexpectedly

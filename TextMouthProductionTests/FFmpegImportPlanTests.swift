@@ -172,7 +172,7 @@ final class FFmpegImportPlanTests: XCTestCase {
             "“Lecture.wma” holds no sound to import.",
             "TextMouth can't convert the sound of “Lecture.wma”: it is in a kind of audio TextMouth does not read.",
             "The audio file Lecture.wma is damaged, so it could not be converted.",
-            "TextMouth can't convert “Lecture.wma” because its sound changes its rate or its channels partway through.",
+            "TextMouth can't convert “Lecture.wma”: its sound changes its rate or its channels partway through, by more than TextMouth can follow.",
             "Converting Lecture.wma was stopped because it needed more memory than it may use.",
             "TextMouth's converter could not make itself safe before reading “Lecture.wma”, so it did not read the file. "
                 + "Install TextMouth again, then import the file again.",
@@ -296,7 +296,7 @@ final class FFmpegImportPlanTests: XCTestCase {
             (.soundNotDecoded(fileName: "Clip.avi"),
              "TextMouth can't convert the sound of “Clip.avi”: it is in a kind of audio TextMouth does not read."),
             (.formChanged(fileName: "Radio.mkv"),
-             "TextMouth can't convert “Radio.mkv” because its sound changes its rate or its channels partway through."),
+             "TextMouth can't convert “Radio.mkv”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."),
             (.notConfined(fileName: "Lecture.wma"),
              "TextMouth's converter could not make itself safe before reading “Lecture.wma”, so it did not read the file. "
                 + "Install TextMouth again, then import the file again."),
