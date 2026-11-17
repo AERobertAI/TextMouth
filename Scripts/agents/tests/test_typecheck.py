@@ -228,6 +228,23 @@ class PackageTests(TypecheckTestsCase):
     def test_the_plain_package_has_no_test_target(self):
         self.assertNotIn(".testTarget(", self.package(tests=False))
 
+    def test_only_the_iphone_app_links_the_braille_library_and_liblouis(self):
+        # The iPhone app calls the braille translation in its own process (DR34), so its package builds both C targets
+        # and its app depends on them; the Mac app's braille helper links them instead, so the Mac's package has
+        # neither.
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False)
+        typecheck.write_package(self.src, self.folder / "pkgs", "ios", "26.0")
+        ios = (self.src / "Package.swift").read_text()
+        app = ios.split(".executableTarget(")[1]
+        for name in ("liblouis", "TextMouthBrailleLibrary"):
+            self.assertIn(f'.target(\n            name: "{name}"', ios)
+            self.assertIn(f'"{name}",', app, f"the iPhone app does not depend on {name}")
+        self.assertIn('exclude: ["main.c", "include"]', ios, "the helper's main is built into the iPhone's library")
+        self.assertIn('publicHeadersPath: "no-public-headers"', ios)
+        mac = self.package(tests=False)
+        self.assertNotIn("liblouis", mac)
+        self.assertNotIn("TextMouthBrailleLibrary", mac)
+
 
 class SummaryTests(TypecheckTestsCase):
     """Errors and warnings in the tests' files, as the summary reports them."""

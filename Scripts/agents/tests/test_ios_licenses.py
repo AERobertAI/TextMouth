@@ -43,6 +43,8 @@ def complete_project():
                     {"target": "LAME_iOS"},
                     {"target": "ObjCExceptionCatcher_iOS"},
                     {"target": "FFmpeg_iOS"},
+                    {"target": "liblouis_iOS"},
+                    {"target": "TextMouthBrailleLibrary_iOS"},
                 ],
             }
         }

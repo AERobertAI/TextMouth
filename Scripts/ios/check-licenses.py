@@ -48,10 +48,13 @@ LIBRARY_LICENCES = {
     # own LICENSE.md and COPYING.LGPLv2.1, and Scripts/vendor/ffmpeg/build.py's README, as the Mac app ships them.
     "FFmpeg_iOS": ("FFmpeg", ["Vendor/package-licenses/FFmpeg/LICENSE.md", "Vendor/package-licenses/FFmpeg/COPYING.LGPLv2.1",
                               "Vendor/package-licenses/FFmpeg/README"]),
+    # liblouis, the braille translator (DR34), under the GNU Lesser General Public License 2.1.
+    "liblouis_iOS": ("liblouis", ["Vendor/liblouis/COPYING.LESSER", "Vendor/liblouis/README"]),
 }
 
-# Targets that are TextMouth's own code, which need no third-party notice.
-OWN_CODE = {"ObjCExceptionCatcher_iOS"}
+# Targets that are TextMouth's own code, which need no third-party notice: the
+# exception catcher, and the braille translation around liblouis (DR34).
+OWN_CODE = {"ObjCExceptionCatcher_iOS", "TextMouthBrailleLibrary_iOS"}
 
 # Code the iPhone app does not link but its shared readers follow, whose
 # licence asks that its notice travel with the app (the MOBI reader follows
