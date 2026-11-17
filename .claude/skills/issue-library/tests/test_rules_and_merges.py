@@ -1,41 +1,17 @@
-"""Tests of who may change what on which branch, and of real git merges of issue files.
+"""Tests of who may change what on which branch, and of the IDs git's history holds.
 
-Each test makes a git repository in its own temporary folder, with a TODO, an issue
-assigned to the agent ``floatrender``, and the real ``.gitattributes`` line that gives
-issue files git's union merge, then works on ``main`` and on a branch as the
-orchestrator and an agent would.
+Each test makes a git repository in its own temporary folder (issuelib_case's
+RepositoryCase: a TODO, an issue assigned to the agent ``floatrender``, the real
+``.gitattributes``, and the merge driver), then works on ``main`` and on a branch
+as the orchestrator and an agent would. The merges themselves are in
+test_merge_driver.py.
 """
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-from issuelib_case import B16, SKILL, TODO, IssueCase
-
-# The repository's own .gitattributes, two folders above the skill's.
-ATTRIBUTES = (SKILL.parents[2] / ".gitattributes").read_text(encoding="utf-8")
-# B16, given to the agent that works on it.
-ASSIGNED = B16.replace("assignee:\n", "assignee: floatrender\n").replace("branch:\n", "branch: fix/float64-render\n")
-
-
-class RepositoryCase(IssueCase):
-    """A repository on main holding the TODO, B16 assigned to floatrender, and (unless told not to) the union merge."""
-
-    def make_repository(self, union: bool = True) -> None:
-        """Commit the starting files on main."""
-        files = {"TODO-2026-09-04.md": TODO, "Issues/README.md": "# Issues\n", "Issues/B16.md": ASSIGNED}
-        if union:
-            files[".gitattributes"] = ATTRIBUTES
-        self.git_repo(files)
-
-    def as_agent(self, *argv: str):
-        """Run a command as the agent floatrender."""
-        return self.run_cli(*argv, "--as", "floatrender")
-
-    def as_orchestrator(self, *argv: str):
-        """Run a command as the orchestrator."""
-        return self.run_cli(*argv, "--as", "orchestrator")
+from issuelib_case import ASSIGNED, B16, TODO, RepositoryCase
 
 
 class RuleTests(RepositoryCase):
@@ -45,8 +21,8 @@ class RuleTests(RepositoryCase):
         super().setUp()
         self.make_repository()
 
-    def test_the_real_attributes_give_issue_files_the_union_merge(self) -> None:
-        self.assertEqual(self.git("check-attr", "merge", "Issues/B16.md").stdout.strip(), "Issues/B16.md: merge: union")
+    def test_the_real_attributes_give_issue_files_the_driver(self) -> None:
+        self.assertEqual(self.git("check-attr", "merge", "Issues/B16.md").stdout.strip(), "Issues/B16.md: merge: issuefile")
         self.assertEqual(self.git("check-attr", "merge", "TODO-2026-09-04.md").stdout.strip(),
                          "TODO-2026-09-04.md: merge: unspecified")
 
@@ -97,77 +73,6 @@ class RuleTests(RepositoryCase):
         self.git("switch", "-q", "-c", "fix/float64-render")
         self.write_tree({"TODO-2026-09-04.md": TODO, "Issues/B16.md": ASSIGNED}, root=copy)
         self.assertEqual(self.new_issue("A bug in a copy", root=copy)[0], 0)
-
-
-class MergeTests(RepositoryCase):
-    """Real merges: two branches' comments on one issue, and a header line both change."""
-
-    def comment_on_both_sides(self) -> None:
-        """The agent comments on its branch, and the orchestrator on main, after the branch began."""
-        self.git("switch", "-q", "-c", "fix/float64-render")
-        self.assertEqual(self.as_agent("comment", "B16", "From the branch.")[0], 0)
-        self.commit_all("floatrender: a comment")
-        self.git("switch", "-q", "main")
-        self.assertEqual(self.as_orchestrator("comment", "B16", "From main: the user answered.")[0], 0)
-        self.commit_all("orchestrator: a comment")
-
-    def test_two_branches_comments_on_one_issue_merge_without_a_conflict(self) -> None:
-        self.make_repository()
-        self.comment_on_both_sides()
-        merge = self.git("merge", "--no-ff", "-m", "Merge the branch", "fix/float64-render", check=False)
-        self.assertEqual(merge.returncode, 0, merge.stdout + merge.stderr)
-        # Main's comment, then the branch's. git shares the blank line both sides began with,
-        # so the second heading follows the first comment's text directly, as Markdown allows.
-        self.assertEqual(self.read("Issues/B16.md"), ASSIGNED
-                         + "\n### 2026-11-16, orchestrator, 1 line\n\nFrom main: the user answered.\n"
-                         + "### 2026-11-16, floatrender, 1 line\n\nFrom the branch.\n")
-        status, out, _err = self.run_cli("show", "B16", "--json")
-        self.assertEqual([(c["author"], c["text"]) for c in json.loads(out)["comment_list"]],
-                         [("orchestrator", "From main: the user answered."), ("floatrender", "From the branch.")])
-        self.assertEqual(self.run_cli("check")[0], 0)
-
-    def test_a_rebase_onto_main_keeps_both_comments_too(self) -> None:
-        self.make_repository()
-        self.comment_on_both_sides()
-        self.git("switch", "-q", "fix/float64-render")
-        rebase = self.git("rebase", "main", check=False)
-        self.assertEqual(rebase.returncode, 0, rebase.stdout + rebase.stderr)
-        comments = self.read("Issues/B16.md").split("## Comments\n")[1]
-        self.assertIn("From main: the user answered.", comments)
-        self.assertIn("From the branch.", comments)
-        self.assertEqual(self.run_cli("check")[0], 0)
-
-    def test_a_header_line_both_branches_change_is_kept_twice_and_check_fails(self) -> None:
-        self.make_repository()
-        self.git("switch", "-q", "-c", "fix/float64-render")
-        self.as_agent("set", "B16", "status", "in-progress")
-        self.commit_all("floatrender: in progress")
-        self.git("switch", "-q", "main")
-        self.as_orchestrator("set", "B16", "status", "blocked")
-        self.commit_all("orchestrator: blocked")
-        merge = self.git("merge", "--no-ff", "-m", "Merge the branch", "fix/float64-render", check=False)
-        # The union merge does not stop; the check is what catches the doubled line.
-        self.assertEqual(merge.returncode, 0, merge.stdout + merge.stderr)
-        status, out, _err = self.run_cli("check")
-        self.assertEqual(status, 1)
-        self.assertIn("Issues/B16.md:6: field status given twice, here and on line 5", out)
-
-    def test_without_the_union_merge_keeping_both_sides_settles_the_conflict(self) -> None:
-        self.make_repository(union=False)
-        self.comment_on_both_sides()
-        merge = self.git("merge", "--no-ff", "-m", "Merge the branch", "fix/float64-render", check=False)
-        self.assertNotEqual(merge.returncode, 0)
-        self.assertIn("CONFLICT (content): Merge conflict in Issues/B16.md", merge.stdout)
-        # Keeping both sides is dropping git's three marker lines.
-        path = self.root / "Issues" / "B16.md"
-        kept = [line for line in path.read_text(encoding="utf-8").split("\n")
-                if not line.startswith(("<<<<<<< ", "=======", ">>>>>>> "))]
-        path.write_text("\n".join(kept), encoding="utf-8")
-        status, out, _err = self.run_cli("check")
-        self.assertEqual((status, out), (0, ""))
-        comments = path.read_text(encoding="utf-8").split("## Comments\n")[1]
-        self.assertIn("From main: the user answered.", comments)
-        self.assertIn("From the branch.", comments)
 
 
 class HistoryTests(RepositoryCase):

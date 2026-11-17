@@ -35,7 +35,7 @@ Each command changes one file, prints one line saying what it did, and takes `--
 
 - The orchestrator, on main, files, assigns, closes, and reopens issues, and changes any field; `record-merge.py --close ID --hash HASH` closes an issue at its merge and ticks its pointer line in the TODO.
 - An agent, on its own branch, only comments on the issue assigned to it and sets it in-progress or blocked; the script refuses the rest there, so two branches never take one ID.
-- Two branches' comments on one issue merge without a conflict, because `.gitattributes` gives `Issues/*.md` git's union merge; a header line that both changed is then kept twice, and `check` reports it.
+- Two branches' changes to one issue merge part by part, through the merge driver `.gitattributes` names for `Issues/*.md` (`issuelib merge-driver`, defined once in the repository's config by `make issues-merge-driver`): the header field by field, the description as git would, and each comment whole, in date order. One field changed both ways stops the merge with git's markers in the header; where the driver is not defined, git merges the file as text.
 - The message board (agent-bbs) is for live talk, and an issue for what must last: a finding posted on the board becomes an issue when the orchestrator files it.
 - A doc section that describes a gap names its issues in its marker (`status: incomplete; issues: ID`), and doc-library's `incomplete` and `check` read them.
 

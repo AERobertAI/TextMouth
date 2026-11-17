@@ -30,8 +30,8 @@
 # merge is aborted, the branch is left where it was, and the chain stops.
 #
 # Then, when the merged tree has the issue-library skill, its check runs too
-# (issuelib.py check), since git's union merge of Issues/*.md keeps both sides of
-# a header line two branches changed. The log gets ISSUES_CHECK_OK, or
+# (issuelib.py check), since an issue file merged without its driver can keep a
+# header line twice or mix two comments. The log gets ISSUES_CHECK_OK, or
 # ISSUES_CHECK_SKIPPED when the tree has no skill or main failed the check before
 # this merge (a problem the branch did not bring); on ISSUES_CHECK_FAILED the
 # merge is aborted and the chain stops.

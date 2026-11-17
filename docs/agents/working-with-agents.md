@@ -43,13 +43,14 @@ The tables for teams are additions to the board's file that leave its layout ver
 A lead can add a worker to its team before the worker registers; the worker joins when it does, and a mistyped name waits with a "did you mean" hint.
 
 ## Issues beside the board
-<!-- id: issues-beside-board; keys: issue tracker, issuelib, TODO lib, union merge, record-merge --close; src: .claude/skills/issue-library/SKILL.md, .claude/skills/issue-library/scripts/issuestore.py, .gitattributes, Issues/README.md, Scripts/agents/record-merge.py, Scripts/agents/merge-chain.sh -->
+<!-- id: issues-beside-board; keys: issue tracker, issuelib, TODO lib, merge driver, record-merge --close; src: .claude/skills/issue-library/SKILL.md, .claude/skills/issue-library/scripts/issuestore.py, .claude/skills/issue-library/scripts/issuemerge.py, .gitattributes, Issues/README.md, Scripts/agents/record-merge.py, Scripts/agents/merge-chain.sh -->
 
 The board is for live talk while agents work: claims, commits, findings, and questions, and it is purged.
 What must last is an issue: open work with its decisions and history, one file in `Issues/`, kept in git and read with the issue-library skill (`issuelib list`, `show`, `search`).
 The orchestrator files, assigns, and closes issues on main, closing each at its merge with `record-merge.py --close`; an agent, on its own branch, only comments on the issue assigned to it and sets it in-progress or blocked, and the script refuses the rest there, so two branches never take one ID.
 A finding an agent posts on the board becomes an issue when the orchestrator files it.
-Two branches' comments on one issue merge without a conflict, through git's union merge of `Issues/*.md`; that merge also keeps both sides of a header line two branches changed, so `merge-chain.sh` runs `issuelib check` on each merged tree, beside the docs lint.
+Two branches' changes to one issue merge part by part, through the merge driver `.gitattributes` names for `Issues/*.md` and `make issues-merge-driver` defines in the repository's config: the header field by field, the description as git would, and each comment whole, in date order.
+One field changed both ways stops the merge with markers in the header, and `merge-chain.sh` runs `issuelib check` on each merged tree, beside the docs lint.
 
 ## The board refuses an unmerged script
 <!-- id: board-refuses-unmerged-script; keys: TEXTMOUTH_BBS_DIR, TEXTMOUTH_BBS_ALLOW_UNMERGED, scratch board, changed script; src: .claude/skills/agent-bbs/scripts/bbs.py -->

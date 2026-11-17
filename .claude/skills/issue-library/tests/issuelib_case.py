@@ -17,12 +17,13 @@ from __future__ import annotations
 import contextlib
 import io
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Iterator, Optional, Tuple
 
 # No bytecode beside the skill when the tests run without -B.
 sys.dont_write_bytecode = True
@@ -92,6 +93,19 @@ What is wrong.
 
 ## Comments
 """
+
+
+# B16, given to the agent that works on it.
+ASSIGNED = B16.replace("assignee:\n", "assignee: floatrender\n").replace("branch:\n", "branch: fix/float64-render\n")
+
+# The repository's own .gitattributes, three folders above the skill's.
+ATTRIBUTES = (SKILL.parents[2] / ".gitattributes").read_text(encoding="utf-8")
+
+
+def driver_command() -> str:
+    """The merge driver as a test's repository defines it: this checkout's script, by its full path."""
+    script = shlex.quote(str(SCRIPTS / "issuelib.py"))
+    return f"{shlex.quote(sys.executable)} -I -B {script} merge-driver %O %A %B %L %P"
 
 
 class IssueCase(unittest.TestCase):
@@ -177,8 +191,44 @@ class IssueCase(unittest.TestCase):
         return subprocess.run([sys.executable, "-I", "-B", str(SCRIPTS / "issuelib.py"), *argv],
                               cwd=root or self.root, env=env, capture_output=True, text=True, timeout=120)
 
+    @contextlib.contextmanager
+    def on(self, date: str) -> Iterator[None]:
+        """Run what the block runs as if today were ``date``."""
+        saved = os.environ.get(self._today_env)
+        os.environ[self._today_env] = date
+        try:
+            yield
+        finally:
+            os.environ[self._today_env] = saved or TODAY
+
     def new_issue(self, title: str = "A test bug", kind: str = "bug", platform: str = "mac",
                   *extra: str, root: Optional[Path] = None) -> Tuple[int, str, str]:
         """File one issue as the orchestrator, with a one-line description."""
         return self.run_cli("new", "--kind", kind, "--title", title, "--platform", platform,
                             "--description", "What is wrong.", "--as", "orchestrator", *extra, root=root)
+
+
+class RepositoryCase(IssueCase):
+    """A repository on main with the TODO, B16 assigned to floatrender, the real .gitattributes, and the driver."""
+
+    def make_repository(self, driver: bool = True, attributes: bool = True, files: Optional[Dict[str, str]] = None) -> None:
+        """Commit the starting files (and ``files``) on main, and define the merge driver unless told not to."""
+        start = {"TODO-2026-09-04.md": TODO, "Issues/README.md": "# Issues\n", "Issues/B16.md": ASSIGNED}
+        if attributes:
+            start[".gitattributes"] = ATTRIBUTES
+        start.update(files or {})
+        self.git_repo(start)
+        if driver:
+            self.git("config", "merge.issuefile.driver", driver_command())
+
+    def as_agent(self, *argv: str) -> Tuple[int, str, str]:
+        """Run a command as the agent floatrender."""
+        return self.run_cli(*argv, "--as", "floatrender")
+
+    def as_orchestrator(self, *argv: str) -> Tuple[int, str, str]:
+        """Run a command as the orchestrator."""
+        return self.run_cli(*argv, "--as", "orchestrator")
+
+    def merge(self, branch: str, check: bool = False) -> subprocess.CompletedProcess:
+        """Merge ``branch`` into the current branch with a merge commit, as the orchestrator does."""
+        return self.git("merge", "--no-ff", "-m", f"Merge {branch}", branch, check=check)

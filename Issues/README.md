@@ -39,5 +39,5 @@ An item whose ID was given twice by mistake keeps an alias in its TODO entry: B1
 
 - The orchestrator files, assigns, closes, and reopens issues, on main.
 - An agent, on its own branch, comments on the issue assigned to it and sets it in-progress or blocked.
-- Two branches' comments on one issue merge without a conflict, because `.gitattributes` gives these files git's union merge; `issuelib.py check` then reports a header line that both branches changed.
+- Two branches' changes to one issue merge part by part, through the merge driver `.gitattributes` names (`make issues-merge-driver` defines it once): the header field by field, the description as git would, and each comment whole; one field changed both ways is a conflict, with git's markers.
 - The message board is for live talk, and an issue for what must last.

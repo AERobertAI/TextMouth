@@ -27,15 +27,14 @@ line for each name of FIELDS, in that order, with nothing after the colon for an
 empty value. A value is everything after the first colon, so a title may hold
 colons; the list fields hold their entries separated by commas.
 
-Two branches that each add a comment to one issue both add lines at the file's end.
-``.gitattributes`` gives these files git's union merge, which keeps both sides'
-lines there instead of stopping at a conflict (git shares the blank line both
-comments begin with, so the second heading follows the first comment's text, which
-Markdown reads the same). So a comment changes no line of the header, not even
-``updated``: ``updated`` is the date a header field last changed, and each comment
-carries its own date. A header line that two branches change differently is kept
-twice by that merge, and ``parse`` reports the field as given twice, which
-``issuelib check`` then fails on.
+Two branches that change one issue meet in git's merge, and ``.gitattributes``
+gives these files a merge driver of their own (``issuemerge``): the header merges
+field by field, the description as git would, and each comment whole, appended in
+date order. So a comment changes no line of the header, not even ``updated``:
+``updated`` is the date a header field last changed, and each comment carries its
+own date. Where the driver is not defined, git merges the file as text, with
+conflict markers; a field given twice, or a comment whose line count its text no
+longer has, is reported by ``parse`` and ``check_comments``.
 
 This module only reads and builds text; ``issuestore`` reads and writes the files.
 """
@@ -124,8 +123,9 @@ class Issue:
 
     ``fields`` holds the first value of each field the header gives, ``field_lines``
     the line each came from, and ``body`` everything after the header's closing
-    line, exactly as it was. ``problems`` names what is wrong with the layout (the
-    header, the headings, the comments); the values are checked by ``check_values``.
+    line, exactly as it was; ``comments_line`` is the line of ``## Comments`` (0
+    without one). ``problems`` names what is wrong with the layout (the header,
+    the headings, the comments); the values are checked by ``check_values``.
     """
 
     path: str
@@ -136,6 +136,7 @@ class Issue:
     problems: List[Problem] = field(default_factory=list)
     comments: List[Comment] = field(default_factory=list)
     description: str = ""
+    comments_line: int = 0
 
     def value(self, name: str) -> str:
         """A field's value, or "" when the header lacks it."""
@@ -262,6 +263,7 @@ def _read_body(lines: List[str], start: int, issue: Issue) -> None:
             continue
         elif comments_at < 0 and line == COMMENTS_HEADING:
             comments_at = index
+            issue.comments_line = number
             if description_at < 0:
                 issue.problems.append(Problem(number, f"'{COMMENTS_HEADING}' comes before '{DESCRIPTION_HEADING}'"))
             continue
@@ -408,13 +410,14 @@ def _status_problems(issue: Issue) -> List[Problem]:
 # Building new text.
 # ---------------------------------------------------------------------------
 
+def field_line(name: str, value: str) -> str:
+    """One header line: "name: value", or "name:" for an empty value."""
+    return f"{name}: {value}" if value else f"{name}:"
+
+
 def header_text(fields: Dict[str, str]) -> str:
     """The header for ``fields``: every field of FIELDS in order, between the two fences."""
-    lines = [FENCE]
-    for name in FIELDS:
-        value = fields.get(name, "")
-        lines.append(f"{name}: {value}" if value else f"{name}:")
-    lines.append(FENCE)
+    lines = [FENCE] + [field_line(name, fields.get(name, "")) for name in FIELDS] + [FENCE]
     return "\n".join(lines) + "\n"
 
 
@@ -458,8 +461,7 @@ def with_comment(issue: Issue, date: str, author: str, text: str) -> str:
     """The file's text with one comment added at its end, and nothing else changed.
 
     The comment is a blank line, its heading, a blank line, and its text, so the
-    lines before it stay as they were: two branches' comments then meet only at
-    the file's end, where the union merge keeps both.
+    lines before it stay as they were, and the merge driver finds it whole.
     """
     _require_sound(issue)
     if not is_date(date):

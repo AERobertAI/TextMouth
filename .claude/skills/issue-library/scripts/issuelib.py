@@ -37,6 +37,7 @@ if str(SCRIPTS) not in sys.path:
 
 import issueids  # noqa: E402  (imported after sys.path is set)
 import issuefile  # noqa: E402
+import issuemerge  # noqa: E402
 import issuestore  # noqa: E402
 from issuefile import Issue  # noqa: E402
 from issuestore import Refused, Store, UsageError  # noqa: E402
@@ -363,6 +364,11 @@ def cmd_reopen(store: Store, args: Any) -> int:
     return finish(issuestore.reopen(store, args.id, args.reason, args.as_name))
 
 
+def cmd_merge_driver(args: Any) -> int:
+    """``merge-driver BASE CURRENT OTHER [SIZE] [PATH]``: git's merge of one issue file (issuemerge.py)."""
+    return issuemerge.merge_files(args.base, args.current, args.other, args.marker_size)
+
+
 # ---------------------------------------------------------------------------
 # The command line.
 # ---------------------------------------------------------------------------
@@ -457,6 +463,16 @@ def build_parser() -> argparse.ArgumentParser:
     sub = add("reopen", cmd_reopen, "open a closed issue again", writes=True)
     sub.add_argument("id", metavar="ID")
     sub.add_argument("--reason", required=True)
+    sub = commands.add_parser("merge-driver", help="git's merge driver for issue files (make issues-merge-driver defines it)",
+                              description="Merge one issue file three ways, as git's merge driver: the header field "
+                                          "by field, the description as git would, each comment whole.")
+    sub.add_argument("base", metavar="BASE", help="the common ancestor (git's %%O)")
+    sub.add_argument("current", metavar="CURRENT", help="the current side, which receives the result (%%A)")
+    sub.add_argument("other", metavar="OTHER", help="the other side (%%B)")
+    sub.add_argument("marker_size", metavar="SIZE", nargs="?", type=int, default=issuemerge.MARKER_SIZE,
+                     help="the conflict markers' length (%%L)")
+    sub.add_argument("path", metavar="PATH", nargs="?", default="", help="the file's path in the tree (%%P)")
+    sub.set_defaults(func=cmd_merge_driver, needs_store=False)
     register_import(add)
     return parser
 
@@ -480,6 +496,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     """Parse the command line, run the command, and return its exit status."""
     parser = build_parser()
     args = parser.parse_args(argv)
+    if not getattr(args, "needs_store", True):
+        # The merge driver works on git's three files alone, wherever git runs it.
+        return args.func(args)
     try:
         root = find_root(Path.cwd()) if args.root is None else args.root.resolve()
         if not root.is_dir():

@@ -35,7 +35,7 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(issue.value("title"), "Speak Info: the selection")
 
     def test_a_field_given_twice_is_reported_with_both_lines(self) -> None:
-        # What git's union merge leaves when two branches change one header line differently.
+        # A header holding one field twice, as a union merge of two branches once left one.
         text = B16.replace("status: open\n", "status: in-progress\nstatus: blocked\n")
         issue = issuefile.parse("Issues/B16.md", text)
         self.assertEqual(messages(issue.problems),

@@ -1,4 +1,5 @@
-# Issue files take both sides' lines where two branches change the same place, so two
-# branches' comments on one issue merge without a conflict. A header line that both
-# branches changed is then kept twice, which `issuelib.py check` reports (Issues/README.md).
-/Issues/*.md merge=union
+# Issue files merge by their parts: the header field by field, the description as git
+# would, and each comment whole (`issuelib.py merge-driver`, which `make
+# issues-merge-driver` defines once in the repository's config). Where it is not
+# defined, git merges them as text, with conflict markers (Issues/README.md).
+/Issues/*.md merge=issuefile
