@@ -5,6 +5,20 @@ Part of [working on TextMouth with coding agents](../../AGENTS.md).
 This page holds the status sections of earlier campaigns, newest first, and then the stories behind the rules of AGENTS.md and CLAUDE.md.
 AGENTS.md keeps only the latest status.
 
+## Where things stood on November 16, 2026
+
+- Main was version 0.5.0 (tag `v0.5.0`), and the user still ran 0.4.2.
+- 0.5.0 held, beyond 0.4.11:
+  - new formats: pictures of pages and CBZ (`BookFormat` picture and comic, hence MINOR), CUE sheets, markers, and Audacity labels, PLS and XSPF playlists, pronunciation lexicons, formats read through the installed ffmpeg, and TextMouth's own TTA, WavPack, and Monkey's Audio readers;
+  - Markdown read from cmark's own tree (swift-markdown gone); the Release app was 18.5 MB;
+  - C11's look-ahead near a chapter's end; V04's kept keys; the MP3 edit fix; quitting and moves losing no write; Return on the selected row;
+  - tests tried up to three times (RETRIED), and the heavy-work lock first come, first served.
+- The TODO's open items moved to `Issues/`, one file each, read with the issue-library skill (`issuelib list`); the TODO remained the record of merges.
+- The day's merges toward 0.5.1:
+  - B12 (a 64-bit float book's edits render), B13 (rules and statistics saved during a move's copy), and B14 (a save's temporary file no longer fails a move);
+  - #5512 (one nesting limit for every walk of Markdown) and Q-flake (a test's waiting settings save);
+  - the runner's module cache stamp, and the issue tracker.
+
 ## Where things stood on November 13, 2026
 
 - Main is version 0.4.7, tagged `v0.4.7` (unpushed), with everything the user asked for at midnight that day:
