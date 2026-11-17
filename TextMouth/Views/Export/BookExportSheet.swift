@@ -16,6 +16,10 @@ import SwiftUI
 /// RTF, Word); the checkbox's label and hint then name the writer, and the
 /// writer's own options view, when it has one, shows under the row.
 ///
+/// A chapter nested too deeply to export with its structure is put to the
+/// person in an alert over this dialog (FR24, `ExportDeepChapterAlert`): Return
+/// writes it as written, and Escape cancels the export.
+///
 /// For one text book, a "Text as spoken audio" checkbox (FMT43) shows its
 /// options under it while it is checked: the format, the range of headings,
 /// the rate, and the pitch (`SpeechExportOptionsView`). While that export runs,
@@ -229,7 +233,7 @@ struct BookExportSheet: View {
         // Phase 0 iOS: a UIKit window has no sheet parent.
         let announcingWindow = window
         #endif
-        guard let outcome = await model.export(announcingFrom: announcingWindow) else { return }
+        guard let outcome = await model.export(announcingFrom: announcingWindow, presentingFrom: window) else { return }
         if BookExportModel.didEverything(outcome) {
             close()
         }
