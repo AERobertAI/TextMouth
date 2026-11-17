@@ -2,7 +2,7 @@
 id: DOC02
 title: DR35's limitation is also stated in the Word 6 and Word 95 section, which no marker cites
 kind: docs
-status: in-progress
+status: done
 priority: P3
 platform: both
 assignee: docspass1116
@@ -10,7 +10,7 @@ created: 2026-11-16
 updated: 2026-11-16
 found-by: review-issuelib
 branch: docs/pass-1116
-merged:
+merged: 377101c46
 reason:
 related: DR35
 docs: what-word-6-word-95
@@ -29,3 +29,7 @@ On main, the docs pass adds DR35 to that section's marker (`status: incomplete; 
 ### 2026-11-16, docspass1116, 1 line
 
 Done on docs/pass-1116: the section what-word-6-word-95 (What Word 6 and Word 95 reading leaves out) now says status: incomplete; issues: DR35. The orchestrator still runs issuelib set DR35 docs on main to add the section to DR35's docs line (a branch may not).
+
+### 2026-11-16, orchestrator, 1 line
+
+Closed as done: merged in 377101c46.

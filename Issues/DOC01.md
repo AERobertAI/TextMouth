@@ -2,7 +2,7 @@
 id: DOC01
 title: Pages that mean October's B12 say B12-OCT
 kind: docs
-status: in-progress
+status: done
 priority: P3
 platform: both
 assignee: docspass1116
@@ -10,7 +10,7 @@ created: 2026-11-16
 updated: 2026-11-16
 found-by: review-issuelib
 branch: docs/pass-1116
-merged:
+merged: 377101c46
 reason:
 related: B12-OCT
 docs:
@@ -33,3 +33,7 @@ The review of tools/issue-library (November 16, 2026, its item 13) found pages t
 ### 2026-11-16, docspass1116, 1 line
 
 Done on docs/pass-1116: B12-OCT now stands in package-records (Analysis-owned fields), text-caches (How the page reader's version is read), and text-caches-rereads-edits (Edited text, Who may write edited text). The log history.md keeps its November 1 words.
+
+### 2026-11-16, orchestrator, 1 line
+
+Closed as done: merged in 377101c46.
