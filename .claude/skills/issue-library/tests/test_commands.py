@@ -290,7 +290,7 @@ class ReadingTests(IssueCase):
                                              "id": "wishes-not-yet", "status": "planned"}])
         out = self.run_cli("close", "FR01", "--reason", "the user withdrew it", "--status", "wontfix", "--as", "orchestrator")[1]
         self.assertEqual(out.splitlines()[1], "issuelib: docs/user/wishes.md:4 (wishes-not-yet, status planned) cites FR01: "
-                                              "the next docs pass updates that section")
+                                              "the next docs pass updates that section (doclib check lists it)")
 
     def test_show_finds_an_id_or_an_alias_that_only_the_todo_has(self) -> None:
         out = self.run_cli("show", "B12")[1]

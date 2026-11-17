@@ -84,6 +84,7 @@ When acting on an answer, record the decision in the TODO with the user's words,
 <!-- id: documentation-pass; keys: docs agent, Markdown-only merge, no build, doc-library; src: -->
 
 A documentation pass is its own agent (no build) that edits only the documentation (README.md, ARCHITECTURE.md, and the pages under docs/) from the merged code and the agents' wording, one commit per documented branch.
+It runs `doclib check`, which names each section whose marker still cites an issue that has closed, and updates those sections.
 It is merged without a suite as a Markdown-only merge and recorded in the TODO with a sentence.
 
 ## The docs' checks

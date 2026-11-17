@@ -380,9 +380,8 @@ def cmd_close(store: Store, args: Any) -> int:
     pointer = issuestore.pointer_change(store, args.id, closed=True)
     if pointer is not None:
         finish(pointer)
-    for section in store.sections_citing(args.id):
-        print(f"issuelib: {section.path}:{section.start} ({section.section_id}, status {section.status or 'none'}) "
-              f"cites {args.id}: the next docs pass updates that section")
+    for note in issuestore.citing_notes(store, args.id):
+        print(f"issuelib: {note}")
     return EXIT_OK
 
 

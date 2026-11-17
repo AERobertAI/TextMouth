@@ -195,6 +195,16 @@ class CloseTests(RecordMergeCase):
                          "record-merge: B16 has no pointer line in TODO-2026-09-04.md, so only its issue file changed")
         self.assertIn("status: done\n", self.issue.read_text(encoding="utf-8"))
 
+    def test_close_names_the_doc_sections_that_cite_the_issue(self):
+        page = self.root / "docs" / "user" / "x.md"
+        page.parent.mkdir(parents=True)
+        page.write_text("# X\n<!-- id: x-top; status: incomplete; issues: B16 -->\n\nNot yet.\n", encoding="utf-8")
+        result = self.record("--close", "B16", "--hash", "6b09b2ee2")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines()[-1],
+                         "record-merge: docs/user/x.md:1 (x-top, status incomplete) cites B16: the next docs pass "
+                         "updates that section (doclib check lists it)")
+
     def test_two_issues_close_at_one_merge(self):
         (self.root / "Issues" / "B17.md").write_text(B16.replace("id: B16", "id: B17"), encoding="utf-8")
         result = self.record("--close", "B16", "--close", "B17", "--hash", "6b09b2ee2")

@@ -564,6 +564,13 @@ def reopen(store: Store, issue_id: str, reason: str, as_name: str) -> Change:
     return Change(store.path_of(issue_id), text, f"{issue.path}: reopened ({was[0].lower() + was[1:]})")
 
 
+def citing_notes(store: Store, issue_id: str) -> List[str]:
+    """A sentence for each doc section whose marker cites ``issue_id``, said when it closes: the docs pass updates them."""
+    return [f"{section.path}:{section.start} ({section.section_id}, status {section.status or 'none'}) cites "
+            f"{issue_id}: the next docs pass updates that section (doclib check lists it)"
+            for section in store.sections_citing(issue_id)]
+
+
 def pointer_change(store: Store, issue_id: str, closed: bool) -> Optional[Change]:
     """The TODO with ``issue_id``'s pointer lines ticked (or unticked), or None when it has none to change."""
     text = store.todo_text()

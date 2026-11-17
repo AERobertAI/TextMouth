@@ -156,7 +156,8 @@ def close_issues(text, todo_path, issues, merge_hash, date_text):
     """Close each issue at the merge, and tick its pointer lines in `text`.
 
     Returns the TODO's new text, the issue files' changes, and the lines to print
-    (one for an issue that has no pointer line), written by the caller only once
+    (one for an issue that has no pointer line, and one for each doc section that
+    cites a closed issue, for the next docs pass), written by the caller only once
     everything has passed; fails on the first issue that cannot close (missing,
     closed already, or a file the skill refuses to change).
     """
@@ -174,6 +175,7 @@ def close_issues(text, todo_path, issues, merge_hash, date_text):
         text, count = issuestore.issueids.set_pointers(text, issue_id, closed=True)
         if not count:
             notes.append(f"{issue_id} has no pointer line in {todo_path.name}, so only its issue file changed")
+        notes.extend(issuestore.citing_notes(store, issue_id))
     return text, changes, notes
 
 
