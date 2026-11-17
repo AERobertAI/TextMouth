@@ -191,6 +191,61 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(WatchedProcess.runningChildCount, 0)
     }
 
+    /// A decode whose .m4a passes the output cap is stopped by the reader's
+    /// own check before the next block, not by the watchdog's look once a
+    /// second: the watchdog here looks once in ten minutes, and the stream
+    /// has no END, so only the check can end the import as a kill for
+    /// writing too much, with nothing left behind.
+    func testADecodeThatWritesPastItsCapIsStoppedByTheReader() async throws {
+        // Forty blocks of noise, 30 seconds of mono sound, that an AAC file of 100 KB or more holds.
+        var seed: UInt32 = 12_345
+        let blocks = (0..<40).flatMap { _ -> [UInt8] in
+            let samples = (0..<16_384).map { _ -> UInt32 in
+                seed = seed &* 1_664_525 &+ 1_013_904_223
+                return (Float(Int32(bitPattern: seed)) / Float(Int32.max) / 2).bitPattern
+            }
+            return FFmpegTestStream.pcm32(samples)
+        }
+        let stream = FFmpegTestStream.head() + FFmpegTestStream.info(FFmpegTestStream.wmaInfo) + blocks
+        let wma = try source()
+        let (helper, _) = try ffmpegHelperStandIn(decode: .write(stream, status: 0))
+        var tool = ffmpegTool(helper: helper, seconds: TestMachine.allowed(30))
+        let watched = tool.limits(4)
+        tool.limits = { _ in
+            var limits = watched
+            limits.maximumOutputBytes = 20_000
+            limits.pollInterval = 600
+            return limits
+        }
+
+        do {
+            _ = try await FFmpegAudioConverter.convert(wma, using: tool)
+            XCTFail("a decode past its cap must fail")
+        } catch let ImportAudioConverter.Failure.killed(fileName, reason) {
+            XCTAssertEqual(fileName, "tones.wma")
+            XCTAssertEqual(reason, WatchedProcess.KillReason.wroteTooMuch(bytes: 20_000).words)
+        }
+        XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
+        XCTAssertEqual(WatchedProcess.runningChildCount, 0)
+    }
+
+    /// The reader's check of the cap: nothing past it, nothing when there is
+    /// no cap or no file yet, and a file past it names the cap.
+    func testTheOutputCapCheck() throws {
+        let file = try makeSandboxDirectory("FFmpegCap").appendingPathComponent("written.m4a")
+        var limits = WatchedProcess.Limits(maximumSeconds: 10, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 10)
+        limits.maximumOutputBytes = 1_000
+        XCTAssertNoThrow(try FFmpegAudioConverter.checkOutputCap(of: file, against: limits), "no file is no bytes")
+        try Data(count: 1_000).write(to: file)
+        XCTAssertNoThrow(try FFmpegAudioConverter.checkOutputCap(of: file, against: limits), "the cap itself is allowed")
+        try Data(count: 1_001).write(to: file)
+        XCTAssertThrowsError(try FFmpegAudioConverter.checkOutputCap(of: file, against: limits)) {
+            XCTAssertEqual(/bin/zsh as? FFmpegAudioConverter.WroteTooMuch, FFmpegAudioConverter.WroteTooMuch(bytes: 1_000))
+        }
+        limits.maximumOutputBytes = nil
+        XCTAssertNoThrow(try FFmpegAudioConverter.checkOutputCap(of: file, against: limits), "no cap allows any size")
+    }
+
     /// A source that says no length is taken as long as its converted file
     /// lasts, which must play and last longer than nothing.
     func testASourceOfUnknownLengthTakesTheConvertedLength() async throws {

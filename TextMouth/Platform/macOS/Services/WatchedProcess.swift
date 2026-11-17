@@ -21,7 +21,11 @@ import os
 /// - when the output has a cap, the kernel ends the child (SIGXFSZ) the
 ///   moment a write would pass it, `ulimit -f`: the watchdog looks once a
 ///   second, and a fast writer can put gigabytes on the disk between two
-///   looks;
+///   looks. That holds only for a child that writes the file itself (`run`):
+///   a streaming run's child writes a pipe, which `ulimit -f` never limits,
+///   so there the cap is the watchdog's look at the file the reader writes,
+///   once a second, and the reader's own count before each block it writes
+///   (`FFmpegAudioConverter`);
 /// - a tiny reaper shell kills the child as soon as TextMouth's own process
 ///   is gone, however it went (quit, force-quit, or the memory guard's
 ///   `_exit`);
@@ -612,10 +616,14 @@ enum WatchedProcess {
     /// Runs `executable` as `run` does, with its standard output a pipe that
     /// `read` reads while it runs (FMT50: the FFmpeg helper's stream, which
     /// the import writes into an .m4a as it comes). The watchdog's stall
-    /// clock follows the bytes read from the pipe; its output cap, and the
-    /// kernel's, follow the file `output`, which `read` writes, when there is
-    /// one (a probe writes none). When `read` fails, the child is killed at
-    /// once. A crash is told from an exit (`Ending.signal`).
+    /// clock follows the bytes read from the pipe; its output cap follows
+    /// the file `output`, which `read` writes, when there is one (a probe
+    /// writes none), as the watchdog's look at it, once a second. The
+    /// kernel's file-size limit (`ulimit -f`) never applies here: the child
+    /// writes a pipe, not that file, so a reader that writes a file fast
+    /// checks the cap itself, as `FFmpegAudioConverter` does. When `read`
+    /// fails, the child is killed at once. A crash is told from an exit
+    /// (`Ending.signal`).
     ///
     /// A reader that returns has all it wants (the FFmpeg import returns once
     /// it has read and checked the stream's END record): the child then has

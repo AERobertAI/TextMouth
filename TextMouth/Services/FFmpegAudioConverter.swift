@@ -222,7 +222,8 @@ enum FFmpegAudioConverter {
 
     /// The failure a run of the helper on the file named `name` ended in, or
     /// nil when it ended well. In order:
-    /// - a kill by the watchdog, logged with `logTag`, as every kill is;
+    /// - a kill by the watchdog, logged with `logTag`, as every kill is, or
+    ///   the reader's own stop at the output cap (`WroteTooMuch`), the same;
     /// - a cancellation, as it is;
     /// - a whole stream, read to its END, is success, however the helper
     ///   then ended;
@@ -243,11 +244,12 @@ enum FFmpegAudioConverter {
         logTag: String
     ) -> (any Error)? {
         if case let .killed(reason) = ending.outcome {
-            DiagnosticLog.event(.storage, "\(logTag): \(name): \(reason.words)")
-            return ImportAudioConverter.Failure.killed(fileName: name, reason: reason.words)
+            return killed(reason, fileName: name, logTag: logTag)
         }
         guard case let .failure(error) = read else { return nil }
         if error is CancellationError { return error }
+        // The reader's own check of the output cap: the same kill, as the watchdog would have made it.
+        if let tooMuch = error as? WroteTooMuch { return killed(.wroteTooMuch(bytes: tooMuch.bytes), fileName: name, logTag: logTag) }
         guard let streamError = error as? FFmpegHelperStream.StreamError else { return error }
         switch streamError {
         case .endedEarly:
@@ -261,6 +263,33 @@ enum FFmpegAudioConverter {
         case .damaged, .otherProtocol:
             return Failure.unreadableStream(fileName: name)
         }
+    }
+
+    /// The failure of a run of the helper that was killed for `reason`, by
+    /// the watchdog or by the reader's own check: the sentence every killed
+    /// conversion says, with the kill logged under `logTag`.
+    private static func killed(_ reason: WatchedProcess.KillReason, fileName: String, logTag: String) -> any Error {
+        DiagnosticLog.event(.storage, "\(logTag): \(fileName): \(reason.words)")
+        return ImportAudioConverter.Failure.killed(fileName: fileName, reason: reason.words)
+    }
+
+    /// Thrown by the reader of a decode when the .m4a it writes has passed
+    /// the output cap (`checkOutputCap(of:against:)`). The helper writes to a
+    /// pipe, so the kernel's file-size limit never ends it, and the watchdog
+    /// looks at the file only once a second: this is the count the reader
+    /// makes itself, before each block it writes.
+    struct WroteTooMuch: Error, Equatable, Sendable {
+        /// The cap that was passed, in bytes.
+        let bytes: Int64
+    }
+
+    /// Checks that the file at `file`, which the decode is writing, has not
+    /// passed the output cap of `limits` (none: any size is allowed); a file
+    /// that is not there yet is no bytes.
+    /// - Throws: `WroteTooMuch` naming the cap.
+    static func checkOutputCap(of file: URL, against limits: WatchedProcess.Limits) throws {
+        guard let cap = limits.maximumOutputBytes, ImportAudioConverter.fileSize(of: file) > cap else { return }
+        throw WroteTooMuch(bytes: cap)
     }
 
     /// What the helper's exit `status` says of the file named `fileName`, of
@@ -601,7 +630,13 @@ enum FFmpegAudioConverter {
             do {
                 try await OwnAudioConverter.writeBlocks(
                     of: samplesStream(of: report), tags: report.bookTags(in: container), to: staged, target: target
-                ) { try await stream.nextBlock() }
+                ) {
+                    // Before each block, so a decode that writes fast is stopped at the cap, not a second later.
+                    try checkOutputCap(of: staged, against: limits)
+                    return try await stream.nextBlock()
+                }
+                // And once more for what the last blocks and the closing of the file added.
+                try checkOutputCap(of: staged, against: limits)
             } catch let AudioEditError.renderFailed(reason) {
                 // The reason is an error's domain and code, which never quote a path.
                 throw ImportAudioConverter.Failure.notWritten(fileName: name, reason: reason)
