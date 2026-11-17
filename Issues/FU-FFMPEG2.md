@@ -2,7 +2,7 @@
 id: FU-FFMPEG2
 title: The bundled FFmpeg's leftovers
 kind: follow-up
-status: open
+status: in-progress
 priority: P2
 platform: mac
 assignee: ffmpegform
