@@ -29,6 +29,10 @@ class FilingTests(IssueCase):
         self.assertIn("C19", self.new_issue("A setting", "bug", "mac", "--family", "C")[1])
         self.assertIn("PG01", self.new_issue("A page", "feature", "both", "--family", "PG")[1])
 
+    def test_a_typo_in_a_related_field_does_not_move_the_next_number(self) -> None:
+        self.write_tree({"Issues/B16.md": B16.replace("related: B12", "related: B99")})
+        self.assertIn("filed Issues/B17.md", self.new_issue("Next")[1])
+
     def test_a_given_id_must_be_unused(self) -> None:
         for taken in ("B12", "B12-OCT", "B14"):
             status, _out, err = self.new_issue("Again", "bug", "mac", "--id", taken)

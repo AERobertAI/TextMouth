@@ -256,10 +256,12 @@ class Store:
         return found
 
     def used_numbers(self) -> Dict[str, Set[int]]:
-        """Every number each family has ever had (see issueids): the files, the TODO, and git's history."""
+        """Every number each family has ever had (see issueids): the files, the TODO, and git's history.
+
+        An issue's ``related`` values are not counted: they name IDs that exist
+        already, and a typo in one (B99) would move B's next number for good.
+        """
         ids: Set[str] = {path.stem for path in self.issue_files()}
-        for issue in self.load_all():
-            ids.update(issue.values("related"))
         ids.update(self.aliases())
         ids.update(self.history_issue_ids())
         used = issueids.numbers_of_ids(ids)
