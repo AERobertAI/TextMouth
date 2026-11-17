@@ -5,9 +5,9 @@ kind: follow-up
 status: open
 priority: P2
 platform: mac
-assignee:
+assignee: ffmpegform
 created: 2026-11-16
-updated: 2026-11-16
+updated: 2026-11-17
 found-by: review-ffmpegbuild
 branch:
 merged:
