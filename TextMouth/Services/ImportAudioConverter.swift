@@ -273,21 +273,33 @@ enum ImportAudioConverter {
     /// Whether a file that `afinfo` describes by `formatID` (its first
     /// track's codec) and `fileType` (its container) plays as it is: AAC
     /// (`aac `, `aach`, `aacp`) in MPEG-4, QuickTime, or ADTS; Apple Lossless
-    /// (`alac`) in MPEG-4 or QuickTime; MP3 (`.mp3`) in MPEG audio, MPEG-4,
-    /// or QuickTime. Every other codec or container is converted. A nil
-    /// `fileType` (the container is not known) asks about the codec alone.
-    static func playsAsIs(formatID: String, fileType: String?) -> Bool {
+    /// (`alac`) in MPEG-4 or QuickTime, unless it holds a 20-bit source
+    /// (`unreadableAppleLosslessBits`, with `bitsPerSample`); MP3 (`.mp3`) in
+    /// MPEG audio, MPEG-4, or QuickTime. Every other codec or container is
+    /// converted. A nil `fileType` (the container is not known) asks about the
+    /// codec alone.
+    static func playsAsIs(formatID: String, fileType: String?, bitsPerSample: Int? = nil) -> Bool {
         let mpeg4Containers: Set<String> = ["m4af", "m4bf", "mp4f", "qt", "moov"]
         let containers: Set<String>
         switch formatID.trimmingCharacters(in: .whitespaces) {
         case "aac", "aach", "aacp": containers = mpeg4Containers.union(["adts"])
-        case "alac": containers = mpeg4Containers
+        case "alac":
+            // AVAssetReader cannot read Apple Lossless of a 20-bit source (the probe would call the file
+            // damaged), so it is converted, written at 24 bits (`appleLosslessBitDepth(forBitsPerSample:)`).
+            if bitsPerSample == unreadableAppleLosslessBits { return false }
+            containers = mpeg4Containers
         case ".mp3": containers = mpeg4Containers.union(["mpg3"])
         default: return false
         }
         guard let fileType else { return true }
         return containers.contains(fileType.trimmingCharacters(in: .whitespaces).lowercased())
     }
+
+    /// The bit depth of the source an Apple Lossless file may hold that
+    /// AVAssetReader cannot read, so that the file is converted rather than
+    /// played as it is (`playsAsIs`): 20, the depth `afconvert` and
+    /// AVFoundation's writer used to write (B15).
+    static let unreadableAppleLosslessBits = 20
 
     /// The files among `files` that the import converts, in their order: by
     /// their extension and bytes (`verdict(for:)`), and, for those the bytes
@@ -321,7 +333,7 @@ enum ImportAudioConverter {
     /// that the import converts; false when it cannot read the file.
     private static func isConvertedByWhatItHolds(_ url: URL, using tool: AudioFileInfo.Tool) async throws -> Bool {
         guard let facts = try await AudioFileInfo.read(url, using: tool) else { return false }
-        return !playsAsIs(formatID: facts.formatID, fileType: facts.fileType)
+        return !playsAsIs(formatID: facts.formatID, fileType: facts.fileType, bitsPerSample: facts.bitsPerSample)
     }
 
     /// The tracks of the folder `folder` that the import converts, by
@@ -450,7 +462,8 @@ enum ImportAudioConverter {
                 // Like needsConversion(among:), the codec decides MPEG-4 and unrecognized
                 // content; a file that cannot be read at all keeps its extension's answer.
                 let isReadable = AudioContentSniffer.firstBytes(of: source, upTo: 1) != nil
-                converts = isReadable && !playsAsIs(formatID: info.formatID, fileType: nil)
+                converts = isReadable
+                    && !playsAsIs(formatID: info.formatID, fileType: nil, bitsPerSample: info.bitsPerSample)
             }
         }
         guard converts else { return .leaveAsItIs }
@@ -513,25 +526,28 @@ enum ImportAudioConverter {
     }
 
     /// The Apple Lossless bit depth that holds a source of `bits` bits a
-    /// sample: 16, 20, 24, or 32, the smallest that fits; 24 when the depth
-    /// is unknown or the samples are floating-point numbers (nil).
+    /// sample: 16, 24, or 32, the smallest that fits; 24 when the depth is
+    /// unknown or the samples are floating-point numbers (nil). A source of
+    /// 17 to 20 bits is written at 24, which holds every sample exactly:
+    /// AVAssetReader cannot read the 20-bit Apple Lossless file that
+    /// afconvert and AVFoundation's writer make, so the import's own check
+    /// refused it as undecodable (train 1117-0431, B15).
     static func appleLosslessBitDepth(forBitsPerSample bits: Int?) -> Int {
         guard let bits else { return 24 }
         switch bits {
         case ...16: return 16
-        case ...20: return 20
         case ...24: return 24
         default: return 32
         }
     }
 
     /// The flag afconvert takes after `alac/` for an Apple Lossless bit
-    /// depth: 1, 2, 3, or 4 for 16, 20, 24, or 32 bits. Without it afconvert
+    /// depth (`appleLosslessBitDepth(forBitsPerSample:)`): 1, 3, or 4 for 16,
+    /// 24, or 32 bits (2 is 20 bits, never asked for). Without it afconvert
     /// writes 32-bit samples, five times the size of a 16-bit source's.
     static func appleLosslessFlag(forBitDepth depth: Int) -> Int {
         switch depth {
         case 16: return 1
-        case 20: return 2
         case 24: return 3
         default: return 4
         }
@@ -617,11 +633,10 @@ enum ImportAudioConverter {
 
     /// The bit depth of the stereo PCM file that step 1 of a downmix writes
     /// for `target`: 16 bits for AAC, which keeps no more; for Apple
-    /// Lossless the depth of its samples, 24 for a depth of 20 (PCM has no
-    /// 20-bit form), so nothing is lost.
+    /// Lossless the depth of its samples (`appleLosslessBitDepth`, which is
+    /// never 20, a depth PCM has no form of).
     static func downmixBitDepth(for target: Target) -> Int {
-        guard let depth = target.appleLosslessBitDepth else { return 16 }
-        return depth == 20 ? 24 : depth
+        target.appleLosslessBitDepth ?? 16
     }
 
     /// The free space a downmix of a track lasting `duration` seconds,

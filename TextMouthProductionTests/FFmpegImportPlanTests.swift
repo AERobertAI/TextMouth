@@ -60,12 +60,12 @@ final class FFmpegImportPlanTests: XCTestCase {
     }
 
     /// A lossless sound becomes Apple Lossless of its own depth: 16 bits for
-    /// 8 and 16, 20 and 24 as they are, 32 for 32, and 24 for floating point,
+    /// 8 and 16, 24 as it is, 20 widened to 24 (B15), 32 for 32, and 24 for floating point,
     /// which keeps no depth of whole bits; never a bit rate.
     func testHowEachLosslessSoundIsWritten() throws {
         for (codec, format, bits, depth) in [
             ("flac", "s16", "16", 16), ("flac", "s32", "24", 24), ("pcm_u8", "s16", "8", 16), ("wmalossless", "s32", "24", 24),
-            ("truehd", "s32", "20", 20), ("pcm_s32le", "s32", "32", 32), ("pcm_f32le", "f32", "32", 24), ("wavpack", "f32", "32", 24),
+            ("truehd", "s32", "20", 24), ("pcm_s32le", "s32", "32", 32), ("pcm_f32le", "f32", "32", 24), ("wavpack", "f32", "32", 24),
         ] {
             let lossless = try FFmpegAudioConverter.plan(
                 for: try report([("codec", codec), ("sample_format", format), ("bits", bits), ("channels", "2")]), fileName: "a.mka"

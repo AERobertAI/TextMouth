@@ -347,11 +347,10 @@ final class OwnAudioImportTests: XCTestCase {
                 let convertedRead = try await AudioFileInfo.read(conversion.converted)
                 let converted = try XCTUnwrap(convertedRead, sample.path)
                 XCTAssertEqual(converted.formatID, "alac", sample.path)
-                // The smallest depth that holds the samples; 24 for 20, which the writer is never asked for.
+                // The smallest depth that holds the samples: 16, 24, or 32 (24 for 17 to 20 bits).
                 XCTAssertEqual(
                     converted.bitsPerSample,
-                    OwnAudioConverter.writtenBitDepth(forAppleLossless: ImportAudioConverter.appleLosslessBitDepth(
-                        forBitsPerSample: sample.isFloat ? nil : sample.bits)),
+                    ImportAudioConverter.appleLosslessBitDepth(forBitsPerSample: sample.isFloat ? nil : sample.bits),
                     sample.path)
                 XCTAssertEqual(converted.sampleRate, Double(sample.sampleRate), sample.path)
                 XCTAssertEqual(converted.channels, min(sample.channels, 2), sample.path)

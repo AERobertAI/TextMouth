@@ -343,15 +343,15 @@ final class OggAfconvertTests: XCTestCase {
         XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 100, target: chosen), 4_000_000)
         let lossless16 = Target(channels: 2, sampleRate: 44_100, bitRate: nil, appleLosslessBitDepth: 16)
         XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 10, target: lossless16), 1_764_000)
-        // A depth of 20 is written as 24-bit PCM, three bytes a sample.
-        let lossless20 = Target(channels: 2, sampleRate: 48_000, bitRate: nil, appleLosslessBitDepth: 20)
-        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 10, target: lossless20), 2_880_000)
+        // A depth of 24 is written as 24-bit PCM, three bytes a sample.
+        let lossless24 = Target(channels: 2, sampleRate: 48_000, bitRate: nil, appleLosslessBitDepth: 24)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 10, target: lossless24), 2_880_000)
         let mono24 = Target(channels: 1, sampleRate: 96_000, bitRate: nil, appleLosslessBitDepth: 24)
         XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 5, target: mono24), 1_440_000)
     }
 
     /// The downmix's PCM is two channels at the depth step 2 keeps: 16-bit
-    /// for AAC, the Apple Lossless depth (24 for 20) for lossless.
+    /// for AAC, the Apple Lossless depth for lossless.
     func testTheDownmixStepIsCappedAtItsStereoPCM() {
         typealias Target = ImportAudioConverter.Target
         let aac = Target(channels: 2, sampleRate: 44_100, bitRate: 64_000)

@@ -444,11 +444,11 @@ final class UnsupportedSampleFormTests: XCTestCase {
 
     /// A CAF file of each form the decoders read still converts, to Apple
     /// Lossless of the source's length: the refusal takes only what fails.
-    /// The 20-bit form is left out: its Apple Lossless file is written at 20
-    /// bits, which AVAssetReader cannot read, so the converter's own check
-    /// refuses it (a separate fault, posted on the board; train 1117-0431).
+    /// The 20-bit form and an 18-bit one are among them: the Apple Lossless
+    /// file made of them is written at 24 bits, since AVAssetReader cannot
+    /// read one of 20 (train 1117-0431).
     func testTheConverterStillConvertsEachSupportedForm() async throws {
-        for form in Self.supported where form.bits != 20 {
+        for form in Self.supported + [Self.form(18)] {
             let name = "\(form.bits)-\(form.isFloat ? "float" : "integer").caf"
             let source = folder.appendingPathComponent(name)
             try AudioTestFixtures.writeToneCAF(to: source, frames: 8_000, sampleRate: 8_000, bits: form.bits, isFloat: form.isFloat)
@@ -457,7 +457,57 @@ final class UnsupportedSampleFormTests: XCTestCase {
 
             XCTAssertEqual(conversion.duration, 1, accuracy: 0.05, name)
             XCTAssertTrue(FileManager.default.fileExists(atPath: conversion.converted.path), name)
+            // A source of 17 to 20 bits is written at 24 bits: AVAssetReader cannot read a 20-bit Apple Lossless file.
+            if !form.isFloat, (17...20).contains(form.bits) {
+                let written = try await AudioFileInfo.read(conversion.converted)
+                XCTAssertEqual(written?.bitsPerSample, 24, name)
+            }
         }
+    }
+
+    // MARK: - Sources of 17 to 20 Bits
+
+    /// Writes a 20-bit Apple Lossless .m4a, as `afconvert` has always written
+    /// one from a 20-bit source (flag 2 after `alac/`), in this test's folder:
+    /// the file an earlier TextMouth, or another program, made, which the
+    /// import now meets as it is.
+    private func writeAppleLossless20(named name: String) throws -> URL {
+        let source = folder.appendingPathComponent(".source-\(name).caf")
+        try AudioTestFixtures.writeToneCAF(to: source, frames: 8_000, sampleRate: 8_000, bits: 20, isFloat: false)
+        let file = folder.appendingPathComponent(name)
+        let converter = Process()
+        converter.executableURL = URL(fileURLWithPath: "/usr/bin/afconvert")
+        converter.arguments = ["-f", "m4af", "-d", "alac/2", source.path, file.path]
+        try converter.run()
+        converter.waitUntilExit()
+        XCTAssertEqual(converter.terminationStatus, 0, "afconvert wrote the 20-bit file")
+        return file
+    }
+
+    /// An Apple Lossless file of a 20-bit source is not played as it is: the
+    /// import converts it, to 24 bits, while the same file at 16, 24, or 32
+    /// bits is left alone. Without it the probe called the file damaged.
+    func testAnAppleLosslessFileOfTwentyBitsIsConvertedNotKept() async throws {
+        let twenty = try writeAppleLossless20(named: "Twenty.m4a")
+        let twentyFour = folder.appendingPathComponent("Twenty Four.m4a")
+        try AudioTestFixtures.writeToneAppleLossless24(to: twentyFour, frames: 8_000, sampleRate: 8_000)
+
+        let converted = try await ImportAudioConverter.needsConversion(among: [twenty, twentyFour])
+
+        XCTAssertEqual(converted.map(\.lastPathComponent), ["Twenty.m4a"])
+    }
+
+    /// Importing that file gives a book whose audio is Apple Lossless of 24
+    /// bits, which plays, and not the refusal that called it damaged.
+    func testImportingAnAppleLosslessFileOfTwentyBitsWritesItAtTwentyFour() async throws {
+        let source = try writeAppleLossless20(named: "Canal Tapes.m4a")
+
+        let imported = try FileImportService.importFileWithReport(from: source)
+        importedPackages.append(imported.book.tmbDirectory)
+
+        let written = try await AudioFileInfo.read(URL(fileURLWithPath: imported.book.filePath))
+        XCTAssertEqual(written?.formatID, "alac")
+        XCTAssertEqual(written?.bitsPerSample, 24)
     }
 
     /// A damaged CAF file is still told as unreadable for converting: it has
