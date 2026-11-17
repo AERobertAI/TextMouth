@@ -209,6 +209,7 @@ Export writes the edits as they stand, saved or not, to a new file in any of tho
 
 Settings: "Preview filters before applying" and "Play half a second after each move", in the Audio Editing group of Storage settings, are on by default, and config.json keeps them as audioEditorPreviewsFilters and audioEditorPlaysAfterMoves.
 Filter Presets…, in the same group, lists the presets, to edit, add, reorder, delete, or reset them, each command a button of the preset's row and, when it can act, one of the row's VoiceOver actions and context menu items.
+The presets are saved in the library in use: a preset saved while the library is being moved is saved again in the moved library, even if the list was closed meanwhile, and a list left open through a move writes to the moved library afterwards.
 
 ## Tracks and the manifest
 <!-- id: audio-editor-tracks; keys: manifest order, renamed track, Ogg to m4a; src: TextMouth/Services/AudioEditing/AudioEditBookRender.swift -->

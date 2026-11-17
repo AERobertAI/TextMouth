@@ -159,6 +159,9 @@ The filter presets.
   A file that can't be used is preserved beside itself.
   One that arrives from another Mac while the premade presets stand in takes their place, the change made meanwhile refused (AudioFilterPresetError.fileArrived).
   The editor's Apply Filter (AudioEditorFilterSheet) and Storage settings' Filter Presets… (AudioFilterPresetsView) each make one, reading the file as they open.
+  The file is looked up at each read and write (TextMouthPaths.audioFiltersFile), unless a test chose one, so a Filter Presets pane left open through a data-directory move writes the library then in use.
+  A save made while a move copies the library is provisional ([Holding storage work](data-directory.md)).
+  It registers the bytes it wrote with StorageBoundary.isProvisionalSave, and the move writes them again in the moved library, even if the pane has closed, so a first save, which has no file for the copy to take, is not lost.
 - How others observe it: the editor's filter chains; AUDIO_FILTERS_FILE lines tell of each wait and preserved copy.
 
 ## The editor window

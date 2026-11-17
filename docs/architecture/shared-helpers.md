@@ -143,6 +143,7 @@ AudioEditHistoryStore and AudioEditPackage (Services/AudioEditing/):
 <!-- id: data-directory-migrator-location; keys: move library, copy and rename, symlink, relocate, storage move; src: TextMouth/Services/DataDirectoryMigrator.swift -->
 
 DataDirectoryMigrator and DataDirectoryLocation (Services/DataDirectoryMigrator.swift): copy a whole data directory out of sight and publish it with one rename, and take a location as the real folder its links lead to.
+SaveTemporaryNames, in the same file, says which names are a save's temporary file, so the copy leaves them out ([Copying and publishing](state/data-directory.md)).
 
 ## StorageBoundary and StorageGeneration
 <!-- id: storageboundary-storagegeneration; keys: write fence, move publication, stale writes; src: TextMouth/Services/StorageGeneration.swift -->
