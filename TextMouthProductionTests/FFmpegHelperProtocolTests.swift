@@ -97,6 +97,59 @@ final class FFmpegHelperProtocolTests: XCTestCase {
         XCTAssertEqual([stream.refusedPackets, stream.refusedFrames], [0, 0])
     }
 
+    /// The times a signal crosses zero in `samples`: the sign changes, which a
+    /// pure tone has twice for each cycle, so they tell its pitch.
+    private func zeroCrossings(_ samples: ArraySlice<Float>) -> Int {
+        var count = 0
+        var previous: Float?
+        for sample in samples where sample != 0 {
+            if let previous, (previous < 0) != (sample < 0) { count += 1 }
+            previous = sample
+        }
+        return count
+    }
+
+    /// Sound that changes its form partway is converted to the first form,
+    /// not refused (FU-FFMPEG2): `mka/mp3-form-changes.mka` is a second of
+    /// 440 Hz in 22,050 Hz mono, a second of 880 Hz in 44,100 Hz stereo, and
+    /// a second of 660 Hz in 22,050 Hz mono again, joined byte for byte. The
+    /// helper ends with 0 and writes all of it in the first stretch's form
+    /// (22,050 Hz, one channel, floating point): the length is the stretches'
+    /// own, the reader's END count agrees (it checks), and each stretch keeps
+    /// its pitch, so the middle one was resampled and mixed down, not dropped
+    /// or played at the wrong speed.
+    func testSoundThatChangesItsFormIsConvertedToTheFirstOne() async throws {
+        let sample = try formatSampleURL("mka/mp3-form-changes.mka")
+        let run = try await runHelper(["decode", "matroska", sample.path])
+        XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
+        var stream = FFmpegHelperStream(data: Data(run.bytes))
+        let report = try await stream.readReport()
+        XCTAssertEqual(report.sampleRate, 22_050)
+        XCTAssertEqual(report.channels, 1)
+        XCTAssertEqual(report.sampleFormat, .f32)
+        var samples: [Float] = []
+        while let block = try await stream.nextBlock() {
+            samples += block.map { Float(bitPattern: UInt32(bitPattern: $0)) }
+        }
+        XCTAssertTrue(stream.isFinished)
+        XCTAssertEqual(UInt64(samples.count), stream.framesRead, "END counts the frames of the first form")
+        // The stretches decode to 23,616, 23,040 (46,080 frames at 44,100 Hz), and 23,616 frames at
+        // 22,050 Hz: 70,272 in all, and the resampler's own delay is under 0.03 s.
+        XCTAssertEqual(Double(samples.count), 70_272, accuracy: 700, "every stretch is there")
+        // 440, 880, and 660 Hz cross zero 880, 1,760, and 1,320 times a second; each stretch's
+        // middle (about 0.9 s) is read, clear of the joins, with a margin of 8 %.
+        let pitches: [(name: String, span: Range<Int>, hertz: Double)] = [
+            ("first", 1_000..<22_000, 440), ("second", 25_000..<45_000, 880), ("third", 48_000..<69_000, 660),
+        ]
+        for pitch in pitches {
+            let expected = pitch.hertz * 2 * Double(pitch.span.count) / 22_050
+            let found = Double(zeroCrossings(samples[pitch.span]))
+            XCTAssertEqual(found, expected, accuracy: expected * 0.08, "the \(pitch.name) stretch")
+            XCTAssertGreaterThan(samples[pitch.span].map { abs($0) }.max() ?? 0, 0.05, "the \(pitch.name) stretch is sound")
+        }
+        XCTAssertEqual([stream.refusedPackets, stream.refusedFrames], [0, 0])
+    }
+
     /// Each refusal is the protocol's exit status, with nothing written: a
     /// missing file, a folder, and a FIFO (never waited on) are unreadable
     /// (2); a demuxer this build has not is 10; a file of another container

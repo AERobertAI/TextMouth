@@ -10,8 +10,11 @@
  * Every frame is written in one sample format, chosen from the first frame: 32-bit floating
  * point for a decoder that gives floating point, 16-bit whole numbers for one that gives 8 or 16
  * bits, and 32-bit whole numbers of the decoder's own depth for one that gives more. A frame
- * whose rate, channels, or format differ from the first frame's ends the stream
- * (TMFF_EXIT_FORM_CHANGED): no audiobook does that, and converting it would take a resampler.
+ * whose rate, channels, or format differ from the first frame's (joined recordings, such as
+ * chained streams, and MP3 that changes its rate partway, do that) is converted to the first
+ * frame's form with libswresample, so the stream keeps one form from start to end and END counts
+ * the frames of that form. Only sound that cannot be converted ends the stream
+ * (TMFF_EXIT_FORM_CHANGED).
  *
  * It uses only FFmpeg's documented public API (the headers' documentation, published at
  * https://ffmpeg.org/doxygen/); nothing of FFmpeg's own code is copied here. It grew from the
@@ -38,6 +41,7 @@
 #include <libavutil/dict.h>
 #include <libavutil/mem.h>
 #include <libavutil/samplefmt.h>
+#include <libswresample/swresample.h>
 
 #include "../include/TextMouthFFmpegProtocol.h"
 #include "../include/TextMouthFFmpegSession.h"
@@ -66,6 +70,11 @@ enum { PCM_RECORD_TARGET = 256 * 1024 };
 /* The most errors in a row the decoder may give without a frame between: past them the file is
    damaged, rather than a decoder that answers every call with an error being asked for ever. */
 enum { MAX_ERRORS_IN_A_ROW = 1000 };
+
+/* The most times the sound may change its form: past them the file is refused
+   (TMFF_EXIT_FORM_CHANGED), so a file that changes its rate at every frame costs a refusal
+   rather than a resampler set up again for ever. A real joined recording has a few. */
+enum { MAX_FORM_CHANGES = 1000 };
 
 /* Where the stream has got to: each stage gives its records in turn. */
 typedef enum {
@@ -108,8 +117,19 @@ struct tmff_session {
     out_format out;
     int bits;
     int frame_format;               /* the decoder's AVSampleFormat the first frame had */
-    int have_frame;                 /* a decoded frame waits in `frame`, from `frame_position` on */
+    AVChannelLayout layout;         /* the first frame's channel layout (make_layout's form of it) */
+    AVFrame *source;                /* the frame being written: `frame` itself, or `converted` */
+    int have_frame;                 /* `source` holds a frame, from `frame_position` on */
     int frame_position;             /* the first of its frames not yet written */
+
+    /* The conversion of a frame whose form is not the first's (FORM_CHANGED's old refusal). */
+    AVFrame *converted;             /* the frames the resampler gave, in the first frame's form */
+    SwrContext *swr;                /* converts the form below to the first one; NULL when none is open */
+    int swr_rate;                   /* the form the resampler takes in: its rate, */
+    int swr_format;                 /*   sample format, */
+    AVChannelLayout swr_layout;     /*   and channel layout */
+    int frame_waits;                /* a decoded frame waits in `frame`, not yet taken into the records */
+    unsigned int form_changes;      /* how many times the sound has changed its form */
 
     /* The decoder's progress. */
     int demuxer_ended;
@@ -459,7 +479,8 @@ tmff_session *tmff_session_open(int descriptor, const char *demuxer_name, tmff_s
     }
     session->packet = av_packet_alloc();
     session->frame = av_frame_alloc();
-    if (!session->packet || !session->frame) {
+    session->converted = av_frame_alloc();
+    if (!session->packet || !session->frame || !session->converted) {
         failure = TMFF_EXIT_MEMORY;
         goto failed;
     }
@@ -482,6 +503,10 @@ void tmff_session_close(tmff_session *session) {
     if (!session) {
         return;
     }
+    swr_free(&session->swr);
+    av_channel_layout_uninit(&session->swr_layout);
+    av_channel_layout_uninit(&session->layout);
+    av_frame_free(&session->converted);
     av_frame_free(&session->frame);
     av_packet_free(&session->packet);
     avcodec_free_context(&session->decoder);
@@ -669,6 +694,179 @@ static int has_the_first_form(const tmff_session *session, const AVFrame *frame)
         && frame->format == session->frame_format;
 }
 
+/* Sets `layout` to `wanted` as a resampler can use it: an unspecified order (a channel count
+   that names no loudspeaker) becomes FFmpeg's default layout for that many channels, which may
+   itself be unspecified. Returns 0, or a negative AVERROR when the memory is refused. */
+static int make_layout(AVChannelLayout *layout, const AVChannelLayout *wanted) {
+    if (wanted->order == AV_CHANNEL_ORDER_UNSPEC) {
+        av_channel_layout_uninit(layout);
+        av_channel_layout_default(layout, wanted->nb_channels);
+        return 0;
+    }
+    return av_channel_layout_copy(layout, wanted);
+}
+
+/* Whether `frame` is a form the resampler can be asked for: a rate, channel count, and sample
+   format of a real file (the limits the first frame is held to), which a frame of a damaged
+   decoder may not have. */
+static int is_convertible(const AVFrame *frame) {
+    return frame->sample_rate > 0 && frame->sample_rate <= TMFF_MAX_SAMPLE_RATE && frame->ch_layout.nb_channels > 0
+        && frame->ch_layout.nb_channels <= TMFF_MAX_CHANNELS && frame->format >= 0
+        && av_get_bytes_per_sample((enum AVSampleFormat)frame->format) > 0;
+}
+
+/* Whether the open resampler takes in `frame`'s form, so the frame can go through it. */
+static int resampler_takes(const tmff_session *session, const AVFrame *frame) {
+    return session->swr_rate == frame->sample_rate && session->swr_format == frame->format
+        && av_channel_layout_compare(&session->swr_layout, &frame->ch_layout) == 0;
+}
+
+/* Opens a resampler from `frame`'s form to the first frame's. Returns 0, or a negative
+   TMFF_EXIT_ number: FORM_CHANGED for a form that cannot be converted or that has come too
+   often, MEMORY when memory is refused. */
+static int open_resampler(tmff_session *session, const AVFrame *frame) {
+    if (!is_convertible(frame) || ++session->form_changes > MAX_FORM_CHANGES) {
+        return -TMFF_EXIT_FORM_CHANGED;
+    }
+    AVChannelLayout in_layout;
+    memset(&in_layout, 0, sizeof in_layout);
+    if (make_layout(&in_layout, &frame->ch_layout) != 0) {
+        return -TMFF_EXIT_MEMORY;
+    }
+    int result = 0;
+    const int allocated = swr_alloc_set_opts2(&session->swr, &session->layout, (enum AVSampleFormat)session->frame_format,
+                                              session->sample_rate, &in_layout, (enum AVSampleFormat)frame->format,
+                                              frame->sample_rate, 0, NULL);
+    if (allocated < 0) {
+        result = allocated == AVERROR(ENOMEM) ? -TMFF_EXIT_MEMORY : -TMFF_EXIT_FORM_CHANGED;
+    } else if (swr_init(session->swr) < 0) {
+        /* A layout the resampler has no way from (it names no loudspeakers and the count differs). */
+        swr_free(&session->swr);
+        result = -TMFF_EXIT_FORM_CHANGED;
+    }
+    if (result == 0) {
+        /* Remember the form it takes in, to know the next frame of that form from another. */
+        session->swr_rate = frame->sample_rate;
+        session->swr_format = frame->format;
+        if (av_channel_layout_copy(&session->swr_layout, &frame->ch_layout) != 0) {
+            swr_free(&session->swr);
+            result = -TMFF_EXIT_MEMORY;
+        }
+    }
+    av_channel_layout_uninit(&in_layout);
+    return result;
+}
+
+/* Runs `input` (NULL: nothing more, which drains what the resampler still holds) through the
+   resampler into session->converted, in the first frame's form. Returns the frames given, 0
+   when none came out, or a negative TMFF_EXIT_ number. */
+static int resample_into_converted(tmff_session *session, const AVFrame *input) {
+    AVFrame *out = session->converted;
+    av_frame_unref(out);
+    /* What the resampler can give for this input and what it holds, with a little to spare. A
+       frame too small for it is no loss: the rest waits in the resampler for the next call. */
+    const int64_t held = swr_get_delay(session->swr, session->sample_rate);
+    const int64_t bound = swr_get_out_samples(session->swr, input ? input->nb_samples : 0);
+    const int64_t capacity = (bound > held ? bound : held) + 32;
+    if (capacity > INT32_MAX / 4) {
+        return -TMFF_EXIT_FORM_CHANGED;
+    }
+    out->format = session->frame_format;
+    out->sample_rate = session->sample_rate;
+    out->nb_samples = (int)capacity;
+    if (av_channel_layout_copy(&out->ch_layout, &session->layout) != 0) {
+        return -TMFF_EXIT_MEMORY;
+    }
+    const int allocated = av_frame_get_buffer(out, 0);
+    if (allocated < 0) {
+        return allocated == AVERROR(ENOMEM) ? -TMFF_EXIT_MEMORY : -TMFF_EXIT_FORM_CHANGED;
+    }
+    const int count = swr_convert(session->swr, out->extended_data, out->nb_samples,
+                                  input ? (const uint8_t *const *)input->extended_data : NULL, input ? input->nb_samples : 0);
+    if (count < 0) {
+        return count == AVERROR(ENOMEM) ? -TMFF_EXIT_MEMORY : -TMFF_EXIT_FORM_CHANGED;
+    }
+    out->nb_samples = count;
+    return count;
+}
+
+/* Gives what the open resampler still holds (the end of its last stretch), as the next source.
+   Returns 1 when frames came out (the resampler stays open: it may hold more), 0 when it held
+   none, and it is closed, or a negative TMFF_EXIT_ number. Without a resampler, 0. */
+static int drain_resampler(tmff_session *session) {
+    if (!session->swr) {
+        return 0;
+    }
+    const int count = resample_into_converted(session, NULL);
+    if (count < 0) {
+        return count;
+    }
+    if (count == 0) {
+        swr_free(&session->swr);
+        return 0;
+    }
+    session->source = session->converted;
+    session->have_frame = 1;
+    session->frame_position = 0;
+    return 1;
+}
+
+/* Takes the next frames to write into session->source: a decoded frame of the first form as it
+   is, one of another form converted to it, or what a resampler still holds when the form changes
+   back or the decoder is done. Returns 1 when frames wait in `source`, 0 when the sound is over,
+   or a negative TMFF_EXIT_ number. */
+static int take_next_source(tmff_session *session) {
+    for (;;) {
+        if (!session->frame_waits) {
+            const int found = next_frame(session);
+            if (found < 0) {
+                return found;
+            }
+            if (found == 0) {
+                /* The decoder has given its last frame; the resampler may hold the end of the sound. */
+                return drain_resampler(session);
+            }
+            session->frame_waits = 1;
+        }
+        AVFrame *frame = session->frame;
+        const int first_form = has_the_first_form(session, frame);
+        if (session->swr && (first_form || !resampler_takes(session, frame))) {
+            /* The form changed since the resampler was set: its last frames come first. */
+            const int drained = drain_resampler(session);
+            if (drained != 0) {
+                return drained;
+            }
+            continue;
+        }
+        if (first_form) {
+            session->source = frame;
+            session->frame_waits = 0;
+            session->have_frame = 1;
+            session->frame_position = 0;
+            return 1;
+        }
+        if (!session->swr) {
+            const int opened = open_resampler(session, frame);
+            if (opened < 0) {
+                return opened;
+            }
+        }
+        const int count = resample_into_converted(session, frame);
+        av_frame_unref(frame);
+        session->frame_waits = 0;
+        if (count < 0) {
+            return count;
+        }
+        if (count > 0) {
+            session->source = session->converted;
+            session->have_frame = 1;
+            session->frame_position = 0;
+            return 1;
+        }
+        /* The resampler kept it all for its next call (a long step down in rate): the next frame. */
+    }
+}
+
 /* Appends `count` frames of `frame`, from frame position `from`, interleaved, to the PCM record
    being made. Returns 0, or TMFF_EXIT_MEMORY when the record cannot grow. */
 static int append_frames(tmff_session *session, const AVFrame *frame, int from, int count) {
@@ -705,7 +903,11 @@ static int read_first_frame(tmff_session *session) {
     session->sample_rate = frame->sample_rate;
     session->channels = frame->ch_layout.nb_channels;
     session->channel_mask = wave_mask(&frame->ch_layout, session->channels);
+    if (make_layout(&session->layout, &frame->ch_layout) != 0) {
+        return TMFF_EXIT_MEMORY;
+    }
     settle_form(session, frame->format, session->decoder->bits_per_raw_sample);
+    session->source = session->frame;
     session->have_frame = 1;
     session->frame_position = 0;
     return 0;
@@ -833,21 +1035,15 @@ static int make_pcm(tmff_session *session) {
     const size_t frame_bytes = (size_t)session->channels * (session->out == OUT_S16 ? 2u : 4u);
     while (session->record_length - TMFF_RECORD_HEADER_BYTES < PCM_RECORD_TARGET) {
         if (!session->have_frame) {
-            const int found = next_frame(session);
+            const int found = take_next_source(session);
             if (found < 0) {
                 return found;
             }
             if (found == 0) {
                 break;
             }
-            if (!has_the_first_form(session, session->frame)) {
-                av_frame_unref(session->frame);
-                return -TMFF_EXIT_FORM_CHANGED;
-            }
-            session->have_frame = 1;
-            session->frame_position = 0;
         }
-        const AVFrame *frame = session->frame;
+        AVFrame *frame = session->source;
         const int left = frame->extended_data ? frame->nb_samples - session->frame_position : 0;
         /* The frames that fit below the record's limit; the loop's test leaves room for at least
            (TMFF_MAX_PCM_RECORD_BYTES - PCM_RECORD_TARGET) bytes, so at least one fits. */
@@ -861,7 +1057,7 @@ static int make_pcm(tmff_session *session) {
             session->frame_position += taken;
         }
         if (session->frame_position >= frame->nb_samples || taken == 0) {
-            av_frame_unref(session->frame);
+            av_frame_unref(frame);
             session->have_frame = 0;
         }
     }
