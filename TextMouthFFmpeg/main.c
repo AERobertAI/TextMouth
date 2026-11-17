@@ -205,6 +205,7 @@ int main(int argc, char **argv) {
     int prepared_features;
 #ifdef DEBUG
     int only_confinement = 0;
+    int only_formcheck = 0;
 #endif
     if (strcmp(argv[1], TMFF_MODE_PROBE) == 0) {
         mode = TMFF_SESSION_PROBE;
@@ -214,10 +215,21 @@ int main(int argc, char **argv) {
     } else if (strcmp(argv[1], TMFF_MODE_CONFINEMENT) == 0) {
         mode = TMFF_SESSION_PROBE;
         only_confinement = 1;
+    } else if (strcmp(argv[1], TMFF_MODE_FORMCHECK) == 0) {
+        mode = TMFF_SESSION_PROBE;
+        only_formcheck = 1;
 #endif
     } else {
         return TMFF_EXIT_USAGE;
     }
+#ifdef DEBUG
+    if (only_formcheck) {
+        /* No file: the frames are made up in memory, and nothing needs the confinement. */
+        char answers[2048];
+        const int answered = tmff_session_formcheck(answers, sizeof answers);
+        return write_all((const unsigned char *)answers, strlen(answers)) == 0 ? answered : TMFF_EXIT_OUTPUT;
+    }
+#endif
     const int descriptor = open_regular_file(argv[3]);
     if (descriptor < 0) {
         return TMFF_EXIT_UNREADABLE;

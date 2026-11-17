@@ -126,4 +126,9 @@
    confinement are still its belief), exiting TMFF_EXIT_DONE only when all four are so. */
 #define TMFF_MODE_CONFINEMENT "confinement"
 
+/* A fourth mode, which only a Debug build of the helper has (a Release build answers it with
+   TMFF_EXIT_USAGE): it opens no file (its other two arguments are ignored) and writes one line
+   for each check tmff_session_formcheck makes of the conversion of sound that changes its form. */
+#define TMFF_MODE_FORMCHECK "formcheck"
+
 #endif /* TEXTMOUTH_FFMPEG_PROTOCOL_H */

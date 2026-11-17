@@ -60,4 +60,13 @@ void tmff_session_stop(tmff_session *session);
 /* Frees the session and everything FFmpeg holds for it (not the descriptor). NULL is allowed. */
 void tmff_session_close(tmff_session *session);
 
+#ifdef DEBUG
+/* Debug builds only (TMFF_MODE_FORMCHECK): runs the checks of the session's conversion of sound
+   that changes its form, on frames made up in memory (no file, no decoder, nothing from outside),
+   and writes one line for each into `out` (of `capacity` bytes): "name=status frames=N largest=B
+   changes=C", the status being the TMFF_EXIT_ number it ended with, N the frames it wrote, B the most
+   bytes one frame it wrote held, and C the resamplers it opened. Returns TMFF_EXIT_DONE. */
+int tmff_session_formcheck(char *out, size_t capacity);
+#endif
+
 #endif /* TEXTMOUTH_FFMPEG_SESSION_H */

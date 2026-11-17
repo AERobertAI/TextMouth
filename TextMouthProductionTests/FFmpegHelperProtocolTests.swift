@@ -206,6 +206,61 @@ final class FFmpegHelperProtocolTests: XCTestCase {
         XCTAssertTrue(runs(loudRuns(samples), match: expected, within: 6), "\(loudRuns(samples))")
     }
 
+    /// The bounds of the conversion of sound that changes its form (FU-FFMPEG2), checked on frames
+    /// made up in memory, no file read: the Debug helper's `formcheck` mode (which a Release helper
+    /// does not have) runs each check and writes "name=status frames=N largest=B changes=C" (the
+    /// status the check ended with, the frames it wrote, the most bytes one frame it wrote held,
+    /// and how many resamplers it opened).
+    /// - **The rate ratio:** 16 to 1 is converted, both ways, and 17 to 1 ends with 7 (the sentence
+    ///   for sound that cannot be converted).
+    /// - **The size of a converted frame:** a 65,535-frame frame of 32 channels at 48,000 Hz,
+    ///   converted to 768,000 Hz (268 MB in all), is fed in slices, none holding over 16 MB, and all
+    ///   1,048,560 of its frames (and the first frame's 16) come out.
+    /// - **A held-back frame:** ten frames of 8 samples at twice the rate, each kept whole by the
+    ///   resampler, all come out in the end, as 40 frames.
+    /// - **The layout:** a frame of 6 channels in the layout 6.0 after one in 5.1 is another form
+    ///   (a resampler is opened), and one in 5.1 again is not.
+    /// - **The changes:** 1,000 changes away from the first form and back are converted; the
+    ///   1,001st ends with 7.
+    func testTheBoundsOfTheConversionOnMadeUpFrames() async throws {
+        let run = try await runHelper(["formcheck", "all", "-"])
+        XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
+        /// Each line's status, frames, and largest, by name.
+        var checks: [String: (status: Int, frames: Int, largest: Int, changes: Int)] = [:]
+        for line in String(decoding: run.bytes, as: UTF8.self).split(separator: "\n") {
+            let parts = line.split(whereSeparator: { $0 == "=" || $0 == " " }).map(String.init)
+            guard parts.count == 8, let status = Int(parts[1]), let frames = Int(parts[3]), let largest = Int(parts[5]),
+                  let changes = Int(parts[7]) else {
+                XCTFail("a line that is not name=status frames=N largest=B changes=C: \(line)")
+                continue
+            }
+            checks[parts[0]] = (status, frames, largest, changes)
+        }
+        XCTAssertEqual(Set(checks.keys), ["ratio-up-16", "ratio-up-17", "ratio-down-16", "ratio-down-17", "cap", "held-back", "layout-same", "layout-other", "changes-1000", "changes-1001"])
+        for (name, status) in [("ratio-up-16", 0), ("ratio-up-17", 7), ("ratio-down-16", 0), ("ratio-down-17", 7)] {
+            XCTAssertEqual(checks[name]?.status, status, name)
+        }
+        // 1,152 frames at 8,000 Hz, then 1,152 at 128,000 Hz (72 at 8,000) or the other way (18,432).
+        XCTAssertEqual(Double(checks["ratio-up-16"]?.frames ?? 0), 1_152 + 72, accuracy: 4)
+        XCTAssertEqual(Double(checks["ratio-down-16"]?.frames ?? 0), 1_152 + 18_432, accuracy: 4)
+        let cap = try XCTUnwrap(checks["cap"])
+        XCTAssertEqual(cap.status, 0)
+        XCTAssertLessThanOrEqual(cap.largest, 16 * 1_024 * 1_024, "no converted frame holds over 16 MB")
+        XCTAssertGreaterThan(cap.largest, 1_024 * 1_024, "the check made a long frame, fed in slices")
+        XCTAssertEqual(Double(cap.frames), 16 + 1_048_560, accuracy: 64, "every frame comes out")
+        let held = try XCTUnwrap(checks["held-back"])
+        XCTAssertEqual(held.status, 0)
+        XCTAssertEqual(Double(held.frames), 1_152 + 40, accuracy: 2, "the held-back frames come out in the end")
+        XCTAssertEqual([checks["layout-same"]?.status, checks["layout-same"]?.changes], [0, 0], "5.1 again is the first form")
+        XCTAssertEqual([checks["layout-other"]?.status, checks["layout-other"]?.changes], [0, 1], "6.0 after 5.1 is converted")
+        let changes = try XCTUnwrap(checks["changes-1000"])
+        XCTAssertEqual(changes.status, 0)
+        // 1,152 first, then 1,000 pairs of 576 (converted) and 1,152.
+        XCTAssertEqual(Double(changes.frames), 1_152 + 1_000 * (576 + 1_152), accuracy: 1_000)
+        XCTAssertEqual(changes.changes, 1_000)
+        XCTAssertEqual(checks["changes-1001"]?.status, 7)
+    }
+
     /// One decoded frame past a PCM record's 1 MB is split across records and
     /// read back whole (FU-FFMPEG2): `ffmpeg-edge/flac-7.1-24bit-65535.mka` is
     /// FLAC in blocks of 65,535 samples, 8 channels, 24 bits, so each full block
