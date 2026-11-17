@@ -845,14 +845,13 @@ enum BrailleTranslator {
             let soFar = BrailleTranslator.limits(for: direction, bytes: inputBytes)
             var input = BrailleTranslator.headerLine
             input.append(batch)
-            let started = ProcessInfo.processInfo.systemUptime
-            let output = try BrailleTranslator.runLibrary(
+            let (output, seconds) = try BrailleTranslator.runLibrary(
                 direction: direction, table: table, input: input,
                 seconds: max(0, soFar.maximumSeconds - librarySeconds),
                 maximumOutputBytes: BrailleTranslator.limits(for: direction, bytes: Int64(input.count)).maximumOutputBytes ?? 0,
                 timeAllowed: soFar.maximumSeconds
             )
-            librarySeconds += ProcessInfo.processInfo.systemUptime - started
+            librarySeconds += seconds
             // Every batch's output begins with the header, which the Mac's
             // output file holds once.
             outputBytes += Int64(output.count - BrailleTranslator.headerLine.count)
@@ -870,6 +869,9 @@ enum BrailleTranslator {
     private struct LibraryOutcome: Sendable {
         let status: Int32
         let output: Data
+        /// How long the library took, on the engine's thread: its own time,
+        /// with no wait behind another call in it.
+        var seconds: TimeInterval = 0
     }
 
     /// One call of the braille library in this process, on the engine: the
@@ -877,7 +879,8 @@ enum BrailleTranslator {
     /// with `input` in the protocol, told to stop after `seconds`, and with an
     /// output of at most `maximumOutputBytes` (0 for no cap). `timeAllowed`
     /// is the whole translation's time, which a stop for time names.
-    /// - Returns: The output, when the library is done.
+    /// - Returns: The output, when the library is done, and the seconds
+    ///   the library took, on the engine's thread.
     /// - Throws: `Failure.unknownTable` for a table that does not load;
     ///   `Failure.stopped` past the time or a cap; `ImportCancelled` after the
     ///   import's Cancel; `Failure.failed` for any other status; and the
@@ -890,7 +893,7 @@ enum BrailleTranslator {
         seconds: TimeInterval,
         maximumOutputBytes: Int64 = 0,
         timeAllowed: TimeInterval? = nil
-    ) throws -> Data {
+    ) throws -> (output: Data, seconds: TimeInterval) {
         let mode = direction?.rawValue ?? "check"
         // The engine and the import's cancellation are read here, on the
         // caller's thread: the engine's thread inherits no task-locals.
@@ -909,10 +912,13 @@ enum BrailleTranslator {
         let outcome: LibraryOutcome
         do {
             outcome = try engine.run(limit: seconds, cancelledBy: cancellation) { call in
-                callLibrary(
+                let started = ProcessInfo.processInfo.systemUptime
+                var result = callLibrary(
                     mode: libraryMode, folder: folder, table: table, input: input,
                     maximumOutputBytes: maximumOutputBytes, call: call
                 )
+                result.seconds = ProcessInfo.processInfo.systemUptime - started
+                return result
             }
         } catch let failure as InProcessEngine.Failure {
             let what = failure == .refused(work: engine.work)
@@ -922,7 +928,7 @@ enum BrailleTranslator {
         }
         switch Int(outcome.status) {
         case Int(TMB_EXIT_DONE):
-            return outcome.output
+            return (outcome.output, outcome.seconds)
         case Int(TMB_EXIT_TABLE):
             throw Failure.unknownTable(table)
         case Int(TMB_EXIT_STOPPED):
