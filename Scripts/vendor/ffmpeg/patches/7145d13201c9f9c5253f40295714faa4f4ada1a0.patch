@@ -1,0 +1,31 @@
+From 7145d13201c9f9c5253f40295714faa4f4ada1a0 Mon Sep 17 00:00:00 2001
+From: Michael Niedermayer <michael@niedermayer.cc>
+Date: Tue, 29 Sep 2026 01:57:32 +0200
+Subject: [PATCH] avcodec/cook: reject js_subband_start beyond subbands
+
+Fixes: information leak of heap pointers and decoder state into the output
+Fixes: qhg9vxxyEOy1
+Found-by: Yuyao Jiang
+Replicated through Modified FFmpeg
+---
+ libavcodec/cook.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/libavcodec/cook.c b/libavcodec/cook.c
+index 5ed3d2596b858..71c2409ad31ea 100644
+--- a/libavcodec/cook.c
++++ b/libavcodec/cook.c
+@@ -1218,6 +1218,13 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
+             return AVERROR_PATCHWELCOME;
+         }
+ 
++        if (q->subpacket[s].joint_stereo &&
++            q->subpacket[s].js_subband_start > q->subpacket[s].subbands) {
++            av_log(avctx, AV_LOG_ERROR, "js_subband_start %d > subbands %d\n",
++                   q->subpacket[s].js_subband_start, q->subpacket[s].subbands);
++            return AVERROR_INVALIDDATA;
++        }
++
+         if ((q->subpacket[s].js_vlc_bits > 6) ||
+             (q->subpacket[s].js_vlc_bits < 2 * q->subpacket[s].joint_stereo)) {
+             av_log(avctx, AV_LOG_ERROR, "js_vlc_bits = %d, only >= %d and <= 6 allowed!\n",

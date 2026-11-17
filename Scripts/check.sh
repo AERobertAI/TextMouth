@@ -10,9 +10,11 @@
 #   3. builds the Release app from scratch (make build) and requires that
 #      the build reports no Swift warning, and that the app it packages,
 #      build/TextMouth.app, which `make install` copies, is no larger than
-#      APP_SIZE_LIMIT_MB megabytes, a limit this script sets once. It reports
-#      the app's size either way, so growth is noticed long before the limit
-#      is reached;
+#      APP_SIZE_LIMIT_MB megabytes, a limit this script sets once. It warns,
+#      without failing, when the app is larger than APP_SIZE_WARNING_MB, and
+#      reports the app's size either way, so growth is noticed long before
+#      the limit is reached. No file of the app may hold a folder of this
+#      Mac (its home folder, the checkout, or $TMPDIR);
 #   4. runs the hosted XCTest suite with the Makefile's flags (make test),
 #      built from scratch in the same folder, and requires that this build
 #      reports no Swift warning either. The performance baselines tests run
@@ -113,14 +115,17 @@ readonly RELEASE_BUILD_LOG="build/xcodebuild-Release.log"
 # The app `make build` packages (APP_BUNDLE in the Makefile), which `make
 # install` copies to /Applications.
 readonly RELEASE_APP="build/TextMouth.app"
-# The largest the Release app may be, in megabytes of a million bytes. Its
-# developer wants it under 20 MB, and 15 MB if that costs nothing they use. It
-# was 33 MB before the size work of October 2026, 11 MB after it, and 23.55 MB
-# on November 13, 2026, before -Osize and the missing export trie brought it to
-# 18.98 MB. The gate fails above this limit, so the app cannot quietly grow
-# past it. This is the limit's only definition: Scripts/check-selftest.sh
-# reads it here.
-readonly APP_SIZE_LIMIT_MB=20
+# The Release app's two size limits, in megabytes of a million bytes. Its
+# developer's real limit is 30 MB and its strict one 40 MB (November 16, 2026,
+# when FFmpeg was built in: the 20 MB of before was a target to optimize
+# under, not a limit). The gate warns above APP_SIZE_WARNING_MB and fails
+# above APP_SIZE_LIMIT_MB, so the app cannot quietly grow past either. It was
+# 33 MB before the size work of October 2026, 11 MB after it, 23.55 MB on
+# November 13, 2026, before -Osize and the missing export trie brought it to
+# 18.98 MB, and 18.5 MB at version 0.5.0. These are the limits' only
+# definitions: Scripts/check-selftest.sh reads them here.
+readonly APP_SIZE_WARNING_MB=30
+readonly APP_SIZE_LIMIT_MB=40
 # A line in which the Swift compiler reports a warning (see the header).
 readonly SWIFT_WARNING_PATTERN='^(.+\.swift:[0-9]+:[0-9]+|<unknown>:0): warning: '
 # How many warnings a step that fails on them names.
@@ -472,12 +477,13 @@ app_size() {
 }
 
 # require_app_within_size_limit: reports the size of the app the Release
-# build packaged, and fails the gate when the app is missing, cannot be
-# measured, or is larger than APP_SIZE_LIMIT_MB megabytes.
+# build packaged; warns, without failing, when it is larger than
+# APP_SIZE_WARNING_MB megabytes; and fails the gate when the app is missing,
+# cannot be measured, or is larger than APP_SIZE_LIMIT_MB megabytes.
 require_app_within_size_limit() {
-  local bytes limit=$(( APP_SIZE_LIMIT_MB * 1000000 ))
+  local bytes warning=$(( APP_SIZE_WARNING_MB * 1000000 )) limit=$(( APP_SIZE_LIMIT_MB * 1000000 ))
   if (( dry_run )); then
-    detail "would require $RELEASE_APP to be no larger than $APP_SIZE_LIMIT_MB MB"
+    detail "would require $RELEASE_APP to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
     return 0
   fi
   [[ -d $RELEASE_APP ]] ||
@@ -486,10 +492,41 @@ require_app_within_size_limit() {
     fail "step $step_number of $STEP_COUNT ($step_title): cannot measure the size of $RELEASE_APP"
   fi
   if (( bytes > limit )); then
-    detail "the limit is APP_SIZE_LIMIT_MB in Scripts/check.sh; find what grew before raising it"
-    fail "step $step_number of $STEP_COUNT ($step_title): $RELEASE_APP is $(describe_size "$bytes"), more than the $APP_SIZE_LIMIT_MB MB limit"
+    detail "the limits are APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh; find what grew before raising them"
+    fail "step $step_number of $STEP_COUNT ($step_title): $RELEASE_APP is $(describe_size "$bytes"), more than the $APP_SIZE_LIMIT_MB MB strict limit"
   fi
-  detail "$RELEASE_APP is $(describe_size "$bytes"), within the $APP_SIZE_LIMIT_MB MB limit"
+  if (( bytes > warning )); then
+    detail "WARNING: $RELEASE_APP is $(describe_size "$bytes"), more than the $APP_SIZE_WARNING_MB MB limit; the gate fails above $APP_SIZE_LIMIT_MB MB"
+    return 0
+  fi
+  detail "$RELEASE_APP is $(describe_size "$bytes"), within the $APP_SIZE_WARNING_MB MB limit"
+}
+
+# require_app_free_of_mac_paths: fails the gate when a file of the Release app
+# holds a folder of the Mac that built it: its home folder, this checkout, or
+# the temporary folder ($TMPDIR). The app is published, and the user's rule of
+# November 16, 2026 keeps every path of this Mac out of what the repository
+# makes as well as what it holds; FFmpeg's libraries, which configure would
+# write such paths into, are checked by their own script too
+# (Scripts/vendor/ffmpeg/build.py). Names the files, as paths in the app.
+require_app_free_of_mac_paths() {
+  if (( dry_run )); then
+    detail "would require $RELEASE_APP to hold no folder of this Mac"
+    return 0
+  fi
+  local folder files="" temporary=${TMPDIR:-}
+  temporary=${temporary%/}
+  for folder in "$HOME" "$ROOT" "$temporary"; do
+    # An unset or root folder would match everything.
+    (( ${#folder} > 1 )) || continue
+    files+=$(grep -r -l -a -F -e "$folder" "$RELEASE_APP" 2>/dev/null)$'\n'
+  done
+  files=$(sort -u <<<"$files" | sed '/^$/d')
+  if [[ -n $files ]]; then
+    detail_lines "| " "$(sed "s#^$RELEASE_APP/##" <<<"$files" | head -n 5)"
+    fail "step $step_number of $STEP_COUNT ($step_title): $RELEASE_APP holds a folder of this Mac (its home folder, the checkout, or \$TMPDIR)"
+  fi
+  detail "$RELEASE_APP holds no folder of this Mac"
 }
 
 # show_failure_lines <log>: prints the lines of a failed step's log a reader
@@ -622,6 +659,7 @@ main() {
   run_step build yes make build || step_failed build $?
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
   require_app_within_size_limit
+  require_app_free_of_mac_paths
 
   if (( without_tests )); then
     say "the hosted XCTest suite is not run by this gate (--without-tests)"

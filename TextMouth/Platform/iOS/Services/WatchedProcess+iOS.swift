@@ -22,8 +22,9 @@ enum WatchedProcess {
         var maximumResidentBytes: Int64
         /// The longest the watched file may go without growing, in seconds.
         var maximumStalledSeconds: TimeInterval
-        /// How often the watchdog looks, in seconds.
-        var pollInterval: TimeInterval = 1
+        /// How often the watchdog looks, in seconds (a quarter of a second,
+        /// as on the Mac).
+        var pollInterval: TimeInterval = 0.25
         /// The most processor time the child may use, in seconds. Nil means
         /// four times `maximumSeconds`.
         var maximumCPUSeconds: TimeInterval?
@@ -78,6 +79,28 @@ enum WatchedProcess {
         case couldNotStart
     }
 
+    /// How a child ended, with the signal that ended it (a copy of the Mac's
+    /// value type).
+    struct Ending: Equatable, Sendable {
+        /// How it ended.
+        var outcome: Outcome
+        /// The signal that ended it, when the watchdog did not send it.
+        var signal: Int32?
+    }
+
+    /// The reading end of a child's pipe (a stand-in for the Mac's, with its
+    /// members): no child runs on iOS, so it never holds a byte.
+    final class PipeReader: Sendable {
+        /// How many bytes have been read: none.
+        var bytesRead: Int64 { 0 }
+
+        /// Nothing to note: no child runs.
+        func childEnded() {}
+
+        /// The end at once: no child writes.
+        func read(upTo count: Int) async throws -> [UInt8] { [] }
+    }
+
     /// What every captured-output file's name ends with (the same string as
     /// the Mac's).
     static let outputFileSuffix = ".watched-output"
@@ -100,6 +123,28 @@ enum WatchedProcess {
         residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) async throws -> Outcome {
+        throw IOSUnavailable.feature("Converting this kind of file")
+    }
+
+    /// How long the Mac lets a streaming child run on after its reader has
+    /// returned, in seconds (the same number, so the parameters match).
+    static let defaultEndGraceSeconds: TimeInterval = 2
+
+    /// Would run `executable` and hand its output to `read` as it comes
+    /// (the Mac's FFmpeg helper, FMT50); on iOS it starts nothing and throws
+    /// `IOSUnavailable`, as `run` does. The parameters match the Mac's. It
+    /// stays above `runCapturingOutput`, which answers instead of throwing
+    /// and comes last (IOSBranchTests reads this file from there on).
+    static func runStreaming<Value: Sendable>(
+        _ executable: URL,
+        arguments: [String],
+        watching output: URL?,
+        limits: Limits,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
+        uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        endGraceSeconds: TimeInterval = WatchedProcess.defaultEndGraceSeconds,
+        reading read: (PipeReader) async throws -> Value
+    ) async throws -> (ending: Ending, read: Result<Value, any Error>) {
         throw IOSUnavailable.feature("Converting this kind of file")
     }
 

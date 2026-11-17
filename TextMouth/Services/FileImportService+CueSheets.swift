@@ -173,18 +173,23 @@ extension FileImportService {
     /// decoders unless the book plays the file as it is: a file whose bytes
     /// are of a format TextMouth plays as it is
     /// (`ImportAudioConverter.verdict(for:)` is `.leave`) as the book's
-    /// parse measures it (`AudioMediaProber.avFoundation`); every other file
-    /// (MPEG-4, which the bytes leave open, and every format the import
-    /// converts) as the conversion reads it first (`ImportAudioConverter.inspect`:
-    /// an Ogg file from its own pages, any other by `afinfo` in its child).
-    /// A file that cannot be measured is not listed, and the parse checks
-    /// it, after the conversion.
+    /// parse measures it (`AudioMediaProber.avFoundation`); a file only
+    /// FFmpeg reads (WMA, Matroska, and the rest) by TextMouth's FFmpeg helper
+    /// (`FFmpegAudioConverter.length(of:using:)`, the TODO's FU-FFMPEG item:
+    /// afinfo reads none of them, so a sheet over one was taken to fit
+    /// unchecked); every other file (MPEG-4, which the bytes leave open, and
+    /// every other format the import converts) as the conversion reads it
+    /// first (`ImportAudioConverter.inspect`: an Ogg file from its own pages,
+    /// any other by `afinfo` in its child). A file that cannot be measured is
+    /// not listed, and the parse checks it, after the conversion. The FFmpeg
+    /// tool is read on this thread, since the wait's task does not inherit it.
     static func measuredLengths(of files: [M3UPlaylist.Track]) -> [String: TimeInterval] {
         guard !files.isEmpty else { return [:] }
         // The verdict reads a file's first bytes, so it is asked once a file.
         let playedAsTheyAre = Set(files.filter { ImportAudioConverter.verdict(for: $0.url) == .leave }.map(\.path))
         let asTheyAre = files.filter { playedAsTheyAre.contains($0.path) }
         let others = files.filter { !playedAsTheyAre.contains($0.path) }
+        let ffmpeg = FFmpegAudioConverter.tool
         let measured = try? AsyncBridge.waitForResult(timeLimit: AsyncBridge.audioAnalysisTimeLimit, of: {
             var lengths: [String: TimeInterval] = [:]
             let outcomes = await AudioMediaProber.avFoundation.probeEach(asTheyAre.map(\.url))
@@ -192,7 +197,11 @@ extension FileImportService {
                 if case .success(let seconds) = outcome { lengths[file.path] = seconds }
             }
             for file in others {
-                if let info = try await ImportAudioConverter.inspect(file.url), info.duration.isFinite, info.duration > 0 {
+                if FFmpegAudioConverter.converts(file.url) {
+                    if let seconds = await FFmpegAudioConverter.length(of: file.url, using: ffmpeg), seconds > 0 {
+                        lengths[file.path] = seconds
+                    }
+                } else if let info = try await ImportAudioConverter.inspect(file.url), info.duration.isFinite, info.duration > 0 {
                     lengths[file.path] = info.duration
                 }
             }

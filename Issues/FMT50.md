@@ -2,7 +2,7 @@
 id: FMT50
 title: A bundled ffmpeg
 kind: format
-status: open
+status: in-progress
 priority: P2
 platform: both
 assignee: ffmpegfix
@@ -26,3 +26,7 @@ labels:
 ### 2026-11-16, issuelib, 1 line
 
 Moved from TODO-2026-09-04.md, line 5883 of the version this import read, where it was an open item; the description is its text as it was.
+
+### 2026-11-17, ffmpegfix, 1 line
+
+Bundled FFmpeg finished for its merge: the helper confines itself with the pure-computation sandbox once its file is open (exit status 12 and its own sentence when it cannot; a Debug-only confinement mode proves input readable, hosts file and network refused, processor features kept); second download source (FFmpeg's GitHub mirror, own SHA-256); an empty audio record is refused and a helper that hangs after END is ended without failing the import; the output cap is counted by the reader; one decoding thread; memory read every 0.25 s; five upstream CVE patches applied and credited (FU01 drops them at 9.0.3); hostile-file tests run on every GitHub train. Report: build/orchestrator/nov17/ffmpegfix-report.md.

@@ -303,7 +303,6 @@
 				<string>spx</string>
 				<string>mpc</string>
 				<string>mp+</string>
-				<string>mpp</string>
 				<string>mka</string>
 				<string>mkv</string>
 				<string>webm</string>
@@ -1037,7 +1036,6 @@
 				<array>
 					<string>mpc</string>
 					<string>mp+</string>
-					<string>mpp</string>
 				</array>
 				<key>public.mime-type</key>
 				<array>

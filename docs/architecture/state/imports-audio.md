@@ -160,7 +160,7 @@ A file the import converts keeps its chapters through the conversion:
 - The iPhone compiles the readers, and its import refuses the files (see the iPhone's import refusals).
 
 ## Audio only ffmpeg reads
-<!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, FFprobeReport, FFmpeg.locate, ASF, copy protection, FMT31, FMT32; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFprobeReport.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift -->
+<!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, FFmpegReport, TextMouthFFmpeg, ASF, copy protection, FMT31, FMT50; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Services/FFmpegHelperStream.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift -->
 
 - Which files: FFmpegAudioConverter.converts(_:) is true for a file in either of two cases, whatever its name.
   - Its extension is in FFmpegAudioConverter.extensions (16 of them, joined to ImportAudioConverter.convertedExtensions so the reader guards keep them from Apple's decoders).

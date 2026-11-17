@@ -1695,9 +1695,10 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     /// Extract comprehensive metadata from an audio file including album, genre, year, and duration.
     /// Returns an AudioMetadata struct with all available fields populated.
-    /// A file only ffmpeg reads (FMT31) is asked of ffprobe with `ffmpeg`,
-    /// which the import reads on its own thread (`FFmpegAudioConverter.tool`).
-    static func extractFullMetadata(from url: URL, ffmpeg: FFmpegAudioConverter.Tool = .installed) async -> AudioMetadata {
+    /// A file only FFmpeg reads (FMT31) is asked of TextMouth's FFmpeg helper
+    /// with `ffmpeg` (FMT50), which the import reads on its own thread
+    /// (`FFmpegAudioConverter.tool`).
+    static func extractFullMetadata(from url: URL, ffmpeg: FFmpegAudioConverter.Tool = .bundled) async -> AudioMetadata {
         var result = AudioMetadata()
 
         // Set the file format from the extension
@@ -1705,7 +1706,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
         // An Ogg file is never opened by AVFoundation (see `metadataAsset`):
         // its tags and length are read from its own bytes. Nor is a file
-        // only ffmpeg reads, whose tags ffprobe reads in a watched child.
+        // only FFmpeg reads, whose tags the FFmpeg helper reads in a watched
+        // child, choosing among artist, author, and album artist as the
+        // report says (`FFmpegReport.bookTags(in:)`).
         guard let asset = metadataAsset(for: url) else {
             if let header = OggHeaderReader.read(at: url) {
                 result.title = header.tags.title
@@ -1715,13 +1718,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 result.year = header.tags.date
                 result.duration = durationString(header.duration)
             } else if let probed = await FFmpegAudioConverter.tags(of: url, using: ffmpeg) {
-                result.title = probed.tags["title"] ?? ""
-                // ASF's Author and Matroska's ARTIST both reach ffprobe as the
-                // artist; RealMedia's author keeps its name (review9 finding 5).
-                result.artist = probed.tags["artist"] ?? probed.tags["author"] ?? probed.tags["album_artist"] ?? ""
-                result.album = probed.tags["album"] ?? ""
-                result.genre = probed.tags["genre"] ?? ""
-                result.year = probed.tags["date"] ?? probed.tags["year"] ?? ""
+                result.title = probed.tags.title
+                result.artist = probed.tags.artist
+                result.album = probed.tags.album
+                result.genre = probed.tags.genre
+                result.year = probed.tags.date
                 result.duration = probed.duration.map(durationString) ?? ""
             }
             return result

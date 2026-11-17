@@ -303,6 +303,7 @@ check-selftest:
 	@python3 Scripts/test/ogg-lint.py --selftest
 	@python3 Scripts/test/make-corpus.py --selftest
 	@python3 -I -B Scripts/vendor/swiftsoup/test_make_vendor.py
+	@python3 -I -B Scripts/vendor/ffmpeg/test_build.py
 	@python3 -I -B -m unittest discover -s Scripts/agents/tests -p 'test_*_paths.py'
 	@python3 -I -B -m unittest discover -s .claude/skills/issue-library/tests
 

@@ -44,6 +44,10 @@ LIBRARY_LICENCES = {
     "swift-cmark": ("swift-cmark", ["Vendor/package-licenses/swift-cmark/COPYING"]),
     "SwiftSoup_iOS": ("SwiftSoup", ["Vendor/SwiftSoup/LICENSE"]),
     "LAME_iOS": ("LAME", ["Vendor/lame/COPYING", "Vendor/lame/LICENSE"]),
+    # FFmpeg (FMT50), which the iPhone app links once it runs the FFmpeg session in its own process: the release's
+    # own LICENSE.md and COPYING.LGPLv2.1, and Scripts/vendor/ffmpeg/build.py's README, as the Mac app ships them.
+    "FFmpeg_iOS": ("FFmpeg", ["Vendor/package-licenses/FFmpeg/LICENSE.md", "Vendor/package-licenses/FFmpeg/COPYING.LGPLv2.1",
+                              "Vendor/package-licenses/FFmpeg/README"]),
 }
 
 # Targets that are TextMouth's own code, which need no third-party notice.

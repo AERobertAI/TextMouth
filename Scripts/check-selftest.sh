@@ -40,16 +40,23 @@ readonly RESOLVED="TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 REAL_MAKE=$(command -v make) || { echo "check-selftest: make is required" >&2; exit 1; }
 readonly REAL_MAKE
 
-# The Release app's size limit, read from check.sh, which defines it once, so
-# these cases follow the limit when it changes. The expected reports below
-# write a size of a whole number of megabytes as "<limit>.0 MB (<limit>,000,000
-# bytes)", which holds for a limit under 1,000 MB.
+# The Release app's two size limits, read from check.sh, which defines each
+# once, so these cases follow them when they change: the gate warns above
+# APP_SIZE_WARNING_MB and fails above APP_SIZE_LIMIT_MB. The expected reports
+# below write a size of a whole number of megabytes as "<limit>.0 MB
+# (<limit>,000,000 bytes)", which holds for a limit under 1,000 MB.
+APP_SIZE_WARNING_MB=$(sed -n -E 's/^readonly APP_SIZE_WARNING_MB=([0-9]+)$/\1/p' "$ROOT/Scripts/check.sh")
 APP_SIZE_LIMIT_MB=$(sed -n -E 's/^readonly APP_SIZE_LIMIT_MB=([0-9]+)$/\1/p' "$ROOT/Scripts/check.sh")
-if [[ ! $APP_SIZE_LIMIT_MB =~ ^[1-9][0-9]{0,2}$ ]]; then
-  echo "check-selftest: Scripts/check.sh must set APP_SIZE_LIMIT_MB to a whole number from 1 to 999" >&2
+if [[ ! $APP_SIZE_WARNING_MB =~ ^[1-9][0-9]{0,2}$ || ! $APP_SIZE_LIMIT_MB =~ ^[1-9][0-9]{0,2}$ ]]; then
+  echo "check-selftest: Scripts/check.sh must set APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB to whole numbers from 1 to 999" >&2
   exit 1
 fi
-readonly APP_SIZE_LIMIT_MB
+if (( APP_SIZE_WARNING_MB >= APP_SIZE_LIMIT_MB )); then
+  echo "check-selftest: Scripts/check.sh must set APP_SIZE_WARNING_MB below APP_SIZE_LIMIT_MB" >&2
+  exit 1
+fi
+readonly APP_SIZE_WARNING_MB APP_SIZE_LIMIT_MB
+readonly APP_SIZE_WARNING_BYTES=$(( APP_SIZE_WARNING_MB * 1000000 ))
 readonly APP_SIZE_LIMIT_BYTES=$(( APP_SIZE_LIMIT_MB * 1000000 ))
 
 # How many installs keep their dSYMs, read from the Makefile, which defines it
@@ -110,6 +117,8 @@ write_stubs() {
 #                               build/xcodebuild-Release.log; empty writes none
 #   STUB_APP_BYTES=<number>     build packages build/TextMouth.app, of <number>
 #                               bytes (at least 600); empty packages none
+#   STUB_APP_TEXT=<text>        build also writes <text> into the app, as
+#                               Contents/Resources/planted.txt
 #   STUB_TEST_OUTPUT=<file>     test prints <file>
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
 # In the log and output files, @ROOT@ stands for the repository root, since
@@ -148,6 +157,10 @@ case $target in
       head -c 600 /dev/zero > build/TextMouth.app/Contents/Info.plist
       dd if=/dev/zero of=build/TextMouth.app/Contents/MacOS/TextMouth bs=1 count=0 \
         seek=$(( STUB_APP_BYTES - 600 )) 2>/dev/null
+      if [ -n "${STUB_APP_TEXT:-}" ]; then
+        mkdir -p build/TextMouth.app/Contents/Resources
+        printf '%s' "$STUB_APP_TEXT" | sed "s#@ROOT@#$(pwd -P)#g" > build/TextMouth.app/Contents/Resources/planted.txt
+      fi
     fi
     if [ -n "${STUB_BUILD_WRITES:-}" ]; then cp "$STUB_BUILD_WRITES" "$STUB_RESOLVED"; fi ;;
   test)
@@ -468,7 +481,7 @@ dry_run_cases() {
   expect_report "would remove the compiled code of earlier builds: build/DerivedData/Build and TextMouthTests/.build"
   expect_report "would run: make build"
   expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
-  expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB"
+  expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
   expect_report "would run: make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "would repeat the performance tests' warnings and skips from build/check/test.log"
   expect_report "would require no Swift warnings in build/check/test.log"
@@ -485,7 +498,7 @@ dry_run_cases() {
   expect_report "step 3 of 3: build the Release app"
   expect_report "would run: make build"
   expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
-  expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB"
+  expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
   expect_report "the hosted XCTest suite is not run by this gate (--without-tests)"
   expect_report "pins match Package.resolved: "
   refute_report "step 4"
@@ -693,7 +706,7 @@ real_run_cases() {
   expect_report "Executed 3 tests, with 1 test skipped and 0 failures"
   refute_report "Executed 2 tests"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
-  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_LIMIT_MB MB limit"
+  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_WARNING_MB MB limit"
   expect_report "no Swift warnings in build/check/test.log"
   expect_report "Package.resolved still holds the committed pins"
   expect_verdict "check: PASSED"
@@ -705,28 +718,61 @@ real_run_cases() {
   expect_commands "make generate" "make resolve-packages" "make build"
   expect_report "step 3 of 3: build the Release app"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
-  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_LIMIT_MB MB limit"
+  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_WARNING_MB MB limit"
   expect_report "the hosted XCTest suite is not run by this gate (--without-tests)"
   expect_report "Package.resolved still holds the committed pins"
   refute_report "Executed"
   expect_verdict "check: PASSED"
   end_case
 
-  begin_case "a Release app of exactly the size limit passes"
-  run_gate STUB_APP_BYTES="$APP_SIZE_LIMIT_BYTES"
+  begin_case "a Release app that names no folder of this Mac passes, and says so"
+  run_gate STUB_APP_TEXT="built in /Users/reader/TextMouth"
   expect_status 0
-  expect_report "build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,000 bytes), within the $APP_SIZE_LIMIT_MB MB limit"
+  expect_report "build/TextMouth.app holds no folder of this Mac"
   expect_verdict "check: PASSED"
   end_case
 
-  begin_case "a Release app one byte over the size limit fails the gate before the tests"
+  begin_case "a Release app that holds the checkout's folder fails the gate before the tests, naming the file"
+  run_gate STUB_APP_TEXT="built in @ROOT@/TextMouth"
+  expect_status 1
+  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_report "| Contents/Resources/planted.txt"
+  refute_report "holds no folder of this Mac"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds a folder of this Mac (its home folder, the checkout, or \$TMPDIR)"
+  end_case
+
+  begin_case "a Release app of exactly the warning size passes with no warning"
+  run_gate STUB_APP_BYTES="$APP_SIZE_WARNING_BYTES"
+  expect_status 0
+  expect_report "build/TextMouth.app is $APP_SIZE_WARNING_MB.0 MB ($APP_SIZE_WARNING_MB,000,000 bytes), within the $APP_SIZE_WARNING_MB MB limit"
+  refute_report "WARNING: build/TextMouth.app"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app one byte over the warning size passes with a warning"
+  run_gate STUB_APP_BYTES=$(( APP_SIZE_WARNING_BYTES + 1 ))
+  expect_status 0
+  expect_report "WARNING: build/TextMouth.app is $APP_SIZE_WARNING_MB.0 MB ($APP_SIZE_WARNING_MB,000,001 bytes), more than the $APP_SIZE_WARNING_MB MB limit; the gate fails above $APP_SIZE_LIMIT_MB MB"
+  refute_report "within the $APP_SIZE_WARNING_MB MB limit"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app of exactly the strict limit passes with a warning"
+  run_gate STUB_APP_BYTES="$APP_SIZE_LIMIT_BYTES"
+  expect_status 0
+  expect_report "WARNING: build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,000 bytes), more than the $APP_SIZE_WARNING_MB MB limit; the gate fails above $APP_SIZE_LIMIT_MB MB"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app one byte over the strict limit fails the gate before the tests"
   run_gate STUB_APP_BYTES=$(( APP_SIZE_LIMIT_BYTES + 1 ))
   expect_status 1
   expect_commands "make generate" "make resolve-packages" "make build"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
-  expect_report "the limit is APP_SIZE_LIMIT_MB in Scripts/check.sh; find what grew before raising it"
-  refute_report "within the $APP_SIZE_LIMIT_MB MB limit"
-  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,001 bytes), more than the $APP_SIZE_LIMIT_MB MB limit"
+  expect_report "the limits are APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh; find what grew before raising them"
+  refute_report "within the $APP_SIZE_WARNING_MB MB limit"
+  refute_report "WARNING: build/TextMouth.app"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,001 bytes), more than the $APP_SIZE_LIMIT_MB MB strict limit"
   end_case
 
   begin_case "a Release build that packages no app fails the gate, never measuring an earlier build's"

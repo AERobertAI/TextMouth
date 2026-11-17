@@ -100,10 +100,10 @@ Run these from the repository root:
 - `make help` lists these targets.
 
 ## The Mac app's size
-<!-- id: mac-app-size; keys: app size, 20 MB limit, Osize, linker map, LD_GENERATE_MAP_FILE, SwiftSoup; src: Scripts/check.sh, project.yml, Makefile, Scripts/agents/run_locked.py, TextMouth/Views/Library/LibraryView.swift -->
+<!-- id: mac-app-size; keys: app size, 30 MB limit, 40 MB strict limit, Osize, linker map, LD_GENERATE_MAP_FILE, SwiftSoup; src: Scripts/check.sh, project.yml, Makefile, Scripts/agents/run_locked.py, TextMouth/Views/Library/LibraryView.swift -->
 
-The user wants the Mac app under 20 MB, and under 15 MB if that costs nothing they use.
-`make check` fails the app above its hard limit of 20 MB (see The make check gate, below).
+The user's real limit for the Mac app is 30 MB, and 40 MB a strict one; the 20 MB of before was a target to optimize under.
+`make check` warns above 30 MB and fails the app above 40 MB (see The make check gate, below).
 Compiling the app and its packages for size (`-Osize`, and no export trie; see Make targets, above) brought the Release app from 23,545,276 bytes to 18,983,332 bytes, 19.0 MB, its executable from 22,820,048 to 18,258,016 bytes, in 35 files, measured by `make check`.
 Vendoring SwiftSoup then brought the Release app to 17,888,466 bytes.
 The price was slower HTML parsing at import, about 4 ms more for each megabyte of EPUB, since the SwiftSoup package parsed 43% slower at `-Osize`.
@@ -218,7 +218,7 @@ The script, Scripts/set-version.sh:
   Its cases cover both bumps (carries such as 0.2.9 to 0.2.10, numbers beyond 64 bits, and a project.yml whose version cannot be read) and the Makefile's version targets.
 
 ## The make check gate
-<!-- id: make-check-gate; keys: check.sh, reproducible build, APP_SIZE_LIMIT_MB, SIGN_APP, check-selftest, --without-tests, dry run; src: Scripts/check.sh, Scripts/check-selftest.sh, Scripts/make-signing-identity.sh, Scripts/agents/run-on-runner.py, .github/workflows/check.yml, .github/workflows/tests.yml, project.yml, Makefile -->
+<!-- id: make-check-gate; keys: check.sh, reproducible build, APP_SIZE_LIMIT_MB, APP_SIZE_WARNING_MB, SIGN_APP, check-selftest, --without-tests, dry run; src: Scripts/check.sh, Scripts/check-selftest.sh, Scripts/make-signing-identity.sh, Scripts/agents/run-on-runner.py, .github/workflows/check.yml, .github/workflows/tests.yml, project.yml, Makefile -->
 
 **Reproducible builds and `make check`.**
 TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark.
@@ -229,8 +229,8 @@ Run `make check` before merging.
 - builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac;
 - and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
 
-It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 20 MB limit".
-It fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh.
+It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 30 MB limit".
+It warns, without failing, when the app is larger than 30 MB, and fails when it is larger than 40 MB, limits set once, as APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh.
 Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
 In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
 It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.

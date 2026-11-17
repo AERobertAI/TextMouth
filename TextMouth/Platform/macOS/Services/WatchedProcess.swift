@@ -8,7 +8,7 @@ import os
 /// Vorbis decoder spun at 100% CPU inside TextMouth for good, and no
 /// in-process call can be stopped once it does.
 ///
-/// Once a second the watchdog (`Limits`) kills the child, with SIGKILL, when
+/// Four times a second (`Limits.pollInterval`) the watchdog kills the child, with SIGKILL, when
 /// it has run longer than allowed, its resident memory has passed the limit,
 /// the file it writes has not grown for too long, or that file has grown
 /// past its cap. The child's standard
@@ -19,9 +19,13 @@ import os
 /// - the kernel itself ends the child (SIGXCPU) when it has used its CPU
 ///   allowance, `ulimit -t`, even if TextMouth is not watching any more;
 /// - when the output has a cap, the kernel ends the child (SIGXFSZ) the
-///   moment a write would pass it, `ulimit -f`: the watchdog looks once a
-///   second, and a fast writer can put gigabytes on the disk between two
-///   looks;
+///   moment a write would pass it, `ulimit -f`: the watchdog looks only
+///   four times a second, and a fast writer can put gigabytes on the disk between two
+///   looks. That holds only for a child that writes the file itself (`run`):
+///   a streaming run's child writes a pipe, which `ulimit -f` never limits,
+///   so there the cap is the watchdog's look at the file the reader writes,
+///   each quarter second, and the reader's own count before each block it writes
+///   (`FFmpegAudioConverter`);
 /// - a tiny reaper shell kills the child as soon as TextMouth's own process
 ///   is gone, however it went (quit, force-quit, or the memory guard's
 ///   `_exit`);
@@ -38,8 +42,12 @@ enum WatchedProcess {
         var maximumResidentBytes: Int64
         /// The longest the watched file may go without growing, in seconds.
         var maximumStalledSeconds: TimeInterval
-        /// How often the watchdog looks, in seconds.
-        var pollInterval: TimeInterval = 1
+        /// How often the watchdog looks, in seconds: a quarter of a second,
+        /// so that a child that grows without bound (FFmpeg asking for memory
+        /// at the speed of a decode) is seen well before it has used much
+        /// more than its limit. A look is a `proc_pidinfo` call and a file
+        /// size.
+        var pollInterval: TimeInterval = 0.25
         /// The most processor time the child may use, in seconds, enforced by
         /// the kernel (`ulimit -t`). Nil means four times `maximumSeconds`:
         /// a few cores' work for the whole wall-clock allowance.
@@ -98,6 +106,20 @@ enum WatchedProcess {
         case couldNotStart
     }
 
+    /// How a child ended, with what `Outcome` leaves out: the signal that
+    /// ended it, when one did that the watchdog did not send. `run` and
+    /// `runCapturingOutput` report such an end as an exit with the signal's
+    /// number, as before; `runStreaming` tells the two apart, so a crashed
+    /// helper can be named as one (FMT50).
+    struct Ending: Equatable, Sendable {
+        /// How it ended, as `run` reports it.
+        var outcome: Outcome
+        /// The signal that ended it (a crash, or a kill from outside the
+        /// watchdog: the reader's own, when it stopped reading); nil when it
+        /// exited, was killed by the watchdog, or never started.
+        var signal: Int32?
+    }
+
     /// The resident memory of the process `pid` in bytes, or nil when it
     /// cannot be read (it has just ended): one `proc_pidinfo` call.
     static func residentMemory(of pid: pid_t) -> Int64? {
@@ -107,8 +129,10 @@ enum WatchedProcess {
         return Int64(info.pti_resident_size)
     }
 
-    /// The size of the file at `url` in bytes, 0 when it is not there yet.
-    private static func size(of url: URL) -> Int64 {
+    /// The size of the file at `url` in bytes, 0 when it is not there yet or
+    /// there is no file to watch (nil).
+    private static func size(of url: URL?) -> Int64 {
+        guard let url else { return 0 }
         let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
         return (attributes?[.size] as? NSNumber)?.int64Value ?? 0
     }
@@ -362,12 +386,13 @@ enum WatchedProcess {
         try Task.checkCancellation()
         // The child's pid and the cancellation flag, shared with the handler.
         let gate = ChildGate()
-        let outcome: Outcome = await withTaskCancellationHandler {
+        let ending: Ending = await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
                 DispatchQueue.global(qos: .utility).async {
                     continuation.resume(returning: watch(
                         executable, arguments: arguments, output: output,
-                        standardOutput: standardOutput, outputIsProgress: outputIsProgress, limits: limits,
+                        standardOutput: standardOutput, closingAfterLaunch: nil, progress: nil,
+                        outputIsProgress: outputIsProgress, limits: limits,
                         residentMemory: residentMemory, uptime: uptime, gate: gate
                     ))
                 }
@@ -376,7 +401,7 @@ enum WatchedProcess {
             gate.cancel()
         }
         try Task.checkCancellation()
-        return outcome
+        return ending.outcome
     }
 
     /// Starts the child and watches it until it ends or is killed; blocks
@@ -385,19 +410,34 @@ enum WatchedProcess {
     /// The child is `/bin/sh` setting the CPU and file-size limits and then
     /// replacing itself with the tool (`exec`), so the pid seen, measured, and killed here is
     /// the tool's own.
+    ///
+    /// - Parameters:
+    ///   - closingAfterLaunch: this process's copy of a pipe's write end that
+    ///     `standardOutput` is, closed here exactly once, as soon as the child
+    ///     holds its own (or when it never starts), so that the pipe's reader
+    ///     sees its end when the child's ends.
+    ///   - progress: what the stall clock follows, when given (the bytes read
+    ///     from the child's pipe): it runs from the child's start and is reset
+    ///     whenever this grows. The output file's size is the progress
+    ///     otherwise, and the output cap is that file's either way.
     private static func watch(
         _ executable: URL,
         arguments: [String],
-        output: URL,
+        output: URL?,
         standardOutput: FileHandle?,
+        closingAfterLaunch: FileHandle?,
+        progress: (@Sendable () -> Int64)?,
         outputIsProgress: Bool,
         limits: Limits,
         residentMemory: @Sendable (pid_t) -> Int64?,
         uptime: @Sendable () -> TimeInterval,
         gate: ChildGate
-    ) -> Outcome {
+    ) -> Ending {
         // A tool that cannot run, or a task cancelled already, starts nothing.
-        guard canExecute(executable), !gate.isCancelled else { return .couldNotStart }
+        guard canExecute(executable), !gate.isCancelled else {
+            try? closingAfterLaunch?.close()
+            return Ending(outcome: .couldNotStart)
+        }
         let maximumCPU = limits.effectiveMaximumCPUSeconds
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
@@ -415,8 +455,12 @@ enum WatchedProcess {
         do {
             try process.run()
         } catch {
-            return .couldNotStart
+            try? closingAfterLaunch?.close()
+            return Ending(outcome: .couldNotStart)
         }
+        // The child holds its own copy of the pipe's write end now: this
+        // process's copy goes, or the reader would never see the pipe's end.
+        try? closingAfterLaunch?.close()
         let pid = process.processIdentifier
         // Registered and published together: a cancellation that came first
         // kills the child now, one that comes later finds the pid. It is
@@ -434,15 +478,17 @@ enum WatchedProcess {
         }
 
         let started = uptime()
-        var lastSize = size(of: output)
+        var lastProgress = progress?() ?? size(of: output)
         var lastGrowth = started
         while ended.wait(timeout: .now() + limits.pollInterval) == .timedOut {
             let now = uptime()
             let reason: KillReason?
             let currentSize = size(of: output)
-            if currentSize > lastSize {
-                lastSize = currentSize
-                // Output counts as progress only when the caller says so.
+            // The progress is the output file's size unless the caller gives
+            // its own measure; it counts only when the caller says so.
+            let currentProgress = progress?() ?? currentSize
+            if currentProgress > lastProgress {
+                lastProgress = currentProgress
                 if outputIsProgress { lastGrowth = now }
             }
             if now - started > limits.maximumSeconds {
@@ -460,18 +506,197 @@ enum WatchedProcess {
                 kill(pid, SIGKILL)
                 // SIGKILL cannot be caught; wait for the system to reap it.
                 _ = ended.wait(timeout: .now() + 10)
-                return .killed(reason)
+                return Ending(outcome: .killed(reason))
             }
         }
         // The kernel's own limits ended it: say so rather than "exited".
         if process.terminationReason == .uncaughtSignal {
             if process.terminationStatus == SIGXCPU {
-                return .killed(.usedTooMuchProcessorTime(seconds: maximumCPU))
+                return Ending(outcome: .killed(.usedTooMuchProcessorTime(seconds: maximumCPU)))
             }
             if process.terminationStatus == SIGXFSZ, let cap = limits.maximumOutputBytes {
-                return .killed(.wroteTooMuch(bytes: cap))
+                return Ending(outcome: .killed(.wroteTooMuch(bytes: cap)))
+            }
+            // Any other signal: reported as the exit it always was, and named.
+            return Ending(outcome: .exited(status: process.terminationStatus), signal: process.terminationStatus)
+        }
+        return Ending(outcome: .exited(status: process.terminationStatus))
+    }
+
+    // MARK: - Reading a child's output while it runs
+
+    /// The reading end of the pipe a child run by `runStreaming` writes its
+    /// standard output to (FMT50: the FFmpeg helper's stream of samples,
+    /// which can be gigabytes, so it is never written to a file). It reads on
+    /// a queue of its own, never on Swift's cooperative threads, and counts
+    /// what it reads, which the watchdog's stall clock follows.
+    ///
+    /// Its reads end at the pipe's end (every writer gone), and also once the
+    /// child has ended and nothing is left to read, or the run was stopped:
+    /// no other process can then hold the pipe open and keep a read waiting.
+    final class PipeReader: Sendable {
+        /// What the lock guards.
+        private struct State {
+            var bytesRead: Int64 = 0
+            var childEnded = false
+        }
+
+        /// How long one wait for the pipe lasts before the flags are looked
+        /// at again, in milliseconds.
+        static let pollMilliseconds: Int32 = 100
+
+        /// The pipe's reading end, which this reader keeps open.
+        private let handle: FileHandle
+        /// The queue the blocking reads run on, one at a time.
+        private let queue = DispatchQueue(label: "WatchedProcess.PipeReader", qos: .utility)
+        private let state = OSAllocatedUnfairLock(initialState: State())
+
+        /// A reader of the pipe whose reading end is `handle`.
+        init(_ handle: FileHandle) {
+            self.handle = handle
+        }
+
+        /// How many bytes have been read so far.
+        var bytesRead: Int64 { state.withLock { $0.bytesRead } }
+
+        /// The child has ended, or the run was stopped: once the pipe holds
+        /// nothing more, reads give the end.
+        func childEnded() {
+            state.withLock { $0.childEnded = true }
+        }
+
+        /// The next bytes in the pipe, at most `count` (at least 1); empty at
+        /// the end.
+        /// - Throws: `POSIXError` when reading fails.
+        func read(upTo count: Int) async throws -> [UInt8] {
+            let wanted = max(count, 1)
+            return try await withCheckedThrowingContinuation { continuation in
+                queue.async {
+                    continuation.resume(with: Result { try self.readWaiting(upTo: wanted) })
+                }
             }
         }
-        return .exited(status: process.terminationStatus)
+
+        /// `read(upTo:)`'s work, blocking its thread: waits (`poll`) for the
+        /// pipe to hold bytes or end, looking at the flags between waits. The
+        /// bytes are read straight into the array returned, never zeroed
+        /// first: a pipe gives far less than is asked at a time, and a
+        /// stream of samples is gigabytes.
+        private func readWaiting(upTo count: Int) throws -> [UInt8] {
+            let descriptor = handle.fileDescriptor
+            while true {
+                var waiting = pollfd(fd: descriptor, events: Int16(POLLIN), revents: 0)
+                let ready = poll(&waiting, 1, Self.pollMilliseconds)
+                if ready > 0 {
+                    var failure: Int32 = 0
+                    let bytes = [UInt8](unsafeUninitializedCapacity: count) { buffer, initialized in
+                        let got = Darwin.read(descriptor, buffer.baseAddress, count)
+                        failure = got < 0 ? errno : 0
+                        initialized = max(got, 0)
+                    }
+                    if !bytes.isEmpty {
+                        state.withLock { $0.bytesRead += Int64(bytes.count) }
+                        return bytes
+                    }
+                    if failure == 0 { return [] }
+                    if failure == EINTR || failure == EAGAIN { continue }
+                    throw POSIXError(POSIXErrorCode(rawValue: failure) ?? .EIO)
+                }
+                if ready == 0 {
+                    // Nothing waits in the pipe: once the child has ended, nothing will.
+                    if state.withLock({ $0.childEnded }) { return [] }
+                    continue
+                }
+                if errno != EINTR { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+            }
+        }
+    }
+
+    /// How long a child run by `runStreaming` may keep running after its
+    /// reader has returned, in seconds: a helper that has written all it has
+    /// ends in a few milliseconds, so this is generous.
+    static let defaultEndGraceSeconds: TimeInterval = 2
+
+    /// Runs `executable` as `run` does, with its standard output a pipe that
+    /// `read` reads while it runs (FMT50: the FFmpeg helper's stream, which
+    /// the import writes into an .m4a as it comes). The watchdog's stall
+    /// clock follows the bytes read from the pipe; its output cap follows
+    /// the file `output`, which `read` writes, when there is one (a probe
+    /// writes none), as the watchdog's look at it, four times a second. The
+    /// kernel's file-size limit (`ulimit -f`) never applies here: the child
+    /// writes a pipe, not that file, so a reader that writes a file fast
+    /// checks the cap itself, as `FFmpegAudioConverter` does. When `read`
+    /// fails, the child is killed at once. A crash is told from an exit
+    /// (`Ending.signal`).
+    ///
+    /// A reader that returns has all it wants (the FFmpeg import returns once
+    /// it has read and checked the stream's END record): the child then has
+    /// `endGraceSeconds` to end by itself, and is killed when it does not.
+    /// That kill is not the watchdog's: its `Ending` is a SIGKILL signal,
+    /// never `.killed`, so a helper that hangs after a whole stream costs
+    /// the import nothing, where only the stall limit (a minute) would have
+    /// ended it, as a failure.
+    /// - Parameter endGraceSeconds: how long a child may keep running after
+    ///   `read` has returned, in seconds.
+    /// - Returns: How the child ended, and what `read` returned or threw.
+    /// - Throws: `CancellationError` when the task is cancelled, which kills
+    ///   the child; a task already cancelled starts no child.
+    static func runStreaming<Value: Sendable>(
+        _ executable: URL,
+        arguments: [String],
+        watching output: URL?,
+        limits: Limits,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
+        uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        endGraceSeconds: TimeInterval = WatchedProcess.defaultEndGraceSeconds,
+        reading read: (PipeReader) async throws -> Value
+    ) async throws -> (ending: Ending, read: Result<Value, any Error>) {
+        try Task.checkCancellation()
+        let pipe = Pipe()
+        let writeEnd = pipe.fileHandleForWriting
+        let reader = PipeReader(pipe.fileHandleForReading)
+        let gate = ChildGate()
+        return try await withTaskCancellationHandler {
+            async let ended: Ending = withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .utility).async {
+                    let ending = watch(
+                        executable, arguments: arguments, output: output,
+                        standardOutput: writeEnd, closingAfterLaunch: writeEnd, progress: { reader.bytesRead },
+                        outputIsProgress: true, limits: limits,
+                        residentMemory: residentMemory, uptime: uptime, gate: gate
+                    )
+                    reader.childEnded()
+                    continuation.resume(returning: ending)
+                }
+            }
+            let result: Result<Value, any Error>
+            do {
+                result = .success(try await read(reader))
+            } catch {
+                result = .failure(error)
+            }
+            // A reader that gave up leaves a child that may still be writing:
+            // it is killed, rather than left to stall until the watchdog.
+            // One that returned has all it wants: the child has the grace to
+            // end by itself, then it is killed (not the watchdog's kill, so
+            // no failure) instead of waiting out the stall limit.
+            var endsTheChild: Task<Void, Never>?
+            switch result {
+            case .failure:
+                gate.cancel()
+            case .success:
+                endsTheChild = Task {
+                    try? await Task.sleep(for: .seconds(endGraceSeconds))
+                    if !Task.isCancelled { gate.cancel() }
+                }
+            }
+            let ending = await ended
+            endsTheChild?.cancel()
+            try Task.checkCancellation()
+            return (ending, result)
+        } onCancel: {
+            gate.cancel()
+            reader.childEnded()
+        }
     }
 }

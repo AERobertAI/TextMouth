@@ -12,9 +12,10 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     /// Audio the import converts (Ogg, Opus, AC-3, AMR, MP2, CAF, and the
     /// rest of `ImportAudioConverter.convertedExtensions`), named as `kind`.
     case convertedAudio(kind: String)
-    /// Audio or video that only a Mac's installed ffmpeg converts (WMA,
-    /// WebM, Matroska, and the rest of `FFmpegAudioConverter`, FMT31), named
-    /// as `kind`: the phone can start no ffmpeg, and a Mac needs one.
+    /// Audio or video that only the Mac's TextMouth converts, with the FFmpeg
+    /// it carries (WMA, WebM, Matroska, and the rest of
+    /// `FFmpegAudioConverter`, FMT31, FMT50), named as `kind`: the phone runs
+    /// no FFmpeg helper.
     case ffmpegAudio(kind: String)
     /// A Word 6 or Word 95 document, which TextMouth's own Word reader
     /// leaves to textutil.
@@ -58,10 +59,10 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
 
     /// Throws `.convertedAudio`, naming the kind of the first of `sources`,
     /// when there are any: the files an import would convert, which the
-    /// phone can't. When one of them is a file only ffmpeg reads
+    /// phone can't. When one of them is a file only FFmpeg reads
     /// (`FFmpegAudioConverter.converts(_:)`), `.ffmpegAudio` is thrown for
-    /// the first such file instead, since a Mac needs ffmpeg for it. Nothing
-    /// is thrown for none.
+    /// the first such file instead, since the Mac converts it. Nothing is
+    /// thrown for none.
     static func refuseConversion(of sources: [URL]) throws {
         if let first = sources.first(where: FFmpegAudioConverter.converts) {
             let kind = FFmpegImportWording.kindName(of: first, container: FFmpegContainer.of(fileAt: first))

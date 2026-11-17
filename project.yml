@@ -95,6 +95,56 @@ targetTemplates:
         CLANG_ENABLE_OBJC_ARC: YES
         SKIP_INSTALL: YES
 
+  # FFmpeg 9.0.2 (FMT50), the decoders of the formats macOS and iOS cannot read, and TextMouth's
+  # own session around it (TextMouthFFmpeg/Session/session.c, TextMouthFFmpegSession.h): one
+  # static library for each platform, FFmpeg for the Mac and FFmpeg_iOS for the iPhone. FFmpeg's
+  # code is not in the repository: the build phase runs Scripts/vendor/ffmpeg/build.py, which
+  # downloads the pinned release once, checks its SHA-256, and builds the libraries the import
+  # needs into $(OBJROOT)/FFmpeg/<platform> (inside DerivedData, which GitHub's runners cache), or
+  # does nothing when that build is there already. The library's own libtool step then takes
+  # FFmpeg's merged archive in (OTHER_LIBTOOLFLAGS), so a target that depends on this one links
+  # all of FFmpeg, and the system's zlib (session.c asks the linker for it), with that one
+  # dependency and no setting of its own. The session's own header changes with every FFmpeg
+  # build (textmouth_ffmpeg_build.h), so a new build recompiles it and relinks what links it.
+  # FFmpeg is LGPL 2.1 or later, linked statically as LAME and liblouis are: the app's whole
+  # source, the script among it, is public, so anyone can rebuild the app with a changed FFmpeg
+  # (Licenses/FFmpeg/README). FFmpeg is built for arm64 alone, so the targets are arm64 alone.
+  FFmpegLibrary:
+    type: library.static
+    # C alone, with no Objective-C class or category for the linker to keep.
+    requiresObjCLinking: false
+    sources:
+      - path: TextMouthFFmpeg/Session
+      - path: TextMouthFFmpeg/include/TextMouthFFmpegSession.h
+        headerVisibility: project
+      - path: TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h
+        headerVisibility: project
+    preBuildScripts:
+      - name: Build FFmpeg
+        # The system's Python 3, which every Mac with Xcode and every GitHub runner has.
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/vendor/ffmpeg/build.py" --xcode
+        # Run on every build: the script itself ends at once when the build is there.
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/include/textmouth_ffmpeg_build.h
+          - $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/lib/libtmffmpeg.a
+    settings:
+      base:
+        PRODUCT_NAME: FFmpegSession
+        ARCHS: arm64
+        # FFmpeg's headers, as system headers, so that their warnings are not shown; the
+        # session's own are.
+        SYSTEM_HEADER_SEARCH_PATHS:
+          - $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/include
+        OTHER_LIBTOOLFLAGS: $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/lib/libtmffmpeg.a
+        GCC_OPTIMIZATION_LEVEL: s
+        # The script reads the repository and writes into OBJROOT, outside what a sandboxed
+        # script phase may touch.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        SKIP_INSTALL: YES
+        # Its headers are found by their paths, never through the project's header map.
+        USE_HEADERMAP: NO
+
   # SwiftSoup 2.13.9, the HTML and XML parser, vendored in Vendor/SwiftSoup
   # (see its README.md): the release's own source with attributes changed
   # and nothing else, written by Scripts/vendor/swiftsoup/make_vendor.py. A
@@ -223,6 +273,24 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/swift-cmark
+      # FFmpeg's notices (FMT50), which the FFmpeg helper links: the release's own LICENSE.md and
+      # COPYING.LGPLv2.1, unchanged, and the README of Scripts/vendor/ffmpeg/build.py (the
+      # release, its SHA-256, and the configure lines).
+      - path: Vendor/package-licenses/FFmpeg/LICENSE.md
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
+      - path: Vendor/package-licenses/FFmpeg/COPYING.LGPLv2.1
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
+      - path: Vendor/package-licenses/FFmpeg/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
     settings:
       groups:
         - appVersion
@@ -238,9 +306,10 @@ targets:
         GENERATE_INFOPLIST_FILE: false
         # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap),
         # the exception catcher's (Vendor/ObjCExceptionCatcher/include/module.modulemap),
-        # and the braille helper's protocol (TextMouthBraille/include/module.modulemap),
-        # which the helper's main.c includes too.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
+        # the braille helper's protocol (TextMouthBraille/include/module.modulemap),
+        # which the helper's main.c includes too, and the FFmpeg helper's stream
+        # (TextMouthFFmpeg/include/module.modulemap), which its C includes too.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
       # The Release app, which `make build` packages and `make install`
       # copies, is built to be small. Debug, where the hosted tests run, is
       # left as it is.
@@ -306,6 +375,14 @@ targets:
         codeSign: true
         copy:
           destination: executables
+      # The FFmpeg helper (FMT50), copied into Contents/MacOS as the braille helper is; never
+      # linked: the app reads its stream (FFmpegHelperStream), so FFmpeg never runs in the app.
+      - target: TextMouthFFmpeg
+        link: false
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
   # LAME 3.100's MP3 encoder (FR04), vendored in Vendor/lame and built as a
   # static library the app links, so TextMouth writes MP3 itself
   # (MP3Encoder) rather than only through an installed ffmpeg.
@@ -355,6 +432,18 @@ targets:
   ObjCExceptionCatcher_iOS:
     templates:
       - ObjCExceptionCatcherLibrary
+    platform: iOS
+    deploymentTarget: "26.0"
+  # FFmpeg and TextMouth's session around it, for each app (the FFmpegLibrary template's comment,
+  # above, says what it is). The Mac's FFmpeg helper links FFmpeg; the iPhone app, which can run
+  # no helper, will link FFmpeg_iOS in its own process with one dependency entry.
+  FFmpeg:
+    templates:
+      - FFmpegLibrary
+    platform: macOS
+  FFmpeg_iOS:
+    templates:
+      - FFmpegLibrary
     platform: iOS
     deploymentTarget: "26.0"
   # SwiftSoup, for each app (the template's comment, above, says what it is).
@@ -473,9 +562,10 @@ targets:
         # manifest it writes allows several scenes, and the plist above holds
         # a manifest of one scene at a time instead.
         CODE_SIGN_STYLE: Automatic
-        # The LAME, exception-catcher, and braille-protocol modules, as the
-        # Mac target finds them.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
+        # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream
+        # modules, as the Mac target finds them (the FFmpeg session's module,
+        # in the same folder, needs the FFmpeg_iOS dependency to link).
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
     dependencies:
       - package: ZIPFoundation
       - target: SwiftSoup_iOS
@@ -609,6 +699,37 @@ targets:
           STRIP_INSTALLED_PRODUCT: true
           STRIP_STYLE: all
           DEAD_CODE_STRIPPING: true
+  # The FFmpeg helper (FMT50): TextMouthFFmpeg/main.c, TextMouth's own code, a command-line
+  # program that links FFmpeg (the FFmpeg target: FFmpeg and TextMouth's session around it) and
+  # reads one file per run, writing what it holds and its sound to standard output in the stream
+  # of TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h. The app runs it under its watchdog
+  # (FFmpegHelperStream, through WatchedProcess), so a hang or a crash in FFmpeg costs one run of
+  # the helper, never the app, which is not sandboxed. The app target copies it into
+  # Contents/MacOS. Optimized for size, and stripped in the Release configuration as the app is;
+  # FFmpeg itself is built for speed (Scripts/vendor/ffmpeg/build.py, ENABLE_SMALL). arm64
+  # alone, as FFmpeg is built.
+  TextMouthFFmpeg:
+    type: tool
+    platform: macOS
+    sources:
+      - path: TextMouthFFmpeg/main.c
+    dependencies:
+      - target: FFmpeg
+    settings:
+      base:
+        PRODUCT_NAME: TextMouthFFmpeg
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        CODE_SIGN_IDENTITY: "-"
+        ARCHS: arm64
+        USE_HEADERMAP: NO
+        GCC_OPTIMIZATION_LEVEL: s
+        SKIP_INSTALL: YES
+      configs:
+        Release:
+          DEPLOYMENT_POSTPROCESSING: true
+          STRIP_INSTALLED_PRODUCT: true
+          STRIP_STYLE: all
+          DEAD_CODE_STRIPPING: true
   TextMouthProductionTests:
     type: bundle.unit-test
     platform: macOS
@@ -644,8 +765,8 @@ targets:
         INFOPLIST_FILE: TextMouthProductionTests/Info.plist
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
-        # The LAME, exception-catcher, and braille-protocol modules, which `@testable import TextMouth` may load.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
+        # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream modules, which `@testable import TextMouth` may load.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
     dependencies:
       - target: TextMouth
   # The iPhone app's own tests, run in the iOS simulator by
@@ -847,8 +968,8 @@ targets:
         # iPhone app's own scheme, in the TextMouthiOS target, names it.
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
-        # The LAME, exception-catcher, and braille-protocol modules, which `@testable import TextMouth` may load.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
+        # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream modules, which `@testable import TextMouth` may load.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
     dependencies:
       - target: TextMouthiOS
   # The iPhone app driven from outside, in the simulator, by XCUITest: what

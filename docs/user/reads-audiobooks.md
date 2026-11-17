@@ -95,7 +95,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - The iPhone refuses these formats.
 
 ## Formats only ffmpeg reads
-<!-- id: formats-only-ffmpeg-reads; keys: ffmpeg, ffprobe, WMA, Speex, Musepack, WebM, Matroska, brew install ffmpeg; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFprobeReport.swift, TextMouth/Models/FFmpegImportWording.swift -->
+<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift -->
 
 - TextMouth converts, as it is imported, the audio of these formats, which macOS cannot read, with the ffmpeg installed on the Mac:
   - Windows Media Audio (.wma, .asf), and the sound of Windows Media video (.wmv);

@@ -130,10 +130,24 @@ struct AudioFileInfo: Equatable, Sendable {
     ///   an empty format.
     static func parse(xml: Data) -> AudioFileInfo? {
         let collector = FactCollector()
-        let parser = XMLParser(data: xml)
+        let parser = XMLParser(data: validUTF8(xml))
         parser.delegate = collector
         guard parser.parse() else { return nil }
         return collector.info()
+    }
+
+    /// `xml` with every byte sequence that is not UTF-8 replaced by U+FFFD,
+    /// every ASCII byte kept. afinfo prints the path it was given as UTF-8
+    /// in `file_name`, and again in the `filename` entry of each alert (a
+    /// property it could not read, such as a mono file's channel layout),
+    /// where a letter outside ASCII ("é", in a book's folder named by its
+    /// title) comes out as bytes that are not UTF-8 at all; XMLParser then
+    /// refuses the whole answer. No alert is read, and the markup is ASCII,
+    /// so the repair changes no fact.
+    private static func validUTF8(_ xml: Data) -> Data {
+        // Valid UTF-8, the common case, is passed on as it came.
+        if String(data: xml, encoding: .utf8) != nil { return xml }
+        return Data(String(decoding: xml, as: UTF8.self).utf8)
     }
 
     /// Collects the few elements `parse` wants from afinfo's XML, by their

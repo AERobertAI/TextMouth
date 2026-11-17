@@ -1,11 +1,13 @@
 import Foundation
 import os
 
-/// An ffmpeg executable installed on this Mac (FR04), which TextMouth runs,
-/// when the user's setting allows, for every filter ffmpeg has, and to write
-/// MP3 should the LAME encoder built into TextMouth be unavailable
-/// (`MP3Route`). TextMouth bundles nothing of ffmpeg: it only looks for one,
-/// in Homebrew's and MacPorts' folders and along PATH.
+/// An ffmpeg executable installed on this Mac (FR04), which the audio editor
+/// runs, when the user's setting allows ("Use ffmpeg for filters"), for every
+/// filter ffmpeg has, and to write MP3 should the LAME encoder built into
+/// TextMouth be unavailable (`MP3Route`). It only looks for one, in
+/// Homebrew's and MacPorts' folders and along PATH. The import does not use
+/// it: it converts with the FFmpeg libraries TextMouth carries, in its own
+/// helper program (`FFmpegAudioConverter`, FMT50), which has no filters.
 ///
 /// It runs as a separate process, never on the main thread, with its
 /// standard input closed and its errors read back: a refusal becomes
@@ -31,20 +33,6 @@ struct FFmpeg: Equatable, Sendable {
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> FFmpeg? {
         locateProgram(named: "ffmpeg", in: locations, environment: environment).map(FFmpeg.init(executable:))
-    }
-
-    /// The ffprobe that comes with this ffmpeg (FMT31), which the import asks
-    /// what a file holds: the executable named ffprobe in this ffmpeg's own
-    /// folder, as Homebrew and MacPorts install the two side by side; else
-    /// the first in `locations` (by default the standard ones, with
-    /// "ffprobe" for "ffmpeg") or along the PATH in `environment`. Nil when
-    /// there is none. Reads only file metadata; always nil on iOS.
-    func probe(
-        in locations: [String] = FFmpeg.standardLocations.map { ($0 as NSString).deletingLastPathComponent + "/ffprobe" },
-        environment: [String: String] = ProcessInfo.processInfo.environment
-    ) -> URL? {
-        let beside = executable.deletingLastPathComponent().appendingPathComponent("ffprobe").path
-        return Self.locateProgram(named: "ffprobe", in: [beside] + locations, environment: environment)
     }
 
     /// The first executable file (not a folder) named `name` at one of

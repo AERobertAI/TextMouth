@@ -60,6 +60,7 @@ FILES = {
     "TextMouth/Resources/R.txt": "resource\n",
     "Vendor/lame/include/lame.h": "// h\n",
     "TextMouthBraille/include/b.h": "// h\n",
+    "TextMouthFFmpeg/include/f.h": "// h\n",
     "TextMouthProductionTests/FirstTests.swift": "// first\n",
     "TextMouthProductionTests/Info.plist": "<plist/>\n",
     "TextMouthProductionTests/performance-baselines.json": "{}\n",

@@ -420,9 +420,9 @@ struct ImportedFileMetadata {
     /// empty tags are only the type checker's fallback. A file of one of
     /// TextMouth's own readers' formats is read by their tag reader, as
     /// AVFoundation reads none of its tags and the import names the book
-    /// before the file is converted. A file only ffmpeg reads is asked of
-    /// ffprobe with the tool this thread sees (FMT31), read here, since the
-    /// wait's task does not inherit it.
+    /// before the file is converted. A file only FFmpeg reads is asked of
+    /// TextMouth's FFmpeg helper with the tool this thread sees (FMT31,
+    /// FMT50), read here, since the wait's task does not inherit it.
     private static func audioTags(of url: URL) -> AudioMetadata {
         if let own = OwnAudioConverter.tags(of: url) {
             return AudioMetadata(title: own.title, artist: own.artist, album: own.album, genre: own.genre, year: own.date)

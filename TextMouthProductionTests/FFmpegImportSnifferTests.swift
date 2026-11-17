@@ -153,10 +153,10 @@ final class FFmpegImportSnifferTests: XCTestCase {
     }
 
     /// Which tracks of a book of several are left out (review9 finding 2):
-    /// without ffmpeg, or on the iPhone, every file only ffmpeg reads; with
-    /// it, only a file whose bytes are of no container it reads. MP3 and Ogg
-    /// Vorbis are never left out, and ffmpeg is looked for only when a track
-    /// is one of its files.
+    /// on the iPhone, or with the app's helper missing, every file only
+    /// FFmpeg reads; with it, only a file whose bytes are of no container it
+    /// reads. MP3 and Ogg Vorbis are never left out, and the helper is looked
+    /// for only when a track is one of its files.
     func testWhichTracksABookOfSeveralLeavesOut() throws {
         let folder = try makeSandboxDirectory("FFmpegLeftOut")
         let avi = folder.appendingPathComponent("Trailer.avi")
@@ -167,17 +167,17 @@ final class FFmpegImportSnifferTests: XCTestCase {
         let vorbis = try requireFile("audio/ogg-vorbis-tone.ogg")
         let tracks = [mp3, avi, vorbis, report]
 
-        let missing = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { .ffmpegMissing }
-        XCTAssertEqual(missing.needingFFmpeg, [avi])
+        let missing = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { .missing }
+        XCTAssertEqual(missing.needingConverter, [avi])
         XCTAssertEqual(missing.holdingNoSound, [report])
-        XCTAssertEqual(missing.located, .ffmpegMissing)
+        XCTAssertEqual(missing.located, .missing)
         let phone = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { nil }
         XCTAssertEqual(phone.all, [avi, report])
         XCTAssertNil(phone.located)
-        let installed = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { .found(self.standInPrograms) }
-        XCTAssertEqual(installed.all, [report])
+        let bundled = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { FFmpegAudioConverter.locateBundled() }
+        XCTAssertEqual(bundled.all, [report])
         let none = FFmpegAudioConverter.tracksToLeaveOut(of: [mp3, vorbis]) {
-            XCTFail("ffmpeg is looked for only when a track is one of its files")
+            XCTFail("the helper is looked for only when a track is one of its files")
             return nil
         }
         XCTAssertEqual(none, FFmpegAudioConverter.TracksLeftOut())

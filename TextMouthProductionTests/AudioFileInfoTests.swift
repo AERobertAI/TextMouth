@@ -197,6 +197,38 @@ final class AudioFileInfoTests: XCTestCase {
         XCTAssertFalse(info.isLossless)
     }
 
+    /// afinfo prints the path it was given in the alert of a property it
+    /// could not read (a mono ALAC file's channel layout) with each letter
+    /// outside ASCII as bytes that are not UTF-8: "é" as C3 C2 A9. A book
+    /// whose folder is named by such a title was unreadable to afinfo; its
+    /// facts are read all the same.
+    func testReadsTheFactsWhenAfinfoPrintsAPathThatIsNotUTF8() throws {
+        let alert = Array("""
+        \t\t\t\t<alerts>
+        \t\t\t\t\t<alert level="WARNING" code="'cmap'">
+        \t\t\t\t\t\t<description>Warning: AudioFileGetPropertyInfo kAudioFilePropertyChannelLayout failed</description>
+        \t\t\t\t\t\t<alert_info>
+        \t\t\t\t\t\t\t<entry key="filename">Caf
+        """.utf8) + [0xC3, 0xC2, 0xA9] + Array("""
+        -x.tmb/tones.m4a</entry>
+        \t\t\t\t\t\t</alert_info>
+        \t\t\t\t\t</alert>
+        \t\t\t\t</alerts>
+        """.utf8)
+        let tracks = track(channels: "1", rate: "8000", format: "alac")
+        let document = try XCTUnwrap(String(data: xml(tracks: tracks, fileType: "m4af", fileName: "Café-x.tmb/tones.m4a"), encoding: .utf8))
+        // The alert goes inside the track, before its end, as afinfo prints it.
+        let end = try XCTUnwrap(document.range(of: "</track>", options: .backwards))
+        let bytes = Array(document[..<end.lowerBound].utf8) + alert + Array(document[end.lowerBound...].utf8)
+        XCTAssertNil(String(data: Data(bytes), encoding: .utf8), "the fixture holds bytes that are not UTF-8, as afinfo's did")
+
+        let info = try XCTUnwrap(AudioFileInfo.parse(xml: Data(bytes)))
+        XCTAssertEqual(info.formatID, "alac")
+        XCTAssertEqual(info.channels, 1)
+        XCTAssertEqual(info.sampleRate, 8_000)
+        XCTAssertEqual(info.fileType, "m4af")
+    }
+
     /// Only the first track of the first file counts.
     func testReadsOnlyTheFirstTrack() throws {
         let info = try XCTUnwrap(AudioFileInfo.parse(xml: xml(

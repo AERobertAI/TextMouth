@@ -406,6 +406,9 @@ final class LogContentPolicyTests: XCTestCase {
         // markers or Ogg comments gave (FMT17), and an audio editor's WAVE, AIFF, or CAF file written without
         // its chapter markers (FMT11), each with why.
         "AUDIO_CHAPTERS_NOT_KEPT", "AUDIO_MARKERS_NOT_WRITTEN",
+        // The FFmpeg helper's decoder refused packets or frames of a damaged file it converted all the same
+        // (FMT50), with how many of each.
+        "AUDIO_DECODER_REFUSED",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was
