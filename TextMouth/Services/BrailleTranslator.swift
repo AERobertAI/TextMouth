@@ -741,6 +741,13 @@ enum BrailleTranslator {
     /// on the caller's thread, as `tool` is.
     @TaskLocal static var engine: InProcessEngine = libraryEngine
 
+    /// Whether braille is read back by liblouis alone, without TextMouth's
+    /// reading passes (the library's `back-liblouis`), which only tests ask
+    /// for, to show what a pass changes: the iPhone's counterpart of the
+    /// Mac's helper run in that mode by a test's stand-in `Tool`. Read on the
+    /// caller's thread, as `engine` is.
+    @TaskLocal static var readsByLiblouisAlone = false
+
     /// About how many bytes of records one call of the library is sent: a
     /// quarter of a MiB, so that a call holds little more than its batch and
     /// its output, which may grow at most to the Mac's cap on that batch (32
@@ -893,7 +900,12 @@ enum BrailleTranslator {
         guard let folder = Tool.helper.tablesFolder?.path else {
             throw logged(.failed, mode, table, "the bundled tables are missing")
         }
-        let libraryMode = (direction.map { $0 == .printToBraille ? TMB_MODE_FORWARD : TMB_MODE_BACK } ?? TMB_MODE_CHECK).rawValue
+        let libraryMode: UInt32
+        switch direction {
+        case .printToBraille: libraryMode = TMB_MODE_FORWARD.rawValue
+        case .brailleToPrint: libraryMode = (readsByLiblouisAlone ? TMB_MODE_BACK_LIBLOUIS : TMB_MODE_BACK).rawValue
+        case nil: libraryMode = TMB_MODE_CHECK.rawValue
+        }
         let outcome: LibraryOutcome
         do {
             outcome = try engine.run(limit: seconds, cancelledBy: cancellation) { call in
