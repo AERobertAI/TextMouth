@@ -2,7 +2,7 @@
 id: FU-FFMPEG
 title: ffmpeg import's leftovers
 kind: follow-up
-status: open
+status: in-progress
 priority: P2
 platform: both
 assignee: ffmpegfix

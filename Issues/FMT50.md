@@ -2,7 +2,7 @@
 id: FMT50
 title: A bundled ffmpeg
 kind: format
-status: open
+status: in-progress
 priority: P2
 platform: both
 assignee: ffmpegfix
