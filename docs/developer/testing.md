@@ -80,11 +80,11 @@ Delete a kept sandbox when you are done with it.
   It keeps each transcript in the folder's transcripts folder, so a second run doesn't transcribe again, and writes measurement.md, the document's tables, and differences.json, every difference with its confidences and context.
   `TEST_RUNNER_TEXTMOUTH_TRANSCRIPT_MEASUREMENT_LOCALE=en-US,en-GB` measures in both Englishes.
   It downloads and plays nothing.
-- The tests that need an installed ffmpeg, which TextMouth looks for in Homebrew's and MacPorts' folders and along PATH, skip on a Mac without it, as they do on GitHub's runners, which have none:
+- The two tests that need an installed ffmpeg, which TextMouth looks for in Homebrew's and MacPorts' folders and along PATH, skip on a Mac without it, as they do on GitHub's runners, which have none:
   - one that writes MP3 through it, the route MP3 takes only should the LAME built in fail to start;
-  - one that runs every premade filter preset through it and through TextMouth's own filters and compares them;
-  - and the three of `FFmpegImportRealTests`, which import every sample of a format only ffmpeg reads and check its chapters, tags, and length against ffprobe's.
-  Only a run on a Mac with ffmpeg and ffprobe proves them, so the full Mac suite at a merge is their gate.
+  - and one that runs every premade filter preset through it and through TextMouth's own filters and compares them.
+  Only a run on a Mac with ffmpeg proves them, so the full Mac suite at a merge is their gate.
+  The import's tests need none, since the app carries its own FFmpeg helper (see [Formats only ffmpeg reads](testing-formats.md#formats-only-ffmpeg-reads)).
 - The opt-in benchmarks of the performance work (below).
 - `LibraryTypeSelectProbeTests`, which types into hosted lists to find out what AppKit's type select does (for the Leading articles setting), runs only on request and only on GitHub's runner.
   It skips unless the test host has both `TEXTMOUTH_TEST_TIME_SCALE`, which marks the runner, and `TEXTMOUTH_TYPE_SELECT_PROBE`, since a key AppKit turned down would make the Mac beep, and no test may make a sound.
@@ -114,14 +114,15 @@ Delete a kept sandbox when you are done with it.
   The performance baselines tests skip too, since their baselines belong to the development Mac's model (so a request for strict baselines checks no baseline on a runner).
 
 ### A test that may crash the host
-<!-- id: test-may-crash-host; keys: skipUnlessGitHubRunner, isGitHubRunner, TEXTMOUTH_TEST_TIME_SCALE, Objective-C exception, stack overflow, crash report, no-crash rule; src: TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/ObjCExceptionTests.swift, TextMouthProductionTests/AudioEditRenderingTests+WideSamples.swift, TextMouthProductionTests/MarkdownDepthLimitTests.swift, TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift, Scripts/agents/run-on-runner.py, TextMouthProductionTests/StackProbe.swift -->
+<!-- id: test-may-crash-host; keys: skipUnlessGitHubRunner, isGitHubRunner, TEXTMOUTH_TEST_TIME_SCALE, Objective-C exception, stack overflow, crash report, no-crash rule; src: TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/ObjCExceptionTests.swift, TextMouthProductionTests/AudioEditRenderingTests+WideSamples.swift, TextMouthProductionTests/MarkdownDepthLimitTests.swift, TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift, Scripts/agents/run-on-runner.py, TextMouthProductionTests/StackProbe.swift, TextMouthProductionTests/FFmpegHelperHostileFileTests.swift -->
 
 - A test that crashes the test host when the code it checks is broken runs on GitHub's runner only, because a crash on the user's Mac puts macOS's crash report on their screen, and on a runner it is only a failed run.
   Such a test raises an Objective-C exception on purpose with only the code under test to catch it, or fills a thread's stack with a pattern to measure how much of it a walk of a deep tree uses.
 - `TestMachine.skipUnlessGitHubRunner(_:)` (HostedTestIsolationSupport.swift) is the one way to keep it off the user's Mac: the test calls it first, and it skips with the reason it is given anywhere but on a runner.
   It keys on `TEXTMOUTH_TEST_TIME_SCALE`, which `Scripts/agents/run-on-runner.py` sets for every test host it starts and nothing sets on the Mac (`TestMachine.isGitHubRunner`).
   In the iPhone bundle, which shares the file and runs only on GitHub, it is always true.
-- Its users: the two raising tests of `ObjCExceptionTests` and of `AudioEditRenderingTests+WideSamples`, the stack tests of `MarkdownDepthLimitTests` and `ExportDocumentWalkerNestingTests`.
+- Its users: the two raising tests of `ObjCExceptionTests` and of `AudioEditRenderingTests+WideSamples`, the stack tests of `MarkdownDepthLimitTests` and `ExportDocumentWalkerNestingTests`, and `FFmpegHelperHostileFileTests`, which give the FFmpeg helper damaged media.
+  The helper ends itself with _exit on a fatal signal, which should leave no crash report, but that is only tried on a runner.
   The type-select probe uses it too, though for a beep and not a crash.
   StackProbe (TextMouthProductionTests/StackProbe.swift) measures a walk's stack use instead of surviving an overflow: it runs the code on a thread of 8 MiB whose unused stack it filled with a pattern, and says how far the code wrote past a margin.
   A fix for a crash is shown by a break proof on GitHub: a scratch branch with the fix removed, sent by hand, never run on the Mac.

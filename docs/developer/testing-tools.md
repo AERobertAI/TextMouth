@@ -29,6 +29,7 @@ An agent commits its work on its branch and asks the train to test it (`build-tr
 A test that hangs doesn't hold the train: when a run writes nothing to its log for 15 minutes, the train kills its test host, which fails that test as a crash, and the run goes on with the tests after it.
 That watches only the train's own copy of the app.
 
+- `--ios-size` has the train's GitHub run also build the iPhone app for a device and report its size (see [Building TextMouthiOS](building-ios.md)).
 - Each train merges the commit each request names, not the branch's newest, onto a shared base, `train/base`, in a worktree of its own.
   It builds once, in one build folder of its own that is kept between trains, so each build is incremental, with two jobs, which needs about half the memory.
   It runs the union of the classes and areas asked for, and posts each agent its result on the message board.

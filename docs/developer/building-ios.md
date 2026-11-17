@@ -97,7 +97,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
 It names the runner's own architecture (`ARCHS=arm64`), since both would compile every file twice.
   It writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
   A request that says `"ios": false` leaves it out.
-  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`: about 1,960 tests, 19 its own and the rest the Mac's, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
+  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`: about 1,980 tests, 30 its own and the rest the Mac's, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
   It does so when the request asks for them (every full suite, the phone area, or a class of either bundle).
   The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: no iPhone test of either bundle needs a simulator on this Mac.
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.
