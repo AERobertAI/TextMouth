@@ -4,16 +4,17 @@
 Part of [TextMouth's documentation](../../README.md).
 
 TextMouth itself is under the MIT License, in LICENSE at the top of the repository.
-It builds in three libraries by other authors (LAME, liblouis, and SwiftSoup), follows a fourth author's code closely in its Kindle reader, and uses two Swift packages, ZIPFoundation and swift-cmark.
-The licence files of all nine ship inside the Mac app, in Contents/Resources/Licenses, one folder for each:
+It builds in four libraries by other authors (LAME, liblouis, SwiftSoup, and FFmpeg), follows a fourth author's code closely in its Kindle reader, and uses two Swift packages, ZIPFoundation and swift-cmark.
+The licence files of all ten ship inside the Mac app, in Contents/Resources/Licenses, one folder for each:
 - Licenses/LAME holds COPYING and LICENSE;
 - Licenses/liblouis holds COPYING.LESSER and README;
 - Licenses/foliate-js and Licenses/SwiftSoup hold LICENSE;
 - Licenses/ZIPFoundation holds LICENSE;
+- Licenses/FFmpeg holds LICENSE.md, COPYING.LGPLv2.1, and a README that names the release, its patches, and its configure lines;
 - Licenses/swift-cmark holds COPYING;
 - Licenses/TrueAudio holds COPYRIGHT and README, Licenses/WavPack holds COPYING, and Licenses/MonkeysAudio holds License.txt: the notices of the decoders TextMouth's own TTA, WavPack, and Monkey's Audio readers are ported from.
 
-Both apps ship the same folders except liblouis, whose braille translator it does not link.
+Both apps ship the same folders except liblouis, whose braille translator it does not link, and FFmpeg, which the iPhone app does not link yet (FMT54).
 The file project.yml copies them from Vendor, never into the repository a second time, so each stays its author's own text.
 The package and decoder licences are in Vendor/package-licenses, unchanged from their sources.
 BundledLicenseTests and BundledLicenseIOSTests check that they reach the built apps.
@@ -79,6 +80,22 @@ MOBIHeaders.swift and MOBIPalmDatabase.swift take only the header fields' offset
 
 - No JavaScript is in the app or the repository: Vendor/foliate-js holds the licence alone.
 - The licence asks that its notice go with every copy of the code or of a substantial part of it, which the app carries in Licenses/foliate-js (above).
+
+## FFmpeg, the converter of formats macOS cannot read
+<!-- id: ffmpeg-bundled; keys: FFmpeg, libavformat, LGPL 2.1, Credits.rtf, patches, CVE, build.py; src: Scripts/vendor/ffmpeg/build.py, Scripts/vendor/ffmpeg/patches/, Vendor/package-licenses/FFmpeg/README, Vendor/package-licenses/FFmpeg/LICENSE.md, TextMouth/Resources/Credits.rtf, TextMouthProductionTests/BundledLicenseTests.swift, project.yml; status: planned; issues: FU01, FU-FFMPEG2 -->
+
+FFmpeg 9.0.2 (https://ffmpeg.org), under the GNU Lesser General Public License, version 2.1 or later, is built into the helper TextMouthFFmpeg, which converts WMA, Matroska, WebM, and the other formats macOS cannot read.
+The build is in [Building TextMouth](building.md), and the helper in [Imports: audio only FFmpeg reads](../architecture/state/imports-audio-ffmpeg.md).
+
+- Its code is not in the repository: `Scripts/vendor/ffmpeg/build.py` downloads the release, checks it, and builds it, so the app can be rebuilt with a changed FFmpeg.
+- No part under the GPL is built: configure is given none of --enable-gpl, --enable-nonfree, and --enable-version3.
+- The release is changed in one way: five upstream patches for CVEs the National Vulnerability Database lists as open in 9.0.2 (apedec, mpc7, cook, flac_parser, and vorbis_parser), each kept unchanged in Scripts/vendor/ffmpeg/patches and pinned by its SHA-256.
+  Drop them when FFmpeg 9.0.3 includes them (FU01): empty PATCHES, delete the folder, regenerate the README with `build.py --readme`, and change Credits.rtf and BundledLicenseTests to match.
+  A patch the new release lacks stays.
+- The app carries FFmpeg's own LICENSE.md and COPYING.LGPLv2.1 and the README, in Licenses/FFmpeg, and a credit in the About window (Credits.rtf), with the sentence FFmpeg's legal checklist asks for word for word.
+  The credit says "five upstream patches" and does not list their hashes, which VoiceOver would read aloud; the README names each by its commit and CVE.
+  BundledLicenseTests checks both.
+- LGPL 2.1 section 6 asks that the source travel with a binary carrying FFmpeg, which holds while only source is published; before a binary leaves the project (a release download, TestFlight), host the source tarball beside it or give a written offer (FU-FFMPEG2).
 
 ## The Swift packages
 <!-- id: swift-packages; keys: ZIPFoundation, swift-cmark, MarkdownTree, Package.resolved, exact version; src: project.yml, Vendor/package-licenses/swift-cmark/COPYING, TextMouth/Parsers/MarkdownTree.swift -->

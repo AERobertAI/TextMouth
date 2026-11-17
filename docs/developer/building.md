@@ -95,15 +95,45 @@ Run these from the repository root:
   Each is described under [The iOS app](building-ios.md).
 - `make check-ios-plist` fails when the iOS app's `TextMouth/Platform/iOS/Info.plist` is not what `Scripts/ios/sync-info-plist.py` writes from the Mac's `TextMouth/Resources/Info.plist`.
   Run `python3 -I Scripts/ios/sync-info-plist.py` after changing the Mac's plist, then commit both (see [The two apps and the platform folders](../architecture/platforms.md)).
+- `make ios-size` builds the iPhone app for a device under the heavy-work lock and measures it (see [The iPhone app's size](building-ios.md)).
 - `make xcode` regenerates the project and opens it in Xcode.
 - `make clean` removes the build products.
 - `make help` lists these targets.
+
+## The FFmpeg build
+<!-- id: ffmpeg-build; keys: FFmpeg, build.py, libtmffmpeg.a, Build FFmpeg, FFmpegLibrary, tmff-cc, configure, patches; src: Scripts/vendor/ffmpeg/build.py, Scripts/vendor/ffmpeg/test_build.py, Scripts/vendor/ffmpeg/patches/, project.yml, Scripts/check.sh; status: incomplete; issues: FMT54, FU-FFMPEG2, FU01 -->
+
+FFmpeg is not in the repository.
+The targets FFmpeg and FFmpeg_iOS (the template FFmpegLibrary of project.yml) each run a build phase, Build FFmpeg, which calls `Scripts/vendor/ffmpeg/build.py --xcode`.
+They then merge the result, `libtmffmpeg.a`, into the library they link, which the helper TextMouthFFmpeg and, for the iPhone, the app link.
+
+- **What it builds** is FFmpeg 9.0.2, pinned by its URL, SHA-256, and size, for arm64 alone, as static libraries (libavformat, libavcodec, libswresample, and libavutil).
+  Only the demuxers, decoders, and parsers the import reads are built (research/FFMPEG-MINIMAL-RESEARCH-2026-11-16.md), under the LGPL 2.1 or later.
+  `--enable-small` is off: it decoded 6% to 27% slower to save about 0.6 MB.
+- **It downloads from** ffmpeg.org first, then FFmpeg's GitHub archive of the tag n9.0.2, which has a SHA-256 of its own.
+  The two trees differ only in files the tag's archive holds and the release lacks (git's own) and one file the release holds (VERSION); a comment in build.py names each.
+  GitHub does not promise an archive's bytes: if they change, that source fails its pin and ffmpeg.org still serves.
+  A file that matches no pin is never built, and a tarball found in `build/ffmpeg/download` of the main checkout is copied, so every worktree of a Mac shares one download.
+- **The patches** are five upstream commits, kept unchanged in `Scripts/vendor/ffmpeg/patches/` and pinned by SHA-256 in `PATCHES`, are applied in order, with no fuzz, to the unpacked release, and are part of every build's key.
+  Drop them when 9.0.3 holds them (FU01).
+- **The work folder** is `$OBJROOT/FFmpeg`, inside DerivedData, so GitHub's cache keeps it:
+  - `download/` holds the tarballs;
+  - `source/<key>/ffmpeg-<version>/` holds the release unpacked and patched once, where the key is of the release's SHA-256 and the patches, so a changed list of patches unpacks afresh;
+  - `build-<platform>-<key>/` holds configure and make;
+  - `<platform>/include` and `<platform>/lib/libtmffmpeg.a` are what the targets read, with `build.json` and `key` written last.
+  The script deletes nothing: it writes fixed folders and replaces only its own published files.
+- **A build again** happens when the key changes; it holds the pin, the configure line, the platform, the script's RECIPE number, the compiler's version, and the patches.
+  A build with the same key ends in 0.16 s; a cold build took about 34 s on the development Mac and 1.5 to 2 minutes on a GitHub runner.
+  Each DerivedData keeps about 150 MB for it, 125 MB of which is the tarball and the unpacked source (FU-FFMPEG2 would share them).
+- **No path of this Mac** is in the result: the compiler is a wrapper, `tmff-cc`, that maps the work folder away, and the build fails when `strings` finds a home folder, checkout, temporary folder, or work folder in the archive or the headers; `make check` repeats the test on the app.
+- `python3 -I -B Scripts/vendor/ffmpeg/build.py --readme` writes the notice both apps ship, and `test_build.py` (in `make check-selftest`) tests the script without downloading.
 
 ## The Mac app's size
 <!-- id: mac-app-size; keys: app size, 30 MB limit, 40 MB strict limit, Osize, linker map, LD_GENERATE_MAP_FILE, SwiftSoup; src: Scripts/check.sh, project.yml, Makefile, Scripts/agents/run_locked.py, TextMouth/Views/Library/LibraryView.swift -->
 
 The user's real limit for the Mac app is 30 MB, and 40 MB a strict one; the 20 MB of before was a target to optimize under.
 `make check` warns above 30 MB and fails the app above 40 MB (see The make check gate, below).
+The FFmpeg helper took the Release app from 18.5 MB (version 0.5.0) to 21.0 MB (21,008,340 bytes), 2.5 MB of it the helper; the iPhone app is measured by `make ios-size` (see [Building TextMouthiOS for the simulator](building-ios.md)).
 Compiling the app and its packages for size (`-Osize`, and no export trie; see Make targets, above) brought the Release app from 23,545,276 bytes to 18,983,332 bytes, 19.0 MB, its executable from 22,820,048 to 18,258,016 bytes, in 35 files, measured by `make check`.
 Vendoring SwiftSoup then brought the Release app to 17,888,466 bytes.
 The price was slower HTML parsing at import, about 4 ms more for each megabyte of EPUB, since the SwiftSoup package parsed 43% slower at `-Osize`.
@@ -218,7 +248,7 @@ The script, Scripts/set-version.sh:
   Its cases cover both bumps (carries such as 0.2.9 to 0.2.10, numbers beyond 64 bits, and a project.yml whose version cannot be read) and the Makefile's version targets.
 
 ## The make check gate
-<!-- id: make-check-gate; keys: check.sh, reproducible build, APP_SIZE_LIMIT_MB, APP_SIZE_WARNING_MB, SIGN_APP, check-selftest, --without-tests, dry run; src: Scripts/check.sh, Scripts/check-selftest.sh, Scripts/make-signing-identity.sh, Scripts/agents/run-on-runner.py, .github/workflows/check.yml, .github/workflows/tests.yml, project.yml, Makefile -->
+<!-- id: make-check-gate; keys: check.sh, reproducible build, APP_SIZE_LIMIT_MB, APP_SIZE_WARNING_MB, SIGN_APP, check-selftest, --without-tests, dry run; src: Scripts/check.sh, Scripts/check-selftest.sh, Scripts/make-signing-identity.sh, Scripts/agents/run-on-runner.py, .github/workflows/check.yml, .github/workflows/tests.yml, project.yml, Makefile; status: incomplete; issues: TL05 -->
 
 **Reproducible builds and `make check`.**
 TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark.
@@ -230,7 +260,7 @@ Run `make check` before merging.
 - and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
 
 It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 30 MB limit".
-It warns, without failing, when the app is larger than 30 MB, and fails when it is larger than 40 MB, limits set once, as APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh.
+It warns, without failing, when the app is larger than 30 MB, and fails when it is larger than 40 MB, limits set once, as APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh, and it measures the Mac app alone (the same check of the iPhone app is TL05, not built).
 Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
 In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
 It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.
@@ -244,7 +274,7 @@ To upgrade a package, change its version in `project.yml`, run `make update-pack
 - the storage drill script's verdicts (see [Reusable test tools](testing-tools.md));
 - the version script (see Versions, above);
 - the Python tools in `Scripts/test` (see [Reusable test tools](testing-tools.md));
-- the vendored SwiftSoup's script, `Scripts/vendor/swiftsoup/test_make_vendor.py`;
+- the vendored SwiftSoup's script, `Scripts/vendor/swiftsoup/test_make_vendor.py`, the FFmpeg build script's tests (`Scripts/vendor/ffmpeg/test_build.py`), and the iPhone size tool's (`app-size.py --selftest`);
 - the policy test that no tracked file holds a path of one Mac (see [Working with agents](../agents/working-with-agents.md)), and the issue tracker's tests (`.claude/skills/issue-library/tests`), which work only in temporary folders;
 - that `make build` builds without code coverage and with `-Osize` while `make debug` does not;
 - that `make release-goldens` names its settings and golden classes;

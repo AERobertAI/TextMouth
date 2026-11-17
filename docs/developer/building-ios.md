@@ -143,17 +143,37 @@ Clang's module caches in it record the time of the toolchain's `module.modulemap
 
 - Before a build, `prepare` compares the stamp `toolchain-stamp.json` with this runner's.
   The stamp is kept in the derived-data folder, so it is saved with the cache, and holds the image's version (GitHub's ImageVersion variable), `xcodebuild -version`, and the time of that `module.modulemap`.
-- A missing stamp, a different one, or none of this runner's facts being known empties four folders and writes the new stamp: ModuleCache.noindex, SDKStatCaches.noindex, and Build/Intermediates.noindex/ExplicitPrecompiledModules and PrecompiledHeaders.
+- A missing stamp, a different one, or none of this runner's facts being known empties five folders and writes the new stamp:
+  - ModuleCache.noindex and SDKStatCaches.noindex;
+  - Build/Intermediates.noindex/ExplicitPrecompiledModules and PrecompiledHeaders;
+  - and Build/Intermediates.noindex/SwiftExplicitPrecompiledModules, the Swift driver's modules for the SDK, the toolchain, and the repository.
   The compiled objects, the build database, and the package checkouts stay, so this is no clean build.
 - A build that still fails with the error is tried once more, after emptying the same folders, in what is left of its time limit.
   The iPhone build needs 1 minute left, and a Mac shard 5 minutes and no test suite started.
 - The iPhone build's `ios-summary.txt` then has a `Retried:` line, and a Mac shard's `summary.md` a `Module caches:` line.
   When every error of the iPhone build is that one, the train's summary and its board post say the runner's module cache was stale and that nothing is to fix in any file.
-- Two limits: Build/Intermediates.noindex/SwiftExplicitPrecompiledModules is not emptied, so a changed module map or header that one of its modules was built from fails both tries.
-  And a Mac shard's second try is given the first try's `-resultBundlePath`, which xcodebuild has refused as already there.
+- A Mac shard's retry first moves the first try's result bundle to `result.first-try.xcresult` (a number follows when that name is taken), since xcodebuild refuses a `-resultBundlePath` that is already there; the retry writes `result.xcresult`, which the workflow uploads.
+- The iPhone build reads the Swift frontend's `<unknown>:0: error:` lines as errors, so a stale module that fails that way is counted as the stale cache's only error.
 
 A script that puts its own folder on `sys.path` sets `sys.dont_write_bytecode = True` first, or importing a sibling leaves a `__pycache__` folder in the repository.
 `Scripts/agents/tests/test_bytecode_policy.py` fails for any script under `Scripts/` outside a `tests` folder that does not.
+
+### The iPhone app's size
+<!-- id: iphone-app-size; keys: ios-size, app-size.py, ios_size, Size:, IPA, App Store download, device build, TL05; src: Scripts/ios/app-size.py, Scripts/agents/run-ios-build.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/merge_ios_shards.py, Makefile; status: incomplete; issues: TL05 -->
+
+The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see [Building TextMouth](building.md)).
+
+- **On the Mac,** `make ios-size` builds the target TextMouthiOS unsigned in Release for the iphoneos SDK, under the heavy-work lock, and measures it with `Scripts/ios/app-size.py` (`IOS_SIZE_ARGS` passes options, such as `--json`).
+  It builds the target with `-sdk iphoneos` and not a scheme with a destination, since a Mac with Xcode's SDKs alone has no iOS platform.
+  The report gives the app (the files' sizes, counted as `make check` counts the Mac app's), the IPA, an estimate of the App Store download, the 15 biggest files, and each library's share of the executable from the linker's map.
+  The app is stripped as an archive strips it, since that is what ships; a plain build is about twice as large, with 14 MB of symbols.
+  `app-size.py build --check` exits 3 above the strict limit.
+- **On GitHub,** a request with `ios_size` makes `run-ios-build.py` build the device app after the Simulator build, within 15 minutes, and add `Size:` lines (and `Size detail:` lines) to `ios-summary.txt`, which the train's summary, each agent's result, and the suite's output print.
+  `build-train.py request --ios-size` sets it, and `run_suite.py --remote` always does.
+  The device build is only run when asked, and took about 7 to 11 minutes of the iPhone job.
+  A device build that fails or runs late says `Size: not measured` and changes nothing else: the Simulator build's verdict stands.
+  It checks the toolchain stamp as the Simulator build does, and any failure but the time limit runs once more from an empty device folder, on a runner only, since emptying the module caches alone left the build database claiming modules that were gone.
+- `make check` measures the Mac app alone: a step that measures the iPhone app too is TL05, not built.
 
 ## Building TextMouthiOS for the simulator
 <!-- id: building-textmouthios-simulator; keys: xcodebuild, simctl, iPhone 17, DerivedData-ios.noindex, xcresult; src: project.yml, TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme, Scripts/agents/run_locked.py, Scripts/agents/run-ios-ui-tests.py, TextMouth/Phone/PhoneLaunchRequest.swift -->
