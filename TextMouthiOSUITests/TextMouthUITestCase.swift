@@ -413,6 +413,49 @@ class TextMouthUITestCase: XCTestCase {
         /// "Dynamic Type font sizes are partially unsupported", with no element.
         static let unnamedPartlyUnsupported = unnamedDynamicType("Dynamic Type font sizes are partially unsupported")
 
+        /// A SwiftUI `TextField` of the phone, which the audit flags "Dynamic
+        /// Type font sizes are partially unsupported. User will not be able to
+        /// change the font size of this UITextField" although its text grows.
+        /// The audit checks UIKit's `adjustsFontForContentSizeCategory`, which
+        /// SwiftUI leaves off on the UITextField it draws; Apple's DTS engineer
+        /// says SwiftUI "does not always pass along that specific UIKit-level
+        /// flag" and that system fonts are "doing everything right"
+        /// (developer.apple.com/forums/thread/828525, June 2026). Matched by
+        /// the Dynamic Type kind, the field's label, and Apple's exact short
+        /// description, so that a fixed font, which reads "unsupported" and not
+        /// "partially unsupported", still fails (`PhoneFontPolicyTests` also
+        /// refuses fixed fonts in the sheets' source, and the hosted tests of
+        /// `PhoneTextFieldScalingTests` measure that each field's font grows,
+        /// and fail when SwiftUI turns the switch on, which ends the need).
+        static func swiftUITextField(_ label: String, labelIsPrefix: Bool = false) -> Accepted {
+            Accepted(
+                type: .dynamicType, label: label,
+                why: "a SwiftUI TextField whose font grows; the audit reads UIKit's adjustsFontForContentSizeCategory, which SwiftUI leaves off (Apple DTS, developer.apple.com/forums/thread/828525)",
+                labelIsPrefix: labelIsPrefix,
+                description: "Dynamic Type font sizes are partially unsupported"
+            )
+        }
+
+        /// The Go To sheet's three fields: Page, Percent through the book, and
+        /// Time (its label goes on, "Time at 500 words a minute" or "Time in
+        /// the recording").
+        static let goToFields = [
+            swiftUITextField("Page"),
+            swiftUITextField("Percent through the book"),
+            swiftUITextField("Time ", labelIsPrefix: true),
+        ]
+
+        /// The Sleep Timer sheet's custom minutes field.
+        static let sleepTimerField = swiftUITextField("Custom timer minutes")
+
+        /// Book Information's fields: title, author, publisher, and date (a
+        /// hand-edited field's label goes on, so each is matched by its start).
+        static let bookInformationFields = ["Book title", "Author", "Publisher", "Publication date"]
+            .map { swiftUITextField($0, labelIsPrefix: true) }
+
+        /// The Search in Book sheet's field.
+        static let searchTextField = swiftUITextField(TextMouthUITestCase.searchFieldLabel)
+
         /// The system's search field: iOS clips its placeholder at the
         /// largest text sizes, and VoiceOver and braille read it whole.
         static let searchField = Accepted(
