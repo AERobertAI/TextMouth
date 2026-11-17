@@ -78,12 +78,46 @@ SOUND_PATTERN = re.compile(
 )
 
 
+# The one allowance in the rule above: a test may name `ReaderViewModel` inside one helper, `func makeReader() -> ReaderViewModel`,
+# so that the sheets that take a reader (Go To, Search in Book, Sleep Timer) are hosted as the user meets them. The helper
+# builds a stopped reader, services off and content set directly. `sound_in_source` finds its head and cuts it out by its
+# braces, and the rule still reads the helper (without that one type name) and everything outside it (with it): the helper
+# may call nothing that plays, speaks, or resumes, and nothing else in the file may name the type, not even a second helper.
+_READER_HELPER_HEAD = re.compile(r"^[ \t]*(?:private\s+|fileprivate\s+)?func\s+makeReader\s*\(\s*\)\s*->\s*ReaderViewModel\s*\{", re.M)
+# A string literal, blanked before braces are counted so that a brace inside a string cannot move the helper's end.
+_STRING_LITERAL = re.compile(r'"(?:\\.|[^"\\\n])*"')
+
+
+def _cut_reader_helper(code):
+    """`code` (comment lines already removed) as (the helper, the rest). The helper is the first `makeReader() -> ReaderViewModel`
+    function, from its head to the brace that closes it; the rest is everything else, so it is read with the whole rule. When
+    there is no helper, or its braces do not close, the helper is "" and the rest is all of `code`: no allowance is made."""
+    head = _READER_HELPER_HEAD.search(code)
+    if not head:
+        return "", code
+    # Count braces on a copy whose string literals are blanked out, same length so that its indexes are the code's.
+    bare = _STRING_LITERAL.sub(lambda found: " " * len(found.group(0)), code)
+    depth = 0
+    for index in range(head.end() - 1, len(bare)):
+        depth += {"{": 1, "}": -1}.get(bare[index], 0)
+        if depth == 0:
+            # The closing brace itself ends the helper: anything after it on its line is read as the rest.
+            return code[head.start():index + 1], code[:head.start()] + code[index + 1:]
+    return "", code
+
+
 def sound_in_source(text):
     """The first thing in the Swift source `text` that would make sound (see SOUND_PATTERN), or "" when there is none.
-    Comments say "plays" in prose, so only code counts: a line that starts with `//` is not read."""
+    Comments say "plays" in prose, so only code counts: a line that starts with `//` is not read. The one allowance is the
+    `makeReader() -> ReaderViewModel` helper (see _READER_HELPER_HEAD): its body is read with the type's name removed."""
     code = "\n".join(line for line in text.splitlines() if not line.strip().startswith("//"))
-    match = SOUND_PATTERN.search(code)
-    return match.group(0) if match else ""
+    helper, rest = _cut_reader_helper(code)
+    # Outside the helper every name counts, ReaderViewModel included; inside it only that one name is let through.
+    for part in (rest, re.sub(r"\bReaderViewModel\b", "Reader", helper)):
+        match = SOUND_PATTERN.search(part)
+        if match:
+            return match.group(0)
+    return ""
 
 
 def sound_in_files(files):

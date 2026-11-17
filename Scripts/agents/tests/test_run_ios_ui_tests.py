@@ -601,6 +601,58 @@ class TheUnitTestsMakeNoSoundTests(unittest.TestCase):
             self.assertIsNotNone(self.SOUNDS.search(source), source)
         self.assertIsNone(self.SOUNDS.search("XCTAssertEqual(button.accessibilityLabel, \"Play\")"))
 
+    # A stopped reader built the way PhoneTextFieldScalingTests builds one: the one helper the rule lets name ReaderViewModel.
+    HELPER = (
+        "final class SheetTests: XCTestCase {\n"
+        "    /// A stopped reader.\n"
+        "    private func makeReader() -> ReaderViewModel {\n"
+        "        let book = Book(title: \"Notes {braces}\", format: .txt)\n"
+        "        let reader = ReaderViewModel(book: book, libraryViewModel: LibraryViewModel(initializeServices: false))\n"
+        "        reader.isLoading = false\n"
+        "        return reader\n"
+        "    }\n"
+        "    func testA() { let reader = makeReader(); host(Sheet(reader: reader)) }\n"
+        "}\n"
+    )
+
+    def sound(self, source):
+        """What the scanner finds in the Swift `source`: the first match, or "" when it finds nothing."""
+        return uitests.ios_ui_tests.sound_in_source(source)
+
+    def test_the_reader_helper_may_name_ReaderViewModel_and_nothing_else_may(self):
+        """The allowance: ReaderViewModel inside `makeReader() -> ReaderViewModel` is let through (Q11); the real file passes."""
+        self.assertEqual(self.sound(self.HELPER), "")
+        real = (ROOT / "TextMouthiOSTests" / "PhoneTextFieldScalingTests.swift").read_text(encoding="utf-8")
+        self.assertIn("-> ReaderViewModel", real, "the file no longer has the helper this test stands for")
+        self.assertEqual(self.sound(real), "")
+
+    def test_the_allowance_does_not_reach_the_rest_of_the_file(self):
+        """The breaks: the type named anywhere outside the helper, in a second helper, or in a differently named one, is a false red."""
+        outside = self.HELPER.replace("    func testA()", "    func testB() { let other: ReaderViewModel? = nil }\n    func testA()")
+        self.assertEqual(self.sound(outside), "ReaderViewModel")
+        after_line = self.HELPER.replace("        return reader\n    }\n", "        return reader\n    } func other() -> ReaderViewModel { fatalError() }\n")
+        self.assertEqual(self.sound(after_line), "ReaderViewModel")
+        second = self.HELPER.replace("    func testA()", "    func makeReader() -> ReaderViewModel { fatalError() }\n    func testA()")
+        self.assertEqual(self.sound(second), "ReaderViewModel")
+        renamed = self.HELPER.replace("makeReader", "makeAnyModel")
+        self.assertEqual(self.sound(renamed), "ReaderViewModel")
+        self.assertEqual(self.sound("final class T: XCTestCase {\n    func make() -> ReaderViewModel { fatalError() }\n}\n"), "ReaderViewModel")
+        # A comment line says nothing, as before; a longer type name that starts with the name is still a false red.
+        self.assertEqual(self.sound(self.HELPER.replace("    func testA()", "    // ReaderViewModel in prose\n    func testA()")), "")
+        self.assertEqual(self.sound(self.HELPER.replace("reader.isLoading", "reader2 = ReaderViewModelCache()\n        reader.isLoading")), "ReaderViewModel")
+
+    def test_the_helper_must_still_make_no_sound(self):
+        """The break: a helper that plays, speaks, or resumes is read with the whole rule, whatever it is called."""
+        for call in ("reader.togglePlay()", "reader.playOrResume()", "reader.play()", "speak(text)", "resume()",
+                     "let engine = AudioEngine()", "import AVFoundation", "PhoneAppModel()"):
+            loud = self.HELPER.replace("        return reader\n", f"        {call}\n        return reader\n")
+            self.assertNotEqual(self.sound(loud), "", call)
+
+    def test_a_helper_whose_braces_never_close_gets_no_allowance(self):
+        """An unfinished helper hides nothing: the scanner reads all of it, ReaderViewModel included."""
+        open_ended = "final class T: XCTestCase {\n    func makeReader() -> ReaderViewModel {\n        return x\n"
+        self.assertEqual(self.sound(open_ended), "ReaderViewModel")
+
     def test_a_unit_test_that_calls_togglePlay_fails_the_check_even_in_a_subfolder(self):
         """The break: a scratch copy of the unit folder with one file that starts playback."""
         with tempfile.TemporaryDirectory() as scratch:
