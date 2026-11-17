@@ -104,7 +104,7 @@ A text book can be spoken by its voice into one audio file, with a chapter for e
   If the reading jumps back to words it has already said, stop the export or pause the reading.
 
 ## What is not done yet
-<!-- id: export-spoken-audio-not-done; keys: WAV, AIFF, CAF, FLAC, time ranges, Premium voices; src: TextMouth/Models/SpeechExportWording.swift -->
+<!-- id: export-spoken-audio-not-done; keys: WAV, AIFF, CAF, FLAC, time ranges, Premium voices; src: TextMouth/Models/SpeechExportWording.swift; status: incomplete; issues: DR26, DR28 -->
 
 - Time ranges, a selection, and the formats WAV, AIFF, CAF, Apple Lossless, and FLAC are not offered.
 - Each chapter is not encoded while the next is spoken: the file is encoded once, at the end.

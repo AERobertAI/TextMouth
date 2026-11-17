@@ -6,7 +6,7 @@ Part of [TextMouth's documentation](../../README.md).
 TextMouth edits an audiobook's audio, a recording's or an imported one's, in an editor window made for the keyboard, VoiceOver, and a braille display; nothing in it needs a waveform.
 
 ## Opening the editor
-<!-- id: audio-editor-opening; keys: Edit Audio…, Book menu, context menu, one editor per book, several tracks, DAISY; src: TextMouth/Views/AudioEditor/AudioEditorWording.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorLauncher.swift, TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift -->
+<!-- id: audio-editor-opening; keys: Edit Audio…, Book menu, context menu, one editor per book, several tracks, DAISY; src: TextMouth/Views/AudioEditor/AudioEditorWording.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorLauncher.swift, TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift; status: incomplete; issues: DR30 -->
 
 Opening the editor:
 
@@ -86,7 +86,7 @@ Editing:
 - The main Edit menu's Undo, Redo, Cut, Copy, Paste, and Select All are the editor's own while its window is in front, Undo and Redo named as their buttons are, and each available when its button is; in a sheet over the editor, and in every other window, they keep their usual meaning.
 
 ## Saving and exporting
-<!-- id: audio-editor-saving; keys: save, revert to original, Audio Info, bookmarks move, close window, quit with unsaved edits; src: TextMouth/ViewModels/AudioEditorModel+Saving.swift, TextMouth/Views/AudioEditor/AudioEditorFileSheets.swift, TextMouth/Services/AudioEditing/AudioExportFormat.swift, TextMouth/Views/AudioEditor/AudioEditorWording.swift -->
+<!-- id: audio-editor-saving; keys: save, revert to original, Audio Info, bookmarks move, close window, quit with unsaved edits; src: TextMouth/ViewModels/AudioEditorModel+Saving.swift, TextMouth/Views/AudioEditor/AudioEditorFileSheets.swift, TextMouth/Services/AudioEditing/AudioExportFormat.swift, TextMouth/Views/AudioEditor/AudioEditorWording.swift; status: incomplete; issues: DR29 -->
 
 Saving and exporting:
 

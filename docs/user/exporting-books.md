@@ -56,7 +56,7 @@ Each file, whether copied, plain text, or converted, is made first in a scratch 
 So an export never replaces or removes a file that was already in the folder, and the folder never holds a half-written file, even after Stop or a failure.
 
 ## Export, Cancel, and Stop
-<!-- id: export-cancel-stop; keys: Exporting 3 of 40 items, progress bar, Close button, stopped export; src: TextMouth/Models/BookExportWording.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Views/Export/BookExportSheet.swift -->
+<!-- id: export-cancel-stop; keys: Exporting 3 of 40 items, progress bar, Close button, stopped export; src: TextMouth/Models/BookExportWording.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Views/Export/BookExportSheet.swift; status: incomplete; issues: DR23 -->
 
 Return presses Export, and Escape presses Cancel, or Stop while the export runs, which ends the export: the files finished so far stay in the folder, and the file being made is not kept.
 VoiceOver reads Export's hint as "Exports the checked items to the folder." and Stop's as "Stops the export.
@@ -75,7 +75,7 @@ Download it first: select it in the library, then choose Download Now."
 <!-- id: converting-book-text; keys: Convert to, text formats, Markdown HTML RTF Word EPUB BRF PEF; src: TextMouth/Models/BookExportWording.swift, TextMouth/ViewModels/BookExportModel.swift -->
 
 ### The Convert to pop-up
-<!-- id: export-convert-to-pop-up; keys: Convert to, hints, format choices, Word 97-2003 (.doc); src: TextMouth/Models/BookExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift -->
+<!-- id: export-convert-to-pop-up; keys: Convert to, hints, format choices, Word 97-2003 (.doc); src: TextMouth/Models/BookExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift; status: incomplete; issues: DR22 -->
 
 While Text as Markdown is checked, a pop-up named "Convert to" sits beside it, and VoiceOver reaches it right after the checkbox.
 Its label is "Convert to", its value is the choice made, and its hint is that choice's hint.
@@ -137,7 +137,7 @@ The text is the book's content.md, the Markdown TextMouth reads, with any edits 
 Markdown stays the base: Markdown, HTML, RTF, Word 97-2003, EPUB, BRF, and PEF are each written from it, none copied.
 
 ### What every format leaves out
-<!-- id: what-every-format-leaves-out; keys: chapter markers, page lines, raw HTML, alt text; src: TextMouth/Services/Export/ExportDocumentWalker.swift -->
+<!-- id: what-every-format-leaves-out; keys: chapter markers, page lines, raw HTML, alt text; src: TextMouth/Services/Export/ExportDocumentWalker.swift; status: incomplete; issues: DR22 -->
 
 Markdown, HTML, RTF, Word 97-2003, EPUB, BRF, and PEF all leave out content.md's chapter-marker lines (an EPUB uses them to make its chapters, and its page lines to make its pages), its page lines, its navigation annotations, and any raw HTML, and a picture becomes its alternative text.
 
@@ -244,7 +244,7 @@ The accessibility metadata says
 It claims conformance to no standard.
 
 ### What an EPUB leaves out
-<!-- id: epub-leaves-out; keys: pictures, cover, styles, table cell pages; src: TextMouth/Services/Export/EPUBExportWriter.swift, TextMouth/Services/Export/EPUBPackageBuilder.swift -->
+<!-- id: epub-leaves-out; keys: pictures, cover, styles, table cell pages; src: TextMouth/Services/Export/EPUBExportWriter.swift, TextMouth/Services/Export/EPUBPackageBuilder.swift; status: incomplete; issues: DR22 -->
 
 It holds no pictures (their alternative text stays as text), styles, raw HTML, heading annotations as headings, or cover, and no character that XML forbids.
 A page that begins in a table cell stays in the cell; a contents place in a cell moves to just before the table.

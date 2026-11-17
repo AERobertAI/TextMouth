@@ -10,7 +10,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A page that holds only a scanned image is read with the Mac's own text recognition.
 
 ## Pictures of pages and comic book archives
-<!-- id: pictures-comic-archives; keys: picture, photo, PNG, TIFF, CBZ, comic, ComicInfo.xml, text recognition; src: TextMouth/Parsers/PageImageReader.swift, TextMouth/Parsers/PageImageDecoder.swift, TextMouth/Parsers/PageImageArchive.swift, TextMouth/Parsers/PageImageText.swift, TextMouth/Models/PageImageWording.swift, TextMouth/Parsers/VisionTextRecognition.swift -->
+<!-- id: pictures-comic-archives; keys: picture, photo, PNG, TIFF, CBZ, comic, ComicInfo.xml, text recognition; src: TextMouth/Parsers/PageImageReader.swift, TextMouth/Parsers/PageImageDecoder.swift, TextMouth/Parsers/PageImageArchive.swift, TextMouth/Parsers/PageImageText.swift, TextMouth/Models/PageImageWording.swift, TextMouth/Parsers/VisionTextRecognition.swift; status: incomplete; issues: DR14 -->
 
 - A picture of a page (.png, .jpg, .jpeg, .heic, .heif, .tif, .tiff) is read with the Mac's own text recognition, and its words become the book.
   A TIFF of several pages gives a chapter for each page that has text.
@@ -44,7 +44,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - For an HTML file, an encoding other than Unicode that its first 1,024 bytes declare, where ISO Latin 1 and ASCII are read as Windows-1252, as web browsers read them.
 
 ### UTF-16 and UTF-32 without a mark
-<!-- id: utf-16-utf-32-without; keys: UTF-16LE, UTF-16BE, NUL bytes, no BOM, CJK, Devanagari; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextPlausibility.swift -->
+<!-- id: utf-16-utf-32-without; keys: UTF-16LE, UTF-16BE, NUL bytes, no BOM, CJK, Devanagari; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextPlausibility.swift; status: incomplete; issues: DR18, DR19 -->
 
 - Since 0.4.3 TextMouth finds these by the pattern of their bytes:
   - UTF-16 in Latin letters, which shows in its zero bytes, as before;

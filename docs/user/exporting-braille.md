@@ -97,7 +97,7 @@ The address of a link is not written, only its text.
 Italic and bold are written as emphasis, as the next section says, except in a table's cells, a code block, a numbered item's number, and the book's title, which are plain.
 
 ## Italic and bold in braille
-<!-- id: export-braille-emphasis; keys: emphasis signs, UEB, EBAE, sample test, byte for byte; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
+<!-- id: export-braille-emphasis; keys: emphasis signs, UEB, EBAE, sample test, byte for byte; src: TextMouth/Services/Export/BrailleExportWriters.swift; status: incomplete; issues: DR11 -->
 
 Italic and bold in the book's text are written as the braille code's emphasis signs, where the table carries them.
 TextMouth's braille helper tests each table it uses, by writing a sample with each kind of emphasis and reading it back, and a table whose signs do not read back exactly as written writes plain braille.

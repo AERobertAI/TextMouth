@@ -17,7 +17,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - No part of a macro project is read, and no macro ever runs.
 
 ## Rich text, Word 6 to Word 2003, OpenDocument text, and Word 2003 XML
-<!-- id: rich-text-word-6-word; keys: RTF, RTFD, .doc, .odt, WordML, TXT.rtf, re-read, launch; src: TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift, TextMouth/Models/PageReaderVersions.swift -->
+<!-- id: rich-text-word-6-word; keys: RTF, RTFD, .doc, .odt, WordML, TXT.rtf, re-read, launch; src: TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift, TextMouth/Models/PageReaderVersions.swift; status: incomplete; issues: DR17 -->
 
 - Rich text (.rtf), rich text with attachments (.rtfd), Word 6 to Word 2003 documents and templates (.doc, .dot), OpenDocument text and its templates (.odt, .ott), and Word 2003 XML (.xml, see [XML files](reads-daisy-and-braille.md)), which TextMouth reads with code of its own.
   TextMouth reads them the same on the Mac as on iOS, where Apple's textutil tool does not exist.
@@ -58,7 +58,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A document that names even one heading keeps exactly the headings it names.
 
 ### Emphasis, lists, tables, pictures, and fields
-<!-- id: emphasis-lists-tables-pictures-fields; keys: bold, italic, bullet, numbering, field result, HYPERLINK, TOC; src: TextMouth/Parsers/RTFBlockBuilder.swift, TextMouth/Parsers/RTFListTable.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/WordDocumentHTMLWriter.swift -->
+<!-- id: emphasis-lists-tables-pictures-fields; keys: bold, italic, bullet, numbering, field result, HYPERLINK, TOC; src: TextMouth/Parsers/RTFBlockBuilder.swift, TextMouth/Parsers/RTFListTable.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/WordDocumentHTMLWriter.swift; status: incomplete; issues: DR35 -->
 
 - Bold and italic text keeps its emphasis, as in the other text formats, and the marks that show it are never spoken.
 - A list is a list, and the number or bullet it shows is not read as one of its words.
@@ -73,7 +73,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A field is read for its result, as Word shows it, and never for its instruction: the result of a table of contents or a link is read, and its code (TOC, HYPERLINK, PAGE, MERGEFORMAT) is not.
 
 ### What every document reader reads
-<!-- id: what-every-document-reader-reads; keys: hidden text, vanish, tracked changes, footnotes, text box, comments; src: TextMouth/Parsers/DOCXParser+Converter.swift, TextMouth/Parsers/DOCXParser+Styles.swift, TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/ODTContentReader.swift, TextMouth/Parsers/WordMLReader.swift -->
+<!-- id: what-every-document-reader-reads; keys: hidden text, vanish, tracked changes, footnotes, text box, comments; src: TextMouth/Parsers/DOCXParser+Converter.swift, TextMouth/Parsers/DOCXParser+Styles.swift, TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/ODTContentReader.swift, TextMouth/Parsers/WordMLReader.swift; status: incomplete; issues: DR15, DR16, DR35 -->
 
 Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents follow one policy: TextMouth reads what a person reading the document sees in its ordinary view, in reading order.
 
@@ -102,7 +102,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - The marks that show bold, italic, and strikethrough are never spoken.
 
 ### Other limits of each
-<!-- id: other-limits-each; keys: symbol font, w:sym, Wingdings, Symbol encoding, fontTable, .fodt, .sxw; src: TextMouth/Parsers/WordSymbolFontEncodings.swift, TextMouth/Parsers/AdobeSymbolEncoding.swift, TextMouth/Parsers/WordDocumentFonts.swift, TextMouth/Parsers/DOCXParser+Converter.swift, TextMouth/Parsers/ODTDocumentReader.swift -->
+<!-- id: other-limits-each; keys: symbol font, w:sym, Wingdings, Symbol encoding, fontTable, .fodt, .sxw; src: TextMouth/Parsers/WordSymbolFontEncodings.swift, TextMouth/Parsers/AdobeSymbolEncoding.swift, TextMouth/Parsers/WordDocumentFonts.swift, TextMouth/Parsers/DOCXParser+Converter.swift, TextMouth/Parsers/ODTDocumentReader.swift; status: incomplete; issues: DR20 -->
 
 - In rich text, the title and author come from the document's own information group.
 - In Word 97-2003, a document whose main text holds no words at all, such as one whose text is all in a text box or a header, is read from every part of it after the main text, in the order the file keeps them, so it is not an empty book.
@@ -182,7 +182,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - Text in the Symbol font is read as Greek letters and mathematical signs.
 
 ### Word 6 and Word 95 emphasis, notes, tables, and lists
-<!-- id: word-6-word-95-emphasis; keys: bold, italic, hidden text, tracked deletion, footnote, list numbering; src: TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/WordDocumentLegacyNumbering.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/WordDocumentLegacySprm.swift -->
+<!-- id: word-6-word-95-emphasis; keys: bold, italic, hidden text, tracked deletion, footnote, list numbering; src: TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/WordDocumentLegacyNumbering.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/WordDocumentLegacySprm.swift; status: incomplete; issues: DR21 -->
 
 - Bold and italic keep their emphasis and the marks that show it are never spoken.
 - Hidden text and tracked deletions are not read, and a note is read only if its reference is shown.

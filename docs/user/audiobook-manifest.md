@@ -156,7 +156,7 @@ The import checks:
   To change a book you have already imported, edit its manifest with Edit Manifest in Default Editor, or edit it in Finder (both below); there is no need to import it again.
 
 ## Editing an imported book's manifest
-<!-- id: manifest-edit-imported; keys: Edit Manifest in Default Editor, Edit Manifest With…, Manifest updated, Manifest not updated, Show Package Contents, .tmb package, Go to Folder; src: TextMouth/Models/BookManifestEditWording.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Platform/macOS/Services/BookManifestEditor.swift, TextMouth/ViewModels/LibraryViewModel+ManifestEdits.swift, TextMouth/ViewModels/ReaderViewModel+ManifestEdit.swift, TextMouth/App/MenuCommands.swift -->
+<!-- id: manifest-edit-imported; keys: Edit Manifest in Default Editor, Edit Manifest With…, Manifest updated, Manifest not updated, Show Package Contents, .tmb package, Go to Folder; src: TextMouth/Models/BookManifestEditWording.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Platform/macOS/Services/BookManifestEditor.swift, TextMouth/ViewModels/LibraryViewModel+ManifestEdits.swift, TextMouth/ViewModels/ReaderViewModel+ManifestEdit.swift, TextMouth/App/MenuCommands.swift; status: incomplete; issues: DR33 -->
 
 - An audiobook imported from a ZIP, a folder of tracks, or a playlist keeps its tracks and its manifest in its package; a playlist's import writes the manifest, with the playlist's order and titles.
   To change its order, titles, groups, or pauses, choose Edit Manifest in Default Editor or Edit Manifest With… from its reader's Book menu, or from its row's context menu in the Library window.

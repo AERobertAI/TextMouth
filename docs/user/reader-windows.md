@@ -16,7 +16,7 @@ The rest of reading a book has pages of its own:
 Each book opens in its own window, and several can be open at once.
 
 ## Book content
-<!-- id: reader-book-content; keys: text area, scroll area, braille display, maxDisplayChars, 20000 characters; src: TextMouth/Views/Reader/ReaderView.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: reader-book-content; keys: text area, scroll area, braille display, maxDisplayChars, 20000 characters; src: TextMouth/Views/Reader/ReaderView.swift, TextMouth/ViewModels/ReaderViewModel.swift; status: incomplete; issues: DR09 -->
 
 Just above the playback controls, the book's text, up to 20,000 characters of the chapter around the reading position, is in a scroll area VoiceOver calls Book content: interact with it to read the text with VoiceOver or on a braille display, whether the book is playing or paused.
 The part shown always holds the reading position, keeps whole paragraphs where it can, and never begins or ends inside a word, except in a language written without spaces.

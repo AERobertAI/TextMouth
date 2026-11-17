@@ -55,7 +55,7 @@ Details: [Kindle books](reads-kindle-books.md), and [Pages](reads-pages-and-limi
 - Copy-protected Kindle books, in any of the formats above, are refused and never read.
 
 ## Office documents
-<!-- id: formats-list-office-documents; keys: Word, DOCX, DOC, RTF, RTFD, ODT, WordML, textutil; src: TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
+<!-- id: formats-list-office-documents; keys: Word, DOCX, DOC, RTF, RTFD, ODT, WordML, textutil; src: TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift, TextMouth/Parsers/TextutilDocumentReader.swift; status: incomplete; issues: DR36 -->
 
 Details: [What TextMouth reads: EPUB and word-processor documents](what-textmouth-reads.md).
 
@@ -72,7 +72,7 @@ Details: [What TextMouth reads: EPUB and word-processor documents](what-textmout
 - Flat OpenDocument (.fodt) and OpenOffice 1.x (.sxw) files are not read.
 
 ## DAISY and braille books
-<!-- id: formats-list-daisy-braille; keys: DAISY, DTBook, NIMAS, BRF, BRL, PEF, braille; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift -->
+<!-- id: formats-list-daisy-braille; keys: DAISY, DTBook, NIMAS, BRF, BRL, PEF, braille; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift; status: incomplete; issues: DR34 -->
 
 Details: [DAISY and braille books](reads-daisy-and-braille.md).
 
@@ -121,7 +121,7 @@ Details: [Audiobooks](reads-audiobooks.md), [The audiobook manifest](audiobook-m
 - TextMouth package (.tmb): a book TextMouth already describes, with its place and bookmarks; iPhone: yes; Tested with made samples.
 
 ## Transcripts and captions
-<!-- id: formats-list-transcripts; keys: WebVTT, SubRip, vtt, srt, podcast transcript, Attach Transcript, sidecar; src: TextMouth/Parsers/WebVTTReader.swift, TextMouth/Parsers/SubRipReader.swift, TextMouth/Parsers/PodcastTranscriptReader.swift, TextMouth/Parsers/PodcastChapters.swift, TextMouth/Services/TranscriptPairing.swift -->
+<!-- id: formats-list-transcripts; keys: WebVTT, SubRip, vtt, srt, podcast transcript, Attach Transcript, sidecar; src: TextMouth/Parsers/WebVTTReader.swift, TextMouth/Parsers/SubRipReader.swift, TextMouth/Parsers/PodcastTranscriptReader.swift, TextMouth/Parsers/PodcastChapters.swift, TextMouth/Services/TranscriptPairing.swift; status: incomplete; issues: DR24, DR25, DR27 -->
 
 Transcripts are never books of their own: each attaches to an audiobook, from the Book menu or when it sits beside the audio at import (see [Transcribing an audiobook](transcribing.md)).
 A transcript file chosen without its audio is refused.

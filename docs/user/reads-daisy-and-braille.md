@@ -86,7 +86,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A PEF file must be six-dot braille: eight-dot PEF is refused.
 
 ### Braille layout
-<!-- id: braille-layout; keys: BANA Braille Formats, centered, cell 5, cell 7, indent, running head, print page; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleBookReader+Pages.swift -->
+<!-- id: braille-layout; keys: BANA Braille Formats, centered, cell 5, cell 7, indent, running head, print page; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleBookReader+Pages.swift; status: incomplete; issues: DR08 -->
 
 - Headings, paragraphs, and list items are found from the layout, as BANA's Braille Formats (2016) lays it out.
 - A centered line, or a centered run of lines, is a level-1 heading.
@@ -104,7 +104,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   A row of dashes or other rule marks that sets the heading off is never part of its words.
 
 ### Braille emphasis
-<!-- id: braille-emphasis; keys: typeform, italic, bold, UEB, EBAE, emphasis end sign, TextMouthBraille; src: TextMouth/Parsers/BrailleEmphasis.swift, TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/main.c -->
+<!-- id: braille-emphasis; keys: typeform, italic, bold, UEB, EBAE, emphasis end sign, TextMouthBraille; src: TextMouth/Parsers/BrailleEmphasis.swift, TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/main.c; status: incomplete; issues: DR10 -->
 
 - Reading Unified English Braille (UEB) keeps what its emphasis signs say, and reading English Braille, American Edition (EBAE) keeps what its signs say where they are certain.
 - In UEB, italic and bold come into the book's text as italic and bold, and both together as both.
@@ -133,7 +133,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - Export writes a book's emphasis into braille in UEB, and writes none in EBAE (see [Exporting books](exporting-braille.md)).
 
 ### English Braille, American Edition words
-<!-- id: english-braille-american-edition-words; keys: EBAE fixes, en_US table, initials, St., still, before, micro sign; src: TextMouthBraille/main.c, TextMouth/Services/BrailleTranslator.swift -->
+<!-- id: english-braille-american-edition-words; keys: EBAE fixes, en_US table, initials, St., still, before, micro sign; src: TextMouthBraille/main.c, TextMouth/Services/BrailleTranslator.swift; status: incomplete; issues: DR12 -->
 
 - A book in contracted (Grade 2) English Braille, American Edition, read with a table that writes it, such as an English EBAE table of this Mac's, is read with fixes for what liblouis's own EBAE table misreads.
   Uncontracted EBAE, Unified English Braille, and every other table are read as they were.
@@ -177,7 +177,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A braille file of more than 32 MB is refused, and so is one of more than 100,000 pages or 4,000,000 lines (see [Adding books](import-progress-and-errors.md) for the words of each refusal).
 
 ### Braille not read yet
-<!-- id: braille-not-read-yet; keys: hyphenated words, divided words, lists, plain paragraphs; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader.swift -->
+<!-- id: braille-not-read-yet; keys: hyphenated words, divided words, lists, plain paragraphs; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader.swift; status: incomplete; issues: DR07, DR08 -->
 
 - Words divided at a line's end are not read yet.
 - A list laid out by another tool may read as plain paragraphs.

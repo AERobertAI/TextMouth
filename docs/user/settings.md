@@ -68,7 +68,7 @@ Only speech changes: the text on screen and on a braille display keeps every sym
 A change applies from the next chapter spoken.
 
 ## Import and export rules as a pronunciation lexicon
-<!-- id: lexicon-import-export; keys: Import Rules, Export Rules, pronunciation lexicon, PLS, W3C, grapheme, alias, phoneme; src: TextMouth/Views/Settings/SubstitutionsSettingsView.swift, TextMouth/Parsers/PronunciationLexicon.swift, TextMouth/Services/TextSubstitutionService+Lexicon.swift, TextMouth/Models/PronunciationLexiconWording.swift -->
+<!-- id: lexicon-import-export; keys: Import Rules, Export Rules, pronunciation lexicon, PLS, W3C, grapheme, alias, phoneme; src: TextMouth/Views/Settings/SubstitutionsSettingsView.swift, TextMouth/Parsers/PronunciationLexicon.swift, TextMouth/Services/TextSubstitutionService+Lexicon.swift, TextMouth/Models/PronunciationLexiconWording.swift; status: incomplete; issues: DR32 -->
 
 The Text tab's Import Rules… reads a W3C pronunciation lexicon (a .pls file) and adds its spelling-to-words entries after your rules, as plain text rules that match a whole word and ignore case.
 Its hint says the entries go after your rules, and that entries giving only phonetic spellings are set aside.
