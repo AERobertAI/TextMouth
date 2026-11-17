@@ -1237,10 +1237,13 @@ enum BookExportService {
     /// past the reader's limit: it is called on the export's thread, which
     /// waits for the answer, once for each such chapter until the answer is
     /// to do the same for every one. The answer is to write the chapter as
-    /// plain paragraphs of its lines, or to cancel the whole export, which
-    /// ends as Stop does (`BookExportOutcome.wasCancelled`) with nothing
-    /// written for that book. Without it, such a chapter fails its book's
-    /// file with `ExportWalkError.nestedTooDeeply`, and the others export.
+    /// plain paragraphs of the blocks of its lines (`RawChapterLines`: lines
+    /// trimmed, blank lines and markers left out of the words, backslash
+    /// escapes undone), or to cancel the whole export, which ends as Stop does
+    /// (`BookExportOutcome.wasCancelled`): that book's text file is not written
+    /// and no later file is, and files already written stay. Without it (nil,
+    /// where nobody can be asked), such a chapter fails its book's file with
+    /// `ExportWalkError.nestedTooDeeply`, and the others export.
     static func export(
         _ offers: [BookExportOffer],
         kinds: Set<BookExportKind>,
@@ -1260,7 +1263,10 @@ enum BookExportService {
         let token = cancellation ?? BookExportCancellation()
         // One questioner for the whole export, so that "every such chapter"
         // holds for all its books and for no other export.
-        let questioner = askAboutDeepChapters.map { ExportDeepChapterQuestioner(bookCount: offers.count, ask: $0) }
+        let questioner = askAboutDeepChapters.map { ExportDeepChapterQuestioner(ask: $0) }
+        // How many text files are still to be walked after each file, which a
+        // question uses to say whether more such chapters may follow.
+        let textFilesAfter = Self.textFileCounts(after: files)
         for (number, planned) in files.enumerated() {
             if token.isCancelled {
                 outcome.wasCancelled = true
@@ -1271,7 +1277,7 @@ enum BookExportService {
                 access: access,
                 cancellation: token,
                 speech: speech,
-                deepChapters: questioner?.decider(for: planned.book),
+                deepChapters: questioner?.decider(for: planned.book, filesAfter: textFilesAfter[number]),
                 into: &outcome
             )
             // A Stop pressed during this file ended it, and the export too.
@@ -1280,6 +1286,20 @@ enum BookExportService {
         }
         logOutcome(outcome, offers: offers)
         return outcome
+    }
+
+    /// For each of `files`, how many files after it are text conversions,
+    /// which walk content.md (and so may meet a chapter nested too deeply).
+    static func textFileCounts(after files: [PlannedFile]) -> [Int] {
+        var counts = [Int](repeating: 0, count: files.count)
+        var following = 0
+        for index in files.indices.reversed() {
+            counts[index] = following
+            if case .converted(_, _, .text) = files[index].file.source {
+                following += 1
+            }
+        }
+        return counts
     }
 
     /// Writes one planned file, recording in `outcome` that it was written,

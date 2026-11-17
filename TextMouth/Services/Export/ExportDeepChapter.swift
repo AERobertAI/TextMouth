@@ -23,11 +23,15 @@ struct ExportDeepChapter: Equatable, Sendable {
 
 /// What an export does with a chapter nested too deeply.
 enum ExportDeepChapterDecision: Equatable, Sendable {
-    /// Write the chapter as plain paragraphs of its lines, exactly as
-    /// content.md holds them (`ExportDocumentWalker`).
+    /// Write the chapter as plain paragraphs, one for each block of its lines
+    /// (`RawChapterLines`): the lines trimmed at their ends, blank lines and
+    /// TextMouth's own markers left out of the words (markers become places
+    /// where the format keeps them), and content.md's backslash escapes
+    /// undone, so that its quote and list marks are the characters they are.
     case writeAsWritten
-    /// Stop the whole export, as Stop does: nothing is written for the book,
-    /// and no book after it is exported.
+    /// Stop the whole export, as Stop does: the book's text file is not
+    /// written and no book after it is exported; files already written, this
+    /// book's others included, stay.
     case cancel
 }
 
@@ -50,8 +54,8 @@ struct ExportDeepChapterQuestion: Equatable, Sendable {
     /// The deepest nesting read, which the chapter passes.
     let limit: Int
     /// Whether the question offers to do the same for every such chapter of
-    /// the export: when the export holds more than one book, or more chapters
-    /// follow this one in its book.
+    /// the export: when more chapters follow this one in its text, or more
+    /// text files remain to be walked.
     let offersEveryOne: Bool
 }
 
@@ -72,7 +76,7 @@ enum ExportDeepChapterAnswer: Equatable, Sendable {
 /// such chapter" holds for the rest of that export alone.
 ///
 /// An export makes one of these (`BookExportService.export`), and each file it
-/// converts takes a decider from it (`decider(for:)`). The ask closure is the
+/// converts takes a decider from it (`decider(for:filesAfter:)`). The ask closure is the
 /// seam between the export's thread and the person: the app's blocks that
 /// thread until the dialog is answered, and a test's answers at once, so that
 /// no test shows an alert.
@@ -83,28 +87,29 @@ final class ExportDeepChapterQuestioner: Sendable {
 
     /// How the question is put to the person.
     private let ask: Ask
-    /// How many books the export holds.
-    private let bookCount: Int
     /// Whether the person chose every such chapter as written, guarded by the
     /// lock itself.
     private let everyOneAsWritten = OSAllocatedUnfairLock(initialState: false)
 
-    /// A questioner for an export of `bookCount` books that puts its
-    /// questions through `ask`.
-    init(bookCount: Int, ask: @escaping Ask) {
-        self.bookCount = bookCount
+    /// A questioner that puts its questions through `ask`.
+    init(ask: @escaping Ask) {
         self.ask = ask
     }
 
-    /// The decider for the walks of `book`'s text.
-    func decider(for book: BookExportBookName) -> ExportDeepChapterDecider {
-        { [self] chapter in decide(chapter, in: book) }
+    /// The decider for the walk of `book`'s text, after which `filesAfter`
+    /// more text files of the export remain to be walked.
+    func decider(for book: BookExportBookName, filesAfter: Int) -> ExportDeepChapterDecider {
+        { [self] chapter in decide(chapter, in: book, filesAfter: filesAfter) }
     }
 
     /// What to do with `chapter` of `book`: write it as written, without
     /// asking, once the person chose that for every such chapter; otherwise
     /// as the answer to the question says.
-    func decide(_ chapter: ExportDeepChapter, in book: BookExportBookName) -> ExportDeepChapterDecision {
+    func decide(
+        _ chapter: ExportDeepChapter,
+        in book: BookExportBookName,
+        filesAfter: Int
+    ) -> ExportDeepChapterDecision {
         if everyOneAsWritten.withLock({ $0 }) {
             return .writeAsWritten
         }
@@ -112,7 +117,7 @@ final class ExportDeepChapterQuestioner: Sendable {
             bookTitle: book.title,
             chapter: chapter.number,
             limit: chapter.limit,
-            offersEveryOne: bookCount > 1 || chapter.chaptersAfter > 0
+            offersEveryOne: filesAfter > 0 || chapter.chaptersAfter > 0
         )
         switch ask(question) {
         case .exportAsWritten:
