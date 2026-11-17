@@ -11,6 +11,7 @@
 # imports with its own bundled FFmpeg, never with this one. Writes q1.mp3, q2.mp3, q3.mp3,
 # joined.mp3, and the sample into the folder named by the first argument (a new, empty one).
 #
+# The bytes differ from run to run (Matroska writes a random segment UID); the sound is the same.
 # Usage: Scripts/make-form-change-sample.sh FOLDER
 set -e
 folder="$1"

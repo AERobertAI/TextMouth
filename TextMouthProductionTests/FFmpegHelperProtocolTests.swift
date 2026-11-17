@@ -150,6 +150,42 @@ final class FFmpegHelperProtocolTests: XCTestCase {
         XCTAssertEqual([stream.refusedPackets, stream.refusedFrames], [0, 0])
     }
 
+    /// One decoded frame past a PCM record's 1 MB is split across records and
+    /// read back whole (FU-FFMPEG2): `ffmpeg-edge/flac-7.1-24bit-65535.mka` is
+    /// FLAC in blocks of 65,535 samples, 8 channels, 24 bits, so each full block
+    /// decodes to 2,097,120 bytes in the session's 32-bit form. Every record the
+    /// reader takes is within the protocol's 1 MB (it refuses a longer one), the
+    /// records are whole frames, and every one of the 132,000 frames has each
+    /// channel's own constant in its own place, so a split that dropped,
+    /// repeated, or shifted a sample would show.
+    func testAFrameOverAMegabyteIsSplitAcrossRecordsAndReadBackWhole() async throws {
+        let sample = try formatSampleURL("ffmpeg-edge/flac-7.1-24bit-65535.mka")
+        let run = try await runHelper(["decode", "matroska", sample.path])
+        XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
+        var stream = FFmpegHelperStream(data: Data(run.bytes))
+        let report = try await stream.readReport()
+        XCTAssertEqual(report.channels, 8)
+        XCTAssertEqual(report.bitsPerSample, 24)
+        XCTAssertEqual(report.sampleFormat, .s32)
+        // Each channel's constant: its number (1 to 8) times 0.01 of 24-bit full scale, truncated.
+        let constants: [Int32] = [83_886, 167_772, 251_658, 335_544, 419_430, 503_316, 587_202, 671_088]
+        var blocks = 0
+        var wrong = 0
+        while let block = try await stream.nextBlock() {
+            blocks += 1
+            XCTAssertLessThanOrEqual(block.count * 4, 1_048_576, "a record is within the protocol's 1 MB")
+            XCTAssertEqual(block.count % 8, 0, "a record holds whole frames")
+            for (index, sample) in block.enumerated() where sample != constants[index % 8] {
+                wrong += 1
+            }
+        }
+        XCTAssertEqual(wrong, 0, "samples out of their place or changed")
+        XCTAssertEqual(stream.framesRead, 132_000)
+        // Two blocks of 2 MB, each in at least two records, and the 930 frames left over.
+        XCTAssertGreaterThanOrEqual(blocks, 5)
+        XCTAssertTrue(stream.isFinished)
+    }
+
     /// Each refusal is the protocol's exit status, with nothing written: a
     /// missing file, a folder, and a FIFO (never waited on) are unreadable
     /// (2); a demuxer this build has not is 10; a file of another container
