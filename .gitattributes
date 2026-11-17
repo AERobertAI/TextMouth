@@ -3,3 +3,5 @@
 # issues-merge-driver` defines once in the repository's config). Where it is not
 # defined, git merges them as text, with conflict markers (Issues/README.md).
 /Issues/*.md merge=issuefile
+# The folder's README is plain text, merged as git merges any.
+/Issues/README.md merge

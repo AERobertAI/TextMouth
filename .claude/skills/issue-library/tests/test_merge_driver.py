@@ -262,6 +262,21 @@ class GitTests(RepositoryCase):
         self.assertIn("updated: 2026-11-17\n", text)
         self.assertEqual(self.run_cli("check")[0], 0)
 
+    def test_the_readme_is_left_to_gits_own_merge(self) -> None:
+        self.make_repository()
+        self.assertEqual(self.git("check-attr", "merge", "Issues/README.md").stdout.strip(), "Issues/README.md: merge: set")
+        self.git("switch", "-q", "-c", "docs/readme")
+        self.write_tree({"Issues/README.md": "# Issues, the branch's\n"})
+        self.commit_all("the branch's README")
+        self.git("switch", "-q", "main")
+        self.write_tree({"Issues/README.md": "# Issues, main's\n"})
+        self.commit_all("main's README")
+        merge = self.merge("docs/readme")
+        self.assertEqual(merge.returncode, 1)
+        # git's own labels: the driver's would say "current" and "other".
+        self.assertEqual(self.read("Issues/README.md"),
+                         "<<<<<<< HEAD\n# Issues, main's\n=======\n# Issues, the branch's\n>>>>>>> docs/readme\n")
+
     def test_where_the_driver_is_not_defined_git_merges_as_text_with_markers(self) -> None:
         self.make_repository(driver=False)
         self.comment_on_both_sides()
