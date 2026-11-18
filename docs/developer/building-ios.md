@@ -47,7 +47,7 @@ Each reads the commit as it was when it started (`Scripts/ios/typecheck.py` take
   `REF=<commit>` checks that commit (default HEAD) from any worktree, so an agent can check its branch before asking for a train.
   It has its own work folder (`build/typecheck/macos-tests/`), takes the heavy-work lock itself, and takes about four minutes when most test files compile again, six from a cold start, and seconds when nothing changed, after the wait for the lock.
   Never wrap it in `run_locked.py`.
-- **`make typecheck-ios-tests`** is the same for the iPhone's unit bundle: it compiles `TextMouthiOSTests` and the Mac test files it shares for iOS, and takes the lock itself.
+- **`make typecheck-ios-tests`** is the same for the iPhone's unit bundle: it compiles `TextMouthiOSTests` and the Mac test files it shares for iOS, and its interface bundle `TextMouthiOSUITests`, and takes the lock itself.
   **`make typecheck-tests-census`** counts which of the Mac's tests compile for the iPhone (slow; it writes `census.md`).
   Both are described in [Testing the iPhone app](testing-iphone.md).
 - **`make mac-projection BASE=main`** compares, for each Swift file the Mac compiles that HEAD changes since BASE (`HEAD=` names another ref), what the Mac compiles of the old text and of the new.
@@ -165,7 +165,7 @@ A script that puts its own folder on `sys.path` sets `sys.dont_write_bytecode = 
 `Scripts/agents/tests/test_bytecode_policy.py` fails for any script under `Scripts/` outside a `tests` folder that does not.
 
 ### The iPhone app's size
-<!-- id: iphone-app-size; keys: ios-size, app-size.py, ios_size, Size:, IPA, App Store download, device build, TL05; src: Scripts/ios/app-size.py, Scripts/agents/run-ios-build.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/merge_ios_shards.py, Makefile; status: incomplete; issues: TL05 -->
+<!-- id: iphone-app-size; keys: ios-size, app-size.py, ios_size, Size:, IPA, App Store download, device build, TL05; src: Scripts/ios/app-size.py, Scripts/agents/run-ios-build.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/merge_ios_shards.py, Makefile, Scripts/check.sh -->
 
 The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see [Building TextMouth](building.md)).
 
@@ -180,7 +180,9 @@ The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see
   A device build that fails or runs late says `Size: not measured` and changes nothing else: the Simulator build's verdict stands.
   It checks the toolchain stamp as the Simulator build does, and any failure but the time limit runs once more from an empty device folder, on a runner only, since emptying the module caches alone left the build database claiming modules that were gone.
 - With FFmpeg inside it (FMT54), the iPhone app is 16.1 MB (16,078,689 bytes), where it was 13.7 MB, and the Mac app 21.0 MB.
-- `make check` measures the Mac app alone: a step that measures the iPhone app too is TL05, not built.
+- `make check` builds the iPhone app for a device too and holds it to 30 MB (a warning) and 40 MB (a failure), even under `--without-tests` (see [Building TextMouth](building.md)).
+  `app-size.py` reads the limits from `Scripts/check.sh`, and its default derived-data folder, `build/ios-size-DerivedData`, is absolute.
+  Only a GitHub runner skips the step, with a line saying so.
 
 ## Building TextMouthiOS for the simulator
 <!-- id: building-textmouthios-simulator; keys: xcodebuild, simctl, iPhone 17, DerivedData-ios.noindex, xcresult; src: project.yml, TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme, Scripts/agents/run_locked.py, Scripts/agents/run-ios-ui-tests.py, TextMouth/Phone/PhoneLaunchRequest.swift -->

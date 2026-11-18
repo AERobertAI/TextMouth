@@ -82,7 +82,7 @@ Tests that act as a person does find what tests of the parts miss.
   - Each test launches the app with a library of its own and, usually, a public-domain book sent to it: Alice's Adventures in Wonderland, Project Gutenberg #11, from `TestData/alice.epub` (see PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md)).
   - `ReaderUITests` (4 tests): the reader's order, its first values, 44-point controls, and its audit.
   - `LibraryUITests` (4 tests): the Library's words and order, empty and with a book, and the audit of each.
-  - `ScreenOrderUITests` (11 tests, one of them the Go To audit on five launches): the order of the Add to Library sheet, Settings, Bookmarks, Headings, Go To, Sleep Timer, the Voice sheet, Book Information, and the navigation unit's choice, with the audit of each.
+  - `ScreenOrderUITests` (11 tests): the order of the Add to Library sheet, Settings, Bookmarks, Headings, Go To, Sleep Timer, the Voice sheet, Book Information, and the navigation unit's choice, with the audit of each.
   - `LargeTextUITests` (4 tests): see [LargeTextUITests](testing-iphone-audit.md#largetextuitests).
   - `SearchUITests` (7 tests, 0.4.4; typed; see [SearchUITests](testing-iphone-audit.md#searchuitests)).
   - `PlaybackUITests` (6 tests): see [PlaybackUITests](testing-iphone-audit.md#playbackuitests).
@@ -142,10 +142,10 @@ The rule:
 
   It would have found the unterminated string of run 42947183810 in seconds.
   `make typecheck-ios` does not cover these files, nor `TextMouthiOSTests`: it builds the app's sources alone.
-- `make typecheck-ios-tests` compiles `TextMouthiOSTests` for iOS, with the Mac test files it shares (see Mac tests the iPhone shares, below).
+- `make typecheck-ios-tests` compiles `TextMouthiOSTests` for iOS, with the Mac test files it shares (see Mac tests the iPhone shares, below), and the interface bundle `TextMouthiOSUITests`, so the `swiftc` step above is not needed when it runs.
 - So, apart from those two targets and that command, a compile error in a test file is found only by a build that builds the tests.
   - For `TextMouthProductionTests`, `make typecheck-tests` finds it before a train does, and the build train finds it otherwise.
-  - For `TextMouthiOSTests`, `make typecheck-ios-tests` does; for `TextMouthiOSUITests`, that is a simulator build (`build-for-testing`).
+  - For `TextMouthiOSTests` and `TextMouthiOSUITests`, `make typecheck-ios-tests` does.
 - After changing a test file, run `make typecheck-tests` before requesting a train for it.
   Do not take a clean `make typecheck-mac` or `make typecheck-ios` as a sign that its tests compile.
 
