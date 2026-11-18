@@ -14,7 +14,7 @@ from __future__ import annotations
 import bisect
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 # The placeholder an interpolation leaves in a literal's text.
 PLACEHOLDER = "%@"
@@ -95,6 +95,9 @@ class Lexer:
         # The declaration whose initializer is being read: (depth, is a static let, its line), or None.
         self._decl: Optional[Tuple[int, bool, int]] = None
         self._stop_cache: Dict[Tuple[str, str, bool], "re.Pattern[str]"] = {}
+        # The starts of the literals whose innermost bracket is a named call's parenthesis (not
+        # a bare one such as `a + (b ? "x" : "y")`), which a ternary's branches must be in.
+        self._directly_in_call: Set[int] = set()
 
     # ------------------------------------------------------------------ helpers
 
@@ -102,6 +105,7 @@ class Lexer:
         """Lexes the whole file and returns its literals in order."""
         self._lex_code(0, None, [], False)
         self._resolve_plus_neighbours()
+        self._resolve_ternary_branches()
         return self.out
 
     def _line_of(self, pos: int) -> int:
@@ -134,6 +138,14 @@ class Lexer:
         end = self._back(i)
         name = self.s[self._back(end, _IDENT_CHARS):end]
         return name if name and not name[0].isdigit() else None
+
+    def _is_label_colon(self, i: int) -> bool:
+        """Whether the colon at i follows an argument label: an identifier that starts its
+        argument, right after ``(``, ``[``, or ``,``. The colon of a ternary follows something
+        else (``cond ? a : "x"``: ``a`` follows a ``?``), so it labels nothing."""
+        start = self._back(self._back(i), _IDENT_CHARS)
+        before = self._back(start)
+        return start < self._back(i) and before > 0 and self.s[before - 1] in "([,"
 
     def _call_before(self, i: int) -> Tuple[Optional[str], Optional[str]]:
         """The name of the call whose ``(`` is at i and the receiver before its dot, if any."""
@@ -209,7 +221,7 @@ class Lexer:
                         self._decl = None
                 i += 1
             elif tok == ":":
-                if stack and stack[-1]["ch"] in "([":
+                if stack and stack[-1]["ch"] in "([" and self._is_label_colon(i):
                     stack[-1]["label"] = self._ident_before(i)
                 i += 1
             elif tok == ",":
@@ -307,7 +319,9 @@ class Lexer:
                 # An interpolation: lex its code, which may hold strings of its own.
                 has_interp = True
                 pieces.append(PLACEHOLDER)
-                i = self._lex_code(k + 1, ")", list(stack), True)
+                # The frame of its own keeps a colon or comma inside it from changing the label or
+                # the argument index of the call the literal is an argument of.
+                i = self._lex_code(k + 1, ")", list(stack) + [{"ch": "i"}], True)
             elif s[k] == "u" and k + 1 < n and s[k + 1] == "{" and s.find("}", k) > 0:
                 end = s.find("}", k)
                 try:
@@ -346,6 +360,8 @@ class Lexer:
                     call, receiver, label, arg_index = frame["name"], frame["receiver"], frame["label"], frame["arg"]
                 calls.append(frame["name"])
         blocks = [f["decl"] for f in stack if f["ch"] == "{" and f.get("decl")]
+        if stack and stack[-1]["ch"] == "(" and stack[-1]["name"] is not None:
+            self._directly_in_call.add(start)
         line = self._line_of(start)
         end_line = self._line_of(max(start, end - 1))
         line_start = self.line_starts[line - 1]
@@ -370,9 +386,6 @@ class Lexer:
         """Whether the literal is a whole argument: after ``(``, ``[``, ``,``, or a label, and
         before ``,``, ``)``, or ``]``, and so not a piece of a larger expression."""
         s = self.s
-        after = self._forward(end)
-        if after >= self.n or s[after] not in ",)]":
-            return False
         before = self._back(start)
         if before > 0 and s[before - 1] == ":":
             # Skip a label: an identifier and the colon after it.
@@ -381,7 +394,36 @@ class Lexer:
             if label_start == before:
                 return False
             before = self._back(label_start)
-        return before > 0 and s[before - 1] in "([,"
+        return before > 0 and s[before - 1] in "([," and self._ends_argument(end)
+
+    def _ends_argument(self, end: int) -> bool:
+        """Whether the next thing after offset end is a ``,``, ``)``, or ``]``."""
+        after = self._forward(end)
+        return after < self.n and self.s[after] in ",)]"
+
+    def _resolve_ternary_branches(self) -> None:
+        """Marks the literals of ``cond ? "a" : "b"`` as whole arguments when both branches are
+        literals and the ternary ends the argument. The compiler reads such a ternary in a
+        key position as a LocalizedStringKey and extracts both branches; with a variable as
+        the other branch it picks the String overload and extracts neither.
+
+        The ternary has the lowest precedence of the operators, so whatever stands before the
+        ``?`` in the argument is its condition and the first literal needs no other check.
+        """
+        s = self.s
+        by_start = {lit.start: lit for lit in self.out}
+        for first in self.out:
+            before = self._back(first.start)
+            # A `?` right before the literal, but not the `??` of a default value.
+            if before < 1 or s[before - 1] != "?" or (before >= 2 and s[before - 2] == "?") \
+                    or first.start not in self._directly_in_call:
+                continue
+            colon = self._forward(first.end)
+            if colon >= self.n or s[colon] != ":":
+                continue
+            second = by_start.get(self._forward(colon + 1))
+            if second is not None and self._ends_argument(second.end):
+                first.whole_arg = second.whole_arg = True
 
     def _plus_side(self, pos: int, before: bool) -> Optional[str]:
         """What a ``+`` right before (before=True) or after (before=False) the literal joins

@@ -98,8 +98,10 @@ _DATE_FORMAT = re.compile(r"(?=.*(?:yy|MM|dd|HH|hh|mm|ss))[yMdHhmsSEaZzGQwWDFu.:
 # Where a literal is the key the compiler extracts, as a table of call -> (labels, first
 # argument too, and whether the literal must be the whole argument).
 # A SwiftUI call takes its first argument as a LocalizedStringKey, but only a bare literal is
-# one: in `Text(flag ? "a" : "b")` the compiler picks the String overload and the text is shown
-# as is. The Foundation initializers take only a literal, so they need no such check.
+# one: in `Text(flag ? name : "b")` the compiler picks the String overload and the text is shown
+# as is, while a ternary of two literals (`Button(isNew ? "Add" : "Save")`) is read as a key and
+# both branches are extracted. The Foundation initializers take only a literal, so they need
+# no such check.
 KeySpec = Tuple[FrozenSet[str], bool, bool]
 _SWIFTUI_TITLE_CALLS = (
     "Text", "Button", "Label", "Toggle", "Picker", "Menu", "TextField", "SecureField", "Stepper",
@@ -182,6 +184,10 @@ def in_wording_type(lit: Literal, wording_file: bool) -> bool:
 def classify(lit: Literal, wording_file: bool, localizer: Localizer) -> Tuple[str, str]:
     """Returns the literal's bucket and the name of the rule that chose it."""
     text = lit.text
+    # The key of a localizing call is interface text already localized, whatever it holds:
+    # the compiler extracts `Text("\(a): \(b)")` and `Stepper("")` too.
+    if localizer.is_key(lit):
+        return "ui", "localized-key"
     if not any(ch.isalpha() for ch in text):
         return "code", "no-letters"
     # Logging, by the call or by the function the literal is in.
@@ -189,9 +195,6 @@ def classify(lit: Literal, wording_file: bool, localizer: Localizer) -> Tuple[st
         return "log", "log-call"
     if any(_is_log_block(b) for b in lit.blocks[-2:]) or any(_is_log_name(c) for c in lit.calls[1:3]):
         return "log", "log-block"
-    # The key of a localizing call is interface text already localized.
-    if localizer.is_key(lit):
-        return "ui", "localized-key"
     # Text(verbatim:) shows its string as is, so a sentence there is unlocalized interface text.
     if lit.call == "Text" and lit.label == "verbatim" and not lit.in_interp:
         return "ui", "verbatim-text"

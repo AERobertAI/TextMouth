@@ -17,14 +17,16 @@ class CountedBucketTests(ScanCase):
     """The four buckets that are interface text: ui, wording, error, prose, and word."""
 
     def test_ui_a_text_in_a_call_that_shows_text(self) -> None:
-        # Views/Library/LibraryView.swift:588. A ternary inside Label is not a bare literal,
-        # so the compiler shows both strings as is: the bucket is ui, the status unlocalized.
+        # Views/Library/LibraryView.swift:588. A ternary of two literals inside Label is read as
+        # a key: the compiler extracts both branches, so both are localized.
         found = scan_snippet('Label(isEditMode ? "Done" : "Edit", systemImage: "checkmark.circle")')
         self.assertEqual([(l.text, l.bucket, l.rule, l.status) for l in found], [
-            ("Done", "ui", "ui-call", "unlocalized"),
-            ("Edit", "ui", "ui-call", "unlocalized"),
+            ("Done", "ui", "localized-key", "localized"),
+            ("Edit", "ui", "localized-key", "localized"),
             ("checkmark.circle", "code", "code-label", ""),
         ])
+        # A call that shows text but is not one the compiler extracts: unlocalized ui text.
+        self.assertClass('NSMenu(title: "Open Book")', "ui", "ui-call", "unlocalized")
 
     def test_wording_a_literal_in_a_wording_type(self) -> None:
         # Models/LibraryCloudWording.swift:312 (a file whose name holds Wording).
@@ -187,9 +189,12 @@ class LocalizedStatusTests(ScanCase):
     def test_labeled_localized_arguments(self) -> None:
         self.assertEqual(only_status('.searchable(text: $q, prompt: "Search books")'), "localized")
         self.assertEqual(only_status('.accessibilityAction(named: "Delete") { }'), "localized")
-        # The same label with a ternary shows both strings as they are.
+        # The same label with a ternary of two literals extracts both, but with a variable as
+        # the other branch neither: the String overload shows the text as is.
         found = scan_snippet('.searchable(text: $q, prompt: wide ? "Search all books" : "Search")')
-        self.assertEqual([l.status for l in found], ["unlocalized", "unlocalized"])
+        self.assertEqual([l.status for l in found], ["localized", "localized"])
+        found = scan_snippet('.searchable(text: $q, prompt: wide ? hint : "Search")')
+        self.assertEqual([(l.text, l.label, l.status) for l in found], [("Search", "prompt", "unlocalized")])
 
     def test_string_localized_is_localized_and_its_comment_is_not_counted(self) -> None:
         # Synthetic.
@@ -206,10 +211,30 @@ class LocalizedStatusTests(ScanCase):
         # Synthetic: the compiler shows a verbatim string as it is.
         self.assertClass('Text(verbatim: "Library title")', "ui", "verbatim-text", "unlocalized")
 
-    def test_a_ternary_of_literals_in_text_is_not_localized(self) -> None:
-        # Views/Settings/SubstitutionsSettingsView.swift:215: Button(rule.isEnabled ? "Disable" : "Enable").
+    def test_a_ternary_of_two_literals_in_a_key_position_is_localized(self) -> None:
+        # Views/Settings/SubstitutionsSettingsView.swift:215: Button(rule.isEnabled ? "Disable" : "Enable");
+        # the compiler extracts both branches (checked against its stringsdata).
         found = scan_snippet('Button(rule.isEnabled ? "Disable" : "Enable") { toggle() }')
-        self.assertEqual([l.status for l in found], ["unlocalized", "unlocalized"])
+        self.assertEqual([(l.text, l.status) for l in found], [("Disable", "localized"), ("Enable", "localized")])
+
+    def test_a_ternary_with_a_variable_branch_is_not_localized(self) -> None:
+        # Synthetic: the compiler picks the String overload, so the literal is shown as is.
+        found = scan_snippet('Text(isOn ? onTitle : "Off")\nText(isOn ? "On" : offTitle)\nText(name ?? "Untitled")')
+        self.assertEqual([(l.text, l.status) for l in found],
+                         [("Off", "unlocalized"), ("On", "unlocalized"), ("Untitled", "unlocalized")])
+
+    def test_a_ternary_inside_a_larger_expression_is_not_localized(self) -> None:
+        # Synthetic: a bare parenthesis, or a sum, makes a String.
+        found = scan_snippet('Text("Mode: " + (fast ? "Fast mode" : "Slow mode"))')
+        self.assertEqual([l.status for l in found], ["unlocalized"] * 3)
+
+    def test_an_interpolation_only_or_empty_key_is_localized(self) -> None:
+        # Synthetic, from the compiler's stringsdata of Text("\(a): \(b)") and Stepper("").
+        self.assertClass('Text("\\(a): \\(b)")', "ui", "localized-key", "localized")
+        self.assertClass('Stepper("", value: $n)', "ui", "localized-key", "localized")
+        self.assertClass('Text("\\(count)")', "ui", "localized-key", "localized")
+        # Outside a localizing call the same text has no letters and is code.
+        self.assertClass('let x = ""', "code", "no-letters")
 
     def test_a_literal_in_an_interpolation_is_never_the_key(self) -> None:
         found = scan_snippet('Text("Now \\(paused ? "paused" : "playing")")')
@@ -232,6 +257,15 @@ class LocalizedStatusTests(ScanCase):
         found = scan_snippet(code, extra={"TextMouth/Services/Announcer.swift": helper})
         self.assertEqual([(l.text, l.status) for l in found],
                          [("Sleep timer set", "localized"), ("Sleep timer off", "localized"), ("Not a resource", "unlocalized")])
+
+    def test_a_parameter_typed_localized_string_key_makes_its_arguments_localized(self) -> None:
+        # Views/Reader/ReaderView.swift:170: toolbarButton(_ title: LocalizedStringKey, ..., spokenLabel: LocalizedStringKey).
+        helper = ('func toolbarButton(_ title: LocalizedStringKey, systemImage: String, '
+                  'spokenLabel: LocalizedStringKey) {}')
+        found = scan_snippet('toolbarButton("Play", systemImage: "play", spokenLabel: "Play the book")',
+                             extra={"TextMouth/Views/Toolbar.swift": helper})
+        self.assertEqual([(l.text, l.status) for l in found],
+                         [("Play", "localized"), ("play", ""), ("Play the book", "localized")])
 
     def test_a_labeled_resource_parameter_is_found_by_its_label(self) -> None:
         helper = 'func show(title: String.LocalizationValue, detail: String) {}'

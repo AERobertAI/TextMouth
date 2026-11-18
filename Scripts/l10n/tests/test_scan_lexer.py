@@ -134,6 +134,20 @@ class ContextTests(unittest.TestCase):
         found = lex('let t = (ready ? name : "Not ready yet")')
         self.assertEqual((found[0].call, found[0].label), (None, None))
 
+    def test_the_colon_of_a_ternary_is_no_argument_label(self) -> None:
+        # Text(isOn ? onTitle : "Off") must not give "Off" the label onTitle.
+        found = lex('Text(isOn ? onTitle : "Off")\nf(a: c ? 1 : 2, b: "B")\ng(p: c ? "x" : "y")')
+        self.assertEqual([(l.text, l.label) for l in found], [("Off", None), ("B", "b"), ("x", "p"), ("y", "p")])
+
+    def test_a_colon_or_comma_in_an_interpolation_keeps_the_calls_label_and_index(self) -> None:
+        # Views/Library/MetadataEditorView.swift:152 and Views/Reader/ReadingStatsView.swift:89:
+        # a : or , inside \(...) rewrote the label and the index of the call around the literal.
+        found = lex('f(title: "\\(c ? 1 : 2) \\(h(a, b))", "next")')
+        self.assertEqual([(l.text, l.label, l.arg_index) for l in found], [("%@ %@", "title", 0), ("next", None, 1)])
+        found = lex('f("\\(c ? "x" : "y") and \\(d)", "next")')
+        self.assertEqual([(l.text, l.label, l.arg_index, l.in_interp) for l in found],
+                         [("%@ and %@", None, 0, False), ("x", None, 0, True), ("y", None, 0, True), ("next", None, 1, False)])
+
     def test_a_generic_call_keeps_its_name(self) -> None:
         self.assertEqual(lex('let a = Array<String>(arrayLiteral: "x")')[0].call, "Array")
 
@@ -154,7 +168,14 @@ class ContextTests(unittest.TestCase):
     def test_a_whole_argument_is_not_part_of_an_expression(self) -> None:
         found = lex('Text("a")\nText(flag ? "b" : "c")\nText("d" + name)\nText(verbatim: "e")\nText(name + "f")\nf(x, "g", y)')
         self.assertEqual(texts_of(found), ["a", "b", "c", "d", "e", "f", "g"])
-        self.assertEqual([l.whole_arg for l in found], [True, False, False, False, True, False, True])
+        # The two branches of a ternary of literals are whole arguments together.
+        self.assertEqual([l.whole_arg for l in found], [True, True, True, False, True, False, True])
+
+    def test_a_ternary_branch_is_whole_only_when_the_other_branch_is_a_literal(self) -> None:
+        code = 'a(x ? "b" : c)\na(x ? c : "d")\na(x ?? "e")\na(p + (x ? "f" : "g"))\na(l: x ? "h" : "i", 1)\na(x ? "j" : "k" + m)'
+        self.assertEqual([(l.text, l.whole_arg) for l in lex(code)], [
+            ("b", False), ("d", False), ("e", False), ("f", False), ("g", False),
+            ("h", True), ("i", True), ("j", False), ("k", False)])
 
 
 class StaticLetTests(unittest.TestCase):

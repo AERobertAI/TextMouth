@@ -21,8 +21,8 @@ SOURCE_DIR = "TextMouth"
 
 # A declaration of a function, up to its opening parenthesis.
 _FUNC = re.compile(r"\bfunc\s+([A-Za-z_]\w*)\s*(?:<[^>(]*>)?\s*\(")
-# A parameter typed as a localized string: the part after its colon.
-_RESOURCE_TYPE = re.compile(r"\s*(?:@\w+\s+)*(?:String\.)?(?:LocalizedStringResource|LocalizationValue)\b")
+# A parameter typed as a localized string (a resource, a value, or a key): the part after its colon.
+_RESOURCE_TYPE = re.compile(r"\s*(?:@\w+\s+)*(?:String\.)?(?:LocalizedStringResource|LocalizationValue|LocalizedStringKey)\b")
 # A parameter's names: an external label and an internal name, or one name for both.
 _PARAM_NAMES = re.compile(r"\s*(?:@\w+(?:\([^)]*\))?\s+)*(?:([A-Za-z_]\w*)\s+)?([A-Za-z_]\w*)\s*:(.*)", re.S)
 
@@ -67,8 +67,8 @@ def _parameter_list(text: str, open_paren: int) -> str:
 
 
 def collect_resource_params(texts: Iterable[str]) -> ResourceParams:
-    """Finds the functions with a parameter typed LocalizedStringResource or
-    String.LocalizationValue, as {name: [(external label or None, position)]}.
+    """Finds the functions with a parameter typed LocalizedStringResource,
+    String.LocalizationValue, or LocalizedStringKey, as {name: [(external label or None, position)]}.
 
     The compiler extracts a literal passed to such a parameter, so the scanner calls it
     localized. A function name shared by overloads is taken as one: that can only make the
@@ -76,7 +76,7 @@ def collect_resource_params(texts: Iterable[str]) -> ResourceParams:
     """
     found: ResourceParams = {}
     for text in texts:
-        if "LocalizedStringResource" not in text and "LocalizationValue" not in text:
+        if "Localized" not in text and "LocalizationValue" not in text:
             continue
         for match in _FUNC.finditer(text):
             params = _parameter_list(text, match.end() - 1)
