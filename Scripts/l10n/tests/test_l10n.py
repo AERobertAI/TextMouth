@@ -88,6 +88,12 @@ class SyncCase(TemporaryCase):
         self.catalog = self.write_catalog({})
         self.locations = self.folder / "out" / "locations.json"
         self.lines = []
+        self.config = self.folder / "sync-config.json"
+        self.set_sync_paths("TextMouth/**")
+
+    def set_sync_paths(self, *globs):
+        """Writes the sync's configuration with these `syncPaths`."""
+        self.config.write_text(json.dumps({"syncPaths": list(globs)}))
 
     def manifests(self):
         """The two runs' manifests, as the sync reads them."""
@@ -95,7 +101,7 @@ class SyncCase(TemporaryCase):
 
     def sync(self):
         """Runs the sync on the copies; returns its exit status (its lines are in `self.lines`)."""
-        args = args_for("sync", self.catalog, verbose=False)
+        args = args_for("sync", self.catalog, verbose=False, config=self.config)
         return l10n.sync_manifests(args, self.manifests(), self.lines.append, self.locations)
 
     def edit_manifest(self, which, **changes):
@@ -128,7 +134,7 @@ class SyncTests(SyncCase):
         text = "\n".join(self.lines)
         self.assertIn("Localizable: 4 added, 0 became stale, 0 no longer stale, 0 removed", text)
         self.assertIn("the English text went from 0 to 35 bytes", text)
-        self.assertIn("found 5 strings in 6 files (Mac 4, iPhone 3", text)
+        self.assertIn("kept 5 strings of 6 converted files (Mac 4, iPhone 3", text)
 
     def test_the_catalog_is_left_in_the_tools_layout(self):
         self.sync()
@@ -176,12 +182,131 @@ class SyncTests(SyncCase):
     def test_a_table_with_a_catalog_of_its_name_is_synced_there(self):
         menus = self.write_catalog({}, "Menus.xcstrings")
         self.catalog = self.folder / "Localizable.xcstrings"
-        args = args_for("sync", self.catalog)
+        args = args_for("sync", self.catalog, config=self.config)
         with mock.patch.object(l10n, "catalog_path", lambda _args, table=l10n.TABLE: self.folder / f"{table}.xcstrings"):
             status = l10n.sync_manifests(args, self.manifests(), self.lines.append, self.locations)
         self.assertEqual(status, 0)
         self.assertEqual(sorted(catalog.Catalog.load(menus).strings), ["Shortcut"])
         self.assertNotIn("Shortcut", catalog.Catalog.load(self.catalog).strings)
+
+
+@unittest.skipUnless(HAS_TOOL, "xcstringstool is not installed")
+class SyncPathsTests(SyncCase):
+    """`syncPaths`: the catalog holds the strings of the converted files only."""
+
+    def keys(self):
+        """The keys the catalog holds."""
+        return sorted(catalog.Catalog.load(self.catalog).strings)
+
+    def add_entry(self, platform, name, key):
+        """Adds `key` to the entries of a file of a run."""
+        path = self.runs[platform] / name
+        data = json.loads(path.read_text())
+        data["tables"].setdefault("Localizable", []).append(
+            {"comment": "also here", "key": key, "location": {"startingColumn": 1, "startingLine": 99}})
+        path.write_text(json.dumps(data))
+
+    def test_a_key_in_a_converted_file_is_kept_and_one_only_in_unconverted_files_is_left_out(self):
+        self.set_sync_paths("TextMouth/Views/**")
+        self.sync()
+        self.assertEqual(self.keys(), ["%lld books", "Play"])
+        self.assertIn("left out by syncPaths (TextMouth/Views/**): 3 strings", "\n".join(self.lines))
+
+    def test_the_other_files_strings_are_kept_when_the_other_glob_is_given(self):
+        self.set_sync_paths("TextMouth/Platform/**")
+        self.sync()
+        self.assertEqual(self.keys(), ["Reveal in Finder", "Share"])
+
+    def test_a_key_in_a_converted_and_an_unconverted_file_is_kept(self):
+        # Play is in LibraryView.swift (not converted here) and also in MacOnly.swift (converted).
+        self.add_entry("macos", "MacOnly.stringsdata", "Play")
+        self.set_sync_paths("TextMouth/Platform/macOS/**")
+        self.sync()
+        self.assertIn("Play", self.keys())
+        places = json.loads(self.locations.read_text())["Localizable"]["Play"]
+        self.assertEqual(places, [{"file": "TextMouth/Platform/macOS/MacOnly.swift", "line": 99}],
+                         "the locations list the converted files' places only")
+
+    def test_an_empty_sync_paths_gives_an_empty_catalog(self):
+        self.set_sync_paths()
+        self.sync()
+        self.assertEqual(self.keys(), [])
+        self.assertIn("left out by syncPaths (none): 5 strings", "\n".join(self.lines))
+
+    def test_an_empty_sync_paths_removes_the_strings_a_catalog_held_without_translations(self):
+        self.set_sync_paths("TextMouth/**")
+        self.sync()
+        self.assertEqual(len(self.keys()), 4)
+        self.set_sync_paths()
+        self.sync()
+        self.assertEqual(self.keys(), [])
+
+    def test_a_key_that_leaves_every_converted_file_goes_stale_and_keeps_its_translation(self):
+        self.set_sync_paths("TextMouth/**")
+        self.sync()
+        cat = catalog.Catalog.load(self.catalog)
+        cat.strings["Share"]["localizations"] = {"es": unit("Compartir")}
+        cat.save()
+        self.set_sync_paths("TextMouth/Views/**", "TextMouth/Platform/macOS/**")
+        self.sync()
+        cat = catalog.Catalog.load(self.catalog)
+        self.assertTrue(cat.is_stale(cat.strings["Share"]))
+        self.assertEqual(cat.units("Share", "es")[0].value, "Compartir")
+
+    def test_both_platforms_are_still_read_so_the_other_apps_converted_strings_are_not_stale(self):
+        self.set_sync_paths("TextMouth/Platform/**")
+        self.sync()
+        cat = catalog.Catalog.load(self.catalog)
+        self.assertEqual(sorted(cat.strings), ["Reveal in Finder", "Share"])
+        self.assertFalse(any(cat.is_stale(entry) for entry in cat.strings.values()))
+
+    def test_the_record_of_what_was_left_out_is_written_and_status_and_size_say_it(self):
+        self.set_sync_paths("TextMouth/Views/**")
+        self.sync()
+        record = l10n.read_left_out(self.locations.parent)
+        self.assertEqual((record["kept"], record["leftOut"]), (2, 3))
+        self.assertEqual(record["leftOutKeys"], {"Localizable": ["Reveal in Finder", "Share"], "Menus": ["Shortcut"]})
+        for command, function in (("status", l10n.cmd_status), ("size", l10n.cmd_size)):
+            out = io.StringIO()
+            with mock.patch.object(l10n, "OUTPUT", self.locations.parent), contextlib.redirect_stdout(out):
+                function(args_for(command, self.catalog, config=self.config))
+            self.assertIn("Strings left out by syncPaths: 3 found by the compiler in files not yet converted (the last sync kept 2",
+                          out.getvalue(), command)
+
+
+class GlobTests(unittest.TestCase):
+    """The globs of `syncPaths`."""
+
+    def matches(self, glob, path):
+        """Whether `glob` matches `path`."""
+        return l10n.path_matcher([glob])(path)
+
+    def test_double_star_matches_any_depth_and_the_whole_tree(self):
+        self.assertTrue(self.matches("TextMouth/**", "TextMouth/Views/Library/LibraryView.swift"))
+        self.assertTrue(self.matches("TextMouth/Views/**", "TextMouth/Views/A.swift"))
+        self.assertFalse(self.matches("TextMouth/Views/**", "TextMouth/Models/A.swift"))
+        self.assertFalse(self.matches("TextMouth/**", "Vendor/A.swift"))
+
+    def test_a_single_star_stays_within_one_folder(self):
+        self.assertTrue(self.matches("TextMouth/Views/*.swift", "TextMouth/Views/A.swift"))
+        self.assertFalse(self.matches("TextMouth/Views/*.swift", "TextMouth/Views/Library/A.swift"))
+        self.assertTrue(self.matches("TextMouth/Models/*Wording.swift", "TextMouth/Models/BookWording.swift"))
+
+    def test_double_star_slash_matches_no_folder_at_all(self):
+        self.assertTrue(self.matches("TextMouth/**/*.swift", "TextMouth/A.swift"))
+        self.assertTrue(self.matches("TextMouth/**/*.swift", "TextMouth/Views/Library/A.swift"))
+        self.assertFalse(self.matches("TextMouth/**/*.swift", "TextMouth/Views/A.txt"))
+
+    def test_a_question_mark_is_one_character_and_a_dot_is_a_dot(self):
+        self.assertTrue(self.matches("TextMouth/A?.swift", "TextMouth/Ab.swift"))
+        self.assertFalse(self.matches("TextMouth/A?.swift", "TextMouth/A/.swift"))
+        self.assertFalse(self.matches("TextMouth/A.swift", "TextMouth/AXswift"))
+
+    def test_no_globs_match_nothing(self):
+        self.assertFalse(l10n.path_matcher([])("TextMouth/A.swift"))
+
+    def test_a_path_must_match_whole(self):
+        self.assertFalse(self.matches("TextMouth/A", "TextMouth/A.swift"))
 
 
 class RefusalTests(SyncCase):
@@ -524,7 +649,8 @@ class CommandTests(TemporaryCase):
 
     def test_a_bad_configuration_exits_2_and_says_which_file(self):
         config = self.folder / "config.json"
-        for text in ('{"languages": "es"}', '{"budgetBytes": 0}', '{"budgetFails": "yes"}', "not json"):
+        for text in ('{"languages": "es"}', '{"budgetBytes": 0}', '{"budgetFails": "yes"}', '{"syncPaths": "TextMouth/**"}',
+                     '{"syncPaths": [""]}', "not json"):
             config.write_text(text)
             status, _out, err = self.run_main("check", "--config", str(config))
             self.assertEqual(status, 2, text)
@@ -547,7 +673,7 @@ class CommandTests(TemporaryCase):
 
     def test_the_repositorys_configuration_ships_no_language_and_reports_the_budget(self):
         config = l10n.load_config()
-        self.assertEqual(config, {"languages": [], "budgetBytes": 150000, "budgetFails": False})
+        self.assertEqual(config, {"languages": [], "budgetBytes": 150000, "budgetFails": False, "syncPaths": []})
 
 
 if __name__ == "__main__":

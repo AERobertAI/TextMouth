@@ -61,13 +61,18 @@ PLATFORM_NAMES = {"macos": "Mac", "ios": "iPhone"}
 MAIN = repo_paths.main_checkout()
 OUTPUT = MAIN / "build" / "l10n"
 LOCATIONS_FILE = "locations.json"
+# What the last sync left out by `syncPaths`, for `status` and `size` to say.
+LEFT_OUT_FILE = "left-out.json"
 # The line `typecheck.py --emit-strings` ends with, naming the folder of the strings it wrote, and the file in that folder
 # that says what the run found (both defined by typecheck.py; repeated here because that script is run, not imported).
 STRINGS_FOLDER_LINE = "Strings folder: "
 STRINGS_MANIFEST = "manifest.json"
 # The configuration's defaults: no language ships until Spanish is translated; the English budget in bytes (the
 # user's 150 KB for the interface text) only reports until the cutting is done.
-DEFAULT_CONFIG = {"languages": [], "budgetBytes": 150000, "budgetFails": False}
+# `syncPaths` are repository-relative globs of the converted files: the sync keeps only the strings found in them (see
+# path_matcher), so the catalog holds exactly the converted areas and `check`'s comment rule can hold from the first commit.
+# The conversion waves add their globs, ending with "TextMouth/**".
+DEFAULT_CONFIG = {"languages": [], "budgetBytes": 150000, "budgetFails": False, "syncPaths": []}
 # How many problems `check` prints unless --limit says otherwise.
 DEFAULT_LIMIT = 100
 # The longest a key is shown in a line.
@@ -117,6 +122,8 @@ def load_config(path=CONFIG_PATH):
         raise Refused(f"{path}: budgetBytes must be a whole number above zero", EXIT_USAGE)
     if not isinstance(config["budgetFails"], bool):
         raise Refused(f"{path}: budgetFails must be true or false", EXIT_USAGE)
+    if not (isinstance(config["syncPaths"], list) and all(isinstance(glob, str) and glob for glob in config["syncPaths"])):
+        raise Refused(f"{path}: syncPaths must be a list of repository-relative globs", EXIT_USAGE)
     return config
 
 
@@ -215,19 +222,59 @@ def read_stringsdata(path):
         raise Refused(f"cannot read {path}: {error}", EXIT_USAGE)
 
 
-def collect(manifests):
-    """What the runs found: ({table: {key: [{"file": repository path, "line": n}, ...]}} with each key's places sorted
-    and without repeats, {platform: {table: set of keys}})."""
-    places, by_platform = {}, {}
+def glob_regex(glob):
+    """The regular expression of a repository-relative glob: `**` matches anything, slashes included (`**/` also no
+    folder at all, so `TextMouth/**/*.swift` matches `TextMouth/A.swift`), `*` and `?` match within one folder's name."""
+    pieces, index = [], 0
+    while index < len(glob):
+        if glob.startswith("**/", index):
+            pieces.append("(?:.*/)?")
+            index += 3
+        elif glob.startswith("**", index):
+            pieces.append(".*")
+            index += 2
+        elif glob[index] == "*":
+            pieces.append("[^/]*")
+            index += 1
+        elif glob[index] == "?":
+            pieces.append("[^/]")
+            index += 1
+        else:
+            pieces.append(re.escape(glob[index]))
+            index += 1
+    return re.compile("".join(pieces) + r"\Z")
+
+
+def path_matcher(globs):
+    """A function from a repository-relative path to whether any of `globs` matches it; with no globs, none does."""
+    patterns = [glob_regex(glob) for glob in globs]
+    return lambda path: any(pattern.match(path) for pattern in patterns)
+
+
+def relative_source(data, root):
+    """The repository-relative path of the source file a .stringsdata file records, under the type-check's copy `root`."""
+    try:
+        return Path(data["source"]).relative_to(root).as_posix()
+    except ValueError:
+        return Path(data["source"]).name
+
+
+def collect(manifests, keep=lambda path: True):
+    """What the runs found in the files whose repository path `keep` accepts: ({table: {key: [{"file": repository path,
+    "line": n}, ...]}} with each key's places sorted and without repeats, {platform: {table: set of keys}}, {table: set of
+    every key the runs found, kept or not}, the .stringsdata paths that were kept)."""
+    places, by_platform, everything, kept_files = {}, {}, {}, []
     for manifest in manifests:
         root = Path(manifest["sourceRoot"])
         found = by_platform.setdefault(manifest["platform"], {})
         for name in manifest["files"]:
             data = read_stringsdata(manifest["folder"] / name)
-            try:
-                relative = Path(data["source"]).relative_to(root).as_posix()
-            except ValueError:
-                relative = Path(data["source"]).name
+            relative = relative_source(data, root)
+            for table, entries in data.get("tables", {}).items():
+                everything.setdefault(table, set()).update(entry["key"] for entry in entries)
+            if not keep(relative):
+                continue
+            kept_files.append(manifest["folder"] / name)
             for table, entries in data.get("tables", {}).items():
                 for entry in entries:
                     key = entry["key"]
@@ -239,7 +286,7 @@ def collect(manifests):
     for keys in places.values():
         for spots in keys.values():
             spots.sort(key=lambda spot: (spot["file"], spot["line"]))
-    return places, by_platform
+    return places, by_platform, everything, kept_files
 
 
 class SyncReport:
@@ -281,8 +328,13 @@ def sync_manifests(args, manifests, say, output=None):
     """The sync itself, from two strings folders' manifests: checks them, merges them into each catalog that has a table in
     them, writes the locations, and prints what changed. Returns the exit status."""
     check_manifests(manifests)
-    places, by_platform = collect(manifests)
-    files = [manifest["folder"] / name for manifest in sorted(manifests, key=lambda m: m["platform"]) for name in manifest["files"]]
+    config = load_config(args.config)
+    places, by_platform, everything, files = collect(sorted(manifests, key=lambda m: m["platform"]), path_matcher(config["syncPaths"]))
+    # A sync with nothing kept would give xcstringstool no file; an empty one makes it drop every string it can.
+    nothing = manifests[0]["folder"] / "filtered" / "none.stringsdata"
+    nothing.parent.mkdir(parents=True, exist_ok=True)
+    nothing.write_text(json.dumps({"source": "none.swift", "tables": {}, "version": 1}), encoding="utf-8")
+    files = [nothing] + files
     # A catalog takes the strings of the table it is named for, and no other: report a table nobody made a catalog for.
     problems = 0
     tables = set(places) | {TABLE}
@@ -298,8 +350,10 @@ def sync_manifests(args, manifests, say, output=None):
             continue
         reports[table] = sync_catalog(path, files)
     found = {table: len(keys) for table, keys in places.items()}
+    left_out = {table: sorted(everything[table] - set(places.get(table, {}))) for table in everything}
+    say_left_out(say, config, found, left_out)
     per_app = ", ".join(f"{PLATFORM_NAMES[p]} {number(sum(len(k) for k in by_platform[p].values()))}" for p in PLATFORMS)
-    say(f"found {number(sum(found.values()))} strings in {number(len(files))} files ({per_app}; some are in both)")
+    say(f"kept {number(sum(found.values()))} strings of {number(len(files) - 1)} converted files ({per_app}; some are in both)")
     for table, report in reports.items():
         say(f"{table}: {number(len(report.added))} added, {number(len(report.stale))} became stale, "
             f"{number(len(report.revived))} no longer stale, {number(len(report.removed))} removed")
@@ -313,7 +367,45 @@ def sync_manifests(args, manifests, say, output=None):
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(places, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
     say(f"wrote {destination.name}: the files and lines of {number(sum(found.values()))} strings, in {destination.parent}")
+    write_left_out(destination.parent / LEFT_OUT_FILE, config, found, left_out)
     return EXIT_PROBLEMS if problems else EXIT_OK
+
+
+def left_out_summary(config, found, left_out):
+    """What a sync kept and left out, as a dict: the globs, how many strings it kept and left out (each key of each table
+    counted once), and the left-out keys by table, so that nothing falls through the cracks."""
+    return {"syncPaths": config["syncPaths"], "kept": sum(found.values()),
+            "leftOut": sum(len(keys) for keys in left_out.values()),
+            "leftOutKeys": {table: keys for table, keys in sorted(left_out.items()) if keys}}
+
+
+def say_left_out(say, config, found, left_out):
+    """Says how many of the strings the compiler found `syncPaths` left out of the catalog."""
+    count = sum(len(keys) for keys in left_out.values())
+    shown = ", ".join(config["syncPaths"]) or "none"
+    say(f"left out by syncPaths ({shown}): {number(count)} strings, found only in files not yet converted")
+
+
+def write_left_out(path, config, found, left_out):
+    """Writes the record of what the sync left out, which `status` and `size` read."""
+    path.write_text(json.dumps(left_out_summary(config, found, left_out), indent=1, sort_keys=True, ensure_ascii=False) + "\n",
+                    encoding="utf-8")
+
+
+def read_left_out(folder=None):
+    """The record of the last sync's left-out strings ({"leftOut": n, ...}), or None when none was written here."""
+    try:
+        return json.loads(((folder or OUTPUT) / LEFT_OUT_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def left_out_line(record):
+    """The sentence `status` and `size` say about the strings syncPaths left out, from the last sync's record."""
+    if record is None:
+        return "Strings left out by syncPaths: unknown here, since no sync has been recorded (run make l10n-sync)."
+    return (f"Strings left out by syncPaths: {number(record['leftOut'])} found by the compiler in files not yet converted "
+            f"(the last sync kept {number(record['kept'])}; syncPaths: {', '.join(record['syncPaths']) or 'none'}).")
 
 
 def cmd_sync(args):
@@ -366,6 +458,9 @@ def cmd_status(args):
                      f"{number(counts['missing'])} missing")
     if not languages:
         lines.append("No language is shipped or translated yet.")
+    record = read_left_out()
+    data["leftOutBySyncPaths"] = record["leftOut"] if record else None
+    lines.append(left_out_line(record))
     emit(args, data, lines)
     return EXIT_OK
 
@@ -425,6 +520,9 @@ def cmd_size(args):
         lines.append(f"{language}: {shown}")
     if not sizes:
         lines.append("No language is in the catalog yet, so nothing is compiled.")
+    record = read_left_out()
+    data["leftOutBySyncPaths"] = record["leftOut"] if record else None
+    lines.append(left_out_line(record))
     emit(args, data, lines)
     return EXIT_OK
 
