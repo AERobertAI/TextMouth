@@ -70,9 +70,9 @@ STALE_MARKER = "has been modified since the module file"
 MISSING_MODULE = re.compile(r"(?:module file|\.pcm)[^\n]*not found")
 # What a retry's note and a summary call the missing-module failure, as STALE_MARKER names the stale one.
 MISSING_MARKER = "module file ... not found"
-# What a train's summary says when the iPhone build's only errors are that one.
-STALE_SENTENCE = ("the runner's module cache was stale (it was made on another runner image), not this branch's code; "
-                  "nothing to fix in any file")
+# What a train's summary says when the iPhone build's only errors are a cache failure (either kind).
+STALE_SENTENCE = ("the runner's module cache failed the build (it was stale, made on another runner image, or lacked a module "
+                  "its build database claims), not this branch's code; nothing to fix in any file")
 # How long a call to xcodebuild or xcode-select may take, in seconds.
 CALL_SECONDS = 60
 
@@ -215,7 +215,7 @@ def is_stale_module_error(text):
 def cache_failure(text):
     """The words naming how a restored module cache failed the build whose log (or error line) is `text`: STALE_MARKER for
     a module built before a file changed, MISSING_MARKER for a precompiled module that is not there, or None when the
-    text holds neither (a real compile error). The one test of a log that every retry and summary shares."""
+    text holds neither (a real compile error). The one test of a log that the iPhone build's retry and summary share (run-on-runner.py still looks only for the stale kind)."""
     if is_stale_module_error(text):
         return STALE_MARKER
     return MISSING_MARKER if MISSING_MODULE.search(text) else None

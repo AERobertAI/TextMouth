@@ -94,6 +94,9 @@ GH_ATTEMPTS = 4
 GH_RETRY_SECONDS = 15
 # How long one `gh` or `git` call may take before it counts as failed.
 CALL_SECONDS = 120
+# The conclusions of a run that ended without a verdict on its tests (a cancelled run's results are partial, and none is
+# collected later). build-train.py and run_suite.py judge a finished run by this list too.
+UNFINISHED_RUNS = ("cancelled", "timed_out", "startup_failure", "skipped", "stale", "action_required")
 # The words with which `gh run download` says the run has no such artifact (a run that was cancelled or broke before its
 # upload), which no retry will change; any other failure of the download is a lost connection, and is retried.
 NO_ARTIFACT_WORDS = ("no artifact", "no valid artifact")
@@ -497,8 +500,7 @@ def recorded_run(path, key, progress=None):
         if any(words in str(failure).lower() for words in NO_SUCH_RUN_WORDS):
             return None
         raise
-    over_without_results = state.get("status") == "completed" and state.get("conclusion") not in ("success", "failure")
-    if state.get("headSha") != record.get("commit") or over_without_results:
+    if state.get("headSha") != record.get("commit") or state.get("conclusion") in UNFINISHED_RUNS:
         return None
     write_record(path, {**record, "tries": record.get("tries", 0) + 1})
     if progress:
