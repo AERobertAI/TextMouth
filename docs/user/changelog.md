@@ -4,6 +4,33 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.3 (November 18, 2026)
+
+### Audio that macOS can't read, on the iPhone
+- The iPhone now imports WMA, Matroska and WebM, AVI, Flash video, RealMedia, and Speex audio, and the sound of WMV video, as the Mac does, with the same converter, which TextMouth carries inside the app.
+- Each file becomes the same book as on the Mac: the same sound, chapters, title, and author.
+- Before, the iPhone refused these files and said to add them on your Mac.
+- Musepack is accepted the same way, but no Musepack file has been tried yet, on the Mac or the iPhone, so it may fail.
+- A copy-protected Windows Media file is told first, with the Mac's sentence: "TextMouth cannot open copy-protected files."
+- The iPhone app is 2.4 MB larger, 16.1 MB in all, for the converter, and the Licenses folder in it holds FFmpeg's licence.
+- The iPhone still refuses Ogg and the audio the Mac converts with Apple's converter, such as Opus, AC-3, AMR, MP2, and CAF, with "“Radio Drama” is in Ogg, which TextMouth on iPhone can't play yet. Add it on your Mac, then send the book here."
+
+### Switching apps on the iPhone
+- Time limits on the iPhone now count only the time TextMouth is running, for the converter and for braille.
+- Switching to another app in the middle of an import no longer stops it for taking too long.
+- Before, switching apps in the middle of a braille translation could stop braille until TextMouth was closed and opened again, with "TextMouth stopped the braille translation earlier because it took too long, and won't try again until TextMouth is closed and opened again."
+
+### Memory on the iPhone
+- The converter keeps 512 MB of the app's memory free, or half of what was free when it began, if that is less, so that iOS does not end TextMouth in the middle of a book.
+- A file that would take more is stopped with "Converting tones.wma was stopped because the app's memory grew by more than 1700 MB while it ran."
+- A phone that began with little memory free says "Converting tones.wma was stopped because the iPhone had only 400 MB of memory free when it began, and TextMouth keeps half of that free."
+
+### On the Mac and the iPhone
+- A file with a piece of sound too large for TextMouth to decode, as no good file has, is refused with "TextMouth can't convert “Radio.mkv”: part of its sound is stored in one piece too large for TextMouth to decode."
+
+### Not changed
+- How any other format imports, reads, or plays.
+
 ## 0.5.2 (November 17, 2026)
 
 ### Audio that macOS can't read

@@ -196,9 +196,11 @@ It waits for that commit's run, found by its SHA, for up to 125 minutes, downloa
 The test command is made in one place, `Scripts/agents/test_command.py`, which the local train, `run_suite.py`, and the runner script (`Scripts/agents/run-on-runner.py`) all call.
 A remote train takes no heavy-work lock, skips the disk check and the iOS census, and shares the train's own lock with a remote suite, since a newer push to `TestBuild` cancels the older run.
 If its push or run fails, it puts every request back in the queue, tells each agent and the orchestrator, and the loop waits 15 minutes before the next try.
+A lost connection is only a missed poll, and the next train collects a run this one could not (see [A remote train and a lost connection](../developer/testing-tools.md#a-remote-train-and-a-lost-connection)).
+Restart the loop between trains (`status` says "running now: no"): killed while a train is on GitHub, its requests are stranded in its folder with no record.
 A long request runs as up to four parallel jobs (`Scripts/agents/shard.py` deals the classes out; `merge_shards.py` joins the results into the one artifact the Mac reads), and build products are cached between runs (`restore_mtimes.py`).
 A cache made on another runner image is emptied by a toolchain stamp, and its build is tried once more ([A cache made on another runner image](../developer/building-ios.md#a-cache-made-on-another-runner-image)).
-When every error of a train's iPhone build is "has been modified since the module file", its summary says the runner's module cache was stale, not the branch's code, so nobody chases a file for it.
+When the only errors of a train's iPhone build are cache failures, "has been modified since the module file" or "module file ... not found" (retried from an empty folder), its summary says the module cache failed the build, not the branch's code, so nobody chases a file for it.
 The full suite takes about 26 minutes, the iPhone job being the longest part (80 without finishing before the tuning).
 The runner cannot start the audio engine and has other limits, so `Scripts/agents/runner-skips.conf` lists the 14 entries (of about 12,470 tests) it does not run, each with its reason.
 Each remote result says which of an agent's requested tests were among them ("Not run on GitHub, no verdict").

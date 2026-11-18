@@ -49,7 +49,7 @@ It
 It reads a record of the helper's .braille-out.txt for each piece, and where a paragraph of more than maximumPieceScalars (4,000) is cut inside an emphasized passage, the passage is written as two passages, each with its own indicators, and read back, the words after the cut come back plain.
 
 ### The translator on the iPhone
-<!-- id: translator-in-process-iphone; keys: InProcessEngine, tmb_translate, TextMouthBrailleLibrary, liblouis_iOS, bundled tables, abandoned call, DR34; src: TextMouth/Services/InProcessEngine.swift, TextMouth/Models/InProcessEngineWording.swift, TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/TextMouthBrailleLibrary.c, TextMouthBraille/include/TextMouthBrailleLibrary.h, TextMouth/Phone/PhoneImportRefusal.swift; status: incomplete; issues: FR32, FU02 -->
+<!-- id: translator-in-process-iphone; keys: InProcessEngine, tmb_translate, TextMouthBrailleLibrary, liblouis_iOS, bundled tables, abandoned call, DR34; src: TextMouth/Services/InProcessEngine.swift, TextMouth/Models/InProcessEngineWording.swift, TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/TextMouthBrailleLibrary.c, TextMouthBraille/include/TextMouthBrailleLibrary.h, TextMouth/Phone/PhoneImportRefusal.swift; status: incomplete; issues: FR32, FU02, B20 -->
 
 iOS starts no helper, so the iPhone runs the same translation inside the app (DR34).
 TextMouthBraille/main.c is a thin main around TextMouthBraille/TextMouthBrailleLibrary.c, which both apps build: `tmb_translate` takes a request and gives a response in memory, in the same protocol 2, and unloads every table however a call ends.
@@ -61,8 +61,10 @@ Its iPhone targets in project.yml are liblouis_iOS and TextMouthBrailleLibrary_i
   - a record of at most 4,000 characters (status 4);
   - the output of each batch, and of the whole book, within the Mac's cap for its input (statuses 8 and 9, in the Mac's words);
   - the library's time over all the batches within what the Mac allows its helper.
+- A call is timed by `RunningClock`, which counts only running time ([B18](imports-audio-ffmpeg.md#the-in-app-run)).
 - A call still running 5 seconds past its limit is abandoned: its thread, which cannot be killed, drops to a lower priority, its caller gets `Failure.abandoned`, and the engine refuses every later call (`Failure.refused`) until TextMouth is closed and opened again.
   InProcessEngineWording holds both sentences, which end "won't try again until TextMouth is closed and opened again", and IN_PROCESS_CALL_ABANDONED is logged.
+  Its sentence names the call's limit, not the book's (B20).
 - Only the bundled tables are used, by bare name: the four English tables of Vendor/liblouis/tables, in the app's liblouis folder, with the files they include.
   `requireBundledTable` throws `Failure.unknownTable` for any other.
   A book that needs one of a Mac's own tables, or a config.json import table from a Mac, is refused first by `PhoneImportRefusal.macBrailleTable`, in the phone's words.
@@ -164,9 +166,9 @@ So "can" in "can't", which contracted EBAE reads as one rule from ⠉⠄⠞, is 
 <!-- id: ebae-fix-pass; keys: en_US.tbl, word signs, initials, still, before, micro sign, spacing fix; src: TextMouthBraille/main.c, TextMouthProductionTests/BrailleEbaeFixesTests.swift, TextMouthProductionTests/BrailleEmphasisReadingTests.swift -->
 
 - The EBAE fix pass (`fix_ebae_cells`): what contracted EBAE's table (liblouis's en-us-g2.ctb) misreads in a book set in it, as the user's Life of Pi BRF showed, is fixed in TextMouth's own pass over the cells before liblouis reads them.
-  That is so that the fix holds for any table that reads EBAE, the bundled or this Mac's, which TextMouth never edits.
+  So the fix holds for any table that reads EBAE, the bundled or this Mac's, which TextMouth never edits.
   The pass only rewrites cells into cells that liblouis reads right, spaced apart or spelled in letters (which liblouis reads as it reads the contraction's letters in print), so the emphasis pass and its safety net read the very same cells.
-  Measured on the Life of Pi's text through en_US.tbl, piped, the words that did not match the print fell from 2,266 (2.21 percent) to 703 (0.68 percent): "ofthe" from 613 to 0, "andthe" from 201 to 2, "ofa" from 192 to 1, "witha" from 148 to 3, "forthe" from 114 to 0, "withthe" from 89 to 0.
+  Measured on the Life of Pi's text through en_US.tbl, the words that did not match the print fell from 2.21 percent to 0.68 percent.
   - The gate: read_braille runs it, as its first step, only when uses_code(emphasis, CODE_EBAE) holds, the table writes EBAE's emphasis signs (found by translating a probe, never by the table's name), and table_emphasis.contracted does.
     It is set by reads_word_signs when the table reads each of the six cells ⠯ ⠿ ⠷ ⠮ ⠾ ⠁ alone as "and", "for", "of", "the", "with", and "a".
     So uncontracted EBAE, UEB, and every other table are read as before; with no memory the cells are read unfixed.

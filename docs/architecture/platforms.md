@@ -47,9 +47,10 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
   `Scripts/ios/sync-info-plist.py` writes the iOS file from the Mac's, `TextMouth/Resources/Info.plist`, so the two cannot drift apart by hand, and `make check-ios-plist` (`--check`) exits 1 when the iOS file is stale:
   - It leaves out the document types iOS cannot import, with the declaration of any type nothing else names:
     - "Ogg Audio" and "Audio Converted at Import" (the import converts that audio with `afconvert`, which iOS cannot start);
-    - "Audio and Video Converted with ffmpeg" (FMT31), with its types' declarations, since only the Mac's FFmpeg helper converts them (FMT54);
+    - "Lossless Audio Read by TextMouth" (TTA, WavPack, Monkey's), still refused there;
     - and "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is the system's type for `.caf` files too, which are converted the same way, so `.alac` is not offered on iOS either).
     The BRF, BRL, and PEF braille types stay, since the iPhone reads them in the app (DR34).
+    "Audio and Video Converted with ffmpeg" stays, since the app converts it (FMT54).
   - It leaves out the keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which are macOS's, and, until 0.4.2, added `.azw3` to the Kindle MOBI type and its declaration.
     From 0.4.2 the Mac's own list names `.azw3` (FMT48), so that addition is gone: `ADDED_EXTENSION` was removed from Scripts/ios/sync-info-plist.py in 0.4.3, and the iOS plist's Kindle type is the Mac's, unchanged.
     `make check-ios-plist` still exits 0, with the file as it was.

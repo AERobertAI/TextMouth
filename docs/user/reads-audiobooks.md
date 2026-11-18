@@ -97,12 +97,12 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - The iPhone refuses these formats.
 
 ## Formats only ffmpeg reads
-<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT54 -->
+<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: Q13, B19 -->
 
 - TextMouth converts, as it is imported, the audio of these formats, which macOS cannot read, with the converter it carries inside the app, so nothing needs installing:
   - Windows Media Audio (.wma, .asf), and the sound of Windows Media video (.wmv);
   - Speex (.spx), also in an Ogg file named .ogg;
-  - Musepack (.mpc and .mp+);
+  - Musepack (.mpc and .mp+), which TextMouth accepts but has never been tried on a real Musepack file, on the Mac or the iPhone, so it may fail to import;
   - WebM and Matroska (.webm, .weba, .mka), and the sound of Matroska video (.mkv);
   - the sound of AVI (.avi) and Flash video (.flv);
   - RealAudio and RealMedia (.ra, .rm, .rmvb).
@@ -122,6 +122,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   The file may be damaged."
   The converter confines itself before it reads a file (see [Where TextMouth keeps your library](helper-programs.md)), so a hostile file cannot harm the Mac.
 - Copy-protected Windows Media files (including PlayReady's) are refused with "TextMouth cannot open copy-protected files." before the converter runs.
+  An encrypted Matroska or WebM track, or a RealMedia file with copy protection, is not told so: it is refused as damaged.
 - A damaged copy of TextMouth that has lost its converter refuses the file with "TextMouth can't convert WMA files because its converter is missing from the app.
   Install TextMouth again, then import the file again."
 - A folder, ZIP, or playlist of tracks leaves out a file that only the converter reads and that can't be converted, rather than refuse the whole book, and the notice names it.
@@ -131,11 +132,28 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - Up to five files are named, then "and N more".
   - The book is refused only when no other track is left.
 - A feed's episode in one of these formats still fails, as it did before.
-- The iPhone refuses these formats, with "“NAME” is in WMA, which TextMouth on iPhone can't play.
-  Add it on your Mac, then send the book here."
 - A file that claims no length is limited by its size: its output may be at most 50 times the file's size, and no less than 64 MB.
   The import refuses it before running when the disk lacks room for that.
   [Where TextMouth keeps your library](helper-programs.md) lists what else stops the converter.
+- A file with a piece of sound too large for TextMouth to decode, as no good file has, is refused with "TextMouth can't convert “NAME”: part of its sound is stored in one piece too large for TextMouth to decode."
+
+### On the iPhone
+<!-- id: ffmpeg-formats-on-iphone; keys: iPhone, FFmpeg, WMA, Matroska, memory, background, switching apps, Ogg; src: TextMouth/Platform/iOS/Services/FFmpegInProcessRun.swift, TextMouth/Services/InProcessEngine.swift, TextMouth/Services/RunningClock.swift, TextMouth/Phone/PhoneImportRefusal.swift, TextMouth/Phone/PhoneImportWording.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT55 -->
+
+- The iPhone imports every format above, with the same converter, built into the app, and each file becomes the same book as on the Mac: WMA and WMV, Matroska and WebM, AVI, Flash video, RealMedia, and Speex.
+  Musepack is accepted, with the limit named above.
+- A copy-protected Windows Media file is told first, with "TextMouth cannot open copy-protected files.", before any other file of the import is refused.
+- The converter's time limits count only the time TextMouth is running.
+  Switching to another app in the middle of an import no longer stops it for taking too long.
+- The converter also watches the app's memory, so that iOS never ends TextMouth in the middle of a book.
+  It keeps 512 MB free, or half of what was free when the conversion began, if that is less, and otherwise stops with one of these:
+  - "Converting NAME was stopped because the app's memory grew by more than N MB while it ran."
+  - "Converting NAME was stopped because the iPhone had only N MB of memory free when it began, and TextMouth keeps half of that free."
+- A conversion stuck beyond its time is given up with "TextMouth stopped the audio conversion because it ran longer than 62 seconds, and won't try again until TextMouth is closed and opened again.", with the seconds it ran.
+  Until TextMouth is closed and opened again, every conversion says "TextMouth stopped the audio conversion earlier because it took too long, and won't try again until TextMouth is closed and opened again."
+- The iPhone still refuses Ogg and the audio the Mac converts with Apple's converter (Opus, AC-3, AMR, MP2, CAF, and the rest), with "“NAME” is in Ogg, which TextMouth on iPhone can't play yet.
+  Add it on your Mac, then send the book here."
+- A folder, ZIP, or playlist with such a file still refuses the whole book, and one with a file named for these formats whose bytes are of none leaves it out, as on the Mac.
 
 ## Chapter lists in Nero format
 <!-- id: chapter-lists-nero-format; keys: Nero chapters, chpl, M4B chapters, untitled chapter; src: TextMouth/Parsers/NeroChapterReader.swift -->

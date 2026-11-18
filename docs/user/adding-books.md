@@ -214,10 +214,12 @@ The duplicate question, Replace Existing, and the questions that wait their turn
   - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
 
 ## Importing audio that only ffmpeg reads
-<!-- id: importing-audio-only-ffmpeg-reads; keys: ffmpeg, FFmpeg, WMA, left out, Trailer.avi, converter, Converting its audio; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT54 -->
+<!-- id: importing-audio-only-ffmpeg-reads; keys: ffmpeg, FFmpeg, WMA, left out, Trailer.avi, converter, Converting its audio; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: Q13 -->
 
 - Audio in WMA, Speex, Musepack, WebM, Matroska, AVI, Flash video, or RealMedia (see [What TextMouth reads](reads-audiobooks.md)) is converted at the same step, Converting its audio, with the converter inside TextMouth, so nothing needs installing.
-- A single file of one of them, or a book whose only tracks are of them, is refused only when TextMouth has lost its converter, with the sentence that says to install TextMouth again.
+  Musepack is accepted, but no Musepack file has been tried yet on the Mac or the iPhone, so it may fail.
+- On the Mac, a single file of one of them, or a book whose only tracks are of them, is refused only when TextMouth has lost its converter, with the sentence that says to install TextMouth again.
+  The iPhone has the converter inside the app, so it never lacks it.
 - A folder, ZIP, or playlist that holds other tracks too leaves out what the converter is needed for when it is missing, and the alert titled Book Imported names the files:
   - "TextMouth left out “Trailer.avi”, which needs TextMouth's converter, missing from the app." followed by "Install TextMouth again, then import the book again.";
   - "TextMouth left out 2 files, “Trailer.avi” and “Intro.wmv”, which need TextMouth's converter, ..." for several, with at most five named and then "and N more";
@@ -227,7 +229,7 @@ The duplicate question, Replace Existing, and the questions that wait their turn
   - "TextMouth can't read “NAME” as WMA.
     It may be damaged, or named for another format.";
   - "“NAME” holds no sound to import."
-- The iPhone leaves these files out of a book it imports and refuses a single one (see [What TextMouth reads](reads-audiobooks.md)).
+- The iPhone imports these files as the Mac does; how it differs, in time and memory, is in [What TextMouth reads](reads-audiobooks.md#on-the-iphone).
 
 ## The original file after an import
 <!-- id: original-file-after-import; keys: After Importing a Book, Keep Original, Delete After Import, Ask Each Time, .rtfd, Show Package Contents; src: TextMouth/Models/OriginalFileDeletionWording.swift, TextMouth/Services/FileImportService.swift -->

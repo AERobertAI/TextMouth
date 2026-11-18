@@ -13,9 +13,9 @@ project.yml defines two apps over one source folder.
 - It compiles the TextMouth source folder less `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`, so it compiles the files both apps share and `TextMouth/Platform/iOS/`.
 - It is the product TextMouth, with the module name TextMouth, for iOS 26.0, and has a bundle identifier of its own, `com.textmouth.TextMouth.iOS`.
   It takes the same two Swift packages (ZIPFoundation and swift-cmark), the vendored SwiftSoup through its own library target, SwiftSoup_iOS, and its own builds of the four C libraries it links.
-  They are `LAME_iOS`, `ObjCExceptionCatcher_iOS`, `liblouis_iOS`, and TextMouthBrailleLibrary_iOS (the braille translation, DR34).
+  They are `LAME_iOS`, `ObjCExceptionCatcher_iOS`, `liblouis_iOS`, TextMouthBrailleLibrary_iOS (the braille translation, DR34), and FFmpeg_iOS (FFmpeg with TextMouth's session, FMT54; see [The FFmpeg build](building.md#the-ffmpeg-build)).
   The file project.yml defines each library, SwiftSoup included, once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
-- It has no helper program, since iOS lets an app start none, so it runs liblouis inside the app (see [The translator on the iPhone](../architecture/state/imports-braille-tables.md#the-translator-on-the-iphone)).
+- It has no helper program, since iOS lets an app start none, so it runs liblouis and FFmpeg's session inside the app (see [The translator on the iPhone](../architecture/state/imports-braille-tables.md#the-translator-on-the-iphone)).
 - It is the iPhone app: the Library, the reader, Settings, and importing, built from research/IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)).
   Nothing has run on a phone.
 - Its scheme, `TextMouthiOS`, is committed.
@@ -33,6 +33,7 @@ Each reads the commit as it was when it started (`Scripts/ios/typecheck.py` take
 
 - **`make typecheck-ios`** copies the committed sources of HEAD into a work folder of its own, writes a Swift package around them, and builds it with SwiftPM and the iOS SDK, for iOS 26.0, compiling the sources the iOS app compiles and linking its four C libraries.
   It never changes the repository.
+  It builds no FFmpeg: its package links a C stand-in for the session's functions, written against the session's real header (see [The FFmpeg build](building.md#the-ffmpeg-build)).
   A clean run means the iOS app's sources compile and link; because it builds a package of its own and not the Xcode target, it does not test the target's build settings.
   It takes about two minutes once it has the lock.
   `CENSUS=1` reads each `import AppKit` as `import UIKit` in the copy, so that a file does not stop at "no such module 'AppKit'" and every AppKit name left in it is reported; it counts what is left, and is not what the app must pass.
@@ -104,7 +105,7 @@ It names the runner's own architecture (`ARCHS=arm64`), since both would compile
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.
   A failed or missing iPhone test fails the iPhone job and never the Mac tests' verdict (see [Tests on GitHub Actions](testing-github.md)).
 ### The Mac's push, the caches, and what to keep
-<!-- id: github-mac-push-caches-keep; keys: github_run.py, TestBuild push, refspec, actions/cache, restore_mtimes.py, shards; src: Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/restore_mtimes.py, Scripts/agents/shard.py, Scripts/agents/plan_shards.py, Scripts/agents/merge_shards.py, .github/workflows/tests.yml, .github/workflows/test-build.yml -->
+<!-- id: github-mac-push-caches-keep; keys: github_run.py, TestBuild push, refspec, actions/cache, restore_mtimes.py, shards; src: Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/restore_mtimes.py, Scripts/agents/shard.py, Scripts/agents/plan_shards.py, Scripts/agents/merge_shards.py, .github/workflows/tests.yml, .github/workflows/test-build.yml; status: incomplete; issues: TL09 -->
 
 - **What the Mac does.**
   `build-train.py run --remote` (and `loop --remote`) merges the requests here, pushes the merged tree plus the request to `TestBuild` with `--force`, waits for that commit's run, and reads the result; `run_suite.py --remote COMMIT NAME LOG` does it for the full suite.
@@ -125,6 +126,7 @@ It names the runner's own architecture (`ARCHS=arm64`), since both would compile
   A fresh checkout would otherwise make Xcode compile everything again.
   The manifest saved beside the products now only names the files that differ, for the run's page.
   A warm build took about 2 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it).
+  The repository's cache is at GitHub's 10 GB limit, with one iPhone build cache of about 600 MB for each commit, so GitHub evicts the older ones and a build may come up cold (TL09).
   To see where a job's minutes go, a request sent by hand may carry `diagnose`, `audio_probe`, `ax_probe`, or `parallel_workers` (see [Tests on GitHub Actions](testing-github.md)).
   A long request runs as up to four jobs side by side, each with its share of the test classes (`Scripts/agents/shard.py` deals them out by their times on the runner in `class-times.json`; `plan_shards.py` starts the jobs; `merge_shards.py` joins their results into the one artifact the Mac reads).
   And a test that waits for something the runner lacks fails after 2 minutes (xcodebuild rounds to the minute), or is left out (`Scripts/agents/runner-skips.conf`).
@@ -136,10 +138,11 @@ It names the runner's own architecture (`ARCHS=arm64`), since both would compile
   The workflow lives on `TestBuild` as pushed, so it works before it is merged into main; `gh run list --workflow` looks a file up on the default branch, which is why `github_run.py` finds the run by workflow name and commit instead.
 
 ### A cache made on another runner image
-<!-- id: runner-module-cache-stamp; keys: module cache, toolchain stamp, stale module, module.modulemap, ModuleCache.noindex, retry, ImageVersion; src: Scripts/agents/runner_module_cache.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-on-runner.py, Scripts/agents/build-train.py, Scripts/agents/tests/test_bytecode_policy.py -->
+<!-- id: runner-module-cache-stamp; keys: module cache, toolchain stamp, stale module, module file not found, module.modulemap, ModuleCache.noindex, retry, ImageVersion; src: Scripts/agents/runner_module_cache.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-on-runner.py, Scripts/agents/build-train.py, Scripts/agents/tests/test_bytecode_policy.py -->
 
 GitHub rolls a new macOS image out over days, so a job can restore a build cache that the other image made.
 Clang's module caches in it record the time of the toolchain's `module.modulemap`, and the build fails with "has been modified since the module file", an error that names no file of the repository.
+The build database can also claim a precompiled module that is not in the folder, which fails the build with "module file ... not found", a precompiled module file.
 `Scripts/agents/runner_module_cache.py` is the cure, used by `run-ios-build.py` and `run-on-runner.py` (the Mac shards), on a GitHub runner only:
 
 - Before a build, `prepare` compares the stamp `toolchain-stamp.json` with this runner's.
@@ -149,10 +152,12 @@ Clang's module caches in it record the time of the toolchain's `module.modulemap
   - Build/Intermediates.noindex/ExplicitPrecompiledModules and PrecompiledHeaders;
   - and Build/Intermediates.noindex/SwiftExplicitPrecompiledModules, the Swift driver's modules for the SDK, the toolchain, and the repository.
   The compiled objects, the build database, and the package checkouts stay, so this is no clean build.
-- A build that still fails with the error is tried once more, after emptying the same folders, in what is left of its time limit.
+- A build that still fails with the stale error is tried once more, after emptying the same folders, in what is left of its time limit.
   The iPhone build needs 1 minute left, and a Mac shard 5 minutes and no test suite started.
+- The "module file ... not found" error is not cured by emptying those folders, because the build database still claims the module.
+  On a runner, the iPhone build's retry for it starts from an empty derived-data folder, as the device build does, and writes the stamp again; a Mac shard does not look for it.
 - The iPhone build's `ios-summary.txt` then has a `Retried:` line, and a Mac shard's `summary.md` a `Module caches:` line.
-  When every error of the iPhone build is that one, the train's summary and its board post say the runner's module cache was stale and that nothing is to fix in any file.
+  When the build's only errors are cache failures of either kind, the train's summary and its board post say the module cache failed the build, not the branch's code, and that nothing is to fix in any file; a real error beside one is shown as an error.
 - A Mac shard's retry first moves the first try's result bundle to `result.first-try.xcresult` (a number follows when that name is taken), since xcodebuild refuses a `-resultBundlePath` that is already there; the retry writes `result.xcresult`, which the workflow uploads.
 - The iPhone build reads the Swift frontend's `<unknown>:0: error:` lines as errors, so a stale module that fails that way is counted as the stale cache's only error.
 
@@ -174,6 +179,7 @@ The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see
   The device build is only run when asked, and took about 7 to 11 minutes of the iPhone job.
   A device build that fails or runs late says `Size: not measured` and changes nothing else: the Simulator build's verdict stands.
   It checks the toolchain stamp as the Simulator build does, and any failure but the time limit runs once more from an empty device folder, on a runner only, since emptying the module caches alone left the build database claiming modules that were gone.
+- With FFmpeg inside it (FMT54), the iPhone app is 16.1 MB (16,078,689 bytes), where it was 13.7 MB, and the Mac app 21.0 MB.
 - `make check` measures the Mac app alone: a step that measures the iPhone app too is TL05, not built.
 
 ## Building TextMouthiOS for the simulator

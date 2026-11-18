@@ -127,6 +127,7 @@ When it is torn between two explanations, it adds a test for each, so one train 
 **Works while it waits.**
 It waits with one background `wait-for-result.py` and no polling, since each wake costs usage, and meanwhile reviews the patch again, writes the next step's tests, checks its list of documentation, and drafts its report.
 A fix committed meanwhile goes with the train only if the agent asks again before the train leaves, since the train tests the commit each request names, and the newest request for a branch wins.
+A train whose Mac loses GitHub keeps watching its run, and the next train collects a run this one could not (see [A remote train and a lost connection](../developer/testing-tools.md#a-remote-train-and-a-lost-connection)).
 Never run `gh run watch` beside a train or a remote suite: `github_run.py` already polls the run, and the API allows 5,000 calls an hour for the whole account, shared by every agent and tool, so a second watcher only costs calls; wait with a local check.
 
 ### Read the whole result first

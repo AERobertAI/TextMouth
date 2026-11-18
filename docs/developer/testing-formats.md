@@ -223,9 +223,10 @@ Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDO
 - Not covered: other programs reading the markers written, cue sheets from the wild, and the labels checkbox with VoiceOver.
 
 ## Formats only ffmpeg reads
-<!-- id: tests-ffmpeg-import; keys: FFmpegImportSnifferTests, FFmpegImportPlanTests, FFmpegHelperStreamTests, FFmpegHelperHostileFileTests, stand-in helper, PlayReady; src: TextMouthProductionTests/FFmpegImportSnifferTests.swift, TextMouthProductionTests/FFmpegImportPlanTests.swift, TextMouthProductionTests/FFmpegImportConversionTests.swift, TextMouthProductionTests/FFmpegImportRealTests.swift, TextMouthProductionTests/FFmpegHelperProtocolTests.swift, TextMouthProductionTests/FFmpegHelperStreamTests.swift, TextMouthProductionTests/FFmpegHelperHostileFileTests.swift, TextMouthProductionTests/FFmpegTestSupport.swift, Scripts/make-form-change-sample.sh, Scripts/make-big-frame-sample.sh, Scripts/make-bad-packet-samples.py, Scripts/vendor/ffmpeg/test_build.py, TextMouthProductionTests/RefusedFormatAdviceTests.swift -->
+<!-- id: tests-ffmpeg-import; keys: FFmpegImportSnifferTests, FFmpegImportPlanTests, FFmpegHelperStreamTests, FFmpegHelperHostileFileTests, stand-in helper, PlayReady; src: TextMouthiOSTests/FFmpegInAppTests.swift, TextMouthProductionTests/RunningClockTests.swift, TextMouthProductionTests/FFmpegImportSnifferTests.swift, TextMouthProductionTests/FFmpegImportPlanTests.swift, TextMouthProductionTests/FFmpegImportConversionTests.swift, TextMouthProductionTests/FFmpegImportRealTests.swift, TextMouthProductionTests/FFmpegHelperProtocolTests.swift, TextMouthProductionTests/FFmpegHelperStreamTests.swift, TextMouthProductionTests/FFmpegHelperHostileFileTests.swift, TextMouthProductionTests/FFmpegTestSupport.swift, Scripts/make-form-change-sample.sh, Scripts/make-big-frame-sample.sh, Scripts/make-bad-packet-samples.py, Scripts/vendor/ffmpeg/test_build.py, TextMouthProductionTests/RefusedFormatAdviceTests.swift; status: incomplete; issues: Q13 -->
 
-- The app carries its FFmpeg helper (TextMouthFFmpeg), so every test of the import, the real ones too, runs everywhere, on GitHub's runners as on a Mac, and none needs an installed ffmpeg.
+- The Mac carries its FFmpeg helper (TextMouthFFmpeg) and the iPhone links the same session, so every test of the import, the real ones too, runs on GitHub's runners as on a Mac, and none needs an installed ffmpeg.
+  The FFmpeg classes below are shared with the iPhone's unit bundle, so each shows that both platforms make the same stream, book, and sentences from each sample.
 - FFmpegImportSnifferTests tell each sample's container from its first bytes and pin the protection check of ASF files on bytes made in the test, one object at a time, PlayReady's among them.
 - FFmpegHelperStreamTests read streams written by hand (FFmpegTestStream, which spells the protocol's letters and numbers out, so a change to the header that its comment does not follow fails them) and refuse every way a stream can break the protocol, each by name.
 - FFmpegHelperProtocolTests run the real helper on real samples: the stream it writes, the exit status of each refusal, the 4 KB cut of a tag, and the import's Stop.
@@ -239,8 +240,8 @@ Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDO
   A damaged file could crash the helper, so they run on GitHub only (`TestMachine.skipUnlessGitHubRunner`; see [The hosted test suite](testing.md)).
 - `Scripts/vendor/ffmpeg/test_build.py`, in `make check-selftest`, tests the build script without downloading.
   It covers the pins and the second source, a release that matches no pin, the patches' order and place in the key, the configure line, and that no path of the building Mac is left in the result.
-- IOSBranchTests and PhoneImportBranchTests pin that the iPhone refuses these files and leaves them out of a book; RefusedFormatAdviceTests pin the copy-protection sentence, with an .aax as its example.
-- Not run anywhere yet: a real PlayReady file and a Musepack sample, since no encoder made one, and the guard on the decoder's errors in a row, which no file can reach (see Confining and watching the helper in [Exports: audio only FFmpeg reads](../architecture/state/imports-audio-ffmpeg.md)).
+- PhoneImportBranchTests pin that a book leaves out what only FFmpeg reads and can't be converted, before the iPhone refuses the rest of its converted audio; RefusedFormatAdviceTests pin the copy-protection sentence, with an .aax as its example.
+- Not run anywhere yet: a real PlayReady file, and a Musepack sample (Q13), since no encoder made one, and the guard on the decoder's errors in a row, which no file can reach (see Confining and watching the helper in [Exports: audio only FFmpeg reads](../architecture/state/imports-audio-ffmpeg.md)).
 - The form-change and edge samples, each made on this Mac by a script that only makes the file (the import reads it with the app's own FFmpeg):
   - `mka/mp3-form-changes.mka` (`Scripts/make-form-change-sample.sh`, which needs an ffmpeg with LAME): three one-second MP3 stretches joined byte for byte, 22,050 Hz mono (440 Hz), 44,100 Hz stereo (880 Hz), and 22,050 Hz mono (660 Hz).
     `FFmpegHelperProtocolTests` expect it converted to 22,050 Hz mono, exactly 70,272 frames (END's count equal, within 2), each stretch's pitch and the 880 Hz tone ending within 6 frames of frame 46,656, and `FFmpegImportRealTests` a book of 3.19 s within 0.02 s.
@@ -251,6 +252,25 @@ Every other MOBI test reads books that `MOBIFixture` builds in code, with PalmDO
   - `FFmpegHelperProtocolTests.testTheBoundsOfTheConversionOnMadeUpFrames` runs the Debug helper's `formcheck` mode, which needs no file; a PCM record of 1,048,576 bytes is read whole by the reader and one of 1,048,580 refused (`FFmpegHelperStreamTests`).
   - Each is listed in `TestData/format-samples/samples.tsv` with its size and SHA-256.
 - The SharedSourceTests of `test_build.py` cover the shared source: a second build folder unpacks and copies nothing, an unwritable shared folder falls back to the work folder, an older copy is taken over, the archive is hashed once, and a two-process test of the lock.
+
+### FFmpeg in the iPhone app
+<!-- id: tests-ffmpeg-in-app; keys: FFmpegInAppTests, RunningClockTests, flvOfOnePCMTag, matroskaOfOnePCMBlock, countingSessionStarts, M4ASampleEntry, liblouis; src: TextMouthiOSTests/FFmpegInAppTests.swift, TextMouthProductionTests/RunningClockTests.swift, TextMouthProductionTests/FFmpegTestSupport.swift, TextMouthProductionTests/InProcessEngineTests.swift -->
+
+- FFmpegInAppTests (`TextMouthiOSTests`) test what is the iPhone's own, on GitHub's simulator only:
+  - where the session runs and its engine;
+  - the stop check that reads, seeks, and FFmpeg's interrupt callback ask;
+  - a call that hangs abandoned and every later call refused;
+  - each call's time and the run's whole time;
+  - the memory floor, where 0 left means no limit only in the simulator;
+  - a frame past the bound refused before any allocation (exit status 13).
+  Every call goes through an engine of the test's own (the app's is never refused for the tests after one), and hung work waits on a gate the test opens at its end.
+- RunningClockTests (shared with the iPhone) script the clock's uptime to prove that a gap longer than a step counts only the step, and test the heartbeat with two holders and a hold right after a release.
+- FFmpegTestSupport makes what a test needs of any size or count:
+  - `flvOfOnePCMTag` and `matroskaOfOnePCMBlock` write one tag or block of PCM, with as many samples and channels as a bound test needs;
+  - `countingSessionStarts` counts the session's opens, where the Mac counts launches;
+  - `M4ASampleEntry` reads a converted .m4a's codec, channels, and rate from its boxes, since the iPhone has no afinfo to ask.
+  The sample tones-aac.mka (AAC in Matroska) has its recipe in `samples.tsv`.
+- No test may let a real liblouis call be abandoned (see [A test that may crash the host](testing.md#a-test-that-may-crash-the-host)).
 
 ## TextMouth's own TTA, WavPack, and Monkey's Audio readers
 <!-- id: tests-own-audio-readers; keys: OwnAudioTrueAudioTests, OwnAudioWavPackTests, OwnAudioMonkeysAudioTests, OwnAudioTagTests, OwnAudioImportTests, make-own-audio-samples, pcm.tsv, fuzz; src: TextMouthProductionTests/OwnAudioTrueAudioTests.swift, TextMouthProductionTests/OwnAudioWavPackTests.swift, TextMouthProductionTests/OwnAudioMonkeysAudioTests.swift, TextMouthProductionTests/OwnAudioTagTests.swift, TextMouthProductionTests/OwnAudioImportTests.swift, TextMouthProductionTests/OwnAudioSampleSupport.swift, Scripts/make-own-audio-samples.py -->

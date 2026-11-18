@@ -5,7 +5,7 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 The rest of the audio import is in [Imports: audio](imports-audio.md).
 
 ## Which files go to FFmpeg
-<!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, ASF, copy protection, FMT31, FMT50, extensions; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT54 -->
+<!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, ASF, copy protection, FMT31, FMT50, extensions; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: Q13, B19 -->
 
 - Which files: FFmpegAudioConverter.converts(_:) is true for a file in either of two cases, whatever its name.
   - Its extension is in FFmpegAudioConverter.extensions (15 of them, joined to ImportAudioConverter.convertedExtensions so the reader guards keep them from Apple's decoders; "mpp" is not one, since Microsoft Project uses it).
@@ -15,18 +15,22 @@ The rest of the audio import is in [Imports: audio](imports-audio.md).
 - Dispatch: ImportAudioConverter.convert returns FFmpegAudioConverter.convert first for such a file, before keepChapters, since FFmpegAudioConverter.convert keeps the chapters itself.
   FFmpegContainer reads only the first bytes (AudioContentSniffer.firstBytes).
   ASFHeader.isCopyProtected walks the ASF header for the four protection objects, PlayReady's among them: every object at least 24 bytes and inside its parent, at most 10,000 objects, at most 16 MB (maximumHeaderBytes), one nested level.
-  A protected file is refused before the helper is started.
+  A protected file is refused before the helper is started, or on the iPhone before any file is refused for its kind (`PhoneImportRefusal.refuseConversion`).
+  Only ASF is checked: an encrypted Matroska or WebM track, or RealMedia with DRM, ends as damaged (B19).
+  Musepack is in the build and the sniff on both platforms, but no sample has ever been decoded on either (Q13).
 - Tracks left out: FFmpegAudioConverter.tracksToLeaveOut(of:located:) names, among a book's several tracks, the files only ffmpeg reads that can't be converted (the helper is missing from the app, or this is the iPhone) and those whose bytes are of no container the helper reads.
   FileImportService.leavingOutWhatOnlyFFmpegReads removes their staged copies and returns the notice (FFmpegImportWording.tracksLeftOutNotice), and the book is refused only when no track is left.
-- The iPhone starts no program, so it refuses these formats (FMT54 will run the same session inside the app); the build is in [Building TextMouth](../../developer/building.md).
+- The iPhone starts no program, so it runs the same session inside the app ([The in-app run](#the-in-app-run)), and its files are converted as the Mac's are; the build is in [Building TextMouth](../../developer/building.md).
+  It still refuses Ogg and the audio the Mac converts with afconvert (FMT55), and the files TextMouth's own readers decode.
 
 ## The helper and its stream
-<!-- id: ffmpeg-helper-and-stream; keys: TextMouthFFmpeg, FFmpegHelperStream, FFmpegReport, protocol, HEAD, INFO, PCM, END; src: TextMouthFFmpeg/main.c, TextMouthFFmpeg/Session/session.c, TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h, TextMouth/Services/FFmpegHelperStream.swift, TextMouth/Services/FFmpegReport.swift -->
+<!-- id: ffmpeg-helper-and-stream; keys: TextMouthFFmpeg, FFmpegHelperStream, FFmpegReport, protocol, HEAD, INFO, PCM, END; src: TextMouthFFmpeg/main.c, TextMouthFFmpeg/Session/session.c, TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h, TextMouth/Services/FFmpegHelperStream.swift, TextMouth/Services/FFmpegReport.swift; status: incomplete; issues: FU04 -->
 
 - The helper: FFmpeg 9.0.2 is built into TextMouthFFmpeg, a program in the app's Contents/MacOS (FFmpegAudioConverter.locateBundled finds it; none on iOS), and an ffmpeg installed on the Mac is never used for the import (the editor's filters still use one: FFmpeg.locate).
   One run is one file: "probe" says what the file holds, "decode" adds its sound as plain samples, each as a stream of records on the helper's standard output that TextMouthFFmpegProtocol.h defines (HEAD, INFO, TAG, STAG, CHAP, PCM, END).
   FFmpegHelperStream reads them against the protocol's limits, so a helper that writes nonsense costs a failed import: a record over its kind's size, out of order, an empty PCM record, samples that are not whole frames, or an END that counts other frames.
-  The file is opened by the helper itself, a regular file only (a FIFO is never waited on), and FFmpeg reads it through the helper's own callbacks, with no FFmpeg protocol built and the demuxer named from FFmpegContainer.demuxer.
+  The file is opened by the session itself (`tmff_open_regular_file`), a regular file only, and FFmpeg reads it through the session's own callbacks, with no FFmpeg protocol built and the demuxer named from FFmpegContainer.demuxer.
+  A FIFO is never waited on, but a symbolic link to a regular file is followed (FU04); no import meets one, since it hands over a staged copy.
 
 ## Confining and watching the helper
 <!-- id: ffmpeg-helper-confinement-watching; keys: sandbox, sandbox_init, exit status 12, watchdog, grace after END, output cap, AUDIO_DECODER_REFUSED; src: TextMouthFFmpeg/main.c, TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
@@ -36,11 +40,45 @@ The rest of the audio import is in [Imports: audio](imports-audio.md).
   The processor's features are asked first (tmff_session_prepare), since the sandbox blocks sysctl and FFmpeg found fewer afterwards.
   Every fatal signal ends the helper with _exit on a stack of its own (status 70, so no crash report), and SIGXCPU with 71.
   The session sets thread_count to 1 before the decoder opens, and av_max_alloc to 256 MB.
+  It also sets the decoder's max_samples to 16,777,216 samples over all channels (MAX_DECODED_SAMPLES), kept by the session's own buffer callback.
+  A frame past it ends the decode with exit status 13 (TMFF_EXIT_FRAME_TOO_LARGE, `FFmpegImportWording.frameTooLarge`) before any allocation, and is never skipped as damaged; the iPhone has the same bound.
 - Watching it: FFmpegAudioConverter.probe and decode run the helper under WatchedProcess.runStreaming, whose watchdog looks every 0.25 s.
   - The decode gets a minute plus a tenth of the length, 1 GB, and a stall of 60 s; the probe 30 s plus the size at 20 MB/s, 512 MB, and a stall as long as that.
   - The decode's output file is the .m4a the app writes, so the helper's pipe is never capped by the kernel: the reader checks the file's size against the cap before each block and once at the end (checkOutputCap, WroteTooMuch), and the watchdog looks too.
   - A reader that returns after END has the helper end by itself within 2 seconds (defaultEndGraceSeconds), else a plain SIGKILL that is no failure; a stream that ends early is told by the exit status (failure(forExitStatus:)), a signal, or "endedEarly".
   - The decoder's refused packets and frames are logged as AUDIO_DECODER_REFUSED, and the file converts all the same.
+
+## The in-app run
+<!-- id: ffmpeg-in-app-run; keys: runInProcess, InProcessEngine, SessionStopCheck, RunningClock, Tool.clock, memory floor, FFmpeg_iOS, B18; src: TextMouth/Platform/iOS/Services/FFmpegInProcessRun.swift, TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/InProcessEngine.swift, TextMouth/Services/RunningClock.swift, TextMouth/Models/InProcessEngineWording.swift, TextMouth/Models/FFmpegImportWording.swift, TextMouthFFmpeg/Session/session.c, TextMouthiOSTests/FFmpegInAppTests.swift -->
+
+The iPhone links the Mac's session (FFmpeg_iOS) and runs it in TextMouth's own process.
+A decoder's crash would end the app, so the patches, the one decoding thread, and the bounds below matter more than on the Mac.
+
+- **One fork:** `FFmpegAudioConverter.runSession` is where the platforms part: the Mac runs its helper under `WatchedProcess.runStreaming`, and the iPhone `runInProcess` (`#if os(iOS)`).
+  Everything else is shared: the plan, the sentences, and `FFmpegHelperStream`, which reads the records and holds every bound.
+- **One engine call per record:** The first piece the reader asks for opens the session, and each later one is the session's next record.
+  A call takes at most the stall limit, and no more than the run has left.
+  The engine is `FFmpegAudioConverter.sessionEngine`, apart from braille's, so a hung call in one never refuses the other.
+  `Tool.engine`, `openSession`, `memoryFloor`, and `clock` let a test stand in for each.
+- **The stop check** (`SessionStopCheck`): it is asked by FFmpeg's interrupt callback, by the session's reads and seeks of its file (`must_stop` first, AVERROR_EXIT), and at each step.
+  It says stop once the engine's call should, or the app has less memory left than the run's floor, and it stays stopped.
+- **The memory floor:** Free memory is `os_proc_available_memory()`.
+  The floor is 512 MB, twice `av_max_alloc`'s 256 MB, so no allocation between two asks can take the app from above the floor to its limit.
+  A run that begins with less than 1 GB free keeps half of what it began with, and FFmpeg's allocation cap is half the floor, at most 256 MB.
+  A return of 0 means no limit only in the simulator (`#if targetEnvironment(simulator)`); on a device it means over the limit, and stops the run.
+  The stop is a kill for memory, worded by `FFmpegImportWording.memoryGrew` or `beganShortOfMemory`.
+- **The clock** (B18): it is `RunningClock`, which counts only the time TextMouth runs, since iOS keeps the system's clocks counting while it holds the app suspended.
+  - A reading adds at most 1 s since the one before, and a 0.25 s heartbeat reads it while a call or run holds it (`hold()`, `release()`).
+    So running time counts whole, and only a suspension is cut.
+  - `Tool.clock` is the clock a run's whole time is counted by: `RunningClock.app` on the iPhone, and the Mac's braille uses `RunningClock.system`, whole steps.
+  - The engine's waiter is the one judge of a call's time: it holds the clock, reads it afresh, sets the stop, and abandons the call a grace later.
+    `Call.shouldStop` reads no clock, so work resuming first after a suspension never stops on a stale reading.
+- **Abandoned and refused:** A call past its time and grace is abandoned, and the engine refuses every conversion until TextMouth is closed and opened again.
+  `InProcessEngineWording` has the two sentences, with `FFmpegImportWording.inAppWork`.
+  The first names the stall limit, or the run's whole limit when the time left cut the call.
+- **The build:** Clang modules are off for the C files (see [The FFmpeg build](../../developer/building.md#the-ffmpeg-build)), and the app installs no signal handler (FU02).
+- **The tests** are in [Formats only ffmpeg reads](../../developer/testing-formats.md#formats-only-ffmpeg-reads).
+  No test may let a real liblouis call be abandoned (B20).
 
 ## What is written
 <!-- id: ffmpeg-conversion-plan; keys: plan, Apple Lossless, AAC, writeBlocks, tags, form changed, no length; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Services/OwnAudioConverter.swift; status: incomplete; issues: FU03 -->
