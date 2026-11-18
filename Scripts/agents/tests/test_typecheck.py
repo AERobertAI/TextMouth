@@ -392,6 +392,19 @@ class MainTests(TypecheckTestsCase):
         self.lock_seen.append(heavy_lock.LOCK.exists())
         return SimpleNamespace(stdout="Build complete! (0.1s)\n", stderr="", returncode=0)
 
+    def canned_builds(self, *logs):
+        """A context in which each `swift build` prints the next of `logs` (and is recorded in `self.commands`); any other
+        command runs for real."""
+        remaining = iter(logs)
+
+        def build(command, **options):
+            """`swift build` with the next canned log; any other command runs for real."""
+            if command[0] != "swift":
+                return self.real_run(command, **options)
+            self.commands.append(command)
+            return SimpleNamespace(stdout=next(remaining), stderr="", returncode=0)
+        return mock.patch.object(typecheck.subprocess, "run", build)
+
     def main(self, *arguments):
         """Runs main() quietly; returns its exit status."""
         with contextlib.redirect_stdout(io.StringIO()):
@@ -425,16 +438,8 @@ class MainTests(TypecheckTestsCase):
     def test_an_interface_test_that_does_not_compile_fails_the_run_even_when_the_unit_tests_do(self):
         """The unit tests' build is clean and the interface tests' is not: the run fails and names the file, as GitHub would."""
         bad = typecheck.WORK_ROOT / "ios-tests" / "src" / "TextMouthiOSUITests" / "LibraryUITests.swift"
-        logs = iter(["Build of target: 'TextMouthiOSTests' complete! (1s)\n",
-                     f"{bad}:9:5: error: cannot find 'nothing' in scope\n"])
-
-        def build(command, **options):
-            """`swift build` with the next canned log; any other command runs for real."""
-            if command[0] != "swift":
-                return self.real_run(command, **options)
-            self.commands.append(command)
-            return SimpleNamespace(stdout=next(logs), stderr="", returncode=0)
-        with mock.patch.object(typecheck.subprocess, "run", build):
+        with self.canned_builds("Build of target: 'TextMouthiOSTests' complete! (1s)\n",
+                                f"{bad}:9:5: error: cannot find 'nothing' in scope\n"):
             self.assertEqual(self.main("--platform", "ios", "--tests"), 1)
         errors = (next(typecheck.RESULTS.iterdir()) / "errors.txt").read_text()
         self.assertEqual(errors, "TextMouthiOSUITests/LibraryUITests.swift:9:5: error: cannot find 'nothing' in scope\n")
@@ -442,14 +447,7 @@ class MainTests(TypecheckTestsCase):
 
     def test_an_interface_test_build_that_never_finishes_fails_the_run(self):
         """A second build that stops with no recognizable error (a package problem) is not a pass."""
-        logs = iter(["Build of target: 'TextMouthiOSTests' complete! (1s)\n", "error: something odd\n"])
-
-        def build(command, **options):
-            """`swift build` with the next canned log; any other command runs for real."""
-            if command[0] != "swift":
-                return self.real_run(command, **options)
-            return SimpleNamespace(stdout=next(logs), stderr="", returncode=1)
-        with mock.patch.object(typecheck.subprocess, "run", build):
+        with self.canned_builds("Build of target: 'TextMouthiOSTests' complete! (1s)\n", "error: something odd\n"):
             self.assertEqual(self.main("--platform", "ios", "--tests"), 1)
 
     def test_a_census_that_finds_no_error_is_one_build(self):
