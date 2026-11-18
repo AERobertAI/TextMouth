@@ -552,8 +552,69 @@ def _walk(node, path):
     return units
 
 
+def _kind(value):
+    """What JSON `value` is, as a phrase for a sentence ("null", "a number", "a list", "text", ...)."""
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "true or false"
+    if isinstance(value, (int, float)):
+        return "a number"
+    return {str: "text", list: "a list", dict: "an object"}.get(type(value), type(value).__name__)
+
+
+def _shape_of_localization(node, where):
+    """The sentences about what is not of its type in `node`, a localization (or a variation's or substitution's, which
+    have the same shape), `where` being how the sentences name it: it must be an object; its `stringUnit` an object of text
+    `state` and text `value`; its `variations` an object of kinds, each an object of names; its `substitutions` an
+    object. The nodes below are read the same way."""
+    if not isinstance(node, dict):
+        return [f"{where} is {_kind(node)}, not an object"]
+    problems = []
+    if "stringUnit" in node:
+        unit = node["stringUnit"]
+        if not isinstance(unit, dict):
+            problems.append(f"{where} stringUnit is {_kind(unit)}, not an object")
+        else:
+            problems += [f"{where} {field} is {_kind(unit[field])}, not text"
+                         for field in ("state", "value") if field in unit and not isinstance(unit[field], str)]
+    variations = node.get("variations", {})
+    if not isinstance(variations, dict):
+        problems.append(f"{where} variations is {_kind(variations)}, not an object")
+        variations = {}
+    for kind, names in variations.items():
+        if not isinstance(names, dict):
+            problems.append(f"{where} {kind} variations are {_kind(names)}, not an object")
+            continue
+        for name, child in names.items():
+            problems += _shape_of_localization(child, f"{where} {kind}.{name}")
+    substitutions = node.get("substitutions", {})
+    if not isinstance(substitutions, dict):
+        problems.append(f"{where} substitutions is {_kind(substitutions)}, not an object")
+        substitutions = {}
+    for name, child in substitutions.items():
+        problems += _shape_of_localization(child, f"{where} substitution {name}")
+    return problems
+
+
+def _shape_of_entry(entry):
+    """The sentences about what is not of its type in one string's `entry` (see Catalog.shape_problems): the entry itself,
+    its `comment` (text), and its `localizations` (an object of localizations by language)."""
+    if not isinstance(entry, dict):
+        return [f"the entry is {_kind(entry)}, not an object"]
+    problems = []
+    if "comment" in entry and not isinstance(entry["comment"], str):
+        problems.append(f"the comment is {_kind(entry['comment'])}, not text")
+    localizations = entry.get("localizations", {})
+    if not isinstance(localizations, dict):
+        return problems + [f"localizations is {_kind(localizations)}, not an object"]
+    for language, node in localizations.items():
+        problems += _shape_of_localization(node, language)
+    return problems
+
+
 class Catalog:
-    """A String Catalog: `data` is its loaded JSON (`sourceLanguage`, `strings`, `version`), `path` the file it came
+    """A String Catalog:`data` is its loaded JSON (`sourceLanguage`, `strings`, `version`), `path` the file it came
     from or will be saved to (None for one made in memory)."""
 
     def __init__(self, data, path=None):
@@ -562,8 +623,30 @@ class Catalog:
 
     @classmethod
     def load(cls, path):
-        """The catalog in the file `path`."""
-        return cls(loads(read_text(path)), path)
+        """The catalog in the file `path`. Raises ValueError when the file is not a catalog at all (not JSON, or JSON that is
+        not an object with an object of `strings`): nothing below can read it. Strings that are broken inside are loaded, for
+        shape_problems to report."""
+        data = loads(read_text(path))
+        if not isinstance(data, dict) or not isinstance(data.get("strings", {}), dict):
+            raise ValueError("it is not a String Catalog (it needs an object with an object of strings)")
+        return cls(data, path)
+
+    def shape_problems(self):
+        """{key: the sentences about what is not of its type in that string's entry}, for the keys that have any: an entry,
+        a comment, a value, a state, `localizations`, or a variation or substitution that is a number, `null`, a list, or
+        anything but what a catalog holds there. A hand edit makes these; the other methods would fail on them, so
+        `check` reports them and reads the catalog `without` them."""
+        found = {}
+        for key, entry in self.strings.items():
+            problems = _shape_of_entry(entry)
+            if problems:
+                found[key] = problems
+        return found
+
+    def without(self, keys):
+        """A catalog like this one with the strings `keys` left out (the same file, nothing written)."""
+        data = {**self.data, "strings": {key: entry for key, entry in self.strings.items() if key not in keys}}
+        return Catalog(data, self.path)
 
     @classmethod
     def empty(cls, source_language="en"):

@@ -638,11 +638,21 @@ def substitution_problems(cat, key, language):
     return problems
 
 
+def readable(cat):
+    """(the catalog  less its broken strings, the sentences about them: one per problem, each with its key). A string
+    whose entry, comment, value, or localizations is not of its type (a number, null, ...) is broken: the other checks would
+    fail on it, so they read the rest, and the broken ones are problems of their own."""
+    broken = cat.shape_problems()
+    sentences = [f"{quote(key)}: {sentence}" for key, found in sorted(broken.items()) for sentence in found]
+    return cat.without(broken), sentences
+
+
 def check_catalog(cat, config):
     """(the problems, the note about the budget) of a catalog under a configuration. The problems are sentences: each
-    shipped language's (check_language), each string to be translated without a comment, each stale string, each English
-    text with unreadable placeholders, and the budget when the configuration makes it fail."""
-    problems = []
+    string whose parts are not of their type (see readable), each shipped language's (check_language), each string to be
+    translated without a comment, each stale string, each English text with unreadable placeholders, and the budget when
+    the configuration makes it fail."""
+    cat, problems = readable(cat)
     for language in sorted(config["languages"]):
         problems += check_language(cat, language)
     for key in cat.translatable():
@@ -706,6 +716,8 @@ def cmd_check(args):
     budget note; exit status 1 when there is a problem. A glossary file that is malformed is a problem."""
     cat, config = load_catalog(args), load_config(args.config)
     problems, note = check_catalog(cat, config)
+    # The rest reads the strings that are whole (check_catalog has reported the others).
+    cat = readable(cat)[0]
     warnings = []
     try:
         loaded = glossarylib.Glossary.load(args.glossary)

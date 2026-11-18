@@ -596,6 +596,77 @@ class CheckTests(TemporaryCase):
             self.assertEqual(self.problems({"Play": entry(es=unit("Reproducir", state))}),
                              [f'es "Play": not translated (state {state})'], state)
 
+    def broken(self, entry_value, sentence, key="Play"):
+        """The catalog with `entry_value` for a string `key` and a good one beside it: `check` gives exactly one problem, which
+        names the key and says `sentence`, and the good string is still checked (and passes)."""
+        problems = self.problems({"Open": entry(es=unit("Abrir")), key: entry_value})
+        self.assertEqual(problems, [f'{l10n.quote(key)}: {sentence}'], entry_value)
+
+    def test_a_value_that_is_not_text_is_a_problem_and_not_a_crash_or_a_pass(self):
+        """The review's finding 7: `"value": 5` and `"value": null` ended in an AttributeError traceback."""
+        for value, kind in ((5, "a number"), (None, "null"), (["x"], "a list"), (True, "true or false")):
+            self.broken({"comment": "c", "localizations": {"es": {"stringUnit": {"state": "translated", "value": value}}}},
+                        f"es value is {kind}, not text")
+
+    def test_a_state_that_is_not_text_is_a_problem(self):
+        self.broken({"comment": "c", "localizations": {"es": {"stringUnit": {"state": 3, "value": "Reproducir"}}}},
+                    "es state is a number, not text")
+
+    def test_a_comment_that_is_not_text_is_a_problem_and_not_a_pass(self):
+        """`"comment": null` and `"comment": 5` passed the comment rule, since `str(None)` is "None"."""
+        for value, kind in ((None, "null"), (5, "a number"), (["a"], "a list")):
+            self.broken({"comment": value, "localizations": {"es": unit("Reproducir")}}, f"the comment is {kind}, not text")
+
+    def test_localizations_that_are_not_an_object_are_a_problem(self):
+        for value, kind in ((None, "null"), (5, "a number"), ([], "a list")):
+            self.broken({"comment": "c", "localizations": value}, f"localizations is {kind}, not an object")
+
+    def test_a_localization_that_is_not_an_object_is_a_problem(self):
+        self.broken({"comment": "c", "localizations": {"es": None}}, "es is null, not an object")
+
+    def test_an_entry_that_is_not_an_object_is_a_problem(self):
+        for value, kind in ((None, "null"), (7, "a number"), ("text", "text")):
+            self.broken(value, f"the entry is {kind}, not an object")
+
+    def test_a_string_unit_variations_and_substitutions_that_are_not_of_their_type_are_found_where_they_are(self):
+        self.broken({"comment": "c", "localizations": {"es": {"stringUnit": ["x"]}}}, "es stringUnit is a list, not an object")
+        self.broken({"comment": "c", "localizations": {"es": {"variations": None}}}, "es variations is null, not an object")
+        self.broken({"comment": "c", "localizations": {"es": {"variations": {"plural": 5}}}},
+                    "es plural variations are a number, not an object")
+        self.broken({"comment": "c", "localizations": {"es": {"variations": {"plural": {"one": {"stringUnit": {"value": None}}}}}}},
+                    "es plural.one value is null, not text")
+        self.broken({"comment": "c", "localizations": {"es": {"substitutions": {"n": 3}}}}, "es substitution n is a number, not an object")
+
+    def test_every_broken_part_of_a_string_is_listed_and_the_other_checks_go_on_without_it(self):
+        problems = self.problems({"Open": entry(), "Play": {"comment": None, "localizations": {"es": {"stringUnit": {"value": 5}}}}})
+        self.assertEqual(problems, ['"Play": the comment is null, not text', '"Play": es value is a number, not text',
+                                    'es "Open": missing translation'])
+
+    def test_a_broken_catalog_makes_the_command_exit_with_problems_and_no_traceback(self):
+        """What the review ran: the command ended in a traceback, whose exit status 1 looks like a check that found problems."""
+        path = self.write_catalog({"Play": {"comment": "c", "localizations": {"es": {"stringUnit": {"state": "translated", "value": 5}}}},
+                                   "Open": {"comment": None}})
+        config = self.folder / "config.json"
+        config.write_text(json.dumps(self.CONFIG))
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            status = l10n.main(["check", "--catalog", str(path), "--config", str(config)])
+        self.assertEqual(status, 1, err.getvalue())
+        self.assertEqual(err.getvalue(), "")
+        self.assertIn('check: "Play": es value is a number, not text', out.getvalue())
+        self.assertIn('check: "Open": the comment is null, not text', out.getvalue())
+        self.assertIn("check: 2 problems", out.getvalue())
+
+    def test_a_file_that_is_not_a_catalog_is_refused_with_a_sentence(self):
+        for text in ("[]", "5", "null", '{"strings": []}'):
+            path = self.folder / "Bad.xcstrings"
+            path.write_text(text, encoding="utf-8")
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                status = l10n.main(["check", "--catalog", str(path)])
+            self.assertEqual(status, l10n.EXIT_USAGE, text)
+            self.assertIn("cannot read the catalog", err.getvalue())
+
     def test_machine_translated_counts_as_done(self):
         self.assertEqual(self.problems({"Play": entry(es=unit("Reproducir", "machine_translated"))}), [])
 
