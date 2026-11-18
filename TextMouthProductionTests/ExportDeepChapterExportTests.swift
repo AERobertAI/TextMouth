@@ -452,6 +452,10 @@ final class ExportDeepChapterExportTests: XCTestCase {
         var windows: [NSWindow?] = []
         var outcome: BookExportOutcome?
         var answer: ExportDeepChapterAnswer?
+        /// How many times the export under test ended, or its question was
+        /// answered: each exactly once, so a second call fails a test
+        /// rather than over-fulfilling an expectation.
+        var endings = 0
     }
 
     /// A prompt that records each question and the window it was asked over,
@@ -580,12 +584,15 @@ final class ExportDeepChapterExportTests: XCTestCase {
         var continuation: CheckedContinuation<ExportDeepChapterAnswer, Never>?
         /// How many times the model took the question down.
         var dismissals = 0
+        /// How many times the model asked the question: once.
+        var asks = 0
 
         /// A prompt that waits here, answers Cancel Export when dismissed,
         /// and counts its dismissals.
         var prompt: BookExportModel.DeepChapterPrompt {
             BookExportModel.DeepChapterPrompt(
                 ask: { [self] question, _ in
+                    asks += 1
                     self.question = question
                     return await withCheckedContinuation { self.continuation = $0 }
                 },
@@ -612,15 +619,19 @@ final class ExportDeepChapterExportTests: XCTestCase {
         let announcements = AnnouncementCapture()
         defer { announcements.stop() }
         let finished = expectation(description: "the export ends")
+        // A second ending is counted and fails below, never trapping the host.
+        finished.assertForOverFulfill = false
         let result = PromptLog()
         let export = Task { @MainActor in
             result.outcome = await model.export()
+            result.endings += 1
             finished.fulfill()
         }
         defer { export.cancel() }
 
         // Waits, with a limit, until the question is on screen.
         let asked = expectation(description: "the question is asked")
+        asked.assertForOverFulfill = false
         let poll = Task { @MainActor in
             while waiting.question == nil { try? await Task.sleep(nanoseconds: 20_000_000) }
             asked.fulfill()
@@ -631,6 +642,8 @@ final class ExportDeepChapterExportTests: XCTestCase {
         await fulfillment(of: [finished], timeout: 20)
 
         XCTAssertEqual(waiting.dismissals, 1)
+        XCTAssertEqual(waiting.asks, 1, "the question was asked once")
+        XCTAssertEqual(result.endings, 1, "the export ended once")
         let outcome = try XCTUnwrap(result.outcome)
         XCTAssertTrue(outcome.wasCancelled)
         XCTAssertEqual(outcome.exported, [])
@@ -720,14 +733,18 @@ final class ExportDeepChapterExportTests: XCTestCase {
         let dialog = NSWindow()
         let question = ExportDeepChapterQuestion(bookTitle: "Deep Notes", chapter: 1, limit: 128, offersEveryOne: false)
         let answered = expectation(description: "the question is answered")
+        // A second answer is counted and fails below, never trapping the host.
+        answered.assertForOverFulfill = false
         let given = PromptLog()
         let asking = Task { @MainActor in
             given.answer = await presenter.ask(question, in: dialog)
+            given.endings += 1
             answered.fulfill()
         }
         defer { asking.cancel() }
 
         let shown = expectation(description: "the alert is shown")
+        shown.assertForOverFulfill = false
         let poll = Task { @MainActor in
             while log.alerts.isEmpty { try? await Task.sleep(nanoseconds: 20_000_000) }
             shown.fulfill()
@@ -739,12 +756,15 @@ final class ExportDeepChapterExportTests: XCTestCase {
         presenter.dismiss()
         await fulfillment(of: [answered], timeout: 20)
         XCTAssertEqual(given.answer, .cancelExport)
+        XCTAssertEqual(given.endings, 1, "the question was answered once")
+        XCTAssertEqual(log.alerts.count, 1, "the alert was shown once")
         XCTAssertEqual(log.taken, 1)
 
         // AppKit calls the sheet's completion after the sheet ends: nothing waits, and nothing traps.
         log.completions.first?(.alertFirstButtonReturn)
         presenter.dismiss()
         XCTAssertEqual(log.taken, 1, "no alert is on screen to take down again")
+        XCTAssertEqual(given.endings, 1, "the late completion answered nothing again")
     }
 
     /// A button pressed answers once as its response says, and `dismiss()`
@@ -761,13 +781,17 @@ final class ExportDeepChapterExportTests: XCTestCase {
         )
         let question = ExportDeepChapterQuestion(bookTitle: "Deep Notes", chapter: 1, limit: 128, offersEveryOne: true)
         let answered = expectation(description: "the question is answered")
+        // A second answer is counted and fails below, never trapping the host.
+        answered.assertForOverFulfill = false
         let given = PromptLog()
         let asking = Task { @MainActor in
             given.answer = await presenter.ask(question, in: nil)
+            given.endings += 1
             answered.fulfill()
         }
         defer { asking.cancel() }
         let shown = expectation(description: "the alert is shown")
+        shown.assertForOverFulfill = false
         let poll = Task { @MainActor in
             while log.alerts.isEmpty { try? await Task.sleep(nanoseconds: 20_000_000) }
             shown.fulfill()
@@ -779,6 +803,8 @@ final class ExportDeepChapterExportTests: XCTestCase {
         await fulfillment(of: [answered], timeout: 20)
 
         XCTAssertEqual(given.answer, .exportEveryOneAsWritten)
+        XCTAssertEqual(given.endings, 1, "the question was answered once")
+        XCTAssertEqual(log.alerts.count, 1, "the alert was shown once")
         presenter.dismiss()
         XCTAssertEqual(log.taken, 0)
     }
