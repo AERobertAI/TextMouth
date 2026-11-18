@@ -134,7 +134,7 @@ extension ReaderViewModel {
             ?? .nothing(note: readingListEndNote())
         goOnPastThisBook(
             to: succession,
-            in: "the reading list",
+            in: "the reading list", // l10n: no (named in the debug log only)
             startingWith: { self.continueThroughReadingList(to: $0) },
             sleepTimerEndsListening: sleepTimerEndsListening,
             sleepTimerStoppedHere: sleepTimerStoppedHere,

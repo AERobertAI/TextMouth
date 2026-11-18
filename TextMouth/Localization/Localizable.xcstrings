@@ -7,8 +7,60 @@
     "%@ adds one at the current position." : {
       "comment" : "Help under \"No bookmarks yet.\" in the Bookmarks list, when the add command has no keyboard shortcut. %@ is the name of the Add Bookmark button above the list."
     },
+    "%@ is already in the reading list." : {
+      "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title."
+    },
+    "%@ isn't in the reading list." : {
+      "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: the one book selected is not on the list. %@ is the book's title."
+    },
     "%@ remaining" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59."
+    },
+    "%lld books were already in it." : {
+      "comment" : "Second sentence of the announcement after books were added to the reading list: some chosen were on it already. %lld is how many.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book was already in it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books were already in it."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books were not in it." : {
+      "comment" : "Second sentence of the announcement after books were taken off the reading list: some chosen were not on it. %lld is how many.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book was not in it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books were not in it."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%lld minutes" : {
       "comment" : "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.",
@@ -39,11 +91,66 @@
     "Add" : {
       "comment" : "Button of the panel for adding a bookmark: adds it, with the note written."
     },
+    "Add %lld Books to Reading List" : {
+      "comment" : "Context menu item for the books selected in the Library: adds them to the reading list. Title case. %lld is the number of books selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld Book to Reading List"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld Books to Reading List"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Add %lld books to the reading list" : {
+      "comment" : "VoiceOver label of the Library's edit-mode bar button that adds the selected books to the reading list. %lld is the number of books selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld book to the reading list"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld books to the reading list"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Add Bookmark" : {
       "comment" : "Button of the Bookmarks list that adds a bookmark at the reading position, and the heading of the panel where its note is written."
     },
     "Add bookmark at current position" : {
       "comment" : "VoiceOver label of the Bookmarks list's Add Bookmark button."
+    },
+    "Added %lld books to the reading list." : {
+      "comment" : "VoiceOver announcement after several books were added to the reading list. %lld is the number of books added."
+    },
+    "Added to reading list: %@" : {
+      "comment" : "VoiceOver announcement after one book was added to the reading list. %@ is the book's title."
+    },
+    "Adds the selected books to the end of the reading list." : {
+      "comment" : "VoiceOver hint of the Library's edit-mode bar button Add to Reading List."
     },
     "Adjust minutes" : {
       "comment" : "VoiceOver label of the stepper beside the sleep timer sheet's custom minutes field."
@@ -179,11 +286,20 @@
     "End of heading" : {
       "comment" : "Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader."
     },
+    "End of the reading list" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": no book follows it below. Written without its full stop."
+    },
+    "Every book above it in the reading list is finished" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: the books above it are all finished, and the list passes over finished books. Written without its full stop."
+    },
     "Every book after it in the folder is finished" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": every book after it in its library folder is finished, so none plays. Written without its full stop."
     },
     "Every book before it in the folder is finished" : {
       "comment" : "A sentence of the announcement as a book ends, in a folder or feed that plays the book above: every book before it is finished, so none plays. Written without its full stop."
+    },
+    "Every book below it in the reading list is finished" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": the books below it are all finished, and the list passes over finished books. Written without its full stop."
     },
     "Fading out" : {
       "comment" : "The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader."
@@ -194,6 +310,9 @@
     "Finished: %@" : {
       "comment" : "VoiceOver announcement as a book ends with no book to follow it. %@ is the book's title. Sentences saying why may follow it."
     },
+    "For a book opened from the reading list: play the book below it or the book above it when it ends, or stop" : {
+      "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button."
+    },
     "Go To" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark."
     },
@@ -202,6 +321,15 @@
     },
     "Goes to this bookmark and closes the list." : {
       "comment" : "VoiceOver hint of a bookmark's row in the Bookmarks list."
+    },
+    "In reading list" : {
+      "comment" : "Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list."
+    },
+    "Keep these books on this Mac" : {
+      "comment" : "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac."
+    },
+    "Keeps the books on the reading list downloaded on this Mac, as Keep on This Mac does. This choice is this Mac's alone. Clearing it removes no download." : {
+      "comment" : "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox. Keep on This Mac is a command of the Library menu."
     },
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after an audiobook's edited title, artist, album, genre, or year was saved."
@@ -221,8 +349,23 @@
     "No more books in folder" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": its library folder has no book after it. Written without its full stop."
     },
+    "No next book in the reading list." : {
+      "comment" : "VoiceOver announcement when Next in Reading List finds no book below this one."
+    },
+    "No next book in the reading list: every book below this one is finished." : {
+      "comment" : "VoiceOver announcement when Next in Reading List finds only finished books below this one, which the list passes over."
+    },
+    "No previous book in the reading list." : {
+      "comment" : "VoiceOver announcement when Previous in Reading List finds no book above this one."
+    },
+    "No previous book in the reading list: every book above this one is finished." : {
+      "comment" : "VoiceOver announcement when Previous in Reading List finds only finished books above this one, which the list passes over."
+    },
     "No previous sleep timer to restart." : {
       "comment" : "VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set."
+    },
+    "None of the %lld selected books is in the reading list." : {
+      "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: no book selected is on the list. %lld is the number of books selected (two or more)."
     },
     "Not restarted because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book set to loop ends: it did not start again, because the sleep timer stopped it. Written without its full stop."
@@ -248,6 +391,9 @@
     "Open the next item in" : {
       "comment" : "Label of the pop-up button in a feed's Feed Info, choosing where the feed's next item opens."
     },
+    "Opening: %@" : {
+      "comment" : "VoiceOver announcement as Next in Reading List or Previous in Reading List opens a book without playing it. %@ is the book's title."
+    },
     "Optional note to describe this bookmark" : {
       "comment" : "VoiceOver hint of the note field when adding a bookmark."
     },
@@ -263,8 +409,86 @@
     "Pauses playback where the heading playing now ends: where the next heading begins, or the book ends." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of heading button."
     },
+    "Play the book above" : {
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list."
+    },
+    "Play the book below" : {
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list."
+    },
+    "Reading List" : {
+      "comment" : "The start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List."
+    },
+    "Reading List Order" : {
+      "comment" : "Name of the order the Reading List shows its books in, the one the listener arranges: the only item of its Sort menu."
+    },
+    "Reading list, book %lld of %lld" : {
+      "comment" : "Where a book read from the reading list stands in it, in the reader's header and in Where Am I?. %1$lld is the book's place in the list; %2$lld how many books the list holds.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Reading list, book %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Remove %lld Books from Reading List" : {
+      "comment" : "Context menu item for the books selected in the Library: takes them off the reading list. Title case. %lld is the number of books selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld Book from Reading List"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld Books from Reading List"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Remove %lld books from the reading list" : {
+      "comment" : "VoiceOver label of the Library's edit-mode bar button that takes the selected books off the reading list. %lld is the number of books selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld book from the reading list"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld books from the reading list"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Remove Bookmark %lld?" : {
       "comment" : "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %lld is the bookmark's number."
+    },
+    "Remove books when finished" : {
+      "comment" : "Checkbox of the Reading List's options bar: take each book off the list once it is finished."
+    },
+    "Removed %lld books from the reading list." : {
+      "comment" : "VoiceOver announcement after several books were taken off the reading list. %lld is the number of books taken off."
+    },
+    "Removed from reading list: %@" : {
+      "comment" : "VoiceOver announcement after one book was taken off the reading list. %@ is the book's title."
     },
     "Reset Timer" : {
       "comment" : "Button of the sleep timer sheet that starts the running timer again from its whole length."
@@ -309,6 +533,9 @@
     },
     "Setting a new timer replaces the current one." : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while a timer runs."
+    },
+    "Skip finished books" : {
+      "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books."
     },
     "Sleep Timer" : {
       "comment" : "Title of the sleep timer sheet over a book's reader, read by VoiceOver as its heading."
@@ -363,6 +590,15 @@
     "Sleep timer: %lld seconds remaining" : {
       "comment" : "VoiceOver announcement as the sleep timer's countdown passes a milestone under a minute. %lld is the seconds left (30 or 10)."
     },
+    "Sort books by %@" : {
+      "comment" : "VoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order."
+    },
+    "Sorted by %@" : {
+      "comment" : "VoiceOver announcement after the Reading List's order was chosen in its Sort menu. %@ is the order's name, Reading List Order."
+    },
+    "Start of the reading list" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: no book above it. Written without its full stop."
+    },
     "Starting again: %@" : {
       "comment" : "VoiceOver announcement as Play starts a finished book over from its beginning. %@ is the book's title."
     },
@@ -371,6 +607,9 @@
     },
     "Still starting: %@" : {
       "comment" : "VoiceOver announcement when Play is pressed while the next book is still opening. %@ is the next book's title."
+    },
+    "Stop" : {
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there."
     },
     "Stop At" : {
       "comment" : "Heading of the sleep timer sheet's section of timers that stop at a place in the book: End of heading and End of book."
@@ -384,8 +623,29 @@
     "Stop the timer and discard the remaining time" : {
       "comment" : "VoiceOver hint of the sleep timer sheet's Cancel Timer button."
     },
+    "Take it off the reading list, or clear %@ in the Reading List's options" : {
+      "comment" : "Advice that begins a sentence of the iCloud library's messages, on letting go of a book this Mac keeps for the reading list; the sentence goes on after it. %@ is the name of the checkbox Keep these books on this Mac."
+    },
+    "Take them off the reading list, or clear %@ in the Reading List's options" : {
+      "comment" : "Advice that begins a sentence of the iCloud library's messages, on letting go of several books this Mac keeps for the reading list; the sentence goes on after it. %@ is the name of the checkbox Keep these books on this Mac."
+    },
+    "Takes a finished book off the reading list once its reader window moves on or closes. Books finished before you turn this on stay on it." : {
+      "comment" : "VoiceOver hint of the Reading List's Remove books when finished checkbox."
+    },
+    "Takes the selected books off the reading list. They stay in the library." : {
+      "comment" : "VoiceOver hint of the Library's edit-mode bar button Remove from Reading List."
+    },
     "TextMouth is not downloading right now." : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\""
+    },
+    "The %lld selected books are already in the reading list." : {
+      "comment" : "VoiceOver announcement when Add to Reading List added nothing: every book selected is on the list already. %lld is the number of books selected (two or more)."
+    },
+    "The book is in %@." : {
+      "comment" : "Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root."
+    },
+    "The books are in %@." : {
+      "comment" : "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root."
     },
     "The next article could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next article failed. %@ is the download's own sentence saying why."
@@ -393,11 +653,23 @@
     "The next episode could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next episode failed. %@ is the download's own sentence saying why."
     },
+    "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu." : {
+      "comment" : "Shown and read as the only row of the Reading List while it holds no book. Add to Reading List is the name of the command in the Library menu."
+    },
+    "The reading list is set to stop when a book ends" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": the list's When a book ends is Stop. Written without its full stop."
+    },
+    "The reading list keeps the order you arrange with Move Book Up, Move Book Down, or dragging" : {
+      "comment" : "VoiceOver hint of the Reading List Order item of the Reading List's Sort menu. Move Book Up and Move Book Down are commands of the Library menu."
+    },
     "This Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there."
     },
     "This book already stops playing at its end, since Continue to Next Book is off; the timer stops it there too." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book that stops at its end anyway. Continue to Next Book is a choice of the When book ends setting."
+    },
+    "This book was not opened from the reading list." : {
+      "comment" : "VoiceOver announcement when Next in Reading List or Previous in Reading List is used in a reader whose book was not opened from the reading list."
     },
     "Timer reset." : {
       "comment" : "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again."
@@ -456,6 +728,12 @@
     "Use the global setting (%@)" : {
       "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window."
     },
+    "When a book ends" : {
+      "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop."
+    },
+    "When a book opened from the reading list ends, pass over the books already finished" : {
+      "comment" : "VoiceOver hint of the Reading List's Skip finished books checkbox."
+    },
     "Where the next article opens when listening goes on from one of this feed's articles: in this window, in a new window, or as the global setting says" : {
       "comment" : "VoiceOver hint of the Open the next article in pop-up button in a news feed's Feed Info."
     },
@@ -491,6 +769,12 @@
     },
     "stops at the end of this heading" : {
       "comment" : "The state of a sleep timer set to End of heading, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon."
+    },
+    "take it off the reading list, or clear %@ in the Reading List's options" : {
+      "comment" : "Advice inside a sentence of the iCloud library's messages, after \"To let it go,\" or \"Then\": on letting go of a book this Mac keeps for the reading list. Lowercase. %@ is the name of the checkbox Keep these books on this Mac."
+    },
+    "take them off the reading list, or clear %@ in the Reading List's options" : {
+      "comment" : "Advice inside a sentence of the iCloud library's messages, after \"To let them go,\": on letting go of several books this Mac keeps for the reading list. Lowercase. %@ is the name of the checkbox Keep these books on this Mac."
     }
   },
   "version" : "1.0"
