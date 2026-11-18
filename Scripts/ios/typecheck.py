@@ -45,7 +45,9 @@ checked before it is committed; `--ref` still checks a commit. With `--emit-stri
 localized strings it finds (`-emit-localized-strings`), one .stringsdata file per Swift file of the app, into a folder
 that is new for each run, build/l10n/stringsdata/<platform>-<commit>-<stamp>/ of the main checkout (Scripts/l10n/l10n.py
 sync merges both platforms' folders into the String Catalog); the dependencies are not built with the flags, so the
-folder holds the app's own files only.
+folder holds the app's own files only. The extraction build also leaves out debug information (`-gnone`) and the index
+store (`--disable-index-store`), which no string depends on: two Mac runs of one tree, with and without, wrote the same
+826 files, and the build folder was 65 MB smaller.
 
 Every run takes the Mac's heavy-work lock first (Scripts/agents/heavy_lock.py),
 which the build train takes too, so no two heavy jobs ever run at once. A run
@@ -393,10 +395,11 @@ int tmff_session_formcheck(char *out, size_t capacity) {
 
 def string_flags(strings_folder):
     """The compiler flags that make it write the localized strings it finds, one .stringsdata file per Swift file, into
-    `strings_folder` (which must exist: the compiler does not make it). Empty when `strings_folder` is None."""
+    `strings_folder` (which must exist: the compiler does not make it), and leave out the debug information nobody reads
+    in this run (`-gnone`). Empty when `strings_folder` is None."""
     if strings_folder is None:
         return []
-    return ["-emit-localized-strings", "-emit-localized-strings-path", str(strings_folder)]
+    return ["-emit-localized-strings", "-emit-localized-strings-path", str(strings_folder), "-gnone"]
 
 
 def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=(), strings_folder=None):
@@ -984,6 +987,9 @@ def main(argv):
             command += ["--triple", f"arm64-apple-ios{args.ios_target}"]
         # One build command for each test target (see test_targets), or the one plain build.
         commands = [command]
+        if args.emit_strings:
+            # The string extraction reads no index, and the index store is a large folder of its own.
+            commands = [command + ["--disable-index-store"]]
         if tests:
             # Only a test target's module (and the app it needs) is built: SwiftPM's last step for
             # --build-tests (which cannot be combined with --target), the synthesized test-runner module, stops on "unexpected input file:

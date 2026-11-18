@@ -280,6 +280,13 @@ class PackageTests(TypecheckTestsCase):
             before = text.split('name: "TextMouth",')[0]
             self.assertNotIn("emit-localized-strings", before, platform)
 
+    def test_the_extraction_leaves_out_debug_information(self):
+        """Two Mac runs of one tree, with -gnone and --disable-index-store and without, wrote 826 identical .stringsdata files,
+        and the build folder was 65 MB smaller."""
+        for platform in ("macos", "ios"):
+            app = self.package_with_strings(platform).split('name: "TextMouth",')[1].split(".target(")[0]
+            self.assertIn('"-gnone"', app, platform)
+
     def test_the_tests_are_not_given_the_extraction_flags(self):
         text = self.package_with_strings("macos", tests=True)
         self.assertEqual(text.count("-emit-localized-strings\""), 1)
@@ -580,6 +587,12 @@ class MainTests(TypecheckTestsCase):
         self.assertEqual(Path(manifest["sourceRoot"]), (typecheck.WORK_ROOT / "macos-strings" / "src").resolve())
         self.assertEqual(printed.splitlines()[-1], f"{typecheck.STRINGS_FOLDER_LINE}{folder}")
         self.assertIn("Strings: 1 .stringsdata files for 1 Swift files", printed)
+
+    def test_the_extraction_build_leaves_out_the_index_store_and_a_plain_run_keeps_it(self):
+        self.run_strings("--ref", self.commit)
+        self.assertIn("--disable-index-store", self.commands[-1])
+        self.main("--platform", "macos")
+        self.assertNotIn("--disable-index-store", self.commands[-1])
 
     def test_the_extraction_builds_in_a_folder_of_its_own_so_the_plain_check_stays_incremental(self):
         self.run_strings("--ref", self.commit)
