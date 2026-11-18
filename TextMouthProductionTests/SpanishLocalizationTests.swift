@@ -81,6 +81,25 @@ final class SpanishLocalizationTests: XCTestCase {
         XCTAssertEqual(String(localized: LocalizedStringResource("\(30) minutes", locale: english)), "30 minutes")
     }
 
+    /// A bookmark's number is an identifier, written as the old code wrote it: "Bookmark 12345", never grouped
+    /// ("12,345", "12.345") by the region (finding 5 of the pilot's review). Every sentence that names one is checked,
+    /// the iPhone's question included. A count, by contrast, stays grouped: that is the right English.
+    func testABookmarksNumberIsNeverGrouped() {
+        let bookmark = Bookmark(number: 12345, chapterIndex: 0, characterOffset: 0)
+        XCTAssertEqual(bookmark.name, "Bookmark 12345")
+        XCTAssertTrue(bookmark.accessibilityLabel(headingText: "The Battle").hasPrefix("Bookmark 12345, The Battle"))
+        XCTAssertTrue(bookmark.accessibilityLabel(headingText: nil).hasPrefix("Bookmark 12345, added"))
+        XCTAssertEqual(BookmarkPanelView.editTitle(number: 12345), "Edit Bookmark 12345")
+        XCTAssertEqual(ReaderViewModel.bookmarkAddedAnnouncement(number: 12345), "Bookmark 12345 added")
+        XCTAssertEqual(ReaderViewModel.bookmarkRemovedAnnouncement(number: 12345), "Bookmark 12345 removed")
+        XCTAssertEqual(PhoneBookmarksWording.removeQuestion(number: 12345), "Remove Bookmark 12345?")
+        for (button, english) in [(BookmarkCommand.goTo, "Go to bookmark 12345"),
+                                  (.editNote, "Edit note for bookmark 12345"),
+                                  (.delete, "Delete bookmark 12345")] {
+            XCTAssertEqual(button.buttonLabel(forBookmarkNumber: 12345), english)
+        }
+    }
+
     /// The menus that hide by title (finding 1 of the pilot's review): the Bookmarks menu reads "Marcadores" in
     /// Spanish, so the reader's title set must hold it beside the key, or the menu stays over the Library. The
     /// English set is the four keys, unchanged, and the Library's set holds its own key.

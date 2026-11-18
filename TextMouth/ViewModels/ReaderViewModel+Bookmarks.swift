@@ -195,15 +195,15 @@ extension ReaderViewModel {
     /// given: "Bookmark 3 added". The Mac's toggle and Add, and the phone's
     /// Add, say it alike.
     nonisolated static func bookmarkAddedAnnouncement(number: Int) -> String {
-        String(localized: "Bookmark \(number) added",
-               comment: "VoiceOver announcement after a bookmark was added at the reading position. %lld is the new bookmark's number.")
+        String(localized: "Bookmark \(String(number)) added",
+               comment: "VoiceOver announcement after a bookmark was added at the reading position. %@ is the new bookmark's number, an identifier written without digit grouping.")
     }
 
     /// What VoiceOver says once the toggle removed the bookmark near the
     /// reading position: "Bookmark 3 removed".
     nonisolated static func bookmarkRemovedAnnouncement(number: Int) -> String {
-        String(localized: "Bookmark \(number) removed",
-               comment: "VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %lld is that bookmark's number.")
+        String(localized: "Bookmark \(String(number)) removed",
+               comment: "VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %@ is that bookmark's number, an identifier written without digit grouping.")
     }
 
     /// Says `sentence`, which tells that a bookmark command did nothing, a

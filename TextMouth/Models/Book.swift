@@ -2710,8 +2710,8 @@ struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     /// The bookmark's name, by its number, as its row shows it and VoiceOver
     /// says it after a move to it: "Bookmark 3". Localized (FR35).
     var name: String {
-        String(localized: "Bookmark \(number)",
-               comment: "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %lld is the bookmark's number.")
+        String(localized: "Bookmark \(String(number))",
+               comment: "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.")
     }
 
     /// Concise label shared by bookmark rows and the bookmarks rotor, such as
@@ -2728,17 +2728,17 @@ struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     func accessibilityLabel(headingText: String?) -> String {
         switch (headingText?.nonBlank, label.isEmpty ? nil : label) {
         case let (heading?, note?):
-            return String(localized: "Bookmark \(number), \(heading), Note: \(note), added \(dateText)",
-                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$lld is the bookmark's number; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.")
+            return String(localized: "Bookmark \(String(number)), \(heading), Note: \(note), added \(dateText)",
+                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.")
         case let (heading?, nil):
-            return String(localized: "Bookmark \(number), \(heading), added \(dateText)",
-                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$lld is the bookmark's number; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.")
+            return String(localized: "Bookmark \(String(number)), \(heading), added \(dateText)",
+                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.")
         case let (nil, note?):
-            return String(localized: "Bookmark \(number), Note: \(note), added \(dateText)",
-                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$lld is the bookmark's number; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.")
+            return String(localized: "Bookmark \(String(number)), Note: \(note), added \(dateText)",
+                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.")
         case (nil, nil):
-            return String(localized: "Bookmark \(number), added \(dateText)",
-                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$lld is the bookmark's number; %2$@ the day it was added, such as October 9, 2026.")
+            return String(localized: "Bookmark \(String(number)), added \(dateText)",
+                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the day it was added, such as October 9, 2026.")
         }
     }
 

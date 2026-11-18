@@ -525,8 +525,8 @@ extension BookmarkPanelView {
 
     /// The Edit panel's heading, as in "Edit Bookmark 3".
     nonisolated static func editTitle(number: Int) -> String {
-        String(localized: "Edit Bookmark \(number)",
-               comment: "Heading of the panel for editing a bookmark's note. %lld is the bookmark's number.")
+        String(localized: "Edit Bookmark \(String(number))",
+               comment: "Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.")
     }
 }
 
@@ -777,14 +777,14 @@ enum BookmarkCommand: CaseIterable {
     func buttonLabel(forBookmarkNumber number: Int) -> String {
         switch self {
         case .goTo:
-            return String(localized: "Go to bookmark \(number)",
-                          comment: "VoiceOver label of a button that moves the book to a bookmark. %lld is the bookmark's number.")
+            return String(localized: "Go to bookmark \(String(number))",
+                          comment: "VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.")
         case .editNote:
-            return String(localized: "Edit note for bookmark \(number)",
-                          comment: "VoiceOver label of the button beside a bookmark's row that edits its note. %lld is the bookmark's number.")
+            return String(localized: "Edit note for bookmark \(String(number))",
+                          comment: "VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.")
         case .delete:
-            return String(localized: "Delete bookmark \(number)",
-                          comment: "VoiceOver label of the button beside a bookmark's row that deletes it. %lld is the bookmark's number.")
+            return String(localized: "Delete bookmark \(String(number))",
+                          comment: "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.")
         }
     }
 }
