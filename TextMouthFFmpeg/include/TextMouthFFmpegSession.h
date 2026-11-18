@@ -54,11 +54,11 @@ int tmff_session_cpu_features(void);
    Mac's helper, one session a process, never sets it. */
 void tmff_set_allocation_cap(size_t bytes);
 
-/* Opens `path` for reading as a session reads its file: a regular file only, opened without
-   blocking, so that a FIFO or a device is never waited on, then checked, then made blocking for
-   the reads, and closed on exec. Returns the descriptor, or -1. The Mac's helper opens its file
-   so before it confines itself, and the iPhone's import before it opens a session in the app
-   (FMT54). */
+/* Opens `path` for reading as a session reads its file: a regular file only (a symbolic link is
+   refused, by O_NOFOLLOW), opened without blocking, so that a FIFO or a device is never waited on,
+   then checked, then made blocking for the reads, and closed on exec. Returns the descriptor, or
+   -1. The Mac's helper opens its file so before it confines itself, and the iPhone's import
+   before it opens a session in the app (FMT54). */
 int tmff_open_regular_file(const char *path);
 
 /* A check a session asks before every read and seek of its file, before each of its steps, and

@@ -506,8 +506,11 @@ void tmff_set_allocation_cap(size_t bytes) {
     av_max_alloc(allocation_cap);
 }
 
+/* O_NOFOLLOW makes the open fail (ELOOP) when the path's last part is a symbolic link, so a link
+   is refused as the sentence for a file that cannot be opened, before any fstat could pass the
+   regular file it points at. O_NONBLOCK keeps a FIFO from being waited on. */
 int tmff_open_regular_file(const char *path) {
-    const int descriptor = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    const int descriptor = open(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC);
     if (descriptor < 0) {
         return -1;
     }

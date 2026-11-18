@@ -333,6 +333,28 @@ final class FFmpegHelperProtocolTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(started), TestMachine.allowed(20), "no refusal may wait")
     }
 
+    /// The session's opener refuses a symbolic link as it refuses a file that
+    /// cannot be opened (FU04): a link to a good sample is unreadable (2),
+    /// with nothing written, in a probe and in a decode, where the sample
+    /// itself is read. `O_NOFOLLOW` is what refuses it: the opener checks
+    /// that what it opened is a regular file, which a link's target is.
+    /// Shared with the iPhone, whose in-app run opens its file the same way.
+    func testASymbolicLinkIsRefusedAsUnreadable() async throws {
+        let folder = try makeSandboxDirectory("FFmpegLinks")
+        let wma = try formatSampleURL("wma/tones-wma1.wma")
+        let link = folder.appendingPathComponent("link.wma")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: wma)
+        for mode in ["probe", "decode"] {
+            let refused = try await runHelper([mode, "asf", link.path])
+            XCTAssertEqual(refused.ending, WatchedProcess.Ending(outcome: .exited(status: 2)), "\(mode) of a link")
+            XCTAssertEqual(refused.bytes, [], "\(mode) of a link")
+        }
+        // The sample itself, opened by its own path, is still read.
+        let read = try await runHelper(["probe", "asf", wma.path])
+        XCTAssertEqual(read.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
+        XCTAssertFalse(read.bytes.isEmpty)
+    }
+
     /// A tag longer than 4 KB is cut at 4 KB, between two characters (the
     /// TODO's FU-FFMPEG item): the sample's title of "Long" and 3,000 "é"
     /// (6,004 bytes) comes back as its first 4,096 bytes.

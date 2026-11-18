@@ -80,6 +80,25 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
     }
 
+    /// A symbolic link to a good WMA file is refused as a file that cannot be
+    /// opened, not converted through the link (FU04): the session's opener
+    /// refuses a link, and the sentence is the import's for an unreadable
+    /// file. Its target is untouched, and nothing is left beside the link.
+    func testASymbolicLinkToAGoodFileIsRefusedAsUnreadable() async throws {
+        let wma = try source()
+        let folder = try makeSandboxDirectory("FFmpegLinkedSource")
+        let link = folder.appendingPathComponent("linked.wma")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: wma)
+        do {
+            _ = try await FFmpegAudioConverter.convert(link, using: try bundledFFmpegTool())
+            XCTFail("a link must be refused")
+        } catch {
+            XCTAssertEqual(error as? ImportAudioConverter.Failure, .unreadable(fileName: "linked.wma"))
+        }
+        XCTAssertEqual(try names(in: folder), ["linked.wma"])
+        XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
+    }
+
     /// A copy-protected WMA file is refused as copy-protected, with the
     /// helper or without, before anything runs: no converter would help.
     func testACopyProtectedFileIsRefusedBeforeAnythingElse() async throws {
