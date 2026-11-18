@@ -15,6 +15,9 @@ Commands (`--help` after each says more):
   size     The English bytes against the budget, and each language's shipped size in each format.
   check    The rules a catalog must keep before a language ships. Fast, builds nothing, and is run by `make check`.
   plural   Write a string's plural forms in one language (English included).
+  todo     A JSON batch of the strings to translate into a language, each with its comment, placeholders, code context,
+           glossary terms, and an earlier translation of a similar string.
+  apply    Check a translated batch, string by string, and write the good translations (machine_translated).
 
 The catalog's layout, placeholders, plural rules, and states are in catalog.py; the shipped languages and the budget are
 in config.json.
@@ -40,6 +43,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "agents"))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import repo_paths  # noqa: E402
+import glossary as glossarylib  # noqa: E402
 import translate  # noqa: E402
 
 EXIT_OK = 0        # the command did its work
@@ -533,21 +537,8 @@ def cmd_size(args):
 # check
 # ---------------------------------------------------------------------------------------------------------------
 
-def english_text_for(english, key, unit):
-    """The English text a translation unit is compared with: the English unit at the same path; else, for a plural form
-    the English lacks (Spanish's `many`), the English `other` of the same variation; else the English as a whole, or the
-    key when the catalog holds no English localization (the key is the English text). `english` is {path: value}."""
-    if unit.path in english:
-        return english[unit.path]
-    if unit.category:
-        other = unit.path[:-len(unit.category)] + "other"
-        if other in english:
-            return english[other]
-    if "" in english:
-        return english[""]
-    if english:
-        return english[sorted(english)[0]]
-    return key
+# The English a translated unit is compared with lives in translate.py, which `apply` uses too.
+english_text_for = translate.english_text_for
 
 
 def check_language(cat, language):
@@ -641,18 +632,48 @@ def check_catalog(cat, config):
     return problems, note
 
 
+def glossary_warnings(cat, glossary, languages):
+    """The sentences about translations (finished ones, in each of `languages`) that do not use the translation the glossary
+    gives for a term of their English. Only warnings: a language inflects, and a translator may have a better word."""
+    warnings = []
+    for language in languages:
+        for key in cat.translatable():
+            english = {unit.path: unit.value for unit in cat.units(key, cat.source_language)}
+            for unit in cat.units(key, language):
+                if not catalog.unit_done(unit):
+                    continue
+                unused = glossary.unused_terms(english_text_for(english, key, unit), unit.value, language)
+                if unused:
+                    where = f" ({unit.path})" if unit.path else ""
+                    warnings.append(f"{language} {quote(key)}{where}: does not use the glossary's "
+                                    + ", ".join(json.dumps(text, ensure_ascii=False) for text in unused))
+    return warnings
+
+
 def cmd_check(args):
-    """`check`: prints the problems (up to --limit) and the budget note; exit status 1 when there is a problem."""
+    """`check`: prints the problems (up to --limit), then the glossary's warnings (up to --limit, never a failure) and the
+    budget note; exit status 1 when there is a problem. A glossary file that is malformed is a problem."""
     cat, config = load_catalog(args), load_config(args.config)
     problems, note = check_catalog(cat, config)
+    warnings = []
+    try:
+        warnings = glossary_warnings(cat, glossarylib.Glossary.load(args.glossary), languages_of(cat, config))
+    except glossarylib.GlossaryError as error:
+        problems.append(str(error))
     shown = problems if not args.limit else problems[:args.limit]
     lines = [f"check: {line}" for line in shown]
     if len(shown) < len(problems):
         lines.append(f"check: and {number(len(problems) - len(shown))} more (--limit 0 shows all)")
+    shown_warnings = warnings if not args.limit else warnings[:args.limit]
+    lines += [f"check: warning: {line}" for line in shown_warnings]
+    if len(shown_warnings) < len(warnings):
+        lines.append(f"check: and {number(len(warnings) - len(shown_warnings))} more warnings (--limit 0 shows all)")
     lines.append(f"check: {note}")
     shipped = ", ".join(sorted(config["languages"])) or "none yet"
+    if warnings:
+        lines.append(f"check: {number(len(warnings))} warning{'s' if len(warnings) != 1 else ''} (the glossary's terms; not failures)")
     lines.append(f"check: {number(len(problems))} problem{'s' if len(problems) != 1 else ''}; shipped languages: {shipped}")
-    emit(args, {"problems": problems, "englishBytes": cat.english_bytes(), "budgetBytes": config["budgetBytes"],
+    emit(args, {"problems": problems, "warnings": warnings, "englishBytes": cat.english_bytes(), "budgetBytes": config["budgetBytes"],
                 "languages": config["languages"]}, lines)
     return EXIT_PROBLEMS if problems else EXIT_OK
 
@@ -681,11 +702,145 @@ def cmd_plural(args):
 
 
 # ---------------------------------------------------------------------------------------------------------------
+# todo and apply
+# ---------------------------------------------------------------------------------------------------------------
+
+def load_glossary(args):
+    """The glossary named by --glossary (default glossary.json beside this script), or a Refused (status 2) that says it
+    cannot be read or is malformed."""
+    try:
+        return glossarylib.Glossary.load(args.glossary)
+    except glossarylib.GlossaryError as error:
+        raise Refused(str(error), EXIT_USAGE)
+
+
+def load_locations(args):
+    """The table of the main catalog in the locations file `sync` wrote ({key: [{"file", "line"}]}), from --locations or
+    the main checkout's build/l10n/locations.json; (the table, whether the file was there)."""
+    path = Path(args.locations) if args.locations else OUTPUT / LOCATIONS_FILE
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get(TABLE, {}), True
+    except (OSError, ValueError):
+        return {}, False
+
+
+def keys_from_file(path):
+    """The keys listed in `path`: a JSON list of keys, a JSON object with `items` (a batch or its .rejected.json: the keys
+    of its items), or else one key to a line."""
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError as error:
+        raise Refused(f"cannot read {path}: {error}", EXIT_USAGE)
+    if text.lstrip().startswith(("[", "{")):
+        try:
+            data = json.loads(text)
+        except ValueError as error:
+            raise Refused(f"{path} is not valid JSON: {error}", EXIT_USAGE)
+        if isinstance(data, dict):
+            data = [item.get("key") for item in data.get("items", []) if isinstance(item, dict)]
+        return [key for key in data if isinstance(key, str)]
+    return [line for line in text.splitlines() if line.strip()]
+
+
+def repository_path(name):
+    """`name` (a path given on the command line) as the repository-relative, slash-separated path the locations file uses."""
+    path = Path(name)
+    if path.is_absolute():
+        try:
+            path = path.relative_to(ROOT)
+        except ValueError:
+            pass
+    return path.as_posix()
+
+
+def selected_keys(args, locations, have_locations):
+    """The keys the options select, or None for every pending string: --keys-from lists them, --file names source files,
+    --area names one of the scanner's areas (Scripts/l10n/swiftscan/areas.py, when this branch has the scanner)."""
+    if args.keys_from:
+        return keys_from_file(args.keys_from)
+    if not (args.file or args.area):
+        return None
+    if not have_locations:
+        raise Refused("--file and --area read build/l10n/locations.json, which `sync` writes; run it first (or name --locations)", EXIT_USAGE)
+    if args.file:
+        wanted = {repository_path(name) for name in args.file}
+        return sorted(key for key, places in locations.items() if any(place["file"] in wanted for place in places))
+    try:
+        from swiftscan import areas
+    except ImportError:
+        raise Refused("--area needs the scanner's areas (Scripts/l10n/swiftscan/areas.py), which this branch does not have yet; "
+                      "use --file or --keys-from", EXIT_USAGE)
+    if args.area not in areas.area_names():
+        raise Refused(f"no area {args.area!r}; the areas are {', '.join(areas.area_names())}", EXIT_USAGE)
+    return sorted(key for key, places in locations.items() if any(areas.area_of(place["file"]) == args.area for place in places))
+
+
+def cmd_todo(args):
+    """`todo --lang L [--keys-from FILE | --area A | --file PATH...] [--limit N] [--out FILE]`: the batch of strings to
+    translate into L, as JSON on standard output or in FILE."""
+    cat, glossary = load_catalog(args), load_glossary(args)
+    locations, have_locations = load_locations(args)
+    keys = selected_keys(args, locations, have_locations)
+    if not have_locations:
+        print("l10n: no build/l10n/locations.json (run sync): the batch has no code context", file=sys.stderr)
+    try:
+        batch = translate.build_batch(cat, args.lang, glossary, locations, ROOT, keys, args.limit)
+    except translate.Problems as refusal:
+        raise Refused("; ".join(refusal.problems), EXIT_USAGE)
+    text = json.dumps(batch, indent=1, ensure_ascii=False) + "\n"
+    summary = (f"todo: {number(batch['count'])} strings for {args.lang}, {number(batch['remaining'])} more not in this batch, "
+               f"{number(len(batch['skipped']))} skipped")
+    if args.out:
+        Path(args.out).write_text(text, encoding="utf-8")
+        print(f"{summary}; wrote {args.out}")
+    else:
+        print(text, end="")
+        print(summary, file=sys.stderr)
+    return EXIT_OK
+
+
+def rejected_path(file):
+    """The file the refused items of the batch `file` are written to: the batch's name and `.rejected.json`."""
+    return Path(str(file) + ".rejected.json")
+
+
+def cmd_apply(args):
+    """`apply FILE [--state S]`: checks each translation of the batch FILE and writes the good ones. Prints each refusal with
+    its reason and writes the refused items to FILE.rejected.json for a second try; exit status 1 if any was refused."""
+    cat, glossary = load_catalog(args), load_glossary(args)
+    try:
+        batch = json.loads(Path(args.file).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise Refused(f"cannot read the batch {args.file}: {error}", EXIT_USAGE)
+    try:
+        result = translate.apply_batch(cat, batch, glossary, args.state)
+    except translate.Problems as refusal:
+        raise Refused("; ".join(refusal.problems), EXIT_USAGE)
+    if result.written:
+        cat.save(catalog_path(args))
+    for item in result.rejected:
+        for problem in item["problems"]:
+            print(f"refused {quote(str(item.get('key', '?')))}: {problem}")
+    for key, sentence in result.warnings:
+        print(f"warning {quote(key)}: {sentence}")
+    # The refused items go to a file of their own for a second try; an earlier file is overwritten (emptied when nothing
+    # was refused this time) so it never holds an old refusal.
+    target = rejected_path(args.file)
+    if result.rejected or target.exists():
+        retry = {key: batch[key] for key in ("language", "sourceLanguage", "pluralCategories") if key in batch}
+        target.write_text(json.dumps({**retry, "items": result.rejected}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"apply: {number(len(result.written))} written, {number(len(result.unchanged))} already there, "
+          f"{number(len(result.rejected))} refused, {number(len(result.warnings))} warnings"
+          + (f"; the refused ones are in {target}" if result.rejected else ""))
+    return EXIT_PROBLEMS if result.rejected else EXIT_OK
+
+
+# ---------------------------------------------------------------------------------------------------------------
 # The command line.
 # ---------------------------------------------------------------------------------------------------------------
 
 def build_parser():
-    """The command line's parser: one subcommand each for sync, status, size, check, and plural."""
+    """The command line's parser: one subcommand each for sync, status, size, check, plural, todo, and apply."""
     parser = argparse.ArgumentParser(prog="l10n.py", description=__doc__.split("\n\n")[0],
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog="Exit status: 0 done, 1 a check found problems or a sync was refused, 2 a bad command line.")
@@ -718,6 +873,25 @@ def build_parser():
     for category in PLURAL_OPTIONS:
         plural.add_argument(f"--{category}", help=f"the text of the {category} form (give exactly the forms the language uses)")
     plural.add_argument("--state", help="the state to write (default translated for English, else machine_translated)")
+    glossary_option = lambda sub: sub.add_argument(  # noqa: E731  (one line, used three times)
+        "--glossary", default=glossarylib.GLOSSARY_PATH, help="the glossary file (default: glossary.json beside this script)")
+    todo = add("todo", "a JSON batch of the strings to translate into a language, with their context", cmd_todo)
+    todo.add_argument("--lang", required=True, help="the language to translate into, such as es")
+    chosen = todo.add_mutually_exclusive_group()
+    chosen.add_argument("--keys-from", help="only these keys: a JSON list, a batch or .rejected.json file, or one key to a line")
+    chosen.add_argument("--area", help="only the strings the scanner's area of this name uses")
+    chosen.add_argument("--file", nargs="+", help="only the strings these source files use (paths from the repository's root)")
+    todo.add_argument("--limit", type=int, default=translate.DEFAULT_LIMIT,
+                      help=f"at most this many strings, 0 for all (default {translate.DEFAULT_LIMIT})")
+    todo.add_argument("--out", help="write the batch to this file instead of standard output")
+    todo.add_argument("--locations", help="the locations file (default: build/l10n/locations.json of the main checkout)")
+    glossary_option(todo)
+    apply = add("apply", "check a translated batch and write the good translations into the catalog", cmd_apply)
+    apply.add_argument("file", help="the batch file, translated")
+    apply.add_argument("--state", choices=("machine_translated", "translated"),
+                       help="the state to write (default machine_translated; translated once a person reviewed them)")
+    glossary_option(apply)
+    glossary_option(check)
     return parser
 
 

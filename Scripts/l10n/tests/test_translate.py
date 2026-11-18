@@ -103,7 +103,7 @@ class PluralTests(CatalogCase):
                            reason="needs the plural form many")
 
     def test_an_empty_form_is_refused(self):
-        self.assertRefused("%lld books", "--lang", "en", "--one", " ", "--other", "%lld books", reason="the one form is empty")
+        self.assertRefused("%lld books", "--lang", "en", "--one", " ", "--other", "%lld books", reason="the one form: empty text")
 
     def test_placeholders_that_differ_from_the_key_are_refused(self):
         self.assertRefused("%lld books", "--lang", "en", "--one", "%@ book", "--other", "%lld books",
