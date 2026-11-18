@@ -18,7 +18,9 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
+import glossary  # noqa: E402
 import l10n  # noqa: E402
+import translate  # noqa: E402
 import test_l10n as base  # noqa: E402  (its helpers: entry, unit, plural)
 import test_translate as shared  # noqa: E402  (its CatalogCase and run)
 
@@ -33,9 +35,11 @@ GLOSSARY = {
 # The source files the strings are used in, with made-up lines.
 PLAY_VIEW = "TextMouth/Views/PlayView.swift"
 OTHER_VIEW = "TextMouth/Views/Other.swift"
+# The lines that use a string spell its text out, as the code does (a value is interpolated where the key has a placeholder).
+USES = {1: 'Text("Add \\(name) to your Library")', 10: 'Button("Play") {', 15: 'Text("Play")'}
 SOURCE = {
-    PLAY_VIEW: "\n".join(f"line {number}" for number in range(1, 21)),
-    OTHER_VIEW: "alpha\nbeta\ngamma\n",
+    PLAY_VIEW: "\n".join(USES.get(number, f"line {number}") for number in range(1, 21)),
+    OTHER_VIEW: 'alpha\nText("Play")\ngamma\n',
 }
 # The message `todo` gives for a string that is not in the batch because there is nothing to do for it.
 NOTHING_TO_DO = "nothing to translate (done, stale, or not to be translated)"
@@ -106,13 +110,13 @@ class TodoTests(BatchCase):
         self.assertEqual(len(item["context"]), 2)
         first = item["context"][0]
         self.assertEqual((first["file"], first["line"], first["firstLine"]), (PLAY_VIEW, 10, 8))
-        self.assertEqual(first["code"], "line 8\nline 9\nline 10\nline 11\nline 12")
+        self.assertEqual(first["code"], 'line 8\nline 9\nButton("Play") {\nline 11\nline 12')
         self.assertEqual(item["context"][1]["file"], OTHER_VIEW, "a different file is preferred to a second line of the first")
-        self.assertEqual(item["context"][1]["code"], "alpha\nbeta\ngamma")
+        self.assertEqual(item["context"][1]["code"], 'alpha\nText("Play")\ngamma')
 
     def test_a_use_near_the_top_of_a_file_has_fewer_lines_before(self):
         item = self.items()["Add %@ to your Library"]
-        self.assertEqual(item["context"][0]["code"], "line 1\nline 2\nline 3")
+        self.assertEqual(item["context"][0]["code"], 'Text("Add \\(name) to your Library")\nline 2\nline 3')
 
     def test_a_file_that_cannot_be_read_or_lies_outside_the_tree_gives_its_place_without_code(self):
         item = self.items()["Open %@ in TextMouth"]
@@ -202,6 +206,121 @@ class TodoTests(BatchCase):
         self.assertEqual(status, 0)
         self.assertIn("locations.json", err)
         self.assertEqual(batch["items"][0]["context"], [])
+
+
+class TodoContextTests(BatchCase):
+    """`todo`'s code context is checked against the code it is read from, and `previous` is offered with care (finding 7)."""
+
+    def write_locations(self, stamp, **places):
+        """Writes the locations file (the fixtures' places, `places` over them), with `stamp` as the commit it was made from."""
+        table = json.loads(self.locations.read_text(encoding="utf-8"))["Localizable"]
+        table.update(places)
+        data = {"Localizable": table}
+        if stamp is not None:
+            data[l10n.EXTRACTED_KEY] = stamp
+        self.locations.write_text(json.dumps(data), encoding="utf-8")
+
+    def todo_at(self, head, *extra):
+        """Runs `todo` as a checkout whose HEAD and TextMouth folder are `head` ((commit, tree id)); returns (status, batch,
+        standard error)."""
+        with mock.patch.object(l10n, "head_ids", return_value=head):
+            return self.todo(*extra)
+
+    def test_a_stamp_of_this_commit_or_of_these_sources_is_trusted_and_says_nothing(self):
+        for head in (("aaa111", "tree1"), ("bbb222", "tree9")):
+            self.write_locations({"commit": "aaa111", "treeId": "tree9"})
+            status, batch, err = self.todo_at(head)
+            self.assertEqual(status, 0)
+            self.assertNotIn("warning", err, head)
+            play = next(item for item in batch["items"] if item["key"] == "Play")
+            self.assertIn("code", play["context"][0])
+
+    def test_a_stamp_of_other_code_warns_and_leaves_out_the_code_that_does_not_hold_the_string(self):
+        # `Play` is said to be at line 3 of the view, where the text is not (the code has moved since).
+        self.write_locations({"commit": "old1234", "treeId": "oldtree"}, Play=[{"file": PLAY_VIEW, "line": 3}])
+        status, batch, err = self.todo_at(("new5678", "newtree"))
+        self.assertEqual(status, 0)
+        self.assertRegex(err, r"warning: .*made from commit old1234.*this tree is at new5678.*run sync again")
+        play = next(item for item in batch["items"] if item["key"] == "Play")
+        self.assertEqual(play["context"][0]["line"], 3)
+        self.assertNotIn("code", play["context"][0])
+        self.assertIn("not near this line", play["context"][0]["codeOmitted"])
+        self.assertIn("the code of 1 uses left out", err)
+
+    def test_code_that_holds_the_text_is_kept_even_when_the_stamp_is_old(self):
+        """The text of the key is near the line, so a stale stamp does no harm there."""
+        self.write_locations({"commit": "old1234", "treeId": "oldtree"})
+        _, batch, _ = self.todo_at(("new5678", "newtree"))
+        library = next(item for item in batch["items"] if item["key"] == "Add %@ to your Library")
+        self.assertIn("Library", library["context"][0]["code"])
+
+    def test_a_key_with_no_text_of_its_own_has_code_only_when_the_locations_are_trusted(self):
+        cat = self.load()
+        cat.strings["%lld"] = base.entry("A bare number")
+        cat.save()
+        self.write_locations({"commit": "aaa111", "treeId": "t"}, **{"%lld": [{"file": PLAY_VIEW, "line": 5}]})
+        _, batch, _ = self.todo_at(("aaa111", "t"))
+        self.assertIn("code", next(item for item in batch["items"] if item["key"] == "%lld")["context"][0])
+        _, batch, _ = self.todo_at(("zzz999", "other"))
+        self.assertNotIn("code", next(item for item in batch["items"] if item["key"] == "%lld")["context"][0])
+
+    def test_a_locations_file_with_no_stamp_warns(self):
+        self.write_locations(None)
+        _, _, err = self.todo_at(("aaa111", "tree1"))
+        self.assertIn("has no stamp", err)
+
+    def test_the_code_of_a_line_past_the_end_of_the_file_is_not_shown(self):
+        self.write_locations({"commit": "aaa111", "treeId": "t"}, Play=[{"file": OTHER_VIEW, "line": 400}])
+        _, batch, _ = self.todo_at(("aaa111", "t"))
+        play = next(item for item in batch["items"] if item["key"] == "Play")
+        self.assertEqual(play["context"], [{"file": OTHER_VIEW, "line": 400}])
+
+    def test_the_previous_translation_shows_its_placeholders(self):
+        self.assertEqual(self.items()["Add %@ to your Library"]["previous"]["placeholders"], ["%@"])
+
+    def test_a_previous_translation_with_other_placeholders_is_not_offered(self):
+        """A stale "Delete %@" is no help to "Delete %lld books" (the review's case: a ratio of 0.62)."""
+        cat = self.load()
+        cat.strings["Delete %@"] = {"comment": "c", "extractionState": "stale", "localizations": {"es": base.unit("Eliminar %@")}}
+        cat.strings["Delete %lld books"] = base.entry("A confirmation")
+        cat.save()
+        self.assertNotIn("previous", self.items()["Delete %lld books"])
+        cat = self.load()
+        cat.strings["Delete %@ now"] = base.entry("A confirmation")
+        cat.save()
+        self.assertEqual(self.items()["Delete %@ now"]["previous"]["key"], "Delete %@", "the same placeholders are offered")
+
+    def test_a_very_short_text_finds_a_very_short_earlier_one(self):
+        cat = self.load()
+        cat.strings["OK"] = {"comment": "c", "extractionState": "stale", "localizations": {"es": base.unit("Aceptar")}}
+        cat.strings["OKs"] = base.entry("A button")
+        cat.save()
+        self.assertEqual(self.items()["OKs"]["previous"]["key"], "OK")
+
+    def test_a_big_batch_with_many_stale_strings_is_fast(self):
+        """5,000 pending strings and 600 stale ones took 84 seconds when each was compared with every other one."""
+        import random
+        import time
+        words = ("open play pause book chapter library import export delete add remove sleep timer bookmark voice speed rate "
+                 "settings search index page heading feed episode podcast folder file window close next previous skip rewind "
+                 "forward volume language shortcut keyboard braille table contents author title cover recent reading list").split()
+        rng = random.Random(7)
+
+        def phrase():
+            """A made-up interface string, sometimes with a placeholder."""
+            return " ".join(rng.choice(words) for _ in range(rng.randint(1, 6))) + rng.choice(("", "", " %@", " %lld", "..."))
+
+        pending = sorted({phrase() for _ in range(5000)})
+        stale = sorted({phrase() for _ in range(900)} - set(pending))[:600]
+        strings = {text: {"comment": "c"} for text in pending}
+        strings.update({text: {"comment": "c", "extractionState": "stale", "localizations": {"es": base.unit("T " + text)}}
+                        for text in stale})
+        cat = catalog.Catalog({"sourceLanguage": "en", "version": "1.0", "strings": strings})
+        started = time.monotonic()
+        batch = translate.build_batch(cat, "es", glossary.Glossary(), {}, self.root, None, 0)
+        elapsed = time.monotonic() - started
+        self.assertEqual(batch["count"], len(pending))
+        self.assertLess(elapsed, 10, f"{elapsed:.1f} seconds for {len(pending)} strings and {len(stale)} stale ones")
 
 
 class ApplyCase(BatchCase):

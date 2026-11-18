@@ -71,6 +71,9 @@ PLATFORM_NAMES = {"macos": "Mac", "ios": "iPhone"}
 MAIN = repo_paths.main_checkout()
 OUTPUT = MAIN / "build" / "l10n"
 LOCATIONS_FILE = "locations.json"
+# The key of the locations file that holds the stamp of the code it was made from (`{"commit", "treeId"}`), beside the
+# tables (a table is named like a .strings file, never with a leading underscore).
+EXTRACTED_KEY = "_extracted"
 # What the last sync left out by `syncPaths`, for `status` and `size` to say.
 LEFT_OUT_FILE = "left-out.json"
 # The line `typecheck.py --emit-strings` ends with, naming the folder of the strings it wrote, and the file in that folder
@@ -375,7 +378,9 @@ def sync_manifests(args, manifests, say, output=None):
                 say(f"  {label}: {describe(keys)}")
     destination = output or (OUTPUT / LOCATIONS_FILE)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(places, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+    # The stamp (TL12): the commit and sources the lines come from, so that `todo` can tell when it reads them in other code.
+    stamp = {"commit": manifests[0].get("commit"), "treeId": manifests[0].get("treeId")}
+    destination.write_text(json.dumps({EXTRACTED_KEY: stamp, **places}, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
     say(f"wrote {destination.name}: the files and lines of {number(sum(found.values()))} strings, in {destination.parent}")
     write_left_out(destination.parent / LEFT_OUT_FILE, config, found, left_out)
     return EXIT_PROBLEMS if problems else EXIT_OK
@@ -720,12 +725,39 @@ def load_glossary(args):
 
 def load_locations(args):
     """The table of the main catalog in the locations file `sync` wrote ({key: [{"file", "line"}]}), from --locations or
-    the main checkout's build/l10n/locations.json; (the table, whether the file was there)."""
+    the main checkout's build/l10n/locations.json; (the table, whether the file was there, the stamp of the code it was made
+    from, {"commit", "treeId"}, or None when the file has none)."""
     path = Path(args.locations) if args.locations else OUTPUT / LOCATIONS_FILE
     try:
-        return json.loads(path.read_text(encoding="utf-8")).get(TABLE, {}), True
-    except (OSError, ValueError):
-        return {}, False
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data.get(TABLE, {}), True, data.get(EXTRACTED_KEY)
+    except (OSError, ValueError, AttributeError):
+        return {}, False, None
+
+
+def head_ids(root):
+    """(the commit this checkout is at, the id of its TextMouth folder at that commit), or (None, None) when git cannot say
+    (not a repository)."""
+    ids = []
+    for revision in ("HEAD", "HEAD:TextMouth"):
+        done = subprocess.run(["git", "-C", str(root), "rev-parse", revision], capture_output=True, text=True)
+        ids.append(done.stdout.strip() if done.returncode == 0 and done.stdout.strip() else None)
+    return tuple(ids)
+
+
+def locations_note(stamp, root):
+    """(whether the locations can be trusted to be from this code, a sentence that says why not or None). They are when the
+    stamp's commit is this checkout's, or its sources' id is (another commit that left TextMouth/ as it was). A file
+    with no stamp (made by an older sync) cannot be trusted. Where git cannot say, nothing is doubted."""
+    commit, tree = head_ids(root)
+    if commit is None:
+        return True, None
+    if not stamp:
+        return False, "build/l10n/locations.json has no stamp of the commit it was made from (run sync again)"
+    if stamp.get("commit") == commit or (tree and stamp.get("treeId") == tree):
+        return True, None
+    return False, (f"build/l10n/locations.json was made from commit {str(stamp.get('commit'))[:9]}, and this tree is at "
+                   f"{commit[:9]} with other sources, so the lines may have moved: run sync again")
 
 
 def keys_from_file(path):
@@ -783,17 +815,22 @@ def cmd_todo(args):
     """`todo --lang L [--keys-from FILE | --area A | --file PATH...] [--limit N] [--out FILE]`: the batch of strings to
     translate into L, as JSON on standard output or in FILE."""
     cat, glossary = load_catalog(args), load_glossary(args)
-    locations, have_locations = load_locations(args)
+    locations, have_locations, stamp = load_locations(args)
     keys = selected_keys(args, locations, have_locations)
+    trusted, doubt = locations_note(stamp, ROOT) if have_locations else (False, None)
     if not have_locations:
         print("l10n: no build/l10n/locations.json (run sync): the batch has no code context", file=sys.stderr)
+    elif doubt:
+        print(f"l10n: warning: {doubt}", file=sys.stderr)
     try:
-        batch = translate.build_batch(cat, args.lang, glossary, locations, ROOT, keys, args.limit)
+        batch = translate.build_batch(cat, args.lang, glossary, locations, ROOT, keys, args.limit, trusted)
     except translate.Problems as refusal:
         raise Refused("; ".join(refusal.problems), EXIT_USAGE)
     text = json.dumps(batch, indent=1, ensure_ascii=False) + "\n"
+    omitted = sum(1 for item in batch["items"] for use in item["context"] if "codeOmitted" in use)
     summary = (f"todo: {number(batch['count'])} strings for {args.lang}, {number(batch['remaining'])} more not in this batch, "
-               f"{number(len(batch['skipped']))} skipped")
+               f"{number(len(batch['skipped']))} skipped"
+               + (f", the code of {number(omitted)} uses left out (it does not hold the string)" if omitted else ""))
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")
         print(f"{summary}; wrote {args.out}")

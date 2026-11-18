@@ -173,6 +173,13 @@ class SyncTests(SyncCase):
         self.assertEqual(places["Reveal in Finder"], [{"file": "TextMouth/Platform/macOS/MacOnly.swift", "line": 8}])
         self.assertNotIn("/work/", self.locations.read_text(), "a path of the type-check's copy leaked into the locations")
 
+    def test_the_locations_carry_the_commit_and_sources_they_were_made_from(self):
+        """`todo` reads this stamp to tell when the lines it shows come from other code (TL12)."""
+        self.sync()
+        stamp = json.loads(self.locations.read_text())[l10n.EXTRACTED_KEY]
+        self.assertEqual(stamp, {"commit": "abc1234", "treeId": "0000000000000000000000000000000000000000"})
+        self.assertNotIn(l10n.EXTRACTED_KEY, json.loads(self.locations.read_text())["Localizable"], "it is beside the tables")
+
     def test_a_table_with_no_catalog_is_reported_and_the_others_are_still_synced(self):
         status = self.sync()
         self.assertEqual(status, l10n.EXIT_PROBLEMS)

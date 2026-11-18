@@ -19,6 +19,7 @@ English has plural forms. `translation` is empty when `todo` writes it, and the 
 carry `"keepEnglish": true`, which says the translation is deliberately the English (a word the language shares).
 """
 import difflib
+import re
 import sys
 import unicodedata
 from pathlib import Path
@@ -38,6 +39,8 @@ CONTEXT_RADIUS = 2
 CONTEXT_USES = 2
 # An earlier translation is offered when its English is at least this like the new one (difflib's ratio, 0 to 1).
 SIMILARITY = 0.6
+# A text of this many characters or fewer is also compared with the earlier strings too short to have a three-character piece.
+SHORT_TEXT = 4
 # A translation more than this many times as long as its English is listed as a warning, when the English has at least this
 # many characters (a short word grows a lot in any language).
 LENGTH_WARNING = 3
@@ -273,46 +276,121 @@ def english_texts(english):
     return [english] if isinstance(english, str) else [english[category] for category in sorted(english)]
 
 
-def similar_earlier(cat, language, english, candidates):
-    """The earlier translation of the stale string whose English is most like `english`, or None: `{"key", "english",
-    "translation", "similarity"}` for the best of `candidates` ({stale key: its English as one text}) at least SIMILARITY
-    alike. A string whose English changed a little keeps its translator's words this way."""
-    matcher = difflib.SequenceMatcher(autojunk=False)
-    matcher.set_seq2(english_as_text(english).casefold())
-    best, best_ratio = None, SIMILARITY
-    for key, old in candidates.items():
-        matcher.set_seq1(old.casefold())
-        # The cheap bounds first: the exact ratio only for a candidate that could beat the best.
-        if matcher.real_quick_ratio() < best_ratio or matcher.quick_ratio() < best_ratio:
-            continue
-        ratio = matcher.ratio()
-        if ratio >= best_ratio and (best is None or ratio > best_ratio):
-            best, best_ratio = key, ratio
-    if best is None:
-        return None
-    return {"key": best, "english": candidates[best], "translation": translation_of(cat, best, language),
-            "similarity": round(best_ratio, 2)}
+def slot_signature(key):
+    """The placeholders of `key` as something comparable: its slots and their types, sorted. Two strings with the same
+    signature take the same arguments."""
+    return tuple(sorted((str(slot), kind) for slot, kind in catalog.slots(key)[0].items()))
 
 
-def context_of(places, root, cache):
+def trigrams(folded):
+    """The distinct three-character pieces of the (already case-folded) text, the unit the earlier-translation index
+    shares between texts that are nearly the same."""
+    return {folded[at:at + 3] for at in range(len(folded) - 2)}
+
+
+class EarlierIndex:
+    """The stale strings that still hold a translation, indexed so that a new string finds the one whose English is nearly
+    the same without being compared with every one (5,000 new strings against 600 stale ones took 84 seconds that way).
+    A string whose English changed a little keeps its translator's words this way.
+
+    A candidate is offered only when its placeholders are the new key's (a stale "Delete %@" is no help to "Delete %lld
+    books"), it shares a three-character piece with the new English (or both are very short), and difflib finds the two at
+    least SIMILARITY alike. Of the candidates sharing pieces the CANDIDATES most alike by pieces are measured."""
+
+    # How many candidates, the ones sharing the most three-character pieces, get the exact comparison.
+    CANDIDATES = 40
+
+    def __init__(self, cat, language, stale):
+        """`stale` is {stale key: its English as one text}; the earlier translation of each is read from `cat` in
+        `language`. A stale string with no translation there is left out."""
+        self.cat, self.language = cat, language
+        self.entries = {}
+        self.by_piece = {}
+        self.short = []
+        for key in sorted(stale):
+            if translation_of(cat, key, language) is None:
+                continue
+            folded = stale[key].casefold()
+            self.entries[key] = (stale[key], folded, slot_signature(key))
+            pieces = trigrams(folded)
+            for piece in pieces:
+                self.by_piece.setdefault(piece, []).append(key)
+            if not pieces:
+                self.short.append(key)
+
+    def best(self, key, english):
+        """The earlier translation whose English is most like `english` (the English of `key`), or None: `{"key",
+        "english", "placeholders", "translation", "similarity"}`."""
+        folded = english_as_text(english).casefold()
+        signature = slot_signature(key)
+        pieces = trigrams(folded)
+        shared = {}
+        for piece in pieces:
+            for candidate in self.by_piece.get(piece, ()):
+                shared[candidate] = shared.get(candidate, 0) + 1
+        if len(folded) <= SHORT_TEXT:
+            # A text of under three characters has no piece to share, and two texts at least SIMILARITY alike differ in
+            # length by less than half: a short text is compared with the short ones too.
+            for candidate in self.short:
+                shared.setdefault(candidate, 0)
+        ranked = sorted((candidate for candidate in shared if self.entries[candidate][2] == signature),
+                        key=lambda candidate: (-shared[candidate], candidate))[:self.CANDIDATES]
+        matcher = difflib.SequenceMatcher(autojunk=False)
+        matcher.set_seq2(folded)
+        best, best_ratio = None, SIMILARITY
+        for candidate in ranked:
+            matcher.set_seq1(self.entries[candidate][1])
+            # The cheap bounds first: the exact ratio only for a candidate that could beat the best.
+            if matcher.real_quick_ratio() < best_ratio or matcher.quick_ratio() < best_ratio:
+                continue
+            ratio = matcher.ratio()
+            if ratio >= best_ratio and (best is None or ratio > best_ratio):
+                best, best_ratio = candidate, ratio
+        if best is None:
+            return None
+        return {"key": best, "english": self.entries[best][0],
+                "placeholders": [placeholder.raw for placeholder in catalog.placeholders(best)],
+                "translation": translation_of(self.cat, best, self.language), "similarity": round(best_ratio, 2)}
+
+
+def key_fragments(key):
+    """The pieces of text a key is made of between its placeholders, a line break, and quotation marks, stripped, as long as
+    two characters or more: what a Swift literal of the key still spells out when its values are interpolated."""
+    pieces = [part for piece in catalog.literal_pieces(key) for part in re.split(r'[\n"]', piece)]
+    return [piece.strip() for piece in pieces if len(piece.strip()) >= 2]
+
+
+def context_of(places, root, cache, key=None, trusted=True):
     """The uses of a string for a batch: for up to CONTEXT_USES of its `places` ([{"file", "line"}] from locations.json),
     preferring different files, `{"file", "line", "firstLine", "code"}` with the line and CONTEXT_RADIUS lines around it,
-    read from `root`. A file that cannot be read, or that lies outside `root`, gives its place without code. `cache` is
-    {file: lines}, shared between strings so each file is read once."""
+    read from `root`. A file that cannot be read, or that lies outside `root`, gives its place without code. The code is
+    left out too when `key` is given and none of its text (see key_fragments) is within those lines: the line numbers are
+    from another version of the code, and a wrong context misleads more than none. A key with no text of its own ("%lld")
+    cannot be checked, so its code is shown only when `trusted` (the locations are from this code). `cache` is {file: lines},
+    shared between strings so each file is read once."""
     chosen, seen = [], set()
     for place in places:
         if place["file"] not in seen and len(chosen) < CONTEXT_USES:
             chosen.append(place)
             seen.add(place["file"])
     chosen += [place for place in places if place not in chosen][:CONTEXT_USES - len(chosen)]
+    fragments = key_fragments(key) if key is not None else []
     uses = []
     for place in chosen:
         use = {"file": place["file"], "line": place["line"]}
         lines = lines_of(root, place["file"], cache)
         if lines and 1 <= place["line"] <= len(lines):
             first = max(1, place["line"] - CONTEXT_RADIUS)
-            use["firstLine"] = first
-            use["code"] = "\n".join(lines[first - 1:place["line"] + CONTEXT_RADIUS])
+            code = "\n".join(lines[first - 1:place["line"] + CONTEXT_RADIUS])
+            if fragments:
+                shown = any(fragment in code for fragment in fragments)
+            else:
+                shown = trusted or key is None
+            if shown:
+                use["firstLine"] = first
+                use["code"] = code
+            else:
+                use["codeOmitted"] = "the string's text is not near this line, so the locations are from other code"
         uses.append(use)
     return uses
 
@@ -329,9 +407,10 @@ def lines_of(root, file, cache):
     return cache[file]
 
 
-def batch_item(cat, key, language, glossary, places, root, cache, earlier):
+def batch_item(cat, key, language, glossary, places, root, cache, earlier, trusted=True):
     """The item of the batch for string `key`, or (None, reason) when it is a form the tools do not write yet. `places`
-    are the key's uses; `earlier` is {stale key: English text} for similar_earlier."""
+    are the key's uses; `earlier` is the EarlierIndex; `trusted` says the uses' lines are from this code (see
+    context_of)."""
     shape, english = english_shape(cat, key)
     if shape == "other":
         return None, english
@@ -340,7 +419,7 @@ def batch_item(cat, key, language, glossary, places, root, cache, earlier):
     item["placeholders"] = [placeholder.raw for placeholder in catalog.placeholders(texts[0] if shape == "plain" else key)]
     if shape == "plural":
         item["pluralCategories"] = list(catalog.plural_categories(language))
-    item["context"] = context_of(places, root, cache)
+    item["context"] = context_of(places, root, cache, key, trusted)
     seen, terms = set(), []
     for text in texts:
         for term in glossary.terms_in(text, language):
@@ -349,7 +428,7 @@ def batch_item(cat, key, language, glossary, places, root, cache, earlier):
                 terms.append(term)
     item["glossary"] = terms
     item["doNotTranslate"] = sorted({name for text in texts for name in glossary.names_in(text)})
-    previous = similar_earlier(cat, language, english, earlier)
+    previous = earlier.best(key, english)
     if previous:
         item["previous"] = previous
     current = translation_of(cat, key, language)
@@ -360,11 +439,12 @@ def batch_item(cat, key, language, glossary, places, root, cache, earlier):
     return item, None
 
 
-def build_batch(cat, language, glossary, locations, root, keys=None, limit=DEFAULT_LIMIT):
+def build_batch(cat, language, glossary, locations, root, keys=None, limit=DEFAULT_LIMIT, trusted=True):
     """The batch of strings to translate into `language`: the pending strings (see pending_keys), or those of `keys` that
     are pending, the first `limit` in key order (0 means all), each as batch_item makes it. `locations` is the table of
     locations.json for the main catalog ({key: [{"file", "line"}]}); `root` is where the files it names are read.
-    `skipped` lists the keys left out and why. Raises Problems for the source language or a language with no plural rule."""
+    `trusted` says `locations` was made from this code (a stamp that does not match is not trusted, and then a
+    use's code is shown only where it can be checked: see context_of). `skipped` lists the keys left out and why. Raises Problems for the source language or a language with no plural rule."""
     if language == cat.source_language:
         raise Problems(f"{language} is the source language; write its plural forms with `plural`")
     try:
@@ -381,8 +461,8 @@ def build_batch(cat, language, glossary, locations, root, keys=None, limit=DEFAU
             elif key not in pending:
                 skipped.append({"key": key, "reason": "nothing to translate (done, stale, or not to be translated)"})
         pending = [key for key in pending if key in set(wanted)]
-    earlier = {key: english_as_text(english_shape(cat, key)[1]) for key, entry in cat.strings.items()
-               if cat.is_stale(entry) and translation_of(cat, key, language) is not None and english_shape(cat, key)[0] != "other"}
+    earlier = EarlierIndex(cat, language, {key: english_as_text(english_shape(cat, key)[1]) for key, entry in cat.strings.items()
+                                           if cat.is_stale(entry) and english_shape(cat, key)[0] != "other"})
     items, cache, remaining = [], {}, 0
     for index, key in enumerate(pending):
         if limit and len(items) >= limit:
@@ -392,7 +472,7 @@ def build_batch(cat, language, glossary, locations, root, keys=None, limit=DEFAU
             # An empty key is a literal the compiler found (an empty label, say): there is no text to translate.
             skipped.append({"key": key, "reason": "the text is empty"})
             continue
-        item, reason = batch_item(cat, key, language, glossary, locations.get(key, []), root, cache, earlier)
+        item, reason = batch_item(cat, key, language, glossary, locations.get(key, []), root, cache, earlier, trusted)
         if item:
             items.append(item)
         else:

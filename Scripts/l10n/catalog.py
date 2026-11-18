@@ -228,6 +228,11 @@ def placeholder_problems(text):
     return slots(text)[1]
 
 
+def literal_pieces(text):
+    """The pieces of `text` between its placeholders (and `%%`), as a list: "Open %@ in %@" is ["Open ", " in ", ""]."""
+    return _SPECIFIER.sub("\0", text).split("\0")
+
+
 def percent_signs(text):
     """(how many `%%` literal percent signs `text` has, how many lone `%` it has, how many placeholders it has): a lone `%`
     starts no placeholder and is not part of `%%`. In a text that is a format string (it has a placeholder or `%%`) a lone
