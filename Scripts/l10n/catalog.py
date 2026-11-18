@@ -29,6 +29,7 @@ One thing `xcstringstool` does that this does not: two keys that are equal as Sw
 equivalent, such as a precomposed é and e followed by U+0301) are merged into one; no key of ours is written so.
 """
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -99,6 +100,16 @@ def write_text(path, text):
     """Writes `text` to the file `path` exactly as given (no line ending is translated)."""
     with open(path, "w", encoding="utf-8", newline="") as handle:
         handle.write(text)
+
+
+def write_text_atomic(path, text):
+    """Writes `text` to the file `path` through a temporary file in the same folder and a rename, so a reader (or an
+    interrupted run) sees the old file or the new one, never half of it. The temporary has a fixed name beside the file,
+    overwritten by the next call, so no call leaves a growing pile behind."""
+    target = Path(path)
+    temporary = target.with_name(f".{target.name}.l10n-tmp")
+    write_text(temporary, text)
+    os.replace(temporary, target)
 
 
 # ---------------------------------------------------------------------------------------------------------------

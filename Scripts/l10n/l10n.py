@@ -850,9 +850,11 @@ def cmd_merge_driver(args):
     the three values, and the exit status is 1, so git reports the file conflicted."""
     try:
         merged, conflicts = merge.merge_texts(*(catalog.read_text(path) for path in (args.base, args.ours, args.theirs)))
+        # Through a temporary file and a rename: an interrupted write never leaves OURS half written.
+        catalog.write_text_atomic(args.ours, merged)
     except (OSError, ValueError) as error:
+        # Exit 2, and OURS is as it was: the checks all come before the write.
         raise Refused(f"merge-driver: cannot merge {args.path or args.ours}: {error}", EXIT_USAGE)
-    catalog.write_text(args.ours, merged)
     for conflict in conflicts:
         print(f"l10n merge-driver: conflict in {args.path or 'the catalog'}, {conflict.describe()}", file=sys.stderr)
     return EXIT_PROBLEMS if conflicts else EXIT_OK

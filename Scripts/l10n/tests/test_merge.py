@@ -16,6 +16,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -224,6 +225,98 @@ class DriverCommandTests(unittest.TestCase):
         self.assertEqual(status, 2)
         self.assertEqual(catalog.read_text(ours), "{ not json")
         self.assertIn("cannot merge", err.getvalue())
+
+
+class DriverRefusalTests(unittest.TestCase):
+    """The driver refuses what is not a catalog (exit 2, ours untouched) instead of merging it silently (review finding 1)."""
+
+    GOOD = make({"Play": entry("c")})
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.folder = Path(folder.name)
+
+    def drive_texts(self, base, ours, theirs):
+        """Runs the driver on three texts; returns (exit status, standard error, the text now in OURS)."""
+        paths = {}
+        for name, text in (("base", base), ("ours", ours), ("theirs", theirs)):
+            paths[name] = self.folder / name
+            catalog.write_text(paths[name], text)
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            status = l10n.main(["merge-driver", str(paths["base"]), str(paths["ours"]), str(paths["theirs"]), "X.xcstrings"])
+        return status, err.getvalue(), catalog.read_text(paths["ours"])
+
+    def assert_refused(self, base, ours, theirs, words=""):
+        """Asserts that the driver exits 2, names `words`, and leaves OURS byte for byte as it was."""
+        status, err, now = self.drive_texts(base, ours, theirs)
+        self.assertEqual(status, 2, err)
+        self.assertEqual(now, ours)
+        self.assertIn(words, err)
+
+    def test_an_empty_object_as_theirs_is_refused_and_ours_keeps_its_added_key(self):
+        """The review's case: ours added a key, theirs is `{}`; the key used to vanish with exit 0."""
+        base = catalog.dumps(self.GOOD)
+        ours = catalog.dumps(make({"Play": entry("c"), "C": entry("c")}))
+        self.assert_refused(base, ours, "{}", "theirs has no `strings`")
+
+    def test_a_json_object_with_no_strings_is_refused_on_either_side(self):
+        good = catalog.dumps(self.GOOD)
+        self.assert_refused(good, good, '{"hello": 1}', "theirs has no `strings`")
+        self.assert_refused(good, '{"hello": 1}', good, "ours has no `strings`")
+        self.assert_refused('{"hello": 1}', good, good, "the base has no `strings`")
+
+    def test_strings_that_are_not_an_object_of_objects_are_refused(self):
+        good = catalog.dumps(self.GOOD)
+        for bad in ('{"strings": [1]}', '{"strings": null}', '{"strings": "x"}', '{"strings": {"A": 1}}',
+                    '{"strings": {"A": null}}', '{"strings": {"A": []}}'):
+            with self.subTest(bad=bad):
+                self.assert_refused(good, good, bad, "theirs")
+
+    def test_a_top_level_that_is_not_an_object_is_refused(self):
+        good = catalog.dumps(self.GOOD)
+        for bad in ("[]", '"text"', "7", "null"):
+            with self.subTest(bad=bad):
+                self.assert_refused(good, good, bad, "not a JSON object")
+
+    def test_a_result_without_a_required_key_is_refused(self):
+        """Three inputs that have `strings` but no `version`: the merged catalog would lack it."""
+        for dropped in ("sourceLanguage", "version"):
+            bare = {key: value for key, value in self.GOOD.items() if key != dropped}
+            text = catalog.dumps(bare)
+            with self.subTest(dropped=dropped):
+                self.assert_refused(text, text, text, f"would lack `{dropped}`")
+
+    def test_an_empty_file_is_still_an_empty_catalog(self):
+        """Git gives an empty file for a version that does not exist (both branches added the file)."""
+        status, _, now = self.drive_texts("", catalog.dumps(self.GOOD), catalog.dumps(make({"B": entry("c")})))
+        self.assertEqual(status, 0)
+        self.assertEqual(sorted(catalog.loads(now)["strings"]), ["B", "Play"])
+
+    def test_a_merge_with_an_empty_catalog_object_inside_still_keeps_every_piece(self):
+        """`unflatten` returned at the empty path and dropped the other pieces; an empty base object no longer does so."""
+        self.assertEqual(merge.unflatten({(): {}, ("a",): 1}), {"a": 1})
+        base = make({})
+        status, _, now = self.drive_texts(catalog.dumps(base), catalog.dumps(make({"A": entry("c")})), catalog.dumps(base))
+        self.assertEqual((status, list(catalog.loads(now)["strings"])), (0, ["A"]))
+
+    def test_the_result_is_written_through_a_rename_so_a_failed_write_leaves_ours_whole(self):
+        """The write goes to a temporary file in the same folder, then os.replace; if the rename fails, OURS is intact."""
+        ours = catalog.dumps(make({"Play": entry("c"), "A": entry("c")}))
+        base, theirs = catalog.dumps(self.GOOD), catalog.dumps(make({"Play": entry("c"), "B": entry("c")}))
+        for name, text in (("base", base), ("ours", ours), ("theirs", theirs)):
+            catalog.write_text(self.folder / name, text)
+        args = ["merge-driver", *(str(self.folder / name) for name in ("base", "ours", "theirs"))]
+        err = io.StringIO()
+        with mock.patch("os.replace", side_effect=OSError("disk full")), contextlib.redirect_stderr(err):
+            status = l10n.main(args)
+        self.assertEqual(status, 2)
+        self.assertEqual(catalog.read_text(self.folder / "ours"), ours)
+        # Without the failure the same merge succeeds and leaves no temporary behind.
+        self.assertEqual(l10n.main(args), 0)
+        self.assertEqual(sorted(catalog.loads(catalog.read_text(self.folder / "ours"))["strings"]), ["A", "B", "Play"])
+        self.assertEqual([path.name for path in self.folder.iterdir() if path.name.startswith(".")], [])
 
 
 @unittest.skipUnless(HAS_GIT, "git is not installed")

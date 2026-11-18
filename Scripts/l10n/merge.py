@@ -73,7 +73,9 @@ def unflatten(pieces):
     root = {}
     for path in sorted(pieces, key=len):
         if not path:
-            return pieces[path]
+            # The empty path is the (empty) catalog object itself, which `root` already is. Returning it here once lost
+            # every other piece when a side was `{}`.
+            continue
         node = root
         for key in path[:-1]:
             node = node.setdefault(key, {})
@@ -172,18 +174,39 @@ def merge_catalogs(base, ours, theirs):
     return merged, conflicts
 
 
-def load(text):
+# What a catalog must have for the merge to be safe: the top-level keys the tools read, and nothing else is required.
+REQUIRED_KEYS = ("sourceLanguage", "version", "strings")
+
+
+def check_shape(data, name):
+    """Raises a ValueError naming `name` unless `data` is a catalog's shape: an object whose `strings` is an object of
+    objects. A `{}` or a `{"hello": 1}` merged against a real catalog used to drop its strings without a conflict."""
+    if not isinstance(data, dict):
+        raise ValueError(f"{name} is not a JSON object")
+    strings = data.get("strings")
+    if not isinstance(strings, dict):
+        raise ValueError(f"{name} has no `strings` object")
+    for key, entry in strings.items():
+        if not isinstance(entry, dict):
+            raise ValueError(f"{name}'s string {json.dumps(key, ensure_ascii=False)} is not an object")
+
+
+def load(text, name="the catalog"):
     """The catalog in `text`, or {} when it is empty (git gives an empty base for a file both branches added). A
-    ValueError when it is not a JSON object."""
+    ValueError (naming `name`) when a non-empty text is not a JSON object of the catalog's shape."""
     if not text.strip():
         return {}
     data = catalog.loads(text)
-    if not isinstance(data, dict):
-        raise ValueError("a catalog is a JSON object")
+    check_shape(data, name)
     return data
 
 
 def merge_texts(base_text, ours_text, theirs_text):
-    """The three-way merge of three catalog texts: (the merged text in `xcstringstool`'s layout, the Conflicts)."""
-    merged, conflicts = merge_catalogs(load(base_text), load(ours_text), load(theirs_text))
+    """The three-way merge of three catalog texts: (the merged text in `xcstringstool`'s layout, the Conflicts). A
+    ValueError when an input is not a catalog or the result would lack a required top-level key (the caller then leaves
+    ours as it is)."""
+    merged, conflicts = merge_catalogs(load(base_text, "the base"), load(ours_text, "ours"), load(theirs_text, "theirs"))
+    missing = [key for key in REQUIRED_KEYS if key not in merged]
+    if missing:
+        raise ValueError("the merged catalog would lack " + ", ".join(f"`{key}`" for key in missing))
     return catalog.dumps(merged), conflicts
