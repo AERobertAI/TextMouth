@@ -431,6 +431,35 @@ class ArgumentOrderTests(IssueCase):
         short = issuelib.build_parser().parse_args(["merge-driver", "base", "cur", "other"])
         self.assertEqual((short.marker_size, short.path), (issuelib.issuemerge.MARKER_SIZE, ""))
 
+    def run_dashed(self, *argv: str):
+        """Run the command ``argv[0]`` with --root given right after its name: run_cli appends it otherwise, and after a
+        ``--`` it would be read as a positional."""
+        return self.run_cli(argv[0], "--root", str(self.root), *argv[1:])
+
+    def test_a_double_dash_ends_the_options_even_before_the_first_positional(self) -> None:
+        # Python before 3.12.8 lost such a "--" in the intermixed parse: the words after it were read as options, so
+        # `set` wrote an emptied labels field and `search -- -x` and `comment --as N -- ID -x` were refused.
+        status, _out, err = self.run_dashed("set", "--as", "orchestrator", "--", "B16", "labels", "--json")
+        self.assertEqual(status, 1, err)
+        self.assertIn("--json", err)
+        self.assertEqual(self.read("Issues/B16.md"), B16, "a refused value must write nothing")
+        self.assertEqual(self.run_dashed("search", "--", "-x")[0], 1, "no match is status 1, not a usage error")
+        self.assertEqual(self.run_dashed("search", "--status", "all", "--", "-x")[0], 1)
+        status, _out, err = self.run_dashed("comment", "--as", "floatrender", "--", "B16", "-x")
+        self.assertEqual(status, 0, err)
+        self.assertTrue(self.read("Issues/B16.md").endswith("\n-x\n"))
+        status, _out, err = self.run_dashed("set", "--as", "orchestrator", "--", "B16", "title", "-x", "y")
+        self.assertEqual(status, 0, err)
+        self.assertIn("title: -x y\n", self.read("Issues/B16.md"))
+
+    def test_dash_leading_text_after_the_id_still_works(self) -> None:
+        for text in ("- item", "-5", "-", "--dash"):
+            with self.subTest(text):
+                self.write_tree({"Issues/B16.md": B16})
+                status, _out, err = self.run_dashed("comment", "B16", "--as", "floatrender", "--", text)
+                self.assertEqual(status, 0, err)
+                self.assertTrue(self.read("Issues/B16.md").endswith(f"\n{text}\n"))
+
     def test_a_stray_argument_is_still_an_error(self) -> None:
         status, _out, err = self.run_cli("comment", "B16", "one", "two", "--as", "floatrender")
         self.assertEqual(status, 2)

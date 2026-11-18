@@ -415,9 +415,32 @@ class IntermixedParser(argparse.ArgumentParser):
     # True while parse_known_intermixed_args runs: it calls parse_known_args itself, which must then parse plainly.
     _intermixing = False
 
+    def leading_double_dash(self, args: List[str]) -> bool:
+        """Whether ``--`` comes before the first positional word of ``args``, such as ``set --as NAME -- ID FIELD``.
+
+        Python before 3.12.8 loses such a ``--`` in the intermixed parse and then reads the words after it as options,
+        so a dash-leading word is refused or, worse, written. A ``--`` after a positional (``comment ID --as NAME --
+        -x``) is kept by that parse, and the plain parse would refuse it, so only the first case is told apart. Words
+        count as positional unless they start with a dash or are the value of an option that takes one.
+        """
+        words = iter(args)
+        for word in words:
+            if word == "--":
+                return True
+            action = self._option_string_actions.get(word)
+            if action is not None:
+                # An option with a value takes the next word along with it.
+                if action.nargs != 0:
+                    next(words, None)
+            elif not word.startswith("-") or word == "-":
+                return False
+        return False
+
     def parse_known_args(self, args: Any = None, namespace: Any = None) -> Any:
-        """Parse intermixed, unless already inside the intermixed parse, which asks for the plain one."""
-        if self._intermixing:
+        """Parse intermixed, unless already inside the intermixed parse (which asks for the plain one) or a ``--`` comes
+        before the first positional (see leading_double_dash): the plain parse honours it, as it always did."""
+        words = list(sys.argv[1:] if args is None else args)
+        if self._intermixing or self.leading_double_dash(words):
             return super().parse_known_args(args, namespace)
         self._intermixing = True
         try:
