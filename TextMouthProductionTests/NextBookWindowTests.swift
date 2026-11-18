@@ -334,7 +334,7 @@ final class NextBookWindowTests: XCTestCase {
         XCTAssertEqual(
             NextBookWindowWording.globalHint,
             "Chooses where the next book opens: in this window or a new one. "
-                + "A book open in another window comes forward, and with This Window, this window closes."
+                + "A book open in another window comes forward, and with This Window chosen, this window closes."
         )
         XCTAssertEqual(NextBookWindowWording.label(.book), "Open the next book in")
         XCTAssertEqual(NextBookWindowWording.label(.episode), "Open the next episode in")

@@ -471,8 +471,8 @@ extension BookmarkPanelView {
     /// What VoiceOver says the Add Bookmark button does: where the bookmark
     /// goes, which its title does not say.
     nonisolated static var addBookmarkHint: String {
-        String(localized: "Marks the reading position.",
-               comment: "VoiceOver hint of the Bookmarks list's Add Bookmark button: the bookmark is added where the book is being read.")
+        String(localized: "Asks for an optional note, then marks the reading position.",
+               comment: "VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.")
     }
 
     /// The button that closes the panel.

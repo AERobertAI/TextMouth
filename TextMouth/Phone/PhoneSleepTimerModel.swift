@@ -75,11 +75,10 @@ enum PhoneSleepTimerModel {
     /// wasn't a custom one, the Mac's.
     static let defaultCustomMinutes = 30
 
-    /// The custom field's hint: the Mac's, the minutes the field takes. It
-    /// once named the Mac's Return key, so the phone had a sentence of its
-    /// own ("Set sets the timer"); the cut hint names no key or control
-    /// (FR35), so both say the same.
-    static var customMinutesHint: String { SleepTimerView.customMinutesHint }
+    /// The custom field's hint: the minutes the field takes. The Mac's hint
+    /// also names its Return key, which the phone has not, so the phone says
+    /// the range alone (the review of FR35's cuts).
+    static var customMinutesHint: String { SleepTimerView.customMinutesRangeHint }
 
     /// The reader's Sleep Timer value while no timer runs: the spec's new
     /// word "Off".

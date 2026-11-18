@@ -118,7 +118,7 @@ final class PhoneBookmarksVocabularyTests: XCTestCase {
             (PhoneBookmarksVocabulary.addBookmark, BookmarkPanelView.addBookmarkTitle,
              "Add Bookmark", "Text(Self.addBookmarkTitle)"),
             (PhoneBookmarksVocabulary.addBookmarkHint, BookmarkPanelView.addBookmarkHint,
-             "Marks the reading position.", ".accessibilityHint(Self.addBookmarkHint)"),
+             "Asks for an optional note, then marks the reading position.", ".accessibilityHint(Self.addBookmarkHint)"),
             (PhoneBookmarksVocabulary.empty, BookmarkPanelView.emptyList, "No bookmarks yet.", "Text(Self.emptyList)"),
             (PhoneBookmarksVocabulary.rowHint, BookmarkRow.hint,
              "Goes to this bookmark and closes the list.", ".accessibilityHint(row.accessibilityHintText)"),

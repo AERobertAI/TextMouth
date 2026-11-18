@@ -92,7 +92,7 @@ enum ReadingListWording {
     /// only books finished from then on leave the list, so no one expects
     /// the books already finished to go at once.
     static var removeFinishedHint: String {
-        String(localized: "Takes each finished book off the list when its window moves on or closes. Books finished before stay.",
+        String(localized: "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
                comment: "VoiceOver hint of the Reading List's Remove books when finished checkbox.")
     }
 
@@ -106,7 +106,7 @@ enum ReadingListWording {
     /// The checkbox's hint: what it does, and that the choice is this Mac's
     /// own. Nothing is removed from this Mac by clearing it.
     static var keepBooksHint: String {
-        String(localized: "Keeps the list's books downloaded on this Mac alone. Clearing it removes no download.",
+        String(localized: "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
                comment: "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.")
     }
 

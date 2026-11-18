@@ -354,8 +354,8 @@ struct SleepTimerView: View {
 
     /// What VoiceOver says Reset Timer does.
     nonisolated static var resetTimerHint: String {
-        String(localized: "Restarts the timer at its full length.",
-               comment: "VoiceOver hint of the sleep timer sheet's Reset Timer button: the running timer starts again from the length it was set to.")
+        String(localized: "Restarts the timer at its full length and plays the book.",
+               comment: "VoiceOver hint of the sleep timer sheet's Reset Timer button: the running timer starts again from the length it was set to, and the book plays.")
     }
 
     /// The button that stops the running timer.
@@ -454,13 +454,22 @@ struct SleepTimerView: View {
                comment: "VoiceOver hint of the sleep timer sheet's minute presets and Set button: setting the timer also plays the book.")
     }
 
-    /// The custom minutes field's hint: the minutes it takes, which nothing
-    /// else says (FR35's cut; it named the Return key and the stepper, which
-    /// a hint never does, in "Type the minutes, or change them 5 at a time
-    /// with Adjust minutes. Return sets the timer and starts playing.").
+    /// The Mac's custom minutes field's hint: the minutes it takes, which
+    /// nothing else says, and what the Return key does there, a side effect
+    /// that nothing else says either (the review of FR35's cuts: the first
+    /// cut dropped it with the stepper's name, which a hint does drop; a hint
+    /// names a key when the key is how the field is used). The step of 5 is
+    /// gone: the stepper says its new value each time it changes.
     nonisolated static var customMinutesHint: String {
+        String(localized: "Takes \(customMinutesRange.lowerBound) to \(customMinutesRange.upperBound) minutes. Return sets the timer and plays the book.",
+               comment: "VoiceOver hint of the sleep timer sheet's custom minutes field on the Mac: the fewest and most minutes it takes, and what the Return key does there. %1$lld is the fewest (1); %2$lld the most (480). Return is the name of the key.")
+    }
+
+    /// The iPhone's custom minutes field's hint: the minutes it takes. The
+    /// phone has no Return key to name, so it says the range alone.
+    nonisolated static var customMinutesRangeHint: String {
         String(localized: "Takes \(customMinutesRange.lowerBound) to \(customMinutesRange.upperBound) minutes.",
-               comment: "VoiceOver hint of the sleep timer sheet's custom minutes field: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).")
+               comment: "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).")
     }
 
     /// The heading of the section of timers that stop at a place.

@@ -191,13 +191,15 @@ final class ResultHintTests: XCTestCase {
         XCTAssertEqual(skipped.toggleSkip, "Include Section")
     }
 
-    /// The custom timer's field says the minutes it takes, its own limits,
-    /// and names no key and no other control (FR35's cut: it named the
-    /// stepper beside it and the Return key), and the stepper's step is 5.
+    /// The custom timer's field says the minutes it takes, its own limits, and, on the Mac, what Return does there
+    /// (a side effect: it plays the book). It names no other control (FR35's cut named the stepper beside it, which
+    /// a hint does not: a hint names a control only when that control is how the hint's action is done), and the
+    /// stepper's step is 5.
     func testTheCustomTimerFieldSaysItsLimits() {
         XCTAssertEqual(SleepTimerView.customMinutesStep, 5)
         XCTAssertEqual(SleepTimerView.customMinutesRange, 1...480)
-        XCTAssertEqual(SleepTimerView.customMinutesHint, "Takes 1 to 480 minutes.")
+        XCTAssertEqual(SleepTimerView.customMinutesHint, "Takes 1 to 480 minutes. Return sets the timer and plays the book.")
+        XCTAssertEqual(SleepTimerView.customMinutesRangeHint, "Takes 1 to 480 minutes.")
         XCTAssertEqual(SleepTimerView.clampedCustomMinutes(0), 1)
         XCTAssertEqual(SleepTimerView.clampedCustomMinutes(481), 480)
         XCTAssertEqual(SleepTimerView.clampedCustomMinutes(25), 25)

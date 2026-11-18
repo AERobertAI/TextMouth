@@ -756,12 +756,12 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(ReadingListWording.removeFinishedLabel, "Remove books when finished")
         XCTAssertEqual(
             ReadingListWording.removeFinishedHint,
-            "Takes each finished book off the list when its window moves on or closes. Books finished before stay."
+            "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay."
         )
         XCTAssertEqual(ReadingListWording.keepBooksLabel, "Keep these books on this Mac")
         XCTAssertEqual(
             ReadingListWording.keepBooksHint,
-            "Keeps the list's books downloaded on this Mac alone. Clearing it removes no download."
+            "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download."
         )
         // Four controls, each told apart by its own label.
         XCTAssertEqual(

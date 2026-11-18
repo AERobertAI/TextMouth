@@ -60,12 +60,13 @@ final class PhoneSleepTimerModelTests: XCTestCase {
         XCTAssertEqual(PhoneSleepTimerModel.setAnnouncement(.endOfHeading), "Sleep timer: stops at the end of this heading.")
     }
 
-    /// The custom field's hint is the Mac's: the minutes it takes, naming no
-    /// key and no other control (FR35's cut; the phone once had a sentence of
-    /// its own, since the Mac's named its Return key).
-    func testTheCustomHintIsTheMacs() {
+    /// The custom field's hint on the phone is the range alone: the phone has no Return key to name, so its hint is
+    /// not the Mac's, which also says what Return does (the review of FR35's cuts).
+    func testTheCustomHintIsThePhonesOwn() {
         XCTAssertEqual(PhoneSleepTimerModel.customMinutesHint, "Takes 1 to 480 minutes.")
-        XCTAssertEqual(PhoneSleepTimerModel.customMinutesHint, SleepTimerView.customMinutesHint)
+        XCTAssertEqual(PhoneSleepTimerModel.customMinutesHint, SleepTimerView.customMinutesRangeHint)
+        XCTAssertEqual(SleepTimerView.customMinutesHint, "Takes 1 to 480 minutes. Return sets the timer and plays the book.")
+        XCTAssertNotEqual(PhoneSleepTimerModel.customMinutesHint, SleepTimerView.customMinutesHint)
         XCTAssertEqual(PhoneSleepTimerModel.customMinutesRange, SleepTimerView.customMinutesRange)
     }
 
@@ -112,7 +113,7 @@ final class PhoneSleepTimerVocabularyTests: XCTestCase {
              "Current Timer", "Text(Self.currentTimerHeading)"),
             (PhoneSleepTimerVocabulary.resetTimer, SleepTimerView.resetTimerTitle, "Reset Timer", "Button(Self.resetTimerTitle)"),
             (PhoneSleepTimerVocabulary.resetTimerHint, SleepTimerView.resetTimerHint,
-             "Restarts the timer at its full length.", ".accessibilityHint(Self.resetTimerHint)"),
+             "Restarts the timer at its full length and plays the book.", ".accessibilityHint(Self.resetTimerHint)"),
             (PhoneSleepTimerVocabulary.cancelTimer, SleepTimerView.cancelTimerTitle,
              "Cancel Timer", "Button(Self.cancelTimerTitle, role: .destructive)"),
             (PhoneSleepTimerVocabulary.cancelled, SleepTimerView.cancelledAnnouncement,

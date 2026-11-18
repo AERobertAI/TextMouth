@@ -180,7 +180,7 @@ enum NextBookWindowWording {
     /// it began "Where the next book opens when listening goes on from one
     /// book to another", and said each choice at length).
     static var globalHint: String {
-        String(localized: "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with \(NextBookWindow.thisWindow.title), this window closes.",
+        String(localized: "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with \(NextBookWindow.thisWindow.title) chosen, this window closes.",
                comment: "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. %@ is the name of its choice This Window.")
     }
 
