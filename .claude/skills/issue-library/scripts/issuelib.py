@@ -401,6 +401,31 @@ def cmd_merge_driver(args: Any) -> int:
 # The command line.
 # ---------------------------------------------------------------------------
 
+class IntermixedParser(argparse.ArgumentParser):
+    """A command's parser that lets options and positionals come in any order (TL04).
+
+    Plain argparse hands an optional positional (``comment``'s TEXT, ``set``'s VALUE...) the
+    arguments that follow the required ones the moment it meets them, so ``comment ID --as NAME
+    "text"`` found no place for "text" and failed with "unrecognized arguments". The intermixed
+    parse reads the options first and the positionals after, so ``comment ID "text" --as NAME``
+    and ``comment ID --as NAME "text"`` both work. It is a command's own parser (argparse's
+    subparsers call parse_known_args), which cannot hold subparsers of its own.
+    """
+
+    # True while parse_known_intermixed_args runs: it calls parse_known_args itself, which must then parse plainly.
+    _intermixing = False
+
+    def parse_known_args(self, args: Any = None, namespace: Any = None) -> Any:
+        """Parse intermixed, unless already inside the intermixed parse, which asks for the plain one."""
+        if self._intermixing:
+            return super().parse_known_args(args, namespace)
+        self._intermixing = True
+        try:
+            return self.parse_known_intermixed_args(args, namespace)
+        finally:
+            self._intermixing = False
+
+
 def common_options() -> argparse.ArgumentParser:
     """The options every command takes, given after the command's name."""
     common = argparse.ArgumentParser(add_help=False)
@@ -437,7 +462,7 @@ def filter_options(parser: argparse.ArgumentParser, default_status: str) -> None
 def build_parser() -> argparse.ArgumentParser:
     """The command line: one subcommand for each command."""
     parser = argparse.ArgumentParser(prog="issuelib.py", description="TextMouth's issue tracker: Issues/<ID>.md.")
-    commands = parser.add_subparsers(dest="command", metavar="COMMAND")
+    commands = parser.add_subparsers(dest="command", metavar="COMMAND", parser_class=IntermixedParser)
     commands.required = True
     common, writer = common_options(), writer_options()
 

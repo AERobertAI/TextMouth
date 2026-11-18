@@ -364,6 +364,79 @@ class CheckTests(IssueCase):
         self.assertIn("problems in", err)
 
 
+class ArgumentOrderTests(IssueCase):
+    """TL04: options and positionals come in any order, for every command with an optional positional."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.write_tree({"TODO-2026-09-04.md": TODO, "Issues/B16.md": B16})
+
+    def test_comment_takes_its_text_before_or_after_as(self) -> None:
+        # The order that always worked, the one TL04 found failing, and the text last of all.
+        orders = {
+            "text first": ("comment", "B16", "Text one.", "--as", "floatrender"),
+            "as first": ("comment", "B16", "--as", "floatrender", "Text two."),
+            "json between": ("comment", "B16", "--json", "Text three.", "--as", "floatrender"),
+        }
+        for name, argv in orders.items():
+            with self.subTest(name):
+                status, _out, err = self.run_cli(*argv)
+                self.assertEqual(status, 0, err)
+        text = self.read("Issues/B16.md")
+        for wanted in ("Text one.", "Text two.", "Text three."):
+            self.assertIn(f"\n{wanted}\n", text)
+
+    def test_the_same_comment_is_written_whatever_the_order(self) -> None:
+        results = []
+        for argv in (("comment", "B16", "Same text.", "--as", "floatrender"),
+                     ("comment", "B16", "--as", "floatrender", "Same text.")):
+            self.write_tree({"Issues/B16.md": B16})
+            self.assertEqual(self.run_cli(*argv)[0], 0)
+            results.append(self.read("Issues/B16.md"))
+        self.assertEqual(results[0], results[1])
+
+    def test_a_comment_with_no_text_is_still_refused_in_both_orders(self) -> None:
+        for argv in (("comment", "B16", "--as", "floatrender"), ("comment", "--as", "floatrender", "B16")):
+            self.assertEqual(self.run_cli(*argv)[0], 2, argv)
+        self.assertEqual(self.read("Issues/B16.md"), B16)
+
+    def test_set_takes_its_value_words_on_either_side_of_as(self) -> None:
+        for argv in (("set", "B16", "title", "Speak", "Info", "--as", "orchestrator"),
+                     ("set", "B16", "title", "--as", "orchestrator", "Speak", "Info"),
+                     ("set", "B16", "title", "Speak", "--as", "orchestrator", "Info")):
+            with self.subTest(argv):
+                self.write_tree({"Issues/B16.md": B16})
+                status, _out, err = self.run_cli(*argv)
+                self.assertEqual(status, 0, err)
+                self.assertIn("title: Speak Info\n", self.read("Issues/B16.md"))
+
+    def test_set_with_no_value_still_clears_in_both_orders(self) -> None:
+        for argv in (("set", "B16", "labels", "--as", "orchestrator"), ("set", "--as", "orchestrator", "B16", "labels")):
+            self.assertEqual(self.run_cli(*argv)[0], 0)
+            self.assertIn("labels:\n", self.read("Issues/B16.md"))
+
+    def test_commands_with_only_required_positionals_take_options_anywhere(self) -> None:
+        self.assertEqual(self.run_cli("show", "--json", "B16")[0], 0)
+        self.assertEqual(self.run_cli("show", "B16", "--json")[0], 0)
+        self.assertEqual(self.run_cli("search", "--status", "all", "Description")[0], 0)
+        self.assertEqual(self.run_cli("assign", "--as", "orchestrator", "B16", "floatrender")[0], 0)
+        self.assertEqual(self.run_cli("assign", "B16", "none", "--as", "orchestrator")[0], 0)
+        self.assertEqual(self.run_cli("close", "--as", "orchestrator", "B16", "--merged", "6b09b2ee2")[0], 0)
+        self.assertEqual(self.run_cli("reopen", "B16", "--as", "orchestrator", "--reason", "Again.")[0], 0)
+
+    def test_the_merge_driver_keeps_its_optional_size_and_path(self) -> None:
+        import issuelib
+        parsed = issuelib.build_parser().parse_args(["merge-driver", "base", "cur", "other", "9", "a/B1.md"])
+        self.assertEqual((parsed.base, parsed.current, parsed.other, parsed.marker_size, parsed.path), ("base", "cur", "other", 9, "a/B1.md"))
+        short = issuelib.build_parser().parse_args(["merge-driver", "base", "cur", "other"])
+        self.assertEqual((short.marker_size, short.path), (issuelib.issuemerge.MARKER_SIZE, ""))
+
+    def test_a_stray_argument_is_still_an_error(self) -> None:
+        status, _out, err = self.run_cli("comment", "B16", "one", "two", "--as", "floatrender")
+        self.assertEqual(status, 2)
+        self.assertIn("unrecognized arguments: two", err)
+
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
