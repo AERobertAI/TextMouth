@@ -132,4 +132,15 @@
    for each check tmff_session_formcheck makes of the conversion of sound that changes its form. */
 #define TMFF_MODE_FORMCHECK "formcheck"
 
+/* A fifth mode, which only a Debug build of the helper has (a Release build answers it with
+   TMFF_EXIT_USAGE, and carries none of its code): its second argument names a way to crash
+   (TMFF_SIGNALCHECK_*), the helper opens no file, and then crashes that way. With its signal guard
+   in place, each ends with TMFF_EXIT_CRASHED and no crash report; it is run only on GitHub's
+   runners, where a failure puts no crash report in front of anyone (FU-FFMPEG2). */
+#define TMFF_MODE_SIGNALCHECK "signalcheck"
+#define TMFF_SIGNALCHECK_SEGFAULT "segfault"       /* a write through a null pointer */
+#define TMFF_SIGNALCHECK_ABORT "abort"             /* abort() */
+#define TMFF_SIGNALCHECK_OVERFLOW "overflow"       /* recursion until the stack is gone */
+#define TMFF_SIGNALCHECK_DOUBLE_FREE "doublefree"  /* free() of the same memory twice */
+
 #endif /* TEXTMOUTH_FFMPEG_PROTOCOL_H */

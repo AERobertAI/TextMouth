@@ -228,6 +228,30 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
         }
     }
 
+    /// The helper's signal guard (FU-FFMPEG2): a write through a null pointer,
+    /// an abort, a stack overflow, and a double free each end the helper with
+    /// 70 as the guard's own `_exit`, not by the signal (which would leave a
+    /// crash report on the Mac), and with nothing written. The Debug helper's
+    /// `signalcheck` mode crashes on purpose, so this runs on GitHub only (the
+    /// class skips elsewhere), fenced to the Mac, where the helper is a
+    /// program; a Release helper has no such mode and answers 1.
+    #if os(macOS)
+    func testEachFatalSignalEndsTheHelperWithItsOwnStatus() async throws {
+        let helper = try bundledFFmpegHelper()
+        let seconds = TestMachine.allowed(20)
+        let limits = WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
+        for kind in ["segfault", "abort", "overflow", "doublefree"] {
+            let run = try await runFFmpegHelper(helper, ["signalcheck", kind, "-"], limits: limits)
+            XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 70)), kind)
+            XCTAssertNil(run.ending.signal, "\(kind): the helper ended by the signal itself")
+            XCTAssertEqual(run.bytes, [], kind)
+        }
+        // A kind the helper does not know is a usage error, not a crash.
+        let unknown = try await runFFmpegHelper(helper, ["signalcheck", "nothing", "-"], limits: limits)
+        XCTAssertEqual(unknown.ending, WatchedProcess.Ending(outcome: .exited(status: 1)))
+    }
+    #endif
+
     /// A file in which no packet decodes (`flac-all-bad-packets.mka`: every one of its 1,400
     /// packets has its sync code zeroed) ends with the helper's status 6, damaged, and the import
     /// says it is damaged, not that it holds no sound (FU-FFMPEG2): the listener hears that the
