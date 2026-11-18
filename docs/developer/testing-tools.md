@@ -55,6 +55,23 @@ That watches only the train's own copy of the app.
   A symbolic link hid the folder listed right after it, and a fixture that assumed the listing put a link before a folder passed against the old code on one volume.
   So the fixture grows, folder by folder or link by link, until a link really is listed right before a folder, and fails loudly if it never is (`ContentIndexValidationTests`).
 
+### A remote train and a lost connection
+<!-- id: remote-train-lost-connection; keys: github_run.py, pending-run.json, lost_minutes, collected run, gh run download, missed poll, TL07; src: Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/agents/tests/test_remote_train.py -->
+
+A remote train keeps its run when the Mac loses GitHub (a closed lid on battery does), since the run goes on, and may pass, without the Mac:
+
+- **A lost connection is a missed poll.**
+  A poll of `gh run view` that fails after its four tries does not end the wait: it goes on to the run's limit (125 minutes, by a clock that leaves out the Mac's sleep), and says when GitHub was lost and when it was back.
+  The train's `remote.json` then holds `lost_minutes`.
+- **The download tries again.**
+  Only gh's own "no artifact" answers mean a run without results; any other failure that survives the tries fails the train, and is never read as a run with no results.
+- **A run that was not collected is collected next time.**
+  Once GitHub shows the run, the train writes its ID, commit, merged tree, and whole request to `pending-run.json` in its folder (`build/orchestrator/train/`), and empties the record when the results are in hand.
+  The next train that sends the same tree and the same request collects that run's results instead of pushing again, at most 3 times.
+  A record is ignored when its run was cancelled or is gone, and the result says the results are those of an earlier train's run.
+- `run_suite.py --remote` has no record file, so a suite pushes again.
+- A train that loses GitHub while it finds the run it pushed leaves no record: the next train waits for that run, then pushes again, which costs one run.
+
 ## Portable XML differential tests
 <!-- id: portable-xml-differential-tests; keys: XMLDocument, PortableXMLDocument, differential, EPUB, OPML, iOS XML, knownDifferences; src: TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/PortableXMLCorpus.swift, TextMouth/Parsers/PortableXML.swift, TextMouth/Parsers/PortableXMLBuilder.swift, TextMouth/Platform/iOS/Parsers/XMLTree+iOS.swift -->
 

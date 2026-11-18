@@ -105,7 +105,7 @@ It names the runner's own architecture (`ARCHS=arm64`), since both would compile
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.
   A failed or missing iPhone test fails the iPhone job and never the Mac tests' verdict (see [Tests on GitHub Actions](testing-github.md)).
 ### The Mac's push, the caches, and what to keep
-<!-- id: github-mac-push-caches-keep; keys: github_run.py, TestBuild push, refspec, actions/cache, restore_mtimes.py, shards; src: Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/restore_mtimes.py, Scripts/agents/shard.py, Scripts/agents/plan_shards.py, Scripts/agents/merge_shards.py, .github/workflows/tests.yml, .github/workflows/test-build.yml -->
+<!-- id: github-mac-push-caches-keep; keys: github_run.py, TestBuild push, refspec, actions/cache, restore_mtimes.py, shards; src: Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/restore_mtimes.py, Scripts/agents/shard.py, Scripts/agents/plan_shards.py, Scripts/agents/merge_shards.py, .github/workflows/tests.yml, .github/workflows/test-build.yml; status: incomplete; issues: TL09 -->
 
 - **What the Mac does.**
   `build-train.py run --remote` (and `loop --remote`) merges the requests here, pushes the merged tree plus the request to `TestBuild` with `--force`, waits for that commit's run, and reads the result; `run_suite.py --remote COMMIT NAME LOG` does it for the full suite.
@@ -126,6 +126,7 @@ It names the runner's own architecture (`ARCHS=arm64`), since both would compile
   A fresh checkout would otherwise make Xcode compile everything again.
   The manifest saved beside the products now only names the files that differ, for the run's page.
   A warm build took about 2 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it).
+  The repository's cache is at GitHub's 10 GB limit, with one iPhone build cache of about 600 MB for each commit, so GitHub evicts the older ones and a build may come up cold (TL09).
   To see where a job's minutes go, a request sent by hand may carry `diagnose`, `audio_probe`, `ax_probe`, or `parallel_workers` (see [Tests on GitHub Actions](testing-github.md)).
   A long request runs as up to four jobs side by side, each with its share of the test classes (`Scripts/agents/shard.py` deals them out by their times on the runner in `class-times.json`; `plan_shards.py` starts the jobs; `merge_shards.py` joins their results into the one artifact the Mac reads).
   And a test that waits for something the runner lacks fails after 2 minutes (xcodebuild rounds to the minute), or is left out (`Scripts/agents/runner-skips.conf`).
@@ -137,10 +138,11 @@ It names the runner's own architecture (`ARCHS=arm64`), since both would compile
   The workflow lives on `TestBuild` as pushed, so it works before it is merged into main; `gh run list --workflow` looks a file up on the default branch, which is why `github_run.py` finds the run by workflow name and commit instead.
 
 ### A cache made on another runner image
-<!-- id: runner-module-cache-stamp; keys: module cache, toolchain stamp, stale module, module.modulemap, ModuleCache.noindex, retry, ImageVersion; src: Scripts/agents/runner_module_cache.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-on-runner.py, Scripts/agents/build-train.py, Scripts/agents/tests/test_bytecode_policy.py -->
+<!-- id: runner-module-cache-stamp; keys: module cache, toolchain stamp, stale module, module file not found, module.modulemap, ModuleCache.noindex, retry, ImageVersion; src: Scripts/agents/runner_module_cache.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-on-runner.py, Scripts/agents/build-train.py, Scripts/agents/tests/test_bytecode_policy.py -->
 
 GitHub rolls a new macOS image out over days, so a job can restore a build cache that the other image made.
 Clang's module caches in it record the time of the toolchain's `module.modulemap`, and the build fails with "has been modified since the module file", an error that names no file of the repository.
+The build database can also claim a precompiled module that is not in the folder, which fails the build with "module file ... not found", a precompiled module file.
 `Scripts/agents/runner_module_cache.py` is the cure, used by `run-ios-build.py` and `run-on-runner.py` (the Mac shards), on a GitHub runner only:
 
 - Before a build, `prepare` compares the stamp `toolchain-stamp.json` with this runner's.
@@ -150,10 +152,12 @@ Clang's module caches in it record the time of the toolchain's `module.modulemap
   - Build/Intermediates.noindex/ExplicitPrecompiledModules and PrecompiledHeaders;
   - and Build/Intermediates.noindex/SwiftExplicitPrecompiledModules, the Swift driver's modules for the SDK, the toolchain, and the repository.
   The compiled objects, the build database, and the package checkouts stay, so this is no clean build.
-- A build that still fails with the error is tried once more, after emptying the same folders, in what is left of its time limit.
+- A build that still fails with the stale error is tried once more, after emptying the same folders, in what is left of its time limit.
   The iPhone build needs 1 minute left, and a Mac shard 5 minutes and no test suite started.
+- The "module file ... not found" error is not cured by emptying those folders, because the build database still claims the module.
+  On a runner, the iPhone build's retry for it starts from an empty derived-data folder, as the device build does, and writes the stamp again; a Mac shard does not look for it.
 - The iPhone build's `ios-summary.txt` then has a `Retried:` line, and a Mac shard's `summary.md` a `Module caches:` line.
-  When every error of the iPhone build is that one, the train's summary and its board post say the runner's module cache was stale and that nothing is to fix in any file.
+  When the build's only errors are cache failures of either kind, the train's summary and its board post say the module cache failed the build, not the branch's code, and that nothing is to fix in any file; a real error beside one is shown as an error.
 - A Mac shard's retry first moves the first try's result bundle to `result.first-try.xcresult` (a number follows when that name is taken), since xcodebuild refuses a `-resultBundlePath` that is already there; the retry writes `result.xcresult`, which the workflow uploads.
 - The iPhone build reads the Swift frontend's `<unknown>:0: error:` lines as errors, so a stale module that fails that way is counted as the stale cache's only error.
 

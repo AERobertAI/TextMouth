@@ -42,7 +42,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
    Each uploads its log and summary as `shard-results-N`.
 
 ### The iPhone job
-<!-- id: run-iphone-job; keys: build-for-testing, simulator, iPhone 17, iOS 26.0.1, xcodebuild, downloadPlatform, ios-ui-summary; src: Scripts/agents/run-ios-build.py, project.yml -->
+<!-- id: run-iphone-job; keys: build-for-testing, simulator, iPhone 17, iOS 26.0.1, xcodebuild, downloadPlatform, ios-ui-summary; src: Scripts/agents/run-ios-build.py, project.yml; status: incomplete; issues: TL08 -->
 
 4. **The iPhone app** (macOS, beside the shards).
    `Scripts/agents/run-ios-build.py` runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, naming the runner's own architecture (`ARCHS=arm64`).
@@ -50,7 +50,9 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
    The runner image's Xcode 26.0.1 lists the iOS SDKs but says "iOS 26.0 is not installed", so the job first downloads the platform (`xcodebuild -downloadPlatform iOS`, about 3 minutes).
    It uploads `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`.
    A build that does not compile is a result, not a failure of the job.
-   Before the build a stamp of the toolchain empties a restored module cache made on another runner image, and a build that still fails with "has been modified since the module file" is tried once more ([A cache made on another runner image](building-ios.md#a-cache-made-on-another-runner-image)).
+   Before the build a stamp of the toolchain empties a restored module cache made on another runner image.
+   A build that still fails with "has been modified since the module file" or "module file ... not found" is tried once more ([A cache made on another runner image](building-ios.md#a-cache-made-on-another-runner-image)).
+   A "fatal error:" line with a file and line in front is not counted, so a missing header ends "no error line" (TL08).
 
 ### The iPhone tests
 <!-- id: run-iphone-tests; keys: ios-ui-summary, ios_ui_tests, counts_by_bundle, PARALLEL_WORKERS, result bundle, keyboard preferences, NOT ASKED; src: Scripts/agents/run-ios-ui-tests.py, Scripts/agents/ios_ui_tests.py, TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, project.yml -->
@@ -89,7 +91,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
      The run's page (`summary.md`), a train's result, and `run_suite.py --remote` show `iOS UI tests: ...`, the Executed line followed by how many unit tests and how many interface tests ran, `iOS UI test failures: N`, and each failed test.
 
 ### Collecting and reading the results
-<!-- id: run-collect-results; keys: merge_shards, test-build-results, run-summary, artifact, summary.md, Run on GitHub; src: Scripts/agents/merge_shards.py, Scripts/agents/run_suite.py -->
+<!-- id: run-collect-results; keys: merge_shards, test-build-results, run-summary, artifact, summary.md, Run on GitHub; src: Scripts/agents/merge_shards.py, Scripts/agents/run_suite.py, Scripts/agents/github_run.py, Scripts/agents/build-train.py -->
 
 5. **Collect** (Linux, seconds).
    `Scripts/agents/merge_shards.py` joins the shards (and the iPhone job's five files) into one `test-build-results` artifact:
@@ -106,6 +108,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
    The run fails if any shard failed or reported nothing.
    The iPhone build never decides that: it is shown beside the verdict.
 6. **The Mac** finds the run by its commit's SHA, waits for it (up to 125 minutes), downloads that artifact into the train's folder, and reports from it as for a local train.
+   A lost connection is a missed poll, and the next train collects a run this one could not ([how](testing-tools.md#a-remote-train-and-a-lost-connection)).
    The result file of each agent carries
    - a line "Run on GitHub" with the run's link,
    - a line "iOS build of the merged tree on GitHub" with the iPhone build's verdict,
