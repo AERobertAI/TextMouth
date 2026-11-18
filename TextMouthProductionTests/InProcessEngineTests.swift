@@ -395,4 +395,16 @@ final class InProcessEngineTests: XCTestCase {
                 + "and won't try again until TextMouth is closed and opened again."
         )
     }
+
+    /// AsyncBridge's refusal of an audio read uses the engine's own remedy,
+    /// "closed and opened again", on both platforms (B17): this test also
+    /// runs in the iPhone's unit bundle, where only switching back to the
+    /// app does not clear an abandoned read.
+    func testTheAudioReadRefusalSharesTheEnginesRemedy() {
+        let sentence = "TextMouth stopped reading this audio earlier because it took too long, "
+            + "and won't try again until TextMouth is closed and opened again."
+        XCTAssertEqual(AsyncBridgeWording.abandonedEarlier, sentence)
+        XCTAssertEqual(AsyncBridge.AbandonedEarlier().errorDescription, sentence)
+        XCTAssertEqual(InProcessEngineWording.refused("reading this audio"), sentence)
+    }
 }

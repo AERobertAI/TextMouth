@@ -216,7 +216,7 @@ final class AsyncBridgeTests: XCTestCase {
             XCTAssertEqual(error as? AsyncBridge.AbandonedEarlier, AsyncBridge.AbandonedEarlier())
             XCTAssertEqual(
                 error.localizedDescription,
-                "TextMouth stopped reading this audio earlier because it took too long, and won't try again until TextMouth is opened again."
+                "TextMouth stopped reading this audio earlier because it took too long, and won't try again until TextMouth is closed and opened again."
             )
         }
         XCTAssertLessThan(Date().timeIntervalSince(started), 5, "the second read was not refused at once")
