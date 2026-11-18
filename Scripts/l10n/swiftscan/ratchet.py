@@ -19,6 +19,11 @@ from .lexer import Literal
 
 # The version of the baseline file's format.
 BASELINE_VERSION = 1
+# The rule about the baseline, in the lint's failure text and its --help: the lint passes while
+# each file's count is at most its baseline, so a baseline left high fails nothing, and a branch
+# that edited it would only conflict with the others (the merge lowers it).
+BASELINE_RULE = ("Never edit scan-baseline.json to make the lint pass: localize the text. The merge chain "
+                 "lowers it after every merge, and a baseline left high fails nothing.")
 
 
 @dataclass
@@ -143,5 +148,6 @@ def format_problems(problems: Sequence[Problem], width: int = 100) -> List[str]:
         "Make each one localized, as String(localized: \"...\", comment: \"...\") or a SwiftUI literal;",
         "or, for an identifier, a name the system gives, or a test hook, end its line with `// l10n: no`.",
         "`scan.py show FILE` lists a file's unlocalized literals.",
+        BASELINE_RULE,
     ]
     return lines

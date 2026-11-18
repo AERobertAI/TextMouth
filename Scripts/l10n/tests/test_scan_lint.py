@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import unittest
 
-from scan_case import REPO, TreeCase, scan_snippet
+from scan_case import REPO, TreeCase, run_main, scan_snippet
 
 from swiftscan import ratchet
 
@@ -116,6 +116,28 @@ class LintTests(TreeCase):
         status, _out, _err = self.lint("--update-baseline", "--renamed", "TextMouth/Models/OldWording.swift", "TextMouth/Models/HaltWording.swift")
         self.assertEqual(status, 0)
         self.assertEqual(self.baseline_counts(), {"TextMouth/Models/HaltWording.swift": 2})
+
+    def test_a_deleted_files_entry_is_dropped_so_a_new_file_at_its_path_starts_from_zero(self) -> None:
+        # The baseline lists a file the tree no longer has (deleted in a merged branch).
+        self.baseline.write_text('{"version": 1, "files": {"TextMouth/Models/GoneWording.swift": 2, '
+                                 '"TextMouth/Models/PauseWording.swift": 2}}\n', encoding="utf-8")
+        status, out, _err = self.lint("--update-baseline")
+        self.assertEqual(status, 0)
+        self.assertIn("GoneWording.swift: 2 -> 0 (left the baseline)", out)
+        self.assertEqual(self.baseline_counts(), {"TextMouth/Models/PauseWording.swift": 2})
+        # A new file at the same path inherits nothing: one literal fails.
+        self.write("Models/GoneWording.swift", ONE)
+        status, out, _err = self.lint()
+        self.assertEqual(status, 1)
+        self.assertIn("GoneWording.swift: 1 unlocalized literals, baseline 0 (+1)", out)
+
+    def test_the_failure_text_and_help_say_a_branch_never_edits_the_baseline(self) -> None:
+        self.write("Models/PauseWording.swift", THREE)
+        _status, out, _err = self.lint()
+        self.assertIn("Never edit scan-baseline.json", out)
+        self.assertIn("lowers it after every merge", out)
+        _status, help_out, _err = run_main("lint", "--help")
+        self.assertIn("Never edit scan-baseline.json", " ".join(help_out.split()))
 
     def test_renamed_without_update_is_a_usage_error(self) -> None:
         status, _out, err = self.lint("--renamed", "A", "B")

@@ -19,7 +19,9 @@ Commands:
         literals than Scripts/l10n/scan-baseline.json records for it (or a file the baseline
         does not list has any), and prints each literal. --update-baseline lowers the counts
         that fell and drops the files that reached zero (never raises one); --rebuild-baseline,
-        which only the orchestrator runs, writes the baseline from scratch.
+        which only the orchestrator runs, writes the baseline from scratch. A branch never edits
+        the baseline: the lint passes while each count is at most its baseline, so one left high
+        fails nothing, and the merge chain runs --update-baseline after every merge.
 
 A literal is interface text when it is shown or spoken to the user (see swiftscan/classify.py
 for the buckets). It is *localized* when it is the key of a call the compiler extracts
@@ -217,7 +219,8 @@ def build_parser() -> argparse.ArgumentParser:
     show.add_argument("--width", type=int, default=DEFAULT_WIDTH, help=f"line width (default {DEFAULT_WIDTH})")
     show.add_argument("--json", action="store_true", help="print JSON instead of text")
 
-    lint = sub.add_parser("lint", help="fail when a file gains unlocalized interface text")
+    lint = sub.add_parser("lint", help="fail when a file gains unlocalized interface text",
+                          epilog=ratchet.BASELINE_RULE)
     lint.add_argument("--base", metavar="REF", help="show only the literals on lines added since the merge-base of REF and HEAD")
     lint.add_argument("--baseline", metavar="FILE", help="the baseline file (default Scripts/l10n/scan-baseline.json)")
     group = lint.add_mutually_exclusive_group()
