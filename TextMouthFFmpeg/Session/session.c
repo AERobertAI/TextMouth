@@ -81,7 +81,10 @@ enum { READ_BUFFER_BYTES = 64 * 1024 };
 enum { PCM_RECORD_TARGET = 256 * 1024 };
 
 /* The most memory FFmpeg may ask for at once: far more than any audio frame or index needs. */
-#define MAX_ALLOCATION_BYTES (256u * 1024u * 1024u)
+#define MAX_ALLOCATION_BYTES TMFF_MAX_ALLOCATION_BYTES
+
+/* The cap every open gives FFmpeg (tmff_set_allocation_cap), MAX_ALLOCATION_BYTES unless lowered. */
+static size_t allocation_cap = MAX_ALLOCATION_BYTES;
 
 /* The loudspeakers a WAVE channel mask names (its bits 0 to 17), which FFmpeg's native order
    names with the same bits; a layout with any other bit is sent as unknown. */
@@ -498,6 +501,11 @@ int tmff_session_cpu_features(void) {
     return av_get_cpu_flags();
 }
 
+void tmff_set_allocation_cap(size_t bytes) {
+    allocation_cap = bytes > 0 && bytes < MAX_ALLOCATION_BYTES ? bytes : MAX_ALLOCATION_BYTES;
+    av_max_alloc(allocation_cap);
+}
+
 int tmff_open_regular_file(const char *path) {
     const int descriptor = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if (descriptor < 0) {
@@ -532,7 +540,7 @@ tmff_session *tmff_session_open_checked(int descriptor, const char *demuxer_name
     int failure = TMFF_EXIT_MEMORY;
     unsigned char *buffer = NULL;
     av_log_set_level(AV_LOG_QUIET);
-    av_max_alloc(MAX_ALLOCATION_BYTES);
+    av_max_alloc(allocation_cap);
 
     tmff_session *session = calloc(1, sizeof *session);
     if (!session) {

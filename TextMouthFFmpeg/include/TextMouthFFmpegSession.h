@@ -44,6 +44,16 @@ int tmff_session_prepare(void);
    first, and what a confined process still reports (the Debug confinement check compares). */
 int tmff_session_cpu_features(void);
 
+/* The most FFmpeg may allocate at once (av_max_alloc), 256 MB: far more than any audio frame or
+   index needs, and what every session allows unless tmff_set_allocation_cap lowers it. */
+#define TMFF_MAX_ALLOCATION_BYTES 268435456u
+
+/* Sets the most FFmpeg may allocate at once, from now on, for every session of the process: `bytes`,
+   or TMFF_MAX_ALLOCATION_BYTES for 0 or more than that. FFmpeg's cap is the process's alone, so the
+   iPhone, whose runs' calls take turns on one thread, sets its run's before each call (FMT54); the
+   Mac's helper, one session a process, never sets it. */
+void tmff_set_allocation_cap(size_t bytes);
+
 /* Opens `path` for reading as a session reads its file: a regular file only, opened without
    blocking, so that a FIFO or a device is never waited on, then checked, then made blocking for
    the reads, and closed on exec. Returns the descriptor, or -1. The Mac's helper opens its file

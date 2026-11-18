@@ -275,6 +275,8 @@ int tmff_session_prepare(void) { return 0; }
 
 int tmff_session_cpu_features(void) { return 0; }
 
+void tmff_set_allocation_cap(size_t bytes) { (void)bytes; }
+
 int tmff_open_regular_file(const char *path) {
     (void)path;
     return -1;

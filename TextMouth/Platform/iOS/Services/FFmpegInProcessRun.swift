@@ -54,13 +54,14 @@ protocol InProcessFFmpegSession: AnyObject, Sendable {
 /// TextMouth itself past its memory limit, which the listener would meet as a
 /// crash, mid-book.
 struct SessionMemoryFloor: Sendable {
-    /// The least memory the app may have left while a session runs, in bytes:
+    /// The most memory the app keeps free while a session runs, in bytes:
     /// the app's, 512 MB, twice the most FFmpeg may allocate at once
     /// (`av_max_alloc`, 256 MB), so that no allocation between two asks can
     /// take the app from above the floor to its limit, and room for the rest
     /// of TextMouth to say what happened. A sound file's session needs tens
     /// of megabytes, so only a session that grows far past what any file
-    /// means to hold reaches it.
+    /// means to hold reaches it. A run that begins with less than twice it
+    /// free keeps half of what it began with (`run(beganWith:)`).
     let bytes: Int
     /// The memory the app has left before iOS ends it, in bytes:
     /// `os_proc_available_memory()`, unless a test scripts its own; 0 when
@@ -76,15 +77,56 @@ struct SessionMemoryFloor: Sendable {
         let left = available()
         return left > 0 ? left : nil
     }
+
+    /// What one run keeps, as it begins with `leftAtStart` bytes left (nil:
+    /// no limit): its floor, `bytes` or half of what was left if that is less,
+    /// so that a phone that begins short of memory still converts an ordinary
+    /// file; and the most FFmpeg may allocate at once in its calls, half its
+    /// floor and never more than 256 MB, which keeps the floor's promise that
+    /// no allocation between two asks crosses from above it to the limit (the
+    /// check of the FMT54 review's fixes, item 2).
+    func run(beganWith leftAtStart: Int?) -> RunMemory {
+        let largest = Int(TMFF_MAX_ALLOCATION_BYTES)
+        guard let leftAtStart else {
+            return RunMemory(reader: self, floor: bytes, allocationCap: largest, leftAtStart: nil)
+        }
+        let floor = min(bytes, leftAtStart / 2)
+        return RunMemory(reader: self, floor: floor, allocationCap: min(largest, floor / 2), leftAtStart: leftAtStart)
+    }
+}
+
+/// What one FFmpeg run in the app keeps of the memory it began with
+/// (`SessionMemoryFloor.run(beganWith:)`).
+struct RunMemory: Sendable, Equatable {
+    /// What reads the memory the app has left.
+    let reader: SessionMemoryFloor
+    /// The least memory the app may have left while the run goes on, in
+    /// bytes.
+    let floor: Int
+    /// The most FFmpeg may allocate at once in the run's calls, in bytes.
+    let allocationCap: Int
+    /// The memory the app had left as the run began, nil with no limit.
+    let leftAtStart: Int?
+
+    /// Whether the run began short of memory: its floor is below the app's,
+    /// half of what it began with.
+    var beganShort: Bool { floor < reader.bytes }
+
+    static func == (lhs: RunMemory, rhs: RunMemory) -> Bool {
+        lhs.floor == rhs.floor && lhs.allocationCap == rhs.allocationCap && lhs.leftAtStart == rhs.leftAtStart
+            && lhs.reader.bytes == rhs.reader.bytes
+    }
 }
 
 /// The stop check one engine call gives its FFmpeg session in the app
 /// (FMT54), as `tmff_stop_check` with this as its context: stop once the
 /// engine says the call's time is spent or its import is cancelled
 /// (`InProcessEngine.Call.shouldStop`), or once the app has less memory left
-/// than the floor. The session asks it before every read and seek of its
-/// file and at each of its steps, and FFmpeg at its own checkpoints, so the
-/// floor is watched as closely as the time.
+/// than its run's floor. The session asks it before every read and seek of
+/// its file and at each of its steps, and FFmpeg at its own checkpoints, so
+/// the floor is watched as closely as the time. It carries its run's
+/// allocation cap too, which the linked session gives FFmpeg before each
+/// call.
 ///
 /// It lives in its call's work, on the engine's thread, and the session
 /// asks it there alone, so it is not Sendable: the work hands back what it
@@ -92,23 +134,23 @@ struct SessionMemoryFloor: Sendable {
 final class SessionStopCheck {
     /// The engine's call it is asked in.
     let call: InProcessEngine.Call
-    /// The floor under the app's free memory.
-    let floor: SessionMemoryFloor
+    /// What its run keeps of the app's memory.
+    let memory: RunMemory
     /// The memory the app had left when the floor said stop, in bytes; nil
     /// unless it did.
     private(set) var memoryLeftWhenStopped: Int?
 
-    /// The check of `call`, keeping `floor`.
-    init(call: InProcessEngine.Call, floor: SessionMemoryFloor) {
+    /// The check of `call`, keeping `memory`.
+    init(call: InProcessEngine.Call, memory: RunMemory) {
         self.call = call
-        self.floor = floor
+        self.memory = memory
     }
 
     /// Whether the session should stop now: its call should, or the app has
-    /// less memory left than the floor, which stops it for good.
+    /// less memory left than its run's floor, which stops it for good.
     var shouldStop: Bool {
         if memoryLeftWhenStopped != nil || call.shouldStop { return true }
-        guard let left = floor.left, left < floor.bytes else { return false }
+        guard let left = memory.reader.left, left < memory.floor else { return false }
         memoryLeftWhenStopped = left
         return true
     }
@@ -165,6 +207,7 @@ final class LinkedFFmpegSession: InProcessFFmpegSession, @unchecked Sendable {
     ) -> (session: (any InProcessFFmpegSession)?, status: Int32) {
         let descriptor = file.withUnsafeFileSystemRepresentation { path in path.map { tmff_open_regular_file($0) } ?? -1 }
         guard descriptor >= 0 else { return (nil, TMFF_EXIT_UNREADABLE) }
+        tmff_set_allocation_cap(check.memory.allocationCap)
         var status = TMFF_EXIT_DONE
         let opened = demuxer.withCString { name in
             tmff_session_open_checked(
@@ -187,6 +230,7 @@ final class LinkedFFmpegSession: InProcessFFmpegSession, @unchecked Sendable {
     /// which reuses its buffer at the next call.
     func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8]) {
         guard !isClosed else { return (TMFF_EXIT_USAGE, []) }
+        tmff_set_allocation_cap(check.memory.allocationCap)
         tmff_session_set_stop_check(session, SessionStopCheck.function, check.context)
         defer { tmff_session_set_stop_check(session, nil, nil) }
         var bytes: UnsafePointer<UInt8>?
@@ -243,10 +287,12 @@ extension FFmpegAudioConverter {
     /// - **The memory.** The helper's memory watch is, in one process, a floor
     ///   under the memory the app has left (`tool.memoryFloor`, the FMT54
     ///   review's finding 4): the session's check says stop once less is left,
-    ///   and the run ends in the watchdog's kill for memory, naming what the
-    ///   app's memory grew by since the run began. FFmpeg's allocations are
-    ///   held to 256 MB each (`av_max_alloc`), a decoded frame to 4,194,304
-    ///   samples, and the records to the protocol's sizes.
+    ///   and the run ends in a kill for memory: the app's memory grew by more
+    ///   than so much since the run began, or, for a run that began short of
+    ///   memory, which keeps half of what it began with, that it did. FFmpeg's
+    ///   allocations are held to 256 MB each (`av_max_alloc`), less in a run
+    ///   that began short, a decoded frame to 16,777,216 samples, and the
+    ///   records to the protocol's sizes.
     /// - **The end.** Once `read` is done the session is freed, in a call of
     ///   its own; an engine that refuses (a call was abandoned) leaves it to
     ///   the thread that still holds it.
@@ -296,9 +342,10 @@ private actor InProcessFFmpegRun {
     /// When the run began, by the tool's clock: its whole time counts from
     /// here, as the watchdog's counts from the helper's start.
     private let started: TimeInterval
-    /// The memory the app had left as the run began (nil with no limit), which
-    /// a stop for memory measures the run's growth from.
-    private let memoryAtStart: Int?
+    /// What the run keeps of the memory the app had left as it began: its
+    /// floor and its allocation cap, and what a stop for memory measures the
+    /// app's growth from.
+    private let memory: RunMemory
     /// Whether the open has been asked for; it is asked once.
     private var openAsked = false
     /// The open session, until it is freed.
@@ -316,7 +363,7 @@ private actor InProcessFFmpegRun {
         self.limits = limits
         self.tool = tool
         started = tool.clock.now()
-        memoryAtStart = tool.memoryFloor.left
+        memory = tool.memoryFloor.run(beganWith: tool.memoryFloor.left)
     }
 
     /// How the run ended, as the helper's run says it: the watchdog's kill
@@ -337,9 +384,9 @@ private actor InProcessFFmpegRun {
         guard let callLimit = timeForTheNextCall() else { return [] }
         if !openAsked {
             openAsked = true
-            let (file, demuxer, mode, open, floor) = (file, demuxer, mode, tool.openSession, tool.memoryFloor)
+            let (file, demuxer, mode, open, memory) = (file, demuxer, mode, tool.openSession, memory)
             let opening = try await engineCall(within: callLimit) { call in
-                let check = SessionStopCheck(call: call, floor: floor)
+                let check = SessionStopCheck(call: call, memory: memory)
                 let (session, status) = open(file, demuxer, mode, check)
                 return (session: session, status: status, memoryLeft: check.memoryLeftWhenStopped)
             }
@@ -358,9 +405,9 @@ private actor InProcessFFmpegRun {
     /// The next record of `session`, in a call within `limit`; nothing once
     /// the stream has ended.
     private func record(from session: any InProcessFFmpegSession, within limit: CallLimit) async throws -> [UInt8] {
-        let floor = tool.memoryFloor
+        let memory = memory
         let (status, record, memoryLeft) = try await engineCall(within: limit) { call in
-            let check = SessionStopCheck(call: call, floor: floor)
+            let check = SessionStopCheck(call: call, memory: memory)
             let (status, record) = session.next(asking: check)
             return (status, record, check.memoryLeftWhenStopped)
         }
@@ -415,16 +462,20 @@ private actor InProcessFFmpegRun {
     }
 
     /// Ends the stream with `status`. A stop the memory floor asked for, the
-    /// app having `memoryLeft` bytes left, is the watchdog's kill for memory,
-    /// naming what the app's memory grew by since the run began (at least 1
-    /// MB); any other stop the task's cancellation did not ask for
-    /// (TMFF_EXIT_STOPPED) was a time limit's: the run's whole time when it is
-    /// spent, else the call's, the stall.
+    /// app having `memoryLeft` bytes left, is a kill for memory: for a run
+    /// that began short of memory, that it did, with what it began with; for
+    /// any other, what the app's memory grew by since the run began (at least
+    /// 1 MB), other conversions of the import counted with it. Any other stop
+    /// the task's cancellation did not ask for (TMFF_EXIT_STOPPED) was a time
+    /// limit's: the run's whole time when it is spent, else the call's, the
+    /// stall.
     private func end(with status: Int32, memoryLeft: Int? = nil) {
         self.status = status
         if let memoryLeft {
-            let grew = max((memoryAtStart ?? memoryLeft) - memoryLeft, 1_048_576)
-            stopped = .usedTooMuchMemory(bytes: Int64(grew))
+            let leftAtStart = memory.leftAtStart ?? memoryLeft
+            stopped = memory.beganShort
+                ? .beganShortOfMemory(freeBytes: Int64(leftAtStart))
+                : .memoryGrew(bytes: Int64(max(leftAtStart - memoryLeft, 1_048_576)))
             return
         }
         guard status == TMFF_EXIT_STOPPED, !Task.isCancelled else { return }

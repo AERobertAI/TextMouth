@@ -113,6 +113,24 @@ enum FFmpegImportWording {
         "TextMouth can't convert “\(fileName)”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."
     }
 
+    /// Why the iPhone stopped a conversion because the app's memory grew
+    /// past what it keeps free (the FMT54 review's finding 4), by more than
+    /// `megabytes` MB since the conversion began, other conversions of the
+    /// import counted with it: the end of "Converting tones.wma was stopped
+    /// because the app's memory grew by more than 1700 MB while it ran."
+    static func memoryGrew(megabytes: Int64) -> String {
+        "the app's memory grew by more than \(megabytes) MB while it ran"
+    }
+
+    /// Why the iPhone stopped a conversion it began with less than 1 GB of
+    /// memory free, `freeMegabytes` MB, half of which it keeps free (the
+    /// check of the FMT54 review's fixes, item 2): the end of "Converting
+    /// tones.wma was stopped because the iPhone had only 400 MB of memory free
+    /// when it began, and TextMouth keeps half of that free."
+    static func beganShortOfMemory(freeMegabytes: Int64) -> String {
+        "the iPhone had only \(freeMegabytes) MB of memory free when it began, and TextMouth keeps half of that free"
+    }
+
     /// Why a file was not imported one frame of whose sound holds more
     /// samples than TextMouth decodes at once (16,777,216 over its channels,
     /// almost three minutes of 48 kHz stereo in one piece), where a good file

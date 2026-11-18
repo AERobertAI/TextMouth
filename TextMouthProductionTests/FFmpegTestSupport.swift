@@ -335,16 +335,17 @@ extension XCTestCase {
 // MARK: - Files Made by the Tests
 
 extension XCTestCase {
-    /// An FLV file of one audio tag of `samples` samples of 8-bit mono PCM at
-    /// 44,100 Hz, all silence, written as `name` to a sandbox folder of the
-    /// test's own (FMT54 review, finding 2): a file as long, or a frame as
-    /// large, as a test needs, which FFmpeg's FLV demuxer and PCM decoder
+    /// An FLV file of one audio tag of `samples` samples of mono sound, all
+    /// silence, written as `name` to a sandbox folder of the test's own (FMT54
+    /// review, finding 2): 8-bit PCM at 44,100 Hz, or, `aLaw`, G.711 A-law at
+    /// 8,000 Hz, which decodes to twice its bytes. A file as long, or a frame
+    /// as large, as a test needs, which FFmpeg's FLV demuxer and PCM decoders
     /// read. The layout is Adobe's (FLV version 1): the 9-byte header, then
     /// each tag after the size of the one before it, and an audio tag's data
     /// its sound's format byte followed by its samples, so one tag is one
     /// packet and one decoded frame. A tag holds at most 16,777,214 samples.
     /// - Throws: `FFmpegTestError.tagTooLong` for more, or for none.
-    func flvOfOnePCMTag(samples: Int, named name: String) throws -> URL {
+    func flvOfOnePCMTag(samples: Int, aLaw: Bool = false, named name: String) throws -> URL {
         guard samples > 0, samples < (1 << 24) - 1 else { throw FFmpegTestError.tagTooLong(samples) }
         /// `value` as `count` big-endian bytes.
         func bigEndian(_ value: Int, bytes count: Int) -> [UInt8] {
@@ -354,8 +355,9 @@ extension XCTestCase {
         var bytes: [UInt8] = Array("FLV".utf8) + [0x01, 0x04] + bigEndian(9, bytes: 4)  // version 1, audio only
         bytes += bigEndian(0, bytes: 4)  // the size of the tag before the first: none
         bytes += [0x08] + bigEndian(dataSize, bytes: 3) + bigEndian(0, bytes: 4) + bigEndian(0, bytes: 3)  // audio, time 0, stream 0
-        bytes.append(0x3C)  // linear PCM, little-endian (3), 44 kHz (3), 8 bits (0), mono (0)
-        bytes += [UInt8](repeating: 128, count: samples)
+        // Linear PCM, little-endian (3), 44 kHz (3), 8 bits (0), mono (0); or G.711 A-law (7), 16 bits decoded (1).
+        bytes.append(aLaw ? 0x72 : 0x3C)
+        bytes += [UInt8](repeating: aLaw ? 0xD5 : 128, count: samples)
         bytes += bigEndian(11 + dataSize, bytes: 4)
         let file = try makeSandboxDirectory("FFmpegFLV").appendingPathComponent(name)
         try Data(bytes).write(to: file)

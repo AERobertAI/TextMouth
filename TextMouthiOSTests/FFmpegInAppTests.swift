@@ -291,15 +291,52 @@ final class FFmpegInAppTests: XCTestCase {
 
     // MARK: - The Memory Floor
 
+    /// A megabyte, in bytes.
+    private static let megabyte = 1_048_576
+
+    /// A decode of the sample `sample` in the app, on the test's engine, with
+    /// the app's memory as `available` says it, by a floor of 512 MB: how it
+    /// ended, and how many records it gave.
+    private func decode(
+        _ sample: URL,
+        demuxer: String,
+        memory available: @escaping @Sendable () -> Int
+    ) async throws -> (ending: WatchedProcess.Ending, read: Result<Int, any Error>, limits: WatchedProcess.Limits) {
+        var tool = ffmpegTool(helper: try bundledFFmpegHelper())
+        tool.engine = engine
+        tool.memoryFloor = SessionMemoryFloor(bytes: 512 * Self.megabyte, available: available)
+        let limits = WatchedProcess.Limits(maximumSeconds: 60, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 60)
+        let (ending, read) = try await FFmpegAudioConverter.runInProcess(
+            .decode, of: sample, demuxer: demuxer, limits: limits, using: tool
+        ) { nextPiece -> Int in
+            var count = 0
+            while try await !nextPiece().isEmpty { count += 1 }
+            return count
+        }
+        return (ending, read, limits)
+    }
+
+    /// The memory a scripted system says the app has left: `atStart` as the
+    /// run begins, its first reading, and `after` from then on.
+    private static func memory(atStart: Int, after: Int) -> @Sendable () -> Int {
+        let readings = OSAllocatedUnfairLock(initialState: 0)
+        return {
+            readings.withLock { count -> Int in
+                count += 1
+                return count == 1 ? atStart : after
+            }
+        }
+    }
+
     /// A floor under the app's free memory (the FMT54 review, finding 4) is
     /// crossed only when the system says how much is left and it is less than
-    /// the floor: the simulator sets the app no limit (0 left), which never
-    /// stops a session. The app's floor is 512 MB, read from the system.
+    /// the run's floor: the simulator sets the app no limit (0 left), which
+    /// never stops a session. The app's floor is 512 MB, read from the system.
     func testTheMemoryFloorIsCrossedOnlyBelowItWithALimit() throws {
-        let megabyte = 1_048_576
+        let megabyte = Self.megabyte
         for (left, crossed) in [(0, false), (100 * megabyte, true), (511 * megabyte, true), (512 * megabyte, false), (2_000 * megabyte, false)] {
-            let floor = SessionMemoryFloor(bytes: 512 * megabyte, available: { left })
-            let check = SessionStopCheck(call: try finishedCall(), floor: floor)
+            let memory = SessionMemoryFloor(bytes: 512 * megabyte, available: { left }).run(beganWith: 4_000 * megabyte)
+            let check = SessionStopCheck(call: try finishedCall(), memory: memory)
             XCTAssertEqual(check.shouldStop, crossed, "\(left / megabyte) MB left")
             XCTAssertEqual(check.memoryLeftWhenStopped, crossed ? left : nil)
         }
@@ -307,38 +344,80 @@ final class FFmpegInAppTests: XCTestCase {
         XCTAssertEqual(FFmpegAudioConverter.Tool.bundled.memoryFloor.bytes, 512 * megabyte)
     }
 
-    /// A session that leaves the app less memory than the floor is stopped,
-    /// asked as it reads the file, and the run ends as the Mac's watchdog
-    /// ends a helper that holds too much, in the Mac's words, naming what the
-    /// app's memory grew by since the run began: by a scripted system that
-    /// has 1,000 MB left as the run begins and 300 MB from the session's first
-    /// ask on, "Converting tones.wma was stopped because it held more than 700
-    /// MB of memory."
-    func testASessionThatLeavesTooLittleMemoryIsStoppedInTheMacsWords() async throws {
-        let megabyte = 1_048_576
-        let asks = OSAllocatedUnfairLock(initialState: 0)
-        var tool = ffmpegTool(helper: try bundledFFmpegHelper())
-        tool.engine = engine
-        tool.memoryFloor = SessionMemoryFloor(bytes: 512 * megabyte, available: {
-            asks.withLock { count -> Int in
-                count += 1
-                return count == 1 ? 1_000 * megabyte : 300 * megabyte
-            }
-        })
-        let limits = WatchedProcess.Limits(maximumSeconds: 60, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 60)
-        let (ending, read) = try await FFmpegAudioConverter.runInProcess(
-            .decode, of: try formatSampleURL("wma/tones-wma1.wma"), demuxer: "asf", limits: limits, using: tool
-        ) { nextPiece -> Int in
-            var count = 0
-            while try await !nextPiece().isEmpty { count += 1 }
-            return count
+    /// A run keeps 512 MB free, or half of what the app had left as it began
+    /// when that is less, and holds FFmpeg to allocations of half its floor,
+    /// never more than 256 MB (the check of the FMT54 review's fixes, item
+    /// 2): so a phone that begins short of memory still converts an ordinary
+    /// file, and no allocation between two asks crosses from above the floor
+    /// to the app's limit. A run with no limit known keeps the app's.
+    func testARunKeepsHalfOfWhatItBeganWithWhenThatIsLess() {
+        let megabyte = Self.megabyte
+        let floor = SessionMemoryFloor(bytes: 512 * megabyte, available: { 0 })
+        let plans = [nil, 4_000, 1_024, 600, 100].map { (megabytes: Int?) -> [Int] in
+            let run = floor.run(beganWith: megabytes.map { $0 * megabyte })
+            return [run.floor / megabyte, run.allocationCap / megabyte, run.beganShort ? 1 : 0]
         }
-        XCTAssertEqual(ending, WatchedProcess.Ending(outcome: .killed(.usedTooMuchMemory(bytes: Int64(700 * megabyte)))))
+        XCTAssertEqual(plans, [[512, 256, 0], [512, 256, 0], [512, 256, 0], [300, 150, 1], [50, 25, 1]])
+    }
+
+    /// A session that leaves the app less memory than its run's floor is
+    /// stopped, asked as it reads the file, and the run says what the app's
+    /// memory grew by since it began, the import's other conversions counted
+    /// with it: by a scripted system that has 2,000 MB left as the run begins
+    /// and 300 MB from the session's first ask on, "Converting tones.wma was
+    /// stopped because the app's memory grew by more than 1700 MB while it
+    /// ran."
+    func testASessionThatLeavesTooLittleMemorySaysWhatTheAppsMemoryGrewBy() async throws {
+        let megabyte = Self.megabyte
+        let (ending, read, limits) = try await decode(
+            try formatSampleURL("wma/tones-wma1.wma"), demuxer: "asf",
+            memory: Self.memory(atStart: 2_000 * megabyte, after: 300 * megabyte)
+        )
+        XCTAssertEqual(ending, WatchedProcess.Ending(outcome: .killed(.memoryGrew(bytes: Int64(1_700 * megabyte)))))
         XCTAssertEqual(try read.get(), 0, "the session gave a record past the floor")
         let failure = FFmpegAudioConverter.failure(
             of: ending, read: read, fileName: "tones.wma", kind: "WMA", limits: limits, logTag: "AUDIO_CONVERSION_KILLED"
         )
-        XCTAssertEqual(failure?.localizedDescription, "Converting tones.wma was stopped because it held more than 700 MB of memory.")
+        XCTAssertEqual(failure?.localizedDescription, "Converting tones.wma was stopped because the app's memory grew by more than 1700 MB while it ran.")
+    }
+
+    /// A phone that begins a conversion short of memory, 400 MB free, keeps
+    /// half of it (the check of the FMT54 review's fixes, item 2): with 300 MB
+    /// left all along the file converts, where the app's floor of 512 MB
+    /// would have stopped it at the first ask; with 150 MB left it is stopped,
+    /// in its own words: "Converting tones.wma was stopped because the iPhone
+    /// had only 400 MB of memory free when it began, and TextMouth keeps half
+    /// of that free."
+    func testARunThatBeginsShortOfMemoryKeepsHalfOfIt() async throws {
+        let megabyte = Self.megabyte
+        let wma = try formatSampleURL("wma/tones-wma1.wma")
+        let converted = try await decode(wma, demuxer: "asf", memory: Self.memory(atStart: 400 * megabyte, after: 300 * megabyte))
+        XCTAssertEqual(converted.ending, WatchedProcess.Ending(outcome: .exited(status: TMFF_EXIT_DONE)))
+        XCTAssertGreaterThan(try converted.read.get(), 0)
+        let (ending, read, limits) = try await decode(wma, demuxer: "asf", memory: Self.memory(atStart: 400 * megabyte, after: 150 * megabyte))
+        XCTAssertEqual(ending, WatchedProcess.Ending(outcome: .killed(.beganShortOfMemory(freeBytes: Int64(400 * megabyte)))))
+        let failure = FFmpegAudioConverter.failure(
+            of: ending, read: read, fileName: "tones.wma", kind: "WMA", limits: limits, logTag: "AUDIO_CONVERSION_KILLED"
+        )
+        XCTAssertEqual(
+            failure?.localizedDescription,
+            "Converting tones.wma was stopped because the iPhone had only 400 MB of memory free when it began, "
+                + "and TextMouth keeps half of that free."
+        )
+    }
+
+    /// A run that began short of memory holds FFmpeg to allocations of half
+    /// its floor: begun with 40 MB free (a floor of 20 MB), FFmpeg may take
+    /// only 10 MB at once, so a file whose one packet of 6 MB of A-law decodes
+    /// to a frame of 12 MB stops with the session's status for an allocation
+    /// refused (9), where a roomy run decodes it whole.
+    func testARunThatBeganShortHoldsFFmpegToSmallerAllocations() async throws {
+        let megabyte = Self.megabyte
+        let file = try flvOfOnePCMTag(samples: 6_000_000, aLaw: true, named: "twelve-megabytes-decoded.flv")
+        let short = try await decode(file, demuxer: "flv", memory: { 40 * megabyte })
+        XCTAssertEqual(short.ending, WatchedProcess.Ending(outcome: .exited(status: TMFF_EXIT_MEMORY)))
+        let roomy = try await decode(file, demuxer: "flv", memory: { 4_000 * megabyte })
+        XCTAssertEqual(roomy.ending, WatchedProcess.Ending(outcome: .exited(status: TMFF_EXIT_DONE)))
     }
 
     // MARK: - The Run's Time
