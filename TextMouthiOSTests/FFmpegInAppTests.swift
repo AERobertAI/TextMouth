@@ -230,6 +230,50 @@ final class FFmpegInAppTests: XCTestCase {
         }
     }
 
+    /// A call abandoned past its time is told by the limit that cut it (the
+    /// FMT54 review, finding 5): by a scripted clock, two records spend 20 of
+    /// a run's 20.5 seconds, and the third call, allowed what is left, half a
+    /// second, hangs: its sentence names the run's time, rounded up to 21
+    /// seconds, not the half second that cut it. A call that hangs with the
+    /// run's time to spare is told by the stall, the most one call may take.
+    func testAnAbandonedCallIsToldByTheLimitThatCutIt() async throws {
+        /// How a decode of a session that hangs at its `stuckAt`th record, each
+        /// record before it spending `step` seconds of the run's clock, ends
+        /// under `limits`, on an engine of its own with a grace of 0.3 seconds.
+        func abandonment(limits: WatchedProcess.Limits, step: TimeInterval, stuckAt: Int) async throws -> InProcessEngine.Failure? {
+            let clock = OSAllocatedUnfairLock<TimeInterval>(initialState: 1_000)
+            let session = ClockThenStuckSession(clock: clock, step: step, stuckAt: stuckAt, gate: makeGate())
+            var tool = ffmpegTool(helper: try bundledFFmpegHelper())
+            tool.engine = InProcessEngine(name: "test-FFmpeg-cut", work: "the audio conversion", grace: 0.3)
+            tool.clock = RunningClock(countingWhole: { clock.withLock { $0 } })
+            tool.openSession = { _, _, _, _ in (session: session, status: TMFF_EXIT_DONE) }
+            let (_, read) = try await FFmpegAudioConverter.runInProcess(
+                .decode, of: try formatSampleURL("wma/tones-wma1.wma"), demuxer: "asf", limits: limits, using: tool
+            ) { nextPiece -> Int in
+                var count = 0
+                while try await !nextPiece().isEmpty { count += 1 }
+                return count
+            }
+            guard case let .failure(error) = read else { return nil }
+            return error as? InProcessEngine.Failure
+        }
+        let cut = try await abandonment(
+            limits: WatchedProcess.Limits(maximumSeconds: 20.5, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 60),
+            step: 10, stuckAt: 3
+        )
+        XCTAssertEqual(cut, .abandoned(work: "the audio conversion", limit: 20.5))
+        XCTAssertEqual(
+            cut?.errorDescription,
+            "TextMouth stopped the audio conversion because it ran longer than 21 seconds, "
+                + "and won't try again until TextMouth is closed and opened again."
+        )
+        let stalled = try await abandonment(
+            limits: WatchedProcess.Limits(maximumSeconds: 120, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 0.4),
+            step: 0, stuckAt: 1
+        )
+        XCTAssertEqual(stalled, .abandoned(work: "the audio conversion", limit: 0.4))
+    }
+
     /// Through the import's own path the listener hears the engine's sentence
     /// after the import's own words, and nothing is added to the library.
     func testAnImportWhoseDecodeIsStuckSaysTheEnginesSentence() throws {
@@ -438,6 +482,40 @@ private final class SuspendingSession: InProcessFFmpegSession {
         }
         if number == suspendedAfter { uptime.withLock { $0 += 300 } }
         return number <= records ? (TMFF_EXIT_DONE, FFmpegTestStream.head()) : (TMFF_EXIT_DONE, [])
+    }
+
+    func close() {}
+}
+
+/// A stand-in session whose records before its `stuckAt`th each move a
+/// scripted clock on by `step` seconds, and which then never gives one, nor
+/// asks its check, as FFmpeg stuck inside a decoder: it waits on `gate`, which
+/// the test opens when it ends.
+private final class ClockThenStuckSession: InProcessFFmpegSession {
+    let clock: OSAllocatedUnfairLock<TimeInterval>
+    let step: TimeInterval
+    let stuckAt: Int
+    let gate: DispatchSemaphore
+    private let given = OSAllocatedUnfairLock(initialState: 0)
+
+    init(clock: OSAllocatedUnfairLock<TimeInterval>, step: TimeInterval, stuckAt: Int, gate: DispatchSemaphore) {
+        self.clock = clock
+        self.step = step
+        self.stuckAt = stuckAt
+        self.gate = gate
+    }
+
+    func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8]) {
+        let number = given.withLock { count -> Int in
+            count += 1
+            return count
+        }
+        guard number < stuckAt else {
+            _ = gate.wait(timeout: .now() + 30)
+            return (TMFF_EXIT_DONE, [])
+        }
+        clock.withLock { $0 += step }
+        return (TMFF_EXIT_DONE, FFmpegTestStream.head())
     }
 
     func close() {}

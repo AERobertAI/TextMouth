@@ -338,7 +338,7 @@ private actor InProcessFFmpegRun {
         if !openAsked {
             openAsked = true
             let (file, demuxer, mode, open, floor) = (file, demuxer, mode, tool.openSession, tool.memoryFloor)
-            let opening = try await tool.engine.runForTask(limit: callLimit) { call in
+            let opening = try await engineCall(within: callLimit) { call in
                 let check = SessionStopCheck(call: call, floor: floor)
                 let (session, status) = open(file, demuxer, mode, check)
                 return (session: session, status: status, memoryLeft: check.memoryLeftWhenStopped)
@@ -355,11 +355,11 @@ private actor InProcessFFmpegRun {
         return try await record(from: session, within: callLimit)
     }
 
-    /// The next record of `session`, in a call of `limit` seconds; nothing
-    /// once the stream has ended.
-    private func record(from session: any InProcessFFmpegSession, within limit: TimeInterval) async throws -> [UInt8] {
+    /// The next record of `session`, in a call within `limit`; nothing once
+    /// the stream has ended.
+    private func record(from session: any InProcessFFmpegSession, within limit: CallLimit) async throws -> [UInt8] {
         let floor = tool.memoryFloor
-        let (status, record, memoryLeft) = try await tool.engine.runForTask(limit: limit) { call in
+        let (status, record, memoryLeft) = try await engineCall(within: limit) { call in
             let check = SessionStopCheck(call: call, floor: floor)
             let (status, record) = session.next(asking: check)
             return (status, record, check.memoryLeftWhenStopped)
@@ -373,16 +373,45 @@ private actor InProcessFFmpegRun {
         return record
     }
 
-    /// How long the next call may take: the stall limit, and no more than
-    /// the run has left; nil, with the run stopped as the watchdog stops a
-    /// helper that ran too long, once the run's time is spent.
-    private func timeForTheNextCall() -> TimeInterval? {
+    /// How long one call may take, and the limit a call abandoned past it is
+    /// told by (the FMT54 review, finding 5).
+    private struct CallLimit {
+        /// The call's own time, in seconds: the stall limit, and no more than
+        /// the run has left.
+        let seconds: TimeInterval
+        /// What an abandoned call's sentence names: the stall limit, or the
+        /// run's whole time when what was left of it cut the call, so a long
+        /// conversion stuck in its last call never ran "longer than 3
+        /// seconds".
+        let named: TimeInterval
+    }
+
+    /// How long the next call may take (`CallLimit`); nil, with the run
+    /// stopped as the watchdog stops a helper that ran too long, once the
+    /// run's time is spent.
+    private func timeForTheNextCall() -> CallLimit? {
         let elapsed = tool.clock.now() - started
         guard elapsed < limits.maximumSeconds else {
             stopped = .tookTooLong(seconds: limits.maximumSeconds)
             return nil
         }
-        return min(limits.maximumSeconds - elapsed, limits.maximumStalledSeconds)
+        let left = limits.maximumSeconds - elapsed
+        return left < limits.maximumStalledSeconds
+            ? CallLimit(seconds: left, named: limits.maximumSeconds)
+            : CallLimit(seconds: limits.maximumStalledSeconds, named: limits.maximumStalledSeconds)
+    }
+
+    /// Runs `body` on the tool's engine within `limit`; a call abandoned past
+    /// it fails with the engine's sentence, naming `limit.named`.
+    private func engineCall<Value: Sendable>(
+        within limit: CallLimit,
+        _ body: @escaping @Sendable (InProcessEngine.Call) -> Value
+    ) async throws -> Value {
+        do {
+            return try await tool.engine.runForTask(limit: limit.seconds, body)
+        } catch InProcessEngine.Failure.abandoned(let work, _) {
+            throw InProcessEngine.Failure.abandoned(work: work, limit: limit.named)
+        }
     }
 
     /// Ends the stream with `status`. A stop the memory floor asked for, the
