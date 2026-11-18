@@ -344,7 +344,8 @@ class Lexer:
         for frame in reversed(stack):
             if frame["ch"] == "(":
                 # The call is the innermost parenthesis that follows a name: a bare
-                # parenthesis, as in `a + (b ? "x" : "y")`, belongs to the call around it.
+                # parenthesis, as in `a + (b ? "x" : "y")`, belongs to the call around it, and
+                # its colon (the ternary's) is no argument label.
                 if call is None and frame["name"] is not None:
                     call, receiver, label, arg_index = frame["name"], frame["receiver"], frame["label"], frame["arg"]
                 calls.append(frame["name"])

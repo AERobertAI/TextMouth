@@ -88,6 +88,10 @@ _WORDING_NAME = re.compile(r"Wording|Vocabulary")
 _INTERFACE_TYPE_NAME = re.compile(r"Wording|Vocabulary|Settings|View|Section|Sheet|Finder")
 # An event tag at the start of a diagnostic line built outside a logging call: DATA_DIRECTORY_FOUND: ...
 _LOG_TAG = re.compile(r"[A-Z][A-Z0-9]*_[A-Z0-9_]+(?::? )")
+# A capitalized phrase of two or more words, such as "Skip URLs" or "Jumped to %.1f percent."
+_PHRASE = re.compile(r"[A-Z][a-z]+(?: [A-Za-z'’-]+)+")
+# One lowercase word, or words joined by hyphens, with its placeholders already removed.
+_LOWERCASE_WORDS = re.compile(r"[a-z]+(?:-[a-z]+)*")
 # A date format such as yyyy-MM-dd HH:mm, which has a doubled format letter and no real word.
 _DATE_FORMAT = re.compile(r"(?=.*(?:yy|MM|dd|HH|hh|mm|ss))[yMdHhmsSEaZzGQwWDFu.:/ ,'\-]+")
 
@@ -119,7 +123,7 @@ KEY_CALLS: Dict[str, KeySpec] = {
 
 # The marker that leaves a literal out of the lint: `// l10n: no`, alone or with a reason
 # in parentheses or after a colon or a dash, at the end of the line.
-MARKER = re.compile(r"//\s*l10n:\s*no\b(?:\s*[(:\u2014\u2013-].*)?\s*$")
+MARKER = re.compile(r"//\s*l10n:\s*no(?:\s*[(:\u2014\u2013-].*)?\s*$")
 # A count compared with one before a ?, the start of a hand-built plural.
 _PLURAL_TERNARY = re.compile(r"(?:[=!]=|>)\s*1\s*\?|>=\s*2\s*\?|<=\s*1\s*\?|<\s*2\s*\?")
 _PLURAL_LABELS = frozenset({"singular", "plural"})
@@ -144,9 +148,8 @@ class Localizer:
         spec = KEY_CALLS.get(lit.call)
         if spec is not None:
             labels, positional, whole = spec
-            if lit.label in labels:
-                return not whole or lit.whole_arg
-            if positional and lit.label is None and lit.arg_index == 0:
+            # A labelled key, or the first argument when it takes one unlabelled.
+            if lit.label in labels or (positional and lit.label is None and lit.arg_index == 0):
                 return not whole or lit.whole_arg
         for label, index in self.resource_params.get(lit.call, ()):
             if (label is None and lit.label is None and lit.arg_index == index) or \
@@ -199,7 +202,9 @@ def classify(lit: Literal, wording_file: bool, localizer: Localizer) -> Tuple[st
         return "code", "raw-value"
     if lit.label == "comment":
         return "comment", "comment-label"
-    if lit.label in CODE_LABELS:
+    # A label that usually names a key can hold a title, as in SubstitutionRule(name: "Skip URLs"):
+    # a capitalized phrase is text, and goes on through the rules below.
+    if lit.label in CODE_LABELS and not _PHRASE.match(text):
         return "code", "code-label"
     if lit.call in CODE_CALLS:
         return "code", "code-call"
@@ -216,6 +221,10 @@ def classify(lit: Literal, wording_file: bool, localizer: Localizer) -> Tuple[st
         not stripped[:1].isupper() or "." in stripped or "_" in stripped or re.search(r"[a-z][A-Z]", stripped)
         or (stripped.isupper() and len(stripped) > 1) or len(stripped) == 1)
     if identifier_like:
+        # In a wording type a lowercase word or two is a piece of a sentence ("it", "seconds",
+        # "%@ and %@"), which the conversion must rebuild as whole sentences; elsewhere it is a key.
+        if _LOWERCASE_WORDS.fullmatch(stripped) and in_wording_type(lit, wording_file):
+            return "wording", "wording-fragment"
         return "token", "identifier"
     if _LOG_TAG.match(text):
         return "log", "log-tag"

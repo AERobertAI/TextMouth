@@ -52,6 +52,28 @@ class CountedBucketTests(ScanCase):
         code = 'var displayName: String {\n    switch self {\n    case .play: return "Play"\n    }\n}'
         self.assertClass(code, "word", "capitalized-word", "unlocalized")
 
+    def test_wording_a_title_in_a_label_that_usually_names_a_key(self) -> None:
+        # Services/TextSubstitutionService.swift:963: name: is a code label, but "Skip URLs"
+        # is the rule's title in Settings.
+        code = 'SubstitutionRule(name: "Skip URLs", pattern: "https?://\\\\S+", replacement: "link", isRegex: true)'
+        found = scan_snippet(code)
+        self.assertEqual([(l.text, l.bucket, l.rule) for l in found], [
+            ("Skip URLs", "prose", "sentence"), ("https?://\\S+", "code", "code-label"), ("link", "token", "identifier")])
+
+    def test_wording_a_fragment_of_a_sentence_in_a_wording_type(self) -> None:
+        # Models/AudioEditWording.swift:28 and App/QuitFinisher.swift:32: words a sentence is built from.
+        code = ('enum AudioEditWording {\n    static func seconds(_ rest: Double) -> String {\n'
+                '        "\\(number(rest)) \\(rest == 1 ? "second" : "seconds")"\n    }\n'
+                '    static func pair(_ a: String, _ b: String) -> String { "\\(a) and \\(b)" }\n}')
+        found = scan_snippet(code, path=WORDING)
+        self.assertEqual([(l.text, l.bucket, l.rule) for l in found], [
+            ("%@ %@", "code", "no-letters"), ("second", "wording", "wording-fragment"),
+            ("seconds", "wording", "wording-fragment"), ("%@ and %@", "wording", "wording-fragment")])
+
+    def test_a_lowercase_word_outside_a_wording_type_stays_a_token(self) -> None:
+        # The same words in a service are keys, as in Parsers/WordMLStyles.swift:26.
+        self.assertClass('case "second": unit = .second', "token", "identifier")
+
     def test_plural_nouns_of_a_hand_built_plural_are_words(self) -> None:
         # Models/CountWording.swift:34 (phrase's callers), e.g. books(_:).
         found = scan_snippet('static func books(_ count: Int) -> String {\n    phrase(count, singular: "book", plural: "books")\n}')
@@ -165,6 +187,9 @@ class LocalizedStatusTests(ScanCase):
     def test_labeled_localized_arguments(self) -> None:
         self.assertEqual(only_status('.searchable(text: $q, prompt: "Search books")'), "localized")
         self.assertEqual(only_status('.accessibilityAction(named: "Delete") { }'), "localized")
+        # The same label with a ternary shows both strings as they are.
+        found = scan_snippet('.searchable(text: $q, prompt: wide ? "Search all books" : "Search")')
+        self.assertEqual([l.status for l in found], ["unlocalized", "unlocalized"])
 
     def test_string_localized_is_localized_and_its_comment_is_not_counted(self) -> None:
         # Synthetic.
@@ -189,6 +214,16 @@ class LocalizedStatusTests(ScanCase):
     def test_a_literal_in_an_interpolation_is_never_the_key(self) -> None:
         found = scan_snippet('Text("Now \\(paused ? "paused" : "playing")")')
         self.assertEqual([(l.text, l.status) for l in found], [("Now %@", "localized"), ("paused", ""), ("playing", "")])
+        # A literal inside the key's interpolation is not the key even where its call takes a
+        # bare literal: the call here is String(localized:), and "Item %@" is only a piece of it.
+        found = scan_snippet('String(localized: "Items: \\(items.map { "Item \\($0)" }.count)")')
+        self.assertEqual([(l.text, l.status) for l in found], [("Items: %@", "localized"), ("Item %@", "unlocalized")])
+
+    def test_a_bare_parenthesis_around_a_ternary_is_not_a_labelled_argument(self) -> None:
+        # Synthetic. The colon of a ternary after an identifier is no argument label (`name`
+        # is a code label): the literal after it is still a sentence.
+        found = scan_snippet('let t = (ready ? name : "Not ready to read yet")')
+        self.assertEqual([(l.bucket, l.rule) for l in found], [("prose", "sentence")])
 
     def test_a_parameter_typed_localized_string_resource_makes_its_arguments_localized(self) -> None:
         # Synthetic: a helper whose parameter is a LocalizedStringResource.

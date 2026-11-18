@@ -95,7 +95,8 @@ def lowered_baseline(baseline: Mapping[str, int], counts: Mapping[str, int],
     for old, new in renames:
         if old in moved and new not in moved:
             moved[new] = moved.pop(old)
-    return {file: min(n, counts.get(file, 0)) for file, n in moved.items() if min(n, counts.get(file, 0)) > 0}
+    lowered = {file: min(n, counts.get(file, 0)) for file, n in moved.items()}
+    return {file: n for file, n in lowered.items() if n > 0}
 
 
 def describe_changes(before: Mapping[str, int], after: Mapping[str, int]) -> List[str]:

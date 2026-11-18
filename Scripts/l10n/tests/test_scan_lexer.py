@@ -129,6 +129,11 @@ class ContextTests(unittest.TestCase):
         found = lex('Text(a + (flag ? "x" : "y"))')
         self.assertEqual([l.call for l in found], ["Text", "Text"])
 
+    def test_a_ternary_colon_in_a_bare_parenthesis_is_no_argument_label(self) -> None:
+        # With no call around it, a literal has no call and no label, whatever precedes the colon.
+        found = lex('let t = (ready ? name : "Not ready yet")')
+        self.assertEqual((found[0].call, found[0].label), (None, None))
+
     def test_a_generic_call_keeps_its_name(self) -> None:
         self.assertEqual(lex('let a = Array<String>(arrayLiteral: "x")')[0].call, "Array")
 
@@ -147,9 +152,9 @@ class ContextTests(unittest.TestCase):
         self.assertEqual([l.line for l in found], [3, 5])
 
     def test_a_whole_argument_is_not_part_of_an_expression(self) -> None:
-        found = lex('Text("a")\nText(flag ? "b" : "c")\nText("d" + name)\nText(verbatim: "e")')
-        self.assertEqual(texts_of(found), ["a", "b", "c", "d", "e"])
-        self.assertEqual([l.whole_arg for l in found], [True, False, False, False, True])
+        found = lex('Text("a")\nText(flag ? "b" : "c")\nText("d" + name)\nText(verbatim: "e")\nText(name + "f")\nf(x, "g", y)')
+        self.assertEqual(texts_of(found), ["a", "b", "c", "d", "e", "f", "g"])
+        self.assertEqual([l.whole_arg for l in found], [True, False, False, False, True, False, True])
 
 
 class StaticLetTests(unittest.TestCase):

@@ -103,7 +103,7 @@ class ShowTests(TreeCase):
             '    static let title = "Counted things"\n'            # line 2: unlocalized, static let
             '    static var done: String { "All done here" }\n'    # line 3: unlocalized
             '    static let key = "snippet.key"\n'                 # line 4: a token, not listed
-            '    static func few(_ n: Int) -> String { "Found \\(n) " + (n == 1 ? "thing" : "things") }\n'  # line 5
+            '    static func few(_ n: Int) -> String { "Found \\(n) " + (n == 1 ? one : many) }\n'  # line 5
             '    static let skip = "Left alone on purpose" // l10n: no\n'  # line 6: marked
             '}\n'))
 
