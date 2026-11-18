@@ -59,6 +59,7 @@ FILES = {
     "project.yml": PROJECT_YML,
     "TextMouth/App.swift": "// app\n",
     "TextMouth/Resources/R.txt": "resource\n",
+    "TextMouth/Localization/Localizable.xcstrings": "{}",
     "Vendor/lame/include/lame.h": "// h\n",
     "TextMouthBraille/include/b.h": "// h\n",
     "TextMouthFFmpeg/include/f.h": "// h\n",
@@ -250,6 +251,50 @@ class PackageTests(TypecheckTestsCase):
                 typecheck.write_package(self.src, self.folder / "pkgs", platform, "26.0", kind)
             self.assertNotIn(typecheck.IOS_UI_TEST_TARGET, (self.src / "Package.swift").read_text(), (kind, platform))
 
+    def test_the_string_catalog_is_not_an_unhandled_resource_of_either_platforms_app(self):
+        # The catalog is a resource of the Xcode apps; SwiftPM warns about every file of a target it does not handle, and a
+        # warning about it is a failure of the type-check, so both platforms' app targets leave its folder out.
+        for platform in ("macos", "ios"):
+            typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests=False)
+            with mock.patch.object(typecheck, "run", lambda *a, **k: SimpleNamespace(stdout="/platform\n")):
+                typecheck.write_package(self.src, self.folder / "pkgs", platform, "26.0", False)
+            block = (self.src / "Package.swift").read_text().split('path: "TextMouth",')[1].split("swiftSettings")[0]
+            self.assertIn('"Localization"', block, platform)
+
+    def package_with_strings(self, platform="macos", tests=False):
+        """The Package.swift written with the string extraction on, as text; the strings folder is `self.strings`."""
+        self.strings = self.folder / "strings-here"
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests=tests)
+        with mock.patch.object(typecheck, "run", lambda *a, **k: SimpleNamespace(stdout="/platform\n")):
+            typecheck.write_package(self.src, self.folder / "pkgs", platform, "26.0", tests, strings_folder=self.strings)
+        return (self.src / "Package.swift").read_text()
+
+    def test_the_extraction_flags_reach_the_apps_target_and_only_it(self):
+        for platform in ("macos", "ios"):
+            text = self.package_with_strings(platform)
+            flags = f'"-emit-localized-strings", "-emit-localized-strings-path", "{self.strings}"'
+            self.assertEqual(text.count("-emit-localized-strings\""), 1, platform)
+            app = text.split('name: "TextMouth",')[1].split(".target(")[0]
+            self.assertIn(flags, app, platform)
+            # The dependencies the package builds (LAME, SwiftSoup, the C libraries) are not given the flags.
+            before = text.split('name: "TextMouth",')[0]
+            self.assertNotIn("emit-localized-strings", before, platform)
+
+    def test_the_extraction_leaves_out_debug_information(self):
+        """Two Mac runs of one tree, with -gnone and --disable-index-store and without, wrote 826 identical .stringsdata files,
+        and the build folder was 65 MB smaller."""
+        for platform in ("macos", "ios"):
+            app = self.package_with_strings(platform).split('name: "TextMouth",')[1].split(".target(")[0]
+            self.assertIn('"-gnone"', app, platform)
+
+    def test_the_tests_are_not_given_the_extraction_flags(self):
+        text = self.package_with_strings("macos", tests=True)
+        self.assertEqual(text.count("-emit-localized-strings\""), 1)
+        self.assertNotIn("emit-localized-strings", text.split(".testTarget(")[1])
+
+    def test_without_the_option_no_target_has_the_extraction_flags(self):
+        self.assertNotIn("emit-localized-strings", self.package(tests=False))
+
     def test_files_to_skip_are_left_out_of_the_target(self):
         typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="census")
         typecheck.write_package(self.src, self.folder / "pkgs", "macos", "26.0", "census", ["FirstTests.swift"])
@@ -390,6 +435,7 @@ class MainTests(TypecheckTestsCase):
         self.commands = []
         work, results = self.folder / "work-root", self.folder / "results"
         patches = [mock.patch.object(typecheck, "WORK_ROOT", work), mock.patch.object(typecheck, "RESULTS", results),
+                   mock.patch.object(typecheck, "STRINGS_ROOT", self.folder / "strings-root"),
                    mock.patch.object(typecheck, "checkout_root", lambda: self.repo),
                    mock.patch.object(typecheck, "prepare_packages", lambda *a, **k: None),
                    mock.patch.object(heavy_lock, "LOCK", self.folder / "heavy-lock"),
@@ -399,7 +445,7 @@ class MainTests(TypecheckTestsCase):
         for patch in patches:
             patch.start()
             self.addCleanup(patch.stop)
-        for path in (typecheck.WORK_ROOT, typecheck.RESULTS, heavy_lock.LOCK, heavy_lock.FIRST):
+        for path in (typecheck.WORK_ROOT, typecheck.RESULTS, typecheck.STRINGS_ROOT, heavy_lock.LOCK, heavy_lock.FIRST):
             self.assertTrue(str(path).startswith(str(self.folder)), path)
         # `swift build` itself, which main() runs with subprocess.run.
         self.real_run = subprocess.run
@@ -488,6 +534,138 @@ class MainTests(TypecheckTestsCase):
         out = next((typecheck.RESULTS).iterdir())
         self.assertEqual((out / "census.md").read_text(), "report\n")
         self.assertTrue(json.loads((out / "census.json").read_text())["ok"])
+
+    def run_strings(self, *arguments, files=("TextMouth/App.swift",), foreign=True, during_build=None):
+        """main() with --emit-strings, a `swift build` that writes a .stringsdata file for each of `files` (repository paths
+        of the app's sources) and, with `foreign`, one for a dependency, into the folder the package names, after calling
+        `during_build` (a function, to change the tree while the build runs); returns (the exit status, what main() printed,
+        the strings folder it used)."""
+        written = []
+
+        def build(command, **options):
+            """`swift build` writing the compiler's files; any other command runs for real."""
+            if command[0] != "swift":
+                return self.real_run(command, **options)
+            self.commands.append(command)
+            if during_build:
+                during_build()
+            folder = Path(re.search(r'"-emit-localized-strings-path", "([^"]+)"',
+                                    (Path(options["cwd"]) / "Package.swift").read_text()).group(1))
+            written.append(folder)
+            for name in files:
+                (folder / (Path(name).stem + ".stringsdata")).write_text(
+                    json.dumps({"source": str(Path(options["cwd"]) / name), "tables": {}, "version": 1}))
+            if foreign:
+                (folder / "Dependency.stringsdata").write_text(
+                    json.dumps({"source": "/elsewhere/Dependency.swift", "tables": {}, "version": 1}))
+            return SimpleNamespace(stdout="Build complete! (0.1s)\n", stderr="", returncode=0)
+        out = io.StringIO()
+        with mock.patch.object(typecheck.subprocess, "run", build), contextlib.redirect_stdout(out):
+            status = typecheck.main(["--agent", "t", "--platform", "macos", "--emit-strings", *arguments])
+        return status, out.getvalue(), written[0] if written else None
+
+    def test_the_strings_folder_is_new_for_each_run_and_named_by_platform_commit_and_stamp(self):
+        stamps = iter(["1118-100000", "1118-100001"])
+        fake_datetime = SimpleNamespace(datetime=SimpleNamespace(now=lambda: SimpleNamespace(strftime=lambda _format: next(stamps))))
+        with mock.patch.object(typecheck, "datetime", fake_datetime):
+            first = self.run_strings("--ref", self.commit)
+            second = self.run_strings("--ref", self.commit)
+        short = self.git("rev-parse", "--short", self.commit)
+        self.assertEqual(first[2], typecheck.STRINGS_ROOT / f"macos-{short}-1118-100000")
+        self.assertEqual(second[2], typecheck.STRINGS_ROOT / f"macos-{short}-1118-100001")
+        self.assertEqual(sorted(p.name for p in typecheck.STRINGS_ROOT.iterdir()), [first[2].name, second[2].name])
+
+    def test_the_manifest_lists_the_apps_files_only_and_the_run_names_its_folder_last(self):
+        status, printed, folder = self.run_strings("--ref", self.commit)
+        self.assertEqual(status, 0)
+        manifest = json.loads((folder / typecheck.STRINGS_MANIFEST).read_text())
+        self.assertEqual(manifest["files"], ["App.stringsdata"])
+        self.assertEqual(manifest["swiftFiles"], 1, "TextMouth/App.swift is the only Swift file of the app in the fake repository")
+        self.assertEqual(manifest["platform"], "macos")
+        self.assertEqual(manifest["tree"], "commit")
+        self.assertEqual(manifest["treeId"], self.git("rev-parse", f"{self.commit}:TextMouth"))
+        self.assertEqual(Path(manifest["sourceRoot"]), (typecheck.WORK_ROOT / "macos-strings" / "src").resolve())
+        self.assertEqual(printed.splitlines()[-1], f"{typecheck.STRINGS_FOLDER_LINE}{folder}")
+        self.assertIn("Strings: 1 .stringsdata files for 1 Swift files", printed)
+
+    def test_the_extraction_build_leaves_out_the_index_store_and_a_plain_run_keeps_it(self):
+        self.run_strings("--ref", self.commit)
+        self.assertIn("--disable-index-store", self.commands[-1])
+        self.main("--platform", "macos")
+        self.assertNotIn("--disable-index-store", self.commands[-1])
+
+    def test_the_extraction_builds_in_a_folder_of_its_own_so_the_plain_check_stays_incremental(self):
+        self.run_strings("--ref", self.commit)
+        self.assertTrue((typecheck.WORK_ROOT / "macos-strings" / "src").is_dir())
+        self.assertFalse((typecheck.WORK_ROOT / "macos").exists())
+
+    def test_the_extraction_is_refused_with_the_tests_and_the_census(self):
+        for extra in ("--tests", "--census", "--tests-census"):
+            with self.assertRaises(SystemExit) as stopped, contextlib.redirect_stderr(io.StringIO()):
+                typecheck.main(["--agent", "t", "--platform", "ios", "--emit-strings", extra])
+            self.assertEqual(stopped.exception.code, 2, extra)
+        self.assertEqual(self.commands, [])
+
+    def test_the_working_tree_run_copies_a_changed_file_a_new_one_and_leaves_out_what_git_ignores_or_lost(self):
+        (self.repo / ".gitignore").write_text("Ignored.swift\n")
+        (self.repo / "TextMouth" / "App.swift").write_text("// changed after the commit\n")
+        (self.repo / "TextMouth" / "Brand New.swift").write_text("// not committed\n")
+        (self.repo / "TextMouth" / "Ignored.swift").write_text("// ignored\n")
+        (self.repo / "TextMouthBraille" / "include" / "b.h").unlink()
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(typecheck.main(["--agent", "t", "--platform", "macos", "--worktree"]), 0)
+        copy = typecheck.WORK_ROOT / "macos" / "src"
+        self.assertEqual((copy / "TextMouth" / "App.swift").read_text(), "// changed after the commit\n")
+        self.assertEqual((copy / "TextMouth" / "Brand New.swift").read_text(), "// not committed\n")
+        self.assertFalse((copy / "TextMouth" / "Ignored.swift").exists())
+        self.assertFalse((copy / "TextMouthBraille" / "include" / "b.h").exists(), "a tracked file deleted on disk was copied")
+        # The run is named for the commit it is on, with -wt: its results folder says so.
+        self.assertIn(f"-{self.git('rev-parse', '--short', 'HEAD')}-wt-", next(typecheck.RESULTS.iterdir()).name)
+
+    def copy_id(self):
+        """The sources' id of a fresh copy of the working tree's TextMouth/ (as a run makes it)."""
+        copy = Path(tempfile.mkdtemp(dir=self.folder))
+        typecheck.extract_worktree(self.repo, ["TextMouth"], copy)
+        return typecheck.sources_id(self.repo, typecheck.WORKTREE, copy)
+
+    def test_the_sources_id_of_the_working_tree_changes_with_a_file_and_not_with_the_run(self):
+        ids = []
+        for edit in (None, None, "// edited\n"):
+            if edit:
+                (self.repo / "TextMouth" / "App.swift").write_text(edit)
+            ids.append(self.copy_id())
+        self.assertEqual(ids[0], ids[1])
+        self.assertNotEqual(ids[1], ids[2])
+        copy = Path(tempfile.mkdtemp(dir=self.folder))
+        self.assertEqual(typecheck.sources_id(self.repo, self.commit, copy), self.git("rev-parse", f"{self.commit}:TextMouth"))
+
+    def test_the_sources_id_is_the_copys_and_not_the_working_trees_after_a_file_changes_during_the_build(self):
+        """A file edited while the build runs must not change what the run says it read (the review's finding 1): the id
+        was taken after the build, so it named the new content while the strings came from the old copy."""
+        before = self.copy_id()
+
+        def edit_during_the_build():
+            """What an editor does while the Mac's two-minute build is running."""
+            (self.repo / "TextMouth" / "App.swift").write_text("// edited during the build\n")
+
+        status, _, folder = self.run_strings("--worktree", during_build=edit_during_the_build)
+        self.assertEqual(status, 0)
+        manifest = json.loads((folder / typecheck.STRINGS_MANIFEST).read_text())
+        self.assertEqual(manifest["treeId"], before, "the id is of the files the run copied")
+        self.assertNotEqual(manifest["treeId"], self.copy_id(), "and no longer the working tree's, which has changed")
+
+    def test_the_ref_run_still_copies_the_commit_and_not_the_working_tree(self):
+        (self.repo / "TextMouth" / "App.swift").write_text("// changed after the commit\n")
+        (self.repo / "TextMouth" / "Brand New.swift").write_text("// not committed\n")
+        self.assertEqual(self.main("--platform", "macos"), 0)
+        copy = typecheck.WORK_ROOT / "macos" / "src"
+        self.assertEqual((copy / "TextMouth" / "App.swift").read_text(), "// app\n")
+        self.assertFalse((copy / "TextMouth" / "Brand New.swift").exists())
+
+    def test_a_ref_and_the_working_tree_cannot_both_be_asked_for(self):
+        with self.assertRaises(SystemExit) as stopped, contextlib.redirect_stderr(io.StringIO()):
+            typecheck.main(["--agent", "t", "--platform", "macos", "--ref", self.commit, "--worktree"])
+        self.assertEqual(stopped.exception.code, 2)
 
     def test_the_options_that_do_not_go_together_are_refused(self):
         for arguments in (("--platform", "macos", "--tests-census"), ("--platform", "ios", "--tests", "--census"),

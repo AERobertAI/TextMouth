@@ -3,7 +3,8 @@
 # check.sh: TextMouth's reproducibility gate, run by `make check` and by CI.
 #
 # From a clean checkout the gate
-#   1. regenerates TextMouth.xcodeproj from project.yml (make generate);
+#   1. regenerates TextMouth.xcodeproj from project.yml (make generate), then
+#      checks the String Catalog (make l10n-check: fast, builds nothing);
 #   2. resolves Swift packages exactly as the committed Package.resolved pins
 #      them (make resolve-packages) and verifies that every pin's package,
 #      version, revision, and URL still matches the committed file;
@@ -58,7 +59,7 @@
 #              comparison still reads the real files, so a dry run checks the
 #              gate's own logic in about a second. Two variables simulate
 #              failures, and are accepted only with --dry-run:
-#                TEXTMOUTH_CHECK_SIMULATE_FAILURE=generate|resolve|build|ios-size|test
+#                TEXTMOUTH_CHECK_SIMULATE_FAILURE=generate|l10n|resolve|build|ios-size|test
 #                  makes that step fail as though its command had failed;
 #                TEXTMOUTH_CHECK_SIMULATE_RESOLVED=<file>
 #                  treats <file> as the Package.resolved that resolution wrote.
@@ -267,8 +268,8 @@ read_simulation_settings() {
     setup_error "TEXTMOUTH_CHECK_SIMULATE_FAILURE and TEXTMOUTH_CHECK_SIMULATE_RESOLVED are accepted only with --dry-run"
   fi
   case $simulate_failure in
-    ""|generate|resolve|build|ios-size|test) ;;
-    *) setup_error "TEXTMOUTH_CHECK_SIMULATE_FAILURE must be generate, resolve, build, ios-size, or test, not: $simulate_failure" ;;
+    ""|generate|l10n|resolve|build|ios-size|test) ;;
+    *) setup_error "TEXTMOUTH_CHECK_SIMULATE_FAILURE must be generate, l10n, resolve, build, ios-size, or test, not: $simulate_failure" ;;
   esac
   if [[ -n $simulate_resolved ]]; then
     [[ -f $simulate_resolved ]] ||
@@ -700,6 +701,11 @@ main() {
 
   begin_step 1 "regenerate the Xcode project from project.yml"
   run_step generate no make generate || step_failed generate $?
+  # The String Catalog's rules (FR34): every string of a shipped language translated, placeholders and plural forms
+  # agreeing, a comment on every string, nothing stale. It reads the catalog and builds nothing, so it runs here, where
+  # a failure costs seconds and not a Release build.
+  step_title="$step_title, then check the String Catalog"
+  run_step l10n no make l10n-check || step_failed l10n $? "Run make l10n-check for the whole list; make l10n-status says what each language lacks."
 
   begin_step 2 "resolve Swift packages exactly as Package.resolved pins them"
   run_step resolve yes make resolve-packages || step_failed resolve $? "$UPDATE_HINT"

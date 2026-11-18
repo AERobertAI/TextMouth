@@ -1,0 +1,13 @@
+{
+ "commit": "abc1234",
+ "files": [
+  "BookRow.stringsdata",
+  "LibraryView.stringsdata",
+  "MacOnly.stringsdata"
+ ],
+ "platform": "macos",
+ "sourceRoot": "/work/typecheck/macos-strings/src",
+ "swiftFiles": 3,
+ "tree": "commit",
+ "treeId": "0000000000000000000000000000000000000000"
+}
