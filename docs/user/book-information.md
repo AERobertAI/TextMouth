@@ -30,7 +30,7 @@ The metadata refresh after an update never replaces a field edited by hand (see 
 <!-- id: reading-audiobook-tags; keys: audio tags, ID3, hung file, album, artist, cloud only; src: TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Views/Library/LibrarySheetViews.swift -->
 
 Book Information for an audiobook reads the tags of its audio file when it opens.
-If that read has not finished after 30 seconds, as with a file that hangs the system's audio reader, the sheet stops waiting and shows the details TextMouth keeps for the book, and does not read that file's tags again until TextMouth is opened again, or the file changes.
+If that read has not finished after 30 seconds, as with a file that hangs the system's audio reader, the sheet stops waiting and shows the details TextMouth keeps for the book, and does not read that file's tags again until TextMouth is closed and opened again, or the file changes.
 It says nothing about a download then, since the file is on this Mac; the message about a book that is only in the cloud is for a book that is.
 
 ## Text Encoding

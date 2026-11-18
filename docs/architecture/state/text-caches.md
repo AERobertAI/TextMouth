@@ -43,11 +43,12 @@ Every build of it reads the file in the encoding the book recorded when it was i
   A chosen encoding that the bytes are not valid in, as a file changed since is, is refused instead (TextEncodingError.invalidForChosenEncoding), never read by the fallback.
 
 ## Markdown parsed and refused for nesting
-<!-- id: markdown-parsed-refused-nesting; keys: nested lists, deep nesting, parse limit, block quotes, recursion, too many levels; src: TextMouth/Services/MarkdownCacheService.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/MarkdownNesting.swift, TextMouthProductionTests/MarkdownNestingTests.swift, TextMouthProductionTests/MarkdownNestingCacheTests.swift -->
+<!-- id: markdown-parsed-refused-nesting; keys: nested lists, deep nesting, parse limit, block quotes, recursion, too many levels; src: TextMouth/Services/MarkdownCacheService.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/MarkdownNesting.swift, TextMouth/Parsers/RawChapterLines.swift, TextMouthProductionTests/MarkdownNestingTests.swift, TextMouthProductionTests/MarkdownNestingCacheTests.swift -->
 
 Markdown parsed from content.md and Markdown refused for nesting: MarkdownCacheService has two parses of a cached Markdown file, both through MarkdownDocParser.parseChapter, which refuses past the nesting limit (MarkdownNesting, in [Shared helpers](../shared-helpers.md)).
 MarkdownCacheService.parseMultiChapterMarkdown, which Edit Text, rebuilds, the pages' re-read, and the exports commit text from, never drops a chapter that is refused and never reads it for a shorter text.
-The chapter keeps its raw Markdown as its text, as the reader shows a file it cannot parse, and one line is logged for the whole parse, MARKDOWN_NESTING_KEPT_RAW, counting the chapters kept raw of all the chapters and naming no title or word (see [Logs](logs.md)).
+The chapter keeps its words as written as its text (`RawChapterLines.readingText`, B16: content.md's marker comments and backslash escapes left out).
+One line is logged for the whole parse, MARKDOWN_NESTING_KEPT_RAW, counting the chapters kept raw of all the chapters and naming no title or word (see [Logs](logs.md)).
 MarkdownCacheService.parseMultiChapterMarkdownRefusing, which writeCache calls for a text about to be written to content.md, throws the first refusal instead.
 MarkdownCacheService.parseMultiChapterMarkdownNamingRefusal does the same for Edit Text and throws a RefusedChapter, which carries the refused chapter's number, so the refusal can name it ([Edited text](text-caches-rereads-edits.md)).
 So an import of a file nested too deeply is refused with the guard's sentence before anything is written, no content.md is left behind, and a refused rebuild keeps the old cache.

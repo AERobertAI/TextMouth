@@ -5,7 +5,7 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 The walk and its writers are in [Exports](exports.md).
 
 ## The decision, the lines, and the question
-<!-- id: export-deep-chapter-question; keys: ExportDeepChapterDecider, RawChapterLines, blocksAsWritten, ExportDeepChapterQuestioner, DeepChapterPrompt, ExportDeepChapterAlert, FR24; src: TextMouth/Services/Export/ExportDeepChapter.swift, TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Parsers/RawChapterLines.swift, TextMouth/Models/BookExportDeepChapterWording.swift, TextMouth/Platform/macOS/Views/Export/ExportDeepChapterAlert.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Services/BookExportService.swift; status: incomplete; issues: B16 -->
+<!-- id: export-deep-chapter-question; keys: ExportDeepChapterDecider, RawChapterLines, blocksAsWritten, ExportDeepChapterQuestioner, DeepChapterPrompt, ExportDeepChapterAlert, FR24; src: TextMouth/Services/Export/ExportDeepChapter.swift, TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Parsers/RawChapterLines.swift, TextMouth/Models/BookExportDeepChapterWording.swift, TextMouth/Platform/macOS/Views/Export/ExportDeepChapterAlert.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Services/BookExportService.swift -->
 
 - The walk's decider: `Walk.blocks(ofSectionTitled:number:chaptersAfter:content:)` hands a chapter past the nesting limit to its ExportDeepChapterDecider, which answers `.writeAsWritten` or `.cancel`.
   `.cancel` throws CancellationError, so the export ends as Stop does: that book's text file is not written, no later file is, and the files already written stay.
@@ -16,7 +16,8 @@ The walk and its writers are in [Exports](exports.md).
   - a marker is a comment `MarkdownMarker.decode` reads, found anywhere in a line in one pass (a comment ends at its first "-->", and one that is no marker stays words);
   - a marker that begins a block is a place between blocks, any other a run of its own at its exact place, and the walk keeps either only where it keeps places;
   - words lose each backslash before an ASCII punctuation mark, and "&#xFEFF;" becomes U+FEFF, the one character reference MarkdownLiteral.escaped writes; no other reference is decoded.
-  The reader's raw chapter and the Plain Text export keep their own paths, whose text offsets are positions and bookmarks, so they still hold the markers and the backslashes (B16).
+  The reader's raw chapter and the Plain Text export take only the words, `RawChapterLines.readingText(of:)`, with a blank line between paragraphs and no marker or escape (B16).
+  That moves the text offsets inside such a chapter: a saved place with words is carried by them (`PlaceRelocator`), and one saved before T06's anchors, with none, can land on other words.
 - The question: BookExportService.export makes one ExportDeepChapterQuestioner for the whole export, so "every such chapter" holds for it alone, and gives each file a decider (`decider(for:filesAfter:)`; `textFileCounts(after:)` counts the text files still to walk).
   It asks again for each chapter until the answer is Export Every Such Chapter as Written, and offers that button when `filesAfter > 0 || chaptersAfter > 0`.
 - BookExportModel's DeepChapterPrompt shows the question on the main actor while the export's thread waits (AsyncBridge.waitForResult).
