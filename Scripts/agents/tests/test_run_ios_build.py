@@ -206,6 +206,13 @@ STALE_ERROR = ("error: Clang dependency scanner failure: fatal error: file '/App
                "1TV4X376J16CB/_Builtin_stdbool-FTUUUU4ZHFEK.pcm' was built: mtime changed (was 1793595417, now 1794497068)")
 
 
+# What train 1117-0527 (TextMouthBrailleLibrary.c, a race) and train 1117-1219 (a restored cache) printed: the error has a
+# file in front of it as "fatal error:", so the error census reads no error line, and it is not the stale-module error.
+MISSING_ERROR = ("/Users/runner/work/TextMouth/TextMouth/TextMouthBraille/Sources/TextMouthBrailleLibrary.c:1:10: fatal error: "
+                 "module file '/Users/runner/work/TextMouth/TextMouth/build/remote-DerivedData-ios/ModuleCache.noindex/"
+                 "1TV4X376J16CB/_Builtin_stdint-FTUUUU4ZHFEK.pcm' not found: module file not found")
+
+
 class RetryTests(unittest.TestCase):
     """A build that fails with the stale-module error is run once more with the module caches emptied, in the same limit."""
 
@@ -268,6 +275,27 @@ class RetryTests(unittest.TestCase):
         # Everything but the module caches is kept: this is not a clean build.
         self.assertTrue((self.derived / "Build" / "Products" / "kept.o").exists())
         self.assertFalse(self.explicit.exists(), "the retry emptied the explicitly built Swift modules too")
+
+    def test_a_build_that_fails_for_a_module_file_not_found_is_run_again_with_the_caches_emptied_and_passes(self):
+        # TL06: the same cure as for the stale module, from the same test of the log.
+        status, files, _ = self.run_main(self.fake_build(MISSING_ERROR, "** TEST BUILD SUCCEEDED **"))
+        self.assertEqual(status, 0)
+        self.assertTrue(files["ios-summary.txt"].startswith("iOS build: PASSED"), files["ios-summary.txt"])
+        self.assertEqual(files["ios.log"].count("MODULE CACHE gone"), 1, "the retry started with the caches emptied")
+        retried = [line for line in files["ios-summary.txt"].splitlines() if line.startswith("Retried: ")]
+        self.assertEqual(len(retried), 1)
+        self.assertIn(ios.runner_module_cache.MISSING_MARKER, retried[0])
+
+    def test_a_module_file_not_found_that_fails_again_is_named_not_reported_as_no_error_line(self):
+        _, files, _ = self.run_main(self.fake_build(MISSING_ERROR, MISSING_ERROR))
+        self.assertEqual(len(self.limits), 2, "one retry, never more")
+        self.assertNotIn("no error line", files["ios-summary.txt"])
+        self.assertIn("Reason: the module cache failed the build", files["ios-summary.txt"])
+
+    def test_a_real_compile_error_is_neither_retried_nor_blamed_on_the_cache(self):
+        _, files, _ = self.run_main(self.fake_build("/x/Foo.swift:3:4: error: cannot find 'x' in scope", ""))
+        self.assertEqual(len(self.limits), 1)
+        self.assertNotIn("module cache failed", files["ios-summary.txt"])
 
     def test_the_summary_says_the_retry_happened_and_why(self):
         _, files, printed = self.run_main(self.fake_build(STALE_ERROR, "** TEST BUILD SUCCEEDED **"))

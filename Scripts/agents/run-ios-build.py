@@ -27,9 +27,10 @@ cannot start (a missing output folder it cannot make). Every wait has a limit (-
 it is stopped, and the summary says so.
 
 The restored derived-data folder may hold module caches made on another runner image, which fail a build with "file
-'...module.modulemap' has been modified since the module file ... was built" (runner_module_cache.py). So the build is
+'...module.modulemap' has been modified since the module file ... was built", or with "module file '...pcm' not found"
+(runner_module_cache.py names both, in cache_failure). So the build is
 preceded by runner_module_cache.prepare, which empties those caches when the toolchain differs from the one that made
-them, and a build that still fails with that error is run once more with the caches emptied, in what is left of the same
+them, and a build that still fails with either error is run once more with the caches emptied, in what is left of the same
 time limit; the summary's "Retried:" line says so and why.
 
 Usage: python3 -I -B Scripts/agents/run-ios-build.py [--out DIR] [--derived-data DIR] [--limit-minutes N]
@@ -158,14 +159,16 @@ def run_build(command, log, limit_minutes, append=False):
 
 
 def needs_retry(status, timed_out, log_text):
-    """Whether a build failed (not by its time limit) with the stale-module error, which emptying the module caches cures."""
-    return status != 0 and not timed_out and runner_module_cache.is_stale_module_error(log_text)
+    """Whether a build failed (not by its time limit) with a module-cache error (the stale module, or a precompiled
+    module that is not there), which emptying the module caches cures. A real compile error never qualifies."""
+    return status != 0 and not timed_out and runner_module_cache.cache_failure(log_text) is not None
 
 
-def retry_note(first_minutes):
-    """The summary's "Retried:" line: that the first try failed with the stale-module error, that the module caches were
-    emptied and the build run again, and how long the first try took."""
-    return (f"Retried: the first try ({first_minutes:.1f} minutes) failed with \"{runner_module_cache.STALE_MARKER}\", "
+def retry_note(first_minutes, failure=runner_module_cache.STALE_MARKER):
+    """The summary's "Retried:" line: that the first try failed with the module-cache error `failure` (see
+    runner_module_cache.cache_failure), that the module caches were emptied and the build run again, and how long the
+    first try took."""
+    return (f"Retried: the first try ({first_minutes:.1f} minutes) failed with \"{failure}\", "
             "so the module caches were emptied and the build ran once more")
 
 
@@ -180,6 +183,11 @@ def write_results(out, errors, log_text, status, timed_out, seconds, limit_minut
         reasons.append(f"the build was stopped after {limit_minutes:g} minutes")
     if platform_missing(log_text) and not passed:
         reasons.append("the runner image lacks the iOS Simulator platform or SDK that this build needs")
+    if not passed and not timed_out and not reasons and runner_module_cache.cache_failure(log_text):
+        # The error has a file in front of it ("fatal error: ..."), which the error census does not read as an error
+        # line, so a build of this failure used to be reported as ending "with no error line" (train 1117-0527).
+        reasons.append(f"the module cache failed the build (\"{runner_module_cache.cache_failure(log_text)}\"), "
+                       "not this branch's code; nothing to fix in any file")
     if not passed and not errors and not timed_out and not reasons:
         reasons.append(f"xcodebuild ended with status {status} and no error line")
     lines = [f"iOS build: {'PASSED' if passed else 'FAILED'}",
@@ -305,13 +313,13 @@ def main(argv):
         if left >= MINIMUM_RETRY_MINUTES:
             # The caches that failed the build are emptied and the build runs again in what is left of the limit. Its
             # output is added to the same log, and only that part is read for the result.
-            print(f"run-ios-build: {runner_module_cache.STALE_MARKER}; emptying the module caches and building once more",
-                  flush=True)
+            failure = runner_module_cache.cache_failure(log_text)
+            print(f"run-ios-build: {failure}; emptying the module caches and building once more", flush=True)
             runner_module_cache.empty_module_caches(derived)
             first_size = log.stat().st_size
             status, timed_out = run_build(command, log, left, append=True)
             log_text = log.read_bytes()[first_size:].decode("utf-8", errors="replace")
-            retried = retry_note(first_seconds)
+            retried = retry_note(first_seconds, failure)
     write_results(out, parse_errors(log_text), log_text, status, timed_out, time.monotonic() - started,
                   args.limit_minutes, retried)
     if size_requested(ROOT / args.request):
