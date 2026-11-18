@@ -152,14 +152,27 @@ class UncountedBucketTests(ScanCase):
         self.assertClass('return "DATA_DIRECTORY_FOUND: \\(name) was missing; its bookmark "', "log", "log-tag")
 
     def test_diag_a_parsers_damage_reason(self) -> None:
-        # Parsers/DOCXParser.swift:164.
-        self.assertClass('reportIncompleteContent(.malformedXML(file: notesPart, reason: "it could not be unpacked"))',
-                         "diag", "diag-reason", path=PARSER)
+        # Parsers/KFXSymbols.swift:62, a call in _DIAG_CALLS.
+        self.assertClass('throw MOBIError.damaged("the symbol table is not a struct")', "diag", "diag-reason", path=PARSER)
 
-    def test_a_single_word_in_a_parser_is_a_token(self) -> None:
-        # Parsers/PageImageArchive.swift:291.
+    def test_other_text_in_a_parser_is_classified_like_text_anywhere(self) -> None:
+        # Parsers/TextEncodingCatalog.swift:83: a pop-up title shown in Book Information.
+        found = scan_snippet('row("iso-8859-7", "ISO 8859-7 (Greek)")', path=PARSER)
+        self.assertEqual([(l.text, l.bucket, l.status) for l in found],
+                         [("iso-8859-7", "token", ""), ("ISO 8859-7 (Greek)", "prose", "unlocalized")])
+        # Parsers/XMLInputGuard.swift:79: a sentence the user reads when an import is refused.
+        self.assertClass('return "TextMouth can\'t safely read the file \\(file) in \\(container)."',
+                         "prose", "sentence", "unlocalized", path=PARSER)
+        # Parsers/DOCXParser.swift:164: a reason that goes into the import failure's wording.
+        self.assertClass('reportIncompleteContent(.malformedXML(file: notesPart, reason: "it could not be unpacked"))',
+                         "prose", "sentence", "unlocalized", path=PARSER)
+
+    def test_a_single_word_in_a_parser_follows_the_single_word_rules(self) -> None:
+        # Parsers/PageImageArchive.swift:291 is a set of element names (capitalized names read as
+        # labels, and the conversion can mark them `// l10n: no`).
         found = scan_snippet('private static let names: Set<String> = ["Title", "Series"]', path=PARSER)
-        self.assertEqual([(l.bucket, l.rule) for l in found], [("token", "diag-single-word")] * 2)
+        self.assertEqual([(l.bucket, l.rule) for l in found], [("word", "capitalized-word")] * 2)
+        self.assertEqual([(l.bucket, l.rule) for l in scan_snippet('let ext = ".snd"', path=PARSER)], [("token", "lowercase-word")])
 
     def test_comment_the_translators_note(self) -> None:
         # Synthetic: the app uses no String(localized:) before the conversion starts.

@@ -238,7 +238,7 @@ def classify(lit: Literal, wording_file: bool, localizer: Localizer) -> Tuple[st
         return "error", "error-decl"
     if in_wording_type(lit, wording_file):
         return "wording", "wording-type"
-    if lit.call in _DIAG_CALLS or "/Parsers/" in lit.file:
+    if lit.call in _DIAG_CALLS:
         return ("token", "diag-single-word") if one_token else ("diag", "diag-reason")
     if one_token:
         # A capitalized single word outside a known call: a label returned from code, often.
