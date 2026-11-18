@@ -230,6 +230,27 @@ enum RawChapterLines {
         }
     }
 
+    /// `pieces` with neighbouring words made one piece. The words are appended
+    /// in place to one string and flushed at each marker, so a paragraph of
+    /// thousands of lines is joined in one pass, not copied once for every
+    /// line (internal, so a test can time it alone).
+    static func joiningNeighbouringWords(_ pieces: [Piece]) -> [Piece] {
+        var joined: [Piece] = []
+        var pendingWords: String?
+        for piece in pieces {
+            switch piece {
+            case let .words(text):
+                if pendingWords == nil { pendingWords = text } else { pendingWords?.append(text) }
+            case .marker:
+                if let words = pendingWords { joined.append(.words(words)) }
+                pendingWords = nil
+                joined.append(piece)
+            }
+        }
+        if let words = pendingWords { joined.append(.words(words)) }
+        return joined
+    }
+
     /// The paragraph whose lines have the pieces `lines`, in order: a line
     /// feed between two lines (none before a line of markers alone, which
     /// names a place and is no line of words), neighbouring words made one
@@ -243,22 +264,7 @@ enum RawChapterLines {
             }
             flat += line
         }
-        // Neighbouring words are one piece. The words are appended in place to
-        // one string and flushed at each marker, so a paragraph of thousands
-        // of lines is joined in one pass, not copied once for every line.
-        var merged: [Piece] = []
-        var pendingWords: String?
-        for piece in flat {
-            switch piece {
-            case let .words(text):
-                if pendingWords == nil { pendingWords = text } else { pendingWords?.append(text) }
-            case .marker:
-                if let words = pendingWords { merged.append(.words(words)) }
-                pendingWords = nil
-                merged.append(piece)
-            }
-        }
-        if let words = pendingWords { merged.append(.words(words)) }
+        var merged = joiningNeighbouringWords(flat)
         // The markers that begin the block come out, and the white space
         // between them and the words, and at the block's end, goes.
         var leading: [MarkdownMarker] = []
