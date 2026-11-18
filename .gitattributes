@@ -5,3 +5,8 @@
 /Issues/*.md merge=issuefile
 # The folder's README is plain text, merged as git merges any.
 /Issues/README.md merge
+
+# String Catalogs merge by key, language, and plural form (`l10n.py merge-driver`, which `make
+# l10n-merge-driver` defines once in the repository's config). Where it is not defined, git merges them
+# as text, and two branches that add neighbouring strings conflict.
+*.xcstrings merge=xcstrings

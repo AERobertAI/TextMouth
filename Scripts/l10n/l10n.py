@@ -18,6 +18,9 @@ Commands (`--help` after each says more):
   todo     A JSON batch of the strings to translate into a language, each with its comment, placeholders, code context,
            glossary terms, and an earlier translation of a similar string.
   apply    Check a translated batch, string by string, and write the good translations (machine_translated).
+  merge-driver
+           Git's merge driver for the String Catalog (`make l10n-merge-driver` defines it): a three-way merge by key,
+           language, and plural form.
 
 The catalog's layout, placeholders, plural rules, and states are in catalog.py; the shipped languages and the budget are
 in config.json.
@@ -44,6 +47,7 @@ sys.path.insert(0, str(HERE.parent / "agents"))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import repo_paths  # noqa: E402
 import glossary as glossarylib  # noqa: E402
+import merge  # noqa: E402
 import translate  # noqa: E402
 
 EXIT_OK = 0        # the command did its work
@@ -836,11 +840,30 @@ def cmd_apply(args):
 
 
 # ---------------------------------------------------------------------------------------------------------------
+# merge-driver
+# ---------------------------------------------------------------------------------------------------------------
+
+def cmd_merge_driver(args):
+    """`merge-driver BASE OURS THEIRS [PATH]`, in the form git calls a driver (`%O %A %B %P`): merges the three versions of a
+    catalog by key, language, and plural form (see merge.py) and writes the result over OURS in the tools' layout. With a
+    conflict (a piece both sides changed differently) the result keeps ours, each conflict is printed on standard error with
+    the three values, and the exit status is 1, so git reports the file conflicted."""
+    try:
+        merged, conflicts = merge.merge_texts(*(catalog.read_text(path) for path in (args.base, args.ours, args.theirs)))
+    except (OSError, ValueError) as error:
+        raise Refused(f"merge-driver: cannot merge {args.path or args.ours}: {error}", EXIT_USAGE)
+    catalog.write_text(args.ours, merged)
+    for conflict in conflicts:
+        print(f"l10n merge-driver: conflict in {args.path or 'the catalog'}, {conflict.describe()}", file=sys.stderr)
+    return EXIT_PROBLEMS if conflicts else EXIT_OK
+
+
+# ---------------------------------------------------------------------------------------------------------------
 # The command line.
 # ---------------------------------------------------------------------------------------------------------------
 
 def build_parser():
-    """The command line's parser: one subcommand each for sync, status, size, check, plural, todo, and apply."""
+    """The command line's parser: one subcommand each for sync, status, size, check, plural, todo, apply, and merge-driver."""
     parser = argparse.ArgumentParser(prog="l10n.py", description=__doc__.split("\n\n")[0],
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog="Exit status: 0 done, 1 a check found problems or a sync was refused, 2 a bad command line.")
@@ -892,6 +915,11 @@ def build_parser():
                        help="the state to write (default machine_translated; translated once a person reviewed them)")
     glossary_option(apply)
     glossary_option(check)
+    driver = add("merge-driver", "git's merge driver for the catalog: BASE OURS THEIRS [PATH] (git's %O %A %B %P)", cmd_merge_driver)
+    for name, what in (("base", "the common ancestor's file"), ("ours", "our file, which the result is written over"),
+                       ("theirs", "the other branch's file")):
+        driver.add_argument(name, help=what)
+    driver.add_argument("path", nargs="?", help="the catalog's path in the repository, for messages")
     return parser
 
 

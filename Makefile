@@ -121,6 +121,7 @@ help:
 	@echo "  make release-goldens - Once per release: run the golden tests against a Release build made with testability on, so an optimizer miscompile cannot hide behind the Debug suite (about 15 minutes; pass options through GOLDEN_ARGS)"
 	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, the storage drill script, the version script, the Scripts/test tools, and the l10n tools in seconds, without building"
 	@echo "  make issues-merge-driver - Define, once, the merge driver .gitattributes names for Issues/*.md (in the repository's config)"
+	@echo "  make l10n-merge-driver - Define, once, the merge driver .gitattributes names for *.xcstrings (in the repository's config)"
 	@echo "  make test-area AREAS=\"feeds bookmarks\" - Run only the hosted tests of some areas, in one build, with a short result"
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
 	@echo "  make lint-a11y  - Check the SwiftUI lines this branch adds for accessibility mistakes"
@@ -330,6 +331,16 @@ ios-size: generate
 issues-merge-driver:
 	git config merge.issuefile.name "an issue file, merged by its parts"
 	git config merge.issuefile.driver "python3 -I -B .claude/skills/issue-library/scripts/issuelib.py merge-driver %O %A %B %L %P"
+
+## Define, once, the merge driver that .gitattributes names for *.xcstrings, in this
+## repository's config, which every worktree (the train's too) shares. It merges two
+## branches' String Catalogs by key, language, and plural form, so two branches that
+## add or translate different strings never conflict; a piece both changed differently
+## is a conflict (ours is kept and both values are printed). See Scripts/l10n/merge.py.
+.PHONY: l10n-merge-driver
+l10n-merge-driver:
+	git config merge.xcstrings.name "a String Catalog, merged by key, language, and plural form"
+	git config merge.xcstrings.driver "python3 -I -B Scripts/l10n/l10n.py merge-driver %O %A %B %P"
 
 ## Run only the hosted tests of some areas (or test classes) in one build,
 ## printing a short summary: make test-area AREAS="feeds bookmarks". The areas
