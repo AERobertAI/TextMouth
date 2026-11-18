@@ -122,6 +122,7 @@ Delete a kept sandbox when you are done with it.
   It keys on `TEXTMOUTH_TEST_TIME_SCALE`, which `Scripts/agents/run-on-runner.py` sets for every test host it starts and nothing sets on the Mac (`TestMachine.isGitHubRunner`).
   In the iPhone bundle, which shares the file and runs only on GitHub, it is always true.
 - Its users: the two raising tests of `ObjCExceptionTests` and of `AudioEditRenderingTests+WideSamples`, the stack tests of `MarkdownDepthLimitTests` and `ExportDocumentWalkerNestingTests`, and `FFmpegHelperHostileFileTests`, which give the FFmpeg helper damaged media.
+  The same tests run the helper's Debug-only `signalcheck` mode, which crashes it on purpose to test its signal guard, on GitHub only.
   The helper ends itself with _exit on a fatal signal, which should leave no crash report, but that is only tried on a runner.
   The type-select probe uses it too, though for a beep and not a crash.
   StackProbe (TextMouthProductionTests/StackProbe.swift) measures a walk's stack use instead of surviving an overflow: it runs the code on a thread of 8 MiB whose unused stack it filled with a pattern, and says how far the code wrote past a margin.

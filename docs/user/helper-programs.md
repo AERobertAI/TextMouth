@@ -51,7 +51,7 @@ At each launch TextMouth also stops any afinfo an earlier run left behind, touch
 The debug log records AFINFO_LEFTOVERS_SWEPT, with how many processes it stopped and how many files it removed, when it did either.
 
 ## TextMouth's own converter, for audio macOS cannot read
-<!-- id: ffmpeg-ffprobe-helper-programs; keys: ffmpeg, FFmpeg, WMA, Matroska, TextMouthFFmpeg, sandbox, AUDIO_CONVERSION_KILLED, AUDIO_DECODER_REFUSED; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FFmpegHelperStream.swift, TextMouth/Models/FFmpegImportWording.swift, TextMouthFFmpeg/main.c, TextMouth/Platform/macOS/Services/WatchedProcess.swift; status: incomplete; issues: FU03 -->
+<!-- id: ffmpeg-ffprobe-helper-programs; keys: ffmpeg, FFmpeg, WMA, Matroska, TextMouthFFmpeg, sandbox, AUDIO_CONVERSION_KILLED, AUDIO_DECODER_REFUSED; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FFmpegHelperStream.swift, TextMouth/Models/FFmpegImportWording.swift, TextMouthFFmpeg/main.c, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
 TextMouth converts WMA, Speex, Musepack, WebM, Matroska, AVI, Flash video, and RealMedia audio with a converter it carries inside the app, built from FFmpeg, so nothing needs installing (see [What TextMouth reads](reads-audiobooks.md)).
 It is a small program in the app, TextMouthFFmpeg, which TextMouth starts for each file, first to ask what the file holds and then to decode its sound, each as a separate process that TextMouth watches.
@@ -74,7 +74,7 @@ An ffmpeg installed on the Mac, Homebrew's or any other, is not used for the imp
   It may be damaged, or named for another format.", and one that makes it stop says "TextMouth's converter stopped unexpectedly while reading “NAME”.
   The file may be damaged."
 - A file whose sound the converter decodes with errors is still imported, and the debug log records AUDIO_DECODER_REFUSED, with the file's name and how many packets and frames it refused.
-  The sound it refused is left out and the rest closes up over the gap, so a long gap can fail the import's length check, and the chapters after it start late.
+  The sound it refused is kept as silence, so the book keeps its length and its chapter marks, and the import says so (see [What TextMouth reads](reads-audiobooks.md#formats-only-ffmpeg-reads)).
 - The Use ffmpeg for filters switch in Settings covers the audio editor's filters only, and those still run an ffmpeg installed on the Mac when the switch allows (see [Editing audio](editing-audio.md)).
 - Cancel stops the converter at once.
 - The iPhone starts no program, so there the converter runs inside TextMouth itself, one step at a time, under the same limits, except that time counts only while TextMouth is running.

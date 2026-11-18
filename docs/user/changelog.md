@@ -10,6 +10,11 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - The iPhone now imports True Audio, WavPack, and Monkey's Audio files with TextMouth's own readers, as the Mac does, and each becomes the same book.
 - A hybrid WavPack book keeps its full quality on the iPhone only when you add it with Import Folder or in a ZIP: Open Book and "Open in" take the file without its .wvc correction file, so it becomes AAC.
 
+### Audio that TextMouth's converter reads
+- A symbolic link to a good file converts.
+- Copy-protected Matroska and WebM files are named as such, with "TextMouth cannot open copy-protected files."
+- A partly damaged file imports with the damaged stretch kept as silence, so its length and chapters hold, and TextMouth says so: "Part of “Lecture.wma” could not be decoded and is kept as silence."
+
 ## 0.5.3 (November 18, 2026)
 
 ### Audio that macOS can't read, on the iPhone
