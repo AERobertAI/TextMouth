@@ -2,7 +2,7 @@
 id: FU-FFMPEG2
 title: The bundled FFmpeg's leftovers
 kind: follow-up
-status: open
+status: in-progress
 priority: P2
 platform: mac
 assignee: ffmpegleft
@@ -38,3 +38,7 @@ ffmpegform, review fixes on formats/ffmpeg-form at 7cae22b57 (train 1117-0750 PA
 ### 2026-11-17, orchestrator, 1 line
 
 Part merged 098398533 (formats/ffmpeg-form, full Mac suite 13313/105/0): sound that changes form is converted, bounded at 16 to 1 and 16 MiB a converted frame; the frame over 1 MB, the record over 1 MB, and the refused-packet tests; one shared FFmpeg source in build/ffmpeg/. Still open here: the signal guard's self-test (GitHub only) and a workflow cache of FFmpeg's build (a .github change, for a release push). The LGPL and App Store question moved to QN01, and a refused stretch closing the timeline is FU03.
+
+### 2026-11-18, ffmpegleft, 1 line
+
+ffmpegleft, branch formats/ffmpeg-leftovers at 342d0fc16 (train 1118-0221 PASSED: Mac 4165 tests, 31 skipped, 0 failures; iPhone 145 tests, 0 failures). Done: a Debug-only signalcheck mode of the helper (main.c, under DEBUG; a Release helper answers the usage error and carries none of its code); FFmpegHelperHostileFileTests.testEachFatalSignalEndsTheHelperWithItsOwnStatus (GitHub only) shows a null write, an abort, a stack overflow, and a double free each end with 70 by the guard's own _exit, not by the signal. Left: the workflow cache of FFmpeg's build keyed on build.py's key, a .github change that waits for the user's next push.

@@ -193,6 +193,19 @@ enum FFmpegImportWording {
     /// until TextMouth is closed and opened again."
     static let inAppWork = "the audio conversion"
 
+    // MARK: - Sound the Decoder Refused
+
+    /// What an import tells of `names`, the files whose sound the decoder
+    /// refused in part (FU03), which the book keeps as silence so its length
+    /// and chapters hold: "Part of “Lecture.wma” could not be decoded and is
+    /// kept as silence." Nil for no names.
+    static func partlyDecodedNotice(_ names: [String]) -> String? {
+        guard !names.isEmpty else { return nil }
+        // One file is named alone; several are counted and listed, set off by commas.
+        let which = names.count == 1 ? leftOutFiles(names) : leftOutFiles(names) + ","
+        return "Part of \(which) could not be decoded and is kept as silence."
+    }
+
     // MARK: - Tracks Left Out of a Book
 
     /// The most left-out files a notice names; "and 3 more" counts the rest.

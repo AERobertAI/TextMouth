@@ -54,6 +54,7 @@
 #ifdef DEBUG
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #endif
 
@@ -173,6 +174,44 @@ static int confinement_report(int descriptor, int prepared_features) {
 }
 #endif
 
+#ifdef DEBUG
+/* Recurses without end, each call holding a kilobyte the compiler must keep, until the stack is
+   gone. Its result is used by the caller so the recursion is never taken out. The compiler's
+   warning that it never ends is the point of the function, and is silenced for it alone, as the
+   deprecated sandbox calls' is. */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winfinite-recursion"
+static unsigned recurse_until_the_stack_ends(unsigned depth) {
+    volatile char frame[1024];
+    frame[0] = (char)depth;
+    return recurse_until_the_stack_ends(depth + 1) + (unsigned)frame[0];
+}
+#pragma clang diagnostic pop
+
+/* The Debug-only proof of the signal guard (TMFF_MODE_SIGNALCHECK): crashes the way `kind` names.
+   With the guard installed it never returns, since the process ends with TMFF_EXIT_CRASHED; it
+   returns TMFF_EXIT_USAGE for a kind it does not know, and TMFF_EXIT_DONE when the crash did not
+   end the process, which is a guard (or a test) that does not work. The pointers are volatile so
+   the compiler cannot see the crash and remove it. */
+static int signal_check(const char *kind) {
+    if (strcmp(kind, TMFF_SIGNALCHECK_SEGFAULT) == 0) {
+        volatile int *nowhere = NULL;
+        *nowhere = 1;
+    } else if (strcmp(kind, TMFF_SIGNALCHECK_ABORT) == 0) {
+        abort();
+    } else if (strcmp(kind, TMFF_SIGNALCHECK_OVERFLOW) == 0) {
+        return (int)recurse_until_the_stack_ends(0);
+    } else if (strcmp(kind, TMFF_SIGNALCHECK_DOUBLE_FREE) == 0) {
+        void *volatile memory = malloc(64);
+        free(memory);
+        free(memory);
+    } else {
+        return TMFF_EXIT_USAGE;
+    }
+    return TMFF_EXIT_DONE;
+}
+#endif
+
 /* Reads the arguments, runs the session, and writes its records. Returns the exit status. */
 int main(int argc, char **argv) {
     install_guards();
@@ -184,6 +223,7 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
     int only_confinement = 0;
     int only_formcheck = 0;
+    int only_signalcheck = 0;
 #endif
     if (strcmp(argv[1], TMFF_MODE_PROBE) == 0) {
         mode = TMFF_SESSION_PROBE;
@@ -196,14 +236,21 @@ int main(int argc, char **argv) {
     } else if (strcmp(argv[1], TMFF_MODE_FORMCHECK) == 0) {
         mode = TMFF_SESSION_PROBE;
         only_formcheck = 1;
+    } else if (strcmp(argv[1], TMFF_MODE_SIGNALCHECK) == 0) {
+        mode = TMFF_SESSION_PROBE;
+        only_signalcheck = 1;
 #endif
     } else {
         return TMFF_EXIT_USAGE;
     }
 #ifdef DEBUG
+    if (only_signalcheck) {
+        /* No file: the helper only crashes as it is told to, under the guard installed above. */
+        return signal_check(argv[2]);
+    }
     if (only_formcheck) {
         /* No file: the frames are made up in memory, and nothing needs the confinement. */
-        char answers[2048];
+        char answers[4096];
         const int answered = tmff_session_formcheck(answers, sizeof answers);
         return write_all((const unsigned char *)answers, strlen(answers)) == 0 ? answered : TMFF_EXIT_OUTPUT;
     }

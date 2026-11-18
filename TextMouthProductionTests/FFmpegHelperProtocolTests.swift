@@ -229,18 +229,20 @@ final class FFmpegHelperProtocolTests: XCTestCase {
     func testTheBoundsOfTheConversionOnMadeUpFrames() async throws {
         let run = try await runHelper(["formcheck", "all", "-"])
         XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
-        /// Each line's status, frames, and largest, by name.
-        var checks: [String: (status: Int, frames: Int, largest: Int, changes: Int)] = [:]
+        /// Each line's status, frames, largest, changes, and silence, by name.
+        var checks: [String: (status: Int, frames: Int, largest: Int, changes: Int, silence: Int)] = [:]
         for line in String(decoding: run.bytes, as: UTF8.self).split(separator: "\n") {
             let parts = line.split(whereSeparator: { $0 == "=" || $0 == " " }).map(String.init)
-            guard parts.count == 8, let status = Int(parts[1]), let frames = Int(parts[3]), let largest = Int(parts[5]),
-                  let changes = Int(parts[7]) else {
-                XCTFail("a line that is not name=status frames=N largest=B changes=C: \(line)")
+            guard parts.count == 10, let status = Int(parts[1]), let frames = Int(parts[3]), let largest = Int(parts[5]),
+                  let changes = Int(parts[7]), let silence = Int(parts[9]) else {
+                XCTFail("a line that is not name=status frames=N largest=B changes=C silence=S: \(line)")
                 continue
             }
-            checks[parts[0]] = (status, frames, largest, changes)
+            checks[parts[0]] = (status, frames, largest, changes, silence)
         }
-        XCTAssertEqual(Set(checks.keys), ["ratio-up-16", "ratio-up-17", "ratio-down-16", "ratio-down-17", "cap", "held-back", "layout-same", "layout-other", "changes-1000", "changes-1001"])
+        XCTAssertEqual(Set(checks.keys), ["ratio-up-16", "ratio-up-17", "ratio-down-16", "ratio-down-17", "cap", "held-back", "layout-same", "layout-other", "changes-1000", "changes-1001",
+                                          "silence-timed", "silence-untimed", "silence-ends", "silence-none", "silence-absurd", "silence-at-bound", "silence-claimed", "silence-sums",
+                                          "silence-backward", "silence-size"])
         for (name, status) in [("ratio-up-16", 0), ("ratio-up-17", 7), ("ratio-down-16", 0), ("ratio-down-17", 7)] {
             XCTAssertEqual(checks[name]?.status, status, name)
         }
@@ -263,6 +265,48 @@ final class FFmpegHelperProtocolTests: XCTestCase {
         XCTAssertEqual(Double(changes.frames), 1_152 + 1_000 * (576 + 1_152), accuracy: 1_000)
         XCTAssertEqual(changes.changes, 1_000)
         XCTAssertEqual(checks["changes-1001"]?.status, 7)
+    }
+
+    /// Sound the decoder refuses is kept as silence (FU03), on made-up frames
+    /// and refusals at 8,000 Hz in frames of 16 samples (2 ms), so the length
+    /// and every later chapter mark hold, within the bounds. The numbers are
+    /// written out, so changing a bound fails the check rather than moving it:
+    /// - 900 packets refused between 100 and 400 good ones (the shape of
+    ///   `flac-900-bad-packets.mka`) are filled by the frames' timestamps, the
+    ///   1.8 s between them (14,400 frames): the sound's 8,000 frames and the
+    ///   silence are the 22,400 of the 2.8 s file;
+    /// - with no timestamps, by the refused packets' own lengths (8 ms, 64 frames);
+    /// - at the start and the end of the sound as well (14 ms, 112 frames);
+    /// - a file with no refused packet is given none, whatever its timestamps say;
+    /// - a stretch past the bound (10 s here) is given no silence and the
+    ///   decode goes on, as before FU03, the gap closing but for the refused
+    ///   packets' own lengths (16 frames): the import is not refused for it; a
+    ///   claim of a length past the ceiling owes none; stretches that add up
+    ///   past the bound owe the first (6 s, 48,000 frames) and not the next;
+    ///   one of exactly the bound is filled (80,000 frames);
+    /// - a jump backward in the timestamps gives the packets' own lengths (48);
+    /// - a file of 10 KB, which holds 81.92 s at 1 kbit/s, is given the
+    ///   packet's own length (16 frames), not a gap of 100 s (800,000 frames).
+    ///
+    /// Fenced to the Mac like the check above: only made-up frames, no file.
+    func testRefusedSoundIsKeptAsBoundedSilence() async throws {
+        let run = try await runHelper(["formcheck", "all", "-"])
+        XCTAssertEqual(run.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
+        var checks: [String: (status: Int, frames: Int, silence: Int)] = [:]
+        for line in String(decoding: run.bytes, as: UTF8.self).split(separator: "\n") {
+            let parts = line.split(whereSeparator: { $0 == "=" || $0 == " " }).map(String.init)
+            guard parts.count == 10, let status = Int(parts[1]), let frames = Int(parts[3]), let silence = Int(parts[9]) else { continue }
+            checks[parts[0]] = (status, frames, silence)
+        }
+        for (name, frames, silence) in [
+            ("silence-timed", 8_000, 14_400), ("silence-untimed", 96, 64), ("silence-ends", 48, 112), ("silence-none", 32, 0),
+            ("silence-at-bound", 32, 80_000), ("silence-absurd", 32, 16), ("silence-claimed", 32, 0), ("silence-sums", 48, 48_000),
+            ("silence-backward", 32, 48), ("silence-size", 32, 16),
+        ] {
+            XCTAssertEqual(checks[name]?.status, 0, "\(name): the decode goes on")
+            XCTAssertEqual(checks[name]?.frames, frames, "\(name): the frames of sound")
+            XCTAssertEqual(checks[name]?.silence, silence, "\(name): the frames of silence")
+        }
     }
     #endif
 
@@ -331,6 +375,28 @@ final class FFmpegHelperProtocolTests: XCTestCase {
             XCTAssertEqual(run.bytes, [], "\(arguments)")
         }
         XCTAssertLessThan(Date().timeIntervalSince(started), TestMachine.allowed(20), "no refusal may wait")
+    }
+
+    /// The session's opener refuses a symbolic link as it refuses a file that
+    /// cannot be opened (FU04): a link to a good sample is unreadable (2),
+    /// with nothing written, in a probe and in a decode, where the sample
+    /// itself is read. `O_NOFOLLOW` is what refuses it: the opener checks
+    /// that what it opened is a regular file, which a link's target is.
+    /// Shared with the iPhone, whose in-app run opens its file the same way.
+    func testASymbolicLinkIsRefusedAsUnreadable() async throws {
+        let folder = try makeSandboxDirectory("FFmpegLinks")
+        let wma = try formatSampleURL("wma/tones-wma1.wma")
+        let link = folder.appendingPathComponent("link.wma")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: wma)
+        for mode in ["probe", "decode"] {
+            let refused = try await runHelper([mode, "asf", link.path])
+            XCTAssertEqual(refused.ending, WatchedProcess.Ending(outcome: .exited(status: 2)), "\(mode) of a link")
+            XCTAssertEqual(refused.bytes, [], "\(mode) of a link")
+        }
+        // The sample itself, opened by its own path, is still read.
+        let read = try await runHelper(["probe", "asf", wma.path])
+        XCTAssertEqual(read.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
+        XCTAssertFalse(read.bytes.isEmpty)
     }
 
     /// A tag longer than 4 KB is cut at 4 KB, between two characters (the

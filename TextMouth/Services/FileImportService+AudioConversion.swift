@@ -75,7 +75,7 @@ extension FileImportService {
             try disposeOfSources(of: unnamed, from: bookURL, in: staging, keepingOriginals: keepingOriginals())
             let conversions = try givingFinalNames(to: unnamed)
             try ImportAudioConverter.renameTracks(of: conversions, inManifestOf: bookURL, bookID: nil, sourceNames: sourceNames)
-            return notice
+            return joinedNotices(notice, partlyDecodedNotice(of: conversions))
         } else {
             let needed = try AsyncBridge.waitForResult { try await ImportAudioConverter.needsConversion(among: [bookURL]) }
             guard !needed.isEmpty else { return nil }
@@ -98,8 +98,15 @@ extension FileImportService {
             let conversions = try givingFinalNames(to: unnamed)
             guard let converted = conversions.first?.converted else { return nil }
             book.filePath = converted.path
-            return nil
+            return partlyDecodedNotice(of: conversions)
         }
+    }
+
+    /// What the import tells of the converted tracks whose sound the decoder
+    /// refused in part (`FFmpegImportWording.partlyDecodedNotice(_:)`), named
+    /// by their sources; nil when none was.
+    static func partlyDecodedNotice(of conversions: [ImportAudioConverter.Conversion]) -> String? {
+        FFmpegImportWording.partlyDecodedNotice(conversions.filter(\.partlyDecoded).map { $0.source.lastPathComponent })
     }
 
     /// Leaves out of the book whose staged folder of tracks is `folder` the

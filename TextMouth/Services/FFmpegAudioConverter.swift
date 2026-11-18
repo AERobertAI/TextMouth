@@ -63,13 +63,22 @@ enum FFmpegAudioConverter {
         return container != .ogg
     }
 
-    /// Whether the file at `url`, whose bytes are of `container`, is a
-    /// copy-protected Windows Media file (`ASFHeader.isCopyProtected`), which
-    /// no converter could help: the one check `convert` makes before anything
-    /// runs, and the iPhone's import before it refuses any other format
-    /// (`PhoneImportRefusal.refuseConversion`, FU-FFMPEG).
+    /// Whether the file at `url`, whose bytes are of `container`, is
+    /// copy-protected, as its container's own header says: a Windows Media
+    /// file with a protection object (`ASFHeader.isCopyProtected`), or a
+    /// Matroska or WebM file whose every sound track is encrypted
+    /// (`MatroskaHeader.isCopyProtected`, B19). No converter could help
+    /// either: the one check `convert` makes before anything runs, and the
+    /// iPhone's import before it refuses any other format
+    /// (`PhoneImportRefusal.refuseConversion`, FU-FFMPEG). RealMedia's DRM
+    /// has no mark in its public format description to look for, so a
+    /// protected RealMedia file still ends as a damaged one (B19).
     static func isCopyProtected(_ url: URL, container: FFmpegContainer?) -> Bool {
-        container == .asf && ASFHeader.isCopyProtected(fileAt: url)
+        switch container {
+        case .asf: return ASFHeader.isCopyProtected(fileAt: url)
+        case .matroska: return MatroskaHeader.isCopyProtected(fileAt: url)
+        default: return false
+        }
     }
 
     /// The files a book of several tracks leaves out rather than be refused
@@ -273,6 +282,11 @@ enum FFmpegAudioConverter {
         using tool: Tool,
         reading read: (_ nextPiece: @escaping () async throws -> [UInt8]) async throws -> Value
     ) async throws -> (ending: WatchedProcess.Ending, read: Result<Value, any Error>) {
+        // The session's own opener refuses a symbolic link (`O_NOFOLLOW`, FU04), but the import stages a
+        // source as it is, and a copy of a link is a link: the path is resolved once, here, so a link to
+        // a good file converts as it does for every other converter, and the opener's refusal stays the
+        // backstop for a link made after this point.
+        let file = file.resolvingSymlinksInPath()
         switch located {
         case let .found(helper):
             return try await WatchedProcess.runStreaming(
@@ -527,7 +541,9 @@ enum FFmpegAudioConverter {
         /// The helper is missing from the app (it is damaged); `kind` names
         /// the format.
         case helperMissing(kind: String)
-        /// A Windows Media file is copy-protected.
+        /// The file is copy-protected: a Windows Media file with a protection
+        /// object, or a Matroska or WebM file whose every sound track is
+        /// encrypted (`isCopyProtected(_:container:)`).
         case copyProtected
         /// The file's bytes are not of the format `kind` its name says, or
         /// the helper's FFmpeg could not read them.
@@ -638,7 +654,8 @@ enum FFmpegAudioConverter {
     ///
     /// In order: a file that is missing or only in the cloud is unreadable;
     /// one whose bytes are of no container only FFmpeg reads is not
-    /// recognized; a copy-protected Windows Media file is refused; an app
+    /// recognized; a copy-protected file (Windows Media, Matroska, or WebM,
+    /// `isCopyProtected(_:container:)`) is refused; an app
     /// whose helper is missing refuses; then the session (the Mac's helper,
     /// or the iPhone's in the app) says what the file holds, a source of no
     /// stated length is refused when the volume lacks room for what it may
@@ -692,8 +709,9 @@ enum FFmpegAudioConverter {
         }
         let lasts: TimeInterval
         let written: ImportAudioConverter.Target
+        let partlyDecoded: Bool
         do {
-            (written, lasts) = try await decode(
+            (written, lasts, partlyDecoded) = try await decode(
                 source, as: container, kind: kind, at: located, into: staged, limits: limits, tool: tool, stated: stated
             )
             if keepingChapters, report.chapterMarks.count > 0 {
@@ -710,7 +728,8 @@ enum FFmpegAudioConverter {
             secondsTaken: Date().timeIntervalSince(started),
             bytesBefore: bytesBefore,
             bytesAfter: ImportAudioConverter.fileSize(of: staged),
-            bitRate: written.bitRate
+            bitRate: written.bitRate,
+            partlyDecoded: partlyDecoded
         )
         if naming {
             do {
@@ -741,11 +760,11 @@ enum FFmpegAudioConverter {
         limits: WatchedProcess.Limits,
         tool: Tool,
         stated: TimeInterval?
-    ) async throws -> (target: ImportAudioConverter.Target, lasts: TimeInterval) {
+    ) async throws -> (target: ImportAudioConverter.Target, lasts: TimeInterval, partlyDecoded: Bool) {
         let name = source.lastPathComponent
         let (ending, read) = try await runSession(
             .decode, of: source, as: container, kind: kind, at: located, watching: staged, limits: limits, using: tool
-        ) { nextPiece -> ImportAudioConverter.Target in
+        ) { nextPiece -> (target: ImportAudioConverter.Target, refusedPackets: UInt32) in
             var stream = FFmpegHelperStream(reading: nextPiece)
             let report = try await stream.readReport()
             let target = try plan(for: report, fileName: name).target
@@ -766,13 +785,13 @@ enum FFmpegAudioConverter {
             if stream.refusedPackets > 0 || stream.refusedFrames > 0 {
                 DiagnosticLog.event(.storage, "\(refusedLogTag): \(name): \(stream.refusedPackets) packets, \(stream.refusedFrames) frames")
             }
-            return target
+            return (target, stream.refusedPackets)
         }
         if let failure = failure(of: ending, read: read, fileName: name, kind: kind, limits: limits, logTag: "AUDIO_CONVERSION_KILLED") {
             throw failure
         }
-        let target = try read.get()
-        return (target, try await check(staged, against: stated, from: name))
+        let (target, refusedPackets) = try read.get()
+        return (target, try await check(staged, against: stated, from: name), refusedPackets > 0)
     }
 
     /// The tag of the debug-log line saying how many packets and frames the

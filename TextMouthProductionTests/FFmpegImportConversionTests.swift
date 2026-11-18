@@ -80,24 +80,124 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
     }
 
-    /// A copy-protected WMA file is refused as copy-protected, with the
-    /// helper or without, before anything runs: no converter would help.
-    func testACopyProtectedFileIsRefusedBeforeAnythingElse() async throws {
-        let folder = try makeSandboxDirectory("FFmpegProtected")
-        let locked = folder.appendingPathComponent("Locked.wma")
-        try copyProtectedASF(from: try formatSampleURL("wma/tones-wma1.wma")).write(to: locked)
-        for helper in [try bundledFFmpegHelper(), nil] {
-            // The helper's launches on the Mac, the session's opens in the iPhone app.
-            let (tool, starts) = countingSessionStarts(of: ffmpegTool(helper: helper))
-            do {
-                _ = try await FFmpegAudioConverter.convert(locked, using: tool)
-                XCTFail("a copy-protected file must be refused")
-            } catch {
-                XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .copyProtected)
-            }
-            XCTAssertEqual(starts(), 0, "the session ran before the copy protection was told")
+    /// A symbolic link to a good WMA file converts as the file does (FU04's
+    /// review): the import stages a source as it is, and a copy of a link is
+    /// a link, so the path is resolved once before the session opens it,
+    /// whose own opener refuses a link (`testASymbolicLinkIsRefusedAsUnreadable`).
+    /// The .m4a is made beside the link, which and whose target are untouched.
+    func testASymbolicLinkToAGoodFileIsConverted() async throws {
+        let wma = try source()
+        let folder = try makeSandboxDirectory("FFmpegLinkedSource")
+        let link = folder.appendingPathComponent("linked.wma")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: wma)
+        let conversion = try await FFmpegAudioConverter.convert(link, using: try bundledFFmpegTool())
+        XCTAssertEqual(conversion.converted.lastPathComponent, "linked.m4a")
+        XCTAssertEqual(conversion.duration, 4.0, accuracy: 0.1)
+        XCTAssertEqual(try names(in: folder), ["linked.m4a", "linked.wma"])
+        XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: link.path), wma.path)
+        XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
+    }
+
+    /// Importing a symbolic link to a good WMA file makes a book of it, as the
+    /// file itself does: the staged copy of the link is a link too, and the
+    /// conversion follows it.
+    func testImportingASymbolicLinkToAGoodFileMakesABook() throws {
+        let wma = try source()
+        let link = try makeSandboxDirectory("FFmpegLinkedImport").appendingPathComponent("Linked.wma")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: wma)
+        let tool = try bundledFFmpegTool()
+        let imported = try FFmpegAudioConverter.$tool.withValue(tool) { try FileImportService.importFileWithReport(from: link) }
+        addTeardownBlock { try? FileManager.default.removeItem(at: imported.book.tmbDirectory) }
+        XCTAssertTrue(imported.book.format.isAudio)
+        XCTAssertEqual(imported.book.bookFileURL.pathExtension, "m4a")
+        XCTAssertNil(imported.notice)
+    }
+
+    // MARK: - Sound the Decoder Refused (FU03)
+
+    /// A stand-in that probes a sample of two seconds and decodes two seconds of
+    /// silence in a stream whose END counts `refusedPackets`: what the session
+    /// writes when its decoder refused packets and the session kept their place
+    /// as silence.
+    private func standInOfTwoSeconds(refusedPackets: UInt32) throws -> FFmpegTestHelper {
+        let info = FFmpegTestStream.replacing("sample_format", with: "s16", in:
+            FFmpegTestStream.replacing("bits", with: "16", in:
+                FFmpegTestStream.replacing("duration", with: "2.000000", in:
+                    FFmpegTestStream.replacing("format_duration", with: "2.000000", in: FFmpegTestStream.wmaInfo))))
+        let decode = FFmpegTestStream.head() + FFmpegTestStream.info(info)
+            + FFmpegTestStream.pcm16([Int16](repeating: 0, count: 44_100))
+            + FFmpegTestStream.end(frames: 44_100, refusedPackets: refusedPackets)
+        return try ffmpegHelperStandIn(probe: .write(FFmpegTestStream.probe(info: info), status: 0), decode: .write(decode, status: 0)).helper
+    }
+
+    /// A conversion whose stream counts refused packets says so, and one that
+    /// counts none does not; the import tells the listener of the first, in one
+    /// short sentence naming the file, and of the second nothing.
+    func testAConversionOfPartlyRefusedSoundIsToldAsSuch() async throws {
+        let wma = try source()
+        let refused = try await FFmpegAudioConverter.convert(wma, using: ffmpegTool(helper: try standInOfTwoSeconds(refusedPackets: 3)))
+        XCTAssertTrue(refused.partlyDecoded)
+        let whole = try source("wma/tones-wma1.wma", named: "whole.wma")
+        let clean = try await FFmpegAudioConverter.convert(whole, using: ffmpegTool(helper: try standInOfTwoSeconds(refusedPackets: 0)))
+        XCTAssertFalse(clean.partlyDecoded)
+
+        let sentence = "Part of “tones.wma” could not be decoded and is kept as silence."
+        XCTAssertEqual(FileImportService.partlyDecodedNotice(of: [refused]), sentence)
+        XCTAssertNil(FileImportService.partlyDecodedNotice(of: [clean]))
+        XCTAssertEqual(FFmpegImportWording.partlyDecodedNotice(["tones.wma"]), sentence)
+        XCTAssertEqual(
+            FileImportService.partlyDecodedNotice(of: [refused, clean]), sentence, "only the tracks that were refused in part are named"
+        )
+        XCTAssertNil(FFmpegImportWording.partlyDecodedNotice([]))
+        XCTAssertEqual(
+            FFmpegImportWording.partlyDecodedNotice(["a.wma", "b.wma"]),
+            "Part of 2 files, “a.wma” and “b.wma”, could not be decoded and is kept as silence."
+        )
+    }
+
+    /// Importing a file whose sound the decoder refused in part makes its book
+    /// all the same and tells the listener, in the import's notice, which is
+    /// shown and spoken with the rest of the import's result; a whole file's
+    /// import tells nothing.
+    func testImportingPartlyRefusedSoundTellsTheListener() throws {
+        let imported = try FFmpegAudioConverter.$tool.withValue(ffmpegTool(helper: try standInOfTwoSeconds(refusedPackets: 3))) {
+            try FileImportService.importFileWithReport(from: try source())
         }
-        XCTAssertEqual(try names(in: folder), ["Locked.wma"])
+        addTeardownBlock { try? FileManager.default.removeItem(at: imported.book.tmbDirectory) }
+        XCTAssertEqual(imported.notice, "Part of “tones.wma” could not be decoded and is kept as silence.")
+        XCTAssertTrue(imported.book.format.isAudio)
+        let whole = try FFmpegAudioConverter.$tool.withValue(ffmpegTool(helper: try standInOfTwoSeconds(refusedPackets: 0))) {
+            try FileImportService.importFileWithReport(from: try source())
+        }
+        addTeardownBlock { try? FileManager.default.removeItem(at: whole.book.tmbDirectory) }
+        XCTAssertNil(whole.notice)
+    }
+
+    /// An encrypted Matroska or WebM file is refused as copy-protected too
+    /// (B19), as a Windows Media file is: with the helper or without, before
+    /// anything runs, and not told as damaged. A file of the same containers
+    /// that is not encrypted still goes on to the session (the sample imports
+    /// in `FFmpegImportRealTests`).
+    func testAnEncryptedMatroskaFileIsRefusedAsCopyProtected() async throws {
+        let folder = try makeSandboxDirectory("FFmpegProtectedMatroska")
+        let locked = [("Locked.mka", "matroska"), ("Locked.webm", "webm"), ("Locked.mkv", "matroska")]
+        for (name, doctype) in locked {
+            try Data(matroskaFile(tracks: [MatroskaTrack(type: 1), MatroskaTrack(type: 2, encryption: 5)], doctype: doctype))
+                .write(to: folder.appendingPathComponent(name))
+        }
+        for (name, _) in locked {
+            for helper in [try bundledFFmpegHelper(), nil] {
+                let (tool, starts) = countingSessionStarts(of: ffmpegTool(helper: helper))
+                do {
+                    _ = try await FFmpegAudioConverter.convert(folder.appendingPathComponent(name), using: tool)
+                    XCTFail("\(name): an encrypted file must be refused")
+                } catch {
+                    XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .copyProtected, name)
+                }
+                XCTAssertEqual(starts(), 0, "\(name): the session ran before the copy protection was told")
+            }
+        }
+        XCTAssertEqual(try names(in: folder), ["Locked.mka", "Locked.mkv", "Locked.webm"])
     }
 
     /// Importing a copy-protected Windows Media file, alone or as a track of

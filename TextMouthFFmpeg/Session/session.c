@@ -48,6 +48,7 @@
 #include <libavutil/channel_layout.h>
 #include <libavutil/cpu.h>
 #include <libavutil/dict.h>
+#include <libavutil/mathematics.h>
 #include <libavutil/mem.h>
 #include <libavutil/samplefmt.h>
 #include <libswresample/swresample.h>
@@ -94,8 +95,8 @@ static size_t allocation_cap = MAX_ALLOCATION_BYTES;
    damaged, rather than a decoder that answers every call with an error being asked for ever. It
    counts the errors of avcodec_receive_frame with no request for a packet between them, which a
    damaged packet never makes (the decoder refuses it when it is sent, and is then asked for the
-   next): any number of damaged packets are counted in END and skipped, as the tests of
-   FFmpegHelperHostileFileTests show with 900 and with 1,200 of them. */
+   next): any number of damaged packets are counted in END and their place kept as silence (FU03),
+   as the tests of FFmpegHelperHostileFileTests show with 900 and with 1,200 of them. */
 enum { MAX_ERRORS_IN_A_ROW = 1000 };
 
 /* The most times the sound may change its form: past them the file is refused
@@ -111,6 +112,19 @@ enum { MAX_RATE_RATIO = 16 };
 /* The most bytes one converted frame may hold: a frame that would convert to more is fed to the
    resampler in slices, each of which gives at most this. */
 enum { MAX_CONVERTED_BYTES = 16 * 1024 * 1024 };
+
+/* Sound the decoder refuses is kept as silence, so the book keeps its length and its chapter marks
+   (FU03). The silence is bounded: the most a file may be given is the duration the file states
+   (the stream's or the container's, whichever is longer; a file that states none, this many
+   seconds), what the file's size can hold at 1 kbit/s (as the app believes a stated length), and
+   never more than the ceiling, however long it claims to be. A refused stretch that would pass the
+   bound is given no silence, and the gap closes up as it did before FU03, with the decode going
+   on: a hostile file's timestamps, or a duration it made up, cannot make hours of silence, and
+   cannot refuse a book that the sound around the damage makes. */
+enum { MAX_UNSTATED_SILENCE_SECONDS = 3600, MAX_SILENCE_SECONDS = 12 * 3600 };
+
+/* Microseconds in a second: the unit the timeline is kept in (FFmpeg's own AV_TIME_BASE). */
+#define MICROSECONDS 1000000
 
 /* Where the stream has got to: each stage gives its records in turn. */
 typedef enum {
@@ -188,6 +202,21 @@ struct tmff_session {
     uint32_t frame_errors;
     /* Set by frame_buffer when the decoder asked for a frame past MAX_DECODED_SAMPLES. */
     int frame_too_large;
+
+    /* The timeline of the sound the decoder refuses (FU03), in microseconds. A packet the decoder
+       refuses sets `refused_since_frame` and adds its length to `refused_us`; the next frame that
+       comes out, or the end of the sound, turns that into silence owed (`silence_owed_us`, then
+       whole frames at the first form's rate, `silence_owed_frames`, which make_pcm writes before
+       the frame that follows). */
+    int refused_since_frame;
+    int64_t refused_us;
+    int64_t last_packet_us;          /* the length of the last packet the decoder took */
+    int64_t prev_end_us;             /* where the last frame that came out ended, when `have_end` */
+    int have_end;
+    int64_t silence_owed_us;
+    uint64_t silence_owed_frames;
+    int64_t silence_total_us;        /* all the silence owed so far, held to its bound */
+    int64_t silence_limit_us;        /* the bound, 0: the file's own (set by the Debug checks) */
 
     /* The record being given, header and payload. */
     unsigned char *record;
@@ -506,8 +535,11 @@ void tmff_set_allocation_cap(size_t bytes) {
     av_max_alloc(allocation_cap);
 }
 
+/* O_NOFOLLOW makes the open fail (ELOOP) when the path's last part is a symbolic link, so a link
+   is refused as the sentence for a file that cannot be opened, before any fstat could pass the
+   regular file it points at. O_NONBLOCK keeps a FIFO from being waited on. */
 int tmff_open_regular_file(const char *path) {
-    const int descriptor = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    const int descriptor = open(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC);
     if (descriptor < 0) {
         return -1;
     }
@@ -723,10 +755,134 @@ static void settle_form(tmff_session *session, int format, int raw_bits) {
  * Decoding
  * ------------------------------------------------------------------------------------------- */
 
+/* `ticks` of `base` in microseconds; 0 for a base that is no time or a number that does not fit. */
+static int64_t ticks_to_us(int64_t ticks, AVRational base) {
+    if (base.num <= 0 || base.den <= 0) {
+        return 0;
+    }
+    const int64_t us = av_rescale_q(ticks, base, AV_TIME_BASE_Q);
+    return us == INT64_MIN ? 0 : us;
+}
+
+/* The most refused sound the session may fill with silence: what the file states of its own
+   length (MAX_UNSTATED_SILENCE_SECONDS when it states none), never past MAX_SILENCE_SECONDS. */
+static int64_t silence_limit(const tmff_session *session) {
+    int64_t limit = session->silence_limit_us;
+    if (limit <= 0 && session->format) {
+        const AVStream *stream = session->format->streams[session->stream_index];
+        if (stream->duration != AV_NOPTS_VALUE && stream->duration > 0) {
+            limit = ticks_to_us(stream->duration, stream->time_base);
+        }
+        if (session->format->duration != AV_NOPTS_VALUE && session->format->duration > limit) {
+            limit = session->format->duration;
+        }
+    }
+    if (limit <= 0) {
+        limit = (int64_t)MAX_UNSTATED_SILENCE_SECONDS * MICROSECONDS;
+    }
+    /* A length the file's size cannot hold is no length (the app's rule, at 1 kbit/s): 8 bits a
+       byte, and 1,000 microseconds a bit, with the size capped so the product fits. */
+    if (session->size > 0) {
+        const int64_t held = (session->size < INT64_MAX / 8000 ? session->size : INT64_MAX / 8000) * 8000;
+        limit = limit < held ? limit : held;
+    }
+    const int64_t ceiling = (int64_t)MAX_SILENCE_SECONDS * MICROSECONDS;
+    return limit < ceiling ? limit : ceiling;
+}
+
+/* Owes `gap_us` of silence, the place of sound the decoder refused, unless the gap, or all the
+   silence owed with it, would pass the bound (silence_limit): then none is owed and the gap
+   closes, as it did before FU03. A gap of nothing, or less, owes none either. */
+static void owe_silence(tmff_session *session, int64_t gap_us) {
+    if (gap_us <= 0) {
+        return;
+    }
+    const int64_t limit = silence_limit(session);
+    if (gap_us > limit || session->silence_total_us > limit - gap_us) {
+        return;
+    }
+    session->silence_total_us += gap_us;
+    session->silence_owed_us += gap_us;
+}
+
+/* Notes a packet of `length_us` the decoder refused (0: the packet states none, which is taken to
+   be as long as the last one the decoder took). A length past the ceiling counts as the ceiling,
+   so the sum never overflows, and is then past the bound, which owe_silence leaves unfilled. */
+static void note_refused_packet(tmff_session *session, int64_t length_us) {
+    const int64_t ceiling = (int64_t)MAX_SILENCE_SECONDS * MICROSECONDS;
+    if (length_us <= 0) {
+        length_us = session->last_packet_us;
+    }
+    session->refused_since_frame = 1;
+    session->refused_us += length_us < ceiling ? length_us : ceiling;
+    if (session->refused_us > ceiling) {
+        session->refused_us = ceiling;
+    }
+}
+
+/* Notes a frame that came out of the decoder, of `samples` at `rate`, whose start is `start_us`
+   (AV_NOPTS_VALUE: it states none). When packets were refused since the last frame, the silence
+   they owe is the gap between where that frame ended and where this one starts, by their
+   timestamps, when both are stated and the gap is forward and within the bound; otherwise (a
+   timestamp missing, a jump backward, or a jump past the bound) the sum of the refused packets'
+   own lengths. A file with no refused packet owes none, whatever its timestamps say. */
+static void note_frame(tmff_session *session, int64_t start_us, int samples, int rate) {
+    if (session->refused_since_frame) {
+        int64_t gap = session->refused_us;
+        int64_t stamped = 0;
+        if (start_us != AV_NOPTS_VALUE && session->have_end && !__builtin_sub_overflow(start_us, session->prev_end_us, &stamped)
+            && stamped > 0 && stamped <= silence_limit(session)) {
+            gap = stamped;
+        }
+        session->refused_since_frame = 0;
+        session->refused_us = 0;
+        owe_silence(session, gap);
+    }
+    int64_t end = 0;
+    session->have_end = start_us != AV_NOPTS_VALUE && rate > 0 && samples >= 0
+        && !__builtin_add_overflow(start_us, (int64_t)samples * MICROSECONDS / rate, &end);
+    session->prev_end_us = end;
+}
+
+/* The silence owed at the end of the sound: what the packets refused since the last frame add up
+   to, within the bound; asked again, nothing more is owed. Returns 0, which next_frame gives as
+   the end of the sound. */
+static int owe_trailing_silence(tmff_session *session) {
+    if (session->refused_since_frame) {
+        const int64_t gap = session->refused_us;
+        session->refused_since_frame = 0;
+        session->refused_us = 0;
+        owe_silence(session, gap);
+    }
+    return 0;
+}
+
+/* Takes at most `most` frames of the silence owed (turned into whole frames at the first form's
+   rate once it is known), and returns how many. */
+static uint64_t take_silence_frames(tmff_session *session, uint64_t most) {
+    if (session->silence_owed_us > 0 && session->sample_rate > 0) {
+        /* Rounded to the nearest frame: at most 12 hours at the greatest rate fits 64 bits. */
+        session->silence_owed_frames +=
+            ((uint64_t)session->silence_owed_us * (uint64_t)session->sample_rate + MICROSECONDS / 2) / MICROSECONDS;
+        session->silence_owed_us = 0;
+    }
+    const uint64_t taken = session->silence_owed_frames < most ? session->silence_owed_frames : most;
+    session->silence_owed_frames -= taken;
+    return taken;
+}
+
+/* The length of `packet` in microseconds, 0 when it states none. */
+static int64_t packet_length_us(const tmff_session *session, const AVPacket *packet) {
+    if (packet->duration <= 0) {
+        return 0;
+    }
+    return ticks_to_us(packet->duration, session->format->streams[session->stream_index]->time_base);
+}
+
 /* Takes the next decoded frame into session->frame. Returns 1 when a frame is there, 0 when the
-   decoder has given its last, or a negative TMFF_EXIT_ number. A packet or frame the decoder
-   refuses is counted and skipped, as a damaged packet would be, up to MAX_ERRORS_IN_A_ROW in a
-   row (TMFF_EXIT_DAMAGED past them). */
+   decoder has given its last, or a negative TMFF_EXIT_ number. A packet the decoder refuses is
+   counted, and its place is kept as silence (FU03); a frame it refuses is counted and skipped,
+   up to MAX_ERRORS_IN_A_ROW in a row (TMFF_EXIT_DAMAGED past them). */
 static int next_frame(tmff_session *session) {
 #ifdef DEBUG
     if (session->made_up) {
@@ -739,7 +895,7 @@ static int next_frame(tmff_session *session) {
             return -TMFF_EXIT_STOPPED;
         }
         if (session->decoder_ended) {
-            return 0;
+            return owe_trailing_silence(session);
         }
         const int received = avcodec_receive_frame(session->decoder, session->frame);
         if (received == 0) {
@@ -750,11 +906,16 @@ static int next_frame(tmff_session *session) {
             if (session->decoder->sample_rate > 0 && session->frame->sample_rate != session->decoder->sample_rate) {
                 session->frame->sample_rate = session->decoder->sample_rate;
             }
+            const AVFrame *frame = session->frame;
+            const int64_t start = frame->best_effort_timestamp == AV_NOPTS_VALUE
+                ? AV_NOPTS_VALUE
+                : ticks_to_us(frame->best_effort_timestamp, session->format->streams[session->stream_index]->time_base);
+            note_frame(session, start, frame->nb_samples, frame->sample_rate);
             return 1;
         }
         if (received == AVERROR_EOF) {
             session->decoder_ended = 1;
-            return 0;
+            return owe_trailing_silence(session);
         }
         if (received == AVERROR(ENOMEM)) {
             return -TMFF_EXIT_MEMORY;
@@ -776,7 +937,7 @@ static int next_frame(tmff_session *session) {
         if (session->demuxer_ended) {
             /* Already drained once and still asking: there is nothing more. */
             session->decoder_ended = 1;
-            return 0;
+            return owe_trailing_silence(session);
         }
         const int read = av_read_frame(session->format, session->packet);
         if (read < 0) {
@@ -790,11 +951,12 @@ static int next_frame(tmff_session *session) {
             session->demuxer_ended = 1;
             if (avcodec_send_packet(session->decoder, NULL) < 0) {
                 session->decoder_ended = 1;
-                return 0;
+                return owe_trailing_silence(session);
             }
             continue;
         }
         if (session->packet->stream_index == session->stream_index) {
+            const int64_t length_us = packet_length_us(session, session->packet);
             const int sent = avcodec_send_packet(session->decoder, session->packet);
             if (sent == AVERROR(ENOMEM)) {
                 av_packet_unref(session->packet);
@@ -806,6 +968,9 @@ static int next_frame(tmff_session *session) {
                     return -TMFF_EXIT_FRAME_TOO_LARGE;
                 }
                 session->packet_errors++;
+                note_refused_packet(session, length_us);
+            } else if (length_us > 0) {
+                session->last_packet_us = length_us;
             }
         }
         av_packet_unref(session->packet);
@@ -1247,13 +1412,27 @@ static int make_pcm(tmff_session *session) {
     const size_t frame_bytes = (size_t)session->channels * (session->out == OUT_S16 ? 2u : 4u);
     while (session->record_length - TMFF_RECORD_HEADER_BYTES < PCM_RECORD_TARGET) {
         if (!session->have_frame) {
+            /* 0 here is not yet the end: the packets refused at the end of the sound owe silence. */
             const int found = take_next_source(session);
             if (found < 0) {
                 return found;
             }
-            if (found == 0) {
-                break;
+        }
+        /* Silence owed for refused sound comes before the frame that follows it (FU03), in whole
+           frames of zeros, which is silence in each of the three forms. */
+        const size_t quiet_room = (TMFF_MAX_PCM_RECORD_BYTES - (session->record_length - TMFF_RECORD_HEADER_BYTES)) / frame_bytes;
+        const uint64_t quiet = take_silence_frames(session, quiet_room);
+        if (quiet > 0) {
+            if (reserve(session, (size_t)quiet * frame_bytes) != 0) {
+                return -TMFF_EXIT_MEMORY;
             }
+            memset(session->record + session->record_length, 0, (size_t)quiet * frame_bytes);
+            session->record_length += (size_t)quiet * frame_bytes;
+            session->frames_written += quiet;
+            continue;
+        }
+        if (!session->have_frame) {
+            break;
         }
         AVFrame *frame = session->source;
         const int left = frame->extended_data ? frame->nb_samples - session->frame_position : 0;
@@ -1378,7 +1557,10 @@ give:
 
 /* One stretch of the frames the made-up decoder gives: `times` frames, each of `samples` samples
    of silence in `format`, at `rate`, in the channel layout `mask` names (a WAVE channel mask),
-   or the default layout for `channels` when `mask` is 0. */
+   or the default layout for `channels` when `mask` is 0. The rest is for the refused sound (FU03),
+   and left out, a run has none: `timed` gives each frame a start (`start_us` for the first, then
+   one frame's length on for each next), `refused` packets of `refused_us` each are refused just
+   before the run's first frame, and `after_refused` just after its last. */
 typedef struct {
     int times;
     int rate;
@@ -1386,6 +1568,11 @@ typedef struct {
     int format;
     int samples;
     uint64_t mask;
+    int timed;
+    int64_t start_us;
+    int refused;
+    int64_t refused_us;
+    int after_refused;
 } made_up_run;
 
 /* The script the made-up decoder is reading, and where it has got to (one check runs at a time). */
@@ -1399,10 +1586,15 @@ static int made_up_next(tmff_session *session) {
         script_given = 0;
     }
     if (script_run >= script_count) {
-        return 0;
+        return owe_trailing_silence(session);
     }
     const made_up_run *run = &script[script_run];
     script_given++;
+    if (script_given == 1) {
+        for (int refused = 0; refused < run->refused; refused++) {
+            note_refused_packet(session, run->refused_us);
+        }
+    }
     AVFrame *frame = session->frame;
     av_frame_unref(frame);
     frame->format = run->format;
@@ -1417,6 +1609,15 @@ static int made_up_next(tmff_session *session) {
         return -TMFF_EXIT_MEMORY;
     }
     av_samples_set_silence(frame->extended_data, 0, run->samples, run->channels, (enum AVSampleFormat)run->format);
+    /* The frame's start, as the decoder would give it: the run's, then one frame's length on each. */
+    const int64_t start = run->timed ? run->start_us + (int64_t)(script_given - 1) * run->samples * MICROSECONDS / run->rate
+                                     : AV_NOPTS_VALUE;
+    note_frame(session, start, run->samples, run->rate);
+    if (script_given == run->times) {
+        for (int refused = 0; refused < run->after_refused; refused++) {
+            note_refused_packet(session, run->refused_us);
+        }
+    }
     return 1;
 }
 
@@ -1427,12 +1628,16 @@ typedef struct {
     long long frames;
     long long largest;
     unsigned int changes;
+    long long silence;
 } formcheck_result;
 
 /* Runs `runs` (`count` of them) through the session's conversion as the PCM records' writer does,
-   from the first frame on: no file and no decoder, only frames made up in memory. */
-static formcheck_result run_script(const made_up_run *runs, int count) {
-    formcheck_result result = {0, 0, 0, 0};
+   from the first frame on: no file and no decoder, only frames made up in memory. The silence
+   owed for refused sound is bounded by `limit_us` (0: the default for a file that states no
+   length) and by a file of `size_bytes` (0: no size), and counted in the result's frames of
+   silence, as make_pcm would write them. */
+static formcheck_result run_script_limited(const made_up_run *runs, int count, int64_t limit_us, int64_t size_bytes) {
+    formcheck_result result = {0, 0, 0, 0, 0};
     script = runs;
     script_count = count;
     script_run = script_given = 0;
@@ -1444,9 +1649,12 @@ static formcheck_result run_script(const made_up_run *runs, int count) {
     session->frame = av_frame_alloc();
     session->converted = av_frame_alloc();
     session->made_up = made_up_next;
+    session->silence_limit_us = limit_us;
+    session->size = size_bytes;
     int found = session->frame && session->converted ? next_frame(session) : -TMFF_EXIT_MEMORY;
     if (found > 0) {
         result.status = adopt_first_form(session, session->frame, 0);
+        result.silence += (long long)take_silence_frames(session, UINT64_MAX);
     } else {
         result.status = found < 0 ? -found : TMFF_EXIT_DAMAGED;
     }
@@ -1460,6 +1668,7 @@ static formcheck_result run_script(const made_up_run *runs, int count) {
         av_frame_unref(session->source);
         session->have_frame = 0;
         found = take_next_source(session);
+        result.silence += (long long)take_silence_frames(session, UINT64_MAX);
         if (found <= 0) {
             result.status = found < 0 ? -found : 0;
             break;
@@ -1470,11 +1679,17 @@ static formcheck_result run_script(const made_up_run *runs, int count) {
     return result;
 }
 
-/* Appends "name=status frames=N largest=B changes=C\n" for `result` to `out` (of `capacity` bytes). */
+/* The same with the default bound on the silence. */
+static formcheck_result run_script(const made_up_run *runs, int count) {
+    return run_script_limited(runs, count, 0, 0);
+}
+
+/* Appends "name=status frames=N largest=B changes=C silence=S\n" for `result` to `out` (of
+   `capacity` bytes). */
 static void formcheck_line(char *out, size_t capacity, const char *name, formcheck_result result) {
     const size_t used = strlen(out);
-    snprintf(out + used, capacity - used, "%s=%d frames=%lld largest=%lld changes=%u\n", name, result.status, result.frames, result.largest,
-             result.changes);
+    snprintf(out + used, capacity - used, "%s=%d frames=%lld largest=%lld changes=%u silence=%lld\n", name, result.status, result.frames,
+             result.largest, result.changes, result.silence);
 }
 
 /* The two rates of a ratio check: the first frame's, then the other's, in mono floating point. */
@@ -1489,7 +1704,7 @@ static formcheck_result run_ratio(int first_rate, int other_rate) {
 /* `changes` changes away from the first form and back: a frame of another rate, then one of the first. */
 static formcheck_result run_changes(int changes) {
     made_up_run *runs = calloc((size_t)(2 * changes + 1), sizeof *runs);
-    formcheck_result result = {TMFF_EXIT_MEMORY, 0, 0, 0};
+    formcheck_result result = {TMFF_EXIT_MEMORY, 0, 0, 0, 0};
     if (runs) {
         runs[0] = (made_up_run){1, 22050, 1, AV_SAMPLE_FMT_FLT, 1152, 0};
         for (int index = 0; index < changes; index++) {
@@ -1543,6 +1758,83 @@ int tmff_session_formcheck(char *out, size_t capacity) {
             {1, 22050, 6, AV_SAMPLE_FMT_FLT, 1152, AV_CH_LAYOUT_6POINT0},
         };
         formcheck_line(out, capacity, "layout-other", run_script(other, 2));
+    }
+    /* Refused sound, kept as silence (FU03). At 8,000 Hz, mono, in frames of 16 samples (2 ms): the
+       sample of 900 refused packets between 100 and 400 good ones (flac-900-bad-packets.mka) has
+       its stretch of 1.8 s filled to the next frame's start, 14,400 frames. */
+    {
+        const made_up_run runs[] = {
+            {100, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 0, 0, 0, 0},
+            {400, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 2000000, 900, 2000, 0},
+        };
+        formcheck_line(out, capacity, "silence-timed", run_script(runs, 2));
+    }
+    /* With no timestamps, the refused packets' own lengths are the gap: 3 of 2 ms and then 1
+       of 2 ms are 8 ms, 64 frames. */
+    {
+        const made_up_run runs[] = {
+            {2, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 0, 0, 0, 0, 0},
+            {2, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 0, 0, 3, 2000, 0},
+            {2, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 0, 0, 1, 2000, 0},
+        };
+        formcheck_line(out, capacity, "silence-untimed", run_script(runs, 3));
+    }
+    /* Refused packets at the start and at the end of the sound are silence too: 2 before the
+       first frame and 5 after the last, of 2 ms each (14 ms, 112 frames). */
+    {
+        const made_up_run runs[] = {
+            {3, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 0, 0, 2, 2000, 5},
+        };
+        formcheck_line(out, capacity, "silence-ends", run_script(runs, 1));
+    }
+    /* A good file is never given silence, whatever its timestamps say: an hour between two
+       frames, no packet refused. */
+    {
+        const made_up_run runs[] = {
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 0, 0, 0, 0},
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 3600000000, 0, 0, 0},
+        };
+        formcheck_line(out, capacity, "silence-none", run_script(runs, 2));
+    }
+    /* Past the bound, no silence is owed and the decode goes on, the gap closing as it did before
+       FU03 (status 0): an hour of timestamp between two frames with a packet refused between them,
+       against a bound of 10 s, gives the packet's own 2 ms (16 frames); a stretch of the bound
+       itself is filled (10 s, 80,000 frames); a packet claiming a length past the ceiling owes
+       none; and the bound is what the stretches add up to, not each one (6 s, then no more); a
+       jump backward gives the packets' own lengths (3 of 2 ms, 48 frames); and a file of 10 KB,
+       which holds 81.92 s at 1 kbit/s, is given the packet's own length instead of a gap of 100 s. */
+    {
+        const made_up_run hour[] = {
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 0, 0, 0, 0},
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 3600000000, 1, 2000, 0},
+        };
+        formcheck_line(out, capacity, "silence-absurd", run_script_limited(hour, 2, 10000000, 0));
+        const made_up_run exact[] = {
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 0, 0, 0, 0},
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 10002000, 1, 2000, 0},
+        };
+        formcheck_line(out, capacity, "silence-at-bound", run_script_limited(exact, 2, 10000000, 0));
+        const made_up_run claimed[] = {
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 0, 0, 0, 0, 0},
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 0, 0, 1, INT64_MAX, 0},
+        };
+        formcheck_line(out, capacity, "silence-claimed", run_script(claimed, 2));
+        const made_up_run sums[] = {
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 0, 0, 0, 0, 0},
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 0, 0, 1, 6000000, 0},
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 0, 0, 1, 6000000, 0},
+        };
+        formcheck_line(out, capacity, "silence-sums", run_script_limited(sums, 3, 10000000, 0));
+        const made_up_run backward[] = {
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 1000000, 0, 0, 0},
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 0, 3, 2000, 0},
+        };
+        formcheck_line(out, capacity, "silence-backward", run_script(backward, 2));
+        const made_up_run sized[] = {
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 0, 0, 0, 0},
+            {1, 8000, 1, AV_SAMPLE_FMT_S16, 16, 0, 1, 100002000, 1, 2000, 0},
+        };
+        formcheck_line(out, capacity, "silence-size", run_script_limited(sized, 2, 43200000000, 10240));
     }
     /* The most changes of form, and one more. */
     formcheck_line(out, capacity, "changes-1000", run_changes(1000));
