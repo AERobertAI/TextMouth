@@ -87,7 +87,7 @@ final class MarkdownNestingCacheTests: XCTestCase {
 
     // MARK: - Reading content.md
 
-    /// A refused chapter keeps its place and its raw text; its neighbours read as they did.
+    /// A refused chapter keeps its place and its words as written (`RawChapterLines.readingText`); its neighbours read as they did.
     func testARefusedChapterIsKeptAsWritten() {
         let deep = deepQuotes(around: "Quoted words")
         let content = MarkdownCacheService.parseMultiChapterMarkdown(
@@ -149,6 +149,32 @@ final class MarkdownNestingCacheTests: XCTestCase {
         XCTAssertEqual(moved.chapterIndex, 1)
         XCTAssertEqual(moved.characterOffset, try Phrase.offset(of: "line two", in: deepAfter))
         XCTAssertNotEqual(moved.characterOffset, offset, "the offset moved, with the words")
+    }
+
+    /// A paragraph of many lines is joined in one pass, not copied once for
+    /// every line (B16's review): a deep quote has no blank line, so a whole
+    /// chapter is one paragraph. A fixed bound would depend on the machine, so
+    /// this compares one text with another four times as long: a linear join
+    /// takes about four times as long for it, a quadratic one about sixteen.
+    /// The best of three runs of each is compared, against a limit of ten.
+    func testAParagraphOfManyLinesIsJoinedInLinearTime() {
+        /// A chapter of `lines` lines and no blank line.
+        func chapter(_ lines: Int) -> String {
+            (0..<lines).map { "line \($0) with some words\\." }.joined(separator: "\n")
+        }
+        /// The shortest of three runs of `readingText` over `text`, in seconds.
+        func best(_ text: String) -> Double {
+            (0..<3).map { _ in
+                let start = Date()
+                XCTAssertFalse(RawChapterLines.readingText(of: text).isEmpty)
+                return Date().timeIntervalSince(start)
+            }.min() ?? 0
+        }
+        let small = best(chapter(5_000))
+        let large = best(chapter(20_000))
+        // A clock too coarse to time the small text proves nothing about it.
+        guard small > 0.001 else { return }
+        XCTAssertLessThan(large / small, 10, "4x the lines took \(large / small)x as long")
     }
 
     /// The text of the middle chapter of `markdown` as it was kept before
