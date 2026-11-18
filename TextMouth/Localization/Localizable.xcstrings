@@ -88,6 +88,9 @@
     "A New Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays."
     },
+    "A new timer replaces the one running." : {
+      "comment" : "Note under the sleep timer sheet's New Timer heading while a timer runs: setting one of the timers below stops it."
+    },
     "Add" : {
       "comment" : "Button of the panel for adding a bookmark: adds it, with the note written."
     },
@@ -139,9 +142,6 @@
     },
     "Add Bookmark" : {
       "comment" : "Button of the Bookmarks list that adds a bookmark at the reading position, and the heading of the panel where its note is written."
-    },
-    "Add bookmark at current position" : {
-      "comment" : "VoiceOver label of the Bookmarks list's Add Bookmark button."
     },
     "Added %lld books to the reading list." : {
       "comment" : "VoiceOver announcement after several books were added to the reading list. %lld is the number of books added."
@@ -232,11 +232,26 @@
     "Cancel Timer" : {
       "comment" : "Button of the sleep timer sheet that stops the running timer."
     },
+    "Chooses what a book opened from the list does when it ends." : {
+      "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button."
+    },
+    "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@, this window closes." : {
+      "comment" : "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. %@ is the name of its choice This Window."
+    },
+    "Chooses where this feed's next article opens." : {
+      "comment" : "VoiceOver hint of the Open the next article in pop-up button in a news feed's Feed Info."
+    },
+    "Chooses where this feed's next episode opens." : {
+      "comment" : "VoiceOver hint of the Open the next episode in pop-up button in a podcast feed's Feed Info."
+    },
+    "Chooses where this feed's next item opens." : {
+      "comment" : "VoiceOver hint of the Open the next item in pop-up button in a feed's Feed Info."
+    },
+    "Chooses where this folder's next book opens." : {
+      "comment" : "VoiceOver hint of the Open the next book in pop-up button in a folder's settings."
+    },
     "Close" : {
       "comment" : "Button that closes a sheet, such as the sleep timer sheet over a book's reader."
-    },
-    "Close the sleep timer and return to the book" : {
-      "comment" : "VoiceOver hint of the sleep timer sheet's Close button."
     },
     "Could not add the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks."
@@ -247,7 +262,7 @@
     "Current Timer" : {
       "comment" : "Heading of the sleep timer sheet's section about the timer running now."
     },
-    "Custom timer minutes" : {
+    "Custom minutes" : {
       "comment" : "VoiceOver label of the sleep timer sheet's field of a custom number of minutes."
     },
     "Custom:" : {
@@ -310,9 +325,6 @@
     "Finished: %@" : {
       "comment" : "VoiceOver announcement as a book ends with no book to follow it. %@ is the book's title. Sentences saying why may follow it."
     },
-    "For a book opened from the reading list: play the book below it or the book above it when it ends, or stop" : {
-      "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button."
-    },
     "Go To" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark."
     },
@@ -328,8 +340,14 @@
     "Keep these books on this Mac" : {
       "comment" : "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac."
     },
-    "Keeps the books on the reading list downloaded on this Mac, as Keep on This Mac does. This choice is this Mac's alone. Clearing it removes no download." : {
-      "comment" : "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox. Keep on This Mac is a command of the Library menu."
+    "Keeps the list's books downloaded on this Mac alone. Clearing it removes no download." : {
+      "comment" : "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone."
+    },
+    "Keeps the order you set with Move Book Up, Move Book Down, or dragging." : {
+      "comment" : "VoiceOver hint of the Reading List Order item of the Reading List's Sort menu. Move Book Up and Move Book Down are commands of the Library menu."
+    },
+    "Marks the reading position." : {
+      "comment" : "VoiceOver hint of the Bookmarks list's Add Bookmark button: the bookmark is added where the book is being read."
     },
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after an audiobook's edited title, artist, album, genre, or year was saved."
@@ -394,26 +412,32 @@
     "Opening: %@" : {
       "comment" : "VoiceOver announcement as Next in Reading List or Previous in Reading List opens a book without playing it. %@ is the book's title."
     },
-    "Optional note to describe this bookmark" : {
-      "comment" : "VoiceOver hint of the note field when adding a bookmark."
+    "Passes over finished books when a book from the list ends." : {
+      "comment" : "VoiceOver hint of the Reading List's Skip finished books checkbox."
     },
     "Pause playback after:" : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes."
-    },
-    "Pauses playback when this book ends, before Continue to Next Book starts the next book." : {
-      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to Continue to Next Book (a choice of the When book ends setting)."
-    },
-    "Pauses playback when this book ends, before Loop to Start plays it again." : {
-      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to Loop to Start (a choice of the When book ends setting)."
-    },
-    "Pauses playback where the heading playing now ends: where the next heading begins, or the book ends." : {
-      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of heading button."
     },
     "Play the book above" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list."
     },
     "Play the book below" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list."
+    },
+    "Plays the book and pauses before it starts again." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends."
+    },
+    "Plays the book and pauses before the next book." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to go on to the next book when it ends."
+    },
+    "Plays the book until the next heading." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of heading button: the book plays, and pauses where the next heading begins."
+    },
+    "Plays the book." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's minute presets and Set button: setting the timer also plays the book."
+    },
+    "Plays the book; it stops at its end anyway." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book that stops at its end on its own, so the timer adds nothing there."
     },
     "Reading List" : {
       "comment" : "The start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List."
@@ -493,14 +517,17 @@
     "Reset Timer" : {
       "comment" : "Button of the sleep timer sheet that starts the running timer again from its whole length."
     },
-    "Restart the timer with its original duration" : {
-      "comment" : "VoiceOver hint of the sleep timer sheet's Reset Timer button."
-    },
     "Restarting: %@" : {
       "comment" : "VoiceOver announcement as a book set to loop starts again from its beginning. %@ is the book's title."
     },
+    "Restarts the timer at its full length." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's Reset Timer button: the running timer starts again from the length it was set to."
+    },
     "Returned to previous position" : {
       "comment" : "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result."
+    },
+    "Returns to the book." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's Close button: closing the sheet goes back to the book's reader."
     },
     "Save" : {
       "comment" : "Button of the panel for editing a bookmark's note: keeps the note."
@@ -508,8 +535,8 @@
     "Set" : {
       "comment" : "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes."
     },
-    "Set timer for %lld minutes and start playing" : {
-      "comment" : "VoiceOver label of a sleep timer button that sets a timer of so many minutes and starts the book. %lld is the number of minutes.",
+    "Set timer for %lld minutes" : {
+      "comment" : "VoiceOver label of a sleep timer button that sets a timer of so many minutes. %lld is the number of minutes.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -517,22 +544,19 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Set timer for %lld minute and start playing"
+                  "value" : "Set timer for %lld minute"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Set timer for %lld minutes and start playing"
+                  "value" : "Set timer for %lld minutes"
                 }
               }
             }
           }
         }
       }
-    },
-    "Setting a new timer replaces the current one." : {
-      "comment" : "Note under the sleep timer sheet's New Timer heading while a timer runs."
     },
     "Skip finished books" : {
       "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books."
@@ -614,14 +638,11 @@
     "Stop At" : {
       "comment" : "Heading of the sleep timer sheet's section of timers that stop at a place in the book: End of heading and End of book."
     },
-    "Stop at the end of the book and start playing" : {
-      "comment" : "VoiceOver label of the sleep timer sheet's End of book button, which sets a timer that stops where the book ends, and starts the book."
+    "Stop at the end of the book" : {
+      "comment" : "VoiceOver label of the sleep timer sheet's End of book button, which sets a timer that stops where the book ends."
     },
-    "Stop at the end of this heading and start playing" : {
-      "comment" : "VoiceOver label of the sleep timer sheet's End of heading button, which sets a timer that stops where the heading playing ends, and starts the book."
-    },
-    "Stop the timer and discard the remaining time" : {
-      "comment" : "VoiceOver hint of the sleep timer sheet's Cancel Timer button."
+    "Stop at the end of this heading" : {
+      "comment" : "VoiceOver label of the sleep timer sheet's End of heading button, which sets a timer that stops where the heading playing ends."
     },
     "Take it off the reading list, or clear %@ in the Reading List's options" : {
       "comment" : "Advice that begins a sentence of the iCloud library's messages, on letting go of a book this Mac keeps for the reading list; the sentence goes on after it. %@ is the name of the checkbox Keep these books on this Mac."
@@ -629,7 +650,18 @@
     "Take them off the reading list, or clear %@ in the Reading List's options" : {
       "comment" : "Advice that begins a sentence of the iCloud library's messages, on letting go of several books this Mac keeps for the reading list; the sentence goes on after it. %@ is the name of the checkbox Keep these books on this Mac."
     },
-    "Takes a finished book off the reading list once its reader window moves on or closes. Books finished before you turn this on stay on it." : {
+    "Takes %lld to %lld minutes." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Takes %1$lld to %2$lld minutes."
+          }
+        }
+      }
+    },
+    "Takes each finished book off the list when its window moves on or closes. Books finished before stay." : {
       "comment" : "VoiceOver hint of the Reading List's Remove books when finished checkbox."
     },
     "Takes the selected books off the reading list. They stay in the library." : {
@@ -659,14 +691,8 @@
     "The reading list is set to stop when a book ends" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": the list's When a book ends is Stop. Written without its full stop."
     },
-    "The reading list keeps the order you arrange with Move Book Up, Move Book Down, or dragging" : {
-      "comment" : "VoiceOver hint of the Reading List Order item of the Reading List's Sort menu. Move Book Up and Move Book Down are commands of the Library menu."
-    },
     "This Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there."
-    },
-    "This book already stops playing at its end, since Continue to Next Book is off; the timer stops it there too." : {
-      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book that stops at its end anyway. Continue to Next Book is a choice of the When book ends setting."
     },
     "This book was not opened from the reading list." : {
       "comment" : "VoiceOver announcement when Next in Reading List or Previous in Reading List is used in a reader whose book was not opened from the reading list."
@@ -703,51 +729,11 @@
         }
       }
     },
-    "Type the minutes, or change them %lld at a time with %@. Return sets the timer and starts playing." : {
-      "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the Mac. %lld is how many minutes the stepper beside the field changes them by (5); %@ is the stepper's label, Adjust minutes.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Type the minutes, or change them %1$lld at a time with %2$@. Return sets the timer and starts playing."
-          }
-        }
-      }
-    },
-    "Type the minutes, or change them %lld at a time with %@. Set sets the timer and starts playing." : {
-      "comment" : "VoiceOver hint of the iPhone sleep timer sheet's custom minutes field. %lld is how many minutes the stepper below the field changes them by (5); %@ is the stepper's label, Adjust minutes; Set is the button that sets the timer.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Type the minutes, or change them %1$lld at a time with %2$@. Set sets the timer and starts playing."
-          }
-        }
-      }
-    },
     "Use the global setting (%@)" : {
       "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window."
     },
     "When a book ends" : {
       "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop."
-    },
-    "When a book opened from the reading list ends, pass over the books already finished" : {
-      "comment" : "VoiceOver hint of the Reading List's Skip finished books checkbox."
-    },
-    "Where the next article opens when listening goes on from one of this feed's articles: in this window, in a new window, or as the global setting says" : {
-      "comment" : "VoiceOver hint of the Open the next article in pop-up button in a news feed's Feed Info."
-    },
-    "Where the next book opens when listening goes on from one book to another: in this window in place of the book here, or in a new window. A book already open in another window is brought forward, and with This Window this window closes." : {
-      "comment" : "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. \"This Window\" is the name of one of its choices."
-    },
-    "Where the next book opens when listening goes on from one of this folder's books: in this window, in a new window, or as the global setting says" : {
-      "comment" : "VoiceOver hint of the Open the next book in pop-up button in a folder's settings."
-    },
-    "Where the next episode opens when listening goes on from one of this feed's episodes: in this window, in a new window, or as the global setting says" : {
-      "comment" : "VoiceOver hint of the Open the next episode in pop-up button in a podcast feed's Feed Info."
-    },
-    "Where the next item opens when listening goes on from one of this feed's items: in this window, in a new window, or as the global setting says" : {
-      "comment" : "VoiceOver hint of the Open the next item in pop-up button in a feed's Feed Info."
     },
     "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
       "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",

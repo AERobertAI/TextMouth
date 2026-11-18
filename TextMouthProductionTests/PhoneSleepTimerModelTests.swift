@@ -46,10 +46,12 @@ final class PhoneSleepTimerModelTests: XCTestCase {
         XCTAssertEqual(PhoneSleepTimerModel.duration(of: .endOfHeading, customMinutes: 30), .endOfHeading)
         XCTAssertEqual(PhoneSleepTimerModel.duration(of: .endOfBook, customMinutes: 30), .endOfBook)
 
-        XCTAssertEqual(PhoneSleepTimerModel.label(of: .preset(minutes: 15), customMinutes: 30), "Set timer for 15 minutes and start playing")
-        XCTAssertEqual(PhoneSleepTimerModel.label(of: .custom, customMinutes: 1), "Set timer for 1 minute and start playing")
-        XCTAssertEqual(PhoneSleepTimerModel.label(of: .endOfHeading, customMinutes: 30), "Stop at the end of this heading and start playing")
-        XCTAssertEqual(PhoneSleepTimerModel.label(of: .endOfBook, customMinutes: 30), "Stop at the end of the book and start playing")
+        XCTAssertEqual(PhoneSleepTimerModel.label(of: .preset(minutes: 15), customMinutes: 30), "Set timer for 15 minutes")
+        XCTAssertEqual(PhoneSleepTimerModel.label(of: .custom, customMinutes: 1), "Set timer for 1 minute")
+        XCTAssertEqual(PhoneSleepTimerModel.label(of: .endOfHeading, customMinutes: 30), "Stop at the end of this heading")
+        XCTAssertEqual(PhoneSleepTimerModel.label(of: .endOfBook, customMinutes: 30), "Stop at the end of the book")
+        // What the minute buttons also do is their hint, the Mac's (FR35).
+        XCTAssertEqual(SleepTimerView.minutesTimerHint, "Plays the book.")
     }
 
     /// What's said once a timer is set is the Mac's sentence.
@@ -58,12 +60,13 @@ final class PhoneSleepTimerModelTests: XCTestCase {
         XCTAssertEqual(PhoneSleepTimerModel.setAnnouncement(.endOfHeading), "Sleep timer: stops at the end of this heading.")
     }
 
-    /// The custom field's hint names no Return key.
-    func testTheCustomHintIsThePhones() {
-        XCTAssertEqual(
-            PhoneSleepTimerModel.customMinutesHint,
-            "Type the minutes, or change them 5 at a time with Adjust minutes. Set sets the timer and starts playing."
-        )
+    /// The custom field's hint is the Mac's: the minutes it takes, naming no
+    /// key and no other control (FR35's cut; the phone once had a sentence of
+    /// its own, since the Mac's named its Return key).
+    func testTheCustomHintIsTheMacs() {
+        XCTAssertEqual(PhoneSleepTimerModel.customMinutesHint, "Takes 1 to 480 minutes.")
+        XCTAssertEqual(PhoneSleepTimerModel.customMinutesHint, SleepTimerView.customMinutesHint)
+        XCTAssertEqual(PhoneSleepTimerModel.customMinutesRange, SleepTimerView.customMinutesRange)
     }
 
     /// The reader's value is "Off" without a timer, else the Mac's status.
@@ -75,7 +78,7 @@ final class PhoneSleepTimerModelTests: XCTestCase {
 
     /// The note under New Timer is the Mac's, by whether a timer runs.
     func testTheNewTimerNoteFollowsTheTimer() {
-        XCTAssertEqual(PhoneSleepTimerModel.newTimerNote(isActive: true), "Setting a new timer replaces the current one.")
+        XCTAssertEqual(PhoneSleepTimerModel.newTimerNote(isActive: true), "A new timer replaces the one running.")
         XCTAssertEqual(PhoneSleepTimerModel.newTimerNote(isActive: false), "Pause playback after:")
     }
 
@@ -104,27 +107,25 @@ final class PhoneSleepTimerVocabularyTests: XCTestCase {
             (PhoneSleepTimerVocabulary.title, SleepTimerView.title, "Sleep Timer", "Text(Self.title)"),
             (PhoneAppWording.close, SleepTimerView.closeTitle, "Close", "Button(Self.closeTitle)"),
             (PhoneSleepTimerVocabulary.closeHint, SleepTimerView.closeHint,
-             "Close the sleep timer and return to the book", ".accessibilityHint(Self.closeHint)"),
+             "Returns to the book.", ".accessibilityHint(Self.closeHint)"),
             (PhoneSleepTimerVocabulary.currentTimer, SleepTimerView.currentTimerHeading,
              "Current Timer", "Text(Self.currentTimerHeading)"),
             (PhoneSleepTimerVocabulary.resetTimer, SleepTimerView.resetTimerTitle, "Reset Timer", "Button(Self.resetTimerTitle)"),
             (PhoneSleepTimerVocabulary.resetTimerHint, SleepTimerView.resetTimerHint,
-             "Restart the timer with its original duration", ".accessibilityHint(Self.resetTimerHint)"),
+             "Restarts the timer at its full length.", ".accessibilityHint(Self.resetTimerHint)"),
             (PhoneSleepTimerVocabulary.cancelTimer, SleepTimerView.cancelTimerTitle,
              "Cancel Timer", "Button(Self.cancelTimerTitle, role: .destructive)"),
-            (PhoneSleepTimerVocabulary.cancelTimerHint, SleepTimerView.cancelTimerHint,
-             "Stop the timer and discard the remaining time", ".accessibilityHint(Self.cancelTimerHint)"),
             (PhoneSleepTimerVocabulary.cancelled, SleepTimerView.cancelledAnnouncement,
              "Sleep timer cancelled.", "announceToVoiceOver(Self.cancelledAnnouncement)"),
             (PhoneSleepTimerVocabulary.newTimer, SleepTimerView.newTimerHeading, "New Timer", "Text(Self.newTimerHeading)"),
             (PhoneSleepTimerVocabulary.replacesCurrent, SleepTimerView.newTimerNote(isActive: true),
-             "Setting a new timer replaces the current one.", "Text(Self.newTimerNote(isActive: sleepTimerService.isActive))"),
+             "A new timer replaces the one running.", "Text(Self.newTimerNote(isActive: sleepTimerService.isActive))"),
             (PhoneSleepTimerVocabulary.pausePlaybackAfter, SleepTimerView.newTimerNote(isActive: false),
              "Pause playback after:", "Text(Self.newTimerNote(isActive: sleepTimerService.isActive))"),
             (PhoneSleepTimerVocabulary.minutesField, SleepTimerView.minutesFieldTitle,
              "Minutes", "TextField(Self.minutesFieldTitle, value: $customMinutes, format: .number)"),
             (PhoneSleepTimerVocabulary.customMinutesLabel, SleepTimerView.customMinutesLabel,
-             "Custom timer minutes", ".accessibilityLabel(Self.customMinutesLabel)"),
+             "Custom minutes", ".accessibilityLabel(Self.customMinutesLabel)"),
             (PhoneSleepTimerVocabulary.set, SleepTimerView.setTitle, "Set", "Button(Self.setTitle)"),
         ]
 

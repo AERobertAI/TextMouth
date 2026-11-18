@@ -122,7 +122,7 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(ReadingListWording.orderAnnouncement, "Sorted by Reading List Order")
         XCTAssertEqual(
             ReadingListWording.orderHint,
-            "The reading list keeps the order you arrange with Move Book Up, Move Book Down, or dragging"
+            "Keeps the order you set with Move Book Up, Move Book Down, or dragging."
         )
     }
 
@@ -746,24 +746,22 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(ReadingListWording.continuationLabel, "When a book ends")
         XCTAssertEqual(
             ReadingListWording.continuationHint,
-            "For a book opened from the reading list: play the book below it or the book above it when it ends, or stop"
+            "Chooses what a book opened from the list does when it ends."
         )
         XCTAssertEqual(ReadingListWording.skipFinishedLabel, "Skip finished books")
         XCTAssertEqual(
             ReadingListWording.skipFinishedHint,
-            "When a book opened from the reading list ends, pass over the books already finished"
+            "Passes over finished books when a book from the list ends."
         )
         XCTAssertEqual(ReadingListWording.removeFinishedLabel, "Remove books when finished")
         XCTAssertEqual(
             ReadingListWording.removeFinishedHint,
-            "Takes a finished book off the reading list once its reader window moves on or closes. "
-                + "Books finished before you turn this on stay on it."
+            "Takes each finished book off the list when its window moves on or closes. Books finished before stay."
         )
         XCTAssertEqual(ReadingListWording.keepBooksLabel, "Keep these books on this Mac")
         XCTAssertEqual(
             ReadingListWording.keepBooksHint,
-            "Keeps the books on the reading list downloaded on this Mac, as Keep on This Mac does. "
-                + "This choice is this Mac's alone. Clearing it removes no download."
+            "Keeps the list's books downloaded on this Mac alone. Clearing it removes no download."
         )
         // Four controls, each told apart by its own label.
         XCTAssertEqual(

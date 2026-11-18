@@ -176,10 +176,12 @@ enum NextBookWindowWording {
                comment: "Label of the pop-up button in Settings, Playback, and in a folder's settings, choosing where the next book opens; its choices are This Window and A New Window.")
     }
 
-    /// The hint of Settings' pop-up button.
+    /// The hint of Settings' pop-up button, also shown under it (FR35's cut:
+    /// it began "Where the next book opens when listening goes on from one
+    /// book to another", and said each choice at length).
     static var globalHint: String {
-        String(localized: "Where the next book opens when listening goes on from one book to another: in this window in place of the book here, or in a new window. A book already open in another window is brought forward, and with This Window this window closes.",
-               comment: "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. \"This Window\" is the name of one of its choices.")
+        String(localized: "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with \(NextBookWindow.thisWindow.title), this window closes.",
+               comment: "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. %@ is the name of its choice This Window.")
     }
 
     // MARK: A Feed's or Folder's Own Choice
@@ -222,26 +224,29 @@ enum NextBookWindowWording {
     }
 
     /// The hint while the choice is in effect: what it chooses, for the
-    /// items `noun` names.
+    /// items `noun` names; its choices say the rest (FR35's cut: each said
+    /// the three choices again).
     private static func enabledHint(_ noun: ListeningOptionsWording.Noun) -> String {
         switch noun {
         case .episode:
-            return String(localized: "Where the next episode opens when listening goes on from one of this feed's episodes: in this window, in a new window, or as the global setting says",
+            return String(localized: "Chooses where this feed's next episode opens.",
                           comment: "VoiceOver hint of the Open the next episode in pop-up button in a podcast feed's Feed Info.")
         case .article:
-            return String(localized: "Where the next article opens when listening goes on from one of this feed's articles: in this window, in a new window, or as the global setting says",
+            return String(localized: "Chooses where this feed's next article opens.",
                           comment: "VoiceOver hint of the Open the next article in pop-up button in a news feed's Feed Info.")
         case .item:
-            return String(localized: "Where the next item opens when listening goes on from one of this feed's items: in this window, in a new window, or as the global setting says",
+            return String(localized: "Chooses where this feed's next item opens.",
                           comment: "VoiceOver hint of the Open the next item in pop-up button in a feed's Feed Info.")
         case .book:
-            return String(localized: "Where the next book opens when listening goes on from one of this folder's books: in this window, in a new window, or as the global setting says",
+            return String(localized: "Chooses where this folder's next book opens.",
                           comment: "VoiceOver hint of the Open the next book in pop-up button in a folder's settings.")
         }
     }
 
     /// The hint while the choice is dimmed: when it becomes available, for
-    /// the items `noun` names.
+    /// the items `noun` names. Word for word the sentence the predownload
+    /// switch beside it says (`ListeningOptionsWording.predownloadHint`), so
+    /// the two read alike and share one translation; not cut alone (FR35).
     private static func unavailableHint(_ noun: ListeningOptionsWording.Noun) -> String {
         switch noun {
         case .episode:

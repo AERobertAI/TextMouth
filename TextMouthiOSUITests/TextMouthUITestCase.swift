@@ -455,7 +455,7 @@ class TextMouthUITestCase: XCTestCase {
         ]
 
         /// The Sleep Timer sheet's custom minutes field.
-        static let sleepTimerField = swiftUITextField("Custom timer minutes")
+        static let sleepTimerField = swiftUITextField("Custom minutes")
 
         /// Book Information's fields: title, author, publisher, and date (a
         /// hand-edited field's label goes on, so each is matched by its start).

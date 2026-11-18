@@ -47,7 +47,7 @@ enum ReadingListWording {
 
     /// The hint of the Reading List's one sort item: how its order changes.
     static var orderHint: String {
-        String(localized: "The reading list keeps the order you arrange with Move Book Up, Move Book Down, or dragging",
+        String(localized: "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
                comment: "VoiceOver hint of the Reading List Order item of the Reading List's Sort menu. Move Book Up and Move Book Down are commands of the Library menu.")
     }
 
@@ -64,7 +64,7 @@ enum ReadingListWording {
     /// The picker's hint: which books it applies to, and what each option
     /// does.
     static var continuationHint: String {
-        String(localized: "For a book opened from the reading list: play the book below it or the book above it when it ends, or stop",
+        String(localized: "Chooses what a book opened from the list does when it ends.",
                comment: "VoiceOver hint of the Reading List's When a book ends pop-up button.")
     }
 
@@ -77,7 +77,7 @@ enum ReadingListWording {
 
     /// The checkbox's hint: when it applies, and what it does.
     static var skipFinishedHint: String {
-        String(localized: "When a book opened from the reading list ends, pass over the books already finished",
+        String(localized: "Passes over finished books when a book from the list ends.",
                comment: "VoiceOver hint of the Reading List's Skip finished books checkbox.")
     }
 
@@ -92,7 +92,7 @@ enum ReadingListWording {
     /// only books finished from then on leave the list, so no one expects
     /// the books already finished to go at once.
     static var removeFinishedHint: String {
-        String(localized: "Takes a finished book off the reading list once its reader window moves on or closes. Books finished before you turn this on stay on it.",
+        String(localized: "Takes each finished book off the list when its window moves on or closes. Books finished before stay.",
                comment: "VoiceOver hint of the Reading List's Remove books when finished checkbox.")
     }
 
@@ -106,8 +106,8 @@ enum ReadingListWording {
     /// The checkbox's hint: what it does, and that the choice is this Mac's
     /// own. Nothing is removed from this Mac by clearing it.
     static var keepBooksHint: String {
-        String(localized: "Keeps the books on the reading list downloaded on this Mac, as Keep on This Mac does. This choice is this Mac's alone. Clearing it removes no download.",
-               comment: "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox. Keep on This Mac is a command of the Library menu.")
+        String(localized: "Keeps the list's books downloaded on this Mac alone. Clearing it removes no download.",
+               comment: "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.")
     }
 
     /// What lets a book go that this Mac keeps for the reading list: take it

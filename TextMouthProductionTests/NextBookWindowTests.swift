@@ -333,9 +333,8 @@ final class NextBookWindowTests: XCTestCase {
         XCTAssertEqual(NextBookWindowWording.globalLabel, "Open the next book in")
         XCTAssertEqual(
             NextBookWindowWording.globalHint,
-            "Where the next book opens when listening goes on from one book to another: "
-                + "in this window in place of the book here, or in a new window. "
-                + "A book already open in another window is brought forward, and with This Window this window closes."
+            "Chooses where the next book opens: in this window or a new one. "
+                + "A book open in another window comes forward, and with This Window, this window closes."
         )
         XCTAssertEqual(NextBookWindowWording.label(.book), "Open the next book in")
         XCTAssertEqual(NextBookWindowWording.label(.episode), "Open the next episode in")
@@ -344,13 +343,11 @@ final class NextBookWindowTests: XCTestCase {
         XCTAssertEqual(NextBookWindowWording.title(.newWindow, global: .thisWindow), "A New Window")
         XCTAssertEqual(
             NextBookWindowWording.hint(.episode, enabled: true),
-            "Where the next episode opens when listening goes on from one of this feed's episodes: "
-                + "in this window, in a new window, or as the global setting says"
+            "Chooses where this feed's next episode opens."
         )
         XCTAssertEqual(
             NextBookWindowWording.hint(.book, enabled: true),
-            "Where the next book opens when listening goes on from one of this folder's books: "
-                + "in this window, in a new window, or as the global setting says"
+            "Chooses where this folder's next book opens."
         )
         XCTAssertEqual(
             NextBookWindowWording.hint(.episode, enabled: false),

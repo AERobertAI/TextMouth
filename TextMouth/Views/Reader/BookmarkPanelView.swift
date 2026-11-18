@@ -174,7 +174,10 @@ struct BookmarkPanelView: View {
                 } label: {
                     Label(Self.addBookmarkTitle, systemImage: "plus")
                 }
-                .accessibilityLabel(Self.addBookmarkLabel)
+                // Its label is its title; where the bookmark goes is its hint
+                // (FR35's cut: the label was "Add bookmark at current
+                // position").
+                .accessibilityHint(Self.addBookmarkHint)
                 // Focus comes here when no bookmark is left to focus, and
                 // back here when an Add is cancelled.
                 .focused($focusedControl, equals: .addButton)
@@ -362,8 +365,9 @@ struct BookmarkPanelView: View {
 
             TextField(Self.addNoteField, text: $noteText)
                 .textFieldStyle(.roundedBorder)
+                // No hint: its label and its placeholder, "Note (optional)",
+                // say it (FR35's cut).
                 .accessibilityLabel(Self.noteLabel)
-                .accessibilityHint(Self.addNoteHint)
                 .focused($noteFieldFocused)
 
             HStack {
@@ -464,10 +468,11 @@ extension BookmarkPanelView {
                comment: "Button of the Bookmarks list that adds a bookmark at the reading position, and the heading of the panel where its note is written.")
     }
 
-    /// What VoiceOver calls the Add Bookmark button.
-    nonisolated static var addBookmarkLabel: String {
-        String(localized: "Add bookmark at current position",
-               comment: "VoiceOver label of the Bookmarks list's Add Bookmark button.")
+    /// What VoiceOver says the Add Bookmark button does: where the bookmark
+    /// goes, which its title does not say.
+    nonisolated static var addBookmarkHint: String {
+        String(localized: "Marks the reading position.",
+               comment: "VoiceOver hint of the Bookmarks list's Add Bookmark button: the bookmark is added where the book is being read.")
     }
 
     /// The button that closes the panel.
@@ -498,12 +503,6 @@ extension BookmarkPanelView {
     nonisolated static var noteLabel: String {
         String(localized: "Bookmark note",
                comment: "VoiceOver label of the note field when adding a bookmark or editing its note.")
-    }
-
-    /// The Add panel's note field's hint.
-    nonisolated static var addNoteHint: String {
-        String(localized: "Optional note to describe this bookmark",
-               comment: "VoiceOver hint of the note field when adding a bookmark.")
     }
 
     /// The button that leaves the Add or Edit panel without a change.

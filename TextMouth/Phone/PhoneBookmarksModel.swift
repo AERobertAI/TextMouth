@@ -18,8 +18,8 @@ enum PhoneBookmarksVocabulary {
     static var done: String { BookmarkPanelView.doneTitle }
     /// The Add Bookmark button's visible word, and the Add sheet's title.
     static var addBookmark: String { BookmarkPanelView.addBookmarkTitle }
-    /// What VoiceOver calls the Add Bookmark button.
-    static var addBookmarkLabel: String { BookmarkPanelView.addBookmarkLabel }
+    /// What VoiceOver says the Add Bookmark button does.
+    static var addBookmarkHint: String { BookmarkPanelView.addBookmarkHint }
     /// What the sheet says for a book without bookmarks.
     static var empty: String { BookmarkPanelView.emptyList }
     /// A bookmark row's hint: what choosing it does, never a gesture.
@@ -30,8 +30,6 @@ enum PhoneBookmarksVocabulary {
     static var editNoteField: String { BookmarkPanelView.editNoteField }
     /// What VoiceOver calls either sheet's field.
     static var noteLabel: String { BookmarkPanelView.noteLabel }
-    /// The Add sheet's field's hint.
-    static var addNoteHint: String { BookmarkPanelView.addNoteHint }
     /// The Add sheet's button that adds the bookmark.
     static var add: String { BookmarkPanelView.addTitle }
 

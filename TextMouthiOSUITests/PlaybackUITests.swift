@@ -233,7 +233,7 @@ final class PlaybackUITests: TextMouthUITestCase {
         let timer = app.buttons["Sleep Timer"]
         XCTAssertEqual(value(of: timer), "Off", "The timer before one is set")
 
-        try startSleepTimer("Set timer for 10 minutes and start playing", in: app)
+        try startSleepTimer("Set timer for 10 minutes", in: app)
         XCTAssertTrue(
             app.buttons["Pause"].waitForExistence(timeout: Self.patience),
             "The book did not start playing after the timer was set:\n\(app.debugDescription)"
@@ -273,7 +273,7 @@ final class PlaybackUITests: TextMouthUITestCase {
         try requireSound("Setting a sleep timer, which starts the book playing")
         let app = try launchIntoTheReader()
         XCTAssertEqual(value(of: app.buttons["Sleep Timer"]), "Off", "The timer before one is set")
-        try startSleepTimer("Stop at the end of this heading and start playing", in: app)
+        try startSleepTimer("Stop at the end of this heading", in: app)
         XCTAssertTrue(
             app.buttons["Pause"].waitForExistence(timeout: Self.patience),
             "The book did not start playing after the End of heading timer was set at the cover. The control reads "
@@ -297,7 +297,7 @@ final class PlaybackUITests: TextMouthUITestCase {
     func testAnEndOfBookTimerNamesItsStopAndCancelEndsIt() throws {
         try requireSound("Setting a sleep timer, which starts the book playing")
         let app = try launchIntoTheReader()
-        try startSleepTimer("Stop at the end of the book and start playing", in: app)
+        try startSleepTimer("Stop at the end of the book", in: app)
         XCTAssertTrue(
             app.buttons["Pause"].waitForExistence(timeout: 20),
             "The book did not start playing after the timer was set. The control reads "

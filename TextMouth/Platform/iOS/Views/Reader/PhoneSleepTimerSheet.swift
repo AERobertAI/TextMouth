@@ -96,8 +96,8 @@ struct PhoneSleepTimerSheet: View {
             }
             PhoneActionButton(title: PhoneSleepTimerVocabulary.resetTimer, action: reset)
                 .accessibilityHint(PhoneSleepTimerVocabulary.resetTimerHint)
+            // No hint: Cancel Timer says what it does (FR35's cut).
             PhoneActionButton(title: PhoneSleepTimerVocabulary.cancelTimer, role: .destructive, action: cancel)
-                .accessibilityHint(PhoneSleepTimerVocabulary.cancelTimerHint)
         } header: {
             Text(PhoneSleepTimerVocabulary.currentTimer)
                 .phoneSecondaryText()
@@ -111,6 +111,7 @@ struct PhoneSleepTimerSheet: View {
             Text(PhoneSleepTimerModel.newTimerNote(isActive: isActive))
             ForEach(PhoneSleepTimerModel.presetMinutes, id: \.self) { minutes in
                 timerButton(.preset(minutes: minutes), title: SleepTimerDuration.minutes(minutes).displayName)
+                    .accessibilityHint(SleepTimerView.minutesTimerHint)
             }
             TextField(PhoneSleepTimerVocabulary.minutesField, text: $customText)
                 .keyboardType(.numberPad)
@@ -125,6 +126,7 @@ struct PhoneSleepTimerSheet: View {
             // The minutes as the Mac's stepper says them, unit and all.
             .accessibilityValue(SleepTimerDuration.minutes(customMinutes).displayName)
             timerButton(.custom, title: PhoneSleepTimerVocabulary.set)
+                .accessibilityHint(SleepTimerView.minutesTimerHint)
         } header: {
             Text(PhoneSleepTimerVocabulary.newTimer)
                 .phoneSecondaryText()

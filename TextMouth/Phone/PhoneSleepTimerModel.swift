@@ -25,8 +25,6 @@ enum PhoneSleepTimerVocabulary {
     static var resetTimerHint: String { SleepTimerView.resetTimerHint }
     /// The button that stops the running timer.
     static var cancelTimer: String { SleepTimerView.cancelTimerTitle }
-    /// What Cancel Timer does.
-    static var cancelTimerHint: String { SleepTimerView.cancelTimerHint }
     /// What VoiceOver says once Cancel Timer has stopped the timer.
     static var cancelled: String { SleepTimerView.cancelledAnnouncement }
     /// The heading over the timers to set.
@@ -69,20 +67,17 @@ enum PhoneSleepTimerModel {
     static let presetMinutes = SleepTimerView.presetMinutes
 
     /// The fewest and most minutes the custom timer takes, the Mac's.
-    static let customMinutesRange = 1...480
+    static var customMinutesRange: ClosedRange<Int> { SleepTimerView.customMinutesRange }
 
     /// The custom minutes the field starts at when the last timer used
     /// wasn't a custom one, the Mac's.
     static let defaultCustomMinutes = 30
 
-    /// The custom field's hint on the phone, which has no Return key to
-    /// name: the Mac's sentence, with its last clause made the phone's (the
-    /// spec, "The Sleep Timer sheet" and "Words that say Mac"). One sentence
-    /// with placeholders, localized (FR35).
-    static var customMinutesHint: String {
-        String(localized: "Type the minutes, or change them \(SleepTimerView.customMinutesStep) at a time with \(SleepTimerView.adjustMinutesLabel). Set sets the timer and starts playing.",
-               comment: "VoiceOver hint of the iPhone sleep timer sheet's custom minutes field. %lld is how many minutes the stepper below the field changes them by (5); %@ is the stepper's label, Adjust minutes; Set is the button that sets the timer.")
-    }
+    /// The custom field's hint: the Mac's, the minutes the field takes. It
+    /// once named the Mac's Return key, so the phone had a sentence of its
+    /// own ("Set sets the timer"); the cut hint names no key or control
+    /// (FR35), so both say the same.
+    static var customMinutesHint: String { SleepTimerView.customMinutesHint }
 
     /// The reader's Sleep Timer value while no timer runs: the spec's new
     /// word "Off".
@@ -112,7 +107,7 @@ enum PhoneSleepTimerModel {
 
     /// `minutes` held to the custom timer's limits, as the Mac holds them.
     static func clampedCustomMinutes(_ minutes: Int) -> Int {
-        min(max(minutes, customMinutesRange.lowerBound), customMinutesRange.upperBound)
+        SleepTimerView.clampedCustomMinutes(minutes)
     }
 
     /// The choice VoiceOver's focus lands on as the sheet opens: the last
@@ -152,8 +147,8 @@ enum PhoneSleepTimerModel {
     }
 
     /// What VoiceOver calls `choice`'s button, the Mac's: "Set timer for 15
-    /// minutes and start playing", or "Stop at the end of this heading and
-    /// start playing".
+    /// minutes", or "Stop at the end of this heading". What each also does
+    /// is its hint, the Mac's too.
     static func label(of choice: PhoneSleepTimerChoice, customMinutes: Int) -> String {
         switch choice {
         case .preset(let minutes): return SleepTimerView.setTimerLabel(minutes: minutes)

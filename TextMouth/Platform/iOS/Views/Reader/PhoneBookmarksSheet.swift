@@ -117,7 +117,7 @@ struct PhoneBookmarksSheet: View {
                     } label: {
                         Label(PhoneBookmarksVocabulary.addBookmark, systemImage: "plus")
                     }
-                    .accessibilityLabel(PhoneBookmarksVocabulary.addBookmarkLabel)
+                    .accessibilityHint(PhoneBookmarksVocabulary.addBookmarkHint)
                     .accessibilityFocused($focus, equals: .addButton)
                 }
             }
@@ -244,7 +244,7 @@ struct PhoneBookmarksSheet: View {
             PhoneBookmarkNoteSheet(
                 title: PhoneBookmarksVocabulary.addBookmark,
                 field: PhoneBookmarksVocabulary.addNoteField,
-                hint: PhoneBookmarksVocabulary.addNoteHint,
+                hint: nil,
                 startingNote: "",
                 doneTitle: PhoneBookmarksVocabulary.add,
                 onCancel: { focusAfterNoteSheet = Focus(model.focus(after: .cancelAdd)) },
