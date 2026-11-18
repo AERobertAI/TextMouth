@@ -108,6 +108,12 @@ final class ScreenOrderUITests: TextMouthUITestCase {
     /// fields, and a Page field before them when the book has pages. The
     /// sheet puts the keyboard in its first field, which clicks only when a
     /// key is pressed, and none is.
+    /// Its audit is the one A11Y-GOTO settled: the audit's Dynamic Type findings
+    /// had come and gone from one launch to the next (train 1115-1800 failed,
+    /// 1115-1838 passed on the same tree), and the fields' finding is accepted
+    /// now (`auditTheGoToSheet`). A separate test launched the app five times
+    /// to show that, then once (Q10), and is gone: this test's launch and
+    /// audit are the same.
     func testTheGoToSheetHasTheSpecsOrder() throws {
         let app = try launchIntoTheReader()
         let elements = try openReaderSheet("Go To", titled: "Go To", waitingFor: "Cancel", in: app)
@@ -122,23 +128,6 @@ final class ScreenOrderUITests: TextMouthUITestCase {
             XCTAssertLessThan(page, percent, "Page is after Percent through the book")
         }
         try auditTheGoToSheet(app, screen: "Go To sheet")
-    }
-
-    /// How many times `testTheGoToSheetAuditHoldsOnEveryLaunch` launches the app and audits the Go To sheet. The
-    /// audit's Dynamic Type findings came and went from one launch to the next (A11Y-GOTO: train 1115-1800 failed,
-    /// 1115-1838 passed on the same tree), so a pass is shown over several launches, not one.
-    private static let goToAuditLaunches = 5
-
-    /// The Go To sheet's audit, five launches in a row, each a new process: the same audit as the order test's, which
-    /// must not fail on one launch and pass on the next. A failure names the launch.
-    func testTheGoToSheetAuditHoldsOnEveryLaunch() throws {
-        for launch in 1...Self.goToAuditLaunches {
-            let app = try launchIntoTheReader()
-            _ = try openReaderSheet("Go To", titled: "Go To", waitingFor: "Cancel", in: app)
-            try auditTheGoToSheet(app, screen: "Go To sheet, launch \(launch) of \(Self.goToAuditLaunches)")
-            // One app at a time: the next launch is of the same app.
-            app.terminate()
-        }
     }
 
     /// Audits the Go To sheet showing in `app`. The fields' Dynamic Type finding is accepted

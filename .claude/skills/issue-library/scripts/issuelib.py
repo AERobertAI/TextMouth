@@ -401,6 +401,54 @@ def cmd_merge_driver(args: Any) -> int:
 # The command line.
 # ---------------------------------------------------------------------------
 
+class IntermixedParser(argparse.ArgumentParser):
+    """A command's parser that lets options and positionals come in any order (TL04).
+
+    Plain argparse hands an optional positional (``comment``'s TEXT, ``set``'s VALUE...) the
+    arguments that follow the required ones the moment it meets them, so ``comment ID --as NAME
+    "text"`` found no place for "text" and failed with "unrecognized arguments". The intermixed
+    parse reads the options first and the positionals after, so ``comment ID "text" --as NAME``
+    and ``comment ID --as NAME "text"`` both work. It is a command's own parser (argparse's
+    subparsers call parse_known_args), which cannot hold subparsers of its own.
+    """
+
+    # True while parse_known_intermixed_args runs: it calls parse_known_args itself, which must then parse plainly.
+    _intermixing = False
+
+    def leading_double_dash(self, args: List[str]) -> bool:
+        """Whether ``--`` comes before the first positional word of ``args``, such as ``set --as NAME -- ID FIELD``.
+
+        Python before 3.12.8 loses such a ``--`` in the intermixed parse and then reads the words after it as options,
+        so a dash-leading word is refused or, worse, written. A ``--`` after a positional (``comment ID --as NAME --
+        -x``) is kept by that parse, and the plain parse would refuse it, so only the first case is told apart. Words
+        count as positional unless they start with a dash or are the value of an option that takes one.
+        """
+        words = iter(args)
+        for word in words:
+            if word == "--":
+                return True
+            action = self._option_string_actions.get(word)
+            if action is not None:
+                # An option with a value takes the next word along with it.
+                if action.nargs != 0:
+                    next(words, None)
+            elif not word.startswith("-") or word == "-":
+                return False
+        return False
+
+    def parse_known_args(self, args: Any = None, namespace: Any = None) -> Any:
+        """Parse intermixed, unless already inside the intermixed parse (which asks for the plain one) or a ``--`` comes
+        before the first positional (see leading_double_dash): the plain parse honours it, as it always did."""
+        words = list(sys.argv[1:] if args is None else args)
+        if self._intermixing or self.leading_double_dash(words):
+            return super().parse_known_args(args, namespace)
+        self._intermixing = True
+        try:
+            return self.parse_known_intermixed_args(args, namespace)
+        finally:
+            self._intermixing = False
+
+
 def common_options() -> argparse.ArgumentParser:
     """The options every command takes, given after the command's name."""
     common = argparse.ArgumentParser(add_help=False)
@@ -437,7 +485,7 @@ def filter_options(parser: argparse.ArgumentParser, default_status: str) -> None
 def build_parser() -> argparse.ArgumentParser:
     """The command line: one subcommand for each command."""
     parser = argparse.ArgumentParser(prog="issuelib.py", description="TextMouth's issue tracker: Issues/<ID>.md.")
-    commands = parser.add_subparsers(dest="command", metavar="COMMAND")
+    commands = parser.add_subparsers(dest="command", metavar="COMMAND", parser_class=IntermixedParser)
     commands.required = True
     common, writer = common_options(), writer_options()
 

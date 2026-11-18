@@ -132,7 +132,7 @@ help:
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
 	@echo "  make typecheck-tests - The same for the Mac's hosted test target too, before a train request (REF=commit checks that commit)"
-	@echo "  make typecheck-ios-tests - The iPhone's unit tests (and the Mac test files they share) compiled for iOS"
+	@echo "  make typecheck-ios-tests - The iPhone's unit tests (and the Mac test files they share) and its interface tests compiled for iOS"
 	@echo "  make typecheck-tests-census - Which of the Mac's tests compile for the iPhone (slow; writes census.md)"
 	@echo "  make mac-projection BASE=main - Show what a branch changes in the code the Mac compiles (DIFF=1 for every line)"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
@@ -310,12 +310,13 @@ check-selftest:
 	@python3 -I -B Scripts/ios/app-size.py --selftest
 
 ## Build the iPhone app for a device (Release, unsigned, small code) in its own
-## derived data folder under build/, and measure it the way `make check` measures
+## derived data folder, build/ios-size-DerivedData (an absolute path, which
+## app-size.py defines once and `make check` uses too), and measure it the way `make check` measures
 ## the Mac app, plus the IPA and the App Store download estimate. The build takes
 ## the heavy-work lock, so it waits behind any build or test run already going.
 ## IOS_SIZE_ARGS passes options to Scripts/ios/app-size.py build, such as --json.
 ios-size: generate
-	@python3 -I -B Scripts/agents/run_locked.py ios-size python3 -I -B Scripts/ios/app-size.py build --derived-data "$(BUILD_DIR)/ios-size-DerivedData" $(IOS_SIZE_ARGS)
+	@python3 -I -B Scripts/agents/run_locked.py ios-size python3 -I -B Scripts/ios/app-size.py build $(IOS_SIZE_ARGS)
 
 ## Define the merge driver that .gitattributes names for Issues/*.md, in this
 ## repository's config, which every worktree (the train's too) shares; run it once.
@@ -393,9 +394,11 @@ typecheck-tests:
 	@python3 -I Scripts/ios/typecheck.py --platform macos --tests $(if $(REF),--ref $(REF),)
 
 ## The iPhone's unit tests (TextMouthiOSTests, with the Mac test files that
-## project.yml lists for it by path) compiled for the iPhone with SwiftPM, no
-## simulator needed: run it, with typecheck-tests, before a train request that
-## touches either bundle's files (REF=<commit> as above).
+## project.yml lists for it by path) and its interface tests (TextMouthiOSUITests,
+## the XCUITest bundle that runs only on GitHub) compiled for the iPhone with
+## SwiftPM, no simulator needed: run it, with typecheck-tests, before a train
+## request that touches either bundle's files (REF=<commit> as above). One
+## target covers both bundles, so that the interface tests' check cannot be skipped.
 typecheck-ios-tests:
 	@python3 -I Scripts/ios/typecheck.py --platform ios --tests $(if $(REF),--ref $(REF),)
 

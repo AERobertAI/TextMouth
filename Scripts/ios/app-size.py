@@ -25,6 +25,7 @@ Exit status: 0 measured (even over the limits: the report says so), 1 the build 
 command line, 3 with --check and the app larger than the strict limit (40 MB; between 30 and 40 MB it says so and exits 0).
 """
 import argparse
+import contextlib
 import glob
 import io
 import json
@@ -46,9 +47,24 @@ ROOT = Path(__file__).resolve().parents[2]
 
 # One megabyte, as Scripts/check.sh counts it.
 MEGABYTE = 1_000_000
-# The user's limits, in megabytes: the real one, and the strict one.
-LIMIT_MB = 30
-STRICT_LIMIT_MB = 40
+
+
+def limits_from_gate(text):
+    """The two limits, in megabytes, that the text of Scripts/check.sh defines once for the Mac's gate and this tool's:
+    (APP_SIZE_WARNING_MB, APP_SIZE_LIMIT_MB). Raises ValueError when either is missing."""
+    found = [re.search(rf"^readonly {name}=(\d+)$", text, re.MULTILINE) for name in ("APP_SIZE_WARNING_MB", "APP_SIZE_LIMIT_MB")]
+    if not all(found):
+        raise ValueError("Scripts/check.sh does not define APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB")
+    return int(found[0].group(1)), int(found[1].group(1))
+
+
+# The user's limits, in megabytes: the real one, and the strict one. Read from check.sh, their one definition, so the
+# Mac's app and the iPhone's cannot drift apart.
+LIMIT_MB, STRICT_LIMIT_MB = limits_from_gate((ROOT / "Scripts" / "check.sh").read_text())
+# Where the device build keeps its derived data unless --derived-data says otherwise: an absolute folder, and the one
+# definition of it (`make ios-size` and `make check` pass none), since xcodebuild resolves a relative path against its own
+# folders, not this tool's (board finding 6513).
+DEFAULT_DERIVED_DATA = ROOT / "build" / "ios-size-DerivedData"
 # How many of the biggest files the report lists.
 DEFAULT_TOP = 15
 # The target and SDK of the device build. It names the target and the SDK, not the scheme and a destination: a scheme
@@ -298,6 +314,13 @@ def run_build(derived_data, limit_minutes):
         return 124
 
 
+def absolute_derived_data(path):
+    """`path` (a --derived-data argument) as an absolute path, a relative one taken from the folder the tool was run in:
+    xcodebuild is given MODULE_CACHE_DIR, OBJROOT, and SYMROOT inside it, and resolves a relative one against its own
+    working folders (a build service's bundle, a package checkout), where the build fails with "Permission denied"."""
+    return os.path.abspath(path)
+
+
 def exit_status(app_bytes, check):
     """The exit status for a measured app: 3 when `check` is asked and the app is over the strict limit, else 0 (a size
     between the limits only warns, in the report)."""
@@ -319,7 +342,8 @@ def main(argv=None):
     measure.add_argument("--summary", action="store_true", help="print the lines a run's ios-summary.txt carries")
     measure.add_argument("--check", action="store_true", help="exit 3 when the app is over the strict limit")
     build = sub.add_parser("build", help="build the iPhone app for a device, then measure it")
-    build.add_argument("--derived-data", default=str(ROOT / "build" / "ios-size-DerivedData"))
+    build.add_argument("--derived-data", default=str(DEFAULT_DERIVED_DATA),
+                       help="the build's derived data folder (default: build/ios-size-DerivedData of the repository)")
     build.add_argument("--limit-minutes", type=int, default=DEFAULT_BUILD_LIMIT_MINUTES)
     build.add_argument("--top", type=int, default=DEFAULT_TOP)
     build.add_argument("--json", action="store_true")
@@ -330,6 +354,7 @@ def main(argv=None):
         return selftest()
     if args.command == "build":
         started = time.monotonic()
+        args.derived_data = absolute_derived_data(args.derived_data)
         status = run_build(args.derived_data, args.limit_minutes)
         if status != 0:
             print(f"iPhone app size: the device build failed (exit status {status}).", file=sys.stderr)
@@ -459,7 +484,7 @@ def selftest():
         check(with_map["executable_bytes"] == sizes["TextMouth"], "the executable's size is not found by the app's name")
         # The report names the sizes, the limits, and the libraries.
         text = "\n".join(format_report({**result, **with_map}, "iPhone app"))
-        check("iPhone app:" in text and "within the 30 MB limit" in text, f"report was {text}")
+        check("iPhone app:" in text and f"within the {LIMIT_MB} MB limit" in text, f"report was {text}")
         check("libmp3lame.a" in text and "App Store download" in text, "report lacks a part")
     # The summary lines: three headlines, then details, each with its prefix.
     lines = summary_lines({**result, **with_map}, "iPhone app")
@@ -467,11 +492,11 @@ def selftest():
     check(all(line.startswith((SUMMARY_PREFIX, SUMMARY_DETAIL_PREFIX)) for line in lines), f"a line has no prefix: {lines}")
     check(any(line.startswith(SUMMARY_DETAIL_PREFIX) and "libmp3lame.a" in line for line in lines), "no library detail line")
     # The limits' words.
-    check("within the 30 MB limit" == verdict(30 * MEGABYTE), "30 MB itself is within the limit")
-    check("over the 30 MB limit" in verdict(30 * MEGABYTE + 1), "30 MB and a byte is over the limit")
-    check("over the strict 40 MB limit" == verdict(40 * MEGABYTE + 1), "40 MB and a byte is over the strict limit")
-    check(exit_status(40 * MEGABYTE, True) == 0 and exit_status(40 * MEGABYTE + 1, True) == 3
-          and exit_status(40 * MEGABYTE + 1, False) == 0 and exit_status(35 * MEGABYTE, True) == 0,
+    check(f"within the {LIMIT_MB} MB limit" == verdict(LIMIT_MB * MEGABYTE), "30 MB itself is within the limit")
+    check(f"over the {LIMIT_MB} MB limit" in verdict(LIMIT_MB * MEGABYTE + 1), "30 MB and a byte is over the limit")
+    check(f"over the strict {STRICT_LIMIT_MB} MB limit" == verdict(STRICT_LIMIT_MB * MEGABYTE + 1), "40 MB and a byte is over the strict limit")
+    check(exit_status(STRICT_LIMIT_MB * MEGABYTE, True) == 0 and exit_status(STRICT_LIMIT_MB * MEGABYTE + 1, True) == 3
+          and exit_status(STRICT_LIMIT_MB * MEGABYTE + 1, False) == 0 and exit_status((LIMIT_MB + 1) * MEGABYTE, True) == 0,
           "--check's status is 3 only above the strict limit")
     check(describe(18_453_210) == "18.5 MB (18,453,210 bytes)", f"describe gave {describe(18_453_210)}")
     # The build's argv: the device SDK, unsigned, a link map, the scheme.
@@ -479,6 +504,37 @@ def selftest():
     check("MODULE_CACHE_DIR=/x/dd/ModuleCache.noindex" in argv and "DEPLOYMENT_POSTPROCESSING=YES" in argv and "SYMROOT=/x/dd/Build/Products" in argv and "OBJROOT=/x/dd/Build/Intermediates.noindex" in argv
           and "-derivedDataPath" not in argv and "iphoneos" in argv and "TextMouthiOS" in argv and "-scheme" not in argv and "ARCHS=arm64" in argv and "-destination" not in argv and "CODE_SIGNING_ALLOWED=NO" in argv and "LD_GENERATE_MAP_FILE=YES" in argv,
           f"build command was {argv}")
+    # The derived data folder reaches xcodebuild absolute, whichever way it was given (a relative one failed `make ios-size`).
+    check(DEFAULT_DERIVED_DATA.is_absolute() and absolute_derived_data(str(DEFAULT_DERIVED_DATA)) == str(DEFAULT_DERIVED_DATA),
+          "the default derived data folder is not absolute")
+    check(absolute_derived_data("build/ios-size-DerivedData") == os.path.join(os.getcwd(), "build", "ios-size-DerivedData"),
+          "a relative --derived-data was not made absolute")
+    relative_argv = build_command(absolute_derived_data("build/x"))
+    check(all(os.path.isabs(part.split("=", 1)[1]) for part in relative_argv if part.startswith(("SYMROOT=", "OBJROOT=", "MODULE_CACHE_DIR=")))
+          and os.path.isabs(relative_argv[relative_argv.index("-clonedSourcePackagesDirPath") + 1]),
+          f"a build path stayed relative: {relative_argv}")
+    # main() hands the build that absolute folder: a build that fails at once stands in for the real one, and records it.
+    given = []
+    real_run_build = globals()["run_build"]
+    globals()["run_build"] = lambda derived_data, limit_minutes: (given.append(derived_data), 1)[1]
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            main(["build", "--derived-data", "build/x"])
+            main(["build"])
+    finally:
+        globals()["run_build"] = real_run_build
+    check(len(given) == 2 and all(os.path.isabs(path) for path in given) and given[1] == str(DEFAULT_DERIVED_DATA),
+          f"main gave the build {given}, not absolute folders")
+    # The limits are read from check.sh, which defines each once.
+    check(limits_from_gate("readonly APP_SIZE_WARNING_MB=12\nreadonly APP_SIZE_LIMIT_MB=34\n") == (12, 34),
+          "the limits were not read from a script's text")
+    try:
+        limits_from_gate("readonly APP_SIZE_WARNING_MB=12\n")
+        check(False, "a script without the strict limit was accepted")
+    except ValueError:
+        pass
+    check(limits_from_gate((ROOT / "Scripts" / "check.sh").read_text()) == (LIMIT_MB, STRICT_LIMIT_MB),
+          "the limits here are not check.sh's")
     for failure in failures:
         print(f"app-size selftest FAILED: {failure}")
     if not failures:

@@ -27,7 +27,12 @@ folder of that name plus the files of TextMouthTests/Sources/Tests that
 project.yml lists for it (read from project.yml at the commit, so the two cannot
 drift apart); errors in those files are reported under their repository paths.
 It compiles the tests and the app, but links no test bundle and runs nothing.
-Do this before asking the build train for a build.
+On iOS, `--tests` also compiles the iPhone's interface-test bundle,
+TextMouthiOSUITests (XCUITest code that drives the app from outside, so it needs
+XCTest and nothing of the app), in a second build of the same package: a compile
+error in an interface test is then found here, not first on GitHub, where it fails
+a whole train. The one command covers both iPhone bundles, so no train request
+can skip the interface tests' check. Do this before asking the build train for a build.
 
 The census (`--census`, iOS only) reads `import AppKit` as `import UIKit` in
 the copy, so that every AppKit name a file uses is reported, instead of the
@@ -88,6 +93,8 @@ LISTED_TESTS_ORIGIN = "TextMouthTests/Sources/Tests"
 # one file serves both bundles). SwiftPM takes one folder per target, so those files are copied into a folder of their own.
 IOS_TEST_TARGET = "TextMouthiOSTests"
 SHARED_TESTS_FOLDER = f"{IOS_TEST_TARGET}/_SharedWithTheMac"
+# The iPhone app's interface-test target (XCUITest): its own folder, built with the unit target by `--tests` on iOS.
+IOS_UI_TEST_TARGET = "TextMouthiOSUITests"
 
 # Each package: its identity in Package.resolved, its checkout's folder name,
 # and the folder name the probe gives it.
@@ -186,6 +193,13 @@ def test_names(kind):
     return TEST_TARGET, LISTED_TESTS_FOLDER, TEST_TARGET
 
 
+def test_targets(kind):
+    """The SwiftPM test targets a kind of test set builds, in order: the iPhone's unit target and then its interface-test
+    target for "ios", and the one hosted target for the others. Each is its own `swift build --target`, so that an error in
+    one does not hide the other's."""
+    return [IOS_TEST_TARGET, IOS_UI_TEST_TARGET] if kind == "ios" else [test_names(kind)[0]]
+
+
 def prepare_sources(repo, commit, src, census, tests=False):
     """Replaces `src` with the committed TextMouth/, Vendor/, TextMouthBraille/, and
     TextMouthFFmpeg/ folders at `commit`; with `tests` (see test_kind), also the
@@ -204,6 +218,9 @@ def prepare_sources(repo, commit, src, census, tests=False):
         if kind == "census":
             # The census reports by area.
             extract(repo, commit, [testkit.AREAS_CONF], src)
+        if kind == "ios":
+            # The interface tests: Swift files only (the bundle's book and sample are resources, which a compile does not read).
+            extract(repo, commit, [f":(glob){IOS_UI_TEST_TARGET}/**/*.swift"], src)
         # SwiftPM takes one folder per target, so the listed files are copied beside the rest.
         folder = src / listed_folder
         folder.mkdir(parents=True)
@@ -412,6 +429,15 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
             exclude: [{skipped}],
             swiftSettings: [.unsafeFlags([{include_flags}, "-continue-building-after-errors"{flags}])]
         ),""" if kind else ""
+    # The iPhone's interface tests drive the app from another process, so they link nothing of it: XCTest alone, found as the
+    # unit tests find it. Only the iPhone's test kind holds them.
+    ui_test_target = f"""
+        // The iPhone's interface tests (XCUITest): compiled, never run.
+        .testTarget(
+            name: "{IOS_UI_TEST_TARGET}",
+            path: "{IOS_UI_TEST_TARGET}",
+            swiftSettings: [.unsafeFlags(["-continue-building-after-errors"{flags}])]
+        ),""" if kind == "ios" else ""
     (src / "Package.swift").write_text(f"""// swift-tools-version: 6.0
 // Written by Scripts/ios/typecheck.py: builds a copy of TextMouth's app sources
 // for {platform}. Never run.
@@ -467,18 +493,19 @@ let package = Package(
             path: "TextMouth",
             exclude: [{excludes}],
             swiftSettings: [.unsafeFlags([{include_flags}, "-continue-building-after-errors"])]
-        ),{test_target}
+        ),{test_target}{ui_test_target}
     ],
     swiftLanguageModes: [.v6]
 )
 """)
 
 
-def summarize(log_text, src, header, out, tests=False, origins=None):
+def summarize(log_text, src, header, out, tests=False, origins=None, builds=1):
     """Writes errors.txt and summary.md into `out` from the build's log, and
     returns (summary text, error count, link failed, build succeeded). `origins`
     maps a listed test file's place in the copy (inside the test target's folder)
-    to its repository path, which the diagnostics are shown under."""
+    to its repository path, which the diagnostics are shown under. `builds` is how many builds the log holds (one per test
+    target): each must have finished for the run to succeed."""
     origins = origins or {}
     errors, warnings, package_problems = set(), set(), 0
     for line in log_text.splitlines():
@@ -497,7 +524,7 @@ def summarize(log_text, src, header, out, tests=False, origins=None):
             relative = origins[relative]
         elif relative.startswith(LISTED_TESTS_FOLDER + "/"):
             relative = f"{LISTED_TESTS_ORIGIN}/{relative[len(LISTED_TESTS_FOLDER) + 1:]}"
-        if not relative.startswith(("TextMouth/", TEST_TARGET + "/", IOS_TEST_TARGET + "/", LISTED_TESTS_ORIGIN + "/")):
+        if not relative.startswith(("TextMouth/", TEST_TARGET + "/", IOS_TEST_TARGET + "/", IOS_UI_TEST_TARGET + "/", LISTED_TESTS_ORIGIN + "/")):
             # The vendored C code builds with its warnings hidden; only its
             # errors would matter, and they count as the app's.
             if match.group(4) == "warning":
@@ -506,7 +533,7 @@ def summarize(log_text, src, header, out, tests=False, origins=None):
         (errors if match.group(4) == "error" else warnings).add(entry)
     link_lines = [l for l in log_text.splitlines() if LINK_FAILURE.search(l)]
     # "Build complete!" ends a whole-package build; a build of one target (--tests) ends "Build of target: 'X' complete!".
-    finished = "Build complete!" in log_text or re.search(r"Build of target: '[^']*' complete!", log_text)
+    finished = "Build complete!" in log_text or len(re.findall(r"Build of target: '[^']*' complete!", log_text)) >= builds
     succeeded = bool(finished) and not errors
     ordered = sorted(errors)
     per_file = {}
@@ -824,23 +851,29 @@ def main(argv):
         command = ["swift", "build", "--sdk", sdk, "-j", str(args.jobs), "--scratch-path", str(work / "spm")]
         if args.platform == "ios":
             command += ["--triple", f"arm64-apple-ios{args.ios_target}"]
+        # One build command for each test target (see test_targets), or the one plain build.
+        commands = [command]
         if tests:
-            # Only the test target's module (and the app it needs) is built: SwiftPM's last step for
+            # Only a test target's module (and the app it needs) is built: SwiftPM's last step for
             # --build-tests (which cannot be combined with --target), the synthesized test-runner module, stops on "unexpected input file:
             # .../plugins/testing" with this Xcode's toolchain after every file has compiled, so
-            # nothing is linked.
-            command += ["--target", test_names(test_kind(tests))[0]]
-            if tests == "census":
-                # Indexing fails with one whole-module job ("index output filenames do not match input source files").
-                command += ["--disable-index-store"]
+            # nothing is linked. The iPhone's two bundles are two builds, one after the other, so that an error in the
+            # first does not hide the second's.
+            # A census adds --disable-index-store: indexing fails with one whole-module job ("index output filenames do not
+            # match input source files").
+            extra = ["--disable-index-store"] if tests == "census" else []
+            commands = [command + ["--target", name, *extra] for name in test_targets(test_kind(tests))]
 
         def build(skipped=()):
-            """Writes the package (without the `skipped` test files), builds, and returns the log's text."""
+            """Writes the package (without the `skipped` test files), builds each target, and returns the logs' text, joined."""
             write_package(src, pkgs, args.platform, args.ios_target, tests, skipped)
             say("building (about two minutes for the app alone)")
-            built = subprocess.run(command, cwd=src, capture_output=True, text=True,
-                                   env={**os.environ, "SWIFTCI_USE_LOCAL_DEPS": "1"})
-            return built.stdout + built.stderr
+            logs = []
+            for one in commands:
+                built = subprocess.run(one, cwd=src, capture_output=True, text=True,
+                                       env={**os.environ, "SWIFTCI_USE_LOCAL_DEPS": "1"})
+                logs.append(built.stdout + built.stderr)
+            return "\n".join(logs)
 
         out.mkdir(parents=True, exist_ok=True)
         if args.tests_census:
@@ -860,7 +893,7 @@ def main(argv):
         if tests:
             _target, listed_folder, project_target = test_names(test_kind(tests))
             origins = {f"{listed_folder}/{Path(path).name}": path for path in listed_test_files(repo, commit, project_target)}
-        summary, count, _link_failed, succeeded = summarize(log_text, src, header, out, bool(tests), origins)
+        summary, count, _link_failed, succeeded = summarize(log_text, src, header, out, bool(tests), origins, len(commands))
     finally:
         if taken and not args.no_lock:
             heavy_lock.release()

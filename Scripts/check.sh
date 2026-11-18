@@ -14,7 +14,12 @@
 #      without failing, when the app is larger than APP_SIZE_WARNING_MB, and
 #      reports the app's size either way, so growth is noticed long before
 #      the limit is reached. No file of the app may hold a folder of this
-#      Mac (its home folder, the checkout, or $TMPDIR);
+#      Mac (its home folder, the checkout, or $TMPDIR). Still in step 3, a
+#      plain run (not --without-tests) then builds the iPhone app for a device
+#      (Scripts/ios/app-size.py build) and holds it to the same two limits: a
+#      warning above APP_SIZE_WARNING_MB and a failure above APP_SIZE_LIMIT_MB,
+#      by the sum of its files' sizes. The build takes about 8 minutes the
+#      first time and about 1 after that, in build/ios-size-DerivedData;
 #   4. runs the hosted XCTest suite with the Makefile's flags (make test),
 #      built from scratch in the same folder, and requires that this build
 #      reports no Swift warning either. The performance baselines tests run
@@ -25,8 +30,8 @@
 #      baselines were recorded on; neither fails it;
 # and finally confirms that no step changed the pins. It fails on any
 # generation, resolution, compile, or test error, on any Swift warning, on a
-# Release app larger than its limit, and when the test run reports no
-# executed tests.
+# Release app larger than its limit, on an iPhone app larger than its limit,
+# and when the test run reports no executed tests.
 #
 # The app's size is the sum of the sizes of the files in it, the number
 # Finder gives as its size in bytes, and a megabyte is a million bytes, as
@@ -53,12 +58,18 @@
 #              comparison still reads the real files, so a dry run checks the
 #              gate's own logic in about a second. Two variables simulate
 #              failures, and are accepted only with --dry-run:
-#                TEXTMOUTH_CHECK_SIMULATE_FAILURE=generate|resolve|build|test
+#                TEXTMOUTH_CHECK_SIMULATE_FAILURE=generate|resolve|build|ios-size|test
 #                  makes that step fail as though its command had failed;
 #                TEXTMOUTH_CHECK_SIMULATE_RESOLVED=<file>
 #                  treats <file> as the Package.resolved that resolution wrote.
 #
-#   --without-tests  Run steps 1 to 3 only: no hosted suite. GitHub's check
+#   --without-tests  Run steps 1 to 3 only: no hosted suite. The iPhone app is
+#              still built and held to its size limits (the release gate runs
+#              `make check --without-tests`, and no other gate fails an
+#              oversized iPhone app), except on a GitHub runner
+#              (GITHUB_ACTIONS=true), where the step is skipped and the report
+#              says so: that job's workflow cannot be changed to opt out, and
+#              the trains measure the iPhone app there. GitHub's check
 #              workflow (.github/workflows/check.yml) runs the gate this way,
 #              and runs the suite beside it in parallel jobs, from nothing, on
 #              the same shards and skips as the TestBuild runs, with the
@@ -115,6 +126,11 @@ readonly RELEASE_BUILD_LOG="build/xcodebuild-Release.log"
 # The app `make build` packages (APP_BUNDLE in the Makefile), which `make
 # install` copies to /Applications.
 readonly RELEASE_APP="build/TextMouth.app"
+# The tool that builds the iPhone app for a device and measures it. It keeps
+# its derived data in an absolute folder of its own (build/ios-size-DerivedData
+# of the repository, its one definition, which `make ios-size` uses too), and
+# takes the heavy-work lock from no one: the gate's caller holds it.
+readonly IOS_SIZE_TOOL="Scripts/ios/app-size.py"
 # The Release app's two size limits, in megabytes of a million bytes. Its
 # developer's real limit is 30 MB and its strict one 40 MB (November 16, 2026,
 # when FFmpeg was built in: the 20 MB of before was a target to optimize
@@ -123,7 +139,8 @@ readonly RELEASE_APP="build/TextMouth.app"
 # 33 MB before the size work of October 2026, 11 MB after it, 23.55 MB on
 # November 13, 2026, before -Osize and the missing export trie brought it to
 # 18.98 MB, and 18.5 MB at version 0.5.0. These are the limits' only
-# definitions: Scripts/check-selftest.sh reads them here.
+# definitions: Scripts/check-selftest.sh and Scripts/ios/app-size.py (the
+# iPhone app's limits) read them here.
 readonly APP_SIZE_WARNING_MB=30
 readonly APP_SIZE_LIMIT_MB=40
 # A line in which the Swift compiler reports a warning (see the header).
@@ -250,8 +267,8 @@ read_simulation_settings() {
     setup_error "TEXTMOUTH_CHECK_SIMULATE_FAILURE and TEXTMOUTH_CHECK_SIMULATE_RESOLVED are accepted only with --dry-run"
   fi
   case $simulate_failure in
-    ""|generate|resolve|build|test) ;;
-    *) setup_error "TEXTMOUTH_CHECK_SIMULATE_FAILURE must be generate, resolve, build, or test, not: $simulate_failure" ;;
+    ""|generate|resolve|build|ios-size|test) ;;
+    *) setup_error "TEXTMOUTH_CHECK_SIMULATE_FAILURE must be generate, resolve, build, ios-size, or test, not: $simulate_failure" ;;
   esac
   if [[ -n $simulate_resolved ]]; then
     [[ -f $simulate_resolved ]] ||
@@ -529,6 +546,48 @@ require_app_free_of_mac_paths() {
   detail "$RELEASE_APP holds no folder of this Mac"
 }
 
+# require_ios_app_within_size_limit: builds the iPhone app for a device and
+# measures it with Scripts/ios/app-size.py, which counts the app's size as
+# app_size does and has the same two limits (its own tests check that they
+# match APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB). Reports the app, its IPA,
+# and the App Store download estimate; warns, without failing, above the
+# warning size; and fails the gate when the build fails or the app is over the
+# strict limit, which the tool signals with its exit status 3. The tool is run
+# directly, not through run_locked.py: this gate's caller already holds the
+# heavy-work lock, which a second wait for it would never get.
+require_ios_app_within_size_limit() {
+  local status=0 headlines app_line
+  run_step ios-size yes python3 -I -B "$IOS_SIZE_TOOL" build --summary --check || status=$?
+  if (( dry_run )); then
+    if (( status != 0 )); then
+      step_failed ios-size "$status"
+    fi
+    detail "would require the iPhone app to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
+    return 0
+  fi
+  # The headline lines of the tool's summary: the app, the IPA, the download.
+  headlines=$(sed -n -E 's/^Size: //p' "$LOG_DIR/ios-size.log")
+  # The app's own headline: the IPA and download lines follow it, and only the app is held to the limits.
+  app_line=$(grep -m 1 -E '^iPhone app: ' <<<"$headlines")
+  # Exit status 3 says the app is over the strict limit; so does its headline, a second guard.
+  if (( status == 3 )) || grep -q -F -e "over the strict" <<<"$app_line"; then
+    detail_lines "" "$headlines"
+    detail "the limits are APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh; the biggest files and libraries are in $LOG_DIR/ios-size.log"
+    fail "step $step_number of $STEP_COUNT ($step_title): the iPhone app is more than the $APP_SIZE_LIMIT_MB MB strict limit"
+  elif (( status != 0 )); then
+    # Name the iPhone in the verdict: a failed Mac build ends the same line.
+    step_title="$step_title, the iPhone app's device build"
+    step_failed ios-size "$status" "The iPhone device build (Scripts/ios/app-size.py) failed, not the Mac's build."
+  fi
+  if [[ -z $app_line ]]; then
+    fail "step $step_number of $STEP_COUNT ($step_title): $LOG_DIR/ios-size.log has no size lines, so the iPhone app's size is unknown"
+  fi
+  if grep -q -F -e "over the $APP_SIZE_WARNING_MB MB limit" <<<"$app_line"; then
+    detail "WARNING: the iPhone app is more than the $APP_SIZE_WARNING_MB MB limit; the gate fails above $APP_SIZE_LIMIT_MB MB"
+  fi
+  detail_lines "" "$headlines"
+}
+
 # show_failure_lines <log>: prints the lines of a failed step's log a reader
 # needs first: errors with two lines of context (where compiler diagnostics
 # show the source line and caret), xcodebuild's verdict, and make's failure
@@ -660,6 +719,11 @@ main() {
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
   require_app_within_size_limit
   require_app_free_of_mac_paths
+  if [[ ${GITHUB_ACTIONS:-} == true ]]; then
+    detail "the iPhone app is not built or measured on a GitHub runner (GITHUB_ACTIONS=true); the trains measure it there"
+  else
+    require_ios_app_within_size_limit
+  fi
 
   if (( without_tests )); then
     say "the hosted XCTest suite is not run by this gate (--without-tests)"
