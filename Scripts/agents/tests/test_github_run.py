@@ -406,6 +406,12 @@ class LostConnectionTests(RemoteTestCase):
             github_run.download(7001, self.folder / "out")
         self.assertEqual(len(tries), github_run.GH_ATTEMPTS)
 
+    def test_gh_other_wording_for_a_run_with_no_artifact_is_not_downloaded_and_not_retried_either(self):
+        # gh's wording when a run has uploaded no artifact at all.
+        self.gh_state({"download": [{"fail": True, "message": "no valid artifacts found to download"}]})
+        self.assertFalse(github_run.download(7001, self.folder / "out"))
+        self.assertEqual(len(self.gh_calls()), 1)
+
     def test_a_run_with_no_artifact_is_not_downloaded_and_not_retried(self):
         self.gh_state({"download": [{"fail": True}]})
         self.assertFalse(github_run.download(7001, self.folder / "out"))
@@ -452,6 +458,30 @@ class CollectingARecordedRunTests(RemoteTestCase):
         self.assertTrue(result["collected"], "the result says the run was collected, not pushed")
         self.assertEqual(self.idle_checks(), 0, "no push, so no look at whether TestBuild is idle")
         self.assertIsNone(github_run.read_record(self.pending), "the record is spent once the results are in hand")
+
+    def test_a_recorded_run_that_ended_failure_is_collected_not_pushed_again(self):
+        # A failing run is a verdict, with results to read; only a run with no verdict (cancelled and so on) is run again.
+        commit = self.lose_the_connection_for_good()
+        failed = {**self.DONE, "conclusion": "failure", "headSha": commit}
+        self.gh_state({"view": [failed], "download": [results(FAILING_SUMMARY, FAILING_LOG)]})
+        result = self.send(train="t2")
+        self.assertEqual((result["conclusion"], result["downloaded"], result["collected"]), ("failure", True, True))
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit})
+
+    def test_each_use_of_a_record_is_counted(self):
+        commit = self.lose_the_connection_for_good()
+        key = github_run.request_key(self.repo, self.head, {**REQUEST})
+        self.gh_state({"view": [{**self.DONE, "headSha": commit}]})
+        for expected in (1, 2):
+            self.assertIsNotNone(github_run.recorded_run(self.pending, key))
+            self.assertEqual(github_run.read_record(self.pending)["tries"], expected)
+
+    def test_a_record_is_used_at_most_max_collect_tries_times_and_then_the_tree_is_pushed(self):
+        commit = self.lose_the_connection_for_good()
+        key = github_run.request_key(self.repo, self.head, {**REQUEST})
+        self.gh_state({"view": [{**self.DONE, "headSha": commit}]})
+        used = [github_run.recorded_run(self.pending, key) for _ in range(github_run.MAX_COLLECT_TRIES + 1)]
+        self.assertEqual([run is not None for run in used], [True] * github_run.MAX_COLLECT_TRIES + [False])
 
     def test_a_record_of_a_run_still_going_is_waited_for(self):
         commit = self.lose_the_connection_for_good()
@@ -821,6 +851,13 @@ class RunRemotelyTests(RemoteTestCase):
         self.assertGreaterEqual(self.now, 2 * github_run.IDLE_POLL_SECONDS)
         self.assertEqual(result["minutes"], round(github_run.POLL_SECONDS / 60, 1), "the wait must not be counted")
         self.assertTrue(any("waiting for https://github.example/runs/6001" in m for m in messages))
+
+    def test_the_default_limit_is_read_when_the_run_is_sent_not_when_the_module_is_imported(self):
+        self.patch_github(RUN_LIMIT_MINUTES=5)
+        self.gh_state({"list": [[STARTED]], "view": [{"status": "in_progress", "conclusion": ""}]})
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            self.run_it()
+        self.assertIn("had not ended after 5 minutes", str(caught.exception))
 
     def test_a_run_whose_tests_failed_is_a_result_not_a_remote_failure(self):
         done = {"status": "completed", "conclusion": "failure", "url": "https://github.example/runs/7001"}

@@ -509,8 +509,7 @@ def recorded_run(path, key, progress=None):
             "conclusion": state.get("conclusion"), "commit": record["commit"]}
 
 
-def run_remotely(cwd, parent, request, destination, message, limit_minutes=RUN_LIMIT_MINUTES, progress=print,
-                 pending=None):
+def run_remotely(cwd, parent, request, destination, message, limit_minutes=None, progress=print, pending=None):
     """Pushes `parent` plus `request` to TestBuild, waits for its run, and
     downloads the results into `destination`. Returns a dictionary with the
     pushed "commit", the run's "url", its "conclusion", the "minutes" from the
@@ -524,7 +523,9 @@ def run_remotely(cwd, parent, request, destination, message, limit_minutes=RUN_L
     `pending`, when given, is the path of the file that keeps the run of the last send until its results are in hand:
     the run is recorded once GitHub shows it, and the record is emptied once the results came (or the run has none). A
     send that finds a record of the same tree and request collects that run's results instead of pushing again
-    (recorded_run); one that ends in a RemoteFailure leaves the record for the next."""
+    (recorded_run); one that ends in a RemoteFailure leaves the record for the next. `limit_minutes` is the run's own
+    limit (RUN_LIMIT_MINUTES, read when this is called, when not given)."""
+    limit_minutes = RUN_LIMIT_MINUTES if limit_minutes is None else limit_minutes
     key = request_key(cwd, parent, request) if pending else None
     run = recorded_run(pending, key, progress) if pending else None
     collected = run is not None
