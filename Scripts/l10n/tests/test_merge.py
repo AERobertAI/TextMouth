@@ -23,8 +23,8 @@ sys.path.insert(0, str(HERE.parent))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import l10n  # noqa: E402
 import merge  # noqa: E402
+from git_case import HAS_GIT, GitCase  # noqa: E402
 
-HAS_GIT = shutil.which("git") is not None
 L10N = HERE.parent / "l10n.py"
 CATALOG_FILE = "Localizable.xcstrings"
 
@@ -320,36 +320,20 @@ class DriverRefusalTests(unittest.TestCase):
 
 
 @unittest.skipUnless(HAS_GIT, "git is not installed")
-class GitMergeTests(unittest.TestCase):
+class GitMergeTests(GitCase):
     """Real merges in a scratch repository that has the driver defined, as `make l10n-merge-driver` defines it."""
 
     def setUp(self):
-        folder = tempfile.TemporaryDirectory()
-        self.addCleanup(folder.cleanup)
-        self.repo = Path(folder.name)
-        # The user's and the system's git configuration are not read: only the scratch repository's own.
-        self.env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
-        self.git("init", "-q", "-b", "main")
-        self.git("config", "user.name", "Test")
-        self.git("config", "user.email", "test@example.com")
-        self.git("config", "commit.gpgsign", "false")
-        (self.repo / ".gitattributes").write_text("*.xcstrings merge=xcstrings\n", encoding="utf-8")
+        super().setUp()
+        self.put(".gitattributes", "*.xcstrings merge=xcstrings\n")
         self.define_driver()
         self.write(make({"Play": entry("The play button"), "Rewind": entry("The rewind button")}))
-        self.git("add", ".")
-        self.git("commit", "-q", "-m", "base")
+        self.commit_all("base")
 
     def define_driver(self):
         """Defines the driver the way the Makefile's target does, with this checkout's script."""
         self.git("config", "merge.xcstrings.name", "a String Catalog")
         self.git("config", "merge.xcstrings.driver", f"{sys.executable} -I -B {L10N} merge-driver %O %A %B %P")
-
-    def git(self, *arguments, check=True):
-        """Runs git in the scratch repository; returns the completed process (text output)."""
-        done = subprocess.run(["git", *arguments], cwd=self.repo, env=self.env, capture_output=True, text=True)
-        if check and done.returncode != 0:
-            self.fail(f"git {' '.join(arguments)} failed: {done.stdout}{done.stderr}")
-        return done
 
     def write(self, data):
         """Writes the catalog `data` in the repository's working tree."""
