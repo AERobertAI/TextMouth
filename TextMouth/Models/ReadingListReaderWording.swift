@@ -62,6 +62,21 @@ enum ReadingListReaderWording {
         }
     }
 
+    /// The English the debug log writes for `stopNote`, whatever the interface
+    /// language is (the log stays English: see `BookSuccession`).
+    static let stopLogName = "the reading list is set to stop when a book ends" // l10n: no (the debug log's words)
+
+    /// The English the debug log writes for `endNote(_:going:)`.
+    static func endLogName(_ end: ReadingListEnd, going direction: ReadingList.Direction) -> String {
+        // l10n: no (the debug log's words)
+        switch (end, direction) {
+        case (.noBookBeyond, .down): return "end of the reading list"
+        case (.noBookBeyond, .up): return "start of the reading list"
+        case (.onlyFinishedBooksBeyond, .down): return "every book below it in the reading list is finished"
+        case (.onlyFinishedBooksBeyond, .up): return "every book above it in the reading list is finished"
+        }
+    }
+
     // MARK: - Next and Previous in Reading List
 
     /// What Next in Reading List and Previous in Reading List say from a

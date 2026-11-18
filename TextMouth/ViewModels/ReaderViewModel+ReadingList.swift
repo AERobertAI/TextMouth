@@ -131,7 +131,7 @@ extension ReaderViewModel {
         sayingNothingFollows say: (String) -> Void
     ) {
         let succession = libraryViewModel.readingListContinuation(after: book.id).map(BookSuccession.book)
-            ?? .nothing(note: readingListEndNote())
+            ?? readingListEndSuccession()
         goOnPastThisBook(
             to: succession,
             in: "the reading list", // l10n: no (named in the debug log only)
@@ -158,11 +158,15 @@ extension ReaderViewModel {
     /// Why nothing follows this book at its end in the reading list, as the
     /// sentence after "Finished: <title>." says it: Stop is chosen, or no
     /// book, or only finished books, lie the way the list continues.
-    private func readingListEndNote() -> String {
+    private func readingListEndSuccession() -> BookSuccession {
         guard let direction = libraryViewModel.readingList.continuation.direction else {
-            return ReadingListReaderWording.stopNote
+            return .nothing(note: ReadingListReaderWording.stopNote, logName: ReadingListReaderWording.stopLogName)
         }
-        return ReadingListReaderWording.endNote(readingListEnd(going: direction), going: direction)
+        let end = readingListEnd(going: direction)
+        return .nothing(
+            note: ReadingListReaderWording.endNote(end, going: direction),
+            logName: ReadingListReaderWording.endLogName(end, going: direction)
+        )
     }
 
     /// What lies beyond this book going `direction` through the reading

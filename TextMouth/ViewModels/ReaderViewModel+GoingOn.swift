@@ -7,8 +7,10 @@ enum BookSuccession: Equatable {
     /// This book takes listening over.
     case book(Book)
     /// Nothing follows; the note says why, as the sentence after
-    /// "Finished: <title>." says it.
-    case nothing(note: String)
+    /// "Finished: <title>." says it, in the interface language. The log name
+    /// says the same in English, for the debug log, which stays English
+    /// whatever the interface language is (never log the note).
+    case nothing(note: String, logName: String)
     /// A feed's next episode, whose file is not here: it is downloaded, and
     /// listening goes on once it arrives (FR19). Only
     /// `LibraryViewModel.succession(after:going:skippingFinished:)` gives it.
@@ -56,8 +58,8 @@ extension ReaderViewModel {
         // must not outlive it and start a book this decision did not.
         nextEpisodeWait = nil
         switch succession {
-        case .nothing(let note):
-            DiagnosticLog.trace(.playback, "end of book: nothing follows in \(place) (\(note))")
+        case .nothing(let note, let logName):
+            DiagnosticLog.trace(.playback, "end of book: nothing follows in \(place) (\(logName))")
             say(EndOfBookWording.finished(book.title, notes: [note], sleepTimerExpired: sleepTimerStoppedHere))
 
         case .book(let next):

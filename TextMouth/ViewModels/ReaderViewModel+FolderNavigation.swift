@@ -46,8 +46,8 @@ extension ReaderViewModel {
         )
         // Nothing that way: say why, and leave this book as it is, playing
         // or not.
-        if case .nothing(let note) = succession {
-            DiagnosticLog.trace(.playback, "folder: nothing \(looking == .down ? "below" : "above") this book (\(note))")
+        if case .nothing(let note, let logName) = succession {
+            DiagnosticLog.trace(.playback, "folder: nothing \(looking == .down ? "below" : "above") this book (\(logName))")
             announceToVoiceOver(FolderNavigationWording.nothingThatWay(note))
             return
         }

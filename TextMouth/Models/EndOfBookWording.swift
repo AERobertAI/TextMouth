@@ -122,6 +122,16 @@ enum EndOfBookWording {
         }
     }
 
+    /// The English the debug log writes for `noMoreBooksInFolderNote`, whatever
+    /// the interface language is (the log stays English: see `BookSuccession`).
+    static let noMoreBooksInFolderLogName = "no more books in folder" // l10n: no (the debug log's words)
+
+    /// The English the debug log writes for `onlyFinishedBooksInFolderNote(going:)`.
+    static func onlyFinishedBooksInFolderLogName(going direction: ReadingList.Direction) -> String {
+        // l10n: no (the debug log's words)
+        direction == .down ? "every book after it in the folder is finished" : "every book before it in the folder is finished"
+    }
+
     // MARK: - An Episode That Must Be Downloaded
 
     /// What a feed's episode that ended says of the next one, whose file is
