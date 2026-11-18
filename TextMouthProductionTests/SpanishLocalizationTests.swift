@@ -80,4 +80,22 @@ final class SpanishLocalizationTests: XCTestCase {
         XCTAssertEqual(String(localized: LocalizedStringResource("\(1) minutes", locale: english)), "1 minute")
         XCTAssertEqual(String(localized: LocalizedStringResource("\(30) minutes", locale: english)), "30 minutes")
     }
+
+    /// The menus that hide by title (finding 1 of the pilot's review): the Bookmarks menu reads "Marcadores" in
+    /// Spanish, so the reader's title set must hold it beside the key, or the menu stays over the Library. The
+    /// English set is the four keys, unchanged, and the Library's set holds its own key.
+    @MainActor
+    func testTheMenuVisibilitySetsHoldTheSpanishTitles() {
+        let spanish = Locale(identifier: "es")
+        let reader = MenuVisibilityManager.titles(for: MenuVisibilityManager.readerMenuKeys, locale: spanish)
+        XCTAssertTrue(reader.contains("Marcadores"), "The reader's Spanish menu titles: \(reader.sorted())")
+        // Every key stays, since a menu with no translation shows its key.
+        XCTAssertTrue(Set(MenuVisibilityManager.readerMenuKeys).isSubset(of: reader))
+        let library = MenuVisibilityManager.titles(for: MenuVisibilityManager.libraryMenuKeys, locale: spanish)
+        XCTAssertTrue(library.contains("Library"), "The Library menu keeps its key: \(library.sorted())")
+        // In English the sets are exactly the keys.
+        let english = Locale(identifier: "en")
+        XCTAssertEqual(MenuVisibilityManager.titles(for: MenuVisibilityManager.readerMenuKeys, locale: english),
+                       ["Playback", "Navigate", "Bookmarks", "Book"])
+    }
 }
