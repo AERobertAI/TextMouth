@@ -60,6 +60,7 @@ problem setting it up, 3 when the lock stayed busy for the whole wait.
 """
 import argparse
 import datetime
+import hashlib
 import json
 import os
 import re
@@ -560,10 +561,26 @@ let package = Package(
 """)
 
 
-def collect_strings(folder, src, platform, commit, tree):
+def tree_id(repo, tree):
+    """An identifier of the app's sources (TextMouth/) in `tree`, equal for two runs only when they read the same files:
+    git's own id of the folder at a commit, or a digest of the names and contents of the files git lists there
+    (tracked and new, less what .gitignore hides) in the working tree."""
+    if tree != WORKTREE:
+        return run(["git", "-C", str(repo), "rev-parse", f"{tree}:TextMouth"]).stdout.strip()
+    listing = run(["git", "-C", str(repo), "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "TextMouth"])
+    digest = hashlib.sha256()
+    for name in sorted(set(filter(None, listing.stdout.split("\0")))):
+        path = Path(repo) / name
+        if path.is_file():
+            digest.update(name.encode("utf-8") + b"\0" + path.read_bytes() + b"\0")
+    return digest.hexdigest()
+
+
+def collect_strings(folder, src, platform, commit, tree, sources_id):
     """Writes STRINGS_MANIFEST into the strings `folder` and returns it (a dict): which of the .stringsdata files in it
     belong to the app's own sources (those whose source file is inside `src`/TextMouth, as the compiler recorded it),
-    the root they were compiled under (so that a source path can be made relative to the repository), and how many
+    the root they were compiled under (so that a source path can be made relative to the repository), the id of the
+    sources (see tree_id), by which the sync checks that both platforms' runs read the same tree, and how many
     Swift files the platform's target compiles, which a complete run matches with one .stringsdata file each. Files of
     other sources (a dependency built with the flags) are listed in no way and so are never read by the sync."""
     app_root = (src / "TextMouth").resolve()
@@ -580,7 +597,7 @@ def collect_strings(folder, src, platform, commit, tree):
     swift_files = sum(1 for path in app_root.rglob("*.swift")
                       if not any(str(path.relative_to(app_root)).startswith(name + "/") for name in left_out))
     manifest = {"platform": platform, "commit": commit, "tree": "worktree" if tree == WORKTREE else "commit",
-                "sourceRoot": str(src.resolve()), "swiftFiles": swift_files, "files": kept}
+                "treeId": sources_id, "sourceRoot": str(src.resolve()), "swiftFiles": swift_files, "files": kept}
     (folder / STRINGS_MANIFEST).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return manifest
 
@@ -1004,7 +1021,7 @@ def main(argv):
             _target, listed_folder, project_target = test_names(test_kind(tests))
             origins = {f"{listed_folder}/{Path(path).name}": path for path in listed_test_files(repo, tree, project_target)}
         summary, count, _link_failed, succeeded = summarize(log_text, src, header, out, bool(tests), origins, len(commands))
-        manifest = collect_strings(strings_folder, src, args.platform, commit, tree) if strings_folder is not None else None
+        manifest = collect_strings(strings_folder, src, args.platform, commit, tree, tree_id(repo, tree)) if strings_folder is not None else None
     finally:
         if taken and not args.no_lock:
             heavy_lock.release()

@@ -573,6 +573,7 @@ class MainTests(TypecheckTestsCase):
         self.assertEqual(manifest["swiftFiles"], 1, "TextMouth/App.swift is the only Swift file of the app in the fake repository")
         self.assertEqual(manifest["platform"], "macos")
         self.assertEqual(manifest["tree"], "commit")
+        self.assertEqual(manifest["treeId"], self.git("rev-parse", f"{self.commit}:TextMouth"))
         self.assertEqual(Path(manifest["sourceRoot"]), (typecheck.WORK_ROOT / "macos-strings" / "src").resolve())
         self.assertEqual(printed.splitlines()[-1], f"{typecheck.STRINGS_FOLDER_LINE}{folder}")
         self.assertIn("Strings: 1 .stringsdata files for 1 Swift files", printed)
@@ -604,6 +605,16 @@ class MainTests(TypecheckTestsCase):
         self.assertFalse((copy / "TextMouthBraille" / "include" / "b.h").exists(), "a tracked file deleted on disk was copied")
         # The run is named for the commit it is on, with -wt: its results folder says so.
         self.assertIn(f"-{self.git('rev-parse', '--short', 'HEAD')}-wt-", next(typecheck.RESULTS.iterdir()).name)
+
+    def test_the_sources_id_of_the_working_tree_changes_with_a_file_and_not_with_the_run(self):
+        ids = []
+        for edit in (None, None, "// edited\n"):
+            if edit:
+                (self.repo / "TextMouth" / "App.swift").write_text(edit)
+            ids.append(typecheck.tree_id(self.repo, typecheck.WORKTREE))
+        self.assertEqual(ids[0], ids[1])
+        self.assertNotEqual(ids[1], ids[2])
+        self.assertEqual(typecheck.tree_id(self.repo, self.commit), self.git("rev-parse", f"{self.commit}:TextMouth"))
 
     def test_the_ref_run_still_copies_the_commit_and_not_the_working_tree(self):
         (self.repo / "TextMouth" / "App.swift").write_text("// changed after the commit\n")
