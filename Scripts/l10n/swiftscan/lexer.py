@@ -39,7 +39,7 @@ _CONTINUATION = "\x01"
 _ESCAPES = {"n": "\n", "t": "\t", "0": "", "r": "\r", '"': '"', "'": "'", "\\": "\\"}
 
 
-@dataclass(slots=True)
+@dataclass
 class Literal:
     """One string literal: its text, where it is, and the code around it."""
 
