@@ -159,13 +159,30 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
     /// damaged packet is refused when it is sent, so a run of them, of any
     /// length, never reaches it, and the file is converted all the same
     /// (the comment of `FFmpegHelperStream`: damaged sound is converted). The
-    /// run of November 17, 2026 (train 1117-0431) showed both.
+    /// run of November 17, 2026 (train 1117-0431) showed both. What they refuse
+    /// is kept as silence by the packets' timestamps (FU03), so the whole
+    /// 2.8 s of the file, 22,400 frames, is written, to within two frames,
+    /// where the packets that decode are 8,000 or 3,200 of them.
     func testAnyRunOfRefusedPacketsStillGivesTheSoundAroundIt() async throws {
-        for (name, good, refused) in [("flac-900-bad-packets.mka", 500, 900), ("flac-1200-bad-packets.mka", 200, 1_200)] {
+        for (name, refused) in [("flac-900-bad-packets.mka", 900), ("flac-1200-bad-packets.mka", 1_200)] {
             let result = try await decodeEdgeSample(name)
             XCTAssertEqual(result.ending, WatchedProcess.Ending(outcome: .exited(status: 0)), name)
-            XCTAssertEqual(result.frames, UInt64(good * 16), "\(name): the packets that decode, whole")
+            XCTAssertEqual(Double(result.frames ?? 0), 22_400, accuracy: 32, "\(name): the packets that decode, and silence for the rest")
             XCTAssertEqual(result.refused, [UInt32(refused), 0], "\(name): every refused packet counted")
+        }
+    }
+
+    /// The import of a file with refused packets lasts as long as the file
+    /// does, and its chapter marks hold (FU03): 900 refused packets between
+    /// 100 and 400 that decode would close up to 1.0 s of 2.8, which the
+    /// import's length check refused ("it lasts 1.0 seconds, not 2.8"), and
+    /// every later chapter mark would land late. The import now succeeds with
+    /// the whole 2.8 s, the sound's own first 0.2 s, and silence after it.
+    func testAFileWithRefusedPacketsImportsAtItsWholeLength() async throws {
+        for name in ["flac-900-bad-packets.mka", "flac-1200-bad-packets.mka"] {
+            let copy = try copyOfFormatSample("ffmpeg-edge/\(name)")
+            let conversion = try await FFmpegAudioConverter.convert(copy, using: try bundledFFmpegTool())
+            XCTAssertEqual(conversion.duration, 2.8, accuracy: 0.05, name)
         }
     }
 
