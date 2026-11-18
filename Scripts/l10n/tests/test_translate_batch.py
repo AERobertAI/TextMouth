@@ -6,6 +6,8 @@ Run with: python3 -I -B -m unittest discover -s Scripts/l10n/tests
 Every test works in a temporary folder: a catalog with strings in every state, a glossary, a made-up source tree, and a
 locations table. Nothing is built, and the repository's own catalog and glossary are never read.
 """
+import contextlib
+import io
 import json
 import os
 import re
@@ -206,6 +208,27 @@ class TodoTests(BatchCase):
         self.assertEqual(status, 0)
         self.assertIn("locations.json", err)
         self.assertEqual(batch["items"][0]["context"], [])
+
+
+class LimitOptionTests(BatchCase):
+    """`--limit` takes a count of zero or more."""
+
+    def test_a_negative_limit_is_refused_by_todo_and_check(self):
+        for command in ("todo", "check"):
+            extra = ("--lang", "es") if command == "todo" else ()
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), self.assertRaises(SystemExit) as raised:
+                l10n.main([command, *extra, "--limit", "-1", "--catalog", str(self.path)])
+            self.assertEqual(raised.exception.code, 2, command)
+            self.assertIn("negative", err.getvalue())
+
+    def test_zero_means_all_and_text_is_refused(self):
+        status, batch, _ = self.todo("--limit", "0")
+        self.assertEqual((status, batch["remaining"]), (0, 0))
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), self.assertRaises(SystemExit):
+            l10n.main(["todo", "--lang", "es", "--limit", "many", "--catalog", str(self.path)])
+        self.assertIn("not a whole number", err.getvalue())
 
 
 class TodoContextTests(BatchCase):

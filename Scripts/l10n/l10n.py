@@ -928,6 +928,18 @@ def cmd_merge_driver(args):
 # The command line.
 # ---------------------------------------------------------------------------------------------------------------
 
+def count_option(text):
+    """An argparse type for `--limit`: a whole number of zero or more (a negative count has no meaning, and `--limit -1`
+    used to give an empty batch that said every string remained)."""
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a whole number")
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"{value} is negative; give 0 for all or a count above 0")
+    return value
+
+
 def build_parser():
     """The command line's parser: one subcommand each for sync, status, size, check, plural, todo, apply, and merge-driver."""
     parser = argparse.ArgumentParser(prog="l10n.py", description=__doc__.split("\n\n")[0],
@@ -955,7 +967,7 @@ def build_parser():
     status.add_argument("--lang", help="only this language")
     add("size", "the English bytes against the budget, and each language's shipped size in each format", cmd_size)
     check = add("check", "the rules a catalog keeps: translations, placeholders, plurals, comments, stale strings, the budget", cmd_check)
-    check.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help=f"print at most this many problems, 0 for all (default {DEFAULT_LIMIT})")
+    check.add_argument("--limit", type=count_option, default=DEFAULT_LIMIT, help=f"print at most this many problems, 0 for all (default {DEFAULT_LIMIT})")
     plural = add("plural", "write a string's plural forms in one language, English included", cmd_plural)
     plural.add_argument("key", help="the string's key, such as '%%lld books'")
     plural.add_argument("--lang", required=True, help="the language, such as en or es")
@@ -970,7 +982,7 @@ def build_parser():
     chosen.add_argument("--keys-from", help="only these keys: a JSON list, a batch or .rejected.json file, or one key to a line")
     chosen.add_argument("--area", help="only the strings the scanner's area of this name uses")
     chosen.add_argument("--file", nargs="+", help="only the strings these source files use (paths from the repository's root)")
-    todo.add_argument("--limit", type=int, default=translate.DEFAULT_LIMIT,
+    todo.add_argument("--limit", type=count_option, default=translate.DEFAULT_LIMIT,
                       help=f"at most this many strings, 0 for all (default {translate.DEFAULT_LIMIT})")
     todo.add_argument("--out", help="write the batch to this file instead of standard output")
     todo.add_argument("--locations", help="the locations file (default: build/l10n/locations.json of the main checkout)")
