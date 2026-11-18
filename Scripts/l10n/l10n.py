@@ -18,6 +18,7 @@ Commands (`--help` after each says more):
   todo     A JSON batch of the strings to translate into a language, each with its comment, placeholders, code context,
            glossary terms, and an earlier translation of a similar string.
   apply    Check a translated batch, string by string, and write the good translations (machine_translated).
+  prune    Delete the stale strings (the code no longer has them) that hold no translation; --all deletes every stale one.
   merge-driver
            Git's merge driver for the String Catalog (`make l10n-merge-driver` defines it): a three-way merge by key,
            language, and plural form.
@@ -706,7 +707,7 @@ def check_catalog(cat, config):
             problems.append(f"{quote(key)}: the English key's placeholders cannot be read: {sentence}")
     for key, entry in sorted(cat.strings.items()):
         if cat.is_stale(entry):
-            problems.append(f"{quote(key)}: stale (the code no longer has it; sync, or delete it by hand)")
+            problems.append(f"{quote(key)}: stale (the code no longer has it; `prune` deletes it, `prune --all` even with a translation)")
     used, budget = cat.english_bytes(), config["budgetBytes"]
     note = f"English text: {number(used)} bytes of {number(budget)} ({percent(used, budget)})"
     if used > budget:
@@ -794,6 +795,40 @@ def cmd_check(args):
 
 # The plural categories the `plural` command takes as options, in CLDR's order.
 PLURAL_OPTIONS = ("zero", "one", "two", "few", "many", "other")
+
+
+def has_translation(cat, key):
+    """Whether string `key` holds a translation: a text in a language other than the source language (the English forms
+    of a string, plural ones included, are not a translation, and neither is a localization without a value)."""
+    return any(unit.value.strip() for language in cat.strings[key].get("localizations", {})
+               if language != cat.source_language for unit in cat.units(key, language))
+
+
+def stale_to_prune(cat, everything):
+    """The stale keys `prune` deletes, sorted: those with no translation, or every stale key when `everything`."""
+    return sorted(key for key, entry in cat.strings.items()
+                  if cat.is_stale(entry) and (everything or not has_translation(cat, key)))
+
+
+def cmd_prune(args):
+    """`prune [--all] [--dry-run]`: deletes the stale strings that hold no translation (`--all`: every stale string, so
+    a stale string with a translation goes too). Prints each key it deletes (with --dry-run, each it would delete, and
+    nothing is written), then saves the catalog through catalog.py. Stale strings that were kept because they hold a
+    translation are counted, so the report says what is left for `check` to name. Running it twice changes nothing."""
+    cat = load_catalog(args)
+    gone = stale_to_prune(cat, args.all)
+    kept = sum(1 for entry in cat.strings.values() if cat.is_stale(entry)) - len(gone)
+    verb = "would delete" if args.dry_run else "deleted"
+    lines = [f"{verb} stale {quote(key)}" for key in gone]
+    lines.append(f"prune: {number(len(gone))} stale strings " + ("would be deleted" if args.dry_run else "deleted")
+                 + (f"; {number(kept)} stale with a translation kept (--all deletes them too)" if kept else ""))
+    if not args.dry_run:
+        for key in gone:
+            del cat.strings[key]
+        if gone:
+            cat.save(catalog_path(args))
+    emit(args, {"deleted": gone, "dryRun": args.dry_run, "keptWithTranslation": kept}, lines)
+    return EXIT_OK
 
 
 def cmd_plural(args):
@@ -1035,7 +1070,7 @@ def count_option(text):
 
 
 def build_parser():
-    """The command line's parser: one subcommand each for sync, status, size, check, plural, todo, apply, and merge-driver."""
+    """The command line's parser: one subcommand each for sync, status, size, check, prune, plural, todo, apply, and merge-driver."""
     parser = argparse.ArgumentParser(prog="l10n.py", description=__doc__.split("\n\n")[0],
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog="Exit status: 0 done, 1 a check found problems or a sync was refused, 2 a bad command line.")
@@ -1062,6 +1097,9 @@ def build_parser():
     add("size", "the English bytes against the budget, and each language's shipped size in each format", cmd_size)
     check = add("check", "the rules a catalog keeps: translations, placeholders, plurals, comments, stale strings, the budget", cmd_check)
     check.add_argument("--limit", type=count_option, default=DEFAULT_LIMIT, help=f"print at most this many problems, 0 for all (default {DEFAULT_LIMIT})")
+    prune = add("prune", "delete the stale strings that hold no translation (--all: every stale string)", cmd_prune)
+    prune.add_argument("--all", action="store_true", help="delete every stale string, translated or not")
+    prune.add_argument("--dry-run", action="store_true", help="list what would be deleted and write nothing")
     plural = add("plural", "write a string's plural forms in one language, English included", cmd_plural)
     plural.add_argument("key", help="the string's key, such as '%%lld books'")
     plural.add_argument("--lang", required=True, help="the language, such as en or es")
