@@ -114,6 +114,65 @@ class LoadingTests(shared.CatalogCase):
                     glossary.Glossary.load(self.write(data))
 
 
+class OrdinaryWordTests(unittest.TestCase):
+    """A term that is also an everyday word is found only as a whole label or a title-case phrase; a name hides what is in it."""
+
+    def terms(self, text):
+        """The terms found in `text`, with Close and Open ordinary and Window and Library not."""
+        glossary_ = glossary.Glossary(["Windows", "TextMouth"], [
+            {"term": "Close", "ordinary": True, "translations": {"es": {"text": "Cerrar"}}},
+            {"term": "Open", "ordinary": True, "translations": {"es": {"text": "Abrir"}}},
+            {"term": "Done", "ordinary": True, "translations": {"es": {"text": "Hecho"}}},
+            {"term": "Window", "translations": {"es": {"text": "Ventana"}}},
+            {"term": "Library", "translations": {"es": {"text": "Biblioteca"}}}])
+        return [item["term"] for item in glossary_.terms_in(text, "es")]
+
+    def test_close_to_the_end_is_not_a_use_of_close(self):
+        for text in ("close to the end", "Close to the end", "Open the book", "I am done", "Almost done reading"):
+            self.assertEqual(self.terms(text), [], text)
+
+    def test_a_whole_label_is_a_use_in_any_case_with_an_ellipsis_or_a_colon(self):
+        for text in ("Close", "close", "Open...", "Open\u2026", "Done:", "Open?"):
+            self.assertEqual(len(self.terms(text)), 1, text)
+
+    def test_a_title_case_phrase_is_a_use(self):
+        self.assertEqual(self.terms("Close Window"), ["Close", "Window"])
+        self.assertEqual(self.terms("Open %@ in TextMouth"), ["Open"])
+        self.assertEqual(self.terms("Open Without the Library"), ["Open", "Library"], "small words stay in lower case")
+
+    def test_a_noun_is_found_in_a_sentence(self):
+        self.assertEqual(self.terms("Your library has a window"), ["Window", "Library"])
+
+    def test_a_term_is_never_found_inside_a_do_not_translate_name(self):
+        self.assertEqual(self.terms("Windows-1252 (Western)"), [], "the name Windows, not the term Window")
+        self.assertEqual(self.terms("Close Windows-1252"), ["Close"])
+        self.assertEqual(self.terms("Window"), ["Window"], "the term alone is still the term")
+
+    def test_title_case_and_whole_labels(self):
+        self.assertTrue(glossary.is_title_case("Open Recent"))
+        self.assertTrue(glossary.is_title_case("Open %lld in TextMouth"))
+        self.assertFalse(glossary.is_title_case("Open the book"))
+        self.assertFalse(glossary.is_title_case("%lld"), "nothing to judge")
+        self.assertTrue(glossary.is_whole_label(" Close... ", "Close"))
+        self.assertFalse(glossary.is_whole_label("Close it", "Close"))
+
+    def test_ordinary_must_be_true_or_false(self):
+        bad = glossary.Glossary([], [{"term": "A", "ordinary": "yes", "translations": {"es": {"text": "B"}}}])
+        self.assertEqual(bad.problems(), ["the term 'A': `ordinary` must be true or false"])
+
+
+class SharedTranslationTests(unittest.TestCase):
+    """Two terms with one translation are a warning of the glossary."""
+
+    def test_two_terms_that_share_a_translation_are_a_warning(self):
+        warnings = make(Index="Índice", **{"Table of Contents": "indice"}).warnings()
+        self.assertEqual(warnings, ["in es the terms 'Index' and 'Table of Contents' share the translation 'Índice'"])
+
+    def test_distinct_translations_have_no_warning_and_a_malformed_glossary_is_not_made_valid_by_it(self):
+        self.assertEqual(make(Index="Índice de búsqueda", **{"Table of Contents": "Índice"}).warnings(), [])
+        self.assertEqual(make(Index="Índice", **{"Table of Contents": "Índice"}).problems(), [], "a warning, not a problem")
+
+
 class CheckWarningTests(shared.CatalogCase):
     """`check` warns when a translation does not use the glossary's term, and fails on a malformed glossary."""
 
@@ -149,6 +208,24 @@ class CheckWarningTests(shared.CatalogCase):
         status, out = self.check()
         self.assertEqual(status, 1)
         self.assertIn("glossary.json", out)
+
+    def test_a_translation_that_drops_a_name_is_a_warning(self):
+        """`apply` refuses a lost name; a hand edit can still drop one, and `check` says so."""
+        cat = self.load()
+        cat.strings["Open in TextMouth"] = base.entry("A menu item", es=base.unit("Abrir en la aplicación"))
+        cat.save()
+        self.glossary.write_text(json.dumps({"doNotTranslate": ["TextMouth"], "terms": []}), encoding="utf-8")
+        status, out = self.check()
+        self.assertEqual(status, 0, out)
+        self.assertIn('check: warning: es "Open in TextMouth": drops the name TextMouth, which is never translated', out)
+
+    def test_two_terms_with_one_translation_are_a_warning_of_check(self):
+        self.glossary.write_text(json.dumps({"terms": [
+            {"term": "Index", "translations": {"es": {"text": "Índice"}}},
+            {"term": "Table of Contents", "translations": {"es": {"text": "Índice"}}}]}), encoding="utf-8")
+        status, out = self.check()
+        self.assertEqual(status, 0, out)
+        self.assertIn("share the translation 'Índice'", out)
 
     def test_the_warnings_are_in_the_json(self):
         _, out = self.check("--json")

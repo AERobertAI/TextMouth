@@ -57,8 +57,36 @@ class ShippedGlossaryTests(unittest.TestCase):
         self.assertLess(len(marked), len(self.glossary.terms), "not every term is in doubt")
 
     def test_the_word_a_term_is_for_is_found_in_a_sentence_that_uses_it(self):
-        found = self.glossary.terms_in("Add a bookmark to the Reading List", "es")
-        self.assertEqual({item["term"] for item in found}, {"Add", "Bookmark", "Reading List", "Reading"})
+        found = self.glossary.terms_in("Your bookmark in the Reading List", "es")
+        self.assertEqual({item["term"] for item in found}, {"Bookmark", "Reading List", "Reading"})
+
+    def test_an_everyday_command_word_is_found_as_a_label_and_not_in_a_sentence(self):
+        for text in ("Close", "Open...", "Done", "Play", "Close Window"):
+            self.assertTrue(any(item["term"] in ("Close", "Open", "Done", "Play") for item in self.glossary.terms_in(text, "es")), text)
+        for text in ("close to the end", "Open the book", "I am done", "Play it again"):
+            found = [item["term"] for item in self.glossary.terms_in(text, "es")]
+            self.assertEqual([term for term in found if term in ("Close", "Open", "Done", "Play")], [], text)
+        # A noun in the same sentence is still found: only the everyday command words are held back.
+        self.assertEqual([item["term"] for item in self.glossary.terms_in("Open the book", "es")], ["Book"])
+
+    def test_the_encodings_windows_name_does_not_find_window(self):
+        for name in ("Windows-1252 (Western)", "Windows-1250 (Central European)", "Windows-1251"):
+            self.assertNotIn("Window", [item["term"] for item in self.glossary.terms_in(name, "es")], name)
+
+    def test_index_is_the_search_index_and_no_two_terms_share_a_translation(self):
+        index = next(term for term in self.glossary.terms if term["term"] == "Index")["translations"]["es"]
+        self.assertEqual(index["text"], "Índice de búsqueda")
+        self.assertTrue(index.get("check"))
+        self.assertEqual(self.glossary.warnings(), [])
+
+    def test_the_terms_whose_apple_spanish_is_not_confirmed_stay_marked_with_what_the_review_believes(self):
+        entries = {term["term"]: term["translations"]["es"] for term in self.glossary.terms}
+        self.assertTrue(entries["Settings"]["check"])
+        self.assertIn("Configuración del Sistema", entries["Settings"]["note"])
+        self.assertTrue(entries["Keyboard Shortcut"]["check"])
+        self.assertIn("Funciones rápidas de teclado", entries["Keyboard Shortcut"]["note"])
+        self.assertEqual((entries["Settings"]["text"], entries["Keyboard Shortcut"]["text"]), ("Ajustes", "Atajo de teclado"),
+                         "no Apple term that cannot be confirmed is decided")
 
 
 if __name__ == "__main__":

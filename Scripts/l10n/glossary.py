@@ -14,6 +14,13 @@ The file holds two things:
   (`Glossary.unused_terms`): a warning only, since a language inflects (Spanish "marcador", "marcadores").
 
 A language code is looked up as given, then without its region or script, so `es-419` uses Spanish's terms.
+
+How a term is found in a text:
+- never inside a do-not-translate name: "Windows-1252" is the name `Windows`, not the term `Window`;
+- a term marked `"ordinary": true` is a command or an adjective that is also an everyday word (Close, Open, Done, Play, Next,
+  Add, Delete, ...), so "close to the end" is not a use of Close. It is found only as a whole label ("Close", "Open...") or in
+  a title-case phrase ("Close Window", "Open %@ in TextMouth"), which is how a menu item or a button is written. Nouns (Library,
+  Bookmark, Chapter) are found anywhere, in any case.
 """
 import json
 import re
@@ -43,6 +50,31 @@ def _fold(text):
 def _word_pattern(text, flags=0):
     """A regular expression for `text` standing as a word of its own (with an optional plural `s` after it)."""
     return re.compile(r"(?<!\w)" + re.escape(text) + _WORD_END, flags)
+
+
+# The words a title-case phrase leaves in lower case ("Open Without the Index", "Open %@ in TextMouth").
+_SMALL_WORDS = frozenset("a an the of to in on for and or with without from by at as into".split())
+# What ends a label without being part of it: an ellipsis, a colon, and sentence punctuation.
+_LABEL_END = re.compile(r"[\s.…:?!]+\Z")
+_WORD = re.compile(r"[^\W\d_][\w'’]*")
+
+
+def is_title_case(text):
+    """Whether the words of `text` (leaving out placeholders and the small words a title keeps in lower case) all start with a
+    capital letter, as a menu item or a button is written, and there is at least one: "Close Window" is, "close to the end"
+    and "Close to the end" are not."""
+    words = [word for word in _WORD.findall(_without_placeholders(text)) if word.casefold() not in _SMALL_WORDS]
+    return bool(words) and all(word[0].isupper() for word in words)
+
+
+def _without_placeholders(text):
+    """`text` with its placeholders replaced by spaces."""
+    return " ".join(catalog.literal_pieces(text))
+
+
+def is_whole_label(text, term):
+    """Whether `text` is `term` alone, in any case, with at most an ellipsis, a colon, or a sentence mark after it."""
+    return _LABEL_END.sub("", text.strip()).casefold() == term.casefold()
 
 
 class Glossary:
@@ -98,9 +130,43 @@ class Glossary:
                 elif not (isinstance(entry.get("match", []), list)
                           and all(isinstance(piece, str) and piece.strip() for piece in entry.get("match", []))):
                     problems.append(f"the term {label!r} in {language}: `match` must be a list of text")
+            if not isinstance(term.get("ordinary", False), bool):
+                problems.append(f"the term {label!r}: `ordinary` must be true or false")
         return problems
 
+    def warnings(self):
+        """The sentences about the glossary that are worth a look but do not make it unusable: two terms that share one
+        translation in a language (a translator cannot tell them apart, as Index and Table of Contents were both Índice),
+        compared in lower case and without accents."""
+        warnings = []
+        for language in sorted({language for term in self.terms for language in term.get("translations", {})}):
+            by_text = {}
+            for term in self.terms:
+                entry = term.get("translations", {}).get(language)
+                if entry:
+                    by_text.setdefault(_fold(entry["text"]), []).append((term["term"], entry["text"]))
+            for terms in by_text.values():
+                if len(terms) > 1:
+                    names = " and ".join(repr(name) for name, _ in terms)
+                    warnings.append(f"in {language} the terms {names} share the translation {terms[0][1]!r}")
+        return warnings
+
     # ---- what a text holds ----
+
+    def mask_names(self, text):
+        """`text` with each do-not-translate name replaced by a space, so that a term is never found inside one."""
+        for name in self.names:
+            text = _word_pattern(name).sub(" ", text)
+        return text
+
+    def term_in(self, term, english):
+        """Whether `term` (a glossary entry) is found in `english`: as a word of its own, in any case, with an optional plural
+        `s`, outside the do-not-translate names; and, for an `ordinary` term, only as a whole label or in a title-case phrase
+        (see the module's note)."""
+        text = self.mask_names(english)
+        if not term.get("ordinary"):
+            return bool(_word_pattern(term["term"], re.IGNORECASE).search(text))
+        return is_whole_label(text, term["term"]) or (is_title_case(text) and bool(_word_pattern(term["term"]).search(text)))
 
     def names_in(self, text):
         """The do-not-translate names `text` holds, in the glossary's order (case matters: "VoiceOver" is not "voiceover")."""
@@ -133,12 +199,11 @@ class Glossary:
         return None
 
     def found_in(self, english, language):
-        """The (term, entry) pairs for the terms found in `english` that have a translation in `language`: a term is found
-        as a word of its own, in any case, with an optional plural `s`."""
+        """The (term, entry) pairs for the terms found in `english` that have a translation in `language` (see term_in)."""
         found = []
         for term in self.terms:
             entry = self.translation_of(term, language)
-            if entry and _word_pattern(term["term"], re.IGNORECASE).search(english):
+            if entry and self.term_in(term, english):
                 found.append((term, entry))
         return found
 

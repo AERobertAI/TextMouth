@@ -643,7 +643,8 @@ def check_catalog(cat, config):
 
 def glossary_warnings(cat, glossary, languages):
     """The sentences about translations (finished ones, in each of `languages`) that do not use the translation the glossary
-    gives for a term of their English. Only warnings: a language inflects, and a translator may have a better word."""
+    gives for a term of their English, or that drop a name the glossary says is never translated (`apply` refuses that, but a
+    hand edit can still lose one). Only warnings: a language inflects, and a translator may have a better word."""
     warnings = []
     for language in languages:
         for key in cat.translatable():
@@ -651,11 +652,15 @@ def glossary_warnings(cat, glossary, languages):
             for unit in cat.units(key, language):
                 if not catalog.unit_done(unit):
                     continue
-                unused = glossary.unused_terms(english_text_for(english, key, unit), unit.value, language)
+                reference = english_text_for(english, key, unit)
+                label = f"{language} {quote(key)}" + (f" ({unit.path})" if unit.path else "")
+                unused = glossary.unused_terms(reference, unit.value, language)
                 if unused:
-                    where = f" ({unit.path})" if unit.path else ""
-                    warnings.append(f"{language} {quote(key)}{where}: does not use the glossary's "
+                    warnings.append(f"{label}: does not use the glossary's "
                                     + ", ".join(json.dumps(text, ensure_ascii=False) for text in unused))
+                lost = glossary.missing_names(reference, unit.value)
+                if lost:
+                    warnings.append(f"{label}: drops the name {', '.join(lost)}, which is never translated")
     return warnings
 
 
@@ -666,7 +671,9 @@ def cmd_check(args):
     problems, note = check_catalog(cat, config)
     warnings = []
     try:
-        warnings = glossary_warnings(cat, glossarylib.Glossary.load(args.glossary), languages_of(cat, config))
+        loaded = glossarylib.Glossary.load(args.glossary)
+        # The glossary's own warnings (two terms with one translation) come with those of the translations.
+        warnings = glossary_warnings(cat, loaded, languages_of(cat, config)) + loaded.warnings()
     except glossarylib.GlossaryError as error:
         problems.append(str(error))
     shown = problems if not args.limit else problems[:args.limit]
