@@ -12,6 +12,17 @@ extension XCTestCase {
         RunLoop.main.run(until: Date().addingTimeInterval(interval))
     }
 
+    /// Waits for one turn of the main queue: everything queued on it before
+    /// the call has run when this returns, such as the library's published
+    /// `openBookIDs`, which follows a reader's registration a turn later
+    /// (B22). The wait has a limit.
+    @MainActor
+    func waitForMainQueueTurn() {
+        let turn = expectation(description: "a turn of the main queue")
+        DispatchQueue.main.async { turn.fulfill() }
+        wait(for: [turn], timeout: 5)
+    }
+
     /// Run the main run loop until `condition` holds or `timeout` passes.
     ///
     /// - Returns: Whether `condition` came to hold.

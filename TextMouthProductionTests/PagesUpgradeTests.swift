@@ -891,6 +891,7 @@ final class PagesUpgradeTests: XCTestCase {
         // waited for by yielding the main actor.
         await waitForReaderToLoadYielding(reader)
         // The reader registers its book as open as it loads.
+        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
         XCTAssertTrue(world.library.openBookIDs.contains(fixture.book.id))
         let noted = TextPlace(chapter: reader.currentChapterIndex, offset: reader.currentCharacterOffset)
         XCTAssertTrue(try XCTUnwrap(reader.content).pages.isEmpty, "the reader should start without pages")
