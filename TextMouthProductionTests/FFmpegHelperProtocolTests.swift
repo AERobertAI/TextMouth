@@ -241,7 +241,8 @@ final class FFmpegHelperProtocolTests: XCTestCase {
             checks[parts[0]] = (status, frames, largest, changes, silence)
         }
         XCTAssertEqual(Set(checks.keys), ["ratio-up-16", "ratio-up-17", "ratio-down-16", "ratio-down-17", "cap", "held-back", "layout-same", "layout-other", "changes-1000", "changes-1001",
-                                          "silence-timed", "silence-untimed", "silence-ends", "silence-none", "silence-absurd", "silence-at-bound", "silence-claimed", "silence-sums"])
+                                          "silence-timed", "silence-untimed", "silence-ends", "silence-none", "silence-absurd", "silence-at-bound", "silence-claimed", "silence-sums",
+                                          "silence-backward", "silence-size"])
         for (name, status) in [("ratio-up-16", 0), ("ratio-up-17", 7), ("ratio-down-16", 0), ("ratio-down-17", 7)] {
             XCTAssertEqual(checks[name]?.status, status, name)
         }
@@ -277,9 +278,15 @@ final class FFmpegHelperProtocolTests: XCTestCase {
     /// - with no timestamps, by the refused packets' own lengths (8 ms, 64 frames);
     /// - at the start and the end of the sound as well (14 ms, 112 frames);
     /// - a file with no refused packet is given none, whatever its timestamps say;
-    /// - a stretch past the bound, here 10 s, a claim of a length past the
-    ///   ceiling, and stretches that add past it end as damaged (6), and one
-    ///   of exactly the bound is filled (80,000 frames).
+    /// - a stretch past the bound (10 s here) is given no silence and the
+    ///   decode goes on, as before FU03, the gap closing but for the refused
+    ///   packets' own lengths (16 frames): the import is not refused for it; a
+    ///   claim of a length past the ceiling owes none; stretches that add up
+    ///   past the bound owe the first (6 s, 48,000 frames) and not the next;
+    ///   one of exactly the bound is filled (80,000 frames);
+    /// - a jump backward in the timestamps gives the packets' own lengths (48);
+    /// - a file of 10 KB, which holds 81.92 s at 1 kbit/s, is given the
+    ///   packet's own length (16 frames), not a gap of 100 s (800,000 frames).
     ///
     /// Fenced to the Mac like the check above: only made-up frames, no file.
     func testRefusedSoundIsKeptAsBoundedSilence() async throws {
@@ -291,16 +298,14 @@ final class FFmpegHelperProtocolTests: XCTestCase {
             guard parts.count == 10, let status = Int(parts[1]), let frames = Int(parts[3]), let silence = Int(parts[9]) else { continue }
             checks[parts[0]] = (status, frames, silence)
         }
-        for (name, status, frames, silence) in [
-            ("silence-timed", 0, 8_000, 14_400), ("silence-untimed", 0, 96, 64), ("silence-ends", 0, 48, 112),
-            ("silence-none", 0, 32, 0), ("silence-at-bound", 0, 32, 80_000),
+        for (name, frames, silence) in [
+            ("silence-timed", 8_000, 14_400), ("silence-untimed", 96, 64), ("silence-ends", 48, 112), ("silence-none", 32, 0),
+            ("silence-at-bound", 32, 80_000), ("silence-absurd", 32, 16), ("silence-claimed", 32, 0), ("silence-sums", 48, 48_000),
+            ("silence-backward", 32, 48), ("silence-size", 32, 16),
         ] {
-            XCTAssertEqual(checks[name]?.status, status, name)
+            XCTAssertEqual(checks[name]?.status, 0, "\(name): the decode goes on")
             XCTAssertEqual(checks[name]?.frames, frames, "\(name): the frames of sound")
             XCTAssertEqual(checks[name]?.silence, silence, "\(name): the frames of silence")
-        }
-        for name in ["silence-absurd", "silence-claimed", "silence-sums"] {
-            XCTAssertEqual(checks[name]?.status, 6, "\(name): a stretch past the bound is damaged")
         }
     }
     #endif

@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
     }
     if (only_formcheck) {
         /* No file: the frames are made up in memory, and nothing needs the confinement. */
-        char answers[2048];
+        char answers[4096];
         const int answered = tmff_session_formcheck(answers, sizeof answers);
         return write_all((const unsigned char *)answers, strlen(answers)) == 0 ? answered : TMFF_EXIT_OUTPUT;
     }
