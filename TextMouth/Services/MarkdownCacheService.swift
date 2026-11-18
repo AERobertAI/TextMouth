@@ -763,8 +763,9 @@ enum MarkdownCacheService {
     /// and plain text extraction.
     ///
     /// A chapter whose Markdown nests past the limit (`MarkupRefusal`) is never
-    /// dropped and never read for a shorter text: it keeps its raw Markdown as its
-    /// text, as the reader shows a file it cannot parse, and the refusal is
+    /// dropped and never read for a shorter text: it keeps its words as written
+    /// as its text (`RawChapterLines.readingText(of:)`: the Markdown's own lines,
+    /// without TextMouth's marker comments and backslash escapes), and the refusal is
     /// logged once (`logKeptRaw`). So Edit Text, a rebuild, the pages' re-read,
     /// and the exports, which all commit for the text this returns, never commit
     /// for fewer words than the book holds. An import does not come here for its
@@ -867,7 +868,10 @@ enum MarkdownCacheService {
                 // threw, a chapter is never dropped: it stays as written.
                 refusedCount += 1
                 firstRefusal = firstRefusal ?? RefusedChapter(number: number, refusal: error)
-                return Chapter(title: title, text: text, headings: [])
+                // Its words as written (B16): without the marker comments and
+                // the backslash escapes content.md adds, which the reader
+                // would otherwise show and speak, and Plain Text export write.
+                return Chapter(title: title, text: RawChapterLines.readingText(of: text), headings: [])
             }
         }
 

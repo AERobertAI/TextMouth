@@ -30,8 +30,11 @@ import Foundation
 ///   U+FEFF or a hand edit, and decoding the named ones would need a table of
 ///   two thousand names, which half a table would only make inconsistent.
 ///
-/// The reader's raw chapter and the plain text export keep their own paths,
-/// whose text offsets are positions and bookmarks.
+/// The walk of an export keeps the paragraphs, with their markers as places;
+/// the reader keeps the words alone (`readingText(of:)`, B16), so a chapter
+/// kept raw shows, speaks, and exports as Plain Text without a marker or an
+/// escape. That moves the text offsets inside such a chapter, which the
+/// load check of saved places carries by their words (`PlaceRelocator`).
 enum RawChapterLines {
 
     /// One piece of a paragraph, in the order it is written.
@@ -79,6 +82,26 @@ enum RawChapterLines {
         }
         endParagraph()
         return paragraphs
+    }
+
+    /// The reading text of `content`, a chapter of content.md that nests too
+    /// deeply to be parsed, as the reader keeps it (B16): the words of its
+    /// paragraphs, with a blank line between one paragraph and the next, and
+    /// the markers and the escapes of content.md left out. A paragraph of
+    /// markers alone has no words and is no paragraph here; a chapter with
+    /// no words at all is empty.
+    ///
+    /// This is the one reading of a raw chapter's words: the export's walk
+    /// (`ExportDocumentWalker`) keeps the same paragraphs, with their markers
+    /// as places, and the reader and Plain Text export take these words.
+    static func readingText(of content: String) -> String {
+        paragraphs(of: content).compactMap { paragraph in
+            // Markers carry no words; the pieces' words, in order, are the paragraph.
+            let words = paragraph.pieces.reduce(into: "") { text, piece in
+                if case let .words(more) = piece { text += more }
+            }
+            return words.isEmpty ? nil : words
+        }.joined(separator: "\n\n")
     }
 
     /// The pieces of one line, already trimmed of the spaces and tabs at its
