@@ -2,6 +2,23 @@ import os
 import XCTest
 @testable import TextMouth
 
+/// A scripted uptime a test moves by hand, starting at 1,000 seconds. At
+/// file scope, as the iPhone's test counter reads a test class's tests
+/// (Scripts/agents/ios_ui_tests.py).
+private final class ScriptedUptime: Sendable {
+    let seconds = OSAllocatedUnfairLock<TimeInterval>(initialState: 1_000)
+
+    /// Moves the uptime on by `step` seconds.
+    func advance(by step: TimeInterval) {
+        seconds.withLock { $0 += step }
+    }
+
+    /// The uptime, as the clock reads it.
+    var reading: @Sendable () -> TimeInterval {
+        { [seconds] in seconds.withLock { $0 } }
+    }
+}
+
 /// Tests of `RunningClock` (B18), the clock the in-app engines time their
 /// calls by, which counts only the time TextMouth runs: each reading counts
 /// the uptime since the one before up to its longest step, so a gap that
@@ -12,21 +29,6 @@ import XCTest
 /// The uptime is scripted, except where the heartbeat is the subject, which
 /// waits a second and a half at most.
 final class RunningClockTests: XCTestCase {
-    /// A scripted uptime the test moves by hand, starting at 1,000 seconds.
-    private final class ScriptedUptime: Sendable {
-        let seconds = OSAllocatedUnfairLock<TimeInterval>(initialState: 1_000)
-
-        /// Moves the uptime on by `step` seconds.
-        func advance(by step: TimeInterval) {
-            seconds.withLock { $0 += step }
-        }
-
-        /// The uptime, as the clock reads it.
-        var reading: @Sendable () -> TimeInterval {
-            { [seconds] in seconds.withLock { $0 } }
-        }
-    }
-
     /// Readings closer together than the longest step count the uptime
     /// between them whole; the first reading is 0.
     func testReadingsCloserThanTheLongestStepCountTheUptimeWhole() {
