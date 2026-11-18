@@ -128,6 +128,9 @@ enum FFmpegTestError: Error {
     /// The iPhone was asked for one of the helper's command lines that only
     /// its program reads (a usage error, or a Debug mode).
     case notASession([String])
+    /// A test asked for an FLV tag of more samples than one holds (16,777,214)
+    /// or of none.
+    case tagTooLong(Int)
 }
 
 extension XCTestCase {
@@ -340,8 +343,9 @@ extension XCTestCase {
     /// each tag after the size of the one before it, and an audio tag's data
     /// its sound's format byte followed by its samples, so one tag is one
     /// packet and one decoded frame. A tag holds at most 16,777,214 samples.
+    /// - Throws: `FFmpegTestError.tagTooLong` for more, or for none.
     func flvOfOnePCMTag(samples: Int, named name: String) throws -> URL {
-        precondition(samples > 0 && samples < (1 << 24) - 1, "one FLV tag holds at most 16,777,214 samples")
+        guard samples > 0, samples < (1 << 24) - 1 else { throw FFmpegTestError.tagTooLong(samples) }
         /// `value` as `count` big-endian bytes.
         func bigEndian(_ value: Int, bytes count: Int) -> [UInt8] {
             (0..<count).reversed().map { UInt8((value >> ($0 * 8)) & 0xFF) }
