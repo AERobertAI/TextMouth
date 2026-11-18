@@ -824,8 +824,15 @@ class CommandTests(TemporaryCase):
             self.assertIn(command, printed.getvalue())
 
     def test_the_repositorys_configuration_ships_no_language_and_reports_the_budget(self):
+        """Only what must hold is pinned: no language ships until the orchestrator ships one (change `languages` here then),
+        the budget, and that it only reports. `syncPaths` grows with every branch that converts files, so it is checked for its
+        type and not its value (l10npilot's finding, #6564)."""
         config = l10n.load_config()
-        self.assertEqual(config, {"languages": [], "budgetBytes": 150000, "budgetFails": False, "syncPaths": []})
+        self.assertEqual(config["languages"], [])
+        self.assertEqual(config["budgetBytes"], 150000)
+        self.assertIs(config["budgetFails"], False)
+        self.assertIsInstance(config["syncPaths"], list)
+        self.assertTrue(all(isinstance(glob, str) for glob in config["syncPaths"]), config["syncPaths"])
 
 
 if __name__ == "__main__":
