@@ -322,7 +322,7 @@ def main(argv):
             first_size = log.stat().st_size
             status, timed_out = run_build(command, log, left, append=True)
             log_text = log.read_bytes()[first_size:].decode("utf-8", errors="replace")
-            retried = retry_note(first_seconds, failure)
+            retried = retry_note(first_seconds / 60, failure)
     write_results(out, parse_errors(log_text), log_text, status, timed_out, time.monotonic() - started,
                   args.limit_minutes, retried)
     if size_requested(ROOT / args.request):

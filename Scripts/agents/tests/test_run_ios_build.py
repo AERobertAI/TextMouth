@@ -313,6 +313,15 @@ class RetryTests(unittest.TestCase):
         self.assertIn("module caches were emptied", retried[0])
         self.assertIn("building once more", printed)
 
+    def test_the_retry_note_counts_the_first_tries_minutes_not_its_seconds(self):
+        # A pretend clock that moves 87 seconds at every reading: the first try lasted 87 seconds, 1.4 minutes.
+        readings = iter(range(0, 10000, 87))
+        with mock.patch.object(ios.time, "monotonic", lambda: next(readings)):
+            _, files, _ = self.run_main(self.fake_build(STALE_ERROR, "** TEST BUILD SUCCEEDED **"))
+        retried = [line for line in files["ios-summary.txt"].splitlines() if line.startswith("Retried: ")]
+        self.assertIn("(1.4 minutes)", retried[0])
+        self.assertEqual(ios.retry_note(2.9).count("2.9 minutes"), 1)
+
     def test_both_tries_are_in_the_log_and_the_retry_has_what_is_left_of_the_limit(self):
         _, files, _ = self.run_main(self.fake_build(STALE_ERROR, "** TEST BUILD SUCCEEDED **"), limit="20")
         self.assertIn("1TV4X376J16CB", files["ios.log"])
