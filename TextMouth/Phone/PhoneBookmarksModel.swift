@@ -32,6 +32,10 @@ enum PhoneBookmarksVocabulary {
     static var noteLabel: String { BookmarkPanelView.noteLabel }
     /// The Add sheet's button that adds the bookmark.
     static var add: String { BookmarkPanelView.addTitle }
+    /// The note sheets' button that leaves without a change.
+    static var cancel: String { BookmarkPanelView.cancelTitle }
+    /// The Edit sheet's button that keeps the note.
+    static var save: String { BookmarkPanelView.saveTitle }
 
     /// The Edit sheet's title, as in "Edit Bookmark 3".
     static func editTitle(number: Int) -> String {
@@ -54,8 +58,19 @@ enum PhoneBookmarksWording {
     /// The title of the question asked before a bookmark with a note is
     /// removed, as in "Remove Bookmark 3?". Its message is the note.
     static func removeQuestion(number: Int) -> String {
-        String(localized: "Remove Bookmark \(number)?",
-               comment: "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %lld is the bookmark's number.")
+        // The number is the bookmark's identifier, not a count: `String(number)` keeps it ungrouped ("1234"), where
+        // a localized Int would read "1,234" (FR35 review, finding 5).
+        String(localized: "Remove Bookmark \(String(number))?",
+               comment: "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %@ is the bookmark's number, an identifier written without digit grouping.")
+    }
+
+    /// The question's button that removes the bookmark. Removing a bookmark
+    /// deletes it, so the Spanish says "Eliminar", as the Mac's "Delete
+    /// bookmark" does. The reader's own question shows it too
+    /// (`PhoneReaderWording.remove`).
+    static var removeButton: String {
+        String(localized: "Remove",
+               comment: "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.")
     }
 
     /// What VoiceOver says once the sheet has closed on a bookmark chosen in

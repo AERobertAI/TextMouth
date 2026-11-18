@@ -58,7 +58,7 @@ struct PhoneReaderView: View {
                 Button(PhoneReaderWording.remove, role: .destructive) {
                     model.toggleBookmark()
                 }
-                Button(PhoneAppWording.cancel, role: .cancel) {}
+                Button(PhoneBookmarksVocabulary.cancel, role: .cancel) {}
             } message: { bookmark in
                 Text(bookmark.label)
             }

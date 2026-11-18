@@ -17,6 +17,8 @@ enum PhoneSleepTimerVocabulary {
     static var title: String { PhoneReaderVocabulary.sleepTimer }
     /// What Close does.
     static var closeHint: String { SleepTimerView.closeHint }
+    /// The sheet's toolbar button that closes it.
+    static var close: String { SleepTimerView.closeTitle }
     /// The heading over the timer running.
     static var currentTimer: String { SleepTimerView.currentTimerHeading }
     /// The button that starts the running timer again from its whole length.

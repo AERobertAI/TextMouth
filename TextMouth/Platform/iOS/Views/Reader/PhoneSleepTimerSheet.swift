@@ -65,7 +65,7 @@ struct PhoneSleepTimerSheet: View {
             .navigationTitle(PhoneSleepTimerVocabulary.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                PhoneSheetButton(title: PhoneAppWording.close, hint: PhoneSleepTimerVocabulary.closeHint) {
+                PhoneSheetButton(title: PhoneSleepTimerVocabulary.close, hint: PhoneSleepTimerVocabulary.closeHint) {
                     dismiss()
                 }
             }

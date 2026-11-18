@@ -105,7 +105,7 @@ final class PhoneSleepTimerVocabularyTests: XCTestCase {
         )
         let words: [(phone: String, mac: String, english: String, shownAs: String)] = [
             (PhoneSleepTimerVocabulary.title, SleepTimerView.title, "Sleep Timer", "Text(Self.title)"),
-            (PhoneAppWording.close, SleepTimerView.closeTitle, "Close", "Button(Self.closeTitle)"),
+            (PhoneSleepTimerVocabulary.close, SleepTimerView.closeTitle, "Close", "Button(Self.closeTitle)"),
             (PhoneSleepTimerVocabulary.closeHint, SleepTimerView.closeHint,
              "Returns to the book.", ".accessibilityHint(Self.closeHint)"),
             (PhoneSleepTimerVocabulary.currentTimer, SleepTimerView.currentTimerHeading,
@@ -134,5 +134,16 @@ final class PhoneSleepTimerVocabularyTests: XCTestCase {
             XCTAssertEqual(word.mac, word.english, "The Mac's \(word.shownAs) changed its English")
             XCTAssertTrue(macView.contains(word.shownAs), "The Mac's Sleep Timer sheet no longer shows \(word.shownAs)")
         }
+    }
+
+    /// The iPhone's Sleep Timer sheet closes with the Mac's localized Close, not `PhoneAppWording.close`'s English
+    /// (finding 4 of the pilot's review). The source is read, since the language cannot change in the test host.
+    func testThePhonesSheetShowsTheMacsClose() throws {
+        let sheet = try String(
+            contentsOf: AppSourceFile.folder.appendingPathComponent("Platform/iOS/Views/Reader/PhoneSleepTimerSheet.swift"),
+            encoding: .utf8
+        )
+        XCTAssertTrue(sheet.contains("PhoneSheetButton(title: PhoneSleepTimerVocabulary.close,"))
+        XCTAssertFalse(sheet.contains("PhoneAppWording.close"))
     }
 }

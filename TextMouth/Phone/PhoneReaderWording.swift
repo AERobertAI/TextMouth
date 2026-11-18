@@ -60,13 +60,14 @@ enum PhoneReaderWording {
     }
 
     /// The question before Add bookmark removes a bookmark that has a note:
-    /// "Remove Bookmark 3?", with the note as its message.
+    /// "Remove Bookmark 3?", with the note as its message. The Bookmarks
+    /// sheet asks the same question in the same words (one definition).
     static func removeBookmarkTitle(_ bookmark: Bookmark) -> String {
-        "Remove Bookmark \(bookmark.number)?"
+        PhoneBookmarksWording.removeQuestion(number: bookmark.number)
     }
 
     /// The question's button that removes the bookmark.
-    static let remove = "Remove"
+    static var remove: String { PhoneBookmarksWording.removeButton }
 
     /// The name of Book content's rotor that moves by sentence.
     static let sentencesRotor = "Sentences"

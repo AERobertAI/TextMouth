@@ -126,8 +126,8 @@ struct PhoneBookmarksSheet: View {
                 isPresented: isAskingToRemove,
                 presenting: removing
             ) { bookmark in
-                Button(PhoneReaderWording.remove, role: .destructive) { delete(bookmark) }
-                Button(PhoneAppWording.cancel, role: .cancel) {}
+                Button(PhoneBookmarksWording.removeButton, role: .destructive) { delete(bookmark) }
+                Button(PhoneBookmarksVocabulary.cancel, role: .cancel) {}
             } message: { bookmark in
                 Text(bookmark.label)
             }
@@ -256,7 +256,7 @@ struct PhoneBookmarksSheet: View {
                 field: PhoneBookmarksVocabulary.editNoteField,
                 hint: nil,
                 startingNote: bookmark.label,
-                doneTitle: PhoneAppWording.save,
+                doneTitle: PhoneBookmarksVocabulary.save,
                 onCancel: { focusAfterNoteSheet = Focus(model.focus(after: .edit(bookmark.id))) },
                 onDone: { note in save(note: note, for: bookmark) }
             )
@@ -337,7 +337,7 @@ private struct PhoneBookmarkNoteSheet: View {
                     .accessibilityFocused($fieldHasVoiceOver)
                     .accessibilityLabel(PhoneBookmarksVocabulary.noteLabel)
                     .accessibilityHint(hint ?? "")
-                Button(PhoneAppWording.cancel) {
+                Button(PhoneBookmarksVocabulary.cancel) {
                     onCancel()
                     dismiss()
                 }
