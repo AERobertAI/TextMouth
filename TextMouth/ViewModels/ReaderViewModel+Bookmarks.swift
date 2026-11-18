@@ -526,9 +526,16 @@ extension ReaderViewModel {
         book.applyEditableMetadata(from: saved)
         // The row's fields, over the edit for the rest, as for an EPUB.
         audioMetadata = saved.mergingEditableAudioMetadata(metadata)
-        announceToVoiceOver(String(localized: "Metadata updated",
-                                   comment: "VoiceOver announcement after an audiobook's edited title, artist, album, genre, or year was saved."))
+        announceToVoiceOver(Self.metadataUpdatedAnnouncement)
         showSavedMetadataInNowPlaying()
+    }
+
+    /// What VoiceOver says once a book's edited details are saved: here for an
+    /// audiobook, and in the iPhone's Book Info (`PhoneLibraryVocabulary`), which
+    /// says the same words through this.
+    nonisolated static var metadataUpdatedAnnouncement: String {
+        String(localized: "Metadata updated",
+               comment: "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.")
     }
 
     /// Shows the book's title and author, as a metadata save left them, in

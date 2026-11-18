@@ -96,8 +96,9 @@ enum PhoneReaderWording {
     /// Sleep Timer's hint.
     static let sleepTimerHint = "Opens the sleep timer."
 
-    /// Sleep Timer's value while no timer runs.
-    static let sleepTimerOff = "Off"
+    /// Sleep Timer's value while no timer runs: the sleep timer's own
+    /// localized word (FR35), read here rather than copied.
+    static var sleepTimerOff: String { PhoneSleepTimerModel.offValue }
 
     /// Headings' value: the heading and its place among the book's headings,
     /// "The Battle, 26 of 412"; "26 of 412" for a heading with no words;

@@ -63,8 +63,9 @@ enum PhoneLibraryVocabulary {
     static let lastOpenedRow = "Last Opened"
     /// The read-only row of the book's word count.
     static let wordCountRow = "Word Count"
-    /// What VoiceOver says once Book Info is saved (the Mac's reader's).
-    static let metadataUpdated = "Metadata updated"
+    /// What VoiceOver says once Book Info is saved: the Mac's reader's own
+    /// localized static, read here rather than copied (FR35).
+    static var metadataUpdated: String { ReaderViewModel.metadataUpdatedAnnouncement }
 
     // MARK: Book Info of an EPUB or an Audiobook (the Mac's MetadataEditorView)
 

@@ -998,7 +998,7 @@
       }
     },
     "Metadata updated" : {
-      "comment" : "VoiceOver announcement after an audiobook's edited title, artist, album, genre, or year was saved.",
+      "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
       "localizations" : {
         "es" : {
           "stringUnit" : {

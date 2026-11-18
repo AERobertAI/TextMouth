@@ -15,11 +15,16 @@ final class SpanishUITests: TextMouthUITestCase {
     /// The launch arguments that start the app in Spanish, with Spain's formats.
     static let spanish = ["-AppleLanguages", "(es)", "-AppleLocale", "es_ES"]
 
-    /// The Sleep Timer sheet, with no timer running, in the catalog's Spanish: the New Timer heading, each preset's
-    /// label, the custom minutes field's label, the stepper's label and its value with its unit, the custom Set
-    /// button's label, and the Stop At heading and buttons.
+    /// The Sleep Timer, with no timer running, in the catalog's Spanish: the reader's Sleep Timer value, then in the
+    /// sheet the New Timer heading, each preset's label, the custom minutes field's label, the stepper's label, the
+    /// custom Set button's label, and the Stop At heading and buttons.
     func testTheSleepTimerSheetIsInSpanish() throws {
         let app = try launchIntoTheReader(arguments: Self.spanish)
+        // The reader's Sleep Timer button keeps its English name (the reader's words), and its value is the
+        // sleep timer's own: "Off" ("Desactivado") while no timer runs.
+        let reader = try elementsInOrder(of: app)
+        let timerValue = reader.first { $0.label == "Sleep Timer" }?.value
+        XCTAssertEqual(timerValue, "Desactivado", "The reader's Sleep Timer read: \(Self.describe(reader))")
         // The reader's button, the sheet's title, and its Close button are the reader's words, still English.
         let elements = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Close", in: app)
         keepScreenshot(of: app, named: "Sleep Timer sheet in Spanish")
@@ -35,9 +40,9 @@ final class SpanishUITests: TextMouthUITestCase {
             "Detener al final de este encabezado",  // "Stop at the end of this heading"
             "Detener al final del libro",  // "Stop at the end of the book"
         ], in: elements)
-        // The stepper's value is the minutes with their unit, the plural "%lld minutes", other.
-        let stepper = elements.first { $0.label == "Ajustar minutos" }
-        XCTAssertEqual(stepper?.value, "30 minutos", "The stepper read: \(Self.describe(elements))")
+        // SwiftUI's stepper is read on the iPhone as its label and two buttons, "Ajustar minutos, Disminución" and
+        // "Ajustar minutos, Aumento" (iOS's own words, in Spanish too), none of which carries its value (train
+        // 1118-1540), so its label is checked in the order above and its value is not read here.
         // The note under New Timer while no timer runs: "Pause playback after:".
         XCTAssertTrue(
             elements.contains { $0.label == "Pausar la reproducción después de:" },
