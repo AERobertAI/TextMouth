@@ -189,7 +189,9 @@ def run_type_check(platform, tree_arguments, say, runner=None):
     say(f"type-checking the {PLATFORM_NAMES[platform]} app with the string extraction on (about two minutes)")
     command = [sys.executable, "-I", "-B", str(TYPECHECK), "--platform", platform, "--emit-strings", "--agent", "l10n",
                "--quiet", *tree_arguments]
-    done = (runner or subprocess.run)(command, capture_output=True, text=True)
+    # typecheck.py takes the repository from the folder it runs in, and the catalog is this checkout's: run it in this
+    # checkout, whatever folder the sync was started from (or another checkout's strings would reach this catalog).
+    done = (runner or subprocess.run)(command, capture_output=True, text=True, cwd=ROOT)
     last = [line for line in done.stdout.splitlines() if line.startswith(STRINGS_FOLDER_LINE)]
     if done.returncode != 0 or not last:
         tail = "\n".join(done.stdout.splitlines()[:12] + done.stderr.splitlines()[-5:])
@@ -316,9 +318,20 @@ class SyncReport:
         self.bytes_before, self.bytes_after = before.english_bytes(), after.english_bytes()
 
 
-def sync_catalog(path, files):
-    """Merges the strings of `files` (the .stringsdata paths of both apps) into the catalog at `path` with `xcstringstool
-    sync`, then writes it in the tool's layout; returns a SyncReport. A Refused when the tool fails."""
+def refuse_misnamed(path, table):
+    """A Refused (status 2) unless the catalog file `path` is named for `table`: xcstringstool reads a catalog's strings from
+    the table its file is named for, and writes nothing, with no word, to a catalog of any other name."""
+    if Path(path).stem != table:
+        raise Refused(f"the catalog {path} is named {Path(path).stem!r} but holds the table {table!r}: xcstringstool "
+                      f"would write nothing to it, so name the file {table}.xcstrings", EXIT_USAGE)
+
+
+def sync_catalog(path, files, table=TABLE):
+    """Merges the strings of `files` (the .stringsdata paths of both apps) into the catalog at `path`, the catalog of
+    `table`, with `xcstringstool sync`, then writes it in the tool's layout; returns a SyncReport. A Refused when the file's
+    name is not the table's (the tool reads only the strings of the table its catalog is named for, and writes nothing, with
+    no word, to a catalog of another name), or when the tool fails."""
+    refuse_misnamed(path, table)
     before = catalog.Catalog.load(path)
     arguments = ["sync", str(path)]
     for file in files:
@@ -329,6 +342,12 @@ def sync_catalog(path, files):
     # The tool writes its own layout when it changes a value; this makes sure of it when it changed nothing.
     catalog.canonicalize(path)
     return SyncReport(before, catalog.Catalog.load(path))
+
+
+def catalogs_present():
+    """The tables that have a catalog in this checkout's TextMouth/Localization/ (each catalog's file name, less its
+    extension): every one is synced, so that a table whose strings have all left the code is marked stale, not forgotten."""
+    return {path.stem for path in (ROOT / CATALOG_FOLDER).glob("*.xcstrings")}
 
 
 def describe(keys, limit=10):
@@ -350,8 +369,12 @@ def sync_manifests(args, manifests, say, output=None):
     files = [nothing] + files
     # A catalog takes the strings of the table it is named for, and no other: report a table nobody made a catalog for.
     problems = 0
-    tables = set(places) | {TABLE}
+    tables = set(places) | {TABLE} | catalogs_present()
     reports = {}
+    # Every catalog's name is checked before any is written, so that a refusal leaves them all as they were.
+    for table in sorted(tables):
+        if catalog_path(args, table).exists():
+            refuse_misnamed(catalog_path(args, table), table)
     for table in sorted(tables):
         path = catalog_path(args, table)
         if not path.exists():
@@ -361,7 +384,7 @@ def sync_manifests(args, manifests, say, output=None):
                 f"{describe(sorted(places[table]), 3)}): add {CATALOG_FOLDER / (table + '.xcstrings')} or use the main table")
             problems += 1
             continue
-        reports[table] = sync_catalog(path, files)
+        reports[table] = sync_catalog(path, files, table)
     found = {table: len(keys) for table, keys in places.items()}
     left_out = {table: sorted(everything[table] - set(places.get(table, {}))) for table in everything}
     say_left_out(say, config, found, left_out)

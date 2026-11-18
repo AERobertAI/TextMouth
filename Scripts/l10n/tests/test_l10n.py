@@ -86,6 +86,11 @@ class SyncCase(TemporaryCase):
             self.runs[platform] = self.folder / "runs" / platform
             shutil.copytree(FIXTURES / platform, self.runs[platform])
         self.catalog = self.write_catalog({})
+        # The checkout whose TextMouth/Localization/ the sync lists is a made-up one, never the repository's own.
+        self.checkout = self.folder / "checkout"
+        patch = mock.patch.object(l10n, "ROOT", self.checkout)
+        patch.start()
+        self.addCleanup(patch.stop)
         self.locations = self.folder / "out" / "locations.json"
         self.lines = []
         self.config = self.folder / "sync-config.json"
@@ -316,8 +321,58 @@ class GlobTests(unittest.TestCase):
         self.assertFalse(self.matches("TextMouth/A", "TextMouth/A.swift"))
 
 
+@unittest.skipUnless(HAS_TOOL, "xcstringstool is not installed")
+class EveryCatalogTests(SyncCase):
+    """The sync reaches every catalog in the checkout's TextMouth/Localization/, not only the tables the code still uses
+    (the review of l10n/core, finding 8)."""
+
+    def put_catalog(self, table, strings):
+        """Writes a catalog of `table` in the made-up checkout's Localization folder; returns its path."""
+        folder = self.checkout / l10n.CATALOG_FOLDER
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / f"{table}.xcstrings"
+        make_catalog(strings).save(path)
+        return path
+
+    def test_the_strings_of_a_table_that_left_the_code_go_stale(self):
+        """No file of the runs has the table `Other` any more: its strings are marked, where before nothing was."""
+        other = self.put_catalog("Other", {"Gone": entry("A string no code uses", es=unit("Se fue"))})
+        self.sync()
+        cat = catalog.Catalog.load(other)
+        self.assertTrue(cat.is_stale(cat.strings["Gone"]))
+        self.assertIn("Other: 0 added, 1 became stale", "\n".join(self.lines))
+
+    def test_a_table_the_code_still_uses_is_synced_once(self):
+        menus = self.put_catalog("Menus", {})
+        self.sync()
+        self.assertEqual(sorted(catalog.Catalog.load(menus).strings), ["Shortcut"])
+        self.assertEqual(sum(1 for line in self.lines if line.startswith("Menus: 1 added")), 1)
+
+    def test_a_folder_catalog_of_the_main_tables_name_is_not_synced_in_place_of_the_one_named_on_the_command_line(self):
+        folder_one = self.put_catalog(l10n.TABLE, {"Left alone": entry("Not the catalog the command line named")})
+        self.sync()
+        self.assertEqual(sorted(catalog.Catalog.load(folder_one).strings), ["Left alone"])
+        self.assertIn("Play", catalog.Catalog.load(self.catalog).strings)
+
+
 class RefusalTests(SyncCase):
     """A sync that must not run: nothing is changed."""
+
+    def test_a_catalog_whose_file_is_not_named_for_its_table_is_refused_with_a_sentence(self):
+        """xcstringstool writes nothing to such a file and exits 0, which the sync would print as `0 added` (finding 5)."""
+        self.catalog = self.write_catalog({}, "Foo.xcstrings")
+        self.refused("named 'Foo' but holds the table 'Localizable'")
+
+    def test_a_misnamed_catalog_is_refused_before_any_catalog_is_written(self):
+        """Alpha sorts before Localizable: without the check up front it would be synced (and its string marked) first."""
+        folder = self.checkout / l10n.CATALOG_FOLDER
+        folder.mkdir(parents=True)
+        alpha = folder / "Alpha.xcstrings"
+        make_catalog({"Gone": entry("c", es=unit("Se fue"))}).save(alpha)
+        self.catalog = self.write_catalog({}, "Foo.xcstrings")
+        self.refused("named 'Foo'")
+        self.assertFalse(catalog.Catalog.load(alpha).is_stale(catalog.Catalog.load(alpha).strings["Gone"]),
+                         "a catalog was written before the refusal")
 
     def refused(self, fragment):
         """Asserts that the sync is refused with a message holding `fragment` and the catalog is untouched."""
@@ -382,6 +437,17 @@ class TypeCheckRunTests(TemporaryCase):
             self.assertIn(flag, command)
         self.assertEqual(Path(command[3]).name, "typecheck.py")
         self.assertNotIn("run_locked.py", " ".join(command), "typecheck.py takes the lock itself")
+
+    def test_the_type_check_runs_in_the_tools_own_checkout_whatever_folder_the_sync_started_in(self):
+        """typecheck.py takes the repository from its working folder: another checkout's strings must not reach this catalog."""
+        seen = []
+
+        def runner(command, **options):
+            """Records where the command runs."""
+            seen.append(options.get("cwd"))
+            return self.done(out=f"{l10n.STRINGS_FOLDER_LINE}/work/strings/macos\n")
+        l10n.run_type_check("macos", ["--worktree"], lambda _text: None, runner)
+        self.assertEqual(seen, [l10n.ROOT])
 
     def test_a_failed_type_check_refuses_the_sync(self):
         runner = lambda command, **options: self.done(1, "# summary\n- Result: FAILED\n", "boom")  # noqa: E731
