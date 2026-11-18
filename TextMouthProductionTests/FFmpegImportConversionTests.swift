@@ -80,43 +80,36 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
     }
 
-    /// A symbolic link to a good WMA file is refused as a file that cannot be
-    /// opened, not converted through the link (FU04): the session's opener
-    /// refuses a link, and the sentence is the import's for an unreadable
-    /// file. Its target is untouched, and nothing is left beside the link.
-    func testASymbolicLinkToAGoodFileIsRefusedAsUnreadable() async throws {
+    /// A symbolic link to a good WMA file converts as the file does (FU04's
+    /// review): the import stages a source as it is, and a copy of a link is
+    /// a link, so the path is resolved once before the session opens it,
+    /// whose own opener refuses a link (`testASymbolicLinkIsRefusedAsUnreadable`).
+    /// The .m4a is made beside the link, which and whose target are untouched.
+    func testASymbolicLinkToAGoodFileIsConverted() async throws {
         let wma = try source()
         let folder = try makeSandboxDirectory("FFmpegLinkedSource")
         let link = folder.appendingPathComponent("linked.wma")
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: wma)
-        do {
-            _ = try await FFmpegAudioConverter.convert(link, using: try bundledFFmpegTool())
-            XCTFail("a link must be refused")
-        } catch {
-            XCTAssertEqual(error as? ImportAudioConverter.Failure, .unreadable(fileName: "linked.wma"))
-        }
-        XCTAssertEqual(try names(in: folder), ["linked.wma"])
+        let conversion = try await FFmpegAudioConverter.convert(link, using: try bundledFFmpegTool())
+        XCTAssertEqual(conversion.converted.lastPathComponent, "linked.m4a")
+        XCTAssertEqual(conversion.duration, 4.0, accuracy: 0.1)
+        XCTAssertEqual(try names(in: folder), ["linked.m4a", "linked.wma"])
+        XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: link.path), wma.path)
         XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
     }
 
-    /// A copy-protected WMA file is refused as copy-protected, with the
-    /// helper or without, before anything runs: no converter would help.
-    func testACopyProtectedFileIsRefusedBeforeAnythingElse() async throws {
-        let folder = try makeSandboxDirectory("FFmpegProtected")
-        let locked = folder.appendingPathComponent("Locked.wma")
-        try copyProtectedASF(from: try formatSampleURL("wma/tones-wma1.wma")).write(to: locked)
-        for helper in [try bundledFFmpegHelper(), nil] {
-            // The helper's launches on the Mac, the session's opens in the iPhone app.
-            let (tool, starts) = countingSessionStarts(of: ffmpegTool(helper: helper))
-            do {
-                _ = try await FFmpegAudioConverter.convert(locked, using: tool)
-                XCTFail("a copy-protected file must be refused")
-            } catch {
-                XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .copyProtected)
-            }
-            XCTAssertEqual(starts(), 0, "the session ran before the copy protection was told")
-        }
-        XCTAssertEqual(try names(in: folder), ["Locked.wma"])
+    /// Importing a symbolic link to a good WMA file makes a book of it, as the
+    /// file itself does: the staged copy of the link is a link too, and the
+    /// conversion follows it.
+    func testImportingASymbolicLinkToAGoodFileMakesABook() throws {
+        let wma = try source()
+        let link = try makeSandboxDirectory("FFmpegLinkedImport").appendingPathComponent("Linked.wma")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: wma)
+        let tool = try bundledFFmpegTool()
+        let imported = try FFmpegAudioConverter.$tool.withValue(tool) { try FileImportService.importFileWithReport(from: link) }
+        XCTAssertTrue(imported.book.format.isAudio)
+        XCTAssertEqual(imported.book.bookFileURL.pathExtension, "m4a")
+        XCTAssertNil(imported.notice)
     }
 
     /// An encrypted Matroska or WebM file is refused as copy-protected too

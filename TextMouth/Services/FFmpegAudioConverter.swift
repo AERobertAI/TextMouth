@@ -282,6 +282,11 @@ enum FFmpegAudioConverter {
         using tool: Tool,
         reading read: (_ nextPiece: @escaping () async throws -> [UInt8]) async throws -> Value
     ) async throws -> (ending: WatchedProcess.Ending, read: Result<Value, any Error>) {
+        // The session's own opener refuses a symbolic link (`O_NOFOLLOW`, FU04), but the import stages a
+        // source as it is, and a copy of a link is a link: the path is resolved once, here, so a link to
+        // a good file converts as it does for every other converter, and the opener's refusal stays the
+        // backstop for a link made after this point.
+        let file = file.resolvingSymlinksInPath()
         switch located {
         case let .found(helper):
             return try await WatchedProcess.runStreaming(
