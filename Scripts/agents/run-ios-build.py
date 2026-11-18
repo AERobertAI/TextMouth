@@ -183,11 +183,14 @@ def write_results(out, errors, log_text, status, timed_out, seconds, limit_minut
         reasons.append(f"the build was stopped after {limit_minutes:g} minutes")
     if platform_missing(log_text) and not passed:
         reasons.append("the runner image lacks the iOS Simulator platform or SDK that this build needs")
-    if not passed and not timed_out and not reasons and runner_module_cache.cache_failure(log_text):
+    failure = runner_module_cache.cache_failure(log_text)
+    if failure and not passed and not timed_out and not reasons \
+            and (not errors or runner_module_cache.stale_cache_only(errors)):
         # The error has a file in front of it ("fatal error: ..."), which the error census does not read as an error
-        # line, so a build of this failure used to be reported as ending "with no error line" (train 1117-0527).
-        reasons.append(f"the module cache failed the build (\"{runner_module_cache.cache_failure(log_text)}\"), "
-                       "not this branch's code; nothing to fix in any file")
+        # line, so a build of this failure used to be reported as ending "with no error line" (train 1117-0527). The
+        # cache is blamed only when no other error is listed: a real error beside it is the branch's to fix.
+        reasons.append(f"the module cache failed the build (\"{failure}\"), not this branch's code; "
+                       "nothing to fix in any file")
     if not passed and not errors and not timed_out and not reasons:
         reasons.append(f"xcodebuild ended with status {status} and no error line")
     lines = [f"iOS build: {'PASSED' if passed else 'FAILED'}",

@@ -292,6 +292,14 @@ class RetryTests(unittest.TestCase):
         self.assertNotIn("no error line", files["ios-summary.txt"])
         self.assertIn("Reason: the module cache failed the build", files["ios-summary.txt"])
 
+    def test_a_real_error_beside_a_cache_error_is_not_blamed_on_the_cache(self):
+        # The retry hit the cache error again and the log also holds an error of the branch's code.
+        real = "/x/Foo.swift:3:4: error: cannot find 'x' in scope"
+        _, files, _ = self.run_main(self.fake_build(MISSING_ERROR + "\n" + real, MISSING_ERROR + "\n" + real))
+        self.assertIn("Errors in the app: 1 in 1 files", files["ios-summary.txt"])
+        self.assertNotIn("not this branch's code", files["ios-summary.txt"])
+        self.assertNotIn("Reason:", files["ios-summary.txt"])
+
     def test_a_real_compile_error_is_neither_retried_nor_blamed_on_the_cache(self):
         _, files, _ = self.run_main(self.fake_build("/x/Foo.swift:3:4: error: cannot find 'x' in scope", ""))
         self.assertEqual(len(self.limits), 1)
