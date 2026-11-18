@@ -122,7 +122,8 @@ struct PhoneSleepTimerSheet: View {
                 in: PhoneSleepTimerModel.customMinutesRange,
                 step: SleepTimerView.customMinutesStep
             )
-            .accessibilityValue(CountWording.minutes(customMinutes))
+            // The minutes as the Mac's stepper says them, unit and all.
+            .accessibilityValue(SleepTimerDuration.minutes(customMinutes).displayName)
             timerButton(.custom, title: PhoneSleepTimerVocabulary.set)
         } header: {
             Text(PhoneSleepTimerVocabulary.newTimer)

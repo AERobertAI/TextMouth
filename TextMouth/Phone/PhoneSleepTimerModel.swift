@@ -2,43 +2,45 @@ import Foundation
 
 // MARK: - The Mac's words
 
-/// The words of the Mac's Sleep Timer sheet that sit inline in its view,
-/// `SleepTimerView`, held here for the phone's sheet, which is rebuilt for
-/// the phone, since the Mac's redraws each second with a changing label (the
-/// iPhone interface spec, "The Sleep Timer sheet"). Words the Mac's view
-/// offers as statics are called there, not copied here.
-/// `PhoneSleepTimerVocabularyTests` reads the Mac's source and requires each
-/// word to be there as it is.
+/// The words of the Mac's Sleep Timer sheet, `SleepTimerView`, by the names
+/// the phone's sheet calls them, which is rebuilt for the phone, since the
+/// Mac's redraws each second with a changing label (the iPhone interface
+/// spec, "The Sleep Timer sheet"). Each is the Mac's own localized static
+/// (FR35): these words once sat inline in the Mac's view and were copied
+/// here; now the Mac's sheet shows its statics, and the phone reads the same
+/// ones, so both say every word alike in every language.
+/// `PhoneSleepTimerVocabularyTests` requires each to be the Mac's, and the
+/// Mac's sheet to show it.
 enum PhoneSleepTimerVocabulary {
     /// The sheet's title, read as its heading: the name of the button that
     /// opens it.
-    static let title: String = PhoneReaderVocabulary.sleepTimer
+    static var title: String { PhoneReaderVocabulary.sleepTimer }
     /// What Close does.
-    static let closeHint = "Close the sleep timer and return to the book"
+    static var closeHint: String { SleepTimerView.closeHint }
     /// The heading over the timer running.
-    static let currentTimer = "Current Timer"
+    static var currentTimer: String { SleepTimerView.currentTimerHeading }
     /// The button that starts the running timer again from its whole length.
-    static let resetTimer = "Reset Timer"
+    static var resetTimer: String { SleepTimerView.resetTimerTitle }
     /// What Reset Timer does.
-    static let resetTimerHint = "Restart the timer with its original duration"
+    static var resetTimerHint: String { SleepTimerView.resetTimerHint }
     /// The button that stops the running timer.
-    static let cancelTimer = "Cancel Timer"
+    static var cancelTimer: String { SleepTimerView.cancelTimerTitle }
     /// What Cancel Timer does.
-    static let cancelTimerHint = "Stop the timer and discard the remaining time"
+    static var cancelTimerHint: String { SleepTimerView.cancelTimerHint }
     /// What VoiceOver says once Cancel Timer has stopped the timer.
-    static let cancelled = "Sleep timer cancelled."
+    static var cancelled: String { SleepTimerView.cancelledAnnouncement }
     /// The heading over the timers to set.
-    static let newTimer = "New Timer"
+    static var newTimer: String { SleepTimerView.newTimerHeading }
     /// The note under New Timer while a timer runs.
-    static let replacesCurrent = "Setting a new timer replaces the current one."
+    static var replacesCurrent: String { SleepTimerView.newTimerNote(isActive: true) }
     /// The note under New Timer while none runs.
-    static let pausePlaybackAfter = "Pause playback after:"
+    static var pausePlaybackAfter: String { SleepTimerView.newTimerNote(isActive: false) }
     /// The custom minutes field, as it shows.
-    static let minutesField = "Minutes"
+    static var minutesField: String { SleepTimerView.minutesFieldTitle }
     /// What VoiceOver calls the custom minutes field.
-    static let customMinutesLabel = "Custom timer minutes"
+    static var customMinutesLabel: String { SleepTimerView.customMinutesLabel }
     /// The button that sets the custom timer, as it shows.
-    static let set = "Set"
+    static var set: String { SleepTimerView.setTitle }
 }
 
 // MARK: - The sheet's timers
@@ -75,14 +77,19 @@ enum PhoneSleepTimerModel {
 
     /// The custom field's hint on the phone, which has no Return key to
     /// name: the Mac's sentence, with its last clause made the phone's (the
-    /// spec, "The Sleep Timer sheet" and "Words that say Mac").
-    static let customMinutesHint =
-        "Type the minutes, or change them \(SleepTimerView.customMinutesStep) at a time with "
-            + "\(SleepTimerView.adjustMinutesLabel). Set sets the timer and starts playing."
+    /// spec, "The Sleep Timer sheet" and "Words that say Mac"). One sentence
+    /// with placeholders, localized (FR35).
+    static var customMinutesHint: String {
+        String(localized: "Type the minutes, or change them \(SleepTimerView.customMinutesStep) at a time with \(SleepTimerView.adjustMinutesLabel). Set sets the timer and starts playing.",
+               comment: "VoiceOver hint of the iPhone sleep timer sheet's custom minutes field. %lld is how many minutes the stepper below the field changes them by (5); %@ is the stepper's label, Adjust minutes; Set is the button that sets the timer.")
+    }
 
     /// The reader's Sleep Timer value while no timer runs: the spec's new
     /// word "Off".
-    static let offValue = "Off"
+    static var offValue: String {
+        String(localized: "Off",
+               comment: "VoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.")
+    }
 
     /// The reader's Sleep Timer value: "Off", or the Mac's spoken status
     /// ("4:59 remaining", "stops at the end of this heading", "fading
@@ -93,7 +100,7 @@ enum PhoneSleepTimerModel {
 
     /// The note under New Timer: the Mac's, by whether a timer runs.
     static func newTimerNote(isActive: Bool) -> String {
-        isActive ? PhoneSleepTimerVocabulary.replacesCurrent : PhoneSleepTimerVocabulary.pausePlaybackAfter
+        SleepTimerView.newTimerNote(isActive: isActive)
     }
 
     /// The minutes the custom timer takes from what was typed: the Mac's

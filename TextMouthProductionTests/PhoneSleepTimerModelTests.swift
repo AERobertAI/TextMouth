@@ -87,34 +87,51 @@ final class PhoneSleepTimerModelTests: XCTestCase {
 }
 
 /// `PhoneSleepTimerVocabulary`: each word is the Mac's Sleep Timer sheet's,
-/// read from its own source.
+/// the static the Mac's sheet shows, with its English as it was.
 final class PhoneSleepTimerVocabularyTests: XCTestCase {
-    /// Every inline word is in `SleepTimerView` as the phone has it.
+    /// Every word the phone takes from the Mac's sheet is the Mac's own
+    /// static, which the Mac's sheet shows where the word once sat inline
+    /// (`shownAs`, read from its source), and its English has not changed.
+    /// The words were inline literals of `SleepTimerView`, which this test
+    /// found in its source; they became its localized statics (FR35), which
+    /// both sheets read, so the source check looks for each static instead.
     func testEveryWordIsTheMacsSleepTimerSheets() throws {
         let macView = try String(
             contentsOf: AppSourceFile.folder.appendingPathComponent("Views/Reader/SleepTimerView.swift"),
             encoding: .utf8
         )
-        let words = [
-            "Text(\"\(PhoneSleepTimerVocabulary.title)\")",
-            "Button(\"\(PhoneAppWording.close)\")",
-            ".accessibilityHint(\"\(PhoneSleepTimerVocabulary.closeHint)\")",
-            "Text(\"\(PhoneSleepTimerVocabulary.currentTimer)\")",
-            "Button(\"\(PhoneSleepTimerVocabulary.resetTimer)\")",
-            ".accessibilityHint(\"\(PhoneSleepTimerVocabulary.resetTimerHint)\")",
-            "Button(\"\(PhoneSleepTimerVocabulary.cancelTimer)\", role: .destructive)",
-            ".accessibilityHint(\"\(PhoneSleepTimerVocabulary.cancelTimerHint)\")",
-            "\"\(PhoneSleepTimerVocabulary.cancelled)\"",
-            "Text(\"\(PhoneSleepTimerVocabulary.newTimer)\")",
-            "\"\(PhoneSleepTimerVocabulary.replacesCurrent)\"",
-            "\"\(PhoneSleepTimerVocabulary.pausePlaybackAfter)\"",
-            "TextField(\"\(PhoneSleepTimerVocabulary.minutesField)\", value: $customMinutes, format: .number)",
-            ".accessibilityLabel(\"\(PhoneSleepTimerVocabulary.customMinutesLabel)\")",
-            "Button(\"\(PhoneSleepTimerVocabulary.set)\")",
+        let words: [(phone: String, mac: String, english: String, shownAs: String)] = [
+            (PhoneSleepTimerVocabulary.title, SleepTimerView.title, "Sleep Timer", "Text(Self.title)"),
+            (PhoneAppWording.close, SleepTimerView.closeTitle, "Close", "Button(Self.closeTitle)"),
+            (PhoneSleepTimerVocabulary.closeHint, SleepTimerView.closeHint,
+             "Close the sleep timer and return to the book", ".accessibilityHint(Self.closeHint)"),
+            (PhoneSleepTimerVocabulary.currentTimer, SleepTimerView.currentTimerHeading,
+             "Current Timer", "Text(Self.currentTimerHeading)"),
+            (PhoneSleepTimerVocabulary.resetTimer, SleepTimerView.resetTimerTitle, "Reset Timer", "Button(Self.resetTimerTitle)"),
+            (PhoneSleepTimerVocabulary.resetTimerHint, SleepTimerView.resetTimerHint,
+             "Restart the timer with its original duration", ".accessibilityHint(Self.resetTimerHint)"),
+            (PhoneSleepTimerVocabulary.cancelTimer, SleepTimerView.cancelTimerTitle,
+             "Cancel Timer", "Button(Self.cancelTimerTitle, role: .destructive)"),
+            (PhoneSleepTimerVocabulary.cancelTimerHint, SleepTimerView.cancelTimerHint,
+             "Stop the timer and discard the remaining time", ".accessibilityHint(Self.cancelTimerHint)"),
+            (PhoneSleepTimerVocabulary.cancelled, SleepTimerView.cancelledAnnouncement,
+             "Sleep timer cancelled.", "announceToVoiceOver(Self.cancelledAnnouncement)"),
+            (PhoneSleepTimerVocabulary.newTimer, SleepTimerView.newTimerHeading, "New Timer", "Text(Self.newTimerHeading)"),
+            (PhoneSleepTimerVocabulary.replacesCurrent, SleepTimerView.newTimerNote(isActive: true),
+             "Setting a new timer replaces the current one.", "Text(Self.newTimerNote(isActive: sleepTimerService.isActive))"),
+            (PhoneSleepTimerVocabulary.pausePlaybackAfter, SleepTimerView.newTimerNote(isActive: false),
+             "Pause playback after:", "Text(Self.newTimerNote(isActive: sleepTimerService.isActive))"),
+            (PhoneSleepTimerVocabulary.minutesField, SleepTimerView.minutesFieldTitle,
+             "Minutes", "TextField(Self.minutesFieldTitle, value: $customMinutes, format: .number)"),
+            (PhoneSleepTimerVocabulary.customMinutesLabel, SleepTimerView.customMinutesLabel,
+             "Custom timer minutes", ".accessibilityLabel(Self.customMinutesLabel)"),
+            (PhoneSleepTimerVocabulary.set, SleepTimerView.setTitle, "Set", "Button(Self.setTitle)"),
         ]
 
         for word in words {
-            XCTAssertTrue(macView.contains(word), "The Mac's Sleep Timer sheet no longer says \(word)")
+            XCTAssertEqual(word.phone, word.mac, "The phone's word is not the Mac's \(word.shownAs)")
+            XCTAssertEqual(word.mac, word.english, "The Mac's \(word.shownAs) changed its English")
+            XCTAssertTrue(macView.contains(word.shownAs), "The Mac's Sleep Timer sheet no longer shows \(word.shownAs)")
         }
     }
 }

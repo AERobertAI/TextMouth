@@ -991,7 +991,10 @@ extension ReaderViewModel {
 
     /// What the listener hears when this reader's sleep timer runs out on
     /// its own clock and pauses playback: one counting minutes.
-    nonisolated static let sleepTimerExpiredAnnouncement = "Sleep timer expired. Playback paused."
+    nonisolated static var sleepTimerExpiredAnnouncement: String {
+        String(localized: "Sleep timer expired. Playback paused.",
+               comment: "VoiceOver announcement as a sleep timer of so many minutes runs out and pauses the book.")
+    }
 
     /// What the listener hears when this reader's sleep timer stops playback
     /// where the heading it was set in ends, before the next heading is
@@ -1002,8 +1005,10 @@ extension ReaderViewModel {
     /// any document. At the book's end, which ends the last heading, the
     /// listener hears instead that the book finished and why nothing follows
     /// (`handleEndOfBook()`).
-    nonisolated static let sleepTimerStoppedAtHeadingEndAnnouncement =
-        "Sleep timer expired at the end of the heading. Playback paused."
+    nonisolated static var sleepTimerStoppedAtHeadingEndAnnouncement: String {
+        String(localized: "Sleep timer expired at the end of the heading. Playback paused.",
+               comment: "VoiceOver announcement as a sleep timer set to End of heading pauses the book where the heading ends.")
+    }
 
     /// Stop where the chapter just played ended, because this reader's sleep
     /// timer, which has just ended, was set for the end of the heading, and
@@ -3647,22 +3652,25 @@ extension ReaderViewModel {
                 "RESTART_ACTION book=\(bookToken) result=reset-active remainingBefore=\(running.remainingSeconds)"
             )
             restartSleepTimer(startPlaybackIfNeeded: true)
-            announceToVoiceOver("Timer reset.")
+            announceToVoiceOver(String(localized: "Timer reset.",
+                                       comment: "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again."))
         } else if let last = sleepTimerService.lastUsedDuration {
             // Previous timer ended — re-arm with that duration.
             SleepTimerService.log(
                 .event,
-                "RESTART_ACTION book=\(bookToken) result=rearm-last duration=\(last.displayName)"
+                "RESTART_ACTION book=\(bookToken) result=rearm-last duration=\(last.logName)"
             )
             startSleepTimer(duration: last, startPlaybackIfNeeded: true)
-            announceToVoiceOver("Timer restarted: \(last.displayName).")
+            announceToVoiceOver(String(localized: "Timer restarted: \(last.displayName).",
+                                       comment: "VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading."))
         } else {
             // First-ever press — nothing to repeat.
             SleepTimerService.log(
                 .event,
                 "RESTART_ACTION book=\(bookToken) result=no-previous-duration"
             )
-            announceToVoiceOver("No previous sleep timer to restart.")
+            announceToVoiceOver(String(localized: "No previous sleep timer to restart.",
+                                       comment: "VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set."))
         }
     }
 

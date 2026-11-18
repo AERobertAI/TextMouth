@@ -2,9 +2,12 @@ import Foundation
 
 /// Where the next book opens when listening goes on from one book to
 /// another: at the end of a book, with Next and Previous in the reading
-/// list, and with Next and Previous in Folder (0.2.5). Each raw value is the
-/// choice's name in Settings' pop-up button, in Feed Info and Folder
-/// Settings, and what config.json keeps.
+/// list, and with Next and Previous in Folder (0.2.5). Each raw value is what
+/// config.json and a folder's or feed's options keep, in English whatever
+/// the interface's language; `title` is the choice's name in Settings'
+/// pop-up button and in Feed Info and Folder Settings, in the interface's
+/// language (FR35). The raw values were the names until the names were
+/// localized, which is why they read as English words.
 ///
 /// The user asked on November 1, 2026: "the opening of new windows when
 /// completing a book in the reading list or similarly configured folder or /
@@ -15,10 +18,24 @@ import Foundation
 enum NextBookWindow: String, CaseIterable, Codable, Sendable {
     /// The window the listener is in shows the next book in place of this
     /// one. The default.
-    case thisWindow = "This Window"
+    case thisWindow = "This Window" // l10n: no (stored id: config.json keeps it; `title` is shown)
     /// A window opens for the next book, and this one stays, as TextMouth
     /// did before 0.2.5.
-    case newWindow = "A New Window"
+    case newWindow = "A New Window" // l10n: no (stored id: config.json keeps it; `title` is shown)
+
+    /// The choice's name, as Settings' pop-up button, Feed Info, and Folder
+    /// Settings show and VoiceOver speaks it: today the same words as the raw
+    /// value in English, read from the String Catalog in any other language.
+    var title: String {
+        switch self {
+        case .thisWindow:
+            return String(localized: "This Window",
+                          comment: "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there.")
+        case .newWindow:
+            return String(localized: "A New Window",
+                          comment: "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays.")
+        }
+    }
 }
 
 /// What the reader's window is doing, as far as switching it to another
@@ -145,24 +162,44 @@ enum NextBookWindowRule {
 /// Settings' pop-up button, and the one of Feed Info and Folder Settings.
 /// One place, so a test pins each string, since the listener hears them
 /// through VoiceOver and reads them in braille.
+///
+/// Localized (FR35): a sentence that names a feed's or folder's items is
+/// written whole for each noun, never built from the noun's English forms,
+/// since another language may change the words around the noun with it.
 enum NextBookWindowWording {
 
     // MARK: The Global Setting
 
     /// The label of Settings' pop-up button.
-    static let globalLabel = "Open the next book in"
+    static var globalLabel: String {
+        String(localized: "Open the next book in",
+               comment: "Label of the pop-up button in Settings, Playback, and in a folder's settings, choosing where the next book opens; its choices are This Window and A New Window.")
+    }
 
     /// The hint of Settings' pop-up button.
-    static let globalHint = "Where the next book opens when listening goes on from one book to another: "
-        + "in this window in place of the book here, or in a new window. "
-        + "A book already open in another window is brought forward, and with This Window this window closes."
+    static var globalHint: String {
+        String(localized: "Where the next book opens when listening goes on from one book to another: in this window in place of the book here, or in a new window. A book already open in another window is brought forward, and with This Window this window closes.",
+               comment: "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. \"This Window\" is the name of one of its choices.")
+    }
 
     // MARK: A Feed's or Folder's Own Choice
 
     /// The label of a feed's or folder's pop-up button: "Open the next
     /// episode in", "Open the next book in".
     static func label(_ noun: ListeningOptionsWording.Noun) -> String {
-        "Open the next \(noun.singular) in"
+        switch noun {
+        case .episode:
+            return String(localized: "Open the next episode in",
+                          comment: "Label of the pop-up button in a podcast feed's Feed Info, choosing where the feed's next episode opens.")
+        case .article:
+            return String(localized: "Open the next article in",
+                          comment: "Label of the pop-up button in a news feed's Feed Info, choosing where the feed's next article opens.")
+        case .item:
+            return String(localized: "Open the next item in",
+                          comment: "Label of the pop-up button in a feed's Feed Info, choosing where the feed's next item opens.")
+        case .book:
+            return globalLabel
+        }
     }
 
     /// The name of one choice. The choice of nil is "Use the global
@@ -170,18 +207,55 @@ enum NextBookWindowWording {
     /// since the choice means whatever that is: "Use the global setting
     /// (This Window)".
     static func title(_ choice: NextBookWindow?, global: NextBookWindow) -> String {
-        guard let choice else { return "Use the global setting (\(global.rawValue))" }
-        return choice.rawValue
+        guard let choice else {
+            return String(localized: "Use the global setting (\(global.title))",
+                          comment: "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.")
+        }
+        return choice.title
     }
 
     /// The hint of a feed's or folder's pop-up button. While listening does
     /// not go on from one item to another, the choice is not in effect, and
     /// the hint says when it is available instead of what it does.
     static func hint(_ noun: ListeningOptionsWording.Noun, enabled: Bool) -> String {
-        guard enabled else {
-            return "Available only while \(noun.owner) \(noun.plural) go on to another \(noun.singular) when one ends"
+        enabled ? enabledHint(noun) : unavailableHint(noun)
+    }
+
+    /// The hint while the choice is in effect: what it chooses, for the
+    /// items `noun` names.
+    private static func enabledHint(_ noun: ListeningOptionsWording.Noun) -> String {
+        switch noun {
+        case .episode:
+            return String(localized: "Where the next episode opens when listening goes on from one of this feed's episodes: in this window, in a new window, or as the global setting says",
+                          comment: "VoiceOver hint of the Open the next episode in pop-up button in a podcast feed's Feed Info.")
+        case .article:
+            return String(localized: "Where the next article opens when listening goes on from one of this feed's articles: in this window, in a new window, or as the global setting says",
+                          comment: "VoiceOver hint of the Open the next article in pop-up button in a news feed's Feed Info.")
+        case .item:
+            return String(localized: "Where the next item opens when listening goes on from one of this feed's items: in this window, in a new window, or as the global setting says",
+                          comment: "VoiceOver hint of the Open the next item in pop-up button in a feed's Feed Info.")
+        case .book:
+            return String(localized: "Where the next book opens when listening goes on from one of this folder's books: in this window, in a new window, or as the global setting says",
+                          comment: "VoiceOver hint of the Open the next book in pop-up button in a folder's settings.")
         }
-        return "Where the next \(noun.singular) opens when listening goes on from one of \(noun.owner) \(noun.plural): "
-            + "in this window, in a new window, or as the global setting says"
+    }
+
+    /// The hint while the choice is dimmed: when it becomes available, for
+    /// the items `noun` names.
+    private static func unavailableHint(_ noun: ListeningOptionsWording.Noun) -> String {
+        switch noun {
+        case .episode:
+            return String(localized: "Available only while this feed's episodes go on to another episode when one ends",
+                          comment: "VoiceOver hint of the dimmed Open the next episode in pop-up button in a podcast feed's Feed Info: when it can be used.")
+        case .article:
+            return String(localized: "Available only while this feed's articles go on to another article when one ends",
+                          comment: "VoiceOver hint of the dimmed Open the next article in pop-up button in a news feed's Feed Info: when it can be used.")
+        case .item:
+            return String(localized: "Available only while this feed's items go on to another item when one ends",
+                          comment: "VoiceOver hint of the dimmed Open the next item in pop-up button in a feed's Feed Info: when it can be used.")
+        case .book:
+            return String(localized: "Available only while this folder's books go on to another book when one ends",
+                          comment: "VoiceOver hint of the dimmed Open the next book in pop-up button in a folder's settings: when it can be used.")
+        }
     }
 }

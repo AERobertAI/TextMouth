@@ -4,6 +4,9 @@ import Foundation
 /// (0.2.5) is lost without being asked to: in one place, so the service, the
 /// reader, and the tests word it alike. A timer that runs out, or that the
 /// listener cancels, has its own words (`ReaderViewModel` and the sheet).
+///
+/// Localized (FR35): each sentence is read from the String Catalog when it is
+/// asked for, never kept in one language.
 enum SleepTimerHandOverWording {
     /// Said when a timer held for a book is stopped because the book truly
     /// could not be opened: it failed to load, its download stopped or failed,
@@ -11,7 +14,10 @@ enum SleepTimerHandOverWording {
     /// count toward pausing nothing. Closing the book's window while it loads
     /// stops the timer without a word, as closing the window a timer belongs
     /// to does.
-    static let noBook = "Sleep timer cancelled, because the next book could not be opened."
+    static var noBook: String {
+        String(localized: "Sleep timer cancelled, because the next book could not be opened.",
+               comment: "VoiceOver announcement, after the reason a book failed to open: the sleep timer that was to go on with that book has stopped.")
+    }
 
     /// How long the sentence waits after a book fails to open, in seconds, so
     /// the reason is read first: the error view's own focus reads it 1.2
@@ -22,5 +28,8 @@ enum SleepTimerHandOverWording {
     /// Said, after "Starting: <title>", when Next or Previous pressed while
     /// the timer fades out ended it, as a Pause during a fade does: the
     /// listener did not ask to cancel it.
-    static let fadeEndedByTheMove = "Sleep timer cancelled, because you moved to another book while it faded out."
+    static var fadeEndedByTheMove: String {
+        String(localized: "Sleep timer cancelled, because you moved to another book while it faded out.",
+               comment: "VoiceOver announcement after \"Starting: <title>\": moving to another book while the sleep timer was fading the sound out ended the timer.")
+    }
 }

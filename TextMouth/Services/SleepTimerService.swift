@@ -251,7 +251,7 @@ final class SleepTimerService: ObservableObject {
     private func timerLog(_ level: DiagnosticLog.Level, _ event: String) {
         Self.log(
             level,
-            "\(event) active=\(isActive) duration=\(duration?.displayName ?? "none") "
+            "\(event) active=\(isActive) duration=\(duration?.logName ?? "none") "
                 + "remaining=\(remainingSeconds) fading=\(isFadingOut) "
                 + "countdownPaused=\(isCountdownPausedByPlayback) "
                 + "owner=\(Self.ownerToken(ownerID)) generation=\(generation)"
@@ -272,9 +272,9 @@ final class SleepTimerService: ObservableObject {
         let model = PersistedDuration(from: duration)
         if let data = try? JSONEncoder().encode(model) {
             userDefaults.set(data, forKey: Self.lastUsedDurationKey)
-            timerLog(.event, "PERSIST_LAST_DURATION result=saved value=\(duration.displayName)")
+            timerLog(.event, "PERSIST_LAST_DURATION result=saved value=\(duration.logName)")
         } else {
-            timerLog(.event, "PERSIST_LAST_DURATION result=encode-failed value=\(duration.displayName)")
+            timerLog(.event, "PERSIST_LAST_DURATION result=encode-failed value=\(duration.logName)")
         }
     }
 
@@ -415,7 +415,7 @@ final class SleepTimerService: ObservableObject {
     /// its way to its book from another window
     /// (`ReaderViewModel.cancelSleepTimer()`), and never another window's.
     func stop(reason: String = "requested") {
-        let previousDurationLabel = duration?.displayName ?? "none"
+        let previousDurationLabel = duration?.logName ?? "none"
         let previousSummary = "wasActive=\(isActive) wasDuration=\(previousDurationLabel) "
             + "wasRemaining=\(remainingSeconds) wasFading=\(isFadingOut)"
         // Capture the callback before clearing state. Calling it only for an
@@ -626,7 +626,7 @@ final class SleepTimerService: ObservableObject {
                 self.armHoldDeadline(forBook: bookID, generation: generation, after: delay)
                 return
             }
-            self.releaseHeld(forBook: bookID, reason: "no reader took it before the deadline")
+            self.releaseHeld(forBook: bookID, reason: "no reader took it before the deadline") // l10n: no (a stop's reason, written only to the debug log)
         }
     }
 
@@ -698,7 +698,7 @@ final class SleepTimerService: ObservableObject {
             rebasePhoneDeadlineIfCounting()
             #endif
         }
-        timerLog(.event, "RESTART_HELD kind=\(duration?.displayName ?? "none")")
+        timerLog(.event, "RESTART_HELD kind=\(duration?.logName ?? "none")")
         return true
     }
 
@@ -791,10 +791,10 @@ final class SleepTimerService: ObservableObject {
         let fadeSeconds = source.fadeOutDuration
         let wasCounting = source.timer != nil
         let wasHalted = source.isCountdownPausedByPlayback
-        source.stop(reason: "taken into another window")
+        source.stop(reason: "taken into another window") // l10n: no (a stop's reason, written only to the debug log)
         // This window's own timer, if it had one, gives way to the timer
         // listening goes on with; stopped first, as a new timer stops it.
-        stop(reason: "replaced by a timer carried from another window")
+        stop(reason: "replaced by a timer carried from another window") // l10n: no (a stop's reason, written only to the debug log)
         ownerID = newOwnerID
         onTimerExpired = onExpire
         self.onFadeStep = onFadeStep
@@ -846,12 +846,12 @@ final class SleepTimerService: ObservableObject {
     @discardableResult
     func releaseHeld(
         forBook bookID: UUID,
-        reason: String = "the book could not be opened",
+        reason: String = "the book could not be opened", // l10n: no (a stop's reason, written only to the debug log)
         announcingAfter delay: TimeInterval = 0
     ) -> Bool {
         stopHeld(
             forBook: bookID,
-            reason: "held for a book that took no timer: \(reason)",
+            reason: "held for a book that took no timer: \(reason)", // l10n: no (a stop's reason, written only to the debug log)
             announcingAfter: delay
         )
     }
@@ -861,7 +861,7 @@ final class SleepTimerService: ObservableObject {
     /// window a timer belongs to stops the timer. Forgets that the timer ran
     /// out for the book, too.
     func cancelHeld(forBook bookID: UUID) {
-        stopHeld(forBook: bookID, reason: "the window of the book it was held for closed", announcingAfter: nil)
+        stopHeld(forBook: bookID, reason: "the window of the book it was held for closed", announcingAfter: nil) // l10n: no (a stop's reason, written only to the debug log)
     }
 
     /// The one stop `releaseHeld` and `cancelHeld` share, with the one
@@ -1243,29 +1243,42 @@ final class SleepTimerService: ObservableObject {
         let milestones: Set<Int> = [300, 60, 30, 10] // 5 min, 1 min, 30 sec, 10 sec
         guard milestones.contains(remainingSeconds) else { return }
 
-        let message: String
-        if remainingSeconds >= 60 {
-            message = "Sleep timer: \(remainingSeconds / 60) \(remainingSeconds == 60 ? "minute" : "minutes") remaining"
-        } else {
-            message = "Sleep timer: \(remainingSeconds) seconds remaining"
-        }
-
         // Medium rather than high priority, so VoiceOver may finish what it
         // is already saying before this countdown reminder.
-        VoiceOverAnnouncer.announce(message, priority: .medium)
+        VoiceOverAnnouncer.announce(Self.milestoneAnnouncement(secondsLeft: remainingSeconds), priority: .medium)
+    }
+
+    /// What VoiceOver says as the countdown passes a milestone with
+    /// `secondsLeft` seconds to go: whole minutes from a minute up ("Sleep
+    /// timer: 5 minutes remaining", "Sleep timer: 1 minute remaining"), and
+    /// seconds below it ("Sleep timer: 30 seconds remaining"). Each is one
+    /// sentence with its own plural forms in the String Catalog (FR35).
+    nonisolated static func milestoneAnnouncement(secondsLeft: Int) -> String {
+        if secondsLeft >= 60 {
+            let minutes = secondsLeft / 60
+            return String(localized: "Sleep timer: \(minutes) minutes remaining",
+                          comment: "VoiceOver announcement as the sleep timer's countdown passes a milestone. %lld is the whole minutes left (5 or 1).")
+        }
+        return String(localized: "Sleep timer: \(secondsLeft) seconds remaining",
+                      comment: "VoiceOver announcement as the sleep timer's countdown passes a milestone under a minute. %lld is the seconds left (30 or 10).")
     }
 
     /// The timer's state as the sheet and the reader show it: the time left
     /// as minutes and seconds, the place a timer waits for (End of heading,
     /// End of book), or Fading out; empty with no timer.
+    ///
+    /// The time is Foundation's minutes-and-seconds form, which writes it as
+    /// "%d:%02d" did in English ("4:59", "61:00", "480:00", checked on
+    /// November 18, 2026) and with each language's own digits elsewhere.
     var formattedRemaining: String {
         guard isActive, let duration else { return "" }
-        if isFadingOut { return "Fading out" }
+        if isFadingOut {
+            return String(localized: "Fading out",
+                          comment: "The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader.")
+        }
         // A timer waiting for a place in the book shows the place.
         guard case .minutes = duration else { return duration.displayName }
-        let minutes = remainingSeconds / 60
-        let seconds = remainingSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
+        return Duration.seconds(remainingSeconds).formatted(.time(pattern: .minuteSecond))
     }
 
     /// The timer's state as VoiceOver reads it after "Sleep timer:": the
@@ -1274,15 +1287,22 @@ final class SleepTimerService: ObservableObject {
     /// out"; empty with no timer.
     var spokenStatus: String {
         guard isActive, let duration else { return "" }
-        if isFadingOut { return "fading out" }
-        return duration.spokenStop ?? "\(formattedRemaining) remaining"
+        if isFadingOut {
+            return String(localized: "fading out",
+                          comment: "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.")
+        }
+        if let stop = duration.spokenStop { return stop }
+        return String(localized: "\(formattedRemaining) remaining",
+                      comment: "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.")
     }
 
     /// The label VoiceOver reads for the timer's status, wherever it is
     /// shown: "Sleep timer: 4:59 remaining", or "Sleep timer: stops at the
     /// end of the book"; empty with no timer.
     var spokenLabel: String {
-        isActive ? "Sleep timer: \(spokenStatus)" : ""
+        guard isActive else { return "" }
+        return String(localized: "Sleep timer: \(spokenStatus)",
+                      comment: "VoiceOver label of the sleep timer's status in the reader and the sleep timer sheet. %@ is the timer's state, such as \"4:59 remaining\" or \"stops at the end of this heading\".")
     }
 
     // MARK: - Test Support

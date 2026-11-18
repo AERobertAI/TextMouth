@@ -1,7 +1,363 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-
+    "%@ remaining" : {
+      "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59."
+    },
+    "%lld minutes" : {
+      "comment" : "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minutes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "A New Window" : {
+      "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays."
+    },
+    "Adjust minutes" : {
+      "comment" : "VoiceOver label of the stepper beside the sleep timer sheet's custom minutes field."
+    },
+    "Available only while this feed's articles go on to another article when one ends" : {
+      "comment" : "VoiceOver hint of the dimmed Open the next article in pop-up button in a news feed's Feed Info: when it can be used."
+    },
+    "Available only while this feed's episodes go on to another episode when one ends" : {
+      "comment" : "VoiceOver hint of the dimmed Open the next episode in pop-up button in a podcast feed's Feed Info: when it can be used."
+    },
+    "Available only while this feed's items go on to another item when one ends" : {
+      "comment" : "VoiceOver hint of the dimmed Open the next item in pop-up button in a feed's Feed Info: when it can be used."
+    },
+    "Available only while this folder's books go on to another book when one ends" : {
+      "comment" : "VoiceOver hint of the dimmed Open the next book in pop-up button in a folder's settings: when it can be used."
+    },
+    "Cancel Timer" : {
+      "comment" : "Button of the sleep timer sheet that stops the running timer."
+    },
+    "Close" : {
+      "comment" : "Button that closes a sheet, such as the sleep timer sheet over a book's reader."
+    },
+    "Close the sleep timer and return to the book" : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's Close button."
+    },
+    "Current Timer" : {
+      "comment" : "Heading of the sleep timer sheet's section about the timer running now."
+    },
+    "Custom timer minutes" : {
+      "comment" : "VoiceOver label of the sleep timer sheet's field of a custom number of minutes."
+    },
+    "Custom:" : {
+      "comment" : "Shown before the sleep timer sheet's field of a custom number of minutes. Hidden from VoiceOver, which reads the field's label."
+    },
+    "Download cancelled, so playback stopped." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of a feed's next episode or article, which playback was waiting for."
+    },
+    "Downloading the next article: %@" : {
+      "comment" : "A sentence of the announcement as a feed's article ends: the next article is being downloaded. %@ is that article's title."
+    },
+    "Downloading the next episode: %@" : {
+      "comment" : "A sentence of the announcement as a feed's episode ends: the next episode is being downloaded. %@ is that episode's title."
+    },
+    "End of book" : {
+      "comment" : "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader."
+    },
+    "End of heading" : {
+      "comment" : "Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader."
+    },
+    "Every book after it in the folder is finished" : {
+      "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": every book after it in its library folder is finished, so none plays. Written without its full stop."
+    },
+    "Every book before it in the folder is finished" : {
+      "comment" : "A sentence of the announcement as a book ends, in a folder or feed that plays the book above: every book before it is finished, so none plays. Written without its full stop."
+    },
+    "Fading out" : {
+      "comment" : "The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader."
+    },
+    "Finished" : {
+      "comment" : "How far a finished book has got, shown and spoken in place of its percent: in the library's row, Speak Info, Where Am I?, and Copy Reading Position."
+    },
+    "Finished: %@" : {
+      "comment" : "VoiceOver announcement as a book ends with no book to follow it. %@ is the book's title. Sentences saying why may follow it."
+    },
+    "Minutes" : {
+      "comment" : "Placeholder of the sleep timer sheet's field of a custom number of minutes."
+    },
+    "New Timer" : {
+      "comment" : "Heading of the sleep timer sheet's section of timers to set: the minute presets and a custom number of minutes."
+    },
+    "Next book not started because of the sleep timer" : {
+      "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the next book was not started, because the sleep timer would not stop it. Written without its full stop."
+    },
+    "No more books in folder" : {
+      "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": its library folder has no book after it. Written without its full stop."
+    },
+    "No previous sleep timer to restart." : {
+      "comment" : "VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set."
+    },
+    "Not restarted because of the sleep timer" : {
+      "comment" : "A sentence of the announcement as a book set to loop ends: it did not start again, because the sleep timer stopped it. Written without its full stop."
+    },
+    "Off" : {
+      "comment" : "VoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs."
+    },
+    "Open the next article in" : {
+      "comment" : "Label of the pop-up button in a news feed's Feed Info, choosing where the feed's next article opens."
+    },
+    "Open the next book in" : {
+      "comment" : "Label of the pop-up button in Settings, Playback, and in a folder's settings, choosing where the next book opens; its choices are This Window and A New Window."
+    },
+    "Open the next episode in" : {
+      "comment" : "Label of the pop-up button in a podcast feed's Feed Info, choosing where the feed's next episode opens."
+    },
+    "Open the next item in" : {
+      "comment" : "Label of the pop-up button in a feed's Feed Info, choosing where the feed's next item opens."
+    },
+    "Pause playback after:" : {
+      "comment" : "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes."
+    },
+    "Pauses playback when this book ends, before Continue to Next Book starts the next book." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to Continue to Next Book (a choice of the When book ends setting)."
+    },
+    "Pauses playback when this book ends, before Loop to Start plays it again." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to Loop to Start (a choice of the When book ends setting)."
+    },
+    "Pauses playback where the heading playing now ends: where the next heading begins, or the book ends." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of heading button."
+    },
+    "Reset Timer" : {
+      "comment" : "Button of the sleep timer sheet that starts the running timer again from its whole length."
+    },
+    "Restart the timer with its original duration" : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's Reset Timer button."
+    },
+    "Restarting: %@" : {
+      "comment" : "VoiceOver announcement as a book set to loop starts again from its beginning. %@ is the book's title."
+    },
+    "Set" : {
+      "comment" : "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes."
+    },
+    "Set timer for %lld minutes and start playing" : {
+      "comment" : "VoiceOver label of a sleep timer button that sets a timer of so many minutes and starts the book. %lld is the number of minutes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Set timer for %lld minute and start playing"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Set timer for %lld minutes and start playing"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Setting a new timer replaces the current one." : {
+      "comment" : "Note under the sleep timer sheet's New Timer heading while a timer runs."
+    },
+    "Sleep Timer" : {
+      "comment" : "Title of the sleep timer sheet over a book's reader, read by VoiceOver as its heading."
+    },
+    "Sleep timer cancelled, because the next book could not be opened." : {
+      "comment" : "VoiceOver announcement, after the reason a book failed to open: the sleep timer that was to go on with that book has stopped."
+    },
+    "Sleep timer cancelled, because you moved to another book while it faded out." : {
+      "comment" : "VoiceOver announcement after \"Starting: <title>\": moving to another book while the sleep timer was fading the sound out ended the timer."
+    },
+    "Sleep timer cancelled." : {
+      "comment" : "VoiceOver announcement after the Cancel Timer button stopped the sleep timer."
+    },
+    "Sleep timer expired" : {
+      "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the sleep timer stopped playback there. Written without its full stop, which is added after it."
+    },
+    "Sleep timer expired at the end of the heading. Playback paused." : {
+      "comment" : "VoiceOver announcement as a sleep timer set to End of heading pauses the book where the heading ends."
+    },
+    "Sleep timer expired. Playback paused." : {
+      "comment" : "VoiceOver announcement as a sleep timer of so many minutes runs out and pauses the book."
+    },
+    "Sleep timer: %@" : {
+      "comment" : "VoiceOver label of the sleep timer's status in the reader and the sleep timer sheet. %@ is the timer's state, such as \"4:59 remaining\" or \"stops at the end of this heading\"."
+    },
+    "Sleep timer: %@." : {
+      "comment" : "VoiceOver announcement after a sleep timer that stops at a place was set. %@ says where it stops, such as \"stops at the end of this heading\"."
+    },
+    "Sleep timer: %lld minutes remaining" : {
+      "comment" : "VoiceOver announcement as the sleep timer's countdown passes a milestone. %lld is the whole minutes left (5 or 1).",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Sleep timer: %lld minute remaining"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Sleep timer: %lld minutes remaining"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Sleep timer: %lld seconds remaining" : {
+      "comment" : "VoiceOver announcement as the sleep timer's countdown passes a milestone under a minute. %lld is the seconds left (30 or 10)."
+    },
+    "Starting again: %@" : {
+      "comment" : "VoiceOver announcement as Play starts a finished book over from its beginning. %@ is the book's title."
+    },
+    "Starting: %@" : {
+      "comment" : "VoiceOver announcement as the next book starts playing after one ends. %@ is the next book's title."
+    },
+    "Still starting: %@" : {
+      "comment" : "VoiceOver announcement when Play is pressed while the next book is still opening. %@ is the next book's title."
+    },
+    "Stop At" : {
+      "comment" : "Heading of the sleep timer sheet's section of timers that stop at a place in the book: End of heading and End of book."
+    },
+    "Stop at the end of the book and start playing" : {
+      "comment" : "VoiceOver label of the sleep timer sheet's End of book button, which sets a timer that stops where the book ends, and starts the book."
+    },
+    "Stop at the end of this heading and start playing" : {
+      "comment" : "VoiceOver label of the sleep timer sheet's End of heading button, which sets a timer that stops where the heading playing ends, and starts the book."
+    },
+    "Stop the timer and discard the remaining time" : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's Cancel Timer button."
+    },
+    "TextMouth is not downloading right now." : {
+      "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\""
+    },
+    "The next article could not be downloaded, so playback stopped. %@" : {
+      "comment" : "VoiceOver announcement when the download of a feed's next article failed. %@ is the download's own sentence saying why."
+    },
+    "The next episode could not be downloaded, so playback stopped. %@" : {
+      "comment" : "VoiceOver announcement when the download of a feed's next episode failed. %@ is the download's own sentence saying why."
+    },
+    "This Window" : {
+      "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there."
+    },
+    "This book already stops playing at its end, since Continue to Next Book is off; the timer stops it there too." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book that stops at its end anyway. Continue to Next Book is a choice of the When book ends setting."
+    },
+    "Timer reset." : {
+      "comment" : "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again."
+    },
+    "Timer reset: %@." : {
+      "comment" : "VoiceOver announcement after Reset Timer started the sleep timer again. %@ is the timer's state, such as \"15:00 remaining\" or \"stops at the end of the book\"."
+    },
+    "Timer restarted: %@." : {
+      "comment" : "VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading."
+    },
+    "Timer set for %lld minutes." : {
+      "comment" : "VoiceOver announcement after a sleep timer of so many minutes was set. %lld is the number of minutes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Timer set for %lld minute."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Timer set for %lld minutes."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Type the minutes, or change them %lld at a time with %@. Return sets the timer and starts playing." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the Mac. %lld is how many minutes the stepper beside the field changes them by (5); %@ is the stepper's label, Adjust minutes.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Type the minutes, or change them %1$lld at a time with %2$@. Return sets the timer and starts playing."
+          }
+        }
+      }
+    },
+    "Type the minutes, or change them %lld at a time with %@. Set sets the timer and starts playing." : {
+      "comment" : "VoiceOver hint of the iPhone sleep timer sheet's custom minutes field. %lld is how many minutes the stepper below the field changes them by (5); %@ is the stepper's label, Adjust minutes; Set is the button that sets the timer.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Type the minutes, or change them %1$lld at a time with %2$@. Set sets the timer and starts playing."
+          }
+        }
+      }
+    },
+    "Use the global setting (%@)" : {
+      "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window."
+    },
+    "Where the next article opens when listening goes on from one of this feed's articles: in this window, in a new window, or as the global setting says" : {
+      "comment" : "VoiceOver hint of the Open the next article in pop-up button in a news feed's Feed Info."
+    },
+    "Where the next book opens when listening goes on from one book to another: in this window in place of the book here, or in a new window. A book already open in another window is brought forward, and with This Window this window closes." : {
+      "comment" : "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. \"This Window\" is the name of one of its choices."
+    },
+    "Where the next book opens when listening goes on from one of this folder's books: in this window, in a new window, or as the global setting says" : {
+      "comment" : "VoiceOver hint of the Open the next book in pop-up button in a folder's settings."
+    },
+    "Where the next episode opens when listening goes on from one of this feed's episodes: in this window, in a new window, or as the global setting says" : {
+      "comment" : "VoiceOver hint of the Open the next episode in pop-up button in a podcast feed's Feed Info."
+    },
+    "Where the next item opens when listening goes on from one of this feed's items: in this window, in a new window, or as the global setting says" : {
+      "comment" : "VoiceOver hint of the Open the next item in pop-up button in a feed's Feed Info."
+    },
+    "With \"Stop\", Play on a finished book says it is finished; with \"Stop, and Play Starts Over\", Play starts it again from the beginning." : {
+      "comment" : "Caption under the When book ends picker in Settings, Playback. \"Stop\" and \"Stop, and Play Starts Over\" are the names of two of the picker's choices."
+    },
+    "article" : {
+      "comment" : "A noun put inside a sentence about a feed's next or previous item, as in \"Downloading the next article\". Lowercase, singular."
+    },
+    "episode" : {
+      "comment" : "A noun put inside a sentence about a feed's next or previous item, as in \"Downloading the next episode\". Lowercase, singular."
+    },
+    "fading out" : {
+      "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon."
+    },
+    "min" : {
+      "comment" : "Short for minutes, shown after the sleep timer sheet's custom minutes field. Hidden from VoiceOver."
+    },
+    "stops at the end of the book" : {
+      "comment" : "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon."
+    },
+    "stops at the end of this heading" : {
+      "comment" : "The state of a sleep timer set to End of heading, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon."
+    }
   },
   "version" : "1.0"
 }
