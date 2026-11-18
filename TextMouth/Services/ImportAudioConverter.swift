@@ -152,6 +152,10 @@ enum ImportAudioConverter {
         /// The AAC bit rate written, in bits a second, or nil when the
         /// encoder chose its own.
         let bitRate: Int?
+        /// Whether the decoder refused part of the source's sound, which the
+        /// .m4a keeps as silence (FU03): the import tells the listener
+        /// (`FFmpegImportWording.partlyDecodedNotice(_:)`).
+        var partlyDecoded = false
     }
 
     /// Why a file could not be converted, in words a listener can be told.

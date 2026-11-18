@@ -706,8 +706,9 @@ enum FFmpegAudioConverter {
         }
         let lasts: TimeInterval
         let written: ImportAudioConverter.Target
+        let partlyDecoded: Bool
         do {
-            (written, lasts) = try await decode(
+            (written, lasts, partlyDecoded) = try await decode(
                 source, as: container, kind: kind, at: located, into: staged, limits: limits, tool: tool, stated: stated
             )
             if keepingChapters, report.chapterMarks.count > 0 {
@@ -724,7 +725,8 @@ enum FFmpegAudioConverter {
             secondsTaken: Date().timeIntervalSince(started),
             bytesBefore: bytesBefore,
             bytesAfter: ImportAudioConverter.fileSize(of: staged),
-            bitRate: written.bitRate
+            bitRate: written.bitRate,
+            partlyDecoded: partlyDecoded
         )
         if naming {
             do {
@@ -755,11 +757,11 @@ enum FFmpegAudioConverter {
         limits: WatchedProcess.Limits,
         tool: Tool,
         stated: TimeInterval?
-    ) async throws -> (target: ImportAudioConverter.Target, lasts: TimeInterval) {
+    ) async throws -> (target: ImportAudioConverter.Target, lasts: TimeInterval, partlyDecoded: Bool) {
         let name = source.lastPathComponent
         let (ending, read) = try await runSession(
             .decode, of: source, as: container, kind: kind, at: located, watching: staged, limits: limits, using: tool
-        ) { nextPiece -> ImportAudioConverter.Target in
+        ) { nextPiece -> (target: ImportAudioConverter.Target, refusedPackets: UInt32) in
             var stream = FFmpegHelperStream(reading: nextPiece)
             let report = try await stream.readReport()
             let target = try plan(for: report, fileName: name).target
@@ -780,13 +782,13 @@ enum FFmpegAudioConverter {
             if stream.refusedPackets > 0 || stream.refusedFrames > 0 {
                 DiagnosticLog.event(.storage, "\(refusedLogTag): \(name): \(stream.refusedPackets) packets, \(stream.refusedFrames) frames")
             }
-            return target
+            return (target, stream.refusedPackets)
         }
         if let failure = failure(of: ending, read: read, fileName: name, kind: kind, limits: limits, logTag: "AUDIO_CONVERSION_KILLED") {
             throw failure
         }
-        let target = try read.get()
-        return (target, try await check(staged, against: stated, from: name))
+        let (target, refusedPackets) = try read.get()
+        return (target, try await check(staged, against: stated, from: name), refusedPackets > 0)
     }
 
     /// The tag of the debug-log line saying how many packets and frames the

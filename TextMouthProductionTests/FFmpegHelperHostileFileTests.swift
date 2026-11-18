@@ -183,6 +183,7 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
             let copy = try copyOfFormatSample("ffmpeg-edge/\(name)")
             let conversion = try await FFmpegAudioConverter.convert(copy, using: try bundledFFmpegTool())
             XCTAssertEqual(conversion.duration, 2.8, accuracy: 0.05, name)
+            XCTAssertTrue(conversion.partlyDecoded, "\(name): the listener is told part could not be decoded")
         }
     }
 
