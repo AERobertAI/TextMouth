@@ -1,4 +1,3 @@
-import AVFoundation
 import XCTest
 @testable import TextMouth
 
@@ -70,22 +69,10 @@ final class OwnAudioImportTests: XCTestCase {
         return url
     }
 
-    /// Every sample of the .m4a at `url`, a file a conversion wrote, as
-    /// 32-bit whole numbers with each sample at the top of its 32 bits.
-    private func samplesOfConvertedFile(at url: URL) throws -> [Int32] {
-        let file = try AVAudioFile(forReading: url, commonFormat: .pcmFormatInt32, interleaved: true)
-        let frames = AVAudioFrameCount(file.length)
-        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: max(frames, 1)))
-        try file.read(into: buffer)
-        let count = Int(buffer.frameLength) * Int(file.processingFormat.channelCount)
-        let data = try XCTUnwrap(buffer.int32ChannelData)
-        return Array(UnsafeBufferPointer(start: data[0], count: count))
-    }
-
     /// What the conversion should write of the sample at `path`: the
     /// samples its own reader gives (with its companion), floats made
     /// 24-bit whole numbers, more than two channels mixed to stereo, each
-    /// moved to the top of 32 bits as `samplesOfConvertedFile(at:)` gives
+    /// moved to the top of 32 bits as `samplesOfConvertedFile(at:)` (Mac only) gives
     /// them.
     private func samplesToBeWritten(of path: String) throws -> [Int32] {
         let bytes = OwnAudioBytes(try ownAudioSampleBytes(path))
@@ -394,6 +381,9 @@ final class OwnAudioImportTests: XCTestCase {
                 if case .failure = await AudioMediaProbe.duration(of: conversion.converted) {
                     XCTFail("\(sample.path) does not play")
                 }
+                // The samples are read back with Apple's audio file reader, which a unit test of the iPhone
+                // may not name (the iPhone's tests name no audio framework), so only the Mac's host does.
+                #if os(macOS)
                 let written = try samplesOfConvertedFile(at: conversion.converted)
                 let expected = try samplesToBeWritten(of: sample.path)
                 XCTAssertEqual(written.count, expected.count, sample.path)
@@ -407,6 +397,7 @@ final class OwnAudioImportTests: XCTestCase {
                     let narrowed = written.map { $0 >> Int32(32 - sample.bits) }
                     XCTAssertEqual(sha256(of: waveBytes(of: narrowed, bits: sample.bits)), digest, sample.path)
                 }
+                #endif
                 // The source is left as it was.
                 XCTAssertEqual([UInt8](try Data(contentsOf: source)), try ownAudioSampleBytes(sample.path), sample.path)
             }
@@ -552,8 +543,8 @@ final class OwnAudioImportTests: XCTestCase {
             "The audio file Cut.tta ends before its audio does, so it could not be converted."
         )
         XCTAssertEqual(
-            ImportAudioConverter.Failure.notWritten(fileName: "a.tta", reason: "AVFoundationErrorDomain -11800").errorDescription,
-            "The audio converted from a.tta could not be written (AVFoundationErrorDomain -11800)."
+            ImportAudioConverter.Failure.notWritten(fileName: "a.tta", reason: "SomeErrorDomain -11800").errorDescription,
+            "The audio converted from a.tta could not be written (SomeErrorDomain -11800)."
         )
         XCTAssertEqual(
             OwnAudioWording.sentence(for: .notThisFormat, fileName: "a.tta"),
@@ -683,11 +674,11 @@ final class OwnAudioImportTests: XCTestCase {
         let audio = URL(fileURLWithPath: imported.book.filePath)
         XCTAssertEqual(audio.lastPathComponent, "hybrid16.m4a")
         // The import waits on its own thread for its conversions, so this test is not an async one.
-        // The format is held while its description is read: the pointer is into the format's own storage.
-        let storedFormat = try AVAudioFile(forReading: audio).fileFormat
-        let stored = storedFormat.streamDescription.pointee.mFormatID
-        XCTAssertEqual(stored, kAudioFormatAppleLossless)
+        // Read back with Apple's audio file reader, which only the Mac's host names (as above).
+        #if os(macOS)
+        XCTAssertTrue(try isAppleLossless(audio))
         XCTAssertTrue(try samplesOfConvertedFile(at: audio) == (try samplesToBeWritten(of: "wv/hybrid16.wv")))
+        #endif
         let left = names(in: audio.deletingLastPathComponent())
         XCTAssertEqual(left.filter { $0.hasSuffix(".wv") || $0.hasSuffix(".wvc") }, [])
         XCTAssertEqual(names(in: source.deletingLastPathComponent()), before)
