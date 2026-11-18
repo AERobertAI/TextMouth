@@ -102,6 +102,68 @@ final class RunningClockTests: XCTestCase {
         XCTAssertEqual(readings.withLock { $0 }, afterRelease, "the heartbeat went on after the clock was released")
     }
 
+    // MARK: - Its Holders (the check of the FMT54 review's fixes, item 5)
+
+    /// A clock whose heartbeat reads it every 0.05 seconds while held, and how
+    /// many times it has been read.
+    private func countedClock() -> (clock: RunningClock, readings: @Sendable () -> Int) {
+        let count = OSAllocatedUnfairLock(initialState: 0)
+        let clock = RunningClock(
+            uptime: { count.withLock { $0 += 1 }; return ProcessInfo.processInfo.systemUptime },
+            longestStep: 1,
+            tick: 0.05
+        )
+        return (clock, { count.withLock { $0 } })
+    }
+
+    /// Whether the heartbeat reads the clock while the test waits 0.4
+    /// seconds, eight ticks' time, in which nothing else reads it.
+    private func heartbeatReads(_ readings: @Sendable () -> Int) -> Bool {
+        let before = readings()
+        Thread.sleep(forTimeInterval: 0.4)
+        return readings() > before + 2
+    }
+
+    /// Two holders keep the heartbeat going until both have released: the
+    /// first release leaves it reading the clock, and the second ends it at
+    /// its next tick.
+    func testTwoHoldersKeepTheHeartbeatUntilBothRelease() {
+        let (clock, readings) = countedClock()
+        clock.hold()
+        clock.hold()
+        clock.release()
+        XCTAssertTrue(heartbeatReads(readings), "one release of two ended the heartbeat")
+        clock.release()
+        Thread.sleep(forTimeInterval: 0.2)
+        XCTAssertFalse(heartbeatReads(readings), "the heartbeat went on after both holders released")
+    }
+
+    /// A hold right after a release, before the heartbeat's next tick, keeps
+    /// it going: the tick that would have ended it finds the clock held
+    /// again, decided under the same lock as the hold.
+    func testAHoldRightAfterAReleaseKeepsTheHeartbeat() {
+        let (clock, readings) = countedClock()
+        clock.hold()
+        clock.release()
+        clock.hold()
+        XCTAssertTrue(heartbeatReads(readings), "a hold right after a release left the heartbeat ended")
+        clock.release()
+    }
+
+    /// A hold after the heartbeat has stopped at rest starts it again.
+    func testAHoldAfterTheHeartbeatStoppedStartsItAgain() {
+        let (clock, readings) = countedClock()
+        clock.hold()
+        clock.release()
+        Thread.sleep(forTimeInterval: 0.2)
+        XCTAssertFalse(heartbeatReads(readings), "the heartbeat went on at rest")
+        clock.hold()
+        XCTAssertTrue(heartbeatReads(readings), "a new hold did not start the heartbeat again")
+        clock.release()
+    }
+
+    // MARK: - The App's
+
     /// The app's clock is the one every in-app engine is timed by.
     func testTheEnginesAreTimedByTheAppsClock() {
         XCTAssertTrue(InProcessEngine(name: "test-clock", work: "the test work").clock === RunningClock.app)
