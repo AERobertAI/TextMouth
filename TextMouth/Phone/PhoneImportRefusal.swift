@@ -89,12 +89,16 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     /// (`OwnAudioFormat`: True Audio, WavPack, Monkey's Audio), which the
     /// app converts itself with no helper program, as on the Mac
     /// (`OwnAudioConverter`): its bytes are of such a format whatever its
-    /// name, or its name is such a format's and its bytes are of none, which
-    /// the conversion then fails as the Mac does, saying it can't be read,
-    /// rather than sending anyone to a Mac that could not read it either.
+    /// name; or its name is such a format's and its bytes are of no format
+    /// the import converts, which the conversion then fails as the Mac does,
+    /// saying it can't be read (and with an old WavPack file's own sentence),
+    /// rather than sending anyone to a Mac that could not read it either. A
+    /// file of another format the import converts (Ogg, AC-3, ...) named like
+    /// one is not let by its name: it is refused as what it is, as it was.
     static func isReadByOwnReader(_ url: URL) -> Bool {
-        OwnAudioConverter.format(of: url) != nil
-            || ImportAudioConverter.ownReaderExtensions.contains(url.pathExtension.lowercased())
+        if OwnAudioConverter.format(of: url) != nil { return true }
+        guard ImportAudioConverter.ownReaderExtensions.contains(url.pathExtension.lowercased()) else { return false }
+        return AudioContentSniffer.verdict(for: AudioContentSniffer.kind(of: url)) != .convert
     }
 
     /// The name of the audio format the file at `url` holds, as the Mac's

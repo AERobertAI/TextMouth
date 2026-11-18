@@ -175,6 +175,25 @@ final class OwnAudioImportTests: XCTestCase {
         }
     }
 
+    /// A file of another format the import converts, named like one of the own readers' formats,
+    /// is refused as what it is, with the true sentence ("is in Ogg ... Add it on your Mac"), not
+    /// let by its name to fail as unreadable: Ogg's signature, and an AC-3 sample, each so named.
+    func testAnotherFormatNamedLikeAnOwnReadersIsRefusedAsWhatItIs() throws {
+        let ogg = try writeFile(Array("OggS".utf8) + [UInt8](repeating: 0, count: 60), named: "Talk.tta")
+        let ac3 = try copySample("ac3/tones.ac3", as: "Notes.wv")
+        XCTAssertFalse(PhoneImportRefusal.isReadByOwnReader(ogg))
+        XCTAssertFalse(PhoneImportRefusal.isReadByOwnReader(ac3))
+        XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: [ogg])) { error in
+            XCTAssertEqual(error as? PhoneImportRefusal, .convertedAudio(kind: "Ogg"))
+        }
+        XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: [ac3])) { error in
+            XCTAssertEqual(error as? PhoneImportRefusal, .convertedAudio(kind: "AC-3"))
+        }
+        // An old WavPack file (a WAVE file's start) is still let by its name, to say why it can't be read.
+        let wave: [UInt8] = Array("RIFF".utf8) + [36, 0, 0, 0] + Array("WAVEfmt ".utf8) + [UInt8](repeating: 0, count: 64)
+        XCTAssertTrue(PhoneImportRefusal.isReadByOwnReader(try writeFile(wave, named: "Old.wv")))
+    }
+
     /// A file named for a format of the own readers, whose bytes are of none of them, is
     /// unreadable as a file afinfo can't read is (the Mac's own failure), also on the
     /// iPhone, which has no afinfo: not "not available on iPhone yet".
