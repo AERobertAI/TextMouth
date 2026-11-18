@@ -121,6 +121,8 @@ final class ReadOnceTests: XCTestCase {
         try withA10HostedControls(sheet) { controls in
             let stepper = try XCTUnwrap(controls.first { $0.role == .incrementor }, "\(controls.map(\.label))")
             XCTAssertEqual(stepper.label, SleepTimerView.adjustMinutesLabel)
+            // No title beside the label: a title that repeats it makes VoiceOver say "Adjust minutes, Adjust minutes".
+            XCTAssertEqual(stepper.title, "")
             XCTAssertEqual(stepper.valueDescription, "30 minutes")
         }
     }
