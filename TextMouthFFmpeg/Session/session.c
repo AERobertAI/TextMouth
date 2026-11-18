@@ -65,6 +65,14 @@ __asm__(".linker_option \"-lz\"");
 /* The bytes of each read the I/O callbacks are asked for. */
 enum { READ_BUFFER_BYTES = 64 * 1024 };
 
+/* The most samples, over all its channels, one decoded frame may hold (AVCodecContext's
+   max_samples): what a 16 MiB frame of 32-bit samples holds, as large as the converted frames the
+   session hands on. The largest frame a sound file means to hold is far smaller (Monkey's Audio's
+   "insane" level, about 2.4 million in stereo; FLAC's largest block, about 0.5 million in eight
+   channels); past it, a crafted packet of PCM or an ALAC frame length could make one decoder call
+   allocate hundreds of megabytes, which nothing could stop until the call returned. */
+#define MAX_DECODED_SAMPLES (4 * 1024 * 1024)
+
 /* About how many bytes of samples one PCM record holds: a quarter of a megabyte, a second and a
    half of 44.1 kHz stereo in 32 bits, small for the pipe and few records a book. */
 enum { PCM_RECORD_TARGET = 256 * 1024 };
@@ -451,6 +459,9 @@ static int open_decoder(tmff_session *session) {
        up (a fault on a decoding thread of FFmpeg's own would not meet it), and no thread's stack
        is left out of the helper's memory count. Set before avcodec_open2, which starts threads. */
     session->decoder->thread_count = 1;
+    /* No decoded frame larger than MAX_DECODED_SAMPLES: FFmpeg refuses one before allocating it,
+       and the session counts the refusal as a damaged packet. */
+    session->decoder->max_samples = MAX_DECODED_SAMPLES;
     const int error = avcodec_open2(session->decoder, codec, NULL);
     if (error < 0) {
         return error == AVERROR(ENOMEM) ? TMFF_EXIT_MEMORY : TMFF_EXIT_DAMAGED;

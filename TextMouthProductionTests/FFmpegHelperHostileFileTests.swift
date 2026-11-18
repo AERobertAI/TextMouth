@@ -129,11 +129,15 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
     /// What the helper makes of the sample `name` of `ffmpeg-edge`: how it ended and, when it
     /// wrote a whole stream, what the reader says of it (frames and the refusals END counts).
     private func decodeEdgeSample(_ name: String) async throws -> (ending: WatchedProcess.Ending, frames: UInt64?, refused: [UInt32]) {
+        try await decode(try formatSampleURL("ffmpeg-edge/\(name)"), demuxer: "matroska")
+    }
+
+    /// What the helper makes of the file at `file`, read by `demuxer`: as `decodeEdgeSample`.
+    private func decode(_ file: URL, demuxer: String) async throws -> (ending: WatchedProcess.Ending, frames: UInt64?, refused: [UInt32]) {
         let helper = try bundledFFmpegHelper()
         let seconds = TestMachine.allowed(20)
         let limits = WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
-        let sample = try formatSampleURL("ffmpeg-edge/\(name)")
-        let (ending, bytes) = try await runFFmpegHelper(helper, ["decode", "matroska", sample.path], limits: limits)
+        let (ending, bytes) = try await runFFmpegHelper(helper, ["decode", demuxer, file.path], limits: limits)
         var stream = FFmpegHelperStream(data: Data(bytes))
         do {
             _ = try await stream.readReport()
@@ -163,6 +167,23 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
             XCTAssertEqual(result.frames, UInt64(good * 16), "\(name): the packets that decode, whole")
             XCTAssertEqual(result.refused, [UInt32(refused), 0], "\(name): every refused packet counted")
         }
+    }
+
+    /// No decoded frame holds more than 4,194,304 samples over its channels
+    /// (`MAX_DECODED_SAMPLES` in session.c; the FMT54 review, finding 2):
+    /// FFmpeg refuses a larger one before allocating it, so one crafted
+    /// packet cannot make one decoder call take hundreds of megabytes, which
+    /// nothing could stop until the call returned. An FLV of one PCM packet
+    /// of that many samples decodes whole; one of a sample more gives no
+    /// frame, and ends with status 6, damaged, as a file of only refused
+    /// packets does.
+    func testNoDecodedFrameHoldsMoreSamplesThanTheBound() async throws {
+        let atTheBound = try await decode(try flvOfOnePCMTag(samples: 4_194_304, named: "at-the-bound.flv"), demuxer: "flv")
+        XCTAssertEqual(atTheBound.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
+        XCTAssertEqual(atTheBound.frames, 4_194_304, "the frame at the bound was not decoded whole")
+        let pastIt = try await decode(try flvOfOnePCMTag(samples: 4_194_305, named: "past-the-bound.flv"), demuxer: "flv")
+        XCTAssertEqual(pastIt.ending, WatchedProcess.Ending(outcome: .exited(status: 6)), "a frame past the bound was decoded")
+        XCTAssertNil(pastIt.frames)
     }
 
     /// A file in which no packet decodes (`flac-all-bad-packets.mka`: every one of its 1,400
