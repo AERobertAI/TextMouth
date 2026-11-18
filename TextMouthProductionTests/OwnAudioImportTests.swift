@@ -368,6 +368,9 @@ final class OwnAudioImportTests: XCTestCase {
                 XCTAssertNil(conversion.bitRate, sample.path)
                 XCTAssertEqual(
                     conversion.duration, Double(sample.frames) / Double(sample.sampleRate), accuracy: 1e-9, sample.path)
+                // afinfo describes the converted file, and the iPhone has no afinfo: it is checked there by
+                // its length and by playing (below), and the Mac's host also by what afinfo says of it.
+                #if os(macOS)
                 let convertedRead = try await AudioFileInfo.read(conversion.converted)
                 let converted = try XCTUnwrap(convertedRead, sample.path)
                 XCTAssertEqual(converted.formatID, "alac", sample.path)
@@ -378,6 +381,7 @@ final class OwnAudioImportTests: XCTestCase {
                     sample.path)
                 XCTAssertEqual(converted.sampleRate, Double(sample.sampleRate), sample.path)
                 XCTAssertEqual(converted.channels, min(sample.channels, 2), sample.path)
+                #endif
                 if case .failure = await AudioMediaProbe.duration(of: conversion.converted) {
                     XCTFail("\(sample.path) does not play")
                 }
@@ -410,11 +414,17 @@ final class OwnAudioImportTests: XCTestCase {
         for (path, alone) in [("wv/lossy16.wv", false), ("wv/hybrid16.wv", true)] {
             let source = try copySample(path, alone: alone)
             let conversion = try await ImportAudioConverter.convert(source)
+            XCTAssertEqual(conversion.duration, 0.25, accuracy: ImportAudioConverter.allowedLengthError(for: 0.25), path)
+            XCTAssertNotNil(conversion.bitRate, "\(path) is lossy, so it is encoded at a bit rate")
+            // afinfo describes the converted file, and the iPhone has no afinfo (the conversion's own check, and
+            // playing, below, hold there).
+            #if os(macOS)
             let convertedRead = try await AudioFileInfo.read(conversion.converted)
             let converted = try XCTUnwrap(convertedRead, path)
             XCTAssertEqual(converted.formatID, "aac ", path)
             XCTAssertEqual(converted.channels, 2, path)
             XCTAssertEqual(converted.duration, 0.25, accuracy: ImportAudioConverter.allowedLengthError(for: 0.25), path)
+            #endif
             if case .failure = await AudioMediaProbe.duration(of: conversion.converted) { XCTFail("\(path) does not play") }
         }
     }
