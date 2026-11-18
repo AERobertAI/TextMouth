@@ -19,7 +19,7 @@ and the buckets that are not interface text and are never counted:
 ``classify`` returns the bucket and the name of the rule that chose it, so a test can name both.
 The counted buckets (``COUNTED``) are the interface text; each is *localized* when it is the
 key of a call the compiler extracts (``String(localized:)``, ``Text("...")``, and the others),
-*marked* when its line ends with ``// l10n: no``, and otherwise *unlocalized*.
+*marked* when its line ends with the comment ``// l10n: no`` (and any reason after it), and otherwise *unlocalized*.
 """
 
 from __future__ import annotations
@@ -123,9 +123,10 @@ KEY_CALLS: Dict[str, KeySpec] = {
     "LocalizationValue": (frozenset({"stringLiteral"}), True, False),
 }
 
-# The marker that leaves a literal out of the lint: `// l10n: no`, alone or with a reason
-# in parentheses or after a colon or a dash, at the end of the line.
-MARKER = re.compile(r"//\s*l10n:\s*no(?:\s*[(:\u2014\u2013-].*)?\s*$")
+# The marker that leaves a literal out of the lint: `// l10n: no`, alone or followed by anything
+# (a reason in parentheses, after a comma, a colon, a dash, or in plain words), to the end of the
+# line. The word boundary keeps `// l10n: nothing` from marking.
+MARKER = re.compile(r"//\s*l10n:\s*no\b.*$")
 # A count compared with one before a ?, the start of a hand-built plural.
 _PLURAL_TERNARY = re.compile(r"(?:[=!]=|>)\s*1\s*\?|>=\s*2\s*\?|<=\s*1\s*\?|<\s*2\s*\?")
 _PLURAL_LABELS = frozenset({"singular", "plural"})

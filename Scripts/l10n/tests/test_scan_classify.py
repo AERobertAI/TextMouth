@@ -281,11 +281,12 @@ class MarkerTests(ScanCase):
         self.assertEqual((lit.bucket, lit.status), ("prose", "marked"))
 
     def test_the_marker_with_a_reason(self) -> None:
-        for comment in ("// l10n: no (test hook)", "// l10n: no: shown only in tests", "// l10n: no - a name the system gives"):
+        for comment in ("// l10n: no (test hook)", "// l10n: no: shown only in tests", "// l10n: no - a name the system gives",
+                        "// l10n: no, a test hook", "// l10n: no reason given", "//l10n:no", "// l10n: no."):
             self.assertEqual(only_literal(f'let label = "Pause button" {comment}').status, "marked", comment)
 
     def test_a_different_comment_does_not_mark(self) -> None:
-        for comment in ("// l10n: nothing", "// l10n yes", "// not l10n: no here", "// TODO l10n: no"):
+        for comment in ("// l10n: nothing", "// l10n: nope", "// l10n yes", "// not l10n: no here", "// TODO l10n: no"):
             self.assertEqual(only_literal(f'let label = "Pause button" {comment}').status, "unlocalized", comment)
 
     def test_the_marker_covers_the_whole_line_and_a_multi_line_literal_by_its_last_line(self) -> None:
