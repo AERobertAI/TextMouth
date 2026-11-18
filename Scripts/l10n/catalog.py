@@ -122,7 +122,11 @@ def write_text_atomic(path, text):
 #   %arg                   the argument of a substitution's own forms (in a variation of `substitutions`);
 #   %(name)lld             Xcode 26's named form;
 #   %[n$][flags][width][.precision][length]conversion   the printf form, with `n$` its position (1-based).
-# A `*` for the width or precision takes an argument of its own and is not supported (none is used).
+# The flags are `- + 0 # '`: a space is NOT one here, so "50% off" and "50 % de descuento" hold no `% o` or `% d`
+# (Foundation formats only text that has an argument, and the compiler writes `%%` for a literal percent sign in a key that
+# does). The width and the precision may be `*` (the next argument, an int) or `*n$` (the argument at position n); the
+# precision may be empty (`%.f` and `%.d` mean `%.0f` and `%.0d`).
+_STAR = r"\*(?:[1-9]\d*\$)?"
 _SPECIFIER = re.compile(r"""
     %(?:
         (?P<percent>%)
@@ -130,9 +134,9 @@ _SPECIFIER = re.compile(r"""
       | (?P<arg>arg)(?![A-Za-z0-9_])
       | (?:\((?P<name>[A-Za-z_]\w*)\))?
         (?:(?P<position>[1-9]\d*)\$)?
-        (?P<flags>[-+ 0\#']*)
-        (?P<width>\d+)?
-        (?:\.(?P<precision>\d+))?
+        (?P<flags>[-+0\#']*)
+        (?P<width>\d+|""" + _STAR + r""")?
+        (?:\.(?P<precision>""" + _STAR + r"""|\d*))?
         (?P<length>hh|h|ll|l|L|q|z|t|j)?
         (?P<conversion>[@dDiuUoOxXeEfFgGaAcCsSpn])
     )""", re.VERBOSE)
@@ -142,15 +146,66 @@ _SPECIFIER = re.compile(r"""
 _WIDE = {"l", "ll", "q", "z", "t", "j"}
 _LEGACY_LONG = {"D": "d", "U": "u", "O": "o"}
 
+# The width in bits of an integer argument by its length modifier: `h` is a short and `hh` a char (Foundation formats
+# `%hd` of 40000 as -25536); no modifier is an int, and a wide one (_WIDE) is 64 bits.
+_NARROW_BITS = {"hh": 8, "h": 16}
+
+# The conversions that print an integer, with the text their type token takes: `d` and `i` are one signed integer; `u`,
+# `o`, `x`, and `X` are unsigned integers that print differently (255 is `255`, `377`, `ff`, `FF`), so a translation may
+# not swap them.
+_INTEGER_CLASSES = {"d": "int{bits}", "i": "int{bits}", "u": "uint{bits}", "o": "uint{bits} octal",
+                    "x": "uint{bits} hex", "X": "uint{bits} HEX"}
+
+# The conversions that print a floating-point number: `f` and `F` (1.500000), `e` and `E` (1.500000e+00), `g` and `G`
+# (1.5), and `a` and `A` (0x1.8p+0) are four different looks; a letter's case only changes the case of its output.
+_FLOAT_CLASSES = {"f": "", "F": "", "e": " exponent", "E": " exponent", "g": " general", "G": " general",
+                  "a": " hex", "A": " hex"}
+
+# The conversions that take something other than a number, with their type token.
+_OTHER_TYPES = {"@": "object", "c": "char", "C": "unichar", "s": "cstring", "S": "unistring", "p": "pointer", "n": "count"}
+
+# The type token of the extra int argument a `*` width or precision takes.
+STAR_TYPE = "int32"
+
+
+def _type_of(length, conversion):
+    """The type token of a printf conversion with its length modifier, which holds what Foundation does with the argument:
+    an integer by its width and how it prints (`int32`, `int64`, `uint32`, `uint32 octal`, `uint32 hex`, `int16` for `%hd`,
+    `int8` for `%hhd`), a floating-point number by how it prints (`double`, `double exponent`, `double general`,
+    `double hex`, and the `long double` forms for `%Lf`), and the rest by their conversion letter. A legacy `%D`, `%U`, or
+    `%O` is a long integer, as `%ld`, `%lu`, `%lo`."""
+    if conversion in _LEGACY_LONG:
+        conversion, length = _LEGACY_LONG[conversion], "l"
+    if conversion in _INTEGER_CLASSES:
+        bits = 64 if length in _WIDE else _NARROW_BITS.get(length, 32)
+        return _INTEGER_CLASSES[conversion].format(bits=bits)
+    if conversion in _FLOAT_CLASSES:
+        return ("long double" if length == "L" else "double") + _FLOAT_CLASSES[conversion]
+    return _OTHER_TYPES[conversion]
+
+
+# The types of a number argument: the ones a plural variation can vary on (an integer or a floating-point number).
+NUMBER_TYPES = frozenset(
+    [_type_of(length, conversion) for length in (None, "h", "hh", "l") for conversion in _INTEGER_CLASSES]
+    + [_type_of(length, conversion) for length in (None, "L") for conversion in _FLOAT_CLASSES])
+
+# What Foundation prints when a conversion has no precision: a floating-point number (not `a`) six digits, an integer at
+# least one. Used to compare a precision with a missing one (see precision_warnings).
+_DEFAULT_PRECISION = {**{conversion: "6" for conversion in "fFeEgG"}, **{conversion: "1" for conversion in "diuoxX"}}
+
 
 class Placeholder:
     """One format specifier of a value: `raw` as written; `position`, its explicit 1-based position or None;
     `name`, its name (a named form, or a substitution's), or None; `type`, a token such as "int64" or "object" that
-    says what argument it takes. Two specifiers agree when their types are equal; width, flags, and precision are
-    formatting and do not count."""
+    says what argument it takes (and how it prints it); `extras`, the positions (an int, or None for the next argument) of
+    the extra int arguments a `*` width or precision takes, width first; `precision`, the precision as written (a bare `.`
+    is "0"; a star is "*") or None; `conversion`, the conversion letter (after the legacy ones are mapped), or None for a
+    substitution. Two specifiers agree when their types are equal; width, flags, and precision are formatting and do not
+    count (a different precision is only a warning: see precision_warnings)."""
 
-    def __init__(self, raw, position, name, kind):
+    def __init__(self, raw, position, name, kind, extras=(), precision=None, conversion=None):
         self.raw, self.position, self.name, self.type = raw, position, name, kind
+        self.extras, self.precision, self.conversion = tuple(extras), precision, conversion
 
     def __repr__(self):
         return f"Placeholder({self.raw!r}, position={self.position}, name={self.name!r}, type={self.type!r})"
@@ -160,21 +215,29 @@ class Placeholder:
             other.raw, other.position, other.name, other.type)
 
 
-def _type_of(length, conversion):
-    """The type token of a printf conversion with its length modifier: integers by signedness and width (`int32`,
-    `int64`), floating point as "double" (or "long double"), and the rest by their conversion letter. A legacy `%D`,
-    `%U`, or `%O` is a long integer, as `%ld`, `%lu`, `%lo`."""
-    if conversion in _LEGACY_LONG:
-        conversion, length = _LEGACY_LONG[conversion], "l"
-    wide = length in _WIDE
-    if conversion == "d" or conversion == "i":
-        return "int64" if wide else "int32"
-    if conversion in "uoxX":
-        # o, x, and X are unsigned like u; their letters differ in how the number is written, not in what it takes.
-        return "uint64" if wide else "uint32"
-    if conversion in "eEfFgGaA":
-        return "long double" if length == "L" else "double"
-    return {"@": "object", "c": "char", "C": "unichar", "s": "cstring", "S": "unistring", "p": "pointer", "n": "count"}[conversion]
+def _star_position(field):
+    """(whether `field`, the text of a width or precision, is a star, its explicit position or None): `*` is (True, None)
+    and `*2$` is (True, 2); a number or nothing is (False, None)."""
+    if not field or not field.startswith("*"):
+        return False, None
+    return True, int(field[1:-1]) if len(field) > 1 else None
+
+
+def _printf_placeholder(match):
+    """The Placeholder of the printf-form specifier that the regular expression `match` found."""
+    position = int(match.group("position")) if match.group("position") else None
+    # The width's argument comes before the precision's, and both before the value.
+    extras = []
+    for field in (match.group("width"), match.group("precision")):
+        is_star, star_position = _star_position(field)
+        if is_star:
+            extras.append(star_position)
+    precision = match.group("precision")
+    if precision is not None and not precision.startswith("*"):
+        precision = precision or "0"
+    conversion = _LEGACY_LONG.get(match.group("conversion"), match.group("conversion"))
+    return Placeholder(match.group(0), position, match.group("name"), _type_of(match.group("length"), match.group("conversion")),
+                       extras, precision, conversion)
 
 
 def placeholders(text):
@@ -190,36 +253,46 @@ def placeholders(text):
         elif match.group("arg"):
             found.append(Placeholder(raw, None, None, "substitution argument"))
         else:
-            position = int(match.group("position")) if match.group("position") else None
-            found.append(Placeholder(raw, position, match.group("name"),
-                                     _type_of(match.group("length"), match.group("conversion"))))
+            found.append(_printf_placeholder(match))
     return found
+
+
+def _references(text):
+    """The argument references of `text` in the order Foundation reads them, as (position, name, type, specifier) tuples:
+    a `*` width or precision takes an int argument before the value it belongs to. A substitution's own `%arg` is not one."""
+    references = []
+    for placeholder in placeholders(text):
+        if placeholder.type == "substitution argument":
+            continue
+        references += [(position, None, STAR_TYPE, placeholder.raw) for position in placeholder.extras]
+        references.append((placeholder.position, placeholder.name, placeholder.type, placeholder.raw))
+    return references
 
 
 def slots(text):
     """(the slots of `text`, its problems): the slots map each argument's slot to its type, where a slot is a
     1-based argument position (an int: explicit, or counted from the unnumbered specifiers in order), or a name (a
-    str: a named form or a substitution). The problems are sentences about specifiers that cannot be read: numbered
-    and unnumbered ones mixed, or one position used for two different types. A substitution's own `%arg` is not a
-    slot."""
+    str: a named form or a substitution). A `*` width or precision is a slot of its own, an int taken before the value.
+    The problems are sentences about specifiers that cannot be read: numbered and unnumbered ones mixed, or one position
+    used for two different types. A substitution's own `%arg` is not a slot."""
     problems, result = [], {}
-    found = [p for p in placeholders(text) if p.type != "substitution argument"]
-    numbered = [p for p in found if p.position is not None]
-    plain = [p for p in found if p.position is None and p.name is None and p.type != "substitution"]
+    references = _references(text)
+    numbered = [r for r in references if r[0] is not None]
+    plain = [r for r in references if r[0] is None and r[1] is None and r[2] != "substitution"]
     if numbered and plain:
         problems.append("numbered (%1$@) and unnumbered (%@) placeholders are mixed")
     counter = 0
-    for placeholder in found:
-        if placeholder.name is not None:
-            slot = placeholder.name
-        elif placeholder.position is not None:
-            slot = placeholder.position
+    for position, name, kind, raw in references:
+        if name is not None:
+            slot = name
+        elif position is not None:
+            slot = position
         else:
             counter += 1
             slot = counter
-        if slot in result and result[slot] != placeholder.type:
-            problems.append(f"{placeholder.raw} takes a {placeholder.type} where slot {slot} takes a {result[slot]}")
-        result.setdefault(slot, placeholder.type)
+        if slot in result and result[slot] != kind:
+            problems.append(f"{raw} takes a {kind} where slot {slot} takes a {result[slot]}")
+        result.setdefault(slot, kind)
     return result, problems
 
 
@@ -260,10 +333,6 @@ def percent_problems(english, translation):
     return problems
 
 
-# The types of a number argument: the ones a plural variation can vary on (an integer or a floating-point number).
-NUMBER_TYPES = ("int32", "int64", "uint32", "uint64", "double", "long double")
-
-
 def has_number(text):
     """Whether `text` has a number placeholder (`%lld`, `%d`, `%f`, ...), which a plural variation needs."""
     return any(placeholder.type in NUMBER_TYPES for placeholder in placeholders(text))
@@ -287,6 +356,40 @@ def compare_placeholders(english, translation, may_drop_numbers=False):
         elif wanted[slot] != got[slot]:
             problems.append(f"placeholder {slot} is a {got[slot]}, the English's is a {wanted[slot]}")
     return problems
+
+
+def _precisions(text):
+    """{slot: the precision of the specifier at that slot} for the numeric specifiers of `text` whose precision is known: the
+    one written, else the conversion's default (six digits for a float, one for an integer). A specifier whose slot cannot
+    be told (mixed numbering) or whose precision is a `*` (an argument) is left out. Slots are numbered as in `slots`."""
+    result, counter = {}, 0
+    for placeholder in placeholders(text):
+        if placeholder.type == "substitution argument":
+            continue
+        # A star's own int argument takes a slot before the value's.
+        counter += sum(1 for position in placeholder.extras if position is None)
+        if placeholder.name is not None:
+            slot = placeholder.name
+        elif placeholder.position is not None:
+            slot = placeholder.position
+        else:
+            counter += 1
+            slot = counter
+        precision = placeholder.precision or _DEFAULT_PRECISION.get(placeholder.conversion)
+        if precision is not None and precision != "*":
+            result.setdefault(slot, precision)
+    return result
+
+
+def precision_warnings(english, translation):
+    """The sentences about a number placeholder of `translation` that prints a different number of digits than the
+    English's (`%.1f` against `%.3f`, or `%f` against `%.1f`), as warnings: a language may well want another precision, so
+    it is never a refusal, only worth a look. The slots compared are those both texts have with the same type."""
+    wanted, got = _precisions(english), _precisions(translation)
+    wanted_types, got_types = slots(english)[0], slots(translation)[0]
+    return [f"placeholder {slot} prints {got[slot]} digits where the English's prints {wanted[slot]}"
+            for slot in sorted(set(wanted) & set(got), key=lambda s: (isinstance(s, str), s))
+            if wanted[slot] != got[slot] and wanted_types.get(slot) == got_types.get(slot)]
 
 
 def _describe(slot, kind):

@@ -664,6 +664,20 @@ def glossary_warnings(cat, glossary, languages):
     return warnings
 
 
+def precision_warnings(cat, languages):
+    """The sentences about finished translations (in each of `languages`) whose number placeholders print other digits than
+    the English's (`%.1f` written `%.3f`). Only warnings: a language may well want another precision."""
+    warnings = []
+    for language in languages:
+        for key in cat.translatable():
+            english = {unit.path: unit.value for unit in cat.units(key, cat.source_language)}
+            for unit in cat.units(key, language):
+                if catalog.unit_done(unit):
+                    label = f"{language} {quote(key)}" + (f" ({unit.path})" if unit.path else "")
+                    warnings += [f"{label}: {sentence}" for sentence in translate.unit_precision_warnings(english, key, unit)]
+    return warnings
+
+
 def cmd_check(args):
     """`check`: prints the problems (up to --limit), then the glossary's warnings (up to --limit, never a failure) and the
     budget note; exit status 1 when there is a problem. A glossary file that is malformed is a problem."""
@@ -673,7 +687,8 @@ def cmd_check(args):
     try:
         loaded = glossarylib.Glossary.load(args.glossary)
         # The glossary's own warnings (two terms with one translation) come with those of the translations.
-        warnings = glossary_warnings(cat, loaded, languages_of(cat, config)) + loaded.warnings()
+        warnings = (glossary_warnings(cat, loaded, languages_of(cat, config)) + loaded.warnings()
+                    + precision_warnings(cat, languages_of(cat, config)))
     except glossarylib.GlossaryError as error:
         problems.append(str(error))
     shown = problems if not args.limit else problems[:args.limit]
@@ -687,7 +702,7 @@ def cmd_check(args):
     lines.append(f"check: {note}")
     shipped = ", ".join(sorted(config["languages"])) or "none yet"
     if warnings:
-        lines.append(f"check: {number(len(warnings))} warning{'s' if len(warnings) != 1 else ''} (the glossary's terms; not failures)")
+        lines.append(f"check: {number(len(warnings))} warning{'s' if len(warnings) != 1 else ''} (the glossary's terms and the number formats; not failures)")
     lines.append(f"check: {number(len(problems))} problem{'s' if len(problems) != 1 else ''}; shipped languages: {shipped}")
     emit(args, {"problems": problems, "warnings": warnings, "englishBytes": cat.english_bytes(), "budgetBytes": config["budgetBytes"],
                 "languages": config["languages"]}, lines)

@@ -423,6 +423,41 @@ class ApplyTests(ApplyCase):
     def test_a_placeholder_of_another_type_is_refused(self):
         self.refused("Open %@ in TextMouth", "Abrir %lld en TextMouth", "is a int64")
 
+    def add_strings(self, **strings):
+        """Adds strings (key to a comment) to the catalog, to be translated by the next batch."""
+        cat = self.load()
+        for key, comment in strings.items():
+            cat.strings[key] = base.entry(comment)
+        cat.save()
+
+    def test_a_percent_sign_after_a_space_is_plain_text(self):
+        """Spanish and French put a space before the sign: "50 % de descuento" has no `% d`, and Foundation formats a text with
+        no argument as it is."""
+        self.add_strings(**{"50% off": "A badge", "Save 10% today": "A banner"})
+        status, out = self.apply(self.translated(**{"50% off": "50 % de descuento", "Save 10% today": "Ahorra hoy 10 %"}))
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.values("50% off", "es"), {"": ("machine_translated", "50 % de descuento")})
+        self.assertEqual(self.values("Save 10% today", "es"), {"": ("machine_translated", "Ahorra hoy 10 %")})
+
+    def test_an_unsigned_conversion_is_refused_for_a_hex_one(self):
+        self.add_strings(**{"Code %x": "A hex number"})
+        self.refused("Code %x", "Código %u", "is a uint32, the English's is a uint32 hex")
+
+    def test_an_exponent_float_is_refused_for_a_plain_one(self):
+        self.add_strings(**{"Rate %f": "A number"})
+        self.refused("Rate %f", "Tasa %e", "is a double exponent, the English's is a double")
+
+    def test_a_short_integer_is_refused_for_an_int(self):
+        self.add_strings(**{"Item %d": "A number"})
+        self.refused("Item %d", "Elemento %hd", "is a int16, the English's is a int32")
+
+    def test_a_different_precision_is_written_with_a_warning(self):
+        self.add_strings(**{"Wait %.1f seconds": "A duration"})
+        status, out = self.apply(self.translated(**{"Wait %.1f seconds": "Espera %.3f segundos"}))
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.values("Wait %.1f seconds", "es"), {"": ("machine_translated", "Espera %.3f segundos")})
+        self.assertIn("warning \"Wait %.1f seconds\": translation: placeholder 1 prints 3 digits where the English's prints 1", out)
+
     def test_a_missing_plural_form_is_refused(self):
         self.refused("%lld books", {"one": "%lld libro", "other": "%lld libros"}, "needs the plural form many")
 

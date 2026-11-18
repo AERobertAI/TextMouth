@@ -98,6 +98,13 @@ def unit_placeholder_problems(english, key, unit, language):
     return catalog.compare_placeholders(english_text_for(english, key, unit), unit.value)
 
 
+def unit_precision_warnings(english, key, unit):
+    """The warnings about the number formats of one finished unit (`%.1f` written `%.3f`): a top-level plural form is
+    compared with the key, as unit_placeholder_problems does, and any other unit with the English text of its place."""
+    reference = key if unit.category and unit.path == f"plural.{unit.category}" else english_text_for(english, key, unit)
+    return catalog.precision_warnings(reference, unit.value)
+
+
 def english_shape(cat, key):
     """What the English of string `key` is: ("plain", text) for one text (the key itself when the catalog holds no English
     localization of it), ("plural", {category: text}) for plural forms, or ("other", reason) for a form this module does
@@ -497,7 +504,8 @@ def text_problems(glossary, english, text, keep_english, found=None):
         if text.strip() == english.strip() and not keep_english and not glossary.nothing_to_translate(english):
             problems.append('the English left as it was (if that is right, set "keepEnglish": true on the item)')
         problems += [f"lost the name {name}, which is never translated" for name in glossary.missing_names(english, text)]
-    warnings = []
+    # A number printed with other digits than the English's is worth a look, never a refusal.
+    warnings = catalog.precision_warnings(english, text)
     if len(english.strip()) >= LENGTH_MINIMUM and len(text) > LENGTH_WARNING * len(english):
         warnings.append(f"{len(text) / len(english):.1f} times as long as the English")
     # A line break inside the text lays the text out in lines; a translation may reflow, but the loss of one is worth a look.

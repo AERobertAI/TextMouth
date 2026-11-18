@@ -134,9 +134,11 @@ class PlaceholderTests(unittest.TestCase):
     def test_the_specifiers_of_the_brief_are_found_with_their_types(self):
         cases = {
             "%@": ["object"], "%d": ["int32"], "%ld": ["int64"], "%lld": ["int64"], "%u": ["uint32"], "%lu": ["uint64"],
-            "%f": ["double"], "%lf": ["double"], "%.1f": ["double"], "%x": ["uint32"], "%1$@": ["object"], "%2$lld": ["int64"],
-            "%s": ["cstring"], "%c": ["char"], "%hd": ["int32"], "%zd": ["int64"], "%D": ["int64"], "%Lf": ["long double"],
-            "%5.2f%%": ["double"], "%-8s|": ["cstring"], "%#x": ["uint32"],
+            "%f": ["double"], "%lf": ["double"], "%.1f": ["double"], "%x": ["uint32 hex"], "%1$@": ["object"], "%2$lld": ["int64"],
+            "%s": ["cstring"], "%c": ["char"], "%hd": ["int16"], "%hhd": ["int8"], "%hu": ["uint16"], "%zd": ["int64"],
+            "%D": ["int64"], "%Lf": ["long double"], "%5.2f%%": ["double"], "%-8s|": ["cstring"], "%#x": ["uint32 hex"],
+            "%o": ["uint32 octal"], "%X": ["uint32 HEX"], "%e": ["double exponent"], "%G": ["double general"],
+            "%a": ["double hex"], "%F": ["double"], "%C": ["unichar"], "%S": ["unistring"], "%p": ["pointer"],
         }
         for text, expected in cases.items():
             self.assertEqual(self.types(text), expected, text)
@@ -199,6 +201,108 @@ class PlaceholderTests(unittest.TestCase):
                          ["missing placeholder books (substitution)", "extra placeholder libros (substitution)"])
 
 
+class FoundationReadingTests(unittest.TestCase):
+    """What Foundation does with a specifier, which decides when two placeholders agree (the review of l10n/core, findings 2
+    to 4): a space is not a flag, the conversion class and `h` length are part of the type, and `*` and an empty precision
+    are read."""
+
+    def test_a_percent_and_a_space_is_text_in_the_languages_that_space_a_percent_sign(self):
+        # Spanish, French, and German put a space before the sign: "50 % de descuento" holds no `% d`.
+        for translation in ("50 % de descuento", "10 % de réduction", "Remise de 10 %", "50 % off", "5 % x", "7 % e"):
+            self.assertEqual(catalog.placeholders(translation), [], translation)
+            self.assertEqual(catalog.compare_placeholders("50% off", translation), [], translation)
+        self.assertEqual(catalog.compare_placeholders("10% discount", "Remise de 10 %"), [])
+
+    def test_a_space_does_not_start_a_flag_even_in_a_format_string(self):
+        # With an argument the compiler writes `%%`, and a lone `%` is reported by percent_problems, not read as `% d`.
+        self.assertEqual([p.raw for p in catalog.placeholders("50%% de %lld")], ["%lld"])
+        self.assertEqual([p.raw for p in catalog.placeholders("% d")], [])
+
+    def test_the_conversion_classes_that_print_differently_do_not_agree(self):
+        for english, translation in (("%u", "%x"), ("%x", "%X"), ("%o", "%u"), ("%x", "%o"), ("%f", "%e"), ("%e", "%g"),
+                                     ("%g", "%a"), ("%f", "%g"), ("%d", "%u"), ("%lld", "%llu"), ("%c", "%C"), ("%s", "%S"),
+                                     ("%p", "%@")):
+            self.assertEqual(len(catalog.compare_placeholders(english, translation)), 1, (english, translation))
+
+    def test_the_conversions_that_print_alike_agree(self):
+        # `d` and `i`, `f` and `F`, `e` and `E`, `g` and `G`, `a` and `A` differ only in case or not at all.
+        for english, translation in (("%d", "%i"), ("%f", "%F"), ("%e", "%E"), ("%g", "%G"), ("%a", "%A"), ("%ld", "%lld"),
+                                     ("%lu", "%llu"), ("%zd", "%lld"), ("%@", "%@")):
+            self.assertEqual(catalog.compare_placeholders(english, translation), [], (english, translation))
+
+    def test_a_short_integer_is_not_an_int(self):
+        self.assertEqual(catalog.compare_placeholders("%d", "%hd"), ["placeholder 1 is a int16, the English's is a int32"])
+        self.assertEqual(catalog.compare_placeholders("%d", "%hhd"), ["placeholder 1 is a int8, the English's is a int32"])
+        self.assertEqual(catalog.compare_placeholders("%hd", "%hhd"), ["placeholder 1 is a int8, the English's is a int16"])
+        self.assertEqual(catalog.compare_placeholders("%hd", "%hd"), [])
+
+    def test_the_wide_lengths_stay_one_type_and_an_int_stays_apart_from_them(self):
+        self.assertEqual(catalog.compare_placeholders("%ld", "%lld"), [], "both 64 bits")
+        self.assertEqual(catalog.compare_placeholders("%d", "%lld"), ["placeholder 1 is a int64, the English's is a int32"])
+
+    def test_every_number_type_a_plural_can_vary_on_is_one(self):
+        for text in ("%d", "%lld", "%hd", "%u", "%x", "%o", "%f", "%e", "%g", "%a", "%Lf", "%lu"):
+            self.assertTrue(catalog.has_number(text), text)
+        for text in ("%@", "%s", "%c", "%p", "plain"):
+            self.assertFalse(catalog.has_number(text), text)
+
+    def test_an_empty_precision_is_read(self):
+        self.assertEqual([(p.raw, p.type) for p in catalog.placeholders("%.f")], [("%.f", "double")])
+        self.assertEqual([(p.raw, p.type) for p in catalog.placeholders("%.d items")], [("%.d", "int32")])
+        # The English `%.f` is a double, so a translation that keeps it agrees and one that drops it is missing it.
+        self.assertEqual(catalog.compare_placeholders("%.f seconds", "%.f segundos"), [])
+        self.assertEqual(catalog.compare_placeholders("%.f seconds", "%f segundos"), [])
+        self.assertEqual(catalog.compare_placeholders("%.f seconds", "segundos"), ["missing placeholder number 1 (double)"])
+        self.assertEqual(catalog.compare_placeholders("%.d", "%.f"), ["placeholder 1 is a double, the English's is a int32"])
+
+    def test_a_star_width_takes_an_int_argument_before_the_value(self):
+        self.assertEqual(catalog.slots("%*d")[0], {1: "int32", 2: "int32"})
+        self.assertEqual(catalog.slots("%@ %*lld")[0], {1: "object", 2: "int32", 3: "int64"})
+        self.assertEqual(catalog.compare_placeholders("%*d", "%*d"), [])
+        self.assertEqual(catalog.compare_placeholders("%.*f", "%.*f"), [])
+        self.assertEqual(catalog.compare_placeholders("%*.*f", "%*.*f"), [])
+
+    def test_a_star_precision_and_both_stars_each_take_an_int_argument(self):
+        self.assertEqual(catalog.slots("%.*f")[0], {1: "int32", 2: "double"})
+        self.assertEqual(catalog.slots("%*.*f")[0], {1: "int32", 2: "int32", 3: "double"})
+        self.assertEqual(catalog.compare_placeholders("%.*f", "%.*f"), [])
+
+    def test_a_numbered_star_names_the_argument_it_takes(self):
+        self.assertEqual(catalog.slots("%1$*2$d")[0], {1: "int32", 2: "int32"})
+        self.assertEqual(catalog.slots("%2$*1$d")[0], {1: "int32", 2: "int32"})
+        self.assertEqual(catalog.slots("%1$@ %2$*3$.*4$f")[0], {1: "object", 2: "double", 3: "int32", 4: "int32"})
+        self.assertEqual(catalog.placeholder_problems("%1$*2$d"), [])
+        self.assertEqual(catalog.compare_placeholders("%1$*2$d", "%1$*2$d"), [])
+
+    def test_a_numbered_value_with_an_unnumbered_star_is_a_mix(self):
+        self.assertIn("mixed", catalog.placeholder_problems("%1$*d")[0])
+
+    def test_a_star_a_translation_loses_is_reported(self):
+        # The English `%*d` has two arguments (width, value); `%d` has one.
+        problems = catalog.compare_placeholders("%*d", "%d")
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("missing placeholder number 2", problems[0])
+        problems = catalog.compare_placeholders("%.*f", "%f")
+        self.assertEqual(len(problems), 2, problems)
+
+    def test_a_different_precision_is_a_warning_and_never_a_problem(self):
+        self.assertEqual(catalog.compare_placeholders("%.1f s", "%.3f s"), [], "agrees: only the type counts")
+        self.assertEqual(catalog.precision_warnings("%.1f s", "%.3f s"),
+                         ["placeholder 1 prints 3 digits where the English's prints 1"])
+        self.assertEqual(catalog.precision_warnings("%.1f s", "%.1f s"), [])
+        # A missing precision is the conversion's default (six digits for a float): `%f` against `%.1f` differs.
+        self.assertEqual(catalog.precision_warnings("%f s", "%.1f s"),
+                         ["placeholder 1 prints 1 digits where the English's prints 6"])
+        self.assertEqual(catalog.precision_warnings("%f", "%.6f"), [])
+        self.assertEqual(catalog.precision_warnings("%.f", "%.0f"), [])
+        # Positions line up the slots; a star's precision is an argument, not a number of digits.
+        self.assertEqual(catalog.precision_warnings("%1$.1f %2$.2f", "%2$.2f %1$.1f"), [])
+        self.assertEqual(catalog.precision_warnings("%.*f", "%.2f"), [])
+        self.assertEqual(catalog.precision_warnings("%@", "%@"), [])
+        # Different types are a refusal's business, not a warning's.
+        self.assertEqual(catalog.precision_warnings("%.1f", "%.1d"), [])
+
+
 class PercentTests(unittest.TestCase):
     """`%%` and the lone `%`: counted, and compared between the English and a translation."""
 
@@ -206,7 +310,7 @@ class PercentTests(unittest.TestCase):
         self.assertEqual(catalog.percent_signs("Rate: %lld%%"), (1, 0, 1))
         self.assertEqual(catalog.percent_signs("100%% sure"), (1, 0, 0))
         self.assertEqual(catalog.percent_signs("Tasa: %lld %"), (0, 1, 1))
-        self.assertEqual(catalog.percent_signs("50% of the book")[1], 0, "`% o` reads as a placeholder, as Foundation reads it")
+        self.assertEqual(catalog.percent_signs("50% of the book"), (0, 1, 0), "a space is no flag: `% o` is text")
         self.assertEqual(catalog.percent_signs("Save 5%")[1], 1)
 
     def test_a_different_number_of_literal_percent_signs_is_a_problem(self):

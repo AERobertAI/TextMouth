@@ -105,6 +105,15 @@ class PluralTests(CatalogCase):
     def test_an_empty_form_is_refused(self):
         self.assertRefused("%lld books", "--lang", "en", "--one", " ", "--other", "%lld books", reason="the one form: empty text")
 
+    def test_a_plural_form_with_another_conversion_class_is_refused(self):
+        self.assertRefused("%lld books", "--lang", "en", "--one", "%llx book", "--other", "%lld books",
+                           reason="the one form: placeholder 1 is a uint64 hex, the English's is a int64")
+
+    def test_a_plural_form_with_a_lone_percent_is_refused_as_before(self):
+        # A plural key has a placeholder, so it is a format string, where a lone % must be written %%.
+        self.assertRefused("%lld books", "--lang", "en", "--one", "%lld book, 5 % off", "--other", "%lld books, 5 % off",
+                           reason="a lone %")
+
     def test_placeholders_that_differ_from_the_key_are_refused(self):
         self.assertRefused("%lld books", "--lang", "en", "--one", "%@ book", "--other", "%lld books",
                            reason="the one form: ")
