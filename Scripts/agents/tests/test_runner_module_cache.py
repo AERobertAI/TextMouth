@@ -247,6 +247,24 @@ class ReadingErrorsTests(unittest.TestCase):
     def test_one_error_of_the_codes_makes_the_failure_the_codes(self):
         self.assertFalse(cache.stale_cache_only([self.ERROR, "TextMouth/A.swift:1:2: error: cannot find 'x' in scope"]))
 
+    # Train 1117-1219's line, as the log printed it (its paths are the runner's).
+    MISSING = ("/Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/"
+               "stddef.h:89:2: fatal error: module file '/Users/runner/work/TextMouth/TextMouth/build/remote-DerivedData-ios/"
+               "Build/Intermediates.noindex/ExplicitPrecompiledModules/_Builtin_stddef-9GGUBAMBUN08H8VY1LWYJDQUK.pcm' "
+               "not found: module file not found")
+
+    def test_a_precompiled_module_that_is_not_there_is_named_as_the_caches_failure(self):
+        # TL06 and train 1117-1219: neither the stale-module words nor an "error:" line.
+        self.assertEqual(cache.cache_failure("CompileC ...\n" + self.MISSING + "\n"), cache.MISSING_MARKER)
+        self.assertEqual(cache.cache_failure(self.ERROR), cache.STALE_MARKER)
+        self.assertTrue(cache.stale_cache_only([self.MISSING, self.ERROR]))
+
+    def test_a_real_error_that_mentions_a_module_is_not_the_caches_failure(self):
+        for text in ("A.swift:1:8: error: no such module 'Foo'", "A.swift:1:8: error: module 'Foo' not found",
+                     "A.swift:1:2: error: cannot find 'x' in scope", ""):
+            self.assertIsNone(cache.cache_failure(text), text)
+        self.assertFalse(cache.stale_cache_only([self.MISSING, "A.swift:1:2: error: cannot find 'x' in scope"]))
+
     def test_the_sentence_says_it_is_not_the_branchs_code(self):
         self.assertIn("not this branch's code", cache.STALE_SENTENCE)
 

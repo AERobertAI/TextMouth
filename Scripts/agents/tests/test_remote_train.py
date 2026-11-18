@@ -606,6 +606,35 @@ class RemoteTrainFailureTests(RemoteTrainCase):
         self.assertIn("Verdict of the whole train: PASSED", self.result_of("alpha"))
 
 
+class RemoteTrainLostConnectionTests(RemoteTrainCase):
+    """TL07: a train that loses GitHub keeps watching, and the next train collects the run it could not."""
+
+    def test_a_train_that_loses_github_for_a_while_still_ends_with_the_runs_results_and_says_how_long(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_state({"list": [[STARTED]], "view": [DONE], "download": [results(PASSING_SUMMARY, PASSING_LOG)],
+                       "fail_first": {"view": 10}})
+        self.assertEqual(self.run_train(), "ran")
+        remote = json.loads(next(train.TRAINS.iterdir()).joinpath("remote.json").read_text())
+        self.assertGreater(remote["lost_minutes"], 0)
+        self.assertIn("Verdict of the whole train: PASSED", self.result_of("alpha"))
+
+    def test_the_next_train_collects_the_run_a_lost_connection_left_and_pushes_nothing(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_state({"list": [[STARTED]], "fail": "view"})
+        self.patch_github(RUN_LIMIT_MINUTES=5)
+        self.assertEqual(self.run_train(), "failed")
+        commit = self.pushed_refs()["refs/heads/TestBuild"]
+        # GitHub is back and the run had passed; the next train is another train of the same tree.
+        self.gh_state({"view": [{**DONE, "headSha": commit}], "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        self.assertEqual(self.run_train(), "ran")
+        self.assertEqual(self.pushed_refs()["refs/heads/TestBuild"], commit, "the same commit, not pushed again")
+        line = train.remote_line(next(path for path in sorted(train.TRAINS.iterdir())[-1:]))
+        self.assertIn("collected", line)
+        self.assertIn("earlier train's run", line)
+        self.assertEqual(self.queued(), [])
+        self.assertIn("Verdict of the whole train: PASSED", self.result_of("alpha"))
+
+
 class RemoteTrainRetryTests(RemoteTrainCase):
     """A build that fails to compile is retried without the branch that broke it, on GitHub again."""
 

@@ -94,6 +94,8 @@ TRAINS = TRAIN_DIR / "trains"
 RESULTS = TRAIN_DIR / "results"
 LOCK = TRAIN_DIR / "lock"
 NEXT = TRAIN_DIR / "next.txt"
+# The file (in TRAIN_DIR) that keeps the run of a remote train until its results are in hand (github_run.recorded_run).
+PENDING_RUN_NAME = "pending-run.json"
 WORKTREE = ROOT / ".claude" / "worktrees" / "train"
 # The train's build cache. It is kept beside the train's records, not in the user's temporary folder
 # under /var/folders, because macOS sweeps that folder of files unused for three days: on 2026-11-04
@@ -483,7 +485,7 @@ def run_tests(merged, train_dir):
 
 # A run that ended like one of these has no verdict on the tests: GitHub stopped it
 # (a newer push to TestBuild cancelled it, or its time ran out) or never started its job.
-UNFINISHED_RUNS = ("cancelled", "timed_out", "startup_failure", "skipped", "stale", "action_required")
+UNFINISHED_RUNS = github_run.UNFINISHED_RUNS
 
 
 def selected_classes(areas, classes):
@@ -549,8 +551,10 @@ def remote_run_tests(merged, train_dir):
     while (train_dir / f"remote-{attempt}").exists():
         attempt += 1
     folder = train_dir / f"remote-{attempt}"
+    # TRAIN_DIR / PENDING_RUN_NAME keeps a run the train could not collect (a lost connection) for the next train (TL07).
     result = github_run.run_remotely(WORKTREE, head, request, folder, f"Test build: train {train_dir.name}",
-                                     progress=lambda text: set_state(f"train {train_dir.name}: {text}"))
+                                     progress=lambda text: set_state(f"train {train_dir.name}: {text}"),
+                                     pending=TRAIN_DIR / PENDING_RUN_NAME)
     (train_dir / "remote.json").write_text(json.dumps(result, indent=2) + "\n")
     if result["conclusion"] in UNFINISHED_RUNS:
         raise github_run.RemoteFailure(f"the run ended {result['conclusion']} after {result['minutes']} minutes: "
@@ -687,8 +691,9 @@ def remote_ios_result(train_dir):
         errors = (train_dir / "ios-errors.txt").read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
         errors = []
-    # Errors that are all "has been modified since the module file" are the runner's stale module cache and in no file of
-    # the branch: the line says so, so that no agent chases them. A build the script ran twice says that too.
+    # Errors that are all a module-cache failure ("has been modified since the module file", or a precompiled module that
+    # "module file ... not found") are the runner's cache and in no file of the branch: the line says so, so that no agent
+    # chases them. A build the script ran twice says that too.
     if runner_module_cache.stale_cache_only(errors):
         reasons.append(runner_module_cache.STALE_SENTENCE)
     reasons += [line.removeprefix("Retried: ") for line in lines if line.startswith("Retried: ")]
@@ -786,6 +791,10 @@ def remote_line(train_dir):
         run = json.loads((train_dir / "remote.json").read_text())
     except (OSError, ValueError):
         return ""
+    if run.get("collected"):
+        # The run is an earlier train's of the same tree: no push was made, and the minutes are only this train's wait.
+        return (f"- Run on GitHub: {run['url']} (collected: the results are those of an earlier train's run of the same "
+                f"tree and request; this train waited {run['minutes']} minutes for it)")
     return f"- Run on GitHub: {run['url']} ({run['minutes']} minutes from the push to its end)"
 
 

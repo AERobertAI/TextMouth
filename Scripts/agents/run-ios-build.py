@@ -27,9 +27,10 @@ cannot start (a missing output folder it cannot make). Every wait has a limit (-
 it is stopped, and the summary says so.
 
 The restored derived-data folder may hold module caches made on another runner image, which fail a build with "file
-'...module.modulemap' has been modified since the module file ... was built" (runner_module_cache.py). So the build is
+'...module.modulemap' has been modified since the module file ... was built", or with "module file '...pcm' not found"
+(runner_module_cache.py names both, in cache_failure). So the build is
 preceded by runner_module_cache.prepare, which empties those caches when the toolchain differs from the one that made
-them, and a build that still fails with that error is run once more with the caches emptied, in what is left of the same
+them, and a build that still fails with either error is run once more with the caches emptied, in what is left of the same
 time limit; the summary's "Retried:" line says so and why.
 
 Usage: python3 -I -B Scripts/agents/run-ios-build.py [--out DIR] [--derived-data DIR] [--limit-minutes N]
@@ -158,14 +159,16 @@ def run_build(command, log, limit_minutes, append=False):
 
 
 def needs_retry(status, timed_out, log_text):
-    """Whether a build failed (not by its time limit) with the stale-module error, which emptying the module caches cures."""
-    return status != 0 and not timed_out and runner_module_cache.is_stale_module_error(log_text)
+    """Whether a build failed (not by its time limit) with a module-cache error (the stale module, or a precompiled
+    module that is not there), which emptying the module caches cures. A real compile error never qualifies."""
+    return status != 0 and not timed_out and runner_module_cache.cache_failure(log_text) is not None
 
 
-def retry_note(first_minutes):
-    """The summary's "Retried:" line: that the first try failed with the stale-module error, that the module caches were
-    emptied and the build run again, and how long the first try took."""
-    return (f"Retried: the first try ({first_minutes:.1f} minutes) failed with \"{runner_module_cache.STALE_MARKER}\", "
+def retry_note(first_minutes, failure=runner_module_cache.STALE_MARKER):
+    """The summary's "Retried:" line: that the first try failed with the module-cache error `failure` (see
+    runner_module_cache.cache_failure), that the module caches were emptied and the build run again, and how long the
+    first try took."""
+    return (f"Retried: the first try ({first_minutes:.1f} minutes) failed with \"{failure}\", "
             "so the module caches were emptied and the build ran once more")
 
 
@@ -180,6 +183,14 @@ def write_results(out, errors, log_text, status, timed_out, seconds, limit_minut
         reasons.append(f"the build was stopped after {limit_minutes:g} minutes")
     if platform_missing(log_text) and not passed:
         reasons.append("the runner image lacks the iOS Simulator platform or SDK that this build needs")
+    failure = runner_module_cache.cache_failure(log_text)
+    if failure and not passed and not timed_out and not reasons \
+            and (not errors or runner_module_cache.stale_cache_only(errors)):
+        # The error has a file in front of it ("fatal error: ..."), which the error census does not read as an error
+        # line, so a build of this failure used to be reported as ending "with no error line" (train 1117-0527). The
+        # cache is blamed only when no other error is listed: a real error beside it is the branch's to fix.
+        reasons.append(f"the module cache failed the build (\"{failure}\"), not this branch's code; "
+                       "nothing to fix in any file")
     if not passed and not errors and not timed_out and not reasons:
         reasons.append(f"xcodebuild ended with status {status} and no error line")
     lines = [f"iOS build: {'PASSED' if passed else 'FAILED'}",
@@ -217,14 +228,16 @@ def device_build_command(derived_data):
     return load_app_size().build_command(derived_data)
 
 
-def start_device_folder_over(derived_data):
-    """Removes the whole device build folder `derived_data`, so that the build after it starts from nothing, and returns
-    whether it did. It acts only on a GitHub Actions runner and only on a folder named DEVICE_FOLDER (never the
-    Simulator build's folder, never a link followed), and says nothing is done anywhere else. Emptying only the module
+def start_device_folder_over(derived_data, names=(DEVICE_FOLDER,)):
+    """Removes the whole build folder `derived_data`, so that the build after it starts from nothing, and returns
+    whether it did. It acts only on a GitHub Actions runner and only on a folder whose name is one of `names` (the
+    device build's, DEVICE_FOLDER, unless the caller names another: the Simulator build's retry names its own derived-data
+    folder), never on the repository's root and never through a link, and says nothing is done anywhere else. Emptying only the module
     caches is not enough here: Xcode's build database in the folder still claims the precompiled modules it made, and
     the build then fails with "module file ... not found" (hand runs 44025566537 and 44039539045, November 17, 2026)."""
     path = Path(derived_data)
-    if not runner_module_cache.on_github_runner(os.environ) or path.name != DEVICE_FOLDER or path.is_symlink():
+    if not runner_module_cache.on_github_runner(os.environ) or path.name not in names or path.is_symlink() \
+            or path.resolve() == ROOT.resolve():
         return False
     if not path.is_dir():
         return False
@@ -305,13 +318,22 @@ def main(argv):
         if left >= MINIMUM_RETRY_MINUTES:
             # The caches that failed the build are emptied and the build runs again in what is left of the limit. Its
             # output is added to the same log, and only that part is read for the result.
-            print(f"run-ios-build: {runner_module_cache.STALE_MARKER}; emptying the module caches and building once more",
-                  flush=True)
-            runner_module_cache.empty_module_caches(derived)
+            failure = runner_module_cache.cache_failure(log_text)
+            # A module the build database claims and the folder lacks is not cured by emptying the caches: the database
+            # still claims it (the device build found this, hand run 44039539045; trains 1117-0527 and 1117-1219 failed so
+            # with ExplicitPrecompiledModules/*.pcm "not found"). That failure starts from an empty folder, on a runner
+            # only, and the toolchain's stamp is written again.
+            if failure == runner_module_cache.MISSING_MARKER and start_device_folder_over(derived, names=(derived.name,)):
+                print(f"run-ios-build: {failure}; starting from an empty derived-data folder and building once more",
+                      flush=True)
+                runner_module_cache.prepare(derived)
+            else:
+                print(f"run-ios-build: {failure}; emptying the module caches and building once more", flush=True)
+                runner_module_cache.empty_module_caches(derived)
             first_size = log.stat().st_size
             status, timed_out = run_build(command, log, left, append=True)
             log_text = log.read_bytes()[first_size:].decode("utf-8", errors="replace")
-            retried = retry_note(first_seconds)
+            retried = retry_note(first_seconds / 60, failure)
     write_results(out, parse_errors(log_text), log_text, status, timed_out, time.monotonic() - started,
                   args.limit_minutes, retried)
     if size_requested(ROOT / args.request):

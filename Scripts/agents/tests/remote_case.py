@@ -33,7 +33,7 @@ import github_run  # noqa: E402  (imported by path, after sys.path is set)
 #               is idle; the same way, and empty (idle) unless a test says otherwise
 #   "view":     the answers to `run view`, the same way
 #   "download": the answers to `run download`, the same way: {"files": {name: text}},
-#               or {"fail": true}
+#               or {"fail": true} (with "message": what gh says; "no artifact" unless given)
 #   "fail":     a command word (such as "list") to answer with an error
 #   "fail_first": {command word: N}: that word's first N calls fail, and the rest are answered as usual
 # and appends each call's arguments to "calls".
@@ -80,7 +80,7 @@ elif word == "view":
 elif word == "download":
     answer = next_answer("download") or {"fail": True}
     if answer.get("fail"):
-        print("no artifact", file=sys.stderr)
+        print(answer.get("message", "no artifact"), file=sys.stderr)
         finish(1)
     folder = Path(arguments[arguments.index("-D") + 1])
     folder.mkdir(parents=True, exist_ok=True)

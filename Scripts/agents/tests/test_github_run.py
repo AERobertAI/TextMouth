@@ -331,6 +331,231 @@ class WaitingForTheRunTests(RemoteTestCase):
         self.assertLess(self.now, 10 * 60 + 2 * github_run.POLL_SECONDS, "it should stop soon after the limit")
 
 
+class LostConnectionTests(RemoteTestCase):
+    """TL07: a Mac that loses GitHub for a while keeps watching its run, and collects it when GitHub is back."""
+
+    DONE = {"status": "completed", "conclusion": "success", "url": "https://github.example/runs/7001"}
+
+    def test_a_watch_goes_on_through_many_failed_polls_and_ends_with_the_runs_state(self):
+        # Ten failed `gh` calls are two and a half polls, each of which gh_json tried GH_ATTEMPTS times in all.
+        self.gh_state({"view": [self.DONE], "fail_first": {"view": 10}})
+        told = []
+        state = github_run.wait_for_run(STARTED, progress=told.append)
+        self.assertEqual(state["conclusion"], "success")
+        self.assertGreater(state["lost_minutes"], 0, "the minutes the connection was out are in the answer")
+        self.assertTrue(any("lost GitHub" in text for text in told), told)
+        self.assertTrue(any("GitHub is back" in text and "minutes" in text for text in told), told)
+
+    def test_a_watch_that_loses_the_connection_for_good_is_a_remote_failure_at_the_runs_limit(self):
+        self.gh_state({"fail": "view"})
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            github_run.wait_for_run(STARTED, limit_minutes=10)
+        self.assertIn("had not ended after 10 minutes", str(caught.exception))
+        self.assertIn("could not be asked", str(caught.exception))
+        self.assertGreater(self.now, 10 * 60, "it watched until the limit, not 45 seconds")
+        self.assertLess(self.now, 10 * 60 + 2 * github_run.POLL_SECONDS + 2 * github_run.GH_ATTEMPTS * github_run.GH_RETRY_SECONDS)
+
+    def test_the_lost_minutes_count_from_the_start_of_the_first_failed_poll(self):
+        # Polls begin at 30 s (the pause), 105 s, and 180 s; the third gets through at 210 s after two failed tries.
+        # The connection was lost from 30 s, so 180 s = 3.0 minutes (counted from the poll's end, it was 2.2).
+        self.gh_state({"view": [self.DONE], "fail_first": {"view": 10}})
+        self.assertEqual(github_run.wait_for_run(STARTED)["lost_minutes"], 3.0)
+
+    def test_a_connection_that_never_dropped_adds_no_lost_minutes(self):
+        self.gh_state({"view": [self.DONE]})
+        self.assertNotIn("lost_minutes", github_run.wait_for_run(STARTED))
+
+    def test_the_download_is_tried_again_after_a_dropped_connection(self):
+        self.gh_state({"fail_first": {"download": 2}, "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        self.assertTrue(github_run.download(7001, self.folder / "out"))
+        self.assertEqual((self.folder / "out" / "run-summary.txt").read_text(), PASSING_SUMMARY)
+        self.assertEqual(self.pauses, [github_run.GH_RETRY_SECONDS] * 2)
+
+    def test_a_download_that_never_gets_through_is_a_remote_failure_not_a_run_without_results(self):
+        self.gh_state({"fail": "download"})
+        with self.assertRaises(github_run.RemoteFailure):
+            github_run.download(7001, self.folder / "out")
+        self.assertEqual(len(self.gh_calls()), github_run.GH_ATTEMPTS)
+
+    def test_a_download_that_hangs_once_is_tried_again(self):
+        # call() raises RemoteFailure for a gh that does not finish in CALL_SECONDS; that is a failed try, not the end.
+        real = github_run.call
+        tries = []
+
+        def hangs_once(command, **more):
+            tries.append(command)
+            if len(tries) == 1:
+                raise github_run.RemoteFailure("`gh run download` did not finish in 120 seconds")
+            return real(command, **more)
+
+        self.patch_github(call=hangs_once)
+        self.gh_state({"download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        self.assertTrue(github_run.download(7001, self.folder / "out"))
+        self.assertEqual(len(tries), 2)
+        self.assertEqual(self.pauses, [github_run.GH_RETRY_SECONDS])
+
+    def test_a_download_that_always_hangs_is_a_remote_failure_after_all_its_tries(self):
+        tries = []
+
+        def hangs(command, **more):
+            tries.append(command)
+            raise github_run.RemoteFailure("`gh run download` did not finish in 120 seconds")
+
+        self.patch_github(call=hangs)
+        with self.assertRaises(github_run.RemoteFailure):
+            github_run.download(7001, self.folder / "out")
+        self.assertEqual(len(tries), github_run.GH_ATTEMPTS)
+
+    def test_gh_other_wording_for_a_run_with_no_artifact_is_not_downloaded_and_not_retried_either(self):
+        # gh's wording when a run has uploaded no artifact at all.
+        self.gh_state({"download": [{"fail": True, "message": "no valid artifacts found to download"}]})
+        self.assertFalse(github_run.download(7001, self.folder / "out"))
+        self.assertEqual(len(self.gh_calls()), 1)
+
+    def test_a_run_with_no_artifact_is_not_downloaded_and_not_retried(self):
+        self.gh_state({"download": [{"fail": True}]})
+        self.assertFalse(github_run.download(7001, self.folder / "out"))
+        self.assertEqual(len(self.gh_calls()), 1)
+        self.assertEqual(self.pauses, [])
+
+
+class CollectingARecordedRunTests(RemoteTestCase):
+    """TL07: a run whose results a train could not collect is collected by the next send of the same tree."""
+
+    DONE = {"status": "completed", "conclusion": "success", "url": "https://github.example/runs/7001"}
+
+    def setUp(self):
+        super().setUp()
+        self.pending = self.folder / "pending-run.json"
+
+    def send(self, request=None, train="t1"):
+        """Sends REQUEST (with `request`'s changes, and the train's name) as a train does, with the record file."""
+        request = {**REQUEST, **(request or {}), "train": train}
+        return github_run.run_remotely(self.repo, self.head, request, self.folder / f"results-{train}", "Test build: t",
+                                       progress=lambda text: None, pending=self.pending, limit_minutes=10)
+
+    def lose_the_connection_for_good(self):
+        """A first send whose watch ends at the limit with the connection lost; returns the commit it pushed."""
+        self.gh_state({"list": [[STARTED]], "fail": "view"})
+        with self.assertRaises(github_run.RemoteFailure):
+            self.send()
+        return github_run.read_record(self.pending)["commit"]
+
+    def test_a_send_that_lost_its_run_leaves_a_record_of_the_run_and_its_commit(self):
+        commit = self.lose_the_connection_for_good()
+        record = github_run.read_record(self.pending)
+        self.assertEqual((record["run_id"], record["commit"]), (7001, commit))
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit})
+
+    def test_the_next_send_of_the_same_tree_collects_the_run_and_pushes_nothing(self):
+        commit = self.lose_the_connection_for_good()
+        # GitHub is back; the run passed. The next train has a new name but tests the same tree and request.
+        self.gh_state({"view": [{**self.DONE, "headSha": commit}], "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        result = self.send(train="t2")
+        self.assertEqual((result["conclusion"], result["downloaded"], result["commit"]), ("success", True, commit))
+        self.assertEqual((self.folder / "results-t2" / "run-summary.txt").read_text(), PASSING_SUMMARY)
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit}, "nothing was pushed again")
+        self.assertTrue(result["collected"], "the result says the run was collected, not pushed")
+        self.assertEqual(self.idle_checks(), 0, "no push, so no look at whether TestBuild is idle")
+        self.assertIsNone(github_run.read_record(self.pending), "the record is spent once the results are in hand")
+
+    def test_a_recorded_run_that_ended_failure_is_collected_not_pushed_again(self):
+        # A failing run is a verdict, with results to read; only a run with no verdict (cancelled and so on) is run again.
+        commit = self.lose_the_connection_for_good()
+        failed = {**self.DONE, "conclusion": "failure", "headSha": commit}
+        self.gh_state({"view": [failed], "download": [results(FAILING_SUMMARY, FAILING_LOG)]})
+        result = self.send(train="t2")
+        self.assertEqual((result["conclusion"], result["downloaded"], result["collected"]), ("failure", True, True))
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit})
+
+    def test_each_use_of_a_record_is_counted(self):
+        commit = self.lose_the_connection_for_good()
+        key = github_run.request_key(self.repo, self.head, {**REQUEST})
+        self.gh_state({"view": [{**self.DONE, "headSha": commit}]})
+        for expected in (1, 2):
+            self.assertIsNotNone(github_run.recorded_run(self.pending, key))
+            self.assertEqual(github_run.read_record(self.pending)["tries"], expected)
+
+    def test_a_record_is_used_at_most_max_collect_tries_times_and_then_the_tree_is_pushed(self):
+        commit = self.lose_the_connection_for_good()
+        key = github_run.request_key(self.repo, self.head, {**REQUEST})
+        self.gh_state({"view": [{**self.DONE, "headSha": commit}]})
+        used = [github_run.recorded_run(self.pending, key) for _ in range(github_run.MAX_COLLECT_TRIES + 1)]
+        self.assertEqual([run is not None for run in used], [True] * github_run.MAX_COLLECT_TRIES + [False])
+
+    def test_a_record_of_a_run_still_going_is_waited_for(self):
+        commit = self.lose_the_connection_for_good()
+        going = {"status": "in_progress", "conclusion": "", "url": "u", "headSha": commit}
+        self.gh_state({"view": [going, {**self.DONE, "headSha": commit}],
+                       "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        self.assertTrue(self.send(train="t2")["downloaded"])
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit})
+
+    def test_a_record_whose_request_differs_is_ignored_and_the_new_request_is_pushed(self):
+        commit = self.lose_the_connection_for_good()
+        self.gh_state({"list": [[STARTED]], "view": [self.DONE], "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        result = self.send({"classes": ["FooTests", "BarTests"]}, train="t2")
+        self.assertNotEqual(result["commit"], commit)
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": result["commit"]})
+
+    def test_a_record_of_another_tree_is_ignored_and_the_new_tree_is_pushed(self):
+        commit = self.lose_the_connection_for_good()
+        self.head = self.commit("another.txt")
+        self.gh_state({"list": [[STARTED]], "view": [self.DONE], "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        result = self.send(train="t2")
+        self.assertNotEqual(result["commit"], commit)
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": result["commit"]})
+
+    def test_a_record_whose_run_was_cancelled_or_whose_commit_is_not_the_runs_is_ignored(self):
+        commit = self.lose_the_connection_for_good()
+        for view in ({**self.DONE, "conclusion": "cancelled", "headSha": commit},
+                     {**self.DONE, "headSha": "0" * 40}):
+            self.gh_state({"list": [[STARTED]], "view": [view, self.DONE],
+                           "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+            result = self.send(train="t3")
+            self.assertNotEqual(result["commit"], commit, view)
+            # The record now holds the new run; put the old one back for the next round.
+            github_run.write_record(self.pending, {"run_id": 7001, "url": "u", "commit": commit, "tries": 0,
+                                                   **github_run.request_key(self.repo, self.head, {**REQUEST})})
+
+    def test_a_record_that_has_been_used_too_often_or_is_garbage_is_ignored(self):
+        commit = self.lose_the_connection_for_good()
+        record = github_run.read_record(self.pending)
+        github_run.write_record(self.pending, {**record, "tries": github_run.MAX_COLLECT_TRIES})
+        self.gh_state({"list": [[STARTED]], "view": [self.DONE], "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        self.assertNotEqual(self.send(train="t2")["commit"], commit)
+        self.pending.write_text("not json {")
+        self.assertIsNone(github_run.read_record(self.pending))
+        self.gh_state({"list": [[STARTED]], "view": [self.DONE], "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        self.assertTrue(self.send(train="t3")["downloaded"])
+
+    def test_with_the_connection_still_lost_the_record_waits_and_nothing_is_pushed(self):
+        commit = self.lose_the_connection_for_good()
+        self.gh_state({"fail": "view"})
+        with self.assertRaises(github_run.RemoteFailure):
+            self.send(train="t2")
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit})
+        self.assertEqual(github_run.read_record(self.pending)["commit"], commit, "the record is kept for the next train")
+
+    def test_a_run_that_is_gone_is_ignored(self):
+        self.lose_the_connection_for_good()
+        key = github_run.request_key(self.repo, self.head, {**REQUEST})
+
+        def gone(*args):
+            """GitHub's answer for a run that has been deleted; the fake gh's failures word it otherwise."""
+            raise github_run.RemoteFailure("gh run view failed: HTTP 404: Not Found")
+
+        self.patch_github(gh_json=gone)
+        self.assertIsNone(github_run.recorded_run(self.pending, key))
+
+    def test_a_send_without_a_record_file_pushes_as_before(self):
+        self.gh_state({"list": [[STARTED]], "view": [self.DONE], "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        result = github_run.run_remotely(self.repo, self.head, REQUEST, self.folder / "r", "Test build: t",
+                                         progress=lambda text: None)
+        self.assertTrue(result["downloaded"])
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": result["commit"]})
+
+
 class WaitingForAnIdleBranchTests(RemoteTestCase):
     """A push waits while another run is on TestBuild, since a newer push cancels the run before it."""
 
@@ -626,6 +851,13 @@ class RunRemotelyTests(RemoteTestCase):
         self.assertGreaterEqual(self.now, 2 * github_run.IDLE_POLL_SECONDS)
         self.assertEqual(result["minutes"], round(github_run.POLL_SECONDS / 60, 1), "the wait must not be counted")
         self.assertTrue(any("waiting for https://github.example/runs/6001" in m for m in messages))
+
+    def test_the_default_limit_is_read_when_the_run_is_sent_not_when_the_module_is_imported(self):
+        self.patch_github(RUN_LIMIT_MINUTES=5)
+        self.gh_state({"list": [[STARTED]], "view": [{"status": "in_progress", "conclusion": ""}]})
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            self.run_it()
+        self.assertIn("had not ended after 5 minutes", str(caught.exception))
 
     def test_a_run_whose_tests_failed_is_a_result_not_a_remote_failure(self):
         done = {"status": "completed", "conclusion": "failure", "url": "https://github.example/runs/7001"}
