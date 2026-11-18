@@ -16,7 +16,7 @@ under ``UNMAPPED`` so that a report is still made.
 from __future__ import annotations
 
 from fnmatch import fnmatchcase
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Tuple
 
 # The name a report uses for a file no pattern covers.
 UNMAPPED = "unmapped"

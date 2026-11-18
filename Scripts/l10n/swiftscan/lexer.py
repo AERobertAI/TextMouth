@@ -114,51 +114,47 @@ class Lexer:
         end = self.line_starts[line] - 1 if line < len(self.line_starts) else self.n
         return self.s[start:end]
 
+    def _back(self, j: int, chars: str = _WHITESPACE) -> int:
+        """Moves the offset j back over any of the characters, so that the character before
+        the result is the first one that is not among them."""
+        s = self.s
+        while j > 0 and s[j - 1] in chars:
+            j -= 1
+        return j
+
+    def _forward(self, j: int, chars: str = _WHITESPACE) -> int:
+        """Moves the offset j forward over any of the characters, to the first one that is not."""
+        s, n = self.s, self.n
+        while j < n and s[j] in chars:
+            j += 1
+        return j
+
     def _ident_before(self, i: int) -> Optional[str]:
         """The identifier that ends just before offset i, ignoring spaces in between."""
-        s = self.s
-        j = i
-        while j > 0 and s[j - 1] in _WHITESPACE:
-            j -= 1
-        end = j
-        while j > 0 and s[j - 1] in _IDENT_CHARS:
-            j -= 1
-        name = s[j:end]
+        end = self._back(i)
+        name = self.s[self._back(end, _IDENT_CHARS):end]
         return name if name and not name[0].isdigit() else None
 
     def _call_before(self, i: int) -> Tuple[Optional[str], Optional[str]]:
         """The name of the call whose ``(`` is at i and the receiver before its dot, if any."""
         s = self.s
-        j = i
-        while j > 0 and s[j - 1] in _WHITESPACE:
-            j -= 1
+        j = self._back(i)
         if j > 0 and s[j - 1] == ">":
             # A generic argument list, as in Array<String>(: skip back over it.
             k = s.rfind("<", max(0, j - 80), j)
             if k < 0 or "(" in s[k:j] or ")" in s[k:j]:
                 return None, None
-            j = k
-            while j > 0 and s[j - 1] in _WHITESPACE:
-                j -= 1
-        end = j
-        while j > 0 and s[j - 1] in _IDENT_CHARS:
-            j -= 1
-        name = s[j:end]
+            j = self._back(k)
+        start = self._back(j, _IDENT_CHARS)
+        name = s[start:j]
         if not name or name[0].isdigit():
             return None, None
         # The receiver: the identifier before a dot that precedes the name.
-        k = j
-        while k > 0 and s[k - 1] in _WHITESPACE:
-            k -= 1
+        k = self._back(start)
         receiver = None
         if k > 0 and s[k - 1] == ".":
-            k -= 1
-            while k > 0 and s[k - 1] in _WHITESPACE + "?!":
-                k -= 1
-            r_end = k
-            while k > 0 and s[k - 1] in _IDENT_CHARS:
-                k -= 1
-            receiver = self.s[k:r_end] or None
+            r_end = self._back(k - 1, _WHITESPACE + "?!")
+            receiver = s[self._back(r_end, _IDENT_CHARS):r_end] or None
         return name, receiver
 
     def _decl_on_line(self, i: int) -> Optional[str]:
@@ -373,28 +369,19 @@ class Lexer:
     def _whole_argument(self, start: int, end: int) -> bool:
         """Whether the literal is a whole argument: after ``(``, ``[``, ``,``, or a label, and
         before ``,``, ``)``, or ``]``, and so not a piece of a larger expression."""
-        s, n = self.s, self.n
-        j = end
-        while j < n and s[j] in _WHITESPACE:
-            j += 1
-        if j >= n or s[j] not in ",)]":
+        s = self.s
+        after = self._forward(end)
+        if after >= self.n or s[after] not in ",)]":
             return False
-        k = start - 1
-        while k >= 0 and s[k] in _WHITESPACE:
-            k -= 1
-        if k >= 0 and s[k] == ":":
+        before = self._back(start)
+        if before > 0 and s[before - 1] == ":":
             # Skip a label: an identifier and the colon after it.
-            k -= 1
-            while k >= 0 and s[k] in _WHITESPACE:
-                k -= 1
-            ident_end = k
-            while k >= 0 and s[k] in _IDENT_CHARS:
-                k -= 1
-            if k == ident_end:
+            before = self._back(before - 1)
+            label_start = self._back(before, _IDENT_CHARS)
+            if label_start == before:
                 return False
-            while k >= 0 and s[k] in _WHITESPACE:
-                k -= 1
-        return k >= 0 and s[k] in "([,"
+            before = self._back(label_start)
+        return before > 0 and s[before - 1] in "([,"
 
     def _plus_side(self, pos: int, before: bool) -> Optional[str]:
         """What a ``+`` right before (before=True) or after (before=False) the literal joins
@@ -402,25 +389,17 @@ class Lexer:
         operand, and None when there is no plus."""
         s, n = self.s, self.n
         if before:
-            k = pos - 1
-            while k >= 0 and s[k] in _WHITESPACE:
-                k -= 1
-            if k >= 1 and s[k] == "=" and s[k - 1] == "+":
+            b = self._back(pos)  # the character before b is the last one before the literal
+            if b >= 2 and s[b - 1] == "=" and s[b - 2] == "+":
                 return "expr"  # `text += "..."` appends to a variable
-            if k < 0 or s[k] != "+" or (k >= 1 and s[k - 1] == "+"):
+            if b < 1 or s[b - 1] != "+" or (b >= 2 and s[b - 2] == "+"):
                 return None
-            k -= 1
-            while k >= 0 and s[k] in _WHITESPACE:
-                k -= 1
-            return "literal" if k >= 0 and s[k] in '"#' else "expr"
-        j = pos
-        while j < n and s[j] in _WHITESPACE:
-            j += 1
+            b = self._back(b - 1)
+            return "literal" if b > 0 and s[b - 1] in '"#' else "expr"
+        j = self._forward(pos)
         if j >= n or s[j] != "+" or s.startswith(("++", "+="), j):
             return None
-        j += 1
-        while j < n and s[j] in _WHITESPACE:
-            j += 1
+        j = self._forward(j + 1)
         return "literal" if j < n and s[j] in '"#' else "expr"
 
     def _resolve_plus_neighbours(self) -> None:
@@ -454,22 +433,11 @@ class Lexer:
     def _neighbour(self, lit: Literal, by_start: Dict[int, Literal], by_end: Dict[int, Literal],
                    before: bool) -> Optional[Literal]:
         """The literal on the other side of the + next to lit, or None when there is none."""
-        s, n = self.s, self.n
         if before:
-            k = lit.start - 1
-            while k >= 0 and s[k] in _WHITESPACE:
-                k -= 1
-            k -= 1  # step over the plus
-            while k >= 0 and s[k] in _WHITESPACE:
-                k -= 1
-            return by_end.get(k + 1)
-        j = lit.end
-        while j < n and s[j] in _WHITESPACE:
-            j += 1
-        j += 1  # step over the plus
-        while j < n and s[j] in _WHITESPACE:
-            j += 1
-        return by_start.get(j)
+            # Back over the spaces, the plus, and the spaces before it: the neighbour ends there.
+            return by_end.get(self._back(self._back(lit.start) - 1))
+        # Forward over the spaces, the plus, and the spaces after it: the neighbour starts there.
+        return by_start.get(self._forward(self._forward(lit.end) + 1))
 
 
 def dedent_multiline(text: str) -> str:

@@ -27,7 +27,7 @@ REPO = L10N.parent.parent
 if str(L10N) not in sys.path:
     sys.path.insert(0, str(L10N))
 
-from swiftscan import classify, lexer, scanner  # noqa: E402
+from swiftscan import lexer, scanner  # noqa: E402
 from swiftscan.lexer import Literal  # noqa: E402
 
 # The path a snippet is given unless a test names another: a view, so that no Parsers rule
