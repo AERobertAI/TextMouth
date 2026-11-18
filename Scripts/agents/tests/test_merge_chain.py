@@ -55,6 +55,28 @@ if "--json" in sys.argv:
 sys.exit(1 if os.path.exists("ISSUES-FAIL") else 0)
 '''
 
+L10N_SCAN_PATH = "Scripts/l10n/scan.py"
+L10N_BASELINE_PATH = "Scripts/l10n/scan-baseline.json"
+
+# The localization scanner stand-in: records its arguments and whether a merge is in progress; "lint --base"
+# fails when the tree holds a file named L10N-FAILS; "lint --update-baseline" writes the lowered baseline
+# (or fails when the tree holds L10N-UPDATE-FAILS).
+L10N_SCAN = '''import os, sys
+with open(os.environ["L10N_RECORD"], "a") as record:
+    record.write(" ".join(sys.argv[1:]) + " merge_head=" + str(os.path.exists(".git/MERGE_HEAD")) + "\\n")
+if "--update-baseline" in sys.argv:
+    if os.path.exists("L10N-UPDATE-FAILS"):
+        sys.exit(2)
+    with open("Scripts/l10n/scan-baseline.json", "w") as baseline:
+        baseline.write("lowered\\n")
+    sys.exit(0)
+print("l10n lint: stand-in")
+sys.exit(1 if os.path.exists("L10N-FAILS") else 0)
+'''
+
+# The real scanner in this checkout, which the end-to-end tests copy into the throwaway repository.
+L10N_FOLDER = Path(__file__).resolve().parents[3] / "Scripts/l10n"
+
 # The real issue tracker in this checkout, and the doc-library modules its store reads markers with.
 ISSUE_SKILL = Path(__file__).resolve().parents[3] / ".claude/skills/issue-library"
 DOCMODEL_FILES = ("docmodel.py", "output.py", "sentences.py")
@@ -82,6 +104,7 @@ class MergeChainCase(unittest.TestCase):
         self.suite_record = self.folder / "suite.txt"
         self.lint_record = self.folder / "lint.txt"
         self.issues_record = self.folder / "issues.txt"
+        self.l10n_record = self.folder / "l10n.txt"
         # An xcodegen that does nothing, found before any real one.
         bin_folder = self.folder / "bin"
         bin_folder.mkdir()
@@ -94,6 +117,7 @@ class MergeChainCase(unittest.TestCase):
             "GIT_COMMITTER_NAME": "chain test", "GIT_COMMITTER_EMAIL": "chain-test@example.invalid",
             "MERGE_LOG_DIR": str(self.logs), "SUITE_RECORD": str(self.suite_record),
             "LINT_RECORD": str(self.lint_record), "ISSUES_RECORD": str(self.issues_record),
+            "L10N_RECORD": str(self.l10n_record),
             # The real lint, run in the throwaway repository, must leave no __pycache__ there.
             "PYTHONDONTWRITEBYTECODE": "1",
         })
@@ -169,6 +193,10 @@ class MergeChainCase(unittest.TestCase):
         """The lines the issuelib stand-in recorded."""
         return self.issues_record.read_text().splitlines() if self.issues_record.exists() else []
 
+    def l10n_calls(self):
+        """The lines the scanner stand-in recorded."""
+        return self.l10n_record.read_text().splitlines() if self.l10n_record.exists() else []
+
     def suite_runs(self):
         """How many times the build wrapper stand-in ran."""
         return len(self.suite_record.read_text().splitlines()) if self.suite_record.exists() else 0
@@ -224,6 +252,119 @@ class IssueCheckTests(MergeChainCase):
         self.assertEqual(status, 0, out)
         self.assertEqual(self.issue_checks(), [])
         self.assertIn("ISSUES_CHECK_SKIPPED", self.log_text("code"))
+
+
+class L10nLintTests(MergeChainCase):
+    """The localization lint: run on the uncommitted merge, then the baseline is lowered into the same merge."""
+
+    def make_repo_with_the_scanner(self):
+        """main with the scanner stand-in and a baseline."""
+        self.make_repo(files={L10N_SCAN_PATH: L10N_SCAN, L10N_BASELINE_PATH: "start\n"})
+
+    def test_the_lint_runs_on_the_uncommitted_merge_then_the_lowered_baseline_joins_the_merge_commit(self):
+        self.make_repo_with_the_scanner()
+        self.make_branch("code", {"App.swift": "let a = 2\n"})
+        status, out = self.run_chain("code")
+        self.assertEqual(status, 0, out)
+        # The lint saw the merge in progress, then the baseline was lowered, both before the commit.
+        self.assertEqual(self.l10n_calls(), ["lint --base HEAD merge_head=True", "lint --update-baseline merge_head=True"])
+        self.assertIn("L10N_LINT_OK", self.log_text("code"))
+        self.assertIn("L10N_LINT_OK", out, "the summary should show the lint line")
+        # The lowered baseline is in the merge commit itself: no extra commit, and the tree is clean.
+        self.assertEqual((self.repo / L10N_BASELINE_PATH).read_text(), "lowered\n")
+        self.assertEqual(self.git("log", "-1", "--format=%s", "main").strip(), "Merge code")
+        self.assertIn(L10N_BASELINE_PATH, self.git("diff", "--name-only", "main~1", "main"))
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertEqual(self.suite_runs(), 1)
+
+    def test_a_failing_lint_aborts_the_merge_and_stops_the_chain(self):
+        self.make_repo_with_the_scanner()
+        self.make_branch("bad", {"L10N-FAILS": "", "App.swift": "let a = 3\n"})
+        before = self.tip()
+        status, out = self.run_chain("bad")
+        self.assertEqual(status, 1, out)
+        self.assertIn("CHAIN_STOPPED after bad", out)
+        self.assertEqual(self.tip(), before)
+        self.assertFalse((self.repo / ".git/MERGE_HEAD").exists(), "the merge was left in progress")
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertIn("L10N_LINT_FAILED", self.log_text("bad"))
+        self.assertIn("L10N_LINT_FAILED", out)
+        self.assertIn("l10n lint: stand-in", out, "the lint's first lines should be shown")
+        # The baseline was not lowered, and the suite did not run.
+        self.assertEqual(self.l10n_calls(), ["lint --base HEAD merge_head=True"])
+        self.assertEqual((self.repo / L10N_BASELINE_PATH).read_text(), "start\n")
+        self.assertEqual(self.suite_runs(), 0)
+
+    def test_a_baseline_that_cannot_be_lowered_also_stops_the_chain(self):
+        self.make_repo_with_the_scanner()
+        self.make_branch("bad", {"L10N-UPDATE-FAILS": "", "App.swift": "let a = 3\n"})
+        before = self.tip()
+        status, out = self.run_chain("bad")
+        self.assertEqual(status, 1, out)
+        self.assertEqual(self.tip(), before)
+        self.assertFalse((self.repo / ".git/MERGE_HEAD").exists())
+        self.assertIn("L10N_LINT_FAILED", self.log_text("bad"))
+
+    def test_a_tree_without_the_scanner_skips_the_lint(self):
+        self.make_repo()
+        self.make_branch("code", {"App.swift": "let a = 2\n"})
+        status, out = self.run_chain("code")
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.l10n_calls(), [])
+        self.assertIn("L10N_LINT_SKIPPED", self.log_text("code"))
+        self.assertEqual(self.suite_runs(), 1)
+
+    def test_a_markdown_only_merge_runs_the_lint_and_still_skips_the_suite(self):
+        self.make_repo_with_the_scanner()
+        self.make_branch("docs", {"docs/page.md": "# Page\n\nNew text.\n"})
+        status, out = self.run_chain("docs")
+        self.assertEqual(status, 0, out)
+        self.assertIn("L10N_LINT_OK", self.log_text("docs"))
+        self.assertIn("MARKDOWN_ONLY_NO_SUITE", self.log_text("docs"))
+        self.assertEqual(self.suite_runs(), 0)
+
+
+class RealL10nLintTests(MergeChainCase):
+    """The chain with the real scanner: a branch that adds unlocalized text fails, and a merge lowers the baseline."""
+
+    PAUSE = ('enum PauseWording {\n    static var one: String { "First sentence of text" }\n'
+             '    static var two: String { "Second sentence of text" }\n}\n')
+    ONE_LOCALIZED = ('enum PauseWording {\n    static var one: String { "First sentence of text" }\n'
+                     '    static var two: String { String(localized: "Second sentence of text", comment: "A title") }\n}\n')
+
+    def make_repo_with_the_real_scanner(self):
+        """main with the scanner's package, a wording file with two unlocalized literals, and its baseline."""
+        self.make_repo(files={"TextMouth/Models/PauseWording.swift": self.PAUSE})
+        shutil.copytree(L10N_FOLDER, self.repo / "Scripts/l10n", ignore=shutil.ignore_patterns("tests", "__pycache__"))
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "the scanner")
+        subprocess.run(["python3", "-I", "-B", L10N_SCAN_PATH, "lint", "--rebuild-baseline"],
+                       cwd=self.repo, env=self.env, check=True, capture_output=True)
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "its baseline")
+
+    def test_a_branch_that_localizes_text_lowers_the_baseline_in_its_merge(self):
+        self.make_repo_with_the_real_scanner()
+        self.make_branch("localize", {"TextMouth/Models/PauseWording.swift": self.ONE_LOCALIZED})
+        status, out = self.run_chain("localize")
+        self.assertEqual(status, 0, out)
+        self.assertIn("L10N_LINT_OK", self.log_text("localize"))
+        self.assertIn('"TextMouth/Models/PauseWording.swift": 1', (self.repo / L10N_BASELINE_PATH).read_text())
+        self.assertIn(L10N_BASELINE_PATH, self.git("diff", "--name-only", "main~1", "main"))
+        self.assertEqual(self.git("status", "--porcelain"), "")
+
+    def test_a_branch_that_adds_unlocalized_text_is_refused(self):
+        self.make_repo_with_the_real_scanner()
+        self.make_branch("more", {"TextMouth/Models/ResumeWording.swift":
+                                  'enum ResumeWording {\n    static var one: String { "A new sentence of text" }\n}\n'})
+        before = self.tip()
+        status, out = self.run_chain("more")
+        self.assertEqual(status, 1, out)
+        self.assertEqual(self.tip(), before)
+        self.assertIn("L10N_LINT_FAILED", self.log_text("more"))
+        self.assertIn("ResumeWording.swift: 1 unlocalized literals, baseline 0 (+1)", out)
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertEqual(self.suite_runs(), 0)
 
 
 class RealIssueCheckTests(MergeChainCase):

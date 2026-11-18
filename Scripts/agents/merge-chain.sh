@@ -37,6 +37,26 @@
 # The log gets ISSUES_CHECK_OK, or ISSUES_CHECK_SKIPPED when the merged tree has
 # no skill; on ISSUES_CHECK_FAILED the merge is aborted and the chain stops.
 #
+# Then, when the merged tree has the localization scanner (Scripts/l10n/scan.py),
+# its lint runs on the merged tree (scan.py lint --base HEAD), since a branch
+# that adds interface text that is not localized must not reach main. On
+# success the baseline is lowered to match the merged code (scan.py lint
+# --update-baseline) and Scripts/l10n/scan-baseline.json is staged into the
+# merge itself, so main's baseline falls with every merge and no extra commit is
+# made; branches never edit it. The log gets L10N_LINT_OK, or L10N_LINT_SKIPPED
+# when the merged tree has no scanner; on L10N_LINT_FAILED the merge is aborted
+# and the chain stops.
+#
+# Then, when the merged tree has the localization scanner (Scripts/l10n/scan.py),
+# its lint runs on the merged tree (scan.py lint --base HEAD), since a branch
+# that adds interface text that is not localized must not reach main. On
+# success the baseline is lowered to the merged code (scan.py lint
+# --update-baseline) and Scripts/l10n/scan-baseline.json is staged into the
+# merge itself, so main's baseline falls with every merge and no extra commit is
+# made; branches never edit it. The log gets L10N_LINT_OK, or L10N_LINT_SKIPPED
+# when the merged tree has no scanner; on L10N_LINT_FAILED the merge is aborted
+# and the chain stops.
+#
 # A merge whose changed files all end in .md gets MARKDOWN_ONLY_NO_SUITE: it is
 # committed and the chain goes on to the next branch with no project check and
 # no suite, since the docs lint is the check on documentation.
@@ -50,6 +70,8 @@ CO_AUTHOR=${MERGE_CO_AUTHOR:-"Claude Opus 5.5 <noreply@anthropic.com>"}
 WRAPPER=.claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh
 DOCLIB=.claude/skills/doc-library/scripts/doclib.py
 ISSUELIB=.claude/skills/issue-library/scripts/issuelib.py
+L10N_SCAN=Scripts/l10n/scan.py
+L10N_BASELINE=Scripts/l10n/scan-baseline.json
 mkdir -p "$LOG_DIR"
 
 # summarize: print the lines of a merge's log that say how it went. The docs
@@ -58,7 +80,7 @@ mkdir -p "$LOG_DIR"
 summarize() {
   local slug="$1" log="$2"
   echo "--- $slug ---"
-  grep -E "^(DOCS_LINT_|ISSUES_CHECK_|MARKDOWN_ONLY_)" "$log"
+  grep -E "^(DOCS_LINT_|ISSUES_CHECK_|L10N_LINT_|MARKDOWN_ONLY_)" "$log"
   grep -E "UNMERGED|ABORTING|RESOLVED|^[0-9a-f]{7,} |PBXPROJ_|Executed [0-9]+ tests, with|TEST (SUCCEEDED|FAILED)|EXIT=|^Test Case '.*' failed" "$log" | tail -8
 }
 
@@ -157,6 +179,38 @@ check_issues() {
   return 1
 }
 
+# lint_l10n: run the unlocalized-text lint on the merged, uncommitted tree, then
+# lower the baseline to the merged code and stage it into the merge. The lint
+# compares each file's count with the baseline and names the literals on the
+# lines the merge adds (--base HEAD). Logs L10N_LINT_OK, L10N_LINT_SKIPPED (no
+# scanner in the merged tree), or L10N_LINT_FAILED, which aborts the merge and
+# returns 1; a baseline that cannot be lowered or staged fails the same way.
+lint_l10n() {
+  local log="$1" lint_output status
+  if [ ! -f "$L10N_SCAN" ]; then
+    echo L10N_LINT_SKIPPED >> "$log"
+    return 0
+  fi
+  # -B: no bytecode next to the scanner, where a forced git add would pick it up.
+  lint_output=$(python3 -I -B "$L10N_SCAN" lint --base HEAD 2>&1)
+  status=$?
+  if [ "$status" = 0 ]; then
+    lint_output="$lint_output
+$(python3 -I -B "$L10N_SCAN" lint --update-baseline 2>&1)"
+    status=$?
+  fi
+  echo "$lint_output" >> "$log"
+  if [ "$status" = 0 ] && git add "$L10N_BASELINE" >> "$log" 2>&1; then
+    echo L10N_LINT_OK >> "$log"
+    return 0
+  fi
+  echo L10N_LINT_FAILED >> "$log"
+  # Say what is wrong; the whole output is in the log.
+  echo "$lint_output" | head -20
+  git merge --abort
+  return 1
+}
+
 # merge_and_test: merge one branch with its message file, check the docs lint
 # on the merged tree, commit, then (unless only Markdown changed) regenerate
 # the project if it drifted and run the suite.
@@ -184,9 +238,14 @@ merge_and_test() {
     return 1
   fi
   # The files this merge changes, one to a line: Markdown-only when there are some and all end in .md.
+  # Taken before the baseline is lowered, so a lowered baseline alone does not make a suite run.
   local changed other
   changed=$(git diff --cached --name-only -z HEAD | tr '\0' '\n')
   other=$(echo "$changed" | grep -v '\.md$')
+  if ! lint_l10n "$log"; then
+    summarize "$slug" "$log"
+    return 1
+  fi
   git commit -q -F "$message" >> "$log" 2>&1 || { echo "ABORTING: the commit failed" >> "$log"; return 1; }
   if [ -n "$changed" ] && [ -z "$other" ]; then
     echo MARKDOWN_ONLY_NO_SUITE >> "$log"
