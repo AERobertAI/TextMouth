@@ -66,6 +66,15 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(glossary_.unused_terms("Index", "indice general", "es"), [])
         self.assertEqual(glossary_.unused_terms("Bookmark and Index", "Favorito e Índice", "es"), ["Marcador"])
 
+    def test_a_match_list_and_slash_alternatives_say_what_counts_as_using_a_term(self):
+        glossary_ = glossary.Glossary([], [
+            {"term": "Play", "translations": {"es": {"text": "Reproducir", "match": ["reproduc"]}}},
+            {"term": "Export", "translations": {"es": {"text": "Exportar / exportación"}}}])
+        self.assertEqual(glossary_.unused_terms("Plays the book", "Reproduce el libro", "es"), [])
+        self.assertEqual(glossary_.unused_terms("Plays the book", "Lee el libro", "es"), ["Reproducir"])
+        self.assertEqual(glossary_.unused_terms("Export", "La exportación", "es"), [])
+        self.assertEqual(glossary_.unused_terms("Export", "Sacar", "es"), ["Exportar / exportación"])
+
 
 class LoadingTests(shared.CatalogCase):
     """Reading the glossary file."""
@@ -96,6 +105,7 @@ class LoadingTests(shared.CatalogCase):
             "a term listed twice": {"terms": [{"term": "A"}, {"term": "A"}]},
             "a translation without its text": {"terms": [{"term": "A", "translations": {"es": {"check": True}}}]},
             "a check that is not true or false": {"terms": [{"term": "A", "translations": {"es": {"text": "B", "check": "yes"}}}]},
+            "a match that is not a list of text": {"terms": [{"term": "A", "translations": {"es": {"text": "B", "match": "b"}}}]},
             "translations that are not an object": {"terms": [{"term": "A", "translations": ["es"]}]},
         }
         for label, data in cases.items():

@@ -7,8 +7,9 @@ The file holds two things:
   English text that has one of them must have it too (`Glossary.missing_names`), and a text with nothing but such
   names, placeholders, numbers, and punctuation may be left as the English (`Glossary.nothing_to_translate`).
 - `terms`: the interface's own words with their translation per language, each `{"term": "Library", "note": "...",
-  "translations": {"es": {"text": "Biblioteca", "check": true, "note": "..."}}}`. `check` marks a translation a native
-  speaker should look at first. `todo` hands the terms found in a string's English to the translator
+  "translations": {"es": {"text": "Biblioteca", "check": true, "note": "...", "match": ["bibliotec"]}}}`. `check` marks a
+  translation a native speaker should look at first; `match` (optional) lists the stems that show a translation used
+  the term, for a word that inflects (without it, the `text` and its slash-separated alternatives are looked for). `todo` hands the terms found in a string's English to the translator
   (`Glossary.terms_in`), and `check` warns when a translation does not use a term's translation
   (`Glossary.unused_terms`): a warning only, since a language inflects (Spanish "marcador", "marcadores").
 
@@ -94,6 +95,9 @@ class Glossary:
                     problems.append(f"the term {label!r} in {language}: needs a `text`")
                 elif not isinstance(entry.get("check", False), bool):
                     problems.append(f"the term {label!r} in {language}: `check` must be true or false")
+                elif not (isinstance(entry.get("match", []), list)
+                          and all(isinstance(piece, str) and piece.strip() for piece in entry.get("match", []))):
+                    problems.append(f"the term {label!r} in {language}: `match` must be a list of text")
         return problems
 
     # ---- what a text holds ----
@@ -128,26 +132,41 @@ class Glossary:
             code = code.rsplit("-", 1)[0]
         return None
 
-    def terms_in(self, english, language):
-        """The terms found in `english` that have a translation in `language`, as dicts for a batch: the term, its
-        translation, the note (the term's, then the translation's), and `check` when a native speaker should look first.
-        A term is found as a word of its own, in any case, with an optional plural `s`."""
+    def found_in(self, english, language):
+        """The (term, entry) pairs for the terms found in `english` that have a translation in `language`: a term is found
+        as a word of its own, in any case, with an optional plural `s`."""
         found = []
         for term in self.terms:
             entry = self.translation_of(term, language)
             if entry and _word_pattern(term["term"], re.IGNORECASE).search(english):
-                item = {"term": term["term"], "translation": entry["text"]}
-                note = " ".join(part for part in (term.get("note"), entry.get("note")) if part)
-                if note:
-                    item["note"] = note
-                if entry.get("check"):
-                    item["check"] = True
-                found.append(item)
+                found.append((term, entry))
         return found
+
+    def terms_in(self, english, language):
+        """The terms found in `english` that have a translation in `language`, as dicts for a batch: the term, its
+        translation, the note (the term's, then the translation's), and `check` when a native speaker should look first."""
+        found = []
+        for term, entry in self.found_in(english, language):
+            item = {"term": term["term"], "translation": entry["text"]}
+            note = " ".join(part for part in (term.get("note"), entry.get("note")) if part)
+            if note:
+                item["note"] = note
+            if entry.get("check"):
+                item["check"] = True
+            found.append(item)
+        return found
+
+    @staticmethod
+    def fragments(entry):
+        """The pieces of text any one of which shows a translation used the term: the entry's `match` list when it has one
+        (stems, for a verb that inflects: "reproduc" for Reproducir), else its `text` and each alternative of it that is
+        separated by a slash."""
+        return entry.get("match") or [part.strip() for part in entry["text"].split("/")]
 
     def unused_terms(self, english, translation, language):
         """The terms of `english` whose translation `translation` does not use, as the translated text of each: a
-        translation uses a term when it holds the term's text, ignoring case and accents, and as a part of a word too
-        (Spanish "marcadores" holds "marcador"). Those are only a warning."""
+        translation uses a term when it holds one of the entry's fragments (see `fragments`), ignoring case and accents,
+        and as a part of a word too (Spanish "marcadores" holds "marcador"). Those are only a warning."""
         folded = _fold(translation)
-        return [item["translation"] for item in self.terms_in(english, language) if _fold(item["translation"]) not in folded]
+        return [entry["text"] for _, entry in self.found_in(english, language)
+                if not any(_fold(fragment) in folded for fragment in self.fragments(entry))]
