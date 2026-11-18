@@ -18,9 +18,11 @@
  *
  * It stops when it is told to (must_stop): by tmff_session_stop from any thread, or by the check
  * it was given (tmff_session_set_stop_check), which the iPhone's engine turns to stop once a
- * call's time is spent or its import is cancelled (FMT54). FFmpeg's interrupt callback asks the
- * same question during its reads, and the session asks it once the open has found the streams
- * (FFmpeg can finish a step it was told to stop), before each packet, and before each record.
+ * call's time is spent or its import is cancelled (FMT54). The session asks it before every read
+ * and seek of the file, through its own I/O callbacks, since FFmpeg asks its interrupt callback
+ * only at checkpoints of its own and never on a read through custom I/O; once the open has found
+ * the streams (FFmpeg can finish a step it was told to stop); before each packet; and before each
+ * record. FFmpeg's interrupt callback asks it too, at those checkpoints.
  *
  * It uses only FFmpeg's documented public API (the headers' documentation, published at
  * https://ffmpeg.org/doxygen/); nothing of FFmpeg's own code is copied here. It grew from the
@@ -181,10 +183,18 @@ struct tmff_session {
  * The file, through FFmpeg's I/O callbacks
  * ------------------------------------------------------------------------------------------- */
 
+static int must_stop(tmff_session *session);
+
 /* FFmpeg's read callback: up to `capacity` bytes of the file; the bytes read, AVERROR_EOF at
-   its end, or AVERROR(EIO). */
+   its end, AVERROR(EIO), or AVERROR_EXIT once the session must stop, asked before every read:
+   FFmpeg's interrupt callback is never asked on a read through custom I/O (review finding 2), so
+   without this a header read for long, or one packet read across a stream it discards, could be
+   ended only by abandoning its call. open_failure and next_frame answer AVERROR_EXIT as a stop. */
 static int read_file(void *opaque, uint8_t *buffer, int capacity) {
     tmff_session *session = opaque;
+    if (must_stop(session)) {
+        return AVERROR_EXIT;
+    }
     if (capacity <= 0) {
         return AVERROR(EINVAL);
     }
@@ -204,9 +214,13 @@ static int read_file(void *opaque, uint8_t *buffer, int capacity) {
 
 /* FFmpeg's seek callback: moves to `offset` as `whence` says (SEEK_SET, SEEK_CUR, or SEEK_END,
    maybe with AVSEEK_FORCE), or answers the size for AVSEEK_SIZE; the new position, or a negative
-   AVERROR. */
+   AVERROR: AVERROR_EXIT once the session must stop, asked before every seek, as before every
+   read. */
 static int64_t seek_file(void *opaque, int64_t offset, int whence) {
     tmff_session *session = opaque;
+    if (must_stop(session)) {
+        return AVERROR_EXIT;
+    }
     if (whence & AVSEEK_SIZE) {
         return session->size >= 0 ? session->size : AVERROR(ENOSYS);
     }
@@ -220,7 +234,7 @@ static int64_t seek_file(void *opaque, int64_t offset, int whence) {
 
 /* Whether the session must stop now: tmff_session_stop has been called, or the check it was given
    says so, which stops it for good (the flag is set), so that every later look agrees. The one
-   question FFmpeg's interrupt callback and every step of the session ask. */
+   question the I/O callbacks, FFmpeg's interrupt callback, and every step of the session ask. */
 static int must_stop(tmff_session *session) {
     if (atomic_load(&session->stopped)) {
         return 1;
@@ -232,7 +246,8 @@ static int must_stop(tmff_session *session) {
     return 0;
 }
 
-/* FFmpeg's interrupt callback, asked during long reads: nonzero once the session must stop. */
+/* FFmpeg's interrupt callback, asked at FFmpeg's own checkpoints (finding a file's streams,
+   among others), never on a read through custom I/O: nonzero once the session must stop. */
 static int interrupted(void *opaque) {
     return must_stop(opaque);
 }

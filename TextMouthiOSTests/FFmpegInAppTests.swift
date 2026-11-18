@@ -59,45 +59,79 @@ final class FFmpegInAppTests: XCTestCase {
         }
     }
 
-    /// What opening `sample` with `demuxer` in a probe gave, on the test's
-    /// engine, with a check that says stop at once when `stopping`, and never
-    /// otherwise: the session's status and how often the check was asked
-    /// while the file opened; the session, opened or not, is closed.
-    private func open(_ sample: String, demuxer: String, stopping: Bool) throws -> (status: Int32, asks: Int32) {
-        let path = try formatSampleURL(sample).path
-        return try engine.run(limit: 30) { _ in
-            let asks = UnsafeMutablePointer<Int32>.allocate(capacity: 1)
-            asks.initialize(to: 0)
-            defer { asks.deallocate() }
-            let descriptor = tmff_open_regular_file(path)
-            guard descriptor >= 0 else { return (TMFF_EXIT_UNREADABLE, 0) }
-            defer { close(descriptor) }
-            var status = TMFF_EXIT_DONE
-            let check = stopping ? Self.stopAtOnce : Self.neverStop
-            let session = tmff_session_open_checked(descriptor, demuxer, TMFF_SESSION_PROBE, check, asks, &status)
-            tmff_session_close(session)
-            return (status, asks.pointee)
+    /// A stop check that counts its asks in the first of the two `Int32`s its
+    /// context points at, and says stop from the ask the second one names
+    /// (0: never).
+    private static var stopAtAsk: tmff_stop_check {
+        { context in
+            guard let counts = context?.assumingMemoryBound(to: Int32.self) else { return 0 }
+            counts[0] += 1
+            return counts[1] > 0 && counts[0] >= counts[1] ? 1 : 0
         }
     }
 
-    /// FFmpeg asks the session's stop check while it reads a file's header and
-    /// finds its streams, through the session's interrupt callback, and the
-    /// session asks it once more itself when FFmpeg is done, since FFmpeg can
-    /// finish a step it was told to stop (train 1117-1406: this file opened
-    /// whole after its check had said stop). So a check that says stop from
-    /// its first ask ends the open itself with the session's stop (11), before
-    /// any record; one that never says stop is asked by FFmpeg as well as by
-    /// the session, more than once, and the file opens. A call's time limit
-    /// reaches FFmpeg's own reading, as the engine's `Call.stopCheck` does in
-    /// the app.
-    func testFFmpegsInterruptCallbackAsksTheStopCheckWhileTheFileOpens() throws {
-        let stopped = try open("wma/tones-wma1.wma", demuxer: "asf", stopping: true)
+    /// What opening the file at `file` with `demuxer` in a probe gave, on the
+    /// test's engine, with a check that says stop from its `stopAt`th ask (0:
+    /// never): the session's status, how often the check was asked, and how
+    /// far into the file the session had read, the descriptor's offset; the
+    /// session, opened or not, is closed.
+    private func open(_ file: URL, demuxer: String, stopAt: Int32) throws -> (status: Int32, asks: Int32, offset: off_t) {
+        let path = file.path
+        return try engine.run(limit: 30) { _ in
+            let counts = UnsafeMutablePointer<Int32>.allocate(capacity: 2)
+            counts.initialize(repeating: 0, count: 2)
+            counts[1] = stopAt
+            defer { counts.deallocate() }
+            let descriptor = tmff_open_regular_file(path)
+            guard descriptor >= 0 else { return (TMFF_EXIT_UNREADABLE, 0, -1) }
+            defer { close(descriptor) }
+            var status = TMFF_EXIT_DONE
+            let session = tmff_session_open_checked(descriptor, demuxer, TMFF_SESSION_PROBE, Self.stopAtAsk, counts, &status)
+            let offset = lseek(descriptor, 0, SEEK_CUR)
+            tmff_session_close(session)
+            return (status, counts[0], offset)
+        }
+    }
+
+    /// The session's check is asked as a file opens, and its answer ends the
+    /// open: one that says stop from its first ask ends it with the session's
+    /// stop (11), before any record, and one that never says stop is asked
+    /// more than once, and the file opens. Besides the session's own asks,
+    /// FFmpeg asks it through the interrupt callback at its own checkpoints,
+    /// and the session asks once more once FFmpeg has found the streams, since
+    /// FFmpeg can finish a step it was told to stop (train 1117-1406). A
+    /// call's time limit reaches FFmpeg's own reading, as the engine's
+    /// `Call.stopCheck` does in the app.
+    func testTheStopCheckIsAskedAsTheFileOpens() throws {
+        let file = try formatSampleURL("wma/tones-wma1.wma")
+        let stopped = try open(file, demuxer: "asf", stopAt: 1)
         XCTAssertEqual(stopped.status, TMFF_EXIT_STOPPED, "a check that says stop did not stop the open")
         XCTAssertGreaterThan(stopped.asks, 0)
-        let opened = try open("wma/tones-wma1.wma", demuxer: "asf", stopping: false)
+        let opened = try open(file, demuxer: "asf", stopAt: 0)
         XCTAssertEqual(opened.status, TMFF_EXIT_DONE)
-        // The session's own ask is one: any more were FFmpeg's.
-        XCTAssertGreaterThan(opened.asks, 1, "FFmpeg never asked the check while the file opened")
+        XCTAssertGreaterThan(opened.asks, 1)
+    }
+
+    /// The session asks its check before every read of the file (review
+    /// finding 2): FFmpeg never asks its interrupt callback on a read through
+    /// the session's own I/O, so without the session's own ask a header read
+    /// for long, or a packet read across a stream it discards, could be ended
+    /// only by abandoning its call. In a file of one 1 MB packet (an FLV of
+    /// one PCM tag), a check that says stop from its first ask leaves the
+    /// file unread, and one that says stop from its second leaves it read
+    /// once at most, a 64 KB buffer, where a check left to say go lets the
+    /// open read the whole packet.
+    func testTheSessionAsksItsCheckBeforeEachReadOfTheFile() throws {
+        let file = try flvOfOnePCMTag(samples: 1_000_000, named: "one-packet.flv")
+        let unread = try open(file, demuxer: "flv", stopAt: 1)
+        XCTAssertEqual(unread.status, TMFF_EXIT_STOPPED)
+        XCTAssertEqual(unread.offset, 0, "the session read the file before asking its check")
+        let readOnce = try open(file, demuxer: "flv", stopAt: 2)
+        XCTAssertEqual(readOnce.status, TMFF_EXIT_STOPPED)
+        XCTAssertLessThanOrEqual(readOnce.offset, 65_536, "the session read on after its check said stop")
+        let whole = try open(file, demuxer: "flv", stopAt: 0)
+        XCTAssertEqual(whole.status, TMFF_EXIT_DONE)
+        XCTAssertGreaterThan(whole.offset, 1_000_000, "the open did not read the packet: the file is too short to show the asks")
     }
 
     /// The session asks its check before each record of a decode, and a check

@@ -51,8 +51,9 @@ int tmff_session_cpu_features(void);
    (FMT54). */
 int tmff_open_regular_file(const char *path);
 
-/* A check a session asks between its steps, and FFmpeg's reading asks through the session's
-   interrupt callback: nonzero to stop, 0 to go on. `context` is what the check was set with.
+/* A check a session asks before every read and seek of its file, before each of its steps, and
+   at FFmpeg's own checkpoints through the session's interrupt callback: nonzero to stop, 0 to go
+   on. `context` is what the check was set with.
    The iPhone's engine gives each call one (InProcessEngine.Call.stopCheck, with the call's
    context), which turns to stop once the call's time is spent or its import is cancelled. */
 typedef int (*tmff_stop_check)(void *context);
@@ -69,8 +70,9 @@ tmff_session *tmff_session_open_checked(int descriptor, const char *demuxer, tmf
                                         tmff_stop_check check, void *context, int *status);
 
 /* Sets the check the session asks from now on, with `context` (NULL: none, as after
-   tmff_session_open): FFmpeg's interrupt callback asks it during the reads, and the session
-   before each step, besides tmff_session_stop's flag. Once it has said stop, the session stays
+   tmff_session_open): the session asks it before every read and seek of the file and before each
+   step, and FFmpeg's interrupt callback at FFmpeg's own checkpoints, besides tmff_session_stop's
+   flag. Once it has said stop, the session stays
    stopped, as after tmff_session_stop. Set it on the thread that calls tmff_session_next, between
    two calls, never during one. NULL is allowed for `session`, and does nothing. */
 void tmff_session_set_stop_check(tmff_session *session, tmff_stop_check check, void *context);
@@ -80,7 +82,7 @@ void tmff_session_set_stop_check(tmff_session *session, tmff_stop_check check, v
    another TMFF_EXIT_ number, after which the stream is over. */
 int tmff_session_next(tmff_session *session, const unsigned char **bytes, size_t *length);
 
-/* Asks a session to stop, from any thread: FFmpeg's reading ends at its next look, and the
+/* Asks a session to stop, from any thread: FFmpeg's reading ends at its next read, and the
    next call of tmff_session_next returns TMFF_EXIT_STOPPED. */
 void tmff_session_stop(tmff_session *session);
 
