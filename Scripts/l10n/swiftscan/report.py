@@ -12,13 +12,13 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from . import areas
-from .classify import CERTAIN, COUNTED, PROBABLE
+from .classify import CERTAIN, COUNTED, FINDING_HELP, PROBABLE, RAW
 from .lexer import Literal
 
 # The findings, in the order a report lists them.
-FINDING_KINDS = ("glued", "plural", "static-let")
+FINDING_KINDS = ("glued", "plural", "static-let", "raw-title")
 # Each finding's name as a column heading in the text report.
-FINDING_HEADINGS = {"glued": "glued", "plural": "plural", "static-let": "static"}
+FINDING_HEADINGS = {"glued": "glued", "plural": "plural", "static-let": "static", "raw-title": "raw"}
 STATUSES = ("unlocalized", "localized", "marked")
 
 
@@ -102,7 +102,7 @@ def certain_probable(literals: Iterable[Literal]) -> Dict[str, Tuple[int, int]]:
     """The unique texts and their bytes of the certain buckets, then of the probable ones."""
     items = list(literals)
     out = {}
-    for name, buckets in (("certain", CERTAIN), ("probable", PROBABLE)):
+    for name, buckets in (("certain", CERTAIN), ("probable", PROBABLE), ("raw", RAW)):
         unique = {lit.text for lit in items if lit.bucket in buckets}
         out[name] = (len(unique), sum(len(t.encode("utf-8")) for t in unique))
     return out
@@ -163,6 +163,7 @@ def text_report(literals: List[Literal], files: List[str], seconds: float, by: s
         f"Interface text of {_num(len(files))} Swift files: {_num(len(literals))} string literals, scanned in {seconds:.1f} s.",
         f"  certain (ui, wording, error): {_num(cp['certain'][0])} unique texts, {_num(cp['certain'][1])} bytes.",
         f"  probable (prose, word): {_num(cp['probable'][0])} unique texts, {_num(cp['probable'][1])} bytes.",
+        f"  raw values shown as titles (rawtitle): {_num(cp['raw'][0])} unique texts, {_num(cp['raw'][1])} bytes.",
         f"  unlocalized: {_num(len(unloc))} literals, {_num(size(unloc))} bytes.",
         f"  localized: {_num(len(loc))} literals, {_num(size(loc))} bytes.",
         f"  marked `// l10n: no`: {_num(len(marked))} literals.",
@@ -174,7 +175,8 @@ def text_report(literals: List[Literal], files: List[str], seconds: float, by: s
         lines.append(f"   {mark}{bucket:<8} {_num(count):>7} {_num(nbytes):>9}   unique {_num(ucount):>6} {_num(ubytes):>9}")
     findings = total_findings(literals)
     lines.append(f"  findings: {findings['glued']} glued sentences, {findings['plural']} hand-built plurals,")
-    lines.append(f"    {findings['static-let']} static lets holding text ({findings['static-let-in-wording']} in wording types).")
+    lines.append(f"    {findings['static-let']} static lets holding text ({findings['static-let-in-wording']} in wording types),")
+    lines.append(f"    {findings['raw-title']} raw values shown as titles ({FINDING_HELP['raw-title']}).")
     lines.append("")
     if by == "file":
         pool = [lit for lit in literals if area is None or areas.area_of(lit.file) == area]

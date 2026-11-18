@@ -37,9 +37,9 @@ class ReportTests(TreeCase):
         lines = out.splitlines()
         self.assertTrue(lines[0].startswith("Interface text of 2 Swift files"), lines[0])
         rows = {line.split()[0]: line.split() for line in lines if line[:1].isalpha() and line.split()[0] in ("feeds", "sleep-timer", "total")}
-        # name files unloc bytes loc bytes marked glued plural static
-        self.assertEqual(rows["feeds"][1:], ["1", "2", "25", "1", "8", "1", "1", "0", "1"])
-        self.assertEqual(rows["sleep-timer"][1:], ["1", "1", "18", "0", "0", "0", "0", "0", "0"])
+        # name files unloc bytes loc bytes marked glued plural static raw
+        self.assertEqual(rows["feeds"][1:], ["1", "2", "25", "1", "8", "1", "1", "0", "1", "0"])
+        self.assertEqual(rows["sleep-timer"][1:], ["1", "1", "18", "0", "0", "0", "0", "0", "0", "0"])
         self.assertEqual(rows["total"][1:4], ["2", "3", "43"])
 
     def test_the_json_report_has_exact_counts(self) -> None:
@@ -53,7 +53,7 @@ class ReportTests(TreeCase):
         self.assertEqual(feeds["files"], 1)
         self.assertEqual(feeds["localized"], {"count": 1, "bytes": 8})
         self.assertEqual(feeds["marked"], {"count": 1, "bytes": len("Feed identifier text")})
-        self.assertEqual(feeds["findings"], {"glued": 1, "plural": 0, "static-let": 1})
+        self.assertEqual(feeds["findings"], {"glued": 1, "plural": 0, "static-let": 1, "raw-title": 0})
         self.assertEqual(groups["sleep-timer"]["unlocalized"], {"count": 1, "bytes": len("Sleep timer is off")})
         self.assertEqual(data["files"], 2)
         # The log line is in its own bucket and is not interface text.
@@ -133,6 +133,16 @@ class ShowTests(TreeCase):
         self.assertEqual((data["unlocalized"], data["marked"]), (3, 1))
         self.assertEqual(data["literals"][0], {"line": 2, "bucket": "wording", "rule": "wording-type",
                                                "status": "unlocalized", "text": "Counted things", "findings": ["static-let"]})
+
+    def test_a_raw_title_is_listed_as_a_finding_with_its_help_and_in_the_report(self) -> None:
+        self.write("Models/ShortcutKind.swift", 'enum ShortcutKind: String {\n    case openBook = "Open Book…"\n}\n')
+        _status, out, _err = run_main("--root", str(self.root), "show", "Models/ShortcutKind.swift")
+        self.assertIn('line 2 [rawtitle] "Open Book…"', out)
+        self.assertIn("line 2: raw-title", out)
+        self.assertIn("keep the raw value as the stored identifier, mark it `// l10n: no (stored id)`", out)
+        _status, out, _err = run_main("--root", str(self.root), "report")
+        self.assertIn("1 raw values shown as titles", out)
+        self.assertIn("(rawtitle): 1 unique texts, 12 bytes", out)
 
     def test_show_cuts_a_long_literal_to_the_width(self) -> None:
         self.write("Models/LongWording.swift", 'enum LongWording {\n    static var a: String { "' + "word " * 40 + 'end" }\n}\n')

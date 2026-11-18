@@ -7,6 +7,8 @@ The buckets, with the first rule that puts a literal in each:
 - ``error``: the body of errorDescription, failureReason, or recoverySuggestion;
 - ``prose``: any other text of two or more words that is not code;
 - ``word``: a capitalized single word outside the above (a label returned from code);
+- ``rawtitle``: the raw value of an enum case that reads as a title (``case openBook = "Open Book…"``),
+  which a ``title`` property returns and a file stores, so the conversion must split it in two;
 
 and the buckets that are not interface text and are never counted:
 
@@ -32,7 +34,9 @@ from .lexer import Literal
 # The buckets that are interface text, certain and probable.
 CERTAIN = ("ui", "wording", "error")
 PROBABLE = ("prose", "word")
-COUNTED = CERTAIN + PROBABLE
+# A raw value that is shown as a title and also stored: interface text with a conversion of its own.
+RAW = ("rawtitle",)
+COUNTED = CERTAIN + PROBABLE + RAW
 
 # Calls whose string arguments the user sees or hears.
 UI_CALLS = frozenset({
@@ -127,6 +131,17 @@ KEY_CALLS: Dict[str, KeySpec] = {
 # (a reason in parentheses, after a comma, a colon, a dash, or in plain words), to the end of the
 # line. The word boundary keeps `// l10n: nothing` from marking.
 MARKER = re.compile(r"//\s*l10n:\s*no\b.*$")
+# A raw value that reads as a title: it starts with a capital and holds a lowercase letter, so
+# "Open Book…", "Title", and "Audio Editor: Undo" count, but "MP3", "h", and "webvtt" do not.
+_RAW_TITLE = re.compile(r"[A-Z].*[a-z]", re.S)
+# What each finding means for the conversion, for the report and for `show`.
+FINDING_HELP = {
+    "glued": "a sentence built from pieces: make it one localized string with placeholders",
+    "plural": "a hand-built plural: use a plural variation of one localized string",
+    "static-let": "interface text kept in a static let: make it a computed static var, so it is read in the current language",
+    "raw-title": "keep the raw value as the stored identifier, mark it `// l10n: no (stored id)`, "
+                 "and add a localized title that the title property returns",
+}
 # A count compared with one before a ?, the start of a hand-built plural.
 _PLURAL_TERNARY = re.compile(r"(?:[=!]=|>)\s*1\s*\?|>=\s*2\s*\?|<=\s*1\s*\?|<\s*2\s*\?")
 _PLURAL_LABELS = frozenset({"singular", "plural"})
@@ -203,7 +218,9 @@ def classify(lit: Literal, wording_file: bool, localizer: Localizer) -> Tuple[st
     if lit.label in _PLURAL_LABELS and lit.call in _PLURAL_CALLS:
         return "word", "plural-noun"
     if lit.raw_value:
-        return "code", "raw-value"
+        # A raw value is a stored identifier, but one that reads as a title is also shown (the
+        # shortcut table's `title` returns its rawValue), so it is interface text.
+        return ("rawtitle", "raw-value-title") if _RAW_TITLE.match(text) else ("code", "raw-value")
     if lit.label == "comment":
         return "comment", "comment-label"
     # A label that usually names a key can hold a title, as in SubstitutionRule(name: "Skip URLs"):
@@ -263,8 +280,9 @@ def is_marked(lit: Literal) -> bool:
 
 def findings_of(lit: Literal) -> List[str]:
     """What the conversion has to restructure around a literal: "glued" (a sentence built by
-    joining pieces), "plural" (a hand-built plural), and "static-let" (interface text kept in a
-    static let, which must become a computed property so it is read in the current language).
+    joining pieces), "plural" (a hand-built plural), "static-let" (interface text kept in a
+    static let, which must become a computed property so it is read in the current language),
+    and "raw-title" (a raw value shown as a title, which must keep its raw value as the stored id).
     Only interface text that is localized or unlocalized has findings: a marked line has none."""
     if lit.status not in ("localized", "unlocalized"):
         return []
@@ -275,4 +293,6 @@ def findings_of(lit: Literal) -> List[str]:
         found.append("plural")
     if lit.static_let:
         found.append("static-let")
+    if lit.rule == "raw-value-title":
+        found.append("raw-title")
     return found

@@ -116,8 +116,25 @@ class UncountedBucketTests(ScanCase):
         self.assertClass('formatter.dateFormat = "yyyy-MM-dd HH:mm"', "code", "date-format")
 
     def test_code_the_raw_value_of_an_enum_case(self) -> None:
-        # ViewModels/SettingsViewModel.swift:7: stored as is, so never translated.
-        self.assertClass('enum RewindUnit: String {\n    case none = "None"\n}', "code", "raw-value")
+        # Models/TimedText.swift:18: a stored identifier that is no title.
+        self.assertClass('enum TimedTextFormat: String {\n    case webvtt = "webvtt"\n}', "code", "raw-value")
+        # A capital with no lowercase letter is a code too (Services/AudioBuiltInFilter.swift has such cases).
+        self.assertClass('enum Unit: String {\n    case mp3 = "MP3"\n}', "code", "raw-value")
+
+    def test_rawtitle_a_raw_value_that_reads_as_a_title(self) -> None:
+        # Models/KeyboardShortcut.swift:137 (ShortcutAction.title returns the raw value, and
+        # config.json stores it), ViewModels/SettingsViewModel.swift:7 and ViewModels/LibraryViewModel.swift:8.
+        for code in ('enum ShortcutAction: String {\n    case importFolder = "Import Folder…"\n}',
+                     'enum RewindUnit: String {\n    case none = "None"\n}',
+                     'enum Sort: String {\n    case dateAdded = "Date Added"\n}'):
+            lit = self.assertClass(code, "rawtitle", "raw-value-title", "unlocalized")
+            self.assertEqual(lit.findings, ("raw-title",))
+
+    def test_a_marked_raw_title_is_left_out(self) -> None:
+        # The conversion keeps the raw value as the stored id and marks it.
+        lit = self.assertClass('enum Sort: String {\n    case dateAdded = "Date Added" // l10n: no (stored id)\n}',
+                               "rawtitle", "raw-value-title", "marked")
+        self.assertEqual(lit.findings, ())
 
     def test_token_an_identifier(self) -> None:
         # Parsers/DOCXParser+Sections.swift:22.

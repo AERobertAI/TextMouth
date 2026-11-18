@@ -47,6 +47,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from swiftscan import areas, ratchet, report  # noqa: E402
+from swiftscan.classify import FINDING_HELP  # noqa: E402
 from swiftscan.scanner import Scan, scan_tree  # noqa: E402
 
 EXIT_OK = 0      # the command did its work
@@ -145,6 +146,9 @@ def cmd_show(args: argparse.Namespace, scan: Scan, root: Path) -> int:
             if (line, kind) not in seen:
                 seen.add((line, kind))
                 print(f"  line {line}: {kind}")
+        # What each kind that occurs asks of the conversion.
+        for kind in sorted({kind for _line, kind in found}):
+            print(f"  {kind}: {FINDING_HELP[kind]}")
     return EXIT_OK
 
 
