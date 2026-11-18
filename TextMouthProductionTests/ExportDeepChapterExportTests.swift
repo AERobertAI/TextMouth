@@ -442,6 +442,27 @@ final class ExportDeepChapterExportTests: XCTestCase {
         }
     }
 
+    /// The Plain Text export of a chapter nested too deeply writes its words as
+    /// they are written (B16): no marker comment, and no backslash before a
+    /// punctuation mark, which content.md's converters add and the reader's
+    /// raw chapter no longer keeps.
+    func testThePlainTextExportOfADeepChapterHasNoMarkerAndNoEscape() throws {
+        let world = try makeIntegrationWorld("Export Deep Plain Text Raw")
+        let content = "<!-- chapter: Notes -->\n<!-- page: 7 -->\n\(deepLine(limit + 1)) Done\\. Costs \\$5\\!"
+            + " <!-- page: 8 -->More\\, words\\.\n"
+        let book = try makeBook(in: world, named: "Deep Notes Raw", content: content)
+        let destination = try makeSandboxDirectory("Export Deep Plain Text Raw Destination")
+
+        let outcome = BookExportService.export([BookExportService.offer(for: book)], kinds: [.plainText], to: destination)
+
+        XCTAssertEqual(outcome.failures, [])
+        let file = try XCTUnwrap(outcome.exported.first)
+        let text = try String(contentsOf: file, encoding: .utf8)
+        XCTAssertTrue(text.contains("Done. Costs $5! More, words."), text)
+        XCTAssertFalse(text.contains("<!--"), "no marker comment")
+        XCTAssertFalse(text.contains("\\"), "no backslash escape")
+    }
+
     // MARK: - The dialog
 
     /// What a scripted prompt saw, kept on the main actor, and what a task

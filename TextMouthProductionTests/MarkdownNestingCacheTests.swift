@@ -102,6 +102,67 @@ final class MarkdownNestingCacheTests: XCTestCase {
         XCTAssertEqual(content.chapters[1].headings.map(\.text), ["Second"])
     }
 
+    /// A raw chapter, as content.md's converters write it: a page marker,
+    /// words with the backslash before each punctuation mark, a marker in the
+    /// middle of a line, and a line of marks past the limit.
+    private var writtenDeepChapter: String {
+        "<!-- page: 7 -->\n\(deepQuotes(around: "He said\\: \\\"Done\\.\\\" <!-- page: 8 -->Costs \\$5\\!"))\n\n"
+            + "Second paragraph\\, line one\\.   \nline two\\.\n"
+    }
+
+    /// The reader's raw chapter shows and speaks no marker comment and no
+    /// escape (B16): its text is the words as written, one paragraph a block of lines.
+    func testARefusedChapterHasNoMarkerAndNoEscape() {
+        let content = MarkdownCacheService.parseMultiChapterMarkdown(
+            contentWithAMiddleChapter(writtenDeepChapter), bookTitle: "Book", bookAuthor: ""
+        )
+
+        let text = content.chapters[1].text
+        XCTAssertEqual(
+            text,
+            deepQuotes(around: "He said: \"Done.\" Costs $5!") + "\n\nSecond paragraph, line one.\nline two."
+        )
+        XCTAssertFalse(text.contains("<!--"))
+        XCTAssertFalse(text.contains("\\"))
+        // The neighbours are untouched.
+        XCTAssertEqual(content.chapters[0].text, "First chapter words.")
+        XCTAssertEqual(content.chapters[2].text, "Third chapter words.")
+    }
+
+    /// A bookmark saved in a deep chapter before the fix, at its offset in
+    /// the raw text with the words round it, is found again in the text the
+    /// reader now makes of the chapter, on the same words: the load check
+    /// carries a place by its words (B16).
+    func testABookmarkInARefusedChapterIsCarriedToTheSameWords() throws {
+        let markdown = contentWithAMiddleChapter(writtenDeepChapter)
+        // The text before the fix: each chapter's text, the deep one raw.
+        let before = ["First chapter words.", try XCTUnwrap(deepSectionAsWritten(of: markdown)), "Third chapter words."]
+        let after = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: "Book", bookAuthor: "")
+        XCTAssertNotEqual(before[1], after.chapters[1].text, "the chapter's text changed, so its offsets do")
+
+        // A bookmark at "line two" in the raw text, as one saved then.
+        let offset = try Phrase.offset(of: "line two", in: before[1])
+        let saved = Bookmark(
+            number: 1, chapterIndex: 1, characterOffset: offset,
+            anchor: try SavedPlace.anchor(at: TextPlace(chapter: 1, offset: offset), in: before)
+        )
+        let outcome = try XCTUnwrap(PlaceRelocator.relocate(
+            PlaceRelocator.Places(bookmarks: [saved]), within: after, movedAt: SavedPlace.moveDate
+        ))
+
+        let moved = try XCTUnwrap(outcome.places.bookmarks.first)
+        XCTAssertEqual(moved.chapterIndex, 1)
+        XCTAssertEqual(moved.characterOffset, try Phrase.offset(of: "line two", in: after.chapters[1].text))
+        XCTAssertNotEqual(moved.characterOffset, offset, "the offset moved, with the words")
+    }
+
+    /// The text of the middle chapter of `markdown` as it was kept before
+    /// B16: the section's own raw lines.
+    private func deepSectionAsWritten(of markdown: String) -> String? {
+        let parts = markdown.components(separatedBy: "<!-- chapter: Second -->\n")
+        return parts.dropFirst().first?.components(separatedBy: "\n\n<!-- chapter: Third -->").first
+    }
+
     /// Where every chapter is refused, each still holds its words: the text holds something
     /// for Edit Text, which says "holds no chapter with anything in it" only when that is true.
     func testWhenEveryChapterIsRefusedEachStillHoldsItsWords() {
