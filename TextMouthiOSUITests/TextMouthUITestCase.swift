@@ -70,14 +70,17 @@ class TextMouthUITestCase: XCTestCase {
 
     /// Launches as `launch(sendingTheBook:textSize:)` does, sending the book
     /// at `path`, a file of this test bundle, when it is not nil: another
-    /// book than Alice, such as a braille one (BrailleUITests).
-    func launch(sendingBookAt path: String?, textSize: String? = nil) throws -> XCUIApplication {
+    /// book than Alice, such as a braille one (BrailleUITests). `arguments`
+    /// are added to the launch's, as `-AppleLanguages (es)` starts the app in
+    /// Spanish (SpanishUITests).
+    func launch(sendingBookAt path: String?, textSize: String? = nil, arguments: [String] = []) throws -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["TEXTMOUTH_UI_TEST"] = "1"
         if let textSize {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
         }
+        app.launchArguments += arguments
         if let path {
             app.launchEnvironment["TEXTMOUTH_OPEN_AT_LAUNCH"] = path
         }
@@ -93,9 +96,14 @@ class TextMouthUITestCase: XCTestCase {
 
     /// Launches with the book (Alice, or the book at `path` when it is not
     /// nil) and waits for the reader it opens, with the book loaded: Play is
-    /// there, and its value no longer says "Loading".
-    func launchIntoTheReader(sendingBookAt path: String? = nil, textSize: String? = nil) throws -> XCUIApplication {
-        let app = try launch(sendingBookAt: path ?? Self.bookPath(), textSize: textSize)
+    /// there, and its value no longer says "Loading". `arguments` are added to
+    /// the launch's (`launch(sendingBookAt:textSize:arguments:)`).
+    func launchIntoTheReader(
+        sendingBookAt path: String? = nil,
+        textSize: String? = nil,
+        arguments: [String] = []
+    ) throws -> XCUIApplication {
+        let app = try launch(sendingBookAt: path ?? Self.bookPath(), textSize: textSize, arguments: arguments)
         let play = app.buttons["Play"]
         XCTAssertTrue(play.appears(within: Self.patience), "The reader never opened:\n\(app.debugDescription)")
         // Not the test case's own expectation, so nothing is left unwaited.
