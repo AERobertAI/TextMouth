@@ -83,3 +83,33 @@ The review's fixes (build/orchestrator/nov17/review-phoneffmpeg-report.md), on p
 Break proofs (scratch commit 7941f1031 at 240a296b1, GitHub hand run 44213336710), each removal failing its own tests and nothing else: the Mac 58 tests, 5 failures; the iPhone 76 tests, 13 failures. (1) see B18. (2) reads asking no check: the read test (offset 65,536, not 0, iPhone). No frame bound: the frame-bound test (the frame past the bound decoded, both). (3) refusal before the step: the import sentence test says "Copying it into the library failed" (iPhone; the Mac passes). (4) no floor: both floor tests (iPhone). (5) its own limit: the abandonment test (iPhone). (6) copy protection after the probe: the copy-protection test counts 1 start (both). The heartbeat: a harness in a scratch copy counted 1.21 of 1.2 seconds with it, 0.50 without.
 
 Last train, 1117-2024 at fd77f7384 (run 44216185313, ogg, import, phone, and braille, with --ios-size), PASSED: the Mac "Executed 3766 tests, with 20 tests skipped and 0 failures (0 unexpected) in 514.689 (514.689) seconds"; the iPhone "Executed 2483 tests, with 1 tests skipped and 0 failures (0 unexpected) in 643.490 (643.490) seconds" (2446 unit, 37 interface). iPhone app 16,078,649 bytes, IPA 7,562,934, App Store estimate 15,792,198; limit 30 MB.
+
+### 2026-11-18, phoneffmpeg, 27 lines
+
+These fix the check of the review's fixes (build/orchestrator/nov17/verify-phoneffmpeg-report.md) on phone/ffmpeg-in-app. Each is its own commit, and each fix has a test that fails without it.
+
+1. The frame bound.
+   - 836a08362 raises MAX_DECODED_SAMPLES to 16,777,216: 64 MiB of 32-bit samples, or 128 MiB of 64-bit ones. That is almost three minutes of 48 kHz stereo in one chunk, or 44 seconds of eight channels. The test makes Matroska in stereo and in eight channels, at the bound and one frame past it.
+   - d03ca0a38 says what happened to a frame past the bound, which the session can tell cheaply. Its own get_buffer2 refuses the frame before any of it is allocated and marks it. The decode then ends with TMFF_EXIT_FRAME_TOO_LARGE (13): "TextMouth can't convert “X”: part of its sound is stored in one piece too large for TextMouth to decode."
+2. A phone that begins short of memory (0f16c35cc).
+   - A run's floor is 512 MB, or half of what the app had left when the run began if that is less.
+   - Its allocation cap is half its floor and never more than 256 MB. The linked session gives the cap to FFmpeg before each call (tmff_set_allocation_cap). The Mac keeps 256 MB.
+   - The new endings: "… because the app's memory grew by more than N MB while it ran." and "… because the iPhone had only N MB of memory free when it began, and TextMouth keeps half of that free."
+3. A 0 from os_proc_available_memory() means no limit only under targetEnvironment(simulator) (4475ac22a). On an iPhone, 0 left stops a session at its first check.
+4. Braille's abandonment sentence is left, as the check allowed.
+   - My try, e0bfb1201, could reach the sentence only by letting liblouis's own batch be abandoned. Train 1117-2249 crashed the test host with it.
+   - The crash report shows SIGSEGV in lou_backTranslate on the abandoned engine's thread. Beside it, the next test's engine was also in lou_backTranslate. liblouis is not thread-safe.
+   - 1c787ca75 reverts e0bfb1201. The app can't run liblouis twice at once: it has one engine, which refuses every call after an abandoned one.
+   - BrailleTranslator.tool has no stand-in for the library call. A seam like FFmpeg's openSession would let a test reach the sentence safely. That is for an issue of its own.
+5. RunningClock (272d0bd0b): tests of two holders, of a hold right after a release, and of a hold after the heartbeat stopped.
+- 7aa619001 compiles the TextMouthFFmpeg helper target's C with textual includes, as 92d1f63c4 did for the library. Without it, a change to the session's header failed the Mac build on a kept runner cache (break run 44226031638).
+
+Break proofs (one scratch commit of breaks, never merged):
+- 44226031638 (at 272d0bd0b): iPhone, 52 tests with 8 failures, each one a break's. The Mac built nothing, the failure 7aa619001 fixes.
+- 44228522562 (at 7aa619001): Mac, 28 tests with 3 failures. The bound as it was (4,194,304) and an unmarked refusal each fail their own assertions of the frame-bound test. One release ending every hold, and a stopped heartbeat left marked as ticking, each fail their RunningClock test. iPhone: the same 8 failures again.
+- 44240297071 (at 7aa619001, with only the run's cap not given to FFmpeg): iPhone, 16 tests with 1 failure. testARunThatBeganShortHoldsFFmpegToSmallerAllocations got status 0 where 9 is due. In the earlier runs the floor's break had decided that test first.
+
+Last train: 1118-0004 (run 44242168363) at 1c787ca75 PASSED.
+- Mac: 3769 tests, 20 skipped, 0 failures.
+- iPhone: 2490 tests, 1 skipped, 0 failures (2453 unit tests, 37 interface tests).
+- Size: the app is 16.1 MB (16,078,689 bytes) in 40 files and the IPA 7.6 MB. The App Store download is about 15.8 MB, within the 30 MB limit.
