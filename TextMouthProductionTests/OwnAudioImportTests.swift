@@ -401,8 +401,12 @@ final class OwnAudioImportTests: XCTestCase {
                 XCTAssertEqual(converted.sampleRate, Double(sample.sampleRate), sample.path)
                 XCTAssertEqual(converted.channels, min(sample.channels, 2), sample.path)
                 #endif
-                if case .failure = await AudioMediaProbe.duration(of: conversion.converted) {
-                    XCTFail("\(sample.path) does not play")
+                // The probe's length, which the iPhone has instead of afinfo's, is the source's to within a
+                // millisecond (Apple Lossless adds no priming), so a cut-short .m4a fails there too.
+                switch await AudioMediaProbe.duration(of: conversion.converted) {
+                case .failure: XCTFail("\(sample.path) does not play")
+                case let .success(seconds):
+                    XCTAssertEqual(seconds, Double(sample.frames) / Double(sample.sampleRate), accuracy: 0.001, sample.path)
                 }
                 // The samples are read back with Apple's audio file reader, which a unit test of the iPhone
                 // may not name (the iPhone's tests name no audio framework), so only the Mac's host does.
