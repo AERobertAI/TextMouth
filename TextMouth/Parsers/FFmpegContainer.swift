@@ -349,17 +349,17 @@ enum MatroskaHeader {
     private static func isCopyProtected(read: (UInt64, Int) -> [UInt8]) -> Bool {
         /// The header of the element that starts at `offset`, nil when the
         /// bytes there are no element's header.
-        func header(at offset: UInt64) -> Header? {
-            header(in: read(offset, 12), at: 0)
+        func headerAt(_ offset: UInt64) -> Header? {
+            Self.header(in: read(offset, 12), at: 0)
         }
         // The EBML header comes first, then the Segment that holds the rest.
-        guard let first = header(at: 0), first.id == ID.ebml, let firstSize = first.size,
+        guard let first = headerAt(0), first.id == ID.ebml, let firstSize = first.size,
               firstSize < UInt64(maximumTracksBytes) else { return false }
         var position = UInt64(first.bodyStart) + firstSize
-        guard let segment = header(at: position), segment.id == ID.segment else { return false }
+        guard let segment = headerAt(position), segment.id == ID.segment else { return false }
         position += UInt64(segment.bodyStart)
         for _ in 0..<maximumTopLevelElements {
-            guard let element = header(at: position), element.id != ID.cluster, let size = element.size else { return false }
+            guard let element = headerAt(position), element.id != ID.cluster, let size = element.size else { return false }
             let bodyAt = position + UInt64(element.bodyStart)
             if element.id == ID.tracks {
                 guard size <= UInt64(maximumTracksBytes) else { return false }
