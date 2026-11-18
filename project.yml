@@ -5,6 +5,12 @@ options:
     macOS: "14.0"
   xcodeVersion: "16.0"
   minimumXcodeGenVersion: "2.30"
+  # English is the language the code is written in, and the String Catalog's
+  # source language (TextMouth/Localization/Localizable.xcstrings, FR34):
+  # each app's CFBundleDevelopmentRegion is $(DEVELOPMENT_LANGUAGE), so a
+  # person whose languages TextMouth lacks gets English, and a string with no
+  # translation falls back to its key, which is its English text.
+  developmentLanguage: en
 
 # Swift package versions are locked deliberately. Each direct dependency is
 # an exactVersion requirement, so regenerating the project can never float to
@@ -36,10 +42,25 @@ packages:
 # warning (Scripts/check.sh), so a new concurrency problem is reported the
 # day it is written. Package targets are not affected: Xcode builds them with
 # their own settings and suppresses their warnings.
+#
+# The localization settings are project-wide too (FR34, TL10), so that both
+# apps and every target built later extract and ship their text the same way:
+# SWIFT_EMIT_LOC_STRINGS makes the compiler write each localized string it
+# finds (Scripts/l10n/l10n.py sync merges them into the catalog);
+# LOCALIZATION_PREFERS_STRING_CATALOGS ships a catalog as the .strings and
+# .stringsdict files of each language it holds, and writes none for English,
+# whose text is the key; STRINGS_FILE_OUTPUT_ENCODING sets how those files are
+# written. UTF-8 is the smallest: measured on a catalog of 200 real Spanish
+# strings, 117 of them with an accented letter, the Mac build wrote es.lproj
+# /Localizable.strings at 56,098 bytes by default (UTF-16), 28,263 as UTF-8,
+# and 32,456 as a binary property list.
 settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    STRINGS_FILE_OUTPUT_ENCODING: UTF-8
 
 # The version both apps carry, on one line: Scripts/set-version.sh (make
 # set-version, bump-patch, and bump-minor) changes exactly one

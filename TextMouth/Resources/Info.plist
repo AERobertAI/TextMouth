@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- The app's source language, English: the String Catalog's source language
+	     (TextMouth/Localization/Localizable.xcstrings), and the language an
+	     unlisted preference falls back to. project.yml's developmentLanguage
+	     sets it. -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleName</key>
 	<string>TextMouth</string>
 	<key>CFBundleDisplayName</key>
