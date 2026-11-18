@@ -119,7 +119,7 @@ help:
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
 	@echo "  make release-goldens - Once per release: run the golden tests against a Release build made with testability on, so an optimizer miscompile cannot hide behind the Debug suite (about 15 minutes; pass options through GOLDEN_ARGS)"
-	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, the storage drill script, the version script, and the Scripts/test tools in seconds, without building"
+	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, the storage drill script, the version script, the Scripts/test tools, and the l10n tools in seconds, without building"
 	@echo "  make issues-merge-driver - Define, once, the merge driver .gitattributes names for Issues/*.md (in the repository's config)"
 	@echo "  make test-area AREAS=\"feeds bookmarks\" - Run only the hosted tests of some areas, in one build, with a short result"
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
@@ -129,6 +129,10 @@ help:
 	@echo "  make check-ios-plist - Fail if the iOS Info.plist is not what the Mac's gives (Scripts/ios/sync-info-plist.py --check)"
 	@echo "  make check-ios-licenses - Fail if a library the iPhone app links has no licence in the app (Scripts/ios/check-licenses.py)"
 	@echo "  make ios-size   - Build the iPhone app for a device (Release, unsigned) under the heavy-work lock, then measure it: app, IPA, App Store estimate, biggest files, libraries"
+	@echo "  make l10n-sync  - Type-check both apps with the string extraction on and merge what it finds into the String Catalog (REF=commit, or WORKTREE=1 for uncommitted work; takes the heavy-work lock, about four minutes)"
+	@echo "  make l10n-status - Per language: the strings translated, machine translated, new, needing review, stale, and missing, and the English bytes (LANG_CODE=es for one language)"
+	@echo "  make l10n-size  - The English bytes against the 150,000-byte budget, and each language's shipped size in each format"
+	@echo "  make l10n-check - Check the String Catalog: shipped languages translated, placeholders and plural forms agreeing, a comment on every string, nothing stale (run by make check)"
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
 	@echo "  make typecheck-tests - The same for the Mac's hosted test target too, before a train request (REF=commit checks that commit)"
@@ -308,6 +312,7 @@ check-selftest:
 	@python3 -I -B -m unittest discover -s Scripts/agents/tests -p 'test_*_paths.py'
 	@python3 -I -B -m unittest discover -s .claude/skills/issue-library/tests
 	@python3 -I -B Scripts/ios/app-size.py --selftest
+	@python3 -I -B -m unittest discover -s Scripts/l10n/tests
 
 ## Build the iPhone app for a device (Release, unsigned, small code) in its own
 ## derived data folder, build/ios-size-DerivedData (an absolute path, which
@@ -361,6 +366,24 @@ lint-ogg:
 ## merge-base of LINT_BASE and HEAD. Prints what got worse. No building.
 lint-docs:
 	@python3 -I -B .claude/skills/doc-library/scripts/doclib.py lint --against $(LINT_BASE)
+
+## The String Catalog's tools (Scripts/l10n/l10n.py, FR34): sync extracts both
+## apps' strings through the type-check (which takes the heavy-work lock
+## itself, so it is never wrapped in run_locked.py) and merges them into
+## TextMouth/Localization/Localizable.xcstrings; status, size, and check read
+## the catalog and build nothing. check is part of `make check`.
+.PHONY: l10n-sync l10n-status l10n-size l10n-check
+l10n-sync:
+	@python3 -I -B Scripts/l10n/l10n.py sync $(if $(WORKTREE),--worktree,$(if $(REF),--ref $(REF),))
+
+l10n-status:
+	@python3 -I -B Scripts/l10n/l10n.py status $(if $(LANG_CODE),--lang $(LANG_CODE),)
+
+l10n-size:
+	@python3 -I -B Scripts/l10n/l10n.py size
+
+l10n-check:
+	@python3 -I -B Scripts/l10n/l10n.py check
 
 ## Compile and link the app's sources for iOS with SwiftPM, which needs only
 ## the iOS SDK Xcode includes, not the iOS platform xcodebuild asks for

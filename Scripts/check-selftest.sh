@@ -521,6 +521,7 @@ dry_run_cases() {
   expect_status 0
   expect_report "step 1 of 4: regenerate the Xcode project from project.yml"
   expect_report "would run: make generate"
+  expect_report "would run: make l10n-check"
   expect_report "would run: make resolve-packages"
   expect_report "would remove the compiled code of earlier builds: build/DerivedData/Build and TextMouthTests/.build"
   expect_report "would run: make build"
@@ -633,6 +634,15 @@ dry_run_cases() {
   expect_verdict "check: FAILED: step 2 of 4"
   end_case
 
+  begin_case "a dry run stops at a failed String Catalog check, before the packages are resolved"
+  run_gate TEXTMOUTH_CHECK_SIMULATE_FAILURE=l10n -- --dry-run
+  expect_status 1
+  expect_report "simulated failure of the l10n step"
+  expect_report "full log: build/check/l10n.log"
+  refute_report "step 2 of 4"
+  expect_verdict "check: FAILED: step 1 of 4 (regenerate the Xcode project from project.yml, then check the String Catalog)"
+  end_case
+
   begin_case "a dry run stops at a failed project generation"
   run_gate TEXTMOUTH_CHECK_SIMULATE_FAILURE=generate -- --dry-run
   expect_status 1
@@ -662,7 +672,7 @@ refusal_cases() {
   begin_case "an unknown simulated step is refused"
   run_gate TEXTMOUTH_CHECK_SIMULATE_FAILURE=deploy -- --dry-run
   expect_status 2
-  expect_report "must be generate, resolve, build, ios-size, or test, not: deploy"
+  expect_report "must be generate, l10n, resolve, build, ios-size, or test, not: deploy"
   end_case
 
   begin_case "a missing simulated Package.resolved is refused"
@@ -722,6 +732,7 @@ build_slot_cases() {
   expect_status 0
   expect_report "build slot: $SLOT_STUB (from TEXTMOUTH_BUILD_SLOT)"
   expect_report "would run: make generate"
+  expect_report "would run: make l10n-check"
   expect_report "would run in a build slot: make resolve-packages"
   expect_report "would run in a build slot: make build"
   expect_report "would run in a build slot: make test"
@@ -754,7 +765,7 @@ real_run_cases() {
   begin_case "a passing run executes each step in order inside the build slot"
   run_gate TEXTMOUTH_BUILD_SLOT="$SLOT_STUB"
   expect_status 0
-  expect_commands "make generate" \
+  expect_commands "make generate" "make l10n-check" \
     "slot make resolve-packages" "make resolve-packages" \
     "slot make build" "make build" \
     "slot $IOS_SIZE_RUN" "$IOS_SIZE_RECORD" \
@@ -774,7 +785,7 @@ real_run_cases() {
   begin_case "a run with --without-tests resolves and builds, checks both sizes, and never runs the suite"
   run_gate -- --without-tests
   expect_status 0
-  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
   expect_report "iPhone app: 12.3 MB (12,345,678 bytes) in 41 files, within the $APP_SIZE_WARNING_MB MB limit."
   expect_report "step 3 of 3: build the Release app"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
@@ -788,14 +799,14 @@ real_run_cases() {
   begin_case "the release gate (--without-tests) fails an iPhone app over the strict limit"
   run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-over.txt" STUB_IOS_SIZE_STATUS=3 -- --without-tests
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
   expect_verdict "check: FAILED: step 3 of 3 (build the Release app): the iPhone app is more than the $APP_SIZE_LIMIT_MB MB strict limit"
   end_case
 
   begin_case "on a GitHub runner the iPhone app is neither built nor measured, with or without the suite"
   run_gate GITHUB_ACTIONS=true -- --without-tests
   expect_status 0
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   expect_report "the iPhone app is not built or measured on a GitHub runner (GITHUB_ACTIONS=true)"
   refute_report "iPhone app:"
   expect_verdict "check: PASSED"
@@ -804,7 +815,7 @@ real_run_cases() {
   begin_case "GITHUB_ACTIONS set to anything but true does not skip the iPhone app"
   run_gate GITHUB_ACTIONS=false -- --without-tests
   expect_status 0
-  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
   end_case
 
   begin_case "a Release app that names no folder of this Mac passes, and says so"
@@ -817,7 +828,7 @@ real_run_cases() {
   begin_case "a Release app that holds the checkout's folder fails the gate before the tests, naming the file"
   run_gate STUB_APP_TEXT="built in @ROOT@/TextMouth"
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   expect_report "| Contents/Resources/planted.txt"
   refute_report "holds no folder of this Mac"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds a folder of this Mac (its home folder, the checkout, or \$TMPDIR)"
@@ -849,7 +860,7 @@ real_run_cases() {
   begin_case "a Release app one byte over the strict limit fails the gate before the tests"
   run_gate STUB_APP_BYTES=$(( APP_SIZE_LIMIT_BYTES + 1 ))
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
   expect_report "the limits are APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh; find what grew before raising them"
   refute_report "build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,001 bytes), within the"
@@ -868,7 +879,7 @@ real_run_cases() {
   begin_case "an iPhone app over the strict limit fails the gate before the tests"
   run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-over.txt" STUB_IOS_SIZE_STATUS=3
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
   expect_report "iPhone app: 41.0 MB (41,000,000 bytes) in 41 files, over the strict $APP_SIZE_LIMIT_MB MB limit."
   expect_report "the biggest files and libraries are in build/check/ios-size.log"
   refute_report "Executed"
@@ -878,7 +889,7 @@ real_run_cases() {
   begin_case "a failed iPhone device build fails the gate before the tests, naming the log"
   run_gate STUB_IOS_SIZE_OUTPUT= STUB_IOS_SIZE_STATUS=1
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
   expect_report "failed with exit status 1"
   expect_report "full log: build/check/ios-size.log"
   expect_report "The iPhone device build (Scripts/ios/app-size.py) failed, not the Mac's build."
@@ -909,7 +920,7 @@ real_run_cases() {
   plant_earlier_builds
   run_gate STUB_APP_BYTES=
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   refute_report " MB ("
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app is missing, so the app's size is unknown"
   end_case
@@ -917,7 +928,7 @@ real_run_cases() {
   begin_case "a Swift warning in the Release build fails the gate before the tests, naming the first five"
   run_gate STUB_BUILD_LOG="$FIXTURES/build-warnings.log"
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   # Six, not seven: the warning reported again for x86_64 counts once.
   expect_report "6 Swift warnings in build/xcodebuild-Release.log; the first 5:"
   expect_report "| TextMouth/Services/Ledger.swift:12:9: warning: capture of 'entry' with non-Sendable type"
@@ -948,7 +959,7 @@ real_run_cases() {
   printf '%s/TextMouth/Old.swift:1:1: warning: left by an earlier build\n' "$sandbox" > "$sandbox/build/xcodebuild-Release.log"
   run_gate STUB_BUILD_LOG=
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   refute_report "left by an earlier build"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/xcodebuild-Release.log is missing, so the build's Swift warnings are unknown"
   end_case
@@ -958,7 +969,7 @@ real_run_cases() {
   run_gate
   expect_status 0
   # The make stub would have recorded finding an earlier build.
-  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD" \
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD" \
     "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "removed the compiled code of earlier builds, so every source compiles: build/DerivedData/Build and TextMouthTests/.build"
   expect_absent build/DerivedData/Build
@@ -982,7 +993,7 @@ real_run_cases() {
   begin_case "a compile error fails the gate before the tests run"
   run_gate STUB_FAIL_TARGET=build
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   expect_report "error: simulated failure of make build"
   expect_report "make: *** [build] Error 65"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app)"
@@ -991,7 +1002,7 @@ real_run_cases() {
   begin_case "xcodebuild rejecting the pins fails the gate before the build"
   run_gate STUB_FAIL_TARGET=resolve-packages
   expect_status 1
-  expect_commands "make generate" "make resolve-packages"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages"
   expect_report "make update-packages"
   expect_verdict "check: FAILED: step 2 of 4"
   end_case
@@ -999,7 +1010,7 @@ real_run_cases() {
   begin_case "a resolution that rewrites a pin fails the gate before the build"
   run_gate STUB_RESOLVE_WRITES="$FIXTURES/version-drift.resolved"
   expect_status 1
-  expect_commands "make generate" "make resolve-packages"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages"
   expect_report "$first_identity: pinned at $first_version"
   expect_report "resolved to 999.0.0"
   expect_verdict "check: FAILED: package resolution does not reproduce the committed Package.resolved"
@@ -1008,7 +1019,7 @@ real_run_cases() {
   begin_case "a pin changed during the build fails the final check"
   run_gate STUB_BUILD_WRITES="$FIXTURES/revision-drift.resolved"
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD" \
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD" \
     "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "revision 000000000000"
   expect_verdict "check: FAILED: Package.resolved changed during the build or tests"
