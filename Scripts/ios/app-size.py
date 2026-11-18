@@ -47,9 +47,20 @@ ROOT = Path(__file__).resolve().parents[2]
 
 # One megabyte, as Scripts/check.sh counts it.
 MEGABYTE = 1_000_000
-# The user's limits, in megabytes: the real one, and the strict one.
-LIMIT_MB = 30
-STRICT_LIMIT_MB = 40
+
+
+def limits_from_gate(text):
+    """The two limits, in megabytes, that the text of Scripts/check.sh defines once for the Mac's gate and this tool's:
+    (APP_SIZE_WARNING_MB, APP_SIZE_LIMIT_MB). Raises ValueError when either is missing."""
+    found = [re.search(rf"^readonly {name}=(\d+)$", text, re.MULTILINE) for name in ("APP_SIZE_WARNING_MB", "APP_SIZE_LIMIT_MB")]
+    if not all(found):
+        raise ValueError("Scripts/check.sh does not define APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB")
+    return int(found[0].group(1)), int(found[1].group(1))
+
+
+# The user's limits, in megabytes: the real one, and the strict one. Read from check.sh, their one definition, so the
+# Mac's app and the iPhone's cannot drift apart.
+LIMIT_MB, STRICT_LIMIT_MB = limits_from_gate((ROOT / "Scripts" / "check.sh").read_text())
 # Where the device build keeps its derived data unless --derived-data says otherwise: an absolute folder, and the one
 # definition of it (`make ios-size` and `make check` pass none), since xcodebuild resolves a relative path against its own
 # folders, not this tool's (board finding 6513).
@@ -473,7 +484,7 @@ def selftest():
         check(with_map["executable_bytes"] == sizes["TextMouth"], "the executable's size is not found by the app's name")
         # The report names the sizes, the limits, and the libraries.
         text = "\n".join(format_report({**result, **with_map}, "iPhone app"))
-        check("iPhone app:" in text and "within the 30 MB limit" in text, f"report was {text}")
+        check("iPhone app:" in text and f"within the {LIMIT_MB} MB limit" in text, f"report was {text}")
         check("libmp3lame.a" in text and "App Store download" in text, "report lacks a part")
     # The summary lines: three headlines, then details, each with its prefix.
     lines = summary_lines({**result, **with_map}, "iPhone app")
@@ -481,11 +492,11 @@ def selftest():
     check(all(line.startswith((SUMMARY_PREFIX, SUMMARY_DETAIL_PREFIX)) for line in lines), f"a line has no prefix: {lines}")
     check(any(line.startswith(SUMMARY_DETAIL_PREFIX) and "libmp3lame.a" in line for line in lines), "no library detail line")
     # The limits' words.
-    check("within the 30 MB limit" == verdict(30 * MEGABYTE), "30 MB itself is within the limit")
-    check("over the 30 MB limit" in verdict(30 * MEGABYTE + 1), "30 MB and a byte is over the limit")
-    check("over the strict 40 MB limit" == verdict(40 * MEGABYTE + 1), "40 MB and a byte is over the strict limit")
-    check(exit_status(40 * MEGABYTE, True) == 0 and exit_status(40 * MEGABYTE + 1, True) == 3
-          and exit_status(40 * MEGABYTE + 1, False) == 0 and exit_status(35 * MEGABYTE, True) == 0,
+    check(f"within the {LIMIT_MB} MB limit" == verdict(LIMIT_MB * MEGABYTE), "30 MB itself is within the limit")
+    check(f"over the {LIMIT_MB} MB limit" in verdict(LIMIT_MB * MEGABYTE + 1), "30 MB and a byte is over the limit")
+    check(f"over the strict {STRICT_LIMIT_MB} MB limit" == verdict(STRICT_LIMIT_MB * MEGABYTE + 1), "40 MB and a byte is over the strict limit")
+    check(exit_status(STRICT_LIMIT_MB * MEGABYTE, True) == 0 and exit_status(STRICT_LIMIT_MB * MEGABYTE + 1, True) == 3
+          and exit_status(STRICT_LIMIT_MB * MEGABYTE + 1, False) == 0 and exit_status((LIMIT_MB + 1) * MEGABYTE, True) == 0,
           "--check's status is 3 only above the strict limit")
     check(describe(18_453_210) == "18.5 MB (18,453,210 bytes)", f"describe gave {describe(18_453_210)}")
     # The build's argv: the device SDK, unsigned, a link map, the scheme.
@@ -514,12 +525,16 @@ def selftest():
         globals()["run_build"] = real_run_build
     check(len(given) == 2 and all(os.path.isabs(path) for path in given) and given[1] == str(DEFAULT_DERIVED_DATA),
           f"main gave the build {given}, not absolute folders")
-    # The limits are check.sh's: one number each, said once there (the Mac's gate) and here (the iPhone's), kept equal.
-    gate = (ROOT / "Scripts" / "check.sh").read_text()
-    warning = re.search(r"^readonly APP_SIZE_WARNING_MB=(\d+)$", gate, re.MULTILINE)
-    limit = re.search(r"^readonly APP_SIZE_LIMIT_MB=(\d+)$", gate, re.MULTILINE)
-    check(bool(warning and limit) and (int(warning.group(1)), int(limit.group(1))) == (LIMIT_MB, STRICT_LIMIT_MB),
-          "the limits here differ from APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh")
+    # The limits are read from check.sh, which defines each once.
+    check(limits_from_gate("readonly APP_SIZE_WARNING_MB=12\nreadonly APP_SIZE_LIMIT_MB=34\n") == (12, 34),
+          "the limits were not read from a script's text")
+    try:
+        limits_from_gate("readonly APP_SIZE_WARNING_MB=12\n")
+        check(False, "a script without the strict limit was accepted")
+    except ValueError:
+        pass
+    check(limits_from_gate((ROOT / "Scripts" / "check.sh").read_text()) == (LIMIT_MB, STRICT_LIMIT_MB),
+          "the limits here are not check.sh's")
     for failure in failures:
         print(f"app-size selftest FAILED: {failure}")
     if not failures:

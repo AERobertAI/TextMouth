@@ -139,7 +139,8 @@ readonly IOS_SIZE_TOOL="Scripts/ios/app-size.py"
 # 33 MB before the size work of October 2026, 11 MB after it, 23.55 MB on
 # November 13, 2026, before -Osize and the missing export trie brought it to
 # 18.98 MB, and 18.5 MB at version 0.5.0. These are the limits' only
-# definitions: Scripts/check-selftest.sh reads them here.
+# definitions: Scripts/check-selftest.sh and Scripts/ios/app-size.py (the
+# iPhone app's limits) read them here.
 readonly APP_SIZE_WARNING_MB=30
 readonly APP_SIZE_LIMIT_MB=40
 # A line in which the Swift compiler reports a warning (see the header).
