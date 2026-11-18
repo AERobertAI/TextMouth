@@ -22,7 +22,9 @@ Run every command as `python3 -I -B Scripts/l10n/l10n.py COMMAND`; `--help` afte
    Nothing else in an item is changed, except `"keepEnglish": true` where the English is right in the language too (a word both share).
 4. `apply batch.json` checks each translation and writes the good ones as `machine_translated`; it is safe to run twice.
    It prints each refusal with its reason, writes the refused items to `batch.json.rejected.json`, and exits 1.
-   Fix those items in that file and run `apply` on it; a clean run of the original file empties it.
+   Fix those items in that file and run `apply batch.json.rejected.json`: that run writes the good ones and rewrites the same file with what is still refused, so repeat until it exits 0 and the file has no items.
+   Never apply the original `batch.json` again once its rejected file holds fixes: a rejected file newer than the batch is left alone, and the run says so.
+   `apply --lang es` stops a batch made for another language.
 5. `check` lists what is wrong in the catalog and warns where a translation does not use a glossary term (a warning, not a failure); `status --lang es` counts the strings by state.
 6. The plural forms of an English string go in with `plural KEY --lang en --one "%lld book" --other "%lld books"`, since the key `%lld books` is only the fallback.
    `plural` takes the other languages' forms too, and checks their categories and placeholders as `apply` does.
@@ -108,7 +110,9 @@ Replace LANGUAGE and BATCH; a model of the Sonnet kind at high effort does this 
     For each item use its comment, its context (the code around the use), its placeholders, its glossary terms, its
     doNotTranslate names, and its previous translation when it has one.
     Then run: python3 -I -B Scripts/l10n/l10n.py apply BATCH
-    Fix every refusal in BATCH.rejected.json and apply that file, until nothing is refused. Then run check.
+    Fix every refusal in BATCH.rejected.json (its items carry the reasons), then run apply on BATCH.rejected.json, which
+    rewrites that same file with what is still refused; repeat until apply exits 0. Never apply BATCH again after that.
+    Then run check.
     Never read or write ~/.TextMouth or any data folder; never delete a file; do not commit anything but the catalog and
     the glossary; do not push or merge.
     Report in 20 lines: how many strings were written, each refusal you could not fix and why, each string that should

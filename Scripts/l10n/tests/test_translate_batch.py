@@ -7,6 +7,7 @@ Every test works in a temporary folder: a catalog with strings in every state, a
 locations table. Nothing is built, and the repository's own catalog and glossary are never read.
 """
 import json
+import os
 import re
 import sys
 import unittest
@@ -203,8 +204,8 @@ class TodoTests(BatchCase):
         self.assertEqual(batch["items"][0]["context"], [])
 
 
-class ApplyTests(BatchCase):
-    """`apply`: a translated batch checked and written."""
+class ApplyCase(BatchCase):
+    """The helpers the tests of `apply` share: a translated batch made from `todo`'s, and `apply` run on a file."""
 
     # The translations the tests fill in, for the five strings `todo` offers.
     GOOD = {"Play": "Reproducir", "Open %@ in TextMouth": "Abrir %@ en TextMouth", "Add %@ to your Library": "Añade %@ a tu Biblioteca",
@@ -235,6 +236,11 @@ class ApplyTests(BatchCase):
         """Runs `apply` on the batch file; returns (status, standard output)."""
         status, out, _ = shared.run("apply", str(path), "--catalog", str(self.path), "--glossary", str(self.glossary), *extra)
         return status, out
+
+
+
+class ApplyTests(ApplyCase):
+    """`apply`: a translated batch checked and written."""
 
     def refused(self, key, translation, reason):
         """Applies the batch with `key` translated as `translation`: the run exits 1, the output names the key and has
@@ -403,13 +409,13 @@ class ApplyTests(BatchCase):
         self.assertEqual(text, catalog.dumps(catalog.loads(text)))
 
 
-class ApplyLanguageTests(BatchCase):
+class ApplyLanguageTests(ApplyCase):
     """`apply` checks the batch's language: text, never the source language, one the tools know, and `--lang` when given."""
 
     def batch_in(self, language):
         """A batch file for `language` with one good-looking item for Play."""
         path = self.folder / "language.json"
-        ApplyTests.write_batch(path, {"language": language, "items": [{"key": "Play", "translation": "Lanzar"}]})
+        self.write_batch(path, {"language": language, "items": [{"key": "Play", "translation": "Lanzar"}]})
         return path
 
     def refused_whole(self, language, words):
@@ -447,6 +453,89 @@ class ApplyLanguageTests(BatchCase):
         status, _, err = shared.run("apply", str(self.batch_in("es-419")), "--catalog", str(self.path), "--glossary", str(self.glossary))
         self.assertEqual(status, 0, err)
         self.assertEqual(self.values("Play", "es-419"), {"": ("machine_translated", "Lanzar")})
+
+
+class RefusalLoopTests(ApplyCase):
+    """The loop the guide's translator follows: apply the batch, fix what is refused in the `.rejected.json` file, apply that
+    file, until nothing is refused; and the original batch never overwrites the translator's fixes."""
+
+    # Two translations that are refused (the first is empty, the second drops the placeholder), the rest are good.
+    BAD = {"Play": "", "Open %@ in TextMouth": "Abrir en TextMouth"}
+
+    def stamp(self, path, seconds):
+        """Sets the modification time of `path` to `seconds` after a fixed start (a clock the test controls)."""
+        os.utime(path, (1_700_000_000 + seconds, 1_700_000_000 + seconds))
+
+    def rejected_of(self, path):
+        """The rejected file of the batch `path`, and its items by key."""
+        rejected = Path(str(path) + ".rejected.json")
+        return rejected, {item["key"]: item for item in self.read_batch(rejected)["items"]}
+
+    def fix(self, rejected, **fixes):
+        """Fills in translations (key to text) in the rejected file, as a translator does."""
+        batch = self.read_batch(rejected)
+        for item in batch["items"]:
+            if item["key"] in fixes:
+                item["translation"] = fixes[item["key"]]
+        self.write_batch(rejected, batch)
+
+    def test_the_loop_ends_with_every_string_written_and_never_makes_a_second_rejected_file(self):
+        path = self.translated(**self.BAD)
+        status, out = self.apply(path)
+        self.assertEqual(status, 1, out)
+        rejected, items = self.rejected_of(path)
+        self.assertEqual(sorted(items), ["Open %@ in TextMouth", "Play"])
+        # The translator fixes one and gets the other wrong again.
+        self.fix(rejected, Play="Reproducir", **{"Open %@ in TextMouth": "Abrir"})
+        status, out = self.apply(rejected)
+        self.assertEqual(status, 1, out)
+        self.assertEqual(self.values("Play", "es"), {"": ("machine_translated", "Reproducir")})
+        self.assertEqual(self.values("Open %@ in TextMouth", "es"), {}, "the refused one is not written")
+        # The same file now holds only what is still refused; no file named .rejected.json.rejected.json exists.
+        self.assertEqual([item["key"] for item in self.read_batch(rejected)["items"]], ["Open %@ in TextMouth"])
+        self.assertEqual(sorted(p.name for p in self.folder.glob("*.rejected*")), [rejected.name])
+        # The last fix: everything goes through and the rejected file is left with no items.
+        self.fix(rejected, **{"Open %@ in TextMouth": "Abrir %@ en TextMouth"})
+        status, out = self.apply(rejected)
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.read_batch(rejected)["items"], [])
+        self.assertEqual(self.values("Open %@ in TextMouth", "es"), {"": ("machine_translated", "Abrir %@ en TextMouth")})
+        self.assertEqual(sorted(p.name for p in self.folder.glob("*.rejected*")), [rejected.name])
+
+    def test_applying_the_original_batch_again_does_not_overwrite_a_rejected_file_the_translator_fixed(self):
+        path = self.translated(**self.BAD)
+        self.stamp(path, 0)
+        self.apply(path)
+        rejected, _ = self.rejected_of(path)
+        self.fix(rejected, Play="Reproducir", **{"Open %@ in TextMouth": "Abrir %@ en TextMouth"})
+        self.stamp(rejected, 100)
+        fixed = rejected.read_text(encoding="utf-8")
+        status, out = self.apply(path)
+        self.assertEqual(status, 1, "the original batch still has its two bad items")
+        self.assertEqual(rejected.read_text(encoding="utf-8"), fixed, "the fixes are still there, byte for byte")
+        self.assertIn("is newer than", out)
+        self.assertIn("apply that file", out)
+
+    def test_an_edited_original_batch_newer_than_its_rejected_file_rewrites_it(self):
+        path = self.translated(**self.BAD)
+        self.stamp(path, 0)
+        self.apply(path)
+        rejected, _ = self.rejected_of(path)
+        self.stamp(rejected, 50)
+        # The batch is fixed and saved again afterwards: it is newer, and a clean run empties the rejected file.
+        self.write_batch(path, {**self.read_batch(path), "items": []})
+        self.stamp(path, 100)
+        self.assertEqual(self.apply(path)[0], 0)
+        self.assertEqual(self.read_batch(rejected)["items"], [])
+
+    def test_a_rejected_file_applied_with_nothing_left_refused_stays_with_no_items_and_applies_cleanly_again(self):
+        path = self.translated(Play="")
+        self.apply(path)
+        rejected, _ = self.rejected_of(path)
+        self.fix(rejected, Play="Reproducir")
+        self.assertEqual(self.apply(rejected)[0], 0)
+        self.assertEqual(self.apply(rejected)[0], 0, "an empty rejected file is a clean no-op")
+        self.assertEqual(self.read_batch(rejected)["items"], [])
 
 
 if __name__ == "__main__":

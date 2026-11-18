@@ -803,14 +803,30 @@ def cmd_todo(args):
     return EXIT_OK
 
 
-def rejected_path(file):
-    """The file the refused items of the batch `file` are written to: the batch's name and `.rejected.json`."""
-    return Path(str(file) + ".rejected.json")
+# The ending of the file `apply` writes the refused items to.
+REJECTED_SUFFIX = ".rejected.json"
+
+
+def rejected_target(file):
+    """(the file the refused items of `apply FILE` are written to, whether it may already hold a translator's work): a
+    batch X.json writes to X.json.rejected.json, and a file that is already a `.rejected.json` is rewritten itself with
+    what is still refused, so the loop (apply, fix the refused, apply the rejected file) never makes
+    X.json.rejected.json.rejected.json. Only the first case may overwrite a file the translator has already fixed."""
+    file = Path(file)
+    if file.name.endswith(REJECTED_SUFFIX):
+        return file, False
+    return Path(str(file) + REJECTED_SUFFIX), True
+
+
+def newer_than(path, other):
+    """Whether the file `path` was modified after the file `other`."""
+    return path.stat().st_mtime_ns > other.stat().st_mtime_ns
 
 
 def cmd_apply(args):
     """`apply FILE [--lang L] [--state S]`: checks each translation of the batch FILE and writes the good ones. Prints each refusal with
-    its reason and writes the refused items to FILE.rejected.json for a second try; exit status 1 if any was refused."""
+    its reason and writes the refused items to FILE.rejected.json for a second try (FILE itself when it is a .rejected.json,
+    rewritten with what is still refused); exit status 1 if any was refused."""
     cat, glossary = load_catalog(args), load_glossary(args)
     try:
         batch = json.loads(Path(args.file).read_text(encoding="utf-8"))
@@ -827,15 +843,19 @@ def cmd_apply(args):
             print(f"refused {quote(str(item.get('key', '?')))}: {problem}")
     for key, sentence in result.warnings:
         print(f"warning {quote(key)}: {sentence}")
-    # The refused items go to a file of their own for a second try; an earlier file is overwritten (emptied when nothing
-    # was refused this time) so it never holds an old refusal.
-    target = rejected_path(args.file)
-    if result.rejected or target.exists():
+    # The refused items go to a file of their own for a second try (see rejected_target). Applying the rejected file
+    # rewrites it with what is still refused (none when all went through); applying the original batch writes it too, unless
+    # the rejected file is newer than the batch, which means a translator has been fixing it: that work is never overwritten.
+    target, from_batch = rejected_target(args.file)
+    protected = from_batch and target.exists() and newer_than(target, Path(args.file))
+    if protected:
+        print(f"apply: {target} is newer than {args.file}, so it was left as it is; apply that file to try the refused ones again")
+    elif result.rejected or target.exists():
         retry = {key: batch[key] for key in ("language", "sourceLanguage", "pluralCategories") if key in batch}
         target.write_text(json.dumps({**retry, "items": result.rejected}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"apply: {number(len(result.written))} written, {number(len(result.unchanged))} already there, "
           f"{number(len(result.rejected))} refused, {number(len(result.warnings))} warnings"
-          + (f"; the refused ones are in {target}" if result.rejected else ""))
+          + (f"; the refused ones are in {target}" if result.rejected and not protected else ""))
     return EXIT_PROBLEMS if result.rejected else EXIT_OK
 
 
