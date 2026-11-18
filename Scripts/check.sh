@@ -63,10 +63,13 @@
 #                TEXTMOUTH_CHECK_SIMULATE_RESOLVED=<file>
 #                  treats <file> as the Package.resolved that resolution wrote.
 #
-#   --without-tests  Run steps 1 to 3 only: no hosted suite, and no iPhone app
-#              build either (the trains measure the iPhone app's size on every
-#              iPhone run, and a hosted runner's check job should stay short).
-#              GitHub's check
+#   --without-tests  Run steps 1 to 3 only: no hosted suite. The iPhone app is
+#              still built and held to its size limits (the release gate runs
+#              `make check --without-tests`, and no other gate fails an
+#              oversized iPhone app), except on a GitHub runner
+#              (GITHUB_ACTIONS=true), where the step is skipped and the report
+#              says so: that job's workflow cannot be changed to opt out, and
+#              the trains measure the iPhone app there. GitHub's check
 #              workflow (.github/workflows/check.yml) runs the gate this way,
 #              and runs the suite beside it in parallel jobs, from nothing, on
 #              the same shards and skips as the TestBuild runs, with the
@@ -710,8 +713,8 @@ main() {
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
   require_app_within_size_limit
   require_app_free_of_mac_paths
-  if (( without_tests )); then
-    detail "the iPhone app is not built or measured by this gate (--without-tests)"
+  if [[ ${GITHUB_ACTIONS:-} == true ]]; then
+    detail "the iPhone app is not built or measured on a GitHub runner (GITHUB_ACTIONS=true); the trains measure it there"
   else
     require_ios_app_within_size_limit
   fi

@@ -423,7 +423,7 @@ run_gate() {
   fi
   output=$(cd "$sandbox" && env \
       -u TEXTMOUTH_BUILD_SLOT -u CLAUDE_CODE_SESSION_ID -u TEXTMOUTH_CLAUDE_TMP_ROOT \
-      -u TEXTMOUTH_CHECK_SIMULATE_FAILURE -u TEXTMOUTH_CHECK_SIMULATE_RESOLVED \
+      -u TEXTMOUTH_CHECK_SIMULATE_FAILURE -u TEXTMOUTH_CHECK_SIMULATE_RESOLVED -u GITHUB_ACTIONS \
       PATH="$STUBS:$PATH" STUB_LOG="$stub_log" STUB_RESOLVED="$RESOLVED" \
       STUB_BUILD_LOG="$FIXTURES/build-clean.log" STUB_TEST_OUTPUT="$FIXTURES/tests-pass.log" \
       STUB_APP_BYTES="$DEFAULT_APP_BYTES" STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-ok.txt" \
@@ -543,8 +543,8 @@ dry_run_cases() {
   expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
   expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
   expect_report "the hosted XCTest suite is not run by this gate (--without-tests)"
-  expect_report "the iPhone app is not built or measured by this gate (--without-tests)"
-  refute_report "app-size.py"
+  expect_report "would run: $IOS_SIZE_RUN"
+  expect_report "would require the iPhone app to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
   expect_report "pins match Package.resolved: "
   refute_report "step 4"
   refute_report "make test"
@@ -768,10 +768,11 @@ real_run_cases() {
   expect_verdict "check: PASSED"
   end_case
 
-  begin_case "a run with --without-tests resolves and builds, checks the size, and never runs the suite"
+  begin_case "a run with --without-tests resolves and builds, checks both sizes, and never runs the suite"
   run_gate -- --without-tests
   expect_status 0
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_report "iPhone app: 12.3 MB (12,345,678 bytes) in 41 files, within the $APP_SIZE_WARNING_MB MB limit."
   expect_report "step 3 of 3: build the Release app"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
   expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_WARNING_MB MB limit"
@@ -779,6 +780,28 @@ real_run_cases() {
   expect_report "Package.resolved still holds the committed pins"
   refute_report "Executed"
   expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "the release gate (--without-tests) fails an iPhone app over the strict limit"
+  run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-over.txt" STUB_IOS_SIZE_STATUS=3 -- --without-tests
+  expect_status 1
+  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_verdict "check: FAILED: step 3 of 3 (build the Release app): the iPhone app is more than the $APP_SIZE_LIMIT_MB MB strict limit"
+  end_case
+
+  begin_case "on a GitHub runner the iPhone app is neither built nor measured, with or without the suite"
+  run_gate GITHUB_ACTIONS=true -- --without-tests
+  expect_status 0
+  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_report "the iPhone app is not built or measured on a GitHub runner (GITHUB_ACTIONS=true)"
+  refute_report "iPhone app:"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "GITHUB_ACTIONS set to anything but true does not skip the iPhone app"
+  run_gate GITHUB_ACTIONS=false -- --without-tests
+  expect_status 0
+  expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
   end_case
 
   begin_case "a Release app that names no folder of this Mac passes, and says so"
