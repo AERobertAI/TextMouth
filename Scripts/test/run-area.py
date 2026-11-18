@@ -374,15 +374,16 @@ def score_test_classes(changed_names, changed_test_paths, classes, words_by_path
     return [(key[0], key[3]) for key in keyed], dropped, matches
 
 
-def changed_files(base: str, root: Path):
-    """The files changed since the merge-base of `base` and HEAD, as {path: text or None}.
+def changed_files(base: str, root: Path, scopes=None):
+    """The files changed since the merge-base of `base` and HEAD, as {path: text or None}. `scopes` are the folders that
+    count (default: the app's, the hosted tests', and TestData's); `l10n.py reach` adds the iPhone tests'.
 
     Tracked changes (staged, unstaged and committed) and untracked files under
     TextMouth/, TextMouthProductionTests/ and TestData/. A deleted file is read
     from the merge-base, so the types it declared still count; a file that
     cannot be read as text maps to None. Raises difflint.GitError.
     """
-    scopes = ["--", CHANGED_APP, CHANGED_TESTS, CHANGED_DATA]
+    scopes = ["--"] + list(scopes or (CHANGED_APP, CHANGED_TESTS, CHANGED_DATA))
     merge_base = difflint.run_git(["merge-base", base, "HEAD"], cwd=str(root)).strip()
     tracked = difflint.run_git(["diff", "--name-only", "--no-color", merge_base] + scopes, cwd=str(root))
     untracked = difflint.run_git(["ls-files", "--others", "--exclude-standard"] + scopes, cwd=str(root))
@@ -420,10 +421,10 @@ def names_of_changes(changes):
     return names, test_paths
 
 
-def test_file_words(root: Path):
-    """{path: words} for every Swift file of the hosted test folder."""
+def test_file_words(root: Path, folder: str = testkit.TESTS_FOLDER):
+    """{path: words} for every Swift file of the hosted test folder (or another test folder, such as the iPhone bundle's)."""
     return {str(source.relative_to(root)): file_words(source.read_text(encoding="utf-8", errors="replace"))
-            for source in sorted((root / testkit.TESTS_FOLDER).glob("*.swift"))}
+            for source in sorted((root / folder).glob("*.swift"))}
 
 
 def changed_report(ranked, dropped, matches, areas, explain=False, limit=None):

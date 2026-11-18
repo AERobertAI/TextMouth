@@ -19,6 +19,8 @@ Commands (`--help` after each says more):
            glossary terms, and an earlier translation of a similar string.
   apply    Check a translated batch, string by string, and write the good translations (machine_translated).
   prune    Delete the stale strings (the code no longer has them) that hold no translation; --all deletes every stale one.
+  reach    The hosted test classes a branch's localization could break, for a train request's --classes: the Mac tests
+           on one comma-separated line, the iPhone unit tests on a line of their own; --explain gives each reason.
   merge-driver
            Git's merge driver for the String Catalog (`make l10n-merge-driver` defines it): a three-way merge by key,
            language, and plural form.
@@ -49,6 +51,7 @@ import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import repo_paths  # noqa: E402
 import glossary as glossarylib  # noqa: E402
 import merge  # noqa: E402
+import reach  # noqa: E402
 import translate  # noqa: E402
 
 EXIT_OK = 0        # the command did its work
@@ -831,6 +834,19 @@ def cmd_prune(args):
     return EXIT_OK
 
 
+def cmd_reach(args):
+    """`reach [--base REF] [--explain]`: prints the hosted test classes this branch's localization could break (see
+    reach.py): the Mac classes as one comma-separated line for `build-train.py request --classes`, then the iPhone unit
+    test classes under a heading of their own. With --explain, a line for each class and reason. Writes nothing."""
+    try:
+        reached = reach.reach(ROOT, args.base)
+    except Exception as error:  # git failed (an unknown --base) or a test folder is unreadable
+        raise Refused(f"reach: {error}", EXIT_USAGE)
+    emit(args, {bundle: {name: reasons for name, reasons in sorted(classes.items())} for bundle, classes in reached.items()},
+         reach.format_reach(reached, args.explain))
+    return EXIT_OK
+
+
 def cmd_plural(args):
     """`plural KEY --lang L --one TEXT --other TEXT ...`: writes the plural forms of one string in one language. Refuses
     (exit status 1, nothing written) a form the language does not use, a missing form, an empty form, or a form whose
@@ -1070,7 +1086,7 @@ def count_option(text):
 
 
 def build_parser():
-    """The command line's parser: one subcommand each for sync, status, size, check, prune, plural, todo, apply, and merge-driver."""
+    """The command line's parser: one subcommand each for sync, status, size, check, prune, reach, plural, todo, apply, and merge-driver."""
     parser = argparse.ArgumentParser(prog="l10n.py", description=__doc__.split("\n\n")[0],
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog="Exit status: 0 done, 1 a check found problems or a sync was refused, 2 a bad command line.")
@@ -1100,6 +1116,10 @@ def build_parser():
     prune = add("prune", "delete the stale strings that hold no translation (--all: every stale string)", cmd_prune)
     prune.add_argument("--all", action="store_true", help="delete every stale string, translated or not")
     prune.add_argument("--dry-run", action="store_true", help="list what would be deleted and write nothing")
+    reach_command = add("reach", "the Mac and iPhone test classes this branch's localization could break, for a train request",
+                        cmd_reach)
+    reach_command.add_argument("--base", default="main", help="the branch to compare with (default main)")
+    reach_command.add_argument("--explain", action="store_true", help="a line for each class and the reason it is reached")
     plural = add("plural", "write a string's plural forms in one language, English included", cmd_plural)
     plural.add_argument("key", help="the string's key, such as '%%lld books'")
     plural.add_argument("--lang", required=True, help="the language, such as en or es")
