@@ -64,18 +64,34 @@ struct SessionMemoryFloor: Sendable {
     /// free keeps half of what it began with (`run(beganWith:)`).
     let bytes: Int
     /// The memory the app has left before iOS ends it, in bytes:
-    /// `os_proc_available_memory()`, unless a test scripts its own; 0 when
-    /// the system sets the app no limit, as in the simulator.
+    /// `os_proc_available_memory()`, unless a test scripts its own. Its 0
+    /// means two things (`zeroMeansNoLimit`).
     let available: @Sendable () -> Int
+    /// Whether `available`'s 0 means the system sets the app no limit, as it
+    /// does in the simulator alone; on an iPhone, 0 means the app is over its
+    /// limit already, which must stop a session at once (the check of the
+    /// FMT54 review's fixes, item 3).
+    var zeroMeansNoLimit = SessionMemoryFloor.onSimulator
 
     /// The app's floor.
     static let app = SessionMemoryFloor(bytes: 512 * 1_048_576, available: { os_proc_available_memory() })
 
-    /// The memory the app has left now, and nil when the system sets it no
-    /// limit, which no floor can be under.
+    /// Whether this is the iOS simulator, where the system sets an app no
+    /// memory limit.
+    static let onSimulator: Bool = {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }()
+
+    /// The memory the app has left now, 0 when it is over its limit, and nil
+    /// when the system sets it no limit, which no floor can be under.
     var left: Int? {
         let left = available()
-        return left > 0 ? left : nil
+        if left > 0 { return left }
+        return zeroMeansNoLimit ? nil : 0
     }
 
     /// What one run keeps, as it begins with `leftAtStart` bytes left (nil:
@@ -147,10 +163,11 @@ final class SessionStopCheck {
     }
 
     /// Whether the session should stop now: its call should, or the app has
-    /// less memory left than its run's floor, which stops it for good.
+    /// less memory left than its run's floor, or none (over its limit, even
+    /// in a run that began so), which stops it for good.
     var shouldStop: Bool {
         if memoryLeftWhenStopped != nil || call.shouldStop { return true }
-        guard let left = memory.reader.left, left < memory.floor else { return false }
+        guard let left = memory.reader.left, left == 0 || left < memory.floor else { return false }
         memoryLeftWhenStopped = left
         return true
     }

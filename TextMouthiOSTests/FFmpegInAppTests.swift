@@ -344,6 +344,27 @@ final class FFmpegInAppTests: XCTestCase {
         XCTAssertEqual(FFmpegAudioConverter.Tool.bundled.memoryFloor.bytes, 512 * megabyte)
     }
 
+    /// The system's 0 means no limit only in the simulator, where the
+    /// iPhone's tests run; on an iPhone it means the app is over its limit
+    /// already, which stops a session at its first ask, even in a run that
+    /// began with nothing left (the check of the FMT54 review's fixes, item
+    /// 3). The app's floor knows which it is.
+    func testZeroLeftStopsASessionOnAnIPhoneAndNotInTheSimulator() throws {
+        let megabyte = Self.megabyte
+        let phone = SessionMemoryFloor(bytes: 512 * megabyte, available: { 0 }, zeroMeansNoLimit: false)
+        let simulator = SessionMemoryFloor(bytes: 512 * megabyte, available: { 0 }, zeroMeansNoLimit: true)
+        XCTAssertEqual(phone.left, 0)
+        XCTAssertNil(simulator.left)
+        for (floor, stops) in [(phone, true), (simulator, false)] {
+            for start in [4_000 * megabyte, 0] {
+                let check = SessionStopCheck(call: try finishedCall(), memory: floor.run(beganWith: start))
+                XCTAssertEqual(check.shouldStop, stops, "zero means no limit: \(floor.zeroMeansNoLimit), \(start / megabyte) MB at the start")
+            }
+        }
+        XCTAssertTrue(SessionMemoryFloor.onSimulator, "the iPhone's tests run in the simulator")
+        XCTAssertEqual(SessionMemoryFloor.app.zeroMeansNoLimit, SessionMemoryFloor.onSimulator)
+    }
+
     /// A run keeps 512 MB free, or half of what the app had left as it began
     /// when that is less, and holds FFmpeg to allocations of half its floor,
     /// never more than 256 MB (the check of the FMT54 review's fixes, item
