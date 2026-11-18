@@ -949,14 +949,6 @@ enum BrailleTranslator {
             let what = failure == .refused(work: engine.work)
                 ? "refused, as an earlier call was abandoned" : "abandoned past its time"
             DiagnosticLog.event(.import, "BRAILLE_HELPER_FAILED: \(mode) \(table): the call was \(what)")
-            // An abandoned call is told by the whole translation's time, as a
-            // stop for time is, not by what was left of it, which cut the call
-            // (the check of the FMT54 review's fixes, item 4, as finding 5 did
-            // for FFmpeg): a book stuck in its last batch never "ran longer
-            // than 1 second".
-            if case let .abandoned(work, _) = failure {
-                throw InProcessEngine.Failure.abandoned(work: work, limit: timeAllowed ?? seconds)
-            }
             throw failure
         }
         switch Int(outcome.status) {
