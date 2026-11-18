@@ -69,14 +69,14 @@ final class FFmpegImportConversionTests: XCTestCase {
     /// naming its format and what to do, and no program runs.
     func testWithoutTheHelperTheFileIsRefusedWithWhatToDo() async throws {
         let wma = try source()
-        let launches = WatchedProcess.launchCount
+        let (tool, starts) = countingSessionStarts(of: ffmpegTool(helper: nil))
         do {
-            _ = try await FFmpegAudioConverter.convert(wma, using: ffmpegTool(helper: nil))
+            _ = try await FFmpegAudioConverter.convert(wma, using: tool)
             XCTFail("the file must be refused")
         } catch {
             XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .helperMissing(kind: "WMA"))
         }
-        XCTAssertEqual(WatchedProcess.launchCount, launches, "no program may run")
+        XCTAssertEqual(starts(), 0, "no session may run")
         XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
     }
 
@@ -87,14 +87,15 @@ final class FFmpegImportConversionTests: XCTestCase {
         let locked = folder.appendingPathComponent("Locked.wma")
         try copyProtectedASF(from: try formatSampleURL("wma/tones-wma1.wma")).write(to: locked)
         for helper in [try bundledFFmpegHelper(), nil] {
-            let launches = WatchedProcess.launchCount
+            // The helper's launches on the Mac, the session's opens in the iPhone app.
+            let (tool, starts) = countingSessionStarts(of: ffmpegTool(helper: helper))
             do {
-                _ = try await FFmpegAudioConverter.convert(locked, using: ffmpegTool(helper: helper))
+                _ = try await FFmpegAudioConverter.convert(locked, using: tool)
                 XCTFail("a copy-protected file must be refused")
             } catch {
                 XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .copyProtected)
             }
-            XCTAssertEqual(WatchedProcess.launchCount, launches)
+            XCTAssertEqual(starts(), 0, "the session ran before the copy protection was told")
         }
         XCTAssertEqual(try names(in: folder), ["Locked.wma"])
     }
@@ -132,14 +133,14 @@ final class FFmpegImportConversionTests: XCTestCase {
         let folder = try makeSandboxDirectory("FFmpegNotRecognized")
         let fake = folder.appendingPathComponent("Fake.wma")
         try Data("not a Windows Media file".utf8).write(to: fake)
-        let launches = WatchedProcess.launchCount
+        let (tool, starts) = countingSessionStarts(of: try bundledFFmpegTool())
         do {
-            _ = try await FFmpegAudioConverter.convert(fake, using: try bundledFFmpegTool())
+            _ = try await FFmpegAudioConverter.convert(fake, using: tool)
             XCTFail("a file that is no WMA must be refused")
         } catch {
             XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .notRecognized(fileName: "Fake.wma", kind: "WMA"))
         }
-        XCTAssertEqual(WatchedProcess.launchCount, launches)
+        XCTAssertEqual(starts(), 0, "the session ran on a file that is no WMA")
 
         let cases: [(Int32, FFmpegAudioConverter.Failure)] = [
             (3, .notRecognized(fileName: "tones.wma", kind: "WMA")), (4, .noSound(fileName: "tones.wma")),

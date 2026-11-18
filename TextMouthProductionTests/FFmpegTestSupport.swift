@@ -271,6 +271,27 @@ extension XCTestCase {
         ffmpegTool(helper: try bundledFFmpegHelper())
     }
 
+    /// `tool`, and how many runs of the session it has started since, on
+    /// either platform (the FMT54 review, finding 6): the helper's launches
+    /// on the Mac (`WatchedProcess.launchCount`), and on the iPhone, which
+    /// starts no program and counts no launch, the opens of the session in
+    /// the app, through the tool.
+    func countingSessionStarts(of tool: FFmpegAudioConverter.Tool) -> (tool: FFmpegAudioConverter.Tool, starts: @Sendable () -> Int) {
+        #if os(macOS)
+        let launchesBefore = WatchedProcess.launchCount
+        return (tool, { WatchedProcess.launchCount - launchesBefore })
+        #else
+        let opens = OSAllocatedUnfairLock(initialState: 0)
+        let open = tool.openSession
+        var counting = tool
+        counting.openSession = { file, demuxer, mode, check in
+            opens.withLock { $0 += 1 }
+            return open(file, demuxer, mode, check)
+        }
+        return (counting, { opens.withLock { $0 } })
+        #endif
+    }
+
     /// Runs the session as the helper's command line asks, `[mode, demuxer,
     /// path]`, on `helper` under `limits`, and returns how it ended and every
     /// byte of its stream: on the Mac the helper program under the watchdog;
