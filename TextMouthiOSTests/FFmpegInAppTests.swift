@@ -452,7 +452,8 @@ private final class ClockSession: InProcessFFmpegSession {
     }
 
     func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8]) {
-        limits.withLock { $0.append(check.call.limit) }
+        let limit = check.call.limit
+        limits.withLock { $0.append(limit) }
         clock.withLock { $0 += step }
         return (TMFF_EXIT_DONE, FFmpegTestStream.head())
     }
