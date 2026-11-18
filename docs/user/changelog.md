@@ -4,6 +4,12 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.4 (November 19, 2026)
+
+### Lossless audio on the iPhone
+- The iPhone now imports True Audio, WavPack, and Monkey's Audio files with TextMouth's own readers, as the Mac does, and each becomes the same book.
+- A hybrid WavPack book keeps its full quality on the iPhone only when you add it with Import Folder or in a ZIP: Open Book and "Open in" take the file without its .wvc correction file, so it becomes AAC.
+
 ## 0.5.3 (November 18, 2026)
 
 ### Audio that macOS can't read, on the iPhone

@@ -99,7 +99,7 @@ Audio gets its title, author, and duration from its tags, and its chapters, wher
 - Ogg (.ogg, .oga, .opus), holding Vorbis, Opus, or FLAC: converted to .m4a at import, and never played through Apple's players; iPhone: no; Tested with made samples.
 - AC-3 (.ac3), E-AC-3 (.ec3, .eac3), MP2 (.mp2), AMR (.amr), 3GPP audio (.3gp), NeXT/Sun audio (.au), AIFC (.aifc), CAF (.caf), and Wave64 (.w64): converted to .m4a at import by afconvert; iPhone: no; Tested with made samples.
 - MP1 (.mp1) and the alternative extensions .mpa, .snd, .awb, .3g2, and .3ga: converted the same way; iPhone: no; Basic.
-- TTA (.tta), WavPack (.wv, with a .wvc correction file beside it), and Monkey's Audio (.ape, version 3.99 and later): read by TextMouth's own decoders and written as Apple Lossless in .m4a, with their tags; iPhone: no; Tested with made samples.
+- TTA (.tta), WavPack (.wv, with a .wvc correction file beside it), and Monkey's Audio (.ape, version 3.99 and later): read by TextMouth's own decoders and written as Apple Lossless in .m4a, with their tags; iPhone: yes; Tested with made samples.
 - WMA (.wma, .asf), Speex (.spx), Musepack (.mpc, .mp+), WebM and Matroska audio (.webm, .weba, .mka), RealAudio (.ra, .rm, .rmvb), and the sound of .wmv, .avi, .flv, and .mkv videos: converted by the app's converter, keeping tags and chapters; iPhone: yes; Tested with made samples, not Musepack.
 - Nothing needs installing for those: TextMouth carries the converter.
 - Copy-protected audio (.aa, .aax, .aaxc, .m4p, and copy-protected ASF) is refused and never read.

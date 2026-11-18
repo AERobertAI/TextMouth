@@ -314,7 +314,9 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 <!-- id: iphone-import-refusals; keys: PhoneImportRefusal, convertedAudio, PhoneImportWording, tracksLeftOut, refuseConversion, copy protection; src: TextMouth/Phone/PhoneImportRefusal.swift, TextMouth/Phone/PhoneImportWording.swift, TextMouth/Services/FileImportService+AudioConversion.swift; status: incomplete; issues: FMT55 -->
 
 - PhoneImportRefusal is thrown only on iOS (`#if os(iOS)`), where the Mac would start a program or, for TextMouth's own audio readers, still converts: FileImportService.convertImportedAudio finds the tracks the import converts and refuses them by kind.
-  - `.convertedAudio` for what afconvert converts (Ogg, AC-3, CAF, and the rest), and for the files TextMouth's own readers decode (TTA, WavPack, Monkey's Audio): the iPhone compiles those readers, but this refusal still stops the import before they run, and the plist leaves their type out.
+  - `.convertedAudio` for what afconvert converts (Ogg, AC-3, CAF, and the rest).
+  - The files TextMouth's own readers decode (TTA, WavPack, Monkey's Audio) are no longer refused: `isReadByOwnReader` lets one through by its bytes, or by its name when its bytes are of no format the import converts, and the plist offers their types.
+    An Ogg file named .tta is still refused as Ogg, and a file of no format named so fails in the converter as unreadable, as on the Mac.
   - The files only FFmpeg reads are no longer refused: the iPhone converts them in the app (FMT54).
     `refuseConversion` throws `FFmpegAudioConverter.Failure.copyProtected`, the Mac's own sentence, first for a copy-protected one, under the conversion's step, before it refuses another file for its kind.
     Ogg and the formats the Mac converts with afconvert are FMT55.
