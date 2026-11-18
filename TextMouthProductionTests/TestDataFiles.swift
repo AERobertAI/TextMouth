@@ -43,6 +43,12 @@ func requireFile(_ name: String) throws -> URL {
     return url
 }
 
+/// The names of the files in `folder`, hidden ones included, sorted: what a test compares a folder's contents
+/// with. Empty for a folder that cannot be listed.
+func namesOfFiles(in folder: URL) -> [String] {
+    ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).sorted()
+}
+
 /// Return a fixture path without requiring that an optional fixture exists.
 /// Some legacy scenarios intentionally skip large, separately downloaded books.
 func dataFilePath(_ name: String) -> String {
