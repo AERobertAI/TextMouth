@@ -14,6 +14,7 @@ Commands (`--help` after each says more):
            English bytes.
   size     The English bytes against the budget, and each language's shipped size in each format.
   check    The rules a catalog must keep before a language ships. Fast, builds nothing, and is run by `make check`.
+  plural   Write a string's plural forms in one language (English included).
 
 The catalog's layout, placeholders, plural rules, and states are in catalog.py; the shipped languages and the budget are
 in config.json.
@@ -39,6 +40,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "agents"))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import repo_paths  # noqa: E402
+import translate  # noqa: E402
 
 EXIT_OK = 0        # the command did its work
 EXIT_PROBLEMS = 1  # a check found problems, or a sync was refused
@@ -656,11 +658,34 @@ def cmd_check(args):
 
 
 # ---------------------------------------------------------------------------------------------------------------
+# plural
+# ---------------------------------------------------------------------------------------------------------------
+
+# The plural categories the `plural` command takes as options, in CLDR's order.
+PLURAL_OPTIONS = ("zero", "one", "two", "few", "many", "other")
+
+
+def cmd_plural(args):
+    """`plural KEY --lang L --one TEXT --other TEXT ...`: writes the plural forms of one string in one language. Refuses
+    (exit status 1, nothing written) a form the language does not use, a missing form, an empty form, or a form whose
+    placeholders differ from the key's."""
+    cat = load_catalog(args)
+    forms = {category: getattr(args, category) for category in PLURAL_OPTIONS if getattr(args, category) is not None}
+    try:
+        state = translate.write_plural(cat, args.key, args.lang, forms, args.state)
+    except translate.Problems as refusal:
+        raise Refused("\n".join(["plural refused:"] + [f"  {problem}" for problem in refusal.problems]))
+    cat.save(catalog_path(args))
+    print(f"wrote {args.lang} {quote(args.key)}: {', '.join(forms)} ({state})")
+    return EXIT_OK
+
+
+# ---------------------------------------------------------------------------------------------------------------
 # The command line.
 # ---------------------------------------------------------------------------------------------------------------
 
 def build_parser():
-    """The command line's parser: one subcommand each for sync, status, size, and check."""
+    """The command line's parser: one subcommand each for sync, status, size, check, and plural."""
     parser = argparse.ArgumentParser(prog="l10n.py", description=__doc__.split("\n\n")[0],
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog="Exit status: 0 done, 1 a check found problems or a sync was refused, 2 a bad command line.")
@@ -687,6 +712,12 @@ def build_parser():
     add("size", "the English bytes against the budget, and each language's shipped size in each format", cmd_size)
     check = add("check", "the rules a catalog keeps: translations, placeholders, plurals, comments, stale strings, the budget", cmd_check)
     check.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help=f"print at most this many problems, 0 for all (default {DEFAULT_LIMIT})")
+    plural = add("plural", "write a string's plural forms in one language, English included", cmd_plural)
+    plural.add_argument("key", help="the string's key, such as '%%lld books'")
+    plural.add_argument("--lang", required=True, help="the language, such as en or es")
+    for category in PLURAL_OPTIONS:
+        plural.add_argument(f"--{category}", help=f"the text of the {category} form (give exactly the forms the language uses)")
+    plural.add_argument("--state", help="the state to write (default translated for English, else machine_translated)")
     return parser
 
 
