@@ -42,6 +42,13 @@ final class FFmpegInAppTests: XCTestCase {
 
     // MARK: - The Stop Check
 
+    /// A call of the test's engine whose work has ended, which never says
+    /// stop: the call a `SessionStopCheck` of the test's own is made for.
+    private func finishedCall() throws -> InProcessEngine.Call {
+        try engine.run(limit: 600) { call in call }
+    }
+
+
     /// A stop check that counts its asks in the `Int32` its context points at,
     /// and says stop from the first.
     private static var stopAtOnce: tmff_stop_check {
@@ -175,8 +182,8 @@ final class FFmpegInAppTests: XCTestCase {
         let gate = makeGate()
         var tool = ffmpegTool(helper: try? bundledFFmpegHelper(), seconds: seconds)
         tool.engine = InProcessEngine(name: "test-FFmpeg-stuck", work: "the audio conversion", grace: grace)
-        tool.openSession = { file, demuxer, mode, call -> (session: (any InProcessFFmpegSession)?, status: Int32) in
-            if mode == .probe { return LinkedFFmpegSession.open(file, demuxer: demuxer, mode: mode, call: call) }
+        tool.openSession = { file, demuxer, mode, check -> (session: (any InProcessFFmpegSession)?, status: Int32) in
+            if mode == .probe { return LinkedFFmpegSession.open(file, demuxer: demuxer, mode: mode, check: check) }
             return (session: StuckSession(gate: gate), status: TMFF_EXIT_DONE)
         }
         return tool
@@ -236,6 +243,58 @@ final class FFmpegInAppTests: XCTestCase {
             XCTAssertTrue(isAbandonedSentence(String(sentence.dropFirst(start.count))), sentence)
         }
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: TextMouthPaths.libraryDir.path).sorted(), libraryBefore)
+    }
+
+    // MARK: - The Memory Floor
+
+    /// A floor under the app's free memory (the FMT54 review, finding 4) is
+    /// crossed only when the system says how much is left and it is less than
+    /// the floor: the simulator sets the app no limit (0 left), which never
+    /// stops a session. The app's floor is 512 MB, read from the system.
+    func testTheMemoryFloorIsCrossedOnlyBelowItWithALimit() throws {
+        let megabyte = 1_048_576
+        for (left, crossed) in [(0, false), (100 * megabyte, true), (511 * megabyte, true), (512 * megabyte, false), (2_000 * megabyte, false)] {
+            let floor = SessionMemoryFloor(bytes: 512 * megabyte, available: { left })
+            let check = SessionStopCheck(call: try finishedCall(), floor: floor)
+            XCTAssertEqual(check.shouldStop, crossed, "\(left / megabyte) MB left")
+            XCTAssertEqual(check.memoryLeftWhenStopped, crossed ? left : nil)
+        }
+        XCTAssertEqual(SessionMemoryFloor.app.bytes, 512 * megabyte)
+        XCTAssertEqual(FFmpegAudioConverter.Tool.bundled.memoryFloor.bytes, 512 * megabyte)
+    }
+
+    /// A session that leaves the app less memory than the floor is stopped,
+    /// asked as it reads the file, and the run ends as the Mac's watchdog
+    /// ends a helper that holds too much, in the Mac's words, naming what the
+    /// app's memory grew by since the run began: by a scripted system that
+    /// has 1,000 MB left as the run begins and 300 MB from the session's first
+    /// ask on, "Converting tones.wma was stopped because it held more than 700
+    /// MB of memory."
+    func testASessionThatLeavesTooLittleMemoryIsStoppedInTheMacsWords() async throws {
+        let megabyte = 1_048_576
+        let asks = OSAllocatedUnfairLock(initialState: 0)
+        var tool = ffmpegTool(helper: try bundledFFmpegHelper())
+        tool.engine = engine
+        tool.memoryFloor = SessionMemoryFloor(bytes: 512 * megabyte, available: {
+            asks.withLock { count -> Int in
+                count += 1
+                return count == 1 ? 1_000 * megabyte : 300 * megabyte
+            }
+        })
+        let limits = WatchedProcess.Limits(maximumSeconds: 60, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 60)
+        let (ending, read) = try await FFmpegAudioConverter.runInProcess(
+            .decode, of: try formatSampleURL("wma/tones-wma1.wma"), demuxer: "asf", limits: limits, using: tool
+        ) { nextPiece -> Int in
+            var count = 0
+            while try await !nextPiece().isEmpty { count += 1 }
+            return count
+        }
+        XCTAssertEqual(ending, WatchedProcess.Ending(outcome: .killed(.usedTooMuchMemory(bytes: Int64(700 * megabyte)))))
+        XCTAssertEqual(try read.get(), 0, "the session gave a record past the floor")
+        let failure = FFmpegAudioConverter.failure(
+            of: ending, read: read, fileName: "tones.wma", kind: "WMA", limits: limits, logTag: "AUDIO_CONVERSION_KILLED"
+        )
+        XCTAssertEqual(failure?.localizedDescription, "Converting tones.wma was stopped because it held more than 700 MB of memory.")
     }
 
     // MARK: - The Run's Time
@@ -326,7 +385,7 @@ private final class StuckSession: InProcessFFmpegSession {
         self.gate = gate
     }
 
-    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+    func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8]) {
         _ = gate.wait(timeout: .now() + 30)
         return (TMFF_EXIT_DONE, [])
     }
@@ -348,8 +407,8 @@ private final class ClockSession: InProcessFFmpegSession {
         self.step = step
     }
 
-    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
-        limits.withLock { $0.append(call.limit) }
+    func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8]) {
+        limits.withLock { $0.append(check.call.limit) }
         clock.withLock { $0 += step }
         return (TMFF_EXIT_DONE, FFmpegTestStream.head())
     }
@@ -372,7 +431,7 @@ private final class SuspendingSession: InProcessFFmpegSession {
         self.suspendedAfter = suspendedAfter
     }
 
-    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+    func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8]) {
         let number = given.withLock { count -> Int in
             count += 1
             return count

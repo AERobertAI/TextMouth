@@ -39,9 +39,10 @@ import os
 /// Each C library gets an engine of its own, made with the phrase its
 /// sentences name its work by: braille's is
 /// `BrailleTranslator.libraryEngine`, and FFmpeg's is
-/// `FFmpegAudioConverter.sessionEngine` (FMT54), whose session asks
-/// `Call.stopCheck` with `Call.context` from FFmpeg's interrupt callback and
-/// before each of its steps. A caller in Swift concurrency, as FFmpeg's
+/// `FFmpegAudioConverter.sessionEngine` (FMT54), whose session asks a check
+/// of its own (`SessionStopCheck`), the call's `shouldStop` and a floor under
+/// the app's free memory, before every read of its file and each of its
+/// steps. A caller in Swift concurrency, as FFmpeg's
 /// import is, uses `runForTask(limit:_:)`, which waits off the cooperative
 /// threads and follows the task's cancellation.
 final class InProcessEngine: Sendable {
@@ -126,9 +127,9 @@ final class InProcessEngine: Sendable {
 
         /// `shouldStop` as a C function: 1 to stop and 0 to go on, for the
         /// call whose `context` it is given, and 0 for none. It has the shape
-        /// of the braille library's `should_stop` and of the FFmpeg session's
-        /// stop check (`tmff_stop_check`, which FFmpeg's interrupt callback
-        /// asks), so a C library asks it between its steps.
+        /// of the braille library's `should_stop`, so the library asks it
+        /// between its steps (FFmpeg's session asks a check of its own that
+        /// asks `shouldStop`, `SessionStopCheck`).
         static var stopCheck: @convention(c) (UnsafeMutableRawPointer?) -> Int32 {
             { context in
                 guard let context else { return 0 }

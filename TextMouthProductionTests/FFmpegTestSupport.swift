@@ -218,12 +218,12 @@ extension XCTestCase {
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: helper.path)
         return (helper, log)
         #else
-        let open: InProcessSessionOpener = { file, demuxer, mode, call in
+        let open: InProcessSessionOpener = { file, demuxer, mode, check in
             FFmpegStandInLog.append("\(mode.argument) \(demuxer)", to: log)
             let action = mode == .probe ? probe : decode
             switch action {
             case .realHelper:
-                return LinkedFFmpegSession.open(file, demuxer: demuxer, mode: mode, call: call)
+                return LinkedFFmpegSession.open(file, demuxer: demuxer, mode: mode, check: check)
             case let .write(bytes, status):
                 return (session: WrittenStandInSession(bytes: bytes, status: status), status: 0)
             case let .hang(seconds):
@@ -368,7 +368,7 @@ final class WrittenStandInSession: InProcessFFmpegSession {
     }
 
     /// The bytes first, when there are any, then the end with `status`.
-    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+    func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8]) {
         let first = given.withLock { given in
             defer { given = true }
             return !given
@@ -392,10 +392,10 @@ final class HangingStandInSession: InProcessFFmpegSession {
         self.seconds = seconds
     }
 
-    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+    func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8]) {
         let end = DispatchTime.now() + .seconds(seconds)
-        while !call.shouldStop, DispatchTime.now() < end { usleep(10_000) }
-        return (call.shouldStop ? 11 : 0, [])
+        while !check.shouldStop, DispatchTime.now() < end { usleep(10_000) }
+        return (check.shouldStop ? 11 : 0, [])
     }
 
     func close() {}

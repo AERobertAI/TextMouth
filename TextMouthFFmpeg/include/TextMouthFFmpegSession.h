@@ -54,8 +54,8 @@ int tmff_open_regular_file(const char *path);
 /* A check a session asks before every read and seek of its file, before each of its steps, and
    at FFmpeg's own checkpoints through the session's interrupt callback: nonzero to stop, 0 to go
    on. `context` is what the check was set with.
-   The iPhone's engine gives each call one (InProcessEngine.Call.stopCheck, with the call's
-   context), which turns to stop once the call's time is spent or its import is cancelled. */
+   The iPhone gives each engine call one (SessionStopCheck), which turns to stop once the call's
+   time is spent, its import is cancelled, or the app has less memory left than its floor. */
 typedef int (*tmff_stop_check)(void *context);
 
 /* Opens the file read from `descriptor` (open for reading, a regular file; it stays the

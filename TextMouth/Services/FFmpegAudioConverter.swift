@@ -188,6 +188,10 @@ enum FFmpegAudioConverter {
         /// linked into the app (`LinkedFFmpegSession`), unless a test stands
         /// in for it with a stream written by hand or a call that hangs.
         var openSession: InProcessSessionOpener = LinkedFFmpegSession.open
+        /// The floor under the memory the app keeps free while a session runs
+        /// (the FMT54 review, finding 4): the app's, 512 MB, unless a test
+        /// scripts what is left.
+        var memoryFloor: SessionMemoryFloor = .app
         /// The clock an in-process run's whole time is counted by: the
         /// app's, which counts only the time TextMouth runs
         /// (`RunningClock.app`, B18), so a run frozen while iOS keeps the app

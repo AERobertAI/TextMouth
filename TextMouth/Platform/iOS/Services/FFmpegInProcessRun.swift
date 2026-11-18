@@ -1,4 +1,5 @@
 import Foundation
+import os
 private import TextMouthFFmpegProtocol
 private import TextMouthFFmpegSession
 
@@ -8,9 +9,9 @@ private import TextMouthFFmpegSession
 // watchdog. iOS lets an app start no program, so the iPhone links the same
 // session (the FFmpeg_iOS library) and runs it here, on an engine of its own
 // (`InProcessEngine`): one call at a time on a thread with the helper's 8 MB
-// stack, each call within a time limit that the session's stop check carries
-// into FFmpeg's interrupt callback, and a call that runs past its limit
-// abandoned. The stream is pulled one record a call into the reader both
+// stack, each call within a time limit and above a floor of free memory that
+// the session's stop check carries into every read of the file and every
+// step (`SessionStopCheck`), and a call that runs past its limit abandoned. The stream is pulled one record a call into the reader both
 // platforms share (`FFmpegHelperStream`), so every bound of it stays in one
 // place, and a run ends as the helper's would, so every sentence is the Mac's.
 // `FFmpegAudioConverter.runSession` is the one caller.
@@ -19,12 +20,12 @@ private import TextMouthFFmpegSession
 
 /// Opens a session of the stream in the app, on the engine's thread, as an
 /// in-process run asks (FMT54): the file, the demuxer its bytes name
-/// (`FFmpegContainer.demuxer`), the mode, and the engine's call it runs in,
-/// whose stop check the open asks. It gives the session, or none with the
-/// TMFF_EXIT_ status that says why (TMFF_EXIT_UNREADABLE for a file that is
-/// not a regular one).
+/// (`FFmpegContainer.demuxer`), the mode, and the stop check of the engine's
+/// call it runs in, which the open asks. It gives the session, or none with
+/// the TMFF_EXIT_ status that says why (TMFF_EXIT_UNREADABLE for a file that
+/// is not a regular one).
 typealias InProcessSessionOpener = @Sendable (
-    _ file: URL, _ demuxer: String, _ mode: FFmpegAudioConverter.SessionMode, _ call: InProcessEngine.Call
+    _ file: URL, _ demuxer: String, _ mode: FFmpegAudioConverter.SessionMode, _ check: SessionStopCheck
 ) -> (session: (any InProcessFFmpegSession)?, status: Int32)
 
 /// One open session of the stream in the app (FMT54), which an in-process run
@@ -32,16 +33,103 @@ typealias InProcessSessionOpener = @Sendable (
 /// end. TextMouth's FFmpeg session linked into the app is one
 /// (`LinkedFFmpegSession`); a test stands in another.
 protocol InProcessFFmpegSession: AnyObject, Sendable {
-    /// The next record of the stream, header and payload, made while `call`
-    /// runs and asking its stop check: TMFF_EXIT_DONE with the record,
-    /// TMFF_EXIT_DONE with none once END has been given, or another
+    /// The next record of the stream, header and payload, made while the
+    /// engine's call of `check` runs, asking `check`: TMFF_EXIT_DONE with the
+    /// record, TMFF_EXIT_DONE with none once END has been given, or another
     /// TMFF_EXIT_ status with none, after which the stream is over
     /// (TMFF_EXIT_STOPPED once the check has said stop).
-    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8])
+    func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8])
 
     /// Frees the session and what it holds; asked once, after its last record.
     func close()
 }
+
+// MARK: - The Session's Stop Check
+
+/// A floor under the memory the app has left while an FFmpeg session runs in
+/// it (the FMT54 review, finding 4), the iPhone's counterpart of the Mac
+/// helper's watch on its memory. FFmpeg builds a file's tags, chapters,
+/// attachments, and index in many small allocations while it reads the
+/// header, which no single allocation's cap holds, and on the iPhone iOS ends
+/// TextMouth itself past its memory limit, which the listener would meet as a
+/// crash, mid-book.
+struct SessionMemoryFloor: Sendable {
+    /// The least memory the app may have left while a session runs, in bytes:
+    /// the app's, 512 MB, twice the most FFmpeg may allocate at once
+    /// (`av_max_alloc`, 256 MB), so that no allocation between two asks can
+    /// take the app from above the floor to its limit, and room for the rest
+    /// of TextMouth to say what happened. A sound file's session needs tens
+    /// of megabytes, so only a session that grows far past what any file
+    /// means to hold reaches it.
+    let bytes: Int
+    /// The memory the app has left before iOS ends it, in bytes:
+    /// `os_proc_available_memory()`, unless a test scripts its own; 0 when
+    /// the system sets the app no limit, as in the simulator.
+    let available: @Sendable () -> Int
+
+    /// The app's floor.
+    static let app = SessionMemoryFloor(bytes: 512 * 1_048_576, available: { os_proc_available_memory() })
+
+    /// The memory the app has left now, and nil when the system sets it no
+    /// limit, which no floor can be under.
+    var left: Int? {
+        let left = available()
+        return left > 0 ? left : nil
+    }
+}
+
+/// The stop check one engine call gives its FFmpeg session in the app
+/// (FMT54), as `tmff_stop_check` with this as its context: stop once the
+/// engine says the call's time is spent or its import is cancelled
+/// (`InProcessEngine.Call.shouldStop`), or once the app has less memory left
+/// than the floor. The session asks it before every read and seek of its
+/// file and at each of its steps, and FFmpeg at its own checkpoints, so the
+/// floor is watched as closely as the time.
+///
+/// It lives in its call's work, on the engine's thread, and the session
+/// asks it there alone, so it is not Sendable: the work hands back what it
+/// found (`memoryLeftWhenStopped`).
+final class SessionStopCheck {
+    /// The engine's call it is asked in.
+    let call: InProcessEngine.Call
+    /// The floor under the app's free memory.
+    let floor: SessionMemoryFloor
+    /// The memory the app had left when the floor said stop, in bytes; nil
+    /// unless it did.
+    private(set) var memoryLeftWhenStopped: Int?
+
+    /// The check of `call`, keeping `floor`.
+    init(call: InProcessEngine.Call, floor: SessionMemoryFloor) {
+        self.call = call
+        self.floor = floor
+    }
+
+    /// Whether the session should stop now: its call should, or the app has
+    /// less memory left than the floor, which stops it for good.
+    var shouldStop: Bool {
+        if memoryLeftWhenStopped != nil || call.shouldStop { return true }
+        guard let left = floor.left, left < floor.bytes else { return false }
+        memoryLeftWhenStopped = left
+        return true
+    }
+
+    /// This check as the context `function` is given, valid while the call's
+    /// work holds it.
+    var context: UnsafeMutableRawPointer {
+        Unmanaged.passUnretained(self).toOpaque()
+    }
+
+    /// `shouldStop` as the session's C check: 1 to stop and 0 to go on, for
+    /// the check whose `context` it is given, and 0 for none.
+    static var function: @convention(c) (UnsafeMutableRawPointer?) -> Int32 {
+        { context in
+            guard let context else { return 0 }
+            return Unmanaged<SessionStopCheck>.fromOpaque(context).takeUnretainedValue().shouldStop ? 1 : 0
+        }
+    }
+}
+
+// MARK: - The Linked Session
 
 /// TextMouth's FFmpeg session linked into the app (TextMouthFFmpegSession.h),
 /// one open file of it (FMT54).
@@ -67,13 +155,13 @@ final class LinkedFFmpegSession: InProcessFFmpegSession, @unchecked Sendable {
     /// Opens the file at `file` as the Mac's helper opens its own
     /// (`tmff_open_regular_file`: a regular file only, never a FIFO waited
     /// on), then the session on it with the demuxer `demuxer` in `mode`,
-    /// asking `call`'s stop check while FFmpeg reads the file's header and
-    /// finds its streams. An `InProcessSessionOpener`.
+    /// asking `check` while FFmpeg reads the file's header and finds its
+    /// streams. An `InProcessSessionOpener`.
     static func open(
         _ file: URL,
         demuxer: String,
         mode: FFmpegAudioConverter.SessionMode,
-        call: InProcessEngine.Call
+        check: SessionStopCheck
     ) -> (session: (any InProcessFFmpegSession)?, status: Int32) {
         let descriptor = file.withUnsafeFileSystemRepresentation { path in path.map { tmff_open_regular_file($0) } ?? -1 }
         guard descriptor >= 0 else { return (nil, TMFF_EXIT_UNREADABLE) }
@@ -81,7 +169,7 @@ final class LinkedFFmpegSession: InProcessFFmpegSession, @unchecked Sendable {
         let opened = demuxer.withCString { name in
             tmff_session_open_checked(
                 descriptor, name, mode == .decode ? TMFF_SESSION_DECODE : TMFF_SESSION_PROBE,
-                InProcessEngine.Call.stopCheck, call.context, &status
+                SessionStopCheck.function, check.context, &status
             )
         }
         guard let opened else {
@@ -93,13 +181,13 @@ final class LinkedFFmpegSession: InProcessFFmpegSession, @unchecked Sendable {
         return (LinkedFFmpegSession(session: opened, descriptor: descriptor), TMFF_EXIT_DONE)
     }
 
-    /// The session's next record, made while `call` runs, its stop check
-    /// set for this call alone and taken off before it returns, since the
-    /// call's context ends with it; the record is copied out of the session,
+    /// The session's next record, made while `check`'s call runs, the check
+    /// set for this call alone and taken off before it returns, since its
+    /// context ends with the call; the record is copied out of the session,
     /// which reuses its buffer at the next call.
-    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+    func next(asking check: SessionStopCheck) -> (status: Int32, record: [UInt8]) {
         guard !isClosed else { return (TMFF_EXIT_USAGE, []) }
-        tmff_session_set_stop_check(session, InProcessEngine.Call.stopCheck, call.context)
+        tmff_session_set_stop_check(session, SessionStopCheck.function, check.context)
         defer { tmff_session_set_stop_check(session, nil, nil) }
         var bytes: UnsafePointer<UInt8>?
         var length = 0
@@ -152,14 +240,19 @@ extension FFmpegAudioConverter {
     ///   grace later is abandoned by the engine, whose failure `read` throws.
     /// - **The task's cancellation** stops the call in progress through the
     ///   same check, and the run ends in `CancellationError`, as on the Mac.
+    /// - **The memory.** The helper's memory watch is, in one process, a floor
+    ///   under the memory the app has left (`tool.memoryFloor`, the FMT54
+    ///   review's finding 4): the session's check says stop once less is left,
+    ///   and the run ends in the watchdog's kill for memory, naming what the
+    ///   app's memory grew by since the run began. FFmpeg's allocations are
+    ///   held to 256 MB each (`av_max_alloc`), a decoded frame to 4,194,304
+    ///   samples, and the records to the protocol's sizes.
     /// - **The end.** Once `read` is done the session is freed, in a call of
     ///   its own; an engine that refuses (a call was abandoned) leaves it to
     ///   the thread that still holds it.
     ///
-    /// The memory limit has no counterpart in one process: FFmpeg's
-    /// allocations are held to 256 MB each (`av_max_alloc`), the records to
-    /// the protocol's sizes, and the processor time to the time limit, which
-    /// one thread cannot pass.
+    /// The processor time is held by the time limit, which one thread cannot
+    /// pass.
     /// - Throws: `CancellationError` when the task is cancelled, after the
     ///   session is freed.
     static func runInProcess<Value: Sendable>(
@@ -203,6 +296,9 @@ private actor InProcessFFmpegRun {
     /// When the run began, by the tool's clock: its whole time counts from
     /// here, as the watchdog's counts from the helper's start.
     private let started: TimeInterval
+    /// The memory the app had left as the run began (nil with no limit), which
+    /// a stop for memory measures the run's growth from.
+    private let memoryAtStart: Int?
     /// Whether the open has been asked for; it is asked once.
     private var openAsked = false
     /// The open session, until it is freed.
@@ -220,6 +316,7 @@ private actor InProcessFFmpegRun {
         self.limits = limits
         self.tool = tool
         started = tool.clock.now()
+        memoryAtStart = tool.memoryFloor.left
     }
 
     /// How the run ended, as the helper's run says it: the watchdog's kill
@@ -240,10 +337,14 @@ private actor InProcessFFmpegRun {
         guard let callLimit = timeForTheNextCall() else { return [] }
         if !openAsked {
             openAsked = true
-            let (file, demuxer, mode, open) = (file, demuxer, mode, tool.openSession)
-            let opening = try await tool.engine.runForTask(limit: callLimit) { call in open(file, demuxer, mode, call) }
+            let (file, demuxer, mode, open, floor) = (file, demuxer, mode, tool.openSession, tool.memoryFloor)
+            let opening = try await tool.engine.runForTask(limit: callLimit) { call in
+                let check = SessionStopCheck(call: call, floor: floor)
+                let (session, status) = open(file, demuxer, mode, check)
+                return (session: session, status: status, memoryLeft: check.memoryLeftWhenStopped)
+            }
             guard let opened = opening.session else {
-                end(with: opening.status)
+                end(with: opening.status, memoryLeft: opening.memoryLeft)
                 return []
             }
             session = opened
@@ -257,9 +358,14 @@ private actor InProcessFFmpegRun {
     /// The next record of `session`, in a call of `limit` seconds; nothing
     /// once the stream has ended.
     private func record(from session: any InProcessFFmpegSession, within limit: TimeInterval) async throws -> [UInt8] {
-        let (status, record) = try await tool.engine.runForTask(limit: limit) { call in session.next(asking: call) }
+        let floor = tool.memoryFloor
+        let (status, record, memoryLeft) = try await tool.engine.runForTask(limit: limit) { call in
+            let check = SessionStopCheck(call: call, floor: floor)
+            let (status, record) = session.next(asking: check)
+            return (status, record, check.memoryLeftWhenStopped)
+        }
         guard status == TMFF_EXIT_DONE else {
-            end(with: status)
+            end(with: status, memoryLeft: memoryLeft)
             return []
         }
         // No record after END: the stream is whole.
@@ -279,11 +385,19 @@ private actor InProcessFFmpegRun {
         return min(limits.maximumSeconds - elapsed, limits.maximumStalledSeconds)
     }
 
-    /// Ends the stream with `status`. A stop the task's cancellation did not
-    /// ask for (TMFF_EXIT_STOPPED) was a limit's: the run's whole time when
-    /// it is spent, else the call's, the stall.
-    private func end(with status: Int32) {
+    /// Ends the stream with `status`. A stop the memory floor asked for, the
+    /// app having `memoryLeft` bytes left, is the watchdog's kill for memory,
+    /// naming what the app's memory grew by since the run began (at least 1
+    /// MB); any other stop the task's cancellation did not ask for
+    /// (TMFF_EXIT_STOPPED) was a time limit's: the run's whole time when it is
+    /// spent, else the call's, the stall.
+    private func end(with status: Int32, memoryLeft: Int? = nil) {
         self.status = status
+        if let memoryLeft {
+            let grew = max((memoryAtStart ?? memoryLeft) - memoryLeft, 1_048_576)
+            stopped = .usedTooMuchMemory(bytes: Int64(grew))
+            return
+        }
         guard status == TMFF_EXIT_STOPPED, !Task.isCancelled else { return }
         stopped = tool.clock.now() - started >= limits.maximumSeconds
             ? .tookTooLong(seconds: limits.maximumSeconds)
