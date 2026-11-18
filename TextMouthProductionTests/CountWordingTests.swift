@@ -84,7 +84,7 @@ final class CountWordingTests: XCTestCase {
             XCTAssertEqual(CountWording.secondsToTheTenth(seconds), words, "\(seconds)")
         }
         // A value no setting holds is written, never trapped on.
-        XCTAssertEqual(CountWording.secondsToTheTenth(.nan), "nan seconds")
+        XCTAssertTrue(CountWording.secondsToTheTenth(.nan).hasSuffix(" seconds"))
         XCTAssertFalse(CountWording.secondsToTheTenth(.infinity).isEmpty)
         XCTAssertFalse(CountWording.secondsToTheTenth(1e300).isEmpty)
     }
@@ -104,10 +104,66 @@ final class CountWordingTests: XCTestCase {
     /// The one list joiner words a list as a sentence does, and says nothing
     /// for no items, which each caller words for itself.
     func testListJoinsItemsAsASentenceListsThem() {
-        XCTAssertEqual(CountWording.list([]), "")
-        XCTAssertEqual(CountWording.list(["A"]), "A")
-        XCTAssertEqual(CountWording.list(["A", "B"]), "A and B")
-        XCTAssertEqual(CountWording.list(["A", "B", "C"]), "A, B, and C")
-        XCTAssertEqual(CountWording.list(["A", "B", "C", "D"]), "A, B, C, and D")
+        // The list follows the region (FR34), so the serial comma is pinned
+        // to en_US here and the other regions are checked below.
+        let us = Locale(identifier: "en_US")
+        XCTAssertEqual(CountWording.list([], locale: us), "")
+        XCTAssertEqual(CountWording.list(["A"], locale: us), "A")
+        XCTAssertEqual(CountWording.list(["A", "B"], locale: us), "A and B")
+        XCTAssertEqual(CountWording.list(["A", "B", "C"], locale: us), "A, B, and C")
+        XCTAssertEqual(CountWording.list(["A", "B", "C", "D"], locale: us), "A, B, C, and D")
+    }
+
+    /// A list is worded by the region's own rules: British English drops the
+    /// serial comma and Spanish says "y".
+    func testListFollowsTheRegion() {
+        XCTAssertEqual(CountWording.list(["A", "B", "C"], locale: Locale(identifier: "en_GB")), "A, B and C")
+        XCTAssertEqual(CountWording.list(["A", "B", "C"], locale: Locale(identifier: "es_ES")), "A, B y C")
+        XCTAssertEqual(CountWording.list(["A", "B"], locale: Locale(identifier: "es_ES")), "A y B")
+    }
+
+    // MARK: - Localized Counts
+
+    /// A count is formatted for the region, as a localized count should be
+    /// ("1,000 books" in en_US), where it used to be written without grouping.
+    func testCountsAreGroupedForTheRegion() {
+        let grouped = 1_000.formatted()
+        XCTAssertEqual(CountWording.books(1_000), "\(grouped) books")
+        XCTAssertEqual(CountWording.feeds(1_000), "\(grouped) feeds")
+        XCTAssertEqual(CountWording.bookmarks(1_001), "\(1_001.formatted()) bookmarks")
+        XCTAssertEqual(CountWording.minutes(1_000), "\(grouped) minutes")
+        // Below a thousand nothing is grouped, so the shorthand stays as it was.
+        XCTAssertEqual(CountWording.books(999), "999 books")
+    }
+
+    /// Every named count has its English one and other forms in the catalog,
+    /// so exactly one takes the singular.
+    func testEveryNamedCountHasItsEnglishPluralForms() {
+        let counts: [(Int) -> String] = [
+            CountWording.books, CountWording.feeds, CountWording.bookmarks, CountWording.hours,
+            CountWording.minutes, CountWording.seconds, CountWording.episodes, CountWording.articles,
+        ]
+        let nouns = ["book", "feed", "bookmark", "hour", "minute", "second", "episode", "article"]
+        for (count, noun) in zip(counts, nouns) {
+            XCTAssertEqual(count(1), "1 \(noun)")
+            XCTAssertEqual(count(0), "0 \(noun)s")
+            XCTAssertEqual(count(2), "2 \(noun)s")
+        }
+    }
+
+    /// A list of counts reads as a short run, with no "and", where each kind
+    /// keeps its own noun.
+    func testListsOfCountsAreShortRuns() {
+        XCTAssertEqual(CountWording.listItems(books: 2, episodes: 5, articles: 1, feeds: 1), "2 books, 5 episodes, 1 article, 1 feed")
+        XCTAssertEqual(CountWording.booksAndFeeds(books: 743, feeds: 2), "743 books, 2 feeds")
+        XCTAssertEqual(CountWording.listItems(books: 0), "0 books")
+    }
+
+    /// Whole seconds are counted as every count is; a decimal is written
+    /// with the region's decimal separator.
+    func testTenthsOfASecondUseTheRegionsDecimalSeparator() {
+        let half = 0.5.formatted(.number.precision(.fractionLength(1)))
+        XCTAssertEqual(CountWording.secondsToTheTenth(0.5), "\(half) seconds")
+        XCTAssertEqual(CountWording.secondsToTheTenth(3), CountWording.seconds(3))
     }
 }
