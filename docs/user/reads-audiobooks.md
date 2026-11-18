@@ -100,7 +100,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   While one converts, the app's memory is watched as FFmpeg's is (see below), and a file that needs more is stopped with "Converting NAME was stopped because the app's memory grew by more than N MB while it ran."
 
 ## Formats only ffmpeg reads
-<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: Q13, B19 -->
+<!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: Q13, B19, FU05 -->
 
 - TextMouth converts, as it is imported, the audio of these formats, which macOS cannot read, with the converter it carries inside the app, so nothing needs installing:
   - Windows Media Audio (.wma, .asf), and the sound of Windows Media video (.wmv);
@@ -125,7 +125,9 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   The file may be damaged."
   The converter confines itself before it reads a file (see [Where TextMouth keeps your library](helper-programs.md)), so a hostile file cannot harm the Mac.
 - Copy-protected Windows Media files (including PlayReady's) are refused with "TextMouth cannot open copy-protected files." before the converter runs.
-  An encrypted Matroska or WebM track, or a RealMedia file with copy protection, is not told so: it is refused as damaged.
+  A Matroska or WebM file whose every sound track is encrypted is told so too, with the same sentence.
+  A RealMedia file with copy protection, and a Matroska file that lists its tracks after its sound, are not told so: they are refused as damaged.
+  A file with an encrypted default sound track beside a plain one is decoded.
 - A damaged copy of TextMouth that has lost its converter refuses the file with "TextMouth can't convert WMA files because its converter is missing from the app.
   Install TextMouth again, then import the file again."
 - A folder, ZIP, or playlist of tracks leaves out a file that only the converter reads and that can't be converted, rather than refuse the whole book, and the notice names it.
@@ -135,10 +137,16 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - Up to five files are named, then "and N more".
   - The book is refused only when no other track is left.
 - A feed's episode in one of these formats still fails, as it did before.
+
+### Sound that is damaged or too large
+<!-- id: ffmpeg-damaged-sound; keys: silence, partly decoded, frame too large, damaged stretch, FU03; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Models/FFmpegImportWording.swift, TextMouthFFmpeg/Session/session.c -->
+
+- A file whose sound is partly refused by the decoder imports, with the damaged stretch kept as silence, and the import says so: "Part of “Lecture.wma” could not be decoded and is kept as silence.".
+  For several files it says "Part of 2 files, “a.wma” and “b.wma”, could not be decoded and is kept as silence."
+- A file with a piece of sound too large for TextMouth to decode, as no good file has, is refused with "TextMouth can't convert “NAME”: part of its sound is stored in one piece too large for TextMouth to decode."
 - A file that claims no length is limited by its size: its output may be at most 50 times the file's size, and no less than 64 MB.
   The import refuses it before running when the disk lacks room for that.
   [Where TextMouth keeps your library](helper-programs.md) lists what else stops the converter.
-- A file with a piece of sound too large for TextMouth to decode, as no good file has, is refused with "TextMouth can't convert “NAME”: part of its sound is stored in one piece too large for TextMouth to decode."
 
 ### On the iPhone
 <!-- id: ffmpeg-formats-on-iphone; keys: iPhone, FFmpeg, WMA, Matroska, memory, background, switching apps, Ogg; src: TextMouth/Platform/iOS/Services/FFmpegInProcessRun.swift, TextMouth/Services/InProcessEngine.swift, TextMouth/Services/RunningClock.swift, TextMouth/Phone/PhoneImportRefusal.swift, TextMouth/Phone/PhoneImportWording.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: FMT55 -->

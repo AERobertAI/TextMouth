@@ -5,7 +5,7 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 The rest of the audio import is in [Imports: audio](imports-audio.md).
 
 ## Which files go to FFmpeg
-<!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, ASF, copy protection, FMT31, FMT50, extensions; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: Q13, B19 -->
+<!-- id: audio-only-ffmpeg-reads; keys: FFmpegAudioConverter, FFmpegContainer, ASF, copy protection, FMT31, FMT50, extensions; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: Q13, B19, FU05 -->
 
 - Which files: FFmpegAudioConverter.converts(_:) is true for a file in either of two cases, whatever its name.
   - Its extension is in FFmpegAudioConverter.extensions (15 of them, joined to ImportAudioConverter.convertedExtensions so the reader guards keep them from Apple's decoders; "mpp" is not one, since Microsoft Project uses it).
@@ -16,7 +16,9 @@ The rest of the audio import is in [Imports: audio](imports-audio.md).
   FFmpegContainer reads only the first bytes (AudioContentSniffer.firstBytes).
   ASFHeader.isCopyProtected walks the ASF header for the four protection objects, PlayReady's among them: every object at least 24 bytes and inside its parent, at most 10,000 objects, at most 16 MB (maximumHeaderBytes), one nested level.
   A protected file is refused before the helper is started, or on the iPhone before any file is refused for its kind (`PhoneImportRefusal.refuseConversion`).
-  Only ASF is checked: an encrypted Matroska or WebM track, or RealMedia with DRM, ends as damaged (B19).
+  ASF is checked by its header, and Matroska and WebM by their Tracks (`FFmpegContainer`, RFC 9559): a file whose every sound track has a ContentEncryption under ContentEncodingType 1 is told as protected too, on both platforms.
+  Still open (B19): RealMedia with DRM, and a file whose Tracks follow its Clusters, end as damaged.
+  An encrypted default sound track beside a plain one is decoded (FU05).
   Musepack is in the build and the sniff on both platforms, but no sample has ever been decoded on either (Q13).
 - Tracks left out: FFmpegAudioConverter.tracksToLeaveOut(of:located:) names, among a book's several tracks, the files only ffmpeg reads that can't be converted (the helper is missing from the app, or this is the iPhone) and those whose bytes are of no container the helper reads.
   FileImportService.leavingOutWhatOnlyFFmpegReads removes their staged copies and returns the notice (FFmpegImportWording.tracksLeftOutNotice), and the book is refused only when no track is left.
@@ -24,13 +26,13 @@ The rest of the audio import is in [Imports: audio](imports-audio.md).
   It still refuses Ogg and the audio the Mac converts with afconvert (FMT55), and the files TextMouth's own readers decode.
 
 ## The helper and its stream
-<!-- id: ffmpeg-helper-and-stream; keys: TextMouthFFmpeg, FFmpegHelperStream, FFmpegReport, protocol, HEAD, INFO, PCM, END; src: TextMouthFFmpeg/main.c, TextMouthFFmpeg/Session/session.c, TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h, TextMouth/Services/FFmpegHelperStream.swift, TextMouth/Services/FFmpegReport.swift; status: incomplete; issues: FU04 -->
+<!-- id: ffmpeg-helper-and-stream; keys: TextMouthFFmpeg, FFmpegHelperStream, FFmpegReport, protocol, HEAD, INFO, PCM, END; src: TextMouthFFmpeg/main.c, TextMouthFFmpeg/Session/session.c, TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h, TextMouth/Services/FFmpegHelperStream.swift, TextMouth/Services/FFmpegReport.swift -->
 
 - The helper: FFmpeg 9.0.2 is built into TextMouthFFmpeg, a program in the app's Contents/MacOS (FFmpegAudioConverter.locateBundled finds it; none on iOS), and an ffmpeg installed on the Mac is never used for the import (the editor's filters still use one: FFmpeg.locate).
   One run is one file: "probe" says what the file holds, "decode" adds its sound as plain samples, each as a stream of records on the helper's standard output that TextMouthFFmpegProtocol.h defines (HEAD, INFO, TAG, STAG, CHAP, PCM, END).
   FFmpegHelperStream reads them against the protocol's limits, so a helper that writes nonsense costs a failed import: a record over its kind's size, out of order, an empty PCM record, samples that are not whole frames, or an END that counts other frames.
   The file is opened by the session itself (`tmff_open_regular_file`), a regular file only, and FFmpeg reads it through the session's own callbacks, with no FFmpeg protocol built and the demuxer named from FFmpegContainer.demuxer.
-  A FIFO is never waited on, but a symbolic link to a regular file is followed (FU04); no import meets one, since it hands over a staged copy.
+  A FIFO is never waited on, and a symbolic link is refused (`O_NOFOLLOW`); `runSession` resolves the path first, on both platforms, so a link to a good file still converts.
 
 ## Confining and watching the helper
 <!-- id: ffmpeg-helper-confinement-watching; keys: sandbox, sandbox_init, exit status 12, watchdog, grace after END, output cap, AUDIO_DECODER_REFUSED; src: TextMouthFFmpeg/main.c, TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
@@ -81,7 +83,7 @@ A decoder's crash would end the app, so the patches, the one decoding thread, an
   No test may let a real liblouis call be abandoned (B20).
 
 ## What is written
-<!-- id: ffmpeg-conversion-plan; keys: plan, Apple Lossless, AAC, writeBlocks, tags, form changed, no length; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Services/OwnAudioConverter.swift; status: incomplete; issues: FU03 -->
+<!-- id: ffmpeg-conversion-plan; keys: plan, Apple Lossless, AAC, writeBlocks, tags, form changed, no length; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Services/OwnAudioConverter.swift -->
 
 - The plan (FFmpegAudioConverter.plan(for:fileName:)): the session chose the first sound stream the build decodes that the file marks as default, else the first.
   A lossless codec (isLossless(codec:)) becomes Apple Lossless at its depth; anything else, AAC included, is decoded and written again as AAC at its own bit rate (OwnAudioConverter.writeBlocks, the writer TextMouth's own readers use), mixed to stereo when it has more channels.
@@ -93,9 +95,10 @@ A decoder's crash would end the app, so the patches, the one decoding thread, an
   - A converted frame is at most 16 MiB (MAX_CONVERTED_BYTES): a longer one is fed to the resampler in slices.
   - The Debug helper's `formcheck` mode (TMFF_MODE_FORMCHECK, no file) runs these bounds on frames made up in memory: the ratio at 16 and 17 to 1 each way, a frame whose conversion would be 268 MB, a frame the resampler holds back, and 1,000 and 1,001 changes.
 - Packets the decoder refuses are skipped and counted in END (AUDIO_DECODER_REFUSED), however many: the guard on errors in a row, MAX_ERRORS_IN_A_ROW, counts errors with no packet between them, which a damaged packet never makes, so no file reaches it.
-  The gap closes: every later chapter mark lands late by its length, and a gap past the check's allowance (a second and half a percent) fails the import as "it lasts ..., not ...".
+  The session keeps the gap as silence, so the book keeps its length and its chapter marks: the gap is the packets' timestamps' when they go forward and within the bound, else the packets' own lengths.
+  The silence is bounded by the file's stated length (an hour when it states none, 12 hours at most) and by the file's size at 1 kbit/s (`silence_limit`); past the bound none is owed and the decode goes on.
   A file with no good packet ends with exit 6 and the damaged sentence.
-  FU03 would fill such a stretch with silence.
+  END carries no silence length, so the import tells only that part was kept: `Conversion.partlyDecoded` and `FFmpegImportWording.partlyDecodedNotice` join the import's notices, for a single file, a folder, or several tracks.
 - The edge samples are in TestData/format-samples/ffmpeg-edge (see [Formats only ffmpeg reads](../../developer/testing-formats.md#formats-only-ffmpeg-reads)).
 - Limits on a source with no length: assumedDuration at 6 kbit/s, and an output cap of max(64 MB, 50 times the file) (unknownLengthOutputCap), refused before running when the volume lacks that and downmixReserveBytes.
   A stated length the file's size can't hold is taken as unknown (believedDuration, AUDIO_INFO_IMPLAUSIBLE).
