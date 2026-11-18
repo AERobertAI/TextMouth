@@ -5,11 +5,11 @@ kind: follow-up
 status: open
 priority: P2
 platform: both
-assignee:
+assignee: phoneformats
 created: 2026-11-15
-updated: 2026-11-16
+updated: 2026-11-18
 found-by: orchestrator
-branch:
+branch: phone/own-lossless
 merged:
 reason:
 related:

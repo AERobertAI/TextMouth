@@ -5,11 +5,11 @@ kind: follow-up
 status: open
 priority: P2
 platform: mac
-assignee:
+assignee: ffmpegleft
 created: 2026-11-16
-updated: 2026-11-17
+updated: 2026-11-18
 found-by: review-ffmpegbuild
-branch:
+branch: formats/ffmpeg-leftovers
 merged:
 reason:
 related:
