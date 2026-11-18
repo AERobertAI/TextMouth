@@ -628,6 +628,9 @@ class RemoteTrainLostConnectionTests(RemoteTrainCase):
         self.gh_state({"view": [{**DONE, "headSha": commit}], "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
         self.assertEqual(self.run_train(), "ran")
         self.assertEqual(self.pushed_refs()["refs/heads/TestBuild"], commit, "the same commit, not pushed again")
+        line = train.remote_line(next(path for path in sorted(train.TRAINS.iterdir())[-1:]))
+        self.assertIn("collected", line)
+        self.assertIn("earlier train's run", line)
         self.assertEqual(self.queued(), [])
         self.assertIn("Verdict of the whole train: PASSED", self.result_of("alpha"))
 

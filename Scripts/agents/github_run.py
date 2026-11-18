@@ -513,7 +513,8 @@ def run_remotely(cwd, parent, request, destination, message, limit_minutes=RUN_L
     downloads the results into `destination`. Returns a dictionary with the
     pushed "commit", the run's "url", its "conclusion", the "minutes" from the
     push to the end, "downloaded" (whether the results artifact came), and
-    "lost_minutes" when GitHub could not be asked for a while (see wait_for_run).
+    "lost_minutes" when GitHub could not be asked for a while (see wait_for_run), and "collected": True
+    when the run was an earlier send's, collected rather than pushed (see `pending`).
     A run that ends without results (cancelled, timed out, or broken before the
     tests) comes back with downloaded False, and the caller decides what that
     means; a step that could not finish raises RemoteFailure.
@@ -524,7 +525,8 @@ def run_remotely(cwd, parent, request, destination, message, limit_minutes=RUN_L
     (recorded_run); one that ends in a RemoteFailure leaves the record for the next."""
     key = request_key(cwd, parent, request) if pending else None
     run = recorded_run(pending, key, progress) if pending else None
-    if run is not None:
+    collected = run is not None
+    if collected:
         commit, started = run["commit"], CLOCK()
     else:
         commit = commit_with_request(cwd, parent, request, message)
@@ -546,4 +548,7 @@ def run_remotely(cwd, parent, request, destination, message, limit_minutes=RUN_L
               "minutes": minutes, "downloaded": downloaded}
     if state.get("lost_minutes"):
         result["lost_minutes"] = state["lost_minutes"]
+    if collected:
+        # The run was an earlier send's: its minutes count from this send's start, not from a push.
+        result["collected"] = True
     return result

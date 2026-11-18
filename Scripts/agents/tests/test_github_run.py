@@ -449,6 +449,7 @@ class CollectingARecordedRunTests(RemoteTestCase):
         self.assertEqual((result["conclusion"], result["downloaded"], result["commit"]), ("success", True, commit))
         self.assertEqual((self.folder / "results-t2" / "run-summary.txt").read_text(), PASSING_SUMMARY)
         self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit}, "nothing was pushed again")
+        self.assertTrue(result["collected"], "the result says the run was collected, not pushed")
         self.assertEqual(self.idle_checks(), 0, "no push, so no look at whether TestBuild is idle")
         self.assertIsNone(github_run.read_record(self.pending), "the record is spent once the results are in hand")
 

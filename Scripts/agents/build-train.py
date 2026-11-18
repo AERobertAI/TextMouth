@@ -790,6 +790,10 @@ def remote_line(train_dir):
         run = json.loads((train_dir / "remote.json").read_text())
     except (OSError, ValueError):
         return ""
+    if run.get("collected"):
+        # The run is an earlier train's of the same tree: no push was made, and the minutes are only this train's wait.
+        return (f"- Run on GitHub: {run['url']} (collected: the results are those of an earlier train's run of the same "
+                f"tree and request; this train waited {run['minutes']} minutes for it)")
     return f"- Run on GitHub: {run['url']} ({run['minutes']} minutes from the push to its end)"
 
 
