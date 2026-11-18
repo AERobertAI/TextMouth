@@ -99,6 +99,31 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(try names(in: folder), ["Locked.wma"])
     }
 
+    /// Importing a copy-protected Windows Media file, alone or as a track of
+    /// a book, says why as the Mac says it, on both platforms: "Could not
+    /// import “Locked.wma”. Converting its audio failed: TextMouth cannot open
+    /// copy-protected files." The iPhone refuses it before it converts
+    /// anything (FU-FFMPEG), under the conversion's own step, not the copy
+    /// or the scan before it (the FMT54 review, finding 3).
+    func testImportingACopyProtectedFileSaysWhyAsTheMacDoes() throws {
+        let sandbox = try makeSandboxDirectory("FFmpegProtectedImport")
+        let locked = sandbox.appendingPathComponent("Locked.wma")
+        try copyProtectedASF(from: try formatSampleURL("wma/tones-wma1.wma")).write(to: locked)
+        let book = sandbox.appendingPathComponent("Locked Lectures")
+        try FileManager.default.createDirectory(at: book, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: locked, to: book.appendingPathComponent("01.wma"))
+        try FileManager.default.copyItem(at: try formatSampleURL("mp3-chapters/three-tones.mp3"), to: book.appendingPathComponent("02.mp3"))
+        let tool = try bundledFFmpegTool()
+        let reason = "Converting its audio failed: TextMouth cannot open copy-protected files."
+        XCTAssertThrowsError(try FFmpegAudioConverter.$tool.withValue(tool) { try FileImportService.importFileWithReport(from: locked) }) {
+            XCTAssertEqual(($0 as? ImportFailure)?.errorDescription, "Could not import “Locked.wma”. \(reason)")
+        }
+        XCTAssertThrowsError(try FFmpegAudioConverter.$tool.withValue(tool) { try FileImportService.importAudioFolderWithReport(from: book) }) {
+            XCTAssertEqual(($0 as? ImportFailure)?.errorDescription, "Could not import “Locked Lectures”. \(reason)")
+        }
+        XCTAssertEqual(try names(in: book), ["01.wma", "02.mp3"])
+    }
+
     /// A file whose bytes are not of its name's format is refused as such
     /// before anything runs; so is one the helper's demuxer refuses (its exit
     /// status 3); and one that holds no sound (status 4) says so, as a helper

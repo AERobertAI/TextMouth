@@ -59,7 +59,12 @@ extension FileImportService {
             #if os(iOS)
             // The iPhone converts what only FFmpeg reads in the app itself
             // (FMT54), and has no converter for the rest: a copy-protected
-            // file is told first, then the rest refused, naming the kind.
+            // file is told first, then the rest refused, naming the kind. The
+            // conversion's step begins first: a copy-protected file's refusal
+            // is the Mac's own failure, told under the step under way, as on
+            // the Mac (the FMT54 review, finding 3); the phone's own refusals
+            // name no step.
+            if !sources.isEmpty { try run.begin(.convertingImportedAudio(done: 0, of: sources.count), in: staging.directory) }
             try PhoneImportRefusal.refuseConversion(of: sources)
             #endif
             guard !sources.isEmpty else { return notice }
@@ -76,7 +81,9 @@ extension FileImportService {
             #if os(iOS)
             // The iPhone converts a file only FFmpeg reads in the app itself
             // (FMT54); any other it has no converter for, and the book is
-            // refused, naming the kind, a copy-protected file told first.
+            // refused, naming the kind, a copy-protected file told first,
+            // under the conversion's step, as above.
+            try run.begin(.convertingImportedAudio(done: 0, of: needed.count), in: staging.directory)
             try PhoneImportRefusal.refuseConversion(of: needed)
             #endif
             let unnamed = try convertTracks([bookURL], inPackage: staging.directory, run: &run)
