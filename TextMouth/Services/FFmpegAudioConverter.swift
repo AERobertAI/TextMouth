@@ -188,10 +188,11 @@ enum FFmpegAudioConverter {
         /// linked into the app (`LinkedFFmpegSession`), unless a test stands
         /// in for it with a stream written by hand or a call that hangs.
         var openSession: InProcessSessionOpener = LinkedFFmpegSession.open
-        /// The clock an in-process run's limits are timed by, in seconds,
-        /// which never runs backwards: the system's uptime, unless a test
-        /// scripts its own.
-        var uptime: @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+        /// The clock an in-process run's whole time is counted by: the
+        /// app's, which counts only the time TextMouth runs
+        /// (`RunningClock.app`, B18), so a run frozen while iOS keeps the app
+        /// suspended has spent none of it, unless a test scripts its own.
+        var clock: RunningClock = .app
         #endif
 
         /// The bundled helper. A decode has the limits of afconvert's

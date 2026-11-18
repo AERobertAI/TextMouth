@@ -289,7 +289,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
         // the print, and the reading back, then the same again.
         let times = OSAllocatedUnfairLock(initialState: [0, 0.01, 1, 1.02, 2, 3, 10, 10.01, 11, 11.02, 12, 13])
         var tool = echoing("\u{2801}")
-        tool.uptime = { times.withLock { $0.isEmpty ? 0 : $0.removeFirst() } }
+        tool.clock = RunningClock(countingWhole: { times.withLock { $0.isEmpty ? 0 : $0.removeFirst() } })
         let verdicts = MacBrailleTableCheck.Verdicts()
         try MacBrailleTableCheck.$verdicts.withValue(verdicts) {
             try BrailleTranslator.$tool.withValue(tool) {

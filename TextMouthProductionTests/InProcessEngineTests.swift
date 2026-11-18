@@ -392,6 +392,69 @@ final class InProcessEngineTests: XCTestCase {
         XCTAssertFalse(engine.hasAbandonedACall)
     }
 
+    // MARK: - Only the Time TextMouth Runs (B18)
+
+    /// A call frozen while iOS keeps TextMouth suspended has spent none of
+    /// its time there: with the engine's clock scripted, five minutes of
+    /// uptime pass in one jump, as while the listener is in another app, and
+    /// the call is neither told to stop nor abandoned; it returns its own
+    /// value once its work ends.
+    func testACallSuspendedPastItsLimitIsNeitherToldToStopNorAbandoned() throws {
+        let uptime = OSAllocatedUnfairLock<TimeInterval>(initialState: 1_000)
+        let clock = RunningClock(uptime: { uptime.withLock { $0 } }, longestStep: 1, tick: nil)
+        let engine = InProcessEngine(name: "test", work: work, grace: 1, clock: clock)
+        let gate = makeGate()
+        let started = DispatchSemaphore(value: 0)
+        let result = OSAllocatedUnfairLock<Result<Bool, Error>?>(initialState: nil)
+        let done = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            let outcome = Result {
+                try engine.run(limit: 10) { call -> Bool in
+                    started.signal()
+                    // The work runs until the gate opens, noting whether it was ever told to stop.
+                    var toldToStop = false
+                    while gate.wait(timeout: .now() + 0.01) == .timedOut {
+                        toldToStop = toldToStop || call.shouldStop
+                    }
+                    return toldToStop || call.shouldStop
+                }
+            }
+            result.withLock { $0 = outcome }
+            done.signal()
+        }
+        XCTAssertEqual(started.wait(timeout: .now() + 30), .success, "the call never started")
+        uptime.withLock { $0 += 300 }
+        // The waiter looks every quarter second: give it several looks at the clock.
+        Thread.sleep(forTimeInterval: 1)
+        XCTAssertFalse(engine.hasAbandonedACall, "a suspended call was abandoned")
+        gate.signal()
+        XCTAssertEqual(done.wait(timeout: .now() + 30), .success, "the call never returned")
+        XCTAssertEqual(try result.withLock { $0 }?.get(), false, "a suspended call was told to stop")
+    }
+
+    /// `shouldStop` reads no clock: the waiter alone judges a call's time, so
+    /// work that resumes before its waiter has looked cannot find its time
+    /// spent by a clock that counted a suspension. Ten thousand asks of the
+    /// work read the engine's clock no more than the waiter's few looks do.
+    func testShouldStopReadsNoClockSoTheWaiterAloneJudgesTime() throws {
+        let readings = OSAllocatedUnfairLock(initialState: 0)
+        let clock = RunningClock(
+            uptime: { readings.withLock { $0 += 1 }; return ProcessInfo.processInfo.systemUptime },
+            longestStep: 1,
+            tick: nil
+        )
+        let engine = InProcessEngine(name: "test", work: work, clock: clock)
+        let result = outcome {
+            try engine.run(limit: 30) { call -> Int in
+                let before = readings.withLock { $0 }
+                for _ in 0..<10_000 where call.shouldStop { break }
+                return readings.withLock { $0 } - before
+            }
+        }
+        let readDuringTheAsks = try XCTUnwrap(try result?.get())
+        XCTAssertLessThan(readDuringTheAsks, 100, "shouldStop read the clock")
+    }
+
     // MARK: - From a Task (FMT54)
 
     /// A call from a task runs its work on the engine's thread, with its name,

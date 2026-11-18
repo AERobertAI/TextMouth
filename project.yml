@@ -1051,6 +1051,7 @@ targets:
       - TextMouthProductionTests/ReadingTextCacheTests.swift
       - TextMouthProductionTests/RemovalWordingTests.swift
       - TextMouthProductionTests/RunLoopWaiting.swift
+      - TextMouthProductionTests/RunningClockTests.swift
       - TextMouthProductionTests/SharedPackageMigrationTests.swift
       - TextMouthProductionTests/SoftHyphenEffectTests.swift
       - TextMouthProductionTests/SourceScanSymlinkTests.swift

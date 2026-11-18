@@ -35,6 +35,9 @@ final class FFmpegInAppTests: XCTestCase {
         XCTAssertEqual(FFmpegAudioConverter.sessionEngine.name, "FFmpeg")
         XCTAssertEqual(FFmpegAudioConverter.sessionEngine.work, "the audio conversion")
         XCTAssertTrue(FFmpegAudioConverter.Located.inProcess.converts)
+        // Its run and its engine count only the time TextMouth runs (B18), by the app's one clock.
+        XCTAssertTrue(FFmpegAudioConverter.Tool.bundled.clock === RunningClock.app)
+        XCTAssertTrue(FFmpegAudioConverter.sessionEngine.clock === RunningClock.app)
     }
 
     // MARK: - The Stop Check
@@ -203,6 +206,30 @@ final class FFmpegInAppTests: XCTestCase {
 
     // MARK: - The Run's Time
 
+    /// A run frozen while iOS keeps TextMouth suspended has spent none of its
+    /// whole time there (B18): five minutes of uptime pass in one jump after
+    /// its second record, as while the listener is in another app, and the
+    /// run of a 25-second limit still reads to its end, where the system's
+    /// uptime would have stopped it as running too long.
+    func testARunSuspendedBetweenItsCallsIsNotStoppedForTime() async throws {
+        let uptime = OSAllocatedUnfairLock<TimeInterval>(initialState: 1_000)
+        let session = SuspendingSession(uptime: uptime, records: 4, suspendedAfter: 2)
+        var tool = ffmpegTool(helper: try bundledFFmpegHelper())
+        tool.engine = engine
+        tool.clock = RunningClock(uptime: { uptime.withLock { $0 } }, longestStep: 1, tick: nil)
+        tool.openSession = { _, _, _, _ in (session: session, status: TMFF_EXIT_DONE) }
+        let limits = WatchedProcess.Limits(maximumSeconds: 25, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 60)
+        let (ending, pieces) = try await FFmpegAudioConverter.runInProcess(
+            .decode, of: try formatSampleURL("wma/tones-wma1.wma"), demuxer: "asf", limits: limits, using: tool
+        ) { nextPiece -> Int in
+            var count = 0
+            while try await !nextPiece().isEmpty { count += 1 }
+            return count
+        }
+        XCTAssertEqual(ending, WatchedProcess.Ending(outcome: .exited(status: TMFF_EXIT_DONE)))
+        XCTAssertEqual(try pieces.get(), 4)
+    }
+
     /// The run's whole time is the limit's, counted from its start by the
     /// tool's clock over every call and the reader's work between them, as
     /// the watchdog counts a helper's: each call may take no more than the
@@ -214,7 +241,7 @@ final class FFmpegInAppTests: XCTestCase {
         let session = ClockSession(clock: clock, step: 10)
         var tool = ffmpegTool(helper: try bundledFFmpegHelper())
         tool.engine = engine
-        tool.uptime = { clock.withLock { $0 } }
+        tool.clock = RunningClock(countingWhole: { clock.withLock { $0 } })
         tool.openSession = { _, _, _, _ in (session: session, status: TMFF_EXIT_DONE) }
         let limits = WatchedProcess.Limits(maximumSeconds: 25, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 60)
         let (ending, pieces) = try await FFmpegAudioConverter.runInProcess(
@@ -294,4 +321,31 @@ private final class ClockSession: InProcessFFmpegSession {
     }
 
     func close() { closes.withLock { $0 += 1 } }
+}
+
+/// A stand-in session of `records` HEAD records and then END, which moves a
+/// scripted uptime on by five minutes as it gives its `suspendedAfter`th
+/// record, as a suspension between two calls would (B18).
+private final class SuspendingSession: InProcessFFmpegSession {
+    let uptime: OSAllocatedUnfairLock<TimeInterval>
+    let records: Int
+    let suspendedAfter: Int
+    private let given = OSAllocatedUnfairLock(initialState: 0)
+
+    init(uptime: OSAllocatedUnfairLock<TimeInterval>, records: Int, suspendedAfter: Int) {
+        self.uptime = uptime
+        self.records = records
+        self.suspendedAfter = suspendedAfter
+    }
+
+    func next(asking call: InProcessEngine.Call) -> (status: Int32, record: [UInt8]) {
+        let number = given.withLock { count -> Int in
+            count += 1
+            return count
+        }
+        if number == suspendedAfter { uptime.withLock { $0 += 300 } }
+        return number <= records ? (TMFF_EXIT_DONE, FFmpegTestStream.head()) : (TMFF_EXIT_DONE, [])
+    }
+
+    func close() {}
 }

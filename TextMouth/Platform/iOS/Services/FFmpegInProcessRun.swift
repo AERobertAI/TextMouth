@@ -142,7 +142,9 @@ extension FFmpegAudioConverter {
     ///   checks every record as it checks the helper's.
     /// - **The time.** The run's whole time is `limits.maximumSeconds`, from
     ///   its start, over every call and the reader's own work between them,
-    ///   as the watchdog counts it; each call may take at most
+    ///   as the watchdog counts it, but by the tool's clock, which counts only
+    ///   the time TextMouth runs (B18), held for the run so its heartbeat
+    ///   counts that time whole; each call may take at most
     ///   `limits.maximumStalledSeconds`, since no record for that long is a
     ///   stall, and no more than the run has left. A call past its limit is
     ///   told to stop through the session's stop check, and the run ends in
@@ -169,6 +171,8 @@ extension FFmpegAudioConverter {
         reading read: (_ nextPiece: @escaping () async throws -> [UInt8]) async throws -> Value
     ) async throws -> (ending: WatchedProcess.Ending, read: Result<Value, any Error>) {
         try Task.checkCancellation()
+        tool.clock.hold()
+        defer { tool.clock.release() }
         let run = InProcessFFmpegRun(file: file, demuxer: demuxer, mode: mode, limits: limits, tool: tool)
         let result: Result<Value, any Error>
         do {
@@ -215,7 +219,7 @@ private actor InProcessFFmpegRun {
         self.mode = mode
         self.limits = limits
         self.tool = tool
-        started = tool.uptime()
+        started = tool.clock.now()
     }
 
     /// How the run ended, as the helper's run says it: the watchdog's kill
@@ -267,7 +271,7 @@ private actor InProcessFFmpegRun {
     /// the run has left; nil, with the run stopped as the watchdog stops a
     /// helper that ran too long, once the run's time is spent.
     private func timeForTheNextCall() -> TimeInterval? {
-        let elapsed = tool.uptime() - started
+        let elapsed = tool.clock.now() - started
         guard elapsed < limits.maximumSeconds else {
             stopped = .tookTooLong(seconds: limits.maximumSeconds)
             return nil
@@ -281,7 +285,7 @@ private actor InProcessFFmpegRun {
     private func end(with status: Int32) {
         self.status = status
         guard status == TMFF_EXIT_STOPPED, !Task.isCancelled else { return }
-        stopped = tool.uptime() - started >= limits.maximumSeconds
+        stopped = tool.clock.now() - started >= limits.maximumSeconds
             ? .tookTooLong(seconds: limits.maximumSeconds)
             : .madeNoProgress(seconds: limits.maximumStalledSeconds)
     }
