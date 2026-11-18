@@ -186,14 +186,12 @@ enum EndOfBookWording {
     }
 
     /// "article" or "episode": a noun that `FolderNavigationWording` still
-    /// puts inside its own sentences, until that area's sentences are made
-    /// whole (FR34); this file's own sentences no longer use it.
+    /// puts inside its own English sentences. English until that area's
+    /// sentences are made whole (FR34): a translated noun inside an English
+    /// sentence read "Downloading the next episodio: ...".
     static func kind(isArticle: Bool) -> String {
-        isArticle
-            ? String(localized: "article",
-                     comment: "A noun put inside a sentence about a feed's next or previous item, as in \"Downloading the next article\". Lowercase, singular.")
-            : String(localized: "episode",
-                     comment: "A noun put inside a sentence about a feed's next or previous item, as in \"Downloading the next episode\". Lowercase, singular.")
+        // l10n: no (inside FolderNavigationWording's English sentences until that area converts)
+        isArticle ? "article" : "episode"
     }
 
     // MARK: - A Book Resting at Its End

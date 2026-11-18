@@ -121,20 +121,13 @@ enum ReadingListWording {
     ///   - plural: Whether it is about several books ("them").
     ///   - capitalized: Whether the sentence begins with this advice.
     static func letGoOfBooksAdvice(plural: Bool, capitalized: Bool) -> String {
-        switch (plural, capitalized) {
-        case (false, true):
-            return String(localized: "Take it off the reading list, or clear \(keepBooksLabel) in the Reading List's options",
-                          comment: "Advice that begins a sentence of the iCloud library's messages, on letting go of a book this Mac keeps for the reading list; the sentence goes on after it. %@ is the name of the checkbox Keep these books on this Mac.")
-        case (true, true):
-            return String(localized: "Take them off the reading list, or clear \(keepBooksLabel) in the Reading List's options",
-                          comment: "Advice that begins a sentence of the iCloud library's messages, on letting go of several books this Mac keeps for the reading list; the sentence goes on after it. %@ is the name of the checkbox Keep these books on this Mac.")
-        case (false, false):
-            return String(localized: "take it off the reading list, or clear \(keepBooksLabel) in the Reading List's options",
-                          comment: "Advice inside a sentence of the iCloud library's messages, after \"To let it go,\" or \"Then\": on letting go of a book this Mac keeps for the reading list. Lowercase. %@ is the name of the checkbox Keep these books on this Mac.")
-        case (true, false):
-            return String(localized: "take them off the reading list, or clear \(keepBooksLabel) in the Reading List's options",
-                          comment: "Advice inside a sentence of the iCloud library's messages, after \"To let them go,\": on letting go of several books this Mac keeps for the reading list. Lowercase. %@ is the name of the checkbox Keep these books on this Mac.")
-        }
+        // English until the cloud's sentences (LibraryCloudWording, CloudStorageContract) convert: a translated
+        // fragment inside an English sentence read "...can't be removed. Quitalo de la lista de lectura ... first."
+        // `keepBooksLabel` stays the checkbox's shown name, whatever the language.
+        // l10n: no (inside LibraryCloudWording's and CloudStorageContract's English sentences until that area converts)
+        let advice = "\(plural ? "take them" : "take it") off the reading list, or clear \(keepBooksLabel) in the Reading List's options"
+        // The sentence-initial form capitalizes its first letter.
+        return capitalized ? advice.prefix(1).uppercased() + advice.dropFirst() : advice
     }
 
     // MARK: - The Empty List
