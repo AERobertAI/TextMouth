@@ -2,15 +2,15 @@
 id: FMT54
 title: FFmpeg inside the iPhone app (FMT50's iPhone half)
 kind: format
-status: in-progress
+status: done
 priority: P2
 platform: iphone
 assignee: phoneffmpeg
 created: 2026-11-17
-updated: 2026-11-17
+updated: 2026-11-18
 found-by: FMT50's merge
 branch:
-merged:
+merged: 2b3b20839
 reason:
 related: FMT50, FU-FFMPEG, DR34
 docs:
@@ -113,3 +113,7 @@ Last train: 1118-0004 (run 44242168363) at 1c787ca75 PASSED.
 - Mac: 3769 tests, 20 skipped, 0 failures.
 - iPhone: 2490 tests, 1 skipped, 0 failures (2453 unit tests, 37 interface tests).
 - Size: the app is 16.1 MB (16,078,689 bytes) in 40 files and the IPA 7.6 MB. The App Store download is about 15.8 MB, within the 30 MB limit.
+
+### 2026-11-18, orchestrator, 1 line
+
+Closed as done: merged in 2b3b20839.
