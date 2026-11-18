@@ -809,7 +809,7 @@ def rejected_path(file):
 
 
 def cmd_apply(args):
-    """`apply FILE [--state S]`: checks each translation of the batch FILE and writes the good ones. Prints each refusal with
+    """`apply FILE [--lang L] [--state S]`: checks each translation of the batch FILE and writes the good ones. Prints each refusal with
     its reason and writes the refused items to FILE.rejected.json for a second try; exit status 1 if any was refused."""
     cat, glossary = load_catalog(args), load_glossary(args)
     try:
@@ -817,7 +817,7 @@ def cmd_apply(args):
     except (OSError, ValueError) as error:
         raise Refused(f"cannot read the batch {args.file}: {error}", EXIT_USAGE)
     try:
-        result = translate.apply_batch(cat, batch, glossary, args.state)
+        result = translate.apply_batch(cat, batch, glossary, args.state, args.lang)
     except translate.Problems as refusal:
         raise Refused("; ".join(refusal.problems), EXIT_USAGE)
     if result.written:
@@ -913,6 +913,7 @@ def build_parser():
     glossary_option(todo)
     apply = add("apply", "check a translated batch and write the good translations into the catalog", cmd_apply)
     apply.add_argument("file", help="the batch file, translated")
+    apply.add_argument("--lang", help="the language the batch is for; it must match the batch's own (a guard against the wrong file)")
     apply.add_argument("--state", choices=("machine_translated", "translated"),
                        help="the state to write (default machine_translated; translated once a person reviewed them)")
     glossary_option(apply)

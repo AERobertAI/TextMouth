@@ -403,5 +403,51 @@ class ApplyTests(BatchCase):
         self.assertEqual(text, catalog.dumps(catalog.loads(text)))
 
 
+class ApplyLanguageTests(BatchCase):
+    """`apply` checks the batch's language: text, never the source language, one the tools know, and `--lang` when given."""
+
+    def batch_in(self, language):
+        """A batch file for `language` with one good-looking item for Play."""
+        path = self.folder / "language.json"
+        ApplyTests.write_batch(path, {"language": language, "items": [{"key": "Play", "translation": "Lanzar"}]})
+        return path
+
+    def refused_whole(self, language, words):
+        """Applies a batch for `language`: exit 2, `words` in the message, and the catalog is not changed."""
+        before = catalog.read_text(self.path)
+        status, _, err = shared.run("apply", str(self.batch_in(language)), "--catalog", str(self.path), "--glossary", str(self.glossary))
+        self.assertEqual(status, 2, err)
+        self.assertIn(words, err)
+        self.assertEqual(catalog.read_text(self.path), before)
+
+    def test_the_source_language_is_refused_and_no_english_is_overwritten(self):
+        self.refused_whole("en", "source language")
+        self.refused_whole("EN", "source language")
+
+    def test_a_language_the_tools_do_not_know_is_refused_not_written_as_a_new_language(self):
+        self.refused_whole("sp", "not one the tools know")
+
+    def test_a_language_that_is_not_text_is_refused_not_a_traceback(self):
+        for language in (["es"], None, "", 7, {"es": 1}):
+            with self.subTest(language=language):
+                self.refused_whole(language, "needs a \"language\" that is text")
+
+    def test_lang_must_match_the_batch(self):
+        path = self.batch_in("es")
+        before = catalog.read_text(self.path)
+        status, _, err = shared.run("apply", str(path), "--lang", "fr", "--catalog", str(self.path), "--glossary", str(self.glossary))
+        self.assertEqual(status, 2, err)
+        self.assertIn("--lang says 'fr'", err)
+        self.assertEqual(catalog.read_text(self.path), before)
+        status, out, err = shared.run("apply", str(path), "--lang", "es", "--catalog", str(self.path), "--glossary", str(self.glossary))
+        self.assertEqual(status, 0, err)
+        self.assertEqual(self.values("Play", "es"), {"": ("machine_translated", "Lanzar")})
+
+    def test_a_region_of_a_known_language_is_a_language(self):
+        status, _, err = shared.run("apply", str(self.batch_in("es-419")), "--catalog", str(self.path), "--glossary", str(self.glossary))
+        self.assertEqual(status, 0, err)
+        self.assertEqual(self.values("Play", "es-419"), {"": ("machine_translated", "Lanzar")})
+
+
 if __name__ == "__main__":
     unittest.main()

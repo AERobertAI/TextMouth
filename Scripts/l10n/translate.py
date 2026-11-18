@@ -402,6 +402,24 @@ def item_problems(cat, item, language, glossary):
     return problems, warnings, translation
 
 
+def batch_language(cat, language, expected=None):
+    """The language of a batch to write, or Problems: it must be text, not the catalog's source language (English is
+    written with `plural`, never overwritten by a batch), a language `catalog.plural_categories` knows (so a typo such as
+    "sp" is not written as a new language), and, when `expected` is given (`apply --lang`), the same as `expected`."""
+    if not isinstance(language, str) or not language.strip():
+        raise Problems('the batch needs a "language" that is text, such as "es"')
+    if language.replace("_", "-").casefold() == cat.source_language.casefold():
+        raise Problems(f'the batch is for {language}, the catalog\'s source language; a batch never writes the source text '
+                       "(use `plural` for English plural forms)")
+    try:
+        catalog.plural_categories(language)
+    except KeyError as error:
+        raise Problems(f'the batch\'s language {language!r} is not one the tools know: {error.args[0]}')
+    if expected is not None and expected != language:
+        raise Problems(f'the batch is for {language!r}, but --lang says {expected!r}')
+    return language
+
+
 class ApplyResult:
     """What apply_batch did: `written` (keys changed), `unchanged` (keys whose translation was already there), `rejected`
     (the refused items, each with its `problems`), and `warnings` ((key, sentence) pairs)."""
@@ -410,15 +428,16 @@ class ApplyResult:
         self.written, self.unchanged, self.rejected, self.warnings = [], [], [], []
 
 
-def apply_batch(cat, batch, glossary, state=None):
+def apply_batch(cat, batch, glossary, state=None, expected_language=None):
     """Checks each item of the translated `batch` (see the module's note) and writes the good ones into `cat` in `state`
     (default: default_state). A good translation of a string a person has already marked `translated` is refused when
     the state is a machine's and the text differs, so a review is never overwritten by a machine. Running it again on the
-    same batch changes nothing. Raises Problems when the batch itself is unusable (no language, a bad state). Returns an
+    same batch changes nothing. `expected_language` is the language the caller says the batch is for (`apply --lang`), which
+    must be the batch's. Raises Problems when the batch itself is unusable (see batch_language, a bad state). Returns an
     ApplyResult."""
-    language = batch.get("language") if isinstance(batch, dict) else None
-    if not language or not isinstance(batch.get("items"), list):
+    if not isinstance(batch, dict) or not isinstance(batch.get("items"), list):
         raise Problems('the batch needs a "language" and a list of "items"')
+    language = batch_language(cat, batch.get("language"), expected_language)
     state = state or default_state(language, cat)
     check_state(state)
     result = ApplyResult()
