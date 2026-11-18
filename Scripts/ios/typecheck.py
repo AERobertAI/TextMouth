@@ -14,7 +14,11 @@ project.yml):
 - macOS: TextMouth/, less TextMouth/Platform/iOS/ and TextMouth/Resources/.
 Both link the C libraries the apps link (LAME and the Objective-C exception
 catcher, and on iOS liblouis and the braille library, which the Mac's braille
-helper links instead), so a clean run means the app compiles and links.
+helper links instead), so a clean run means the app compiles and links. The
+iPhone's FFmpeg session (FMT54) needs FFmpeg's own build, which only Xcode
+makes, so its package links a stand-in of the session's functions
+(FFMPEG_SESSION_STUB), compiled against the session's real header; the real
+session is built by every iPhone build on GitHub.
 
 With `--tests` (macOS only) the package also holds the Mac's hosted test target,
 TextMouthProductionTests, built with `swift build --target`, so a test file
@@ -250,6 +254,76 @@ NO_PUBLIC_HEADERS = "no-public-headers"
 # library's own module's, TextMouthBrailleLibrary, which SwiftPM's module of the target's name would clash with.
 BRAILLE_LIBRARY_TARGET = "TextMouthBrailleC"
 
+# The iPhone app links TextMouth's FFmpeg session (FMT54; project.yml's FFmpeg_iOS), whose C needs FFmpeg's own
+# build, which only Xcode's FFmpeg_iOS target makes (Scripts/vendor/ffmpeg/build.py). So the iPhone's package links a
+# stand-in for it instead: this C file, written into the copy, which includes the session's real header, so that
+# each function is compiled against its declaration, and defines each one to fail at once. Nothing ever runs it:
+# the type-check links an executable and runs nothing. test_typecheck.py checks that every function the header
+# declares is here, so a new one is caught here rather than as a link error; the real session is compiled and
+# linked by every iPhone build on GitHub.
+FFMPEG_SESSION_STUB_TARGET = "TextMouthFFmpegSessionStub"
+FFMPEG_SESSION_STUB_FOLDER = "TextMouthFFmpeg/typecheck-stub"
+FFMPEG_SESSION_STUB = """\
+/* Written by Scripts/ios/typecheck.py into its copy of the sources: a stand-in for TextMouth's FFmpeg session
+   (TextMouthFFmpeg/Session/session.c), so that the iPhone's type-check links without FFmpeg's build. Every
+   function fails at once, and nothing ever calls them: the type-check runs nothing. */
+#include <stddef.h>
+#include "TextMouthFFmpegProtocol.h"
+#include "TextMouthFFmpegSession.h"
+
+int tmff_session_prepare(void) { return 0; }
+
+int tmff_session_cpu_features(void) { return 0; }
+
+void tmff_set_allocation_cap(size_t bytes) { (void)bytes; }
+
+int tmff_open_regular_file(const char *path) {
+    (void)path;
+    return -1;
+}
+
+tmff_session *tmff_session_open(int descriptor, const char *demuxer, tmff_session_mode mode, int *status) {
+    return tmff_session_open_checked(descriptor, demuxer, mode, NULL, NULL, status);
+}
+
+tmff_session *tmff_session_open_checked(int descriptor, const char *demuxer, tmff_session_mode mode,
+                                        tmff_stop_check check, void *context, int *status) {
+    (void)descriptor;
+    (void)demuxer;
+    (void)mode;
+    (void)check;
+    (void)context;
+    *status = TMFF_EXIT_USAGE;
+    return NULL;
+}
+
+void tmff_session_set_stop_check(tmff_session *session, tmff_stop_check check, void *context) {
+    (void)session;
+    (void)check;
+    (void)context;
+}
+
+int tmff_session_next(tmff_session *session, const unsigned char **bytes, size_t *length) {
+    (void)session;
+    *bytes = NULL;
+    *length = 0;
+    return TMFF_EXIT_USAGE;
+}
+
+void tmff_session_stop(tmff_session *session) { (void)session; }
+
+void tmff_session_close(tmff_session *session) { (void)session; }
+
+#ifdef DEBUG
+int tmff_session_formcheck(char *out, size_t capacity) {
+    if (capacity > 0) {
+        out[0] = '\\0';
+    }
+    return TMFF_EXIT_USAGE;
+}
+#endif
+"""
+
 
 def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()):
     """Writes the probe's Package.swift into `src`; with `tests` (see test_kind), it also
@@ -279,10 +353,13 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
     # its public headers, since SwiftPM refuses a folder that is not there. SwiftPM still makes each a module of the
     # target's name, so the library's target is named BRAILLE_LIBRARY_TARGET, never TextMouthBrailleLibrary, the module
     # the app finds the library's interface by.
-    braille_dependencies = f'\n                "liblouis",\n                "{BRAILLE_LIBRARY_TARGET}",' if platform == "ios" else ""
+    # The FFmpeg session's stand-in (FFMPEG_SESSION_STUB) is the iPhone's too, with the same empty public headers.
+    braille_dependencies = (f'\n                "liblouis",\n                "{BRAILLE_LIBRARY_TARGET}",'
+                            f'\n                "{FFMPEG_SESSION_STUB_TARGET}",') if platform == "ios" else ""
     if platform == "ios":
-        for target_folder in ("Vendor/liblouis", "TextMouthBraille"):
+        for target_folder in ("Vendor/liblouis", "TextMouthBraille", FFMPEG_SESSION_STUB_FOLDER):
             (src / target_folder / NO_PUBLIC_HEADERS).mkdir(parents=True, exist_ok=True)
+        (src / FFMPEG_SESSION_STUB_FOLDER / "session_stub.c").write_text(FFMPEG_SESSION_STUB)
     braille_targets = f"""
         // liblouis, as project.yml's LiblouisLibrary template builds it.
         .target(
@@ -308,6 +385,15 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
             sources: ["TextMouthBrailleLibrary.c"],
             publicHeadersPath: "{NO_PUBLIC_HEADERS}",
             cSettings: [.unsafeFlags(["-isystem", "{src / "Vendor" / "liblouis" / "include"}", "-Os"])]
+        ),
+        // A stand-in for TextMouth's FFmpeg session (FMT54), which project.yml's FFmpeg_iOS builds with FFmpeg:
+        // each function of its real header, failing at once (typecheck.py's FFMPEG_SESSION_STUB).
+        .target(
+            name: "{FFMPEG_SESSION_STUB_TARGET}",
+            path: "{FFMPEG_SESSION_STUB_FOLDER}",
+            sources: ["session_stub.c"],
+            publicHeadersPath: "{NO_PUBLIC_HEADERS}",
+            cSettings: [.unsafeFlags(["-I", "{src / "TextMouthFFmpeg" / "include"}", "-Os"])]
         ),""" if platform == "ios" else ""
     test_target = f"""
         // The tests of the platform: compiled, never run.

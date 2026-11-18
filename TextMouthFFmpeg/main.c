@@ -50,7 +50,6 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #ifdef DEBUG
 #include <arpa/inet.h>
@@ -105,27 +104,6 @@ static int write_all(const unsigned char *bytes, size_t length) {
         length -= (size_t)written;
     }
     return 0;
-}
-
-/* Opens `path` for reading, refusing anything but a regular file: opened without blocking, so
-   a FIFO or a device is never waited on, then checked, then made blocking for the reads.
-   Returns the descriptor, or -1. */
-static int open_regular_file(const char *path) {
-    const int descriptor = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-    if (descriptor < 0) {
-        return -1;
-    }
-    struct stat status;
-    if (fstat(descriptor, &status) != 0 || !S_ISREG(status.st_mode)) {
-        close(descriptor);
-        return -1;
-    }
-    const int flags = fcntl(descriptor, F_GETFL);
-    if (flags < 0 || fcntl(descriptor, F_SETFL, flags & ~O_NONBLOCK) < 0) {
-        close(descriptor);
-        return -1;
-    }
-    return descriptor;
 }
 
 /* Confines the process to computing, reading the descriptors it already holds, and writing its
@@ -230,7 +208,9 @@ int main(int argc, char **argv) {
         return write_all((const unsigned char *)answers, strlen(answers)) == 0 ? answered : TMFF_EXIT_OUTPUT;
     }
 #endif
-    const int descriptor = open_regular_file(argv[3]);
+    /* A regular file only, never a FIFO waited on (the session's own opener, which the iPhone's
+       import uses too). */
+    const int descriptor = tmff_open_regular_file(argv[3]);
     if (descriptor < 0) {
         return TMFF_EXIT_UNREADABLE;
     }

@@ -2,13 +2,16 @@ import XCTest
 @testable import TextMouth
 
 /// The FFmpeg import's conversions and imports (FMT31, FMT32, FMT50), through
-/// the helper the app carries, TextMouthFFmpeg, which every build of the app
-/// holds, on GitHub's runners too. A stand-in script stands in front of it
-/// (`ffmpegHelperStandIn`) where a test needs a run to end otherwise: a probe
-/// written by hand, a hang, a crash, an early end, a damaged stream. What each
-/// refusal says and when it comes, what is left behind (nothing), and a whole
-/// import of a file and of a folder through the import's own path.
-/// `FFmpegImportRealTests` imports every sample with the helper alone.
+/// the session the app carries: on the Mac the helper TextMouthFFmpeg, which
+/// every build of the app holds, on GitHub's runners too, and on the iPhone
+/// the same session in the app itself (FMT54), so each test asks the same of
+/// both. A stand-in stands in front of it (`ffmpegHelperStandIn`: a script on
+/// the Mac, a session on the iPhone) where a test needs a run to end
+/// otherwise: a probe written by hand, a hang, a crash, an early end, a
+/// damaged stream. What each refusal says and when it comes, what is left
+/// behind (nothing), and a whole import of a file and of a folder through the
+/// import's own path. `FFmpegImportRealTests` imports every sample with the
+/// session alone. Shared with the iPhone's unit bundle.
 @MainActor
 final class FFmpegImportConversionTests: XCTestCase {
     /// A copy of the sample `sample` named `name`, in a folder of its own.
@@ -45,9 +48,9 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: wma), before)
         XCTAssertEqual(conversion.duration, 3.999)
         XCTAssertEqual(try standInCalls(log), ["probe asf", "decode asf"])
-        let info = try await AudioFileInfo.read(conversion.converted)
-        XCTAssertEqual(info?.formatID.trimmingCharacters(in: .whitespaces), "aac")
-        XCTAssertEqual(info?.channels, 1)
+        let entry = try M4ASampleEntry.read(conversion.converted)
+        XCTAssertEqual(entry?.codec, "aac")
+        XCTAssertEqual(entry?.channels, 1)
         let tags = await AudioPlaybackService.extractFullMetadata(from: conversion.converted)
         XCTAssertEqual([tags.title, tags.artist], ["Three Tones", "TextMouth Test"])
     }
@@ -66,14 +69,14 @@ final class FFmpegImportConversionTests: XCTestCase {
     /// naming its format and what to do, and no program runs.
     func testWithoutTheHelperTheFileIsRefusedWithWhatToDo() async throws {
         let wma = try source()
-        let launches = WatchedProcess.launchCount
+        let (tool, starts) = countingSessionStarts(of: ffmpegTool(helper: nil))
         do {
-            _ = try await FFmpegAudioConverter.convert(wma, using: ffmpegTool(helper: nil))
+            _ = try await FFmpegAudioConverter.convert(wma, using: tool)
             XCTFail("the file must be refused")
         } catch {
             XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .helperMissing(kind: "WMA"))
         }
-        XCTAssertEqual(WatchedProcess.launchCount, launches, "no program may run")
+        XCTAssertEqual(starts(), 0, "no session may run")
         XCTAssertEqual(try names(in: wma.deletingLastPathComponent()), ["tones.wma"])
     }
 
@@ -84,16 +87,42 @@ final class FFmpegImportConversionTests: XCTestCase {
         let locked = folder.appendingPathComponent("Locked.wma")
         try copyProtectedASF(from: try formatSampleURL("wma/tones-wma1.wma")).write(to: locked)
         for helper in [try bundledFFmpegHelper(), nil] {
-            let launches = WatchedProcess.launchCount
+            // The helper's launches on the Mac, the session's opens in the iPhone app.
+            let (tool, starts) = countingSessionStarts(of: ffmpegTool(helper: helper))
             do {
-                _ = try await FFmpegAudioConverter.convert(locked, using: ffmpegTool(helper: helper))
+                _ = try await FFmpegAudioConverter.convert(locked, using: tool)
                 XCTFail("a copy-protected file must be refused")
             } catch {
                 XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .copyProtected)
             }
-            XCTAssertEqual(WatchedProcess.launchCount, launches)
+            XCTAssertEqual(starts(), 0, "the session ran before the copy protection was told")
         }
         XCTAssertEqual(try names(in: folder), ["Locked.wma"])
+    }
+
+    /// Importing a copy-protected Windows Media file, alone or as a track of
+    /// a book, says why as the Mac says it, on both platforms: "Could not
+    /// import “Locked.wma”. Converting its audio failed: TextMouth cannot open
+    /// copy-protected files." The iPhone refuses it before it converts
+    /// anything (FU-FFMPEG), under the conversion's own step, not the copy
+    /// or the scan before it (the FMT54 review, finding 3).
+    func testImportingACopyProtectedFileSaysWhyAsTheMacDoes() throws {
+        let sandbox = try makeSandboxDirectory("FFmpegProtectedImport")
+        let locked = sandbox.appendingPathComponent("Locked.wma")
+        try copyProtectedASF(from: try formatSampleURL("wma/tones-wma1.wma")).write(to: locked)
+        let book = sandbox.appendingPathComponent("Locked Lectures")
+        try FileManager.default.createDirectory(at: book, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: locked, to: book.appendingPathComponent("01.wma"))
+        try FileManager.default.copyItem(at: try formatSampleURL("mp3-chapters/three-tones.mp3"), to: book.appendingPathComponent("02.mp3"))
+        let tool = try bundledFFmpegTool()
+        let reason = "Converting its audio failed: TextMouth cannot open copy-protected files."
+        XCTAssertThrowsError(try FFmpegAudioConverter.$tool.withValue(tool) { try FileImportService.importFileWithReport(from: locked) }) {
+            XCTAssertEqual(($0 as? ImportFailure)?.errorDescription, "Could not import “Locked.wma”. \(reason)")
+        }
+        XCTAssertThrowsError(try FFmpegAudioConverter.$tool.withValue(tool) { try FileImportService.importAudioFolderWithReport(from: book) }) {
+            XCTAssertEqual(($0 as? ImportFailure)?.errorDescription, "Could not import “Locked Lectures”. \(reason)")
+        }
+        XCTAssertEqual(try names(in: book), ["01.wma", "02.mp3"])
     }
 
     /// A file whose bytes are not of its name's format is refused as such
@@ -104,14 +133,14 @@ final class FFmpegImportConversionTests: XCTestCase {
         let folder = try makeSandboxDirectory("FFmpegNotRecognized")
         let fake = folder.appendingPathComponent("Fake.wma")
         try Data("not a Windows Media file".utf8).write(to: fake)
-        let launches = WatchedProcess.launchCount
+        let (tool, starts) = countingSessionStarts(of: try bundledFFmpegTool())
         do {
-            _ = try await FFmpegAudioConverter.convert(fake, using: try bundledFFmpegTool())
+            _ = try await FFmpegAudioConverter.convert(fake, using: tool)
             XCTFail("a file that is no WMA must be refused")
         } catch {
             XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .notRecognized(fileName: "Fake.wma", kind: "WMA"))
         }
-        XCTAssertEqual(WatchedProcess.launchCount, launches)
+        XCTAssertEqual(starts(), 0, "the session ran on a file that is no WMA")
 
         let cases: [(Int32, FFmpegAudioConverter.Failure)] = [
             (3, .notRecognized(fileName: "tones.wma", kind: "WMA")), (4, .noSound(fileName: "tones.wma")),
@@ -144,12 +173,10 @@ final class FFmpegImportConversionTests: XCTestCase {
             if case .killed(fileName: "tones.wma", _)? = error as? ImportAudioConverter.Failure { return true }
             return false
         }
-        let cases: [(String, StandInAction, StandInAction, (any Error) -> Bool)] = [
+        var cases: [(String, StandInAction, StandInAction, (any Error) -> Bool)] = [
             ("a probe that hangs", .hang(seconds: 30), .realHelper, killed),
             ("a decode that hangs", .realHelper, .hang(seconds: 30), killed),
             ("a decode that crashes", .realHelper, .write(partial, status: 70),
-             { ($0 as? FFmpegAudioConverter.Failure) == .crashed(fileName: "tones.wma") }),
-            ("a decode killed by a signal", .realHelper, .killItself,
              { ($0 as? FFmpegAudioConverter.Failure) == .crashed(fileName: "tones.wma") }),
             ("a decode that ends too soon", .realHelper, .write(partial, status: 0),
              { ($0 as? FFmpegAudioConverter.Failure) == .endedEarly(fileName: "tones.wma") }),
@@ -165,6 +192,11 @@ final class FFmpegImportConversionTests: XCTestCase {
                  return false
              }),
         ]
+        #if os(macOS)
+        // A helper killed by a signal is the Mac's alone: a crash in the iPhone app ends the app.
+        cases.append(("a decode killed by a signal", .realHelper, .killItself,
+                      { ($0 as? FFmpegAudioConverter.Failure) == .crashed(fileName: "tones.wma") }))
+        #endif
         for (name, probe, decode, isExpected) in cases {
             let wma = try source()
             let (helper, _) = try ffmpegHelperStandIn(probe: probe, decode: decode)
@@ -182,6 +214,10 @@ final class FFmpegImportConversionTests: XCTestCase {
     /// A helper that has written a whole stream and then does not exit is
     /// ended once the stream's END has been read, and the import succeeds:
     /// only the stall limit would have ended it, as a failure.
+    ///
+    /// Fenced to the Mac: in the iPhone app the session ends at END by
+    /// itself, with no program to outlive its stream (FMT54).
+    #if os(macOS)
     func testAHelperThatHangsAfterAWholeStreamStillImports() async throws {
         let wma = try source()
         let (helper, _) = try ffmpegHelperStandIn(decode: .realHelperThenHang(seconds: 60))
@@ -192,6 +228,7 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(conversion.duration, 4.0, accuracy: 0.1)
         XCTAssertEqual(WatchedProcess.runningChildCount, 0)
     }
+    #endif
 
     /// A decode whose .m4a passes the output cap is stopped by the reader's
     /// own check before the next block, not by the watchdog's look once a
@@ -515,25 +552,37 @@ final class FFmpegImportConversionTests: XCTestCase {
 
     // MARK: - The iPhone
 
-    /// The iPhone refuses a file only FFmpeg reads with a sentence of its
-    /// own, naming the format as the Mac does and the Mac as the way, even
-    /// among other files it refuses; Speex in Ogg is Speex.
-    func testTheIPhoneRefusesFFmpegFormatsSayingTheMacConvertsThem() throws {
+    /// The iPhone refuses no file only FFmpeg reads, which it converts in the
+    /// app itself (FMT54): the refusal of what it can't convert lets WMA,
+    /// Speex in Ogg (whatever its name), and the other formats by, and
+    /// refuses an Ogg Vorbis file among them, naming Ogg.
+    func testTheIPhoneRefusesNoFFmpegFormat() throws {
+        let ffmpegFiles = [
+            try source(), try source("spx/tones.spx", named: "Notes.ogg"), try source("mkv/three-tones-flac.mkv", named: "Lecture.mkv"),
+            try source("webm/tones-opus.webm", named: "Talk.webm"), try source("avi/tones-mp3.avi", named: "Clip.avi"),
+            try source("rm/tones.ra", named: "Show.ra"), URL(fileURLWithPath: "/nonexistent/Lecture.wma"),
+        ]
+        XCTAssertNoThrow(try PhoneImportRefusal.refuseConversion(of: ffmpegFiles))
         let ogg = URL(fileURLWithPath: "/nonexistent/Radio Drama.ogg")
-        let wma = URL(fileURLWithPath: "/nonexistent/Lecture.wma")
-        XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: [ogg, wma])) { error in
-            XCTAssertEqual(error as? PhoneImportRefusal, .ffmpegAudio(kind: "WMA"))
+        XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: ffmpegFiles + [ogg])) { error in
+            XCTAssertEqual(error as? PhoneImportRefusal, .convertedAudio(kind: "Ogg"))
         }
-        XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: [try source("spx/tones.spx", named: "Notes.ogg")])) { error in
-            XCTAssertEqual(error as? PhoneImportRefusal, .ffmpegAudio(kind: "Speex"))
+    }
+
+    /// On the iPhone a copy-protected Windows Media file is told as such
+    /// first, in the Mac's own words, before any conversion and before the
+    /// iPhone refuses another file and sends the person to the Mac, which
+    /// could not convert it either (FU-FFMPEG).
+    func testTheIPhoneTellsACopyProtectedFileFirst() throws {
+        let folder = try makeSandboxDirectory("FFmpegProtectedPhone")
+        let locked = folder.appendingPathComponent("Locked.wma")
+        try copyProtectedASF(from: try formatSampleURL("wma/tones-wma1.wma")).write(to: locked)
+        let ogg = URL(fileURLWithPath: "/nonexistent/Radio Drama.ogg")
+        for sources in [[locked], [ogg, locked], [try source(), locked]] {
+            XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: sources)) { error in
+                XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .copyProtected, "\(sources.map(\.lastPathComponent))")
+            }
         }
-        XCTAssertEqual(
-            PhoneImportRefusal.ffmpegAudio(kind: "WMA").sentence(naming: "Lecture"),
-            "“Lecture” is in WMA, which TextMouth on iPhone can't play. Add it on your Mac, then send the book here."
-        )
-        XCTAssertEqual(
-            PhoneImportRefusal.ffmpegAudio(kind: "Matroska").sentence(naming: nil),
-            "This file is in Matroska, which TextMouth on iPhone can't play. Add it on your Mac, then send the book here."
-        )
+        XCTAssertEqual(FFmpegAudioConverter.Failure.copyProtected.errorDescription, "TextMouth cannot open copy-protected files.")
     }
 }

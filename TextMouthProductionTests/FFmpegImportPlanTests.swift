@@ -163,7 +163,7 @@ final class FFmpegImportPlanTests: XCTestCase {
     /// sentence, and any other the converter's code.
     func testEachExitStatusHasItsFailure() {
         let limits = WatchedProcess.Limits(maximumSeconds: 10, maximumResidentBytes: 1, maximumStalledSeconds: 10)
-        let words = [Int32](arrayLiteral: 2, 3, 4, 5, 6, 7, 9, 12, 70, 71, 1, 8, 10, 99).map {
+        let words = [Int32](arrayLiteral: 2, 3, 4, 5, 6, 7, 9, 12, 13, 70, 71, 1, 8, 10, 99).map {
             FFmpegAudioConverter.failure(forExitStatus: $0, fileName: "Lecture.wma", kind: "WMA", limits: limits).localizedDescription
         }
         XCTAssertEqual(words, [
@@ -176,6 +176,7 @@ final class FFmpegImportPlanTests: XCTestCase {
             "Converting Lecture.wma was stopped because it needed more memory than it may use.",
             "TextMouth's converter could not make itself safe before reading “Lecture.wma”, so it did not read the file. "
                 + "Install TextMouth again, then import the file again.",
+            "TextMouth can't convert “Lecture.wma”: part of its sound is stored in one piece too large for TextMouth to decode.",
             "TextMouth's converter stopped unexpectedly while reading “Lecture.wma”. The file may be damaged.",
             "Converting Lecture.wma was stopped because it used more than 40 seconds of processor time.",
             "Converting Lecture.wma failed (the converter ended with code 1).",
@@ -216,7 +217,9 @@ final class FFmpegImportPlanTests: XCTestCase {
                            "\(FFmpegAudioConverter.Failure.unreadableStream(fileName: "a.wma"))")
         }
         XCTAssertEqual(failure(.init(outcome: .exited(status: 9), signal: 9), .failure(CancellationError())), "\(CancellationError())")
-        let own = ImportAudioConverter.Failure.notWritten(fileName: "a.wma", reason: "AVFoundationErrorDomain -11800")
+        // A writer's error by its domain and code; the domain is a made-up one, since the iPhone's unit tests may
+        // name no audio framework, not even in a string (Scripts/agents/ios_ui_tests.py).
+        let own = ImportAudioConverter.Failure.notWritten(fileName: "a.wma", reason: "TestWriterErrorDomain -11800")
         XCTAssertEqual(failure(.init(outcome: .exited(status: 9), signal: 9), .failure(own)), "\(own)")
     }
 
@@ -250,9 +253,10 @@ final class FFmpegImportPlanTests: XCTestCase {
     }
 
     /// The notice of the tracks a book of several left out (review9 finding
-    /// 2): when the app's converter is missing, on the iPhone, and for files
-    /// that hold no sound, with at most five named; nothing when none was
-    /// left out or the converter is there.
+    /// 2): when the app's converter is missing, and for files that hold no
+    /// sound, with at most five named; nothing when none was left out or the
+    /// converter is there, the Mac's helper or the iPhone's session in the
+    /// app (FMT54), which leaves out only what holds no sound.
     func testTheNoticeOfTracksLeftOut() {
         XCTAssertEqual(
             FFmpegImportWording.tracksLeftOutNotice(
@@ -264,16 +268,15 @@ final class FFmpegImportPlanTests: XCTestCase {
         )
         XCTAssertEqual(
             FFmpegImportWording.tracksLeftOutNotice(
-                needingConverter: PhoneImportWording.ffmpegTracksLeftOut(["Trailer.avi"]),
+                needingConverter: FFmpegImportWording.leftOutNeedingConverter(["Trailer.avi"], located: .inProcess),
                 holdingNoSound: ["a.spx", "b.spx"]
             ),
-            "TextMouth left out “Trailer.avi”, which TextMouth on iPhone can't play. To keep it, import the book on your Mac, "
-                + "then send the book here. TextMouth left out 2 files, “a.spx” and “b.spx”, which hold no sound it can read."
+            "TextMouth left out 2 files, “a.spx” and “b.spx”, which hold no sound it can read."
         )
         XCTAssertNil(FFmpegImportWording.tracksLeftOutNotice(needingConverter: nil, holdingNoSound: []))
         XCTAssertNil(FFmpegImportWording.leftOutNeedingConverter([], located: .missing))
         XCTAssertNil(FFmpegImportWording.leftOutNeedingConverter(["a.avi"], located: .found(URL(fileURLWithPath: "/usr/bin/true"))))
-        XCTAssertNil(PhoneImportWording.ffmpegTracksLeftOut([]))
+        XCTAssertNil(FFmpegImportWording.leftOutNeedingConverter(["a.avi"], located: .inProcess))
         XCTAssertEqual(
             FFmpegImportWording.leftOutFiles((1...7).map { "\($0).wmv" }),
             "7 files, “1.wmv”, “2.wmv”, “3.wmv”, “4.wmv”, “5.wmv”, and 2 more"
@@ -321,6 +324,18 @@ final class FFmpegImportPlanTests: XCTestCase {
             ImportAudioConverter.Failure.checkFailed(fileName: "Talk.webm", reason: FFmpegImportWording.convertedFileIsSilent)
                 .localizedDescription,
             "The audio converted from Talk.webm failed its check: it lasts no time."
+        )
+        // The iPhone's FFmpeg engine (FMT54) says its two sentences of its own work, which a listener hears after
+        // the import's words: a call abandoned past its time, and every one refused after it.
+        XCTAssertEqual(
+            InProcessEngine.Failure.abandoned(work: FFmpegImportWording.inAppWork, limit: 61.2).errorDescription,
+            "TextMouth stopped the audio conversion because it ran longer than 62 seconds, "
+                + "and won't try again until TextMouth is closed and opened again."
+        )
+        XCTAssertEqual(
+            InProcessEngine.Failure.refused(work: FFmpegImportWording.inAppWork).errorDescription,
+            "TextMouth stopped the audio conversion earlier because it took too long, "
+                + "and won't try again until TextMouth is closed and opened again."
         )
     }
 }

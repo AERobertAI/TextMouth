@@ -28,8 +28,8 @@ final class BrailleBatchLimitsTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// The app's own tool, with `limits` tightening the app's limits, and
-    /// `uptime` as its clock when one is given.
+    /// The app's own tool, with `limits` tightening the app's limits, and a
+    /// clock counting every step of `uptime` whole when one is given.
     private func tool(
         limits tighten: @escaping @Sendable (inout WatchedProcess.Limits, Int64) -> Void,
         uptime: (@Sendable () -> TimeInterval)? = nil
@@ -40,7 +40,7 @@ final class BrailleBatchLimitsTests: XCTestCase {
             tighten(&limits, bytes)
             return limits
         }
-        if let uptime { tool.uptime = uptime }
+        if let uptime { tool.clock = RunningClock(countingWhole: uptime) }
         return tool
     }
 
@@ -124,6 +124,33 @@ final class BrailleBatchLimitsTests: XCTestCase {
             XCTAssertEqual($0 as? BrailleTranslator.Failure, stopped(.tookTooLong(seconds: 5)))
         }
         XCTAssertEqual(try read(["\u{281E}\u{2817}\u{2825}\u{281E}\u{2813}"], with: tight), ["truth"])
+    }
+
+    /// A batch frozen while iOS keeps TextMouth suspended has spent none of
+    /// its book's time there (B18): by a clock whose uptime jumps five
+    /// minutes inside the first batch, as while the listener is in another
+    /// app, a book of two batches allowed five seconds still reads, where the
+    /// system's uptime would have left the second batch no time at all.
+    func testABookSuspendedInABatchHasSpentNoneOfItsTimeThere() throws {
+        let readings = OSAllocatedUnfairLock(initialState: 0)
+        // The first batch's two readings: as it starts, and as it ends five minutes of uptime later.
+        let uptime: @Sendable () -> TimeInterval = {
+            readings.withLock { count -> TimeInterval in
+                count += 1
+                return count == 1 ? 1_000 : 1_300 + Double(count) * 0.001
+            }
+        }
+        var tight = tool(limits: { limits, _ in limits.maximumSeconds = 5 })
+        tight.clock = RunningClock(uptime: uptime, longestStep: 1, tick: nil)
+        let paragraphs = book(filling: 2)
+        XCTAssertEqual(try read(paragraphs, with: tight).count, paragraphs.count)
+    }
+
+    /// The app's braille tool and engine count only the time TextMouth runs,
+    /// by the app's one clock (B18).
+    func testTheBrailleToolAndEngineAreTimedByTheAppsClock() {
+        XCTAssertTrue(BrailleTranslator.Tool.helper.clock === RunningClock.app)
+        XCTAssertTrue(BrailleTranslator.libraryEngine.clock === RunningClock.app)
     }
 
     /// A batch that waits its turn behind another call longer than the book's

@@ -22,6 +22,7 @@ final class FFmpegImportSnifferTests: XCTestCase {
             ("webm/tones-vorbis.weba", .matroska),
             ("mka/tones-2tracks.mka", .matroska),
             ("mka/tones-5.1-ac3.mka", .matroska),
+            ("mka/tones-aac.mka", .matroska),
             ("mkv/three-tones-flac.mkv", .matroska),
             ("avi/tones-mp3.avi", .avi),
             ("flv/tones-aac.flv", .flv),
@@ -153,10 +154,11 @@ final class FFmpegImportSnifferTests: XCTestCase {
     }
 
     /// Which tracks of a book of several are left out (review9 finding 2):
-    /// on the iPhone, or with the app's helper missing, every file only
-    /// FFmpeg reads; with it, only a file whose bytes are of no container it
-    /// reads. MP3 and Ogg Vorbis are never left out, and the helper is looked
-    /// for only when a track is one of its files.
+    /// with the Mac app's helper missing, every file only FFmpeg reads; with
+    /// it, or on the iPhone, whose session is in the app (FMT54), only a file
+    /// whose bytes are of no container it reads. MP3 and Ogg Vorbis are never
+    /// left out, and the session is looked for only when a track is one of
+    /// its files.
     func testWhichTracksABookOfSeveralLeavesOut() throws {
         let folder = try makeSandboxDirectory("FFmpegLeftOut")
         let avi = folder.appendingPathComponent("Trailer.avi")
@@ -171,14 +173,15 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertEqual(missing.needingConverter, [avi])
         XCTAssertEqual(missing.holdingNoSound, [report])
         XCTAssertEqual(missing.located, .missing)
-        let phone = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { nil }
-        XCTAssertEqual(phone.all, [avi, report])
-        XCTAssertNil(phone.located)
+        let inTheApp = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { .inProcess }
+        XCTAssertEqual(inTheApp.all, [report])
+        XCTAssertEqual(inTheApp.located, .inProcess)
+        // The app's own: the Mac's helper, or the iPhone's session in the app.
         let bundled = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { FFmpegAudioConverter.locateBundled() }
         XCTAssertEqual(bundled.all, [report])
         let none = FFmpegAudioConverter.tracksToLeaveOut(of: [mp3, vorbis]) {
-            XCTFail("the helper is looked for only when a track is one of its files")
-            return nil
+            XCTFail("the session is looked for only when a track is one of its files")
+            return .missing
         }
         XCTAssertEqual(none, FFmpegAudioConverter.TracksLeftOut())
     }
@@ -218,6 +221,25 @@ final class FFmpegImportSnifferTests: XCTestCase {
             "com.real.realmedia-vbr",
         ])
         XCTAssertFalse((type["LSItemContentTypes"] as? [String] ?? []).contains("com.apple.systemprofiler.document"))
+    }
+
+    /// Each extension ffmpeg converts but .spx (the System Profiler's on the
+    /// Mac) has, in this process, a type its document type names, so the
+    /// system offers TextMouth for such a file: on the Mac in Finder, and on
+    /// the iPhone in "Open in TextMouth" (FMT54), where only the types a
+    /// document type names count, never its extensions. A type of the
+    /// system's that this system did not declare would be made up for the
+    /// extension, and named by none.
+    func testEachFFmpegExtensionHasATypeItsDocumentTypeNames() throws {
+        let named = Set(try XCTUnwrap(documentType(listing: "wma"))["LSItemContentTypes"] as? [String] ?? [])
+        var unnamed: [String] = []
+        for ext in FFmpegAudioConverter.extensions.subtracting(["spx"]).sorted() {
+            let type = UTType(filenameExtension: ext)
+            if !named.contains(type?.identifier ?? "") {
+                unnamed.append("\(ext): \(type?.identifier ?? "none") (declared: \(type?.isDeclared ?? false))")
+            }
+        }
+        XCTAssertEqual(unnamed, [])
     }
 
     /// The Open panel offers every extension ffmpeg converts, by the type

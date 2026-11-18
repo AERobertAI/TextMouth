@@ -27,9 +27,12 @@ private import TextMouthFFmpegProtocol
 /// Ogg holding Vorbis, Opus, or FLAC stays with afconvert, as before; only Ogg
 /// holding Speex comes here.
 ///
-/// The iPhone starts no program, so it has no helper and refuses these
-/// formats (`PhoneImportRefusal`); it will run the same session in its own
-/// process, reading the same stream, once it links the FFmpeg_iOS library.
+/// The iPhone starts no program, so it links the same session into the app
+/// (the FFmpeg_iOS library, FMT54) and runs it in its own process, one record
+/// a call on an engine of its own (`InProcessEngine`), reading the same stream
+/// with the same reader: `runSession(_:of:as:kind:at:watching:limits:using:reading:)`
+/// is the one place the two ways part, and everything before and after it is
+/// shared, the limits, the plan, the writer, the checks, and every sentence.
 enum FFmpegAudioConverter {
     // MARK: - Which Files
 
@@ -60,18 +63,27 @@ enum FFmpegAudioConverter {
         return container != .ogg
     }
 
+    /// Whether the file at `url`, whose bytes are of `container`, is a
+    /// copy-protected Windows Media file (`ASFHeader.isCopyProtected`), which
+    /// no converter could help: the one check `convert` makes before anything
+    /// runs, and the iPhone's import before it refuses any other format
+    /// (`PhoneImportRefusal.refuseConversion`, FU-FFMPEG).
+    static func isCopyProtected(_ url: URL, container: FFmpegContainer?) -> Bool {
+        container == .asf && ASFHeader.isCopyProtected(fileAt: url)
+    }
+
     /// The files a book of several tracks leaves out rather than be refused
     /// for (`tracksToLeaveOut(of:located:)`).
     struct TracksLeftOut: Equatable, Sendable {
         /// Files of a container FFmpeg reads that can't be converted here:
-        /// this is the iPhone, which has no helper, or the Mac's helper is
-        /// missing from the app.
+        /// the Mac's helper is missing from the app (the iPhone converts them
+        /// in the app itself, FMT54).
         var needingConverter: [URL] = []
         /// Files named for a format only FFmpeg reads whose bytes are of no
         /// container it reads, such as a System Information report (.spx).
         var holdingNoSound: [URL] = []
-        /// What `located` found when it was asked: nil on the iPhone, and
-        /// when no file was one only FFmpeg reads.
+        /// What `located` found when it was asked: nil when no file was one
+        /// only FFmpeg reads, so nothing was asked.
         var located: Located?
 
         /// Every file left out, those needing the converter first.
@@ -85,20 +97,21 @@ enum FFmpegAudioConverter {
     /// were tracks. Of the files only FFmpeg reads (`converts(_:)`), those
     /// whose bytes are of no container FFmpeg reads are always left out, and
     /// the rest when `located`, asked only when there is such a file, found
-    /// no helper (nil on the iPhone, which never has one). A file of such a
-    /// container is converted when it can be, and fails the book if that
-    /// fails, as any track's conversion does.
-    static func tracksToLeaveOut(of sources: [URL], located: () -> Located?) -> TracksLeftOut {
+    /// nothing that converts them (`Located.converts`: the Mac's helper
+    /// missing; the iPhone's session, in the app, is never missing). A file
+    /// of such a container is converted when it can be, and fails the book
+    /// if that fails, as any track's conversion does.
+    static func tracksToLeaveOut(of sources: [URL], located: () -> Located) -> TracksLeftOut {
         var leftOut = TracksLeftOut()
         let ffmpegFiles = sources.filter(converts)
         guard !ffmpegFiles.isEmpty else { return leftOut }
-        leftOut.located = located()
-        var found = false
-        if case .found? = leftOut.located { found = true }
+        let found = located()
+        leftOut.located = found
+        let convertible = found.converts
         for file in ffmpegFiles {
             if FFmpegContainer.of(fileAt: file) == nil {
                 leftOut.holdingNoSound.append(file)
-            } else if !found {
+            } else if !convertible {
                 leftOut.needingConverter.append(file)
             }
         }
@@ -110,36 +123,49 @@ enum FFmpegAudioConverter {
     /// The name of the helper program in the app's Contents/MacOS.
     static let helperName = "TextMouthFFmpeg"
 
-    /// What looking for the helper found.
+    /// Where the session runs, as looking for it found.
     enum Located: Equatable, Sendable {
-        /// The helper, at this path.
+        /// The Mac's helper, at this path.
         case found(URL)
-        /// No helper: the app is damaged (the Mac), or this is the iPhone.
+        /// The session linked into the app, run in its own process (FMT54):
+        /// the iPhone, which can start no helper program.
+        case inProcess
+        /// No helper: the Mac's app is damaged.
         case missing
+
+        /// Whether a file only FFmpeg reads can be converted here: by the
+        /// helper, or in the app itself.
+        var converts: Bool { self != .missing }
     }
 
-    /// The helper in the app's own bundle, beside its executable, where
+    /// Where the bundled session runs. On the Mac, the helper in the app's
+    /// own bundle, beside its executable, where
     /// `Bundle.main.url(forAuxiliaryExecutable:)` finds it (the hosted tests'
-    /// main bundle is the app, so they find it too). On iOS, which starts no
-    /// program, there is none.
+    /// main bundle is the app, so they find it too), or none. On iOS, which
+    /// starts no program, the session linked into the app (FMT54), which is
+    /// never missing.
     static func locateBundled() -> Located {
         #if os(macOS)
         if let helper = Bundle.main.url(forAuxiliaryExecutable: helperName),
            FileManager.default.isExecutableFile(atPath: helper.path) {
             return .found(helper)
         }
-        #endif
         return .missing
+        #else
+        return .inProcess
+        #endif
     }
 
     // MARK: - The Tool
 
-    /// What finds the helper and what watches it: the bundled helper under
-    /// the watchdog's rules in the app, replaced in tests by a stand-in (a
-    /// script that writes a damaged stream, a `sleep` that hangs) or a
-    /// missing helper, and tight limits.
+    /// What finds the session and what holds it to its limits, the one
+    /// reach for all of them on both platforms: the bundled helper under the
+    /// watchdog's rules on the Mac, and on the iPhone the session in the app,
+    /// on its engine, under the same limits (`runInProcess`). Tests replace
+    /// it with a stand-in (a script, or on the iPhone a session, that writes
+    /// a damaged stream or hangs) or a missing helper, and tight limits.
     struct Tool: Sendable {
-        /// Finds the helper.
+        /// Finds where the session runs.
         var locate: @Sendable () -> Located
         /// What the watchdog allows the decode of a source lasting the given
         /// seconds.
@@ -153,6 +179,25 @@ enum FFmpegAudioConverter {
         /// (`ImportAudioConverter.availableBytes(on:)`) unless a test fills
         /// the volume.
         var availableBytes: @Sendable (_ folder: URL) -> Int64? = { ImportAudioConverter.availableBytes(on: $0) }
+        #if os(iOS)
+        /// The engine the iPhone runs the session on (FMT54):
+        /// `sessionEngine`, unless a test gives one of its own, so that a
+        /// test that abandons a call refuses no other test's conversions.
+        var engine: InProcessEngine = FFmpegAudioConverter.sessionEngine
+        /// What an in-process run opens on the engine: TextMouth's session
+        /// linked into the app (`LinkedFFmpegSession`), unless a test stands
+        /// in for it with a stream written by hand or a call that hangs.
+        var openSession: InProcessSessionOpener = LinkedFFmpegSession.open
+        /// The floor under the memory the app keeps free while a session runs
+        /// (the FMT54 review, finding 4): the app's, 512 MB, unless a test
+        /// scripts what is left.
+        var memoryFloor: SessionMemoryFloor = .app
+        /// The clock an in-process run's whole time is counted by: the
+        /// app's, which counts only the time TextMouth runs
+        /// (`RunningClock.app`, B18), so a run frozen while iOS keeps the app
+        /// suspended has spent none of it, unless a test scripts its own.
+        var clock: RunningClock = .app
+        #endif
 
         /// The bundled helper. A decode has the limits of afconvert's
         /// (`ImportAudioConverter.Tool.afconvert`), but for the stall: a video
@@ -180,16 +225,77 @@ enum FFmpegAudioConverter {
         )
     }
 
-    /// The tool conversions use: the bundled helper, unless a test binds a
-    /// stand-in with `FFmpegAudioConverter.$tool.withValue(_:operation:)`.
+    /// The tool conversions use: the bundled helper on the Mac, the session
+    /// in the app on the iPhone, unless a test binds a stand-in with
+    /// `FFmpegAudioConverter.$tool.withValue(_:operation:)`.
     /// It is read on the caller's thread, as `TextutilConverter.tool` is: an
     /// import reads it before its conversions start in tasks of their own
     /// (`FileImportService.convertTracks`), which do not inherit it.
     @TaskLocal static var tool: Tool = .bundled
 
+    // MARK: - Running the Session
+
+    /// What a run of the session is asked for, as TextMouthFFmpegProtocol.h
+    /// names its modes: what the file holds, or that and its sound.
+    enum SessionMode: Sendable {
+        case probe, decode
+
+        /// The helper's argument for it.
+        var argument: String { self == .probe ? TMFF_MODE_PROBE : TMFF_MODE_DECODE }
+    }
+
+    /// Runs the session on `file`, read as `container`, in `mode`, where
+    /// `located` says it runs, and hands `read` its stream in pieces, the
+    /// one place the Mac and the iPhone part (FMT54):
+    /// - **The Mac** runs its helper under the watchdog
+    ///   (`WatchedProcess.runStreaming`), whose watched file is `output`
+    ///   (the .m4a a decode writes; nil for a probe), exactly as before.
+    /// - **The iPhone** runs the session linked into the app, in this
+    ///   process, on the tool's engine (`runInProcess`), under the same
+    ///   limits.
+    ///
+    /// Both end alike: how the run ended, an exit status of
+    /// TextMouthFFmpegProtocol.h or a kill and its reason, and what `read`
+    /// returned or threw, which `failure(of:read:fileName:kind:limits:logTag:)`
+    /// turns into the same sentence on both. `kind` names the format in a
+    /// refusal.
+    /// - Throws: `Failure.helperMissing` when there is no session to run
+    ///   (only a damaged Mac app), and `CancellationError` when the task is
+    ///   cancelled.
+    static func runSession<Value: Sendable>(
+        _ mode: SessionMode,
+        of file: URL,
+        as container: FFmpegContainer,
+        kind: String,
+        at located: Located,
+        watching output: URL?,
+        limits: WatchedProcess.Limits,
+        using tool: Tool,
+        reading read: (_ nextPiece: @escaping () async throws -> [UInt8]) async throws -> Value
+    ) async throws -> (ending: WatchedProcess.Ending, read: Result<Value, any Error>) {
+        switch located {
+        case let .found(helper):
+            return try await WatchedProcess.runStreaming(
+                helper, arguments: [mode.argument, container.demuxer, file.path], watching: output, limits: limits,
+                residentMemory: tool.residentMemory
+            ) { pipe in
+                try await read { try await pipe.read(upTo: FFmpegHelperStream.pieceBytes) }
+            }
+        case .inProcess:
+            #if os(iOS)
+            return try await runInProcess(mode, of: file, demuxer: container.demuxer, limits: limits, using: tool, reading: read)
+            #else
+            // The Mac never runs FFmpeg in its own process, which is not sandboxed: only its helper does.
+            throw Failure.helperMissing(kind: kind)
+            #endif
+        case .missing:
+            throw Failure.helperMissing(kind: kind)
+        }
+    }
+
     // MARK: - Asking the Helper
 
-    /// What the helper says the file at `file`, read as `container`, holds
+    /// What the session says the file at `file`, read as `container`, holds
     /// (its `probe` mode): its sound stream, length, tags, and chapters.
     /// `kind` names the format in a refusal.
     /// - Throws: `Failure` or `ImportAudioConverter.Failure` saying why it
@@ -201,14 +307,14 @@ enum FFmpegAudioConverter {
         kind: String,
         using tool: Tool
     ) async throws -> FFmpegReport {
-        guard case let .found(helper) = tool.locate() else { throw Failure.helperMissing(kind: kind) }
+        let located = tool.locate()
+        guard located.converts else { throw Failure.helperMissing(kind: kind) }
         let name = file.lastPathComponent
         let limits = tool.probeLimits(ImportAudioConverter.fileSize(of: file))
-        let (ending, read) = try await WatchedProcess.runStreaming(
-            helper, arguments: [TMFF_MODE_PROBE, container.demuxer, file.path], watching: nil, limits: limits,
-            residentMemory: tool.residentMemory
-        ) { pipe in
-            var stream = FFmpegHelperStream { try await pipe.read(upTo: FFmpegHelperStream.pieceBytes) }
+        let (ending, read) = try await runSession(
+            .probe, of: file, as: container, kind: kind, at: located, watching: nil, limits: limits, using: tool
+        ) { nextPiece in
+            var stream = FFmpegHelperStream(reading: nextPiece)
             let report = try await stream.readReport()
             // A probe's stream ends at END, with no samples.
             guard try await stream.nextBlock() == nil else { throw FFmpegHelperStream.StreamError.damaged }
@@ -234,7 +340,12 @@ enum FFmpegAudioConverter {
     /// - a stream that broke the protocol is `unreadableStream`, the helper
     ///   being killed when it was still writing;
     /// - any other error, the reader's own (a sound the converter can't
-    ///   write), as it is.
+    ///   write), as it is, and so the iPhone engine's own, a call abandoned
+    ///   or refused (`InProcessEngine.Failure`), in its own sentence.
+    ///
+    /// A run in the iPhone app ends as the helper's would (`runInProcess`):
+    /// the session's status is the helper's exit status, and a stop for a
+    /// limit is the watchdog's kill for the same reason.
     static func failure<Value>(
         of ending: WatchedProcess.Ending,
         read: Result<Value, any Error>,
@@ -310,6 +421,8 @@ enum FFmpegAudioConverter {
             return ImportAudioConverter.Failure.notRead(fileName: fileName, problem: .damaged)
         case TMFF_EXIT_FORM_CHANGED:
             return Failure.formChanged(fileName: fileName)
+        case TMFF_EXIT_FRAME_TOO_LARGE:
+            return Failure.frameTooLarge(fileName: fileName)
         case TMFF_EXIT_MEMORY:
             return ImportAudioConverter.Failure.killed(fileName: fileName, reason: FFmpegImportWording.neededTooMuchMemory)
         case TMFF_EXIT_NOT_CONFINED:
@@ -425,6 +538,9 @@ enum FFmpegAudioConverter {
         case soundNotDecoded(fileName: String)
         /// The sound changes its rate, channels, or form partway through.
         case formChanged(fileName: String)
+        /// One frame of the sound holds more samples than the session
+        /// decodes at once (TMFF_EXIT_FRAME_TOO_LARGE).
+        case frameTooLarge(fileName: String)
         /// The helper crashed (a fatal signal) reading the file (the TODO's
         /// FU-FFMPEG item: a crashed helper's own sentence).
         case crashed(fileName: String)
@@ -443,6 +559,7 @@ enum FFmpegAudioConverter {
             case let .noSound(fileName): return FFmpegImportWording.noSound(fileName: fileName)
             case let .soundNotDecoded(fileName): return FFmpegImportWording.soundNotDecoded(fileName: fileName)
             case let .formChanged(fileName): return FFmpegImportWording.formChanged(fileName: fileName)
+            case let .frameTooLarge(fileName): return FFmpegImportWording.frameTooLarge(fileName: fileName)
             case let .notConfined(fileName): return FFmpegImportWording.notConfined(fileName: fileName)
             case let .crashed(fileName): return FFmpegImportWording.crashed(fileName: fileName)
             case let .endedEarly(fileName): return FFmpegImportWording.endedEarly(fileName: fileName)
@@ -522,10 +639,10 @@ enum FFmpegAudioConverter {
     /// In order: a file that is missing or only in the cloud is unreadable;
     /// one whose bytes are of no container only FFmpeg reads is not
     /// recognized; a copy-protected Windows Media file is refused; an app
-    /// whose helper is missing refuses; then the helper says what the file
-    /// holds, a source of no stated length is refused when the volume lacks
-    /// room for what it may write, and the helper decodes it while the app
-    /// writes the .m4a.
+    /// whose helper is missing refuses; then the session (the Mac's helper,
+    /// or the iPhone's in the app) says what the file holds, a source of no
+    /// stated length is refused when the volume lacks room for what it may
+    /// write, and the session decodes it while the app writes the .m4a.
     /// - Throws: `Failure`, `ImportAudioConverter.Failure` (a kill, a failed
     ///   run, a failed check, a name, a writer's failure), or
     ///   `CancellationError`.
@@ -545,8 +662,9 @@ enum FFmpegAudioConverter {
         guard let container else { throw Failure.notRecognized(fileName: name, kind: kind) }
         // A protected file is refused before anything runs: no converter
         // could help.
-        if container == .asf, ASFHeader.isCopyProtected(fileAt: source) { throw Failure.copyProtected }
-        guard case let .found(helper) = tool.locate() else { throw Failure.helperMissing(kind: kind) }
+        if isCopyProtected(source, container: container) { throw Failure.copyProtected }
+        let located = tool.locate()
+        guard located.converts else { throw Failure.helperMissing(kind: kind) }
         let report = try await probe(source, as: container, kind: kind, using: tool)
         let planned = try plan(for: report, fileName: name)
         let bytesBefore = ImportAudioConverter.fileSize(of: source)
@@ -576,7 +694,7 @@ enum FFmpegAudioConverter {
         let written: ImportAudioConverter.Target
         do {
             (written, lasts) = try await decode(
-                source, as: container, kind: kind, helper: helper, into: staged, limits: limits, tool: tool, stated: stated
+                source, as: container, kind: kind, at: located, into: staged, limits: limits, tool: tool, stated: stated
             )
             if keepingChapters, report.chapterMarks.count > 0 {
                 try await ImportAudioConverter.keepChapters(report.chapterMarks, in: staged, lasting: lasts, from: name)
@@ -605,31 +723,30 @@ enum FFmpegAudioConverter {
         return conversion
     }
 
-    /// Runs the helper's decode of `source`, read as `container`, under
-    /// `limits`, writing its samples into `staged` as the decode's own report
-    /// plans (`plan(for:fileName:)`: the samples decoded are what it
-    /// describes, which may differ from the probe's, as HE-AAC's rate does),
-    /// with the file's tags (`FFmpegReport.bookTags(in:)`); then checks the
-    /// .m4a (`check(_:against:from:)`). Returns what was written and how long
-    /// the .m4a lasts.
+    /// Runs the session's decode of `source`, read as `container`, where
+    /// `located` says, under `limits`, writing its samples into `staged` as
+    /// the decode's own report plans (`plan(for:fileName:)`: the samples
+    /// decoded are what it describes, which may differ from the probe's, as
+    /// HE-AAC's rate does), with the file's tags (`FFmpegReport.bookTags(in:)`);
+    /// then checks the .m4a (`check(_:against:from:)`). Returns what was
+    /// written and how long the .m4a lasts.
     /// - Throws: as `convert` does; a writer's failure as
     ///   `ImportAudioConverter.Failure.notWritten`.
     private static func decode(
         _ source: URL,
         as container: FFmpegContainer,
         kind: String,
-        helper: URL,
+        at located: Located,
         into staged: URL,
         limits: WatchedProcess.Limits,
         tool: Tool,
         stated: TimeInterval?
     ) async throws -> (target: ImportAudioConverter.Target, lasts: TimeInterval) {
         let name = source.lastPathComponent
-        let (ending, read) = try await WatchedProcess.runStreaming(
-            helper, arguments: [TMFF_MODE_DECODE, container.demuxer, source.path], watching: staged, limits: limits,
-            residentMemory: tool.residentMemory
-        ) { pipe -> ImportAudioConverter.Target in
-            var stream = FFmpegHelperStream { try await pipe.read(upTo: FFmpegHelperStream.pieceBytes) }
+        let (ending, read) = try await runSession(
+            .decode, of: source, as: container, kind: kind, at: located, watching: staged, limits: limits, using: tool
+        ) { nextPiece -> ImportAudioConverter.Target in
+            var stream = FFmpegHelperStream(reading: nextPiece)
             let report = try await stream.readReport()
             let target = try plan(for: report, fileName: name).target
             do {

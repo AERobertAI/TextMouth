@@ -106,6 +106,7 @@
 #define TMFF_EXIT_NO_DEMUXER 10      /* this build has no demuxer of that name */
 #define TMFF_EXIT_STOPPED 11         /* the session was told to stop */
 #define TMFF_EXIT_NOT_CONFINED 12    /* the helper could not confine itself, so it read nothing */
+#define TMFF_EXIT_FRAME_TOO_LARGE 13 /* one frame of the sound holds more samples than the session decodes at once */
 #define TMFF_EXIT_CRASHED 70         /* a fatal signal (the helper ends itself, with no crash report) */
 #define TMFF_EXIT_PROCESSOR_TIME 71  /* the processor time limit's signal, SIGXCPU */
 

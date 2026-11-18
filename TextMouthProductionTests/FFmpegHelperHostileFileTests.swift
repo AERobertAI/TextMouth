@@ -15,6 +15,13 @@ import XCTest
 /// tried there). So these tests never run on the development Mac:
 /// `TestMachine.skipUnlessGitHubRunner` skips them there, and every GitHub
 /// train runs them (docs/developer/testing.md).
+///
+/// The iPhone runs the same session in the app itself (FMT54), where a crash
+/// ends the app, its test host here, and a hang is abandoned by the engine:
+/// so on the iPhone these tests show, on GitHub alone (where the iPhone's
+/// tests always run), that no damaged copy crashes or hangs the session in
+/// the app, and that each ends by the protocol's statuses or its limits.
+/// Shared with the iPhone's unit bundle.
 final class FFmpegHelperHostileFileTests: XCTestCase {
     /// Skips every test off GitHub's runners: damaged media may crash the
     /// FFmpeg helper, and a crash on the development Mac puts a crash report
@@ -27,7 +34,7 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
     /// The samples damaged here.
     private let samples = [
         "wma/tones.wma", "wma/tones-wma1.wma", "wma/three-tones-chapters.wma", "wmv/tones.wmv", "avi/tones-mp3.avi",
-        "flv/tones-aac.flv", "mkv/three-tones-flac.mkv", "mka/tones-5.1-ac3.mka", "mka/tones-2tracks.mka",
+        "flv/tones-aac.flv", "mkv/three-tones-flac.mkv", "mka/tones-5.1-ac3.mka", "mka/tones-aac.mka", "mka/tones-2tracks.mka",
         "webm/tones-opus.webm", "webm/tones-vorbis.weba", "spx/tones.spx", "rm/tones.ra",
     ]
 
@@ -94,17 +101,15 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
                 let copy = folder.appendingPathComponent("copy." + original.pathExtension)
                 try Data(bytes).write(to: copy)
                 for mode in ["probe", "decode"] {
-                    let (ending, _) = try await WatchedProcess.runStreaming(
-                        helper, arguments: [mode, container.demuxer, copy.path], watching: nil, limits: limits
-                    ) { pipe -> Int in
-                        var total = 0
-                        while true {
-                            let piece = try await pipe.read(upTo: 1 << 20)
-                            if piece.isEmpty { return total }
-                            total += piece.count
-                        }
-                    }
                     let name = "\(sample), \(damage), \(mode)"
+                    let ending: WatchedProcess.Ending
+                    do {
+                        ending = try await runFFmpegHelper(helper, [mode, container.demuxer, copy.path], limits: limits).ending
+                    } catch {
+                        // The iPhone's engine abandoned a call that hung past its limit: not an ending by the protocol.
+                        unexpected.append("\(name): \(error)")
+                        continue
+                    }
                     switch ending.outcome {
                     case .killed:
                         break
@@ -124,21 +129,16 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
     /// What the helper makes of the sample `name` of `ffmpeg-edge`: how it ended and, when it
     /// wrote a whole stream, what the reader says of it (frames and the refusals END counts).
     private func decodeEdgeSample(_ name: String) async throws -> (ending: WatchedProcess.Ending, frames: UInt64?, refused: [UInt32]) {
+        try await decode(try formatSampleURL("ffmpeg-edge/\(name)"), demuxer: "matroska")
+    }
+
+    /// What the helper makes of the file at `file`, read by `demuxer`: as `decodeEdgeSample`.
+    private func decode(_ file: URL, demuxer: String) async throws -> (ending: WatchedProcess.Ending, frames: UInt64?, refused: [UInt32]) {
         let helper = try bundledFFmpegHelper()
         let seconds = TestMachine.allowed(20)
         let limits = WatchedProcess.Limits(maximumSeconds: seconds, maximumResidentBytes: 1_073_741_824, maximumStalledSeconds: seconds)
-        let sample = try formatSampleURL("ffmpeg-edge/\(name)")
-        let (ending, bytes) = try await WatchedProcess.runStreaming(
-            helper, arguments: ["decode", "matroska", sample.path], watching: nil, limits: limits
-        ) { pipe -> [UInt8] in
-            var bytes: [UInt8] = []
-            while true {
-                let piece = try await pipe.read(upTo: 1 << 20)
-                if piece.isEmpty { return bytes }
-                bytes += piece
-            }
-        }
-        var stream = FFmpegHelperStream(data: Data(try bytes.get()))
+        let (ending, bytes) = try await runFFmpegHelper(helper, ["decode", demuxer, file.path], limits: limits)
+        var stream = FFmpegHelperStream(data: Data(bytes))
         do {
             _ = try await stream.readReport()
             while try await stream.nextBlock() != nil {}
@@ -166,6 +166,48 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
             XCTAssertEqual(result.ending, WatchedProcess.Ending(outcome: .exited(status: 0)), name)
             XCTAssertEqual(result.frames, UInt64(good * 16), "\(name): the packets that decode, whole")
             XCTAssertEqual(result.refused, [UInt32(refused), 0], "\(name): every refused packet counted")
+        }
+    }
+
+    /// No decoded frame holds more than 16,777,216 samples over all its
+    /// channels (`MAX_DECODED_SAMPLES` in session.c; the FMT54 review,
+    /// finding 2, and its check, item 1): FFmpeg refuses a larger one before
+    /// allocating it, so one crafted packet cannot make one decoder call take
+    /// hundreds of megabytes, which nothing could stop until the call
+    /// returned. The bound counts every channel: in Matroska made by the
+    /// test, one PCM block of exactly that many samples in stereo (8,388,608
+    /// a channel) and in eight channels (2,097,152 a channel) decodes whole,
+    /// and one of a sample frame more ends the decode with status 13, a frame
+    /// too large, said in its own sentence, not as a damaged packet whose
+    /// loss the length check would blame on the file. A minute of 48 kHz
+    /// stereo in one chunk (5.76 million) is well within it.
+    func testNoDecodedFrameHoldsMoreSamplesThanTheBound() async throws {
+        for channels in [2, 8] {
+            let atTheBound = 16_777_216 / channels
+            let whole = try await decode(
+                try matroskaOfOnePCMBlock(channels: channels, framesPerChannel: atTheBound, named: "at-the-bound-\(channels).mka"),
+                demuxer: "matroska"
+            )
+            XCTAssertEqual(whole.ending, WatchedProcess.Ending(outcome: .exited(status: 0)), "\(channels) channels")
+            XCTAssertEqual(whole.frames, UInt64(atTheBound), "\(channels) channels: the frame at the bound was not decoded whole")
+            let pastIt = try await decode(
+                try matroskaOfOnePCMBlock(channels: channels, framesPerChannel: atTheBound + 1, named: "past-the-bound-\(channels).mka"),
+                demuxer: "matroska"
+            )
+            XCTAssertEqual(pastIt.ending, WatchedProcess.Ending(outcome: .exited(status: 13)), "\(channels) channels: a frame past the bound was not told as such")
+            XCTAssertNil(pastIt.frames, "\(channels) channels")
+        }
+        // The conversion says so in its own sentence.
+        let copy = try matroskaOfOnePCMBlock(channels: 2, framesPerChannel: 8_388_609, named: "Long Chunk.mka")
+        do {
+            _ = try await FFmpegAudioConverter.convert(copy, using: try bundledFFmpegTool())
+            XCTFail("a frame past the bound was converted")
+        } catch {
+            XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .frameTooLarge(fileName: "Long Chunk.mka"))
+            XCTAssertEqual(
+                error.localizedDescription,
+                "TextMouth can't convert “Long Chunk.mka”: part of its sound is stored in one piece too large for TextMouth to decode."
+            )
         }
     }
 

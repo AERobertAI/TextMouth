@@ -109,6 +109,16 @@ enum BrailleTranslator {
 
     // MARK: The Tool
 
+    /// The clock the tool times its runs by unless a test scripts its own
+    /// (`Tool.clock`): on the iPhone the app's, which counts only the time
+    /// TextMouth runs (B18), as the engine it translates on is timed; on the
+    /// Mac the system's uptime, counted whole.
+    #if os(iOS)
+    static let toolClock = RunningClock.app
+    #else
+    static let toolClock = RunningClock.system
+    #endif
+
     /// What runs a translation, and what watches it: the bundled helper in
     /// the app, replaced in tests by a stand-in child (a `sleep`, `false`)
     /// and tight limits.
@@ -128,10 +138,12 @@ enum BrailleTranslator {
         /// The folder of braille tables the helper reads, nil when the
         /// bundle lacks it.
         var tablesFolder: URL?
-        /// The clock a measured run is timed by, in seconds, which never runs
-        /// backwards: the system uptime, unless a test scripts its own
-        /// (review F8).
-        var uptime: @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+        /// The clock a measured run and the library's own time are timed by,
+        /// which never runs backwards, unless a test scripts its own (review
+        /// F8): on the iPhone the app's, which counts only the time TextMouth
+        /// runs, so a translation frozen while iOS keeps the app suspended has
+        /// spent none of its book's time (B18); on the Mac the system's uptime.
+        var clock: RunningClock = BrailleTranslator.toolClock
 
         /// The helper built into the app: `Contents/MacOS/TextMouthBraille`,
         /// reading the bundled tables in `Contents/Resources/liblouis/tables`
@@ -923,14 +935,14 @@ enum BrailleTranslator {
         do {
             // The library's own time, by the tool's clock, on the engine's
             // thread, so that no wait behind another call is in it.
-            let uptime = tool.uptime
+            let clock = tool.clock
             outcome = try engine.run(limit: seconds, cancelledBy: cancellation) { call in
-                let started = uptime()
+                let started = clock.now()
                 var result = callLibrary(
                     mode: libraryMode, folder: folder, table: table, input: input,
                     maximumOutputBytes: maximumOutputBytes, call: call
                 )
-                result.seconds = uptime() - started
+                result.seconds = clock.now() - started
                 return result
             }
         } catch let failure as InProcessEngine.Failure {
@@ -1034,7 +1046,7 @@ enum BrailleTranslator {
             measure?.note(memory: bytes)
             return bytes
         }
-        let started = tool.uptime()
+        let started = tool.clock.now()
         let outcome: WatchedProcess.Outcome
         do {
             outcome = try AsyncBridge.waitForResult(cancelledBy: cancellation) {
@@ -1051,7 +1063,7 @@ enum BrailleTranslator {
             // import ends as a cancelled one does.
             throw ImportCancelled()
         }
-        measure?.note(seconds: tool.uptime() - started)
+        measure?.note(seconds: tool.clock.now() - started)
 
         switch outcome {
         case .exited(status: 0):

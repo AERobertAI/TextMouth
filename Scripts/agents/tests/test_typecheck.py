@@ -11,6 +11,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import re
 import subprocess
 import tempfile
 import unittest
@@ -251,6 +252,36 @@ class PackageTests(TypecheckTestsCase):
         self.assertNotIn(typecheck.BRAILLE_LIBRARY_TARGET, mac)
         # SwiftPM makes a module of each C target's name, so the library's target must not be named as its module is.
         self.assertNotEqual(typecheck.BRAILLE_LIBRARY_TARGET, "TextMouthBrailleLibrary")
+
+    def test_only_the_iphone_app_links_the_ffmpeg_sessions_stand_in(self):
+        # The iPhone app runs the FFmpeg session in its own process (FMT54), and the session needs FFmpeg's own
+        # build, so the iPhone's package builds a stand-in of it and its app depends on that; the Mac app runs the
+        # session in its helper, so the Mac's package has neither.
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False)
+        typecheck.write_package(self.src, self.folder / "pkgs", "ios", "26.0")
+        ios = (self.src / "Package.swift").read_text()
+        app = ios.split(".executableTarget(")[1]
+        self.assertIn(f'.target(\n            name: "{typecheck.FFMPEG_SESSION_STUB_TARGET}"', ios)
+        self.assertIn(f'"{typecheck.FFMPEG_SESSION_STUB_TARGET}",', app, "the iPhone app does not link the stand-in")
+        folder = self.src / typecheck.FFMPEG_SESSION_STUB_FOLDER
+        self.assertEqual((folder / "session_stub.c").read_text(), typecheck.FFMPEG_SESSION_STUB)
+        self.assertEqual(list((folder / typecheck.NO_PUBLIC_HEADERS).iterdir()), [])
+        # SwiftPM makes a module of the target's name, which must not be the session's own module.
+        self.assertNotEqual(typecheck.FFMPEG_SESSION_STUB_TARGET, "TextMouthFFmpegSession")
+        mac = self.package(tests=False)
+        self.assertNotIn(typecheck.FFMPEG_SESSION_STUB_TARGET, mac)
+        self.assertFalse((self.src / typecheck.FFMPEG_SESSION_STUB_FOLDER / "session_stub.c").exists())
+
+    def test_the_stand_in_defines_every_function_the_sessions_header_declares(self):
+        # A function the header gains without its stand-in would fail the iPhone's type-check only at the link; this
+        # names it at once. The header is the repository's own; each declaration is a line ending its name with "(",
+        # outside comments, and the stand-in must define each name once.
+        header = (AGENTS.parent.parent / "TextMouthFFmpeg" / "include" / "TextMouthFFmpegSession.h").read_text()
+        code = re.sub(r"/\*.*?\*/", "", header, flags=re.S)
+        declared = set(re.findall(r"\b(tmff_\w+)\(", code))
+        self.assertIn("tmff_session_next", declared, "no declaration was read from the header")
+        defined = re.findall(r"^[\w][\w \*]*\b(tmff_\w+)\([^;]*\{", typecheck.FFMPEG_SESSION_STUB, flags=re.M)
+        self.assertEqual(sorted(defined), sorted(declared))
 
 
 class SummaryTests(TypecheckTestsCase):

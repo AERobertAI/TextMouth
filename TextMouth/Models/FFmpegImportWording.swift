@@ -113,6 +113,33 @@ enum FFmpegImportWording {
         "TextMouth can't convert “\(fileName)”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."
     }
 
+    /// Why the iPhone stopped a conversion because the app's memory grew
+    /// past what it keeps free (the FMT54 review's finding 4), by more than
+    /// `megabytes` MB since the conversion began, other conversions of the
+    /// import counted with it: the end of "Converting tones.wma was stopped
+    /// because the app's memory grew by more than 1700 MB while it ran."
+    static func memoryGrew(megabytes: Int64) -> String {
+        "the app's memory grew by more than \(megabytes) MB while it ran"
+    }
+
+    /// Why the iPhone stopped a conversion it began with less than 1 GB of
+    /// memory free, `freeMegabytes` MB, half of which it keeps free (the
+    /// check of the FMT54 review's fixes, item 2): the end of "Converting
+    /// tones.wma was stopped because the iPhone had only 400 MB of memory free
+    /// when it began, and TextMouth keeps half of that free."
+    static func beganShortOfMemory(freeMegabytes: Int64) -> String {
+        "the iPhone had only \(freeMegabytes) MB of memory free when it began, and TextMouth keeps half of that free"
+    }
+
+    /// Why a file was not imported one frame of whose sound holds more
+    /// samples than TextMouth decodes at once (16,777,216 over its channels,
+    /// almost three minutes of 48 kHz stereo in one piece), where a good file
+    /// holds far fewer: "TextMouth can't convert “Radio.mkv”: part of its
+    /// sound is stored in one piece too large for TextMouth to decode."
+    static func frameTooLarge(fileName: String) -> String {
+        "TextMouth can't convert “\(fileName)”: part of its sound is stored in one piece too large for TextMouth to decode."
+    }
+
     /// Why a file was not imported when the converter stopped unexpectedly
     /// reading it, as a damaged file can make it do (the TODO's FU-FFMPEG
     /// item: a crashed helper's own sentence): "TextMouth's converter stopped
@@ -159,6 +186,13 @@ enum FFmpegImportWording {
     /// audio converted from Talk.webm failed its check: it lasts no time."
     static let convertedFileIsSilent = "it lasts no time"
 
+    /// What the iPhone's FFmpeg engine names its work by in its two sentences
+    /// (FMT54, `InProcessEngineWording`), for a call abandoned past its time
+    /// and for every one refused after it: "TextMouth stopped the audio
+    /// conversion because it ran longer than 62 seconds, and won't try again
+    /// until TextMouth is closed and opened again."
+    static let inAppWork = "the audio conversion"
+
     // MARK: - Tracks Left Out of a Book
 
     /// The most left-out files a notice names; "and 3 more" counts the rest.
@@ -179,12 +213,13 @@ enum FFmpegImportWording {
     /// missing from the app (`located` is `.missing`): "TextMouth left out
     /// “Trailer.avi”, which needs TextMouth's converter, missing from the
     /// app. Install TextMouth again, then import the book again." Nil for no
-    /// names, or when the converter is there.
+    /// names, or when the converter is there: the Mac's helper, or the
+    /// iPhone's session in the app (FMT54), which is never missing.
     static func leftOutNeedingConverter(_ names: [String], located: FFmpegAudioConverter.Located) -> String? {
         guard !names.isEmpty else { return nil }
         let needs = names.count == 1 ? "needs" : "need"
         switch located {
-        case .found:
+        case .found, .inProcess:
             return nil
         case .missing:
             return "TextMouth left out \(leftOutFiles(names)), which \(needs) TextMouth's converter, missing from the app. "

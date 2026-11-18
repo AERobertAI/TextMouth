@@ -2,11 +2,15 @@ import XCTest
 @testable import TextMouth
 
 /// Every sample of a format only FFmpeg reads, imported through the import's
-/// own path with the FFmpeg helper the app carries (FMT31, FMT32, FMT50): each
+/// own path with the FFmpeg session the app carries (FMT31, FMT32, FMT50): each
 /// becomes an .m4a book of the codec its source calls for, with its chapters
 /// and tags. FFmpeg comes with the app, so these run everywhere, GitHub's
-/// runners included. `FFmpegImportConversionTests` checks the refusals and
-/// the broken runs with stand-ins in front of the same helper.
+/// runners included: on the Mac through its helper, and on the iPhone through
+/// the same session in the app (FMT54), where every sample must make the same
+/// book, of the same codec, channels, length, chapters, title, and author.
+/// `FFmpegImportConversionTests` checks the refusals and the broken runs with
+/// stand-ins in front of the same session. Shared with the iPhone's unit
+/// bundle.
 final class FFmpegImportRealTests: XCTestCase {
     /// The folders of `TestData/format-samples` that hold the formats only
     /// FFmpeg reads.
@@ -18,7 +22,7 @@ final class FFmpegImportRealTests: XCTestCase {
         let sample: String
         /// The name the copy imported has, when not the sample's own.
         var name: String?
-        /// afinfo's codec of the book's file: "aac" or "alac".
+        /// The codec of the book's file, as afinfo names it: "aac" or "alac".
         let codec: String
         /// Its channels.
         var channels = 1
@@ -40,8 +44,9 @@ final class FFmpegImportRealTests: XCTestCase {
 
     /// Every sample, and what it imports as: WMA 1 and 2, with markers and
     /// without, a WMV, an AVI with MP3, a Flash video with AAC (encoded again
-    /// as AAC), a Matroska video with FLAC (Apple Lossless), 5.1 AC-3 (mixed
-    /// to stereo), two Opus tracks (the default taken), WebM with Opus and
+    /// as AAC), a Matroska video with FLAC (Apple Lossless), Matroska with 5.1
+    /// AC-3 (mixed to stereo) and with AAC (encoded again as AAC), two Opus
+    /// tracks (the default taken), WebM with Opus and
     /// with Vorbis, Speex in Ogg under its own name and under .ogg, and
     /// RealAudio, whose file says no length.
     private var expectations: [Expected] {
@@ -54,6 +59,8 @@ final class FFmpegImportRealTests: XCTestCase {
             Expected(sample: "flv/tones-aac.flv", codec: "aac", chapters: ["Three Tones"], title: "Three Tones", author: "TextMouth Test"),
             Expected(sample: "mkv/three-tones-flac.mkv", codec: "alac", chapters: threeTones, title: "Three Tones", author: "TextMouth Test"),
             Expected(sample: "mka/tones-5.1-ac3.mka", codec: "aac", channels: 2, chapters: threeTones, title: "Three Tones", author: "TextMouth Test"),
+            // AAC in Matroska (FMT54): decoded and written again as AAC, as every lossy source is.
+            Expected(sample: "mka/tones-aac.mka", codec: "aac", chapters: threeTones, title: "Three Tones", author: "TextMouth Test"),
             Expected(sample: "mka/tones-2tracks.mka", codec: "aac", chapters: ["First chapter", "Second chapter"],
                      title: "Tones in Matroska", author: "TextMouth tests"),
             // A title of 6,004 bytes, cut at 4 KB, between two characters (the TODO's FU-FFMPEG item).
@@ -83,7 +90,10 @@ final class FFmpegImportRealTests: XCTestCase {
 
     /// Each sample imports as an .m4a book of the codec its source calls for,
     /// with the source's chapters, title, and author; every mismatch is
-    /// reported, sample by sample.
+    /// reported, sample by sample. The codec and channels are read from the
+    /// .m4a's own sample entry (`M4ASampleEntry`), on both platforms; on the
+    /// Mac, afinfo must agree with that reading, so the reader the iPhone
+    /// relies on is checked against Apple's own tool.
     func testEverySampleImportsWithItsChaptersAndTags() throws {
         let tool = try bundledFFmpegTool()
         var mismatches: [String] = []
@@ -92,11 +102,19 @@ final class FFmpegImportRealTests: XCTestCase {
             let imported = try FFmpegAudioConverter.$tool.withValue(tool) { try FileImportService.importFileWithReport(from: copy) }
             addTeardownBlock { try? FileManager.default.removeItem(at: imported.book.tmbDirectory) }
             let file = URL(fileURLWithPath: imported.book.filePath)
+            let entry = try M4ASampleEntry.read(file)
+            #if os(macOS)
+            // afinfo, a program the iPhone has not, reads the same codec and channels.
             let info = try AsyncBridge.waitForResult { try await AudioFileInfo.read(file) }
+            let afinfo = [info?.formatID.trimmingCharacters(in: .whitespaces) ?? "unreadable", String(info?.channels ?? 0)]
+            if afinfo != [entry?.codec ?? "unreadable", String(entry?.channels ?? 0)] {
+                mismatches.append("\(expected.name ?? expected.sample): afinfo reads \(afinfo), the sample entry \(String(describing: entry))")
+            }
+            #endif
             let chapters = try BookContentAnalysisService.load(book: imported.book).content.chapters.map(\.title)
             let found = [
-                file.pathExtension, info?.formatID.trimmingCharacters(in: .whitespaces) ?? "unreadable",
-                String(info?.channels ?? 0), chapters.joined(separator: " | "), imported.book.title, imported.book.author,
+                file.pathExtension, entry?.codec ?? "unreadable",
+                String(entry?.channels ?? 0), chapters.joined(separator: " | "), imported.book.title, imported.book.author,
             ]
             let wanted = [
                 "m4a", expected.codec, String(expected.channels), expected.chapters.joined(separator: " | "),
@@ -116,7 +134,7 @@ final class FFmpegImportRealTests: XCTestCase {
         let tool = try bundledFFmpegTool()
         var mismatches: [String] = []
         for sample in ["wma/tones-wma1.wma", "wmv/tones.wmv", "avi/tones-mp3.avi", "flv/tones-aac.flv",
-                       "mkv/three-tones-flac.mkv", "mka/tones-5.1-ac3.mka", "rm/tones.ra"] {
+                       "mkv/three-tones-flac.mkv", "mka/tones-5.1-ac3.mka", "mka/tones-aac.mka", "rm/tones.ra"] {
             let copy = try copyOfFormatSample(sample)
             let conversion = try await FFmpegAudioConverter.convert(copy, using: tool)
             switch await AudioMediaProbe.duration(of: conversion.converted) {
@@ -129,6 +147,31 @@ final class FFmpegImportRealTests: XCTestCase {
         XCTAssertEqual(mismatches, [])
     }
 
+    /// A file only FFmpeg reads is measured by the FFmpeg session the app
+    /// carries, which afinfo could not do, so a cue sheet over a WMA or
+    /// Matroska file is checked against its length rather than taken to fit
+    /// (the TODO's FU-FFMPEG item); a RealAudio file that says no length is
+    /// left unmeasured, for the parse to check after its conversion. Here,
+    /// among the tests the iPhone shares (it was CueSheetImportTests'), since
+    /// the iPhone measures such a file in the app itself (FMT54).
+    func testAFileOnlyFFmpegReadsIsMeasuredForACueSheet() throws {
+        let folder = try makeSandboxDirectory("cue-measure-ffmpeg")
+        let samples = ["wma/tones-wma1.wma": "tones-wma1.wma", "mkv/three-tones-flac.mkv": "three-tones-flac.mkv", "rm/tones.ra": "tones.ra"]
+        for (sample, name) in samples {
+            try FileManager.default.copyItem(at: try formatSampleURL(sample), to: folder.appendingPathComponent(name))
+        }
+
+        let lengths = FFmpegAudioConverter.$tool.withValue(try bundledFFmpegTool()) {
+            FileImportService.measuredLengths(of: samples.values.sorted().map {
+                M3UPlaylist.Track(url: folder.appendingPathComponent($0), path: $0, title: nil)
+            })
+        }
+
+        XCTAssertEqual(Set(lengths.keys), ["tones-wma1.wma", "three-tones-flac.mkv"])
+        XCTAssertEqual(lengths["tones-wma1.wma"] ?? 0, 3.999, accuracy: 0.01)
+        XCTAssertEqual(lengths["three-tones-flac.mkv"] ?? 0, 4, accuracy: 0.1)
+    }
+
     /// Sound that changes its rate and channels partway is imported whole,
     /// at the first stretch's rate and channels (FU-FFMPEG2): the sample is
     /// 22,050 Hz mono, then 44,100 Hz stereo, then 22,050 Hz mono, 3.2 s in
@@ -138,12 +181,14 @@ final class FFmpegImportRealTests: XCTestCase {
         let tool = try bundledFFmpegTool()
         let copy = try copyOfFormatSample("mka/mp3-form-changes.mka")
         let conversion = try await FFmpegAudioConverter.convert(copy, using: tool)
-        let read = try await AudioFileInfo.read(conversion.converted)
-        let info = try XCTUnwrap(read)
-        XCTAssertEqual(info.channels, 1)
-        XCTAssertEqual(info.sampleRate, 22_050)
+        let entry = try XCTUnwrap(try M4ASampleEntry.read(conversion.converted))
+        XCTAssertEqual(entry.channels, 1)
+        XCTAssertEqual(entry.sampleRate, 22_050)
         // 70,272 frames at 22,050 Hz exactly (3.187 s); the .m4a keeps them to a few hundredths.
-        XCTAssertEqual(info.duration, 70_272.0 / 22_050, accuracy: 0.02)
+        guard case let .success(seconds) = await AudioMediaProbe.duration(of: conversion.converted) else {
+            return XCTFail("the converted file does not play")
+        }
+        XCTAssertEqual(seconds, 70_272.0 / 22_050, accuracy: 0.02)
     }
 
     /// The helper reads the samples as the import plans them: the two-track
@@ -179,5 +224,16 @@ final class FFmpegImportRealTests: XCTestCase {
         XCTAssertEqual(surround.channelMask, 0x60F)
         let realAudio = try await report("rm/tones.ra")
         XCTAssertNil(realAudio.duration)
+        // Matroska holding AAC, FLAC, or AC-3 (FMT54), each as the Mac plans it, on both platforms: AAC is
+        // written again as AAC, mono as it came; FLAC becomes Apple Lossless at its 16 bits; 5.1 AC-3 becomes AAC,
+        // mixed to stereo.
+        let matroskaAAC = try await report("mka/tones-aac.mka")
+        XCTAssertEqual(matroskaAAC.codecName, "aac")
+        let aacTarget = try FFmpegAudioConverter.plan(for: matroskaAAC, fileName: "tones-aac.mka").target
+        XCTAssertEqual([aacTarget.appleLosslessBitDepth == nil ? "aac" : "alac", String(aacTarget.channels)], ["aac", "1"])
+        let flacTarget = try FFmpegAudioConverter.plan(for: mkvReport, fileName: "three-tones-flac.mkv").target
+        XCTAssertEqual([flacTarget.appleLosslessBitDepth.map(String.init) ?? "aac", String(flacTarget.channels)], ["16", "1"])
+        let ac3Target = try FFmpegAudioConverter.plan(for: surround, fileName: "tones-5.1-ac3.mka").target
+        XCTAssertEqual([ac3Target.appleLosslessBitDepth == nil ? "aac" : "alac", String(ac3Target.channels)], ["aac", "2"])
     }
 }

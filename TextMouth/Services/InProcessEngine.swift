@@ -18,7 +18,11 @@ import os
 /// - **A time limit on each call.** A call's `Call.shouldStop` turns true once
 ///   its limit has passed since it started, or once its import is cancelled.
 ///   Work that asks it between its steps (the braille library asks before
-///   each record) stops in time by itself.
+///   each record) stops in time by itself. The time is the engine's `clock`'s,
+///   which counts only the time TextMouth runs (`RunningClock`, B18): a call
+///   frozen while iOS keeps the app suspended has spent none of it. The
+///   waiting caller alone judges it, reading the clock afresh each time it
+///   looks, so the work, which may resume first, never stops on a stale one.
 /// - **Abandoned past its time.** A call still running `grace` seconds after
 ///   it should have stopped is abandoned: its thread cannot be killed, so it
 ///   is left where it is, at the lowest priority, so that the rest of the app
@@ -32,11 +36,15 @@ import os
 ///   that, which an iPhone app gets when it is closed, not when it is only
 ///   switched back to.
 ///
-/// Each C library gets an engine of its own (braille's is
-/// `BrailleTranslator.libraryEngine`), made with the phrase its sentences
-/// name its work by. FFmpeg's iPhone half is to run its calls through another
-/// one, passing `Call.stopCheck` and `Call.context` as its interrupt
-/// callback, so nothing here is copied.
+/// Each C library gets an engine of its own, made with the phrase its
+/// sentences name its work by: braille's is
+/// `BrailleTranslator.libraryEngine`, and FFmpeg's is
+/// `FFmpegAudioConverter.sessionEngine` (FMT54), whose session asks a check
+/// of its own (`SessionStopCheck`), the call's `shouldStop` and a floor under
+/// the app's free memory, before every read of its file and each of its
+/// steps. A caller in Swift concurrency, as FFmpeg's
+/// import is, uses `runForTask(limit:_:)`, which waits off the cooperative
+/// threads and follows the task's cancellation.
 final class InProcessEngine: Sendable {
     // MARK: Failures
 
@@ -65,15 +73,21 @@ final class InProcessEngine: Sendable {
     /// share it: when it started, whether its import was cancelled, and how
     /// it ended.
     final class Call: Sendable {
-        /// How long the work may run once it has started, in seconds.
+        /// How long the work may run once it has started, in seconds of the
+        /// engine's clock.
         let limit: TimeInterval
+        /// The engine's clock, which a Cancel is timed by.
+        fileprivate let clock: RunningClock
 
-        /// What has happened to the call so far.
+        /// What has happened to the call so far, timed by the engine's clock.
         fileprivate struct State: Sendable {
             /// When the engine's thread began the work; nil while it waits.
-            var started: DispatchTime?
+            var started: TimeInterval?
             /// When its import was cancelled; nil until then.
-            var cancelled: DispatchTime?
+            var cancelled: TimeInterval?
+            /// Whether the waiting caller found the call's time spent and told
+            /// the work to stop (B18).
+            var stopAsked = false
             /// Whether the work has returned.
             var finished = false
             /// Whether the caller gave up waiting, past its time.
@@ -89,20 +103,20 @@ final class InProcessEngine: Sendable {
         /// again.
         fileprivate let changed = DispatchSemaphore(value: 0)
 
-        /// A call allowed `limit` seconds once it starts.
-        fileprivate init(limit: TimeInterval) {
+        /// A call allowed `limit` seconds of `clock` once it starts.
+        fileprivate init(limit: TimeInterval, clock: RunningClock) {
             self.limit = limit
+            self.clock = clock
         }
 
-        /// Whether the work should stop now: its limit has passed since it
-        /// started, or its import was cancelled. Cheap enough to ask before
-        /// every step of the work.
+        /// Whether the work should stop now: the waiting caller found its
+        /// limit passed since it started, or its import was cancelled. It
+        /// reads no clock, so the waiter alone judges the call's time (B18):
+        /// work resuming after a suspension, before its waiter has looked,
+        /// cannot find its time spent by a clock that counted the suspension.
+        /// Cheap enough to ask before every step of the work.
         var shouldStop: Bool {
-            state.withLock { state in
-                if state.cancelled != nil { return true }
-                guard let started = state.started else { return false }
-                return DispatchTime.now() >= started + limit
-            }
+            state.withLock { $0.cancelled != nil || $0.stopAsked }
         }
 
         /// This call as the context `stopCheck` is given, valid while the
@@ -113,8 +127,9 @@ final class InProcessEngine: Sendable {
 
         /// `shouldStop` as a C function: 1 to stop and 0 to go on, for the
         /// call whose `context` it is given, and 0 for none. It has the shape
-        /// of the braille library's `should_stop` and of FFmpeg's interrupt
-        /// callback, so a C library asks it between its steps.
+        /// of the braille library's `should_stop`, so the library asks it
+        /// between its steps (FFmpeg's session asks a check of its own that
+        /// asks `shouldStop`, `SessionStopCheck`).
         static var stopCheck: @convention(c) (UnsafeMutableRawPointer?) -> Int32 {
             { context in
                 guard let context else { return 0 }
@@ -131,8 +146,9 @@ final class InProcessEngine: Sendable {
         /// Records the import's Cancel, once: from now on the work should
         /// stop, and its caller waits only `grace` more.
         fileprivate func cancel() {
+            let now = clock.now()
             update { state in
-                if state.cancelled == nil { state.cancelled = .now() }
+                if state.cancelled == nil { state.cancelled = now }
             }
         }
     }
@@ -150,6 +166,10 @@ final class InProcessEngine: Sendable {
     let grace: TimeInterval
     /// The size of the engine's thread's stack, in bytes.
     let stackSize: Int
+    /// The clock every call's time is counted by: the app's, which counts
+    /// only the time TextMouth runs (`RunningClock.app`, B18), unless a test
+    /// scripts its own.
+    let clock: RunningClock
 
     /// One call waiting for the thread: its call, and the work, which keeps
     /// its own value.
@@ -178,14 +198,21 @@ final class InProcessEngine: Sendable {
     private let jobsWaiting = DispatchSemaphore(value: 0)
 
     /// An engine named `name` whose calls do `work` (see the properties),
-    /// with `grace` seconds after a call's time before it is abandoned and a
-    /// thread of `stackSize` bytes of stack. Its thread starts with its first
-    /// call.
-    init(name: String, work: String, grace: TimeInterval = 5, stackSize: Int = 8 * 1_048_576) {
+    /// with `grace` seconds after a call's time before it is abandoned, a
+    /// thread of `stackSize` bytes of stack, and every time counted by
+    /// `clock`. Its thread starts with its first call.
+    init(
+        name: String,
+        work: String,
+        grace: TimeInterval = 5,
+        stackSize: Int = 8 * 1_048_576,
+        clock: RunningClock = .app
+    ) {
         self.name = name
         self.work = work
         self.grace = max(0, grace)
         self.stackSize = stackSize
+        self.clock = clock
     }
 
     /// Ends the engine's thread once it is idle. A thread taken by an
@@ -219,7 +246,7 @@ final class InProcessEngine: Sendable {
         cancelledBy cancellation: ImportCancellation? = nil,
         _ body: @escaping @Sendable (Call) -> Value
     ) throws -> Value {
-        let call = Call(limit: max(0, limit))
+        let call = Call(limit: max(0, limit), clock: clock)
         // The work's value, kept by the work before the thread marks the call
         // finished, so a finished call always has one.
         let value = OSAllocatedUnfairLock<Value?>(initialState: nil)
@@ -258,6 +285,38 @@ final class InProcessEngine: Sendable {
         }
     }
 
+    /// `run(limit:cancelledBy:_:)` for a caller in Swift concurrency (FMT54:
+    /// FFmpeg's session, which the iPhone's import reads from a task).
+    ///
+    /// - **The wait.** The caller is waited for on a dispatch thread, never
+    ///   on one of Swift's cooperative threads, which a call that runs to its
+    ///   limit and its grace would otherwise hold all that time.
+    /// - **The task's cancellation.** It stands for an import's Cancel: once
+    ///   the task is cancelled, `shouldStop` turns true and the call has its
+    ///   grace to return before it is abandoned.
+    /// - **A task cancelled already.** The call still runs, told to stop from
+    ///   its first step, so work that only frees what an earlier call made
+    ///   still runs.
+    /// - Throws: `Failure.abandoned` and `Failure.refused`, as
+    ///   `run(limit:cancelledBy:_:)` does; never `CancellationError`, since
+    ///   the work decides what a stopped call gives back.
+    func runForTask<Value: Sendable>(
+        limit: TimeInterval,
+        _ body: @escaping @Sendable (Call) -> Value
+    ) async throws -> Value {
+        // The task's cancellation, in the form `run` takes an import's.
+        let cancellation = ImportCancellation()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    continuation.resume(with: Result { try self.run(limit: limit, cancelledBy: cancellation, body) })
+                }
+            }
+        } onCancel: {
+            cancellation.cancel()
+        }
+    }
+
     // MARK: Waiting
 
     /// How a wait for a call ended.
@@ -265,30 +324,50 @@ final class InProcessEngine: Sendable {
         case finished, refused, abandoned
     }
 
+    /// The longest a waiting caller sleeps between two looks at its running
+    /// call's time, in seconds of the system's own: each look reads the
+    /// engine's clock afresh, so a look made late by a suspension finds only
+    /// the time the clock counted (B18).
+    private static let lookEvery: TimeInterval = 0.25
+
     /// Waits for `call` to finish, to be refused, or to pass its time, and
     /// abandons it in the last case. A call not yet started has no time of
     /// its own to pass: it waits for the call before it, which itself
-    /// finishes or is abandoned, refusing this one.
+    /// finishes or is abandoned, refusing this one. Once a started call's
+    /// time is spent by the engine's clock, the wait tells the work to stop
+    /// (`Call.shouldStop`), and abandons it the grace later: the one judge of
+    /// a call's time. The clock is held meanwhile, so its heartbeat counts
+    /// the time the app runs whole.
     private func wait(for call: Call) -> Outcome {
+        clock.hold()
+        defer { clock.release() }
         while true {
             let now = call.state.withLock { $0 }
             if now.finished { return .finished }
             if now.refused { return .refused }
-            var deadline = DispatchTime.distantFuture
+            var timeout = DispatchTime.distantFuture
             if let started = now.started {
                 // The work should stop at its limit, or at the Cancel when that
                 // is sooner (but never before it started), and it may take the
                 // grace to return.
                 var stopsAt = started + call.limit
                 if let cancelled = now.cancelled { stopsAt = min(stopsAt, max(started, cancelled)) }
-                deadline = stopsAt + grace
-                if DispatchTime.now() >= deadline {
+                let time = clock.now()
+                if time >= stopsAt + grace {
                     if abandon(call) { return .abandoned }
                     // It finished just then: look again.
                     continue
                 }
+                if time >= stopsAt, !now.stopAsked {
+                    call.update { $0.stopAsked = true }
+                    continue
+                }
+                // Look again when the next of the two times comes, and no later
+                // than `lookEvery`, the clock read anew.
+                let untilNext = (time < stopsAt ? stopsAt : stopsAt + grace) - time
+                timeout = .now() + min(max(0, untilNext), Self.lookEvery)
             }
-            _ = call.changed.wait(timeout: deadline)
+            _ = call.changed.wait(timeout: timeout)
         }
     }
 
@@ -358,7 +437,7 @@ final class InProcessEngine: Sendable {
     /// for as long as the engine lives. Finishing a call and taking the next
     /// happen under one lock, which `abandon(_:)` takes too.
     private func startThread() {
-        let thread = Thread { [state, jobsWaiting] in
+        let thread = Thread { [state, jobsWaiting, clock] in
             // Its pthread, for `abandon(_:)`, before any call is taken.
             let me = UInt(bitPattern: pthread_self())
             state.withLock { $0.thread = me }
@@ -382,7 +461,8 @@ final class InProcessEngine: Sendable {
                 case .idle:
                     continue
                 case let .run(job):
-                    job.call.update { $0.started = .now() }
+                    let startedAt = clock.now()
+                    job.call.update { $0.started = startedAt }
                     job.run()
                     finished = job.call
                 }

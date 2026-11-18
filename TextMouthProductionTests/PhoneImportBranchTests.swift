@@ -39,15 +39,22 @@ final class PhoneImportBranchTests: XCTestCase {
         }
     }
 
-    /// On iOS a book of several tracks leaves out what only ffmpeg reads,
-    /// looking for no ffmpeg, before the rest of its converted audio is
-    /// refused (review9 finding 2).
+    /// A book of several tracks leaves out what only ffmpeg reads and can't
+    /// be converted (review9 finding 2) by one shared line on both platforms,
+    /// asking the FFmpeg tool where its session runs (the iPhone's is in the
+    /// app since FMT54, so it converts what the Mac converts), before the
+    /// iPhone refuses the rest of its converted audio; and the iPhone's words
+    /// for a track left out for want of FFmpeg are gone with the refusal.
     func testWhatOnlyFFmpegReadsIsLeftOutBeforeTheRefusal() throws {
         let source = try Self.source("Services/FileImportService+AudioConversion.swift")
-        let leftOut = try XCTUnwrap(source.range(of: "try leavingOutWhatOnlyFFmpegReads(found, from: bookURL) { nil }"))
+        let leftOut = try XCTUnwrap(
+            source.range(of: "try leavingOutWhatOnlyFFmpegReads(found, from: bookURL) { FFmpegAudioConverter.tool.locate() }"))
         let refused = try XCTUnwrap(source.range(of: "try PhoneImportRefusal.refuseConversion(of: sources)"))
         XCTAssertLessThan(leftOut.lowerBound, refused.lowerBound)
-        XCTAssertTrue(Self.isInsideIOSBranch(leftOut, of: source), "the iPhone's leaving out is outside #if os(iOS)")
+        XCTAssertFalse(Self.isInsideIOSBranch(leftOut, of: source), "the leaving out is the iPhone's alone")
+        XCTAssertEqual(source.components(separatedBy: "leavingOutWhatOnlyFFmpegReads(found").count - 1, 1,
+                       "the leaving out is not one line for both platforms")
+        XCTAssertFalse(source.contains("PhoneImportWording.ffmpeg"), "the iPhone still has words of its own for FFmpeg's files")
     }
 
     /// A Word 6 or Word 95 document is refused on iOS where it would go to

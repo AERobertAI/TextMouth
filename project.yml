@@ -180,6 +180,11 @@ targetTemplates:
         SYSTEM_HEADER_SEARCH_PATHS:
           - $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/include
         OTHER_LIBTOOLFLAGS: $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/lib/libtmffmpeg.a
+        # Plain C with textual includes: session.c needs no Clang module, and with modules on, Xcode
+        # precompiles its system headers and the session's own header (whose folder holds the Swift
+        # side's module map) as modules of this target's own, which a restored runner cache can claim
+        # and lack (train 1117-1219, FMT54: "module file ... not found"). The objects are the same.
+        CLANG_ENABLE_MODULES: NO
         GCC_OPTIMIZATION_LEVEL: s
         # The script reads the repository and writes into OBJROOT, outside what a sandboxed
         # script phase may touch.
@@ -480,7 +485,7 @@ targets:
     deploymentTarget: "26.0"
   # FFmpeg and TextMouth's session around it, for each app (the FFmpegLibrary template's comment,
   # above, says what it is). The Mac's FFmpeg helper links FFmpeg; the iPhone app, which can run
-  # no helper, will link FFmpeg_iOS in its own process with one dependency entry.
+  # no helper, links FFmpeg_iOS and runs the session in its own process (FMT54).
   FFmpeg:
     templates:
       - FFmpegLibrary
@@ -507,7 +512,8 @@ targets:
   # both. Xcode builds it only once its iOS platform is downloaded (Xcode >
   # Settings > Components); until then Scripts/ios/typecheck.py checks it.
   # It runs no helper program: iOS lets an app start none, so the braille
-  # translation the Mac runs in its helper runs inside this app (DR34).
+  # translation and the FFmpeg session the Mac runs in its helpers run inside
+  # this app (DR34, FMT54).
   TextMouthiOS:
     type: application
     platform: iOS
@@ -543,6 +549,25 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/liblouis
+      # FFmpeg's notices (FMT54), which the iPhone app links (FFmpeg_iOS), as the Mac app ships
+      # them: the release's own LICENSE.md and COPYING.LGPLv2.1, unchanged, and the README of
+      # Scripts/vendor/ffmpeg/build.py (the release, its SHA-256, its patches, and the configure
+      # lines). FFmpeg is under the GNU Lesser General Public License 2.1 or later.
+      - path: Vendor/package-licenses/FFmpeg/LICENSE.md
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
+      - path: Vendor/package-licenses/FFmpeg/COPYING.LGPLv2.1
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
+      - path: Vendor/package-licenses/FFmpeg/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
       - path: Vendor/lame/COPYING
         buildPhase:
           copyFiles:
@@ -648,6 +673,11 @@ targets:
       # translation around it, which the app calls in its own process.
       - target: liblouis_iOS
       - target: TextMouthBrailleLibrary_iOS
+      # FFmpeg and TextMouth's session around it (FMT54), which the app runs
+      # in its own process on an engine of its own (FFmpegInProcessRun.swift):
+      # the iPhone starts no helper, so the formats only FFmpeg reads convert
+      # in the app itself.
+      - target: FFmpeg_iOS
     # The iPhone app's scheme, committed, so that `xcodebuild test -scheme
     # TextMouthiOS` runs both of its test bundles in the simulator: the one
     # Xcode made by itself held only the UI tests. The Mac's schemes are
@@ -797,6 +827,11 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         ARCHS: arm64
         USE_HEADERMAP: NO
+        # Textual includes, as the FFmpegLibrary template's (92d1f63c4): main.c needs no Clang
+        # module, and with modules on Xcode precompiles the session's and the protocol's headers as
+        # modules of this target's own, which a restored runner cache can claim and lack after a
+        # change to them (break run 44226031638: "module file ..._Builtin_stddef-*.pcm not found").
+        CLANG_ENABLE_MODULES: NO
         GCC_OPTIMIZATION_LEVEL: s
         SKIP_INSTALL: YES
       configs:
@@ -903,7 +938,15 @@ targets:
       - TextMouthProductionTests/EndOfBookRuleTests.swift
       - TextMouthProductionTests/ExportContentsListTests.swift
       - TextMouthProductionTests/ExtractionReportTests.swift
+      - TextMouthProductionTests/FFmpegHelperHostileFileTests.swift
+      - TextMouthProductionTests/FFmpegHelperProtocolTests.swift
+      - TextMouthProductionTests/FFmpegHelperStreamTests.swift
+      - TextMouthProductionTests/FFmpegImportConversionTests.swift
+      - TextMouthProductionTests/FFmpegImportPlanTests.swift
+      - TextMouthProductionTests/FFmpegImportRealTests.swift
+      - TextMouthProductionTests/FFmpegImportSnifferTests.swift
       - TextMouthProductionTests/FFmpegMetadataTests.swift
+      - TextMouthProductionTests/FFmpegTestSupport.swift
       - TextMouthProductionTests/FinishedBookModelTests.swift
       - TextMouthProductionTests/FolderDuplicateRepairTests.swift
       - TextMouthProductionTests/FolderPathEquivalenceTests.swift
@@ -1013,6 +1056,7 @@ targets:
       - TextMouthProductionTests/ReadingTextCacheTests.swift
       - TextMouthProductionTests/RemovalWordingTests.swift
       - TextMouthProductionTests/RunLoopWaiting.swift
+      - TextMouthProductionTests/RunningClockTests.swift
       - TextMouthProductionTests/SharedPackageMigrationTests.swift
       - TextMouthProductionTests/SoftHyphenEffectTests.swift
       - TextMouthProductionTests/SourceScanSymlinkTests.swift

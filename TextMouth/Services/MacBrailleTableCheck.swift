@@ -345,6 +345,11 @@ enum MacBrailleTableCheck {
             switch stop {
             case .usedTooMuchMemory?:
                 return .needsTooMuchMemory
+            #if os(iOS)
+            // The iPhone's own stops for memory, which only its FFmpeg runs make.
+            case .memoryGrew?, .beganShortOfMemory?:
+                return .needsTooMuchMemory
+            #endif
             case .tookTooLong?, .madeNoProgress?, .usedTooMuchProcessorTime?:
                 return .tooSlow
             case .wroteTooMuch?, nil:
