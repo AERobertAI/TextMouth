@@ -333,16 +333,28 @@ def push(cwd, commit, idle_minutes=IDLE_WAIT_MINUTES, progress=None):
     return began
 
 
-def gh_json(*args):
-    """Runs `gh` with `args` and returns its output parsed as JSON; a failure
-    to run, or an answer that is not JSON, is a RemoteFailure. A call that fails is tried again up to GH_ATTEMPTS
-    times in all, GH_RETRY_SECONDS apart, since a connection to api.github.com drops now and then (it ended a wait
-    for a pushed run on November 10, 2026, which was going well): only the last failure counts."""
+def gh_call(args, final=lambda result: False):
+    """Runs `gh` with `args`; returns the finished process of the first call that succeeded or that `final` says no retry
+    will change. A call that fails is tried again up to GH_ATTEMPTS times in all, GH_RETRY_SECONDS apart, since a
+    connection to api.github.com drops now and then (it ended a wait for a pushed run on November 10, 2026, which was
+    going well), and so does one that hangs or cannot start (call() raises RemoteFailure for it): only the last failure
+    counts, as the last process, or as the RemoteFailure raised when the last call itself failed."""
     for attempt in range(1, GH_ATTEMPTS + 1):
-        result = call([GH, *args])
-        if result.returncode == 0 or attempt == GH_ATTEMPTS:
-            break
+        try:
+            result = call([GH, *args])
+        except RemoteFailure:
+            if attempt == GH_ATTEMPTS:
+                raise
+        else:
+            if result.returncode == 0 or final(result) or attempt == GH_ATTEMPTS:
+                return result
         SLEEP(GH_RETRY_SECONDS)
+
+
+def gh_json(*args):
+    """Runs `gh` with `args` (see gh_call for its tries) and returns its output parsed as JSON; a failure to run, or an
+    answer that is not JSON, is a RemoteFailure."""
+    result = gh_call(args)
     if result.returncode != 0:
         raise RemoteFailure(f"gh {args[0]} {args[1]} failed: {(result.stderr or result.stdout).strip()[:300]}")
     try:
@@ -409,22 +421,25 @@ def wait_for_run(run, limit_minutes=RUN_LIMIT_MINUTES, progress=None):
     return state
 
 
+def has_no_artifact(result):
+    """Whether the finished `gh run download` process says the run has no such artifact (NO_ARTIFACT_WORDS)."""
+    said = (result.stderr or result.stdout).lower()
+    return any(words in said for words in NO_ARTIFACT_WORDS)
+
+
 def download(run_id, destination):
     """Downloads the run's results artifact into the folder `destination`, made if need be. Returns True when the artifact
     was there to download, and False when the run has none (NO_ARTIFACT_WORDS). Any other failure is a lost connection:
-    it is tried again up to GH_ATTEMPTS times in all, GH_RETRY_SECONDS apart, as gh_json does, and a download that
+    it is tried again as gh_call does (a call that hangs counts as a failed try), and a download that
     still fails is a RemoteFailure (never a False, which would read as a run with no results)."""
     Path(destination).mkdir(parents=True, exist_ok=True)
-    for attempt in range(1, GH_ATTEMPTS + 1):
-        result = call([GH, "run", "download", str(run_id), "-R", REPO, "-n", ARTIFACT, "-D", str(destination)])
-        if result.returncode == 0:
-            return True
-        said = (result.stderr or result.stdout).strip()
-        if any(words in said.lower() for words in NO_ARTIFACT_WORDS):
-            return False
-        if attempt < GH_ATTEMPTS:
-            SLEEP(GH_RETRY_SECONDS)
-    raise RemoteFailure(f"gh run download failed: {said[:300]}")
+    result = gh_call(["run", "download", str(run_id), "-R", REPO, "-n", ARTIFACT, "-D", str(destination)],
+                     final=has_no_artifact)
+    if result.returncode == 0:
+        return True
+    if has_no_artifact(result):
+        return False
+    raise RemoteFailure(f"gh run download failed: {(result.stderr or result.stdout).strip()[:300]}")
 
 
 def request_key(cwd, parent, request):

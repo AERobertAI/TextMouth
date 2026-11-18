@@ -371,6 +371,35 @@ class LostConnectionTests(RemoteTestCase):
             github_run.download(7001, self.folder / "out")
         self.assertEqual(len(self.gh_calls()), github_run.GH_ATTEMPTS)
 
+    def test_a_download_that_hangs_once_is_tried_again(self):
+        # call() raises RemoteFailure for a gh that does not finish in CALL_SECONDS; that is a failed try, not the end.
+        real = github_run.call
+        tries = []
+
+        def hangs_once(command, **more):
+            tries.append(command)
+            if len(tries) == 1:
+                raise github_run.RemoteFailure("`gh run download` did not finish in 120 seconds")
+            return real(command, **more)
+
+        self.patch_github(call=hangs_once)
+        self.gh_state({"download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        self.assertTrue(github_run.download(7001, self.folder / "out"))
+        self.assertEqual(len(tries), 2)
+        self.assertEqual(self.pauses, [github_run.GH_RETRY_SECONDS])
+
+    def test_a_download_that_always_hangs_is_a_remote_failure_after_all_its_tries(self):
+        tries = []
+
+        def hangs(command, **more):
+            tries.append(command)
+            raise github_run.RemoteFailure("`gh run download` did not finish in 120 seconds")
+
+        self.patch_github(call=hangs)
+        with self.assertRaises(github_run.RemoteFailure):
+            github_run.download(7001, self.folder / "out")
+        self.assertEqual(len(tries), github_run.GH_ATTEMPTS)
+
     def test_a_run_with_no_artifact_is_not_downloaded_and_not_retried(self):
         self.gh_state({"download": [{"fail": True}]})
         self.assertFalse(github_run.download(7001, self.folder / "out"))
