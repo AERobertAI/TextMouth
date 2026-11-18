@@ -39,14 +39,22 @@ the copy, so that every AppKit name a file uses is reported, instead of the
 file stopping at one "no such module" error. It is for counting what is left;
 the strict run (the default) is what the iOS app must pass.
 
+With `--worktree` the copy is made from the working tree's tracked and new files (the ones git would add, less what
+.gitignore hides) instead of a commit, so that one commit can hold code and the catalog it needs, and a change can be
+checked before it is committed; `--ref` still checks a commit. With `--emit-strings` the compiler also writes the
+localized strings it finds (`-emit-localized-strings`), one .stringsdata file per Swift file of the app, into a folder
+that is new for each run, build/l10n/stringsdata/<platform>-<commit>-<stamp>/ of the main checkout (Scripts/l10n/l10n.py
+sync merges both platforms' folders into the String Catalog); the dependencies are not built with the flags, so the
+folder holds the app's own files only.
+
 Every run takes the Mac's heavy-work lock first (Scripts/agents/heavy_lock.py),
 which the build train takes too, so no two heavy jobs ever run at once. A run
 takes about two minutes. Its results go to the main checkout's gitignored
 build/typecheck/results/, one folder per run: summary.md and errors.txt.
 
 Usage:
-  typecheck.py [--platform ios|macos] [--census | --tests | --tests-census] [--ref REF] [--agent SLUG]
-               [--wait MINUTES] [--jobs N] [--no-lock] [--quiet]
+  typecheck.py [--platform ios|macos] [--census | --tests | --tests-census] [--ref REF | --worktree] [--emit-strings]
+               [--agent SLUG] [--wait MINUTES] [--jobs N] [--no-lock] [--quiet]
 Exit status: 0 when the build succeeded, 1 when it found errors, 2 for a
 problem setting it up, 3 when the lock stayed busy for the whole wait.
 """
@@ -75,6 +83,12 @@ import repo_paths  # noqa: E402
 MAIN = repo_paths.main_checkout()
 WORK_ROOT = MAIN / "build" / "typecheck"
 RESULTS = WORK_ROOT / "results"
+# Where `--emit-strings` puts the compiler's localized strings: one folder for each run, beside the type-check's results.
+STRINGS_ROOT = MAIN / "build" / "l10n" / "stringsdata"
+# The file in each of those folders that lists what the run found (see collect_strings).
+STRINGS_MANIFEST = "manifest.json"
+# The prefix of the last line a `--emit-strings` run prints, which names its strings folder for the program that ran it.
+STRINGS_FOLDER_LINE = "Strings folder: "
 CHECKOUTS = MAIN / "build" / "DerivedData" / "SourcePackages" / "checkouts"
 RESOLVED = Path("TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved")
 
@@ -126,9 +140,21 @@ def checkout_root():
     return Path(run(["git", "rev-parse", "--show-toplevel"]).stdout.strip())
 
 
+# What stands for the working tree where a commit is expected (see `--worktree`): the tracked and new files as they
+# are on disk, whatever has been committed.
+WORKTREE = ":worktree"
+
+
+def file_at(repo, commit, path):
+    """The text of `path` in `commit`, or in the working tree of `repo` when `commit` is WORKTREE."""
+    if commit == WORKTREE:
+        return (Path(repo) / path).read_text(encoding="utf-8")
+    return run(["git", "-C", str(repo), "show", f"{commit}:{path}"]).stdout
+
+
 def pinned_packages(repo, commit):
     """Each package's (location, revision), read from Package.resolved at `commit`."""
-    resolved = json.loads(run(["git", "-C", str(repo), "show", f"{commit}:{RESOLVED}"]).stdout)
+    resolved = json.loads(file_at(repo, commit, str(RESOLVED)))
     return {pin["identity"]: (pin["location"], pin["state"]["revision"]) for pin in resolved["pins"]}
 
 
@@ -162,15 +188,31 @@ def listed_test_files(repo, commit, target=TEST_TARGET):
     """The Swift files that project.yml at `commit` lists, by path, among the sources of the test target `target`, in its
     order (the target's own folder is not a file and is not listed). For the Mac's hosted target they are the files of
     TextMouthTests/Sources/Tests; for the iPhone's unit target, the Mac tests' files it shares."""
-    text = run(["git", "-C", str(repo), "show", f"{commit}:project.yml"]).stdout
+    text = file_at(repo, commit, "project.yml")
     block = re.search(rf"^  {target}:\n(.*?)^    settings:", text, re.MULTILINE | re.DOTALL)
     if not block:
         raise RuntimeError(f"project.yml at {commit} has no {target} target")
     return re.findall(r"^      - (\S+\.swift)\s*$", block.group(1), re.MULTILINE)
 
 
+def extract_worktree(repo, paths, src):
+    """Copies the files of `repo`'s working tree that match `paths` (git pathspecs) into the folder `src`: the tracked
+    files, and the new ones that .gitignore does not hide. A file that is tracked but was deleted on disk is left
+    out, since it is no longer there."""
+    listing = run(["git", "-C", str(repo), "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *paths])
+    for name in sorted(set(filter(None, listing.stdout.split("\0")))):
+        source = Path(repo) / name
+        if source.is_file():
+            target = src / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+
+
 def extract(repo, commit, paths, src):
-    """Extracts `paths` (git pathspecs) of `commit` into the folder `src`."""
+    """Extracts `paths` (git pathspecs) of `commit` into the folder `src`; of the working tree when `commit` is WORKTREE."""
+    if commit == WORKTREE:
+        extract_worktree(repo, paths, src)
+        return
     archive = subprocess.Popen(["git", "-C", str(repo), "archive", commit, *paths], stdout=subprocess.PIPE)
     subprocess.run(["tar", "-x", "-C", str(src)], stdin=archive.stdout, check=True)
     archive.stdout.close()
@@ -202,7 +244,7 @@ def test_targets(kind):
 
 def prepare_sources(repo, commit, src, census, tests=False):
     """Replaces `src` with the committed TextMouth/, Vendor/, TextMouthBraille/, and
-    TextMouthFFmpeg/ folders at `commit`; with `tests` (see test_kind), also the
+    TextMouthFFmpeg/ folders at `commit` (or, when `commit` is WORKTREE, the working tree's tracked and new files); with `tests` (see test_kind), also the
     test target's Swift sources, gathered into one folder; in a census, reads AppKit
     imports as UIKit there. Returns how many imports the census rewrote."""
     if src.exists():
@@ -348,10 +390,20 @@ int tmff_session_formcheck(char *out, size_t capacity) {
 """
 
 
-def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()):
+def string_flags(strings_folder):
+    """The compiler flags that make it write the localized strings it finds, one .stringsdata file per Swift file, into
+    `strings_folder` (which must exist: the compiler does not make it). Empty when `strings_folder` is None."""
+    if strings_folder is None:
+        return []
+    return ["-emit-localized-strings", "-emit-localized-strings-path", str(strings_folder)]
+
+
+def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=(), strings_folder=None):
     """Writes the probe's Package.swift into `src`; with `tests` (see test_kind), it also
     holds the test target. `skipped_tests` are files of the test target's folder (paths inside it) that the
-    package leaves out: the census builds again without the files that did not compile."""
+    package leaves out: the census builds again without the files that did not compile. With `strings_folder`, the app's
+    target (and only it: not the dependencies, not the tests) is compiled with the flags that write its localized strings
+    there (see string_flags)."""
     kind = test_kind(tests)
     target, _listed_folder, _project_target = test_names(kind or "mac")
     # Non-Swift files the Mac's folder holds are left out (only those that exist, so SwiftPM does not warn), with the skipped files.
@@ -364,6 +416,8 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
         # failing batch stopped the others, so a build named one file in a hundred.
         extra_flags += ["-whole-module-optimization"]
     flags = "".join(f', "{flag}"' for flag in extra_flags)
+    # The string extraction's flags go to the app's own target alone (the tests are compiled with `flags`).
+    app_string_flags = "".join(f', "{flag}"' for flag in string_flags(strings_folder))
     excludes = ", ".join(f'"{e}"' for e in excluded_folders(src, platform))
     # The braille helper's protocol and the FFmpeg helper's stream are header-only modules, found by their maps,
     # and so is the braille library's interface, whose map is in the folder named after its module there
@@ -498,12 +552,37 @@ let package = Package(
             ],
             path: "TextMouth",
             exclude: [{excludes}],
-            swiftSettings: [.unsafeFlags([{include_flags}, "-continue-building-after-errors"])]
+            swiftSettings: [.unsafeFlags([{include_flags}, "-continue-building-after-errors"{app_string_flags}])]
         ),{test_target}{ui_test_target}
     ],
     swiftLanguageModes: [.v6]
 )
 """)
+
+
+def collect_strings(folder, src, platform, commit, tree):
+    """Writes STRINGS_MANIFEST into the strings `folder` and returns it (a dict): which of the .stringsdata files in it
+    belong to the app's own sources (those whose source file is inside `src`/TextMouth, as the compiler recorded it),
+    the root they were compiled under (so that a source path can be made relative to the repository), and how many
+    Swift files the platform's target compiles, which a complete run matches with one .stringsdata file each. Files of
+    other sources (a dependency built with the flags) are listed in no way and so are never read by the sync."""
+    app_root = (src / "TextMouth").resolve()
+    kept = []
+    for path in sorted(folder.glob("*.stringsdata")):
+        try:
+            source = Path(json.loads(path.read_text(encoding="utf-8"))["source"]).resolve()
+            source.relative_to(app_root)
+        except (OSError, ValueError, KeyError, TypeError):
+            # Unreadable, or a source outside the app (the second kind of ValueError is relative_to's).
+            continue
+        kept.append(path.name)
+    left_out = excluded_folders(src, platform)
+    swift_files = sum(1 for path in app_root.rglob("*.swift")
+                      if not any(str(path.relative_to(app_root)).startswith(name + "/") for name in left_out))
+    manifest = {"platform": platform, "commit": commit, "tree": "worktree" if tree == WORKTREE else "commit",
+                "sourceRoot": str(src.resolve()), "swiftFiles": swift_files, "files": kept}
+    (folder / STRINGS_MANIFEST).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return manifest
 
 
 def summarize(log_text, src, header, out, tests=False, origins=None, builds=1):
@@ -799,7 +878,14 @@ def main(argv):
     parser.add_argument("--tests-census", action="store_true",
                         help="compile every file of the Mac's hosted tests for the iPhone, leaving out those that fail until a build "
                              "is clean, and write census.md (iOS only)")
-    parser.add_argument("--ref", default="HEAD", help="the commit to check (committed work only)")
+    # The tree to check: a commit (the default, HEAD) or the working tree, never both.
+    tree_choice = parser.add_mutually_exclusive_group()
+    tree_choice.add_argument("--ref", default="HEAD", help="the commit to check (committed work only)")
+    tree_choice.add_argument("--worktree", action="store_true",
+                             help="check the working tree's tracked and new files instead of a commit (uncommitted work too)")
+    parser.add_argument("--emit-strings", action="store_true",
+                        help="also write the localized strings the compiler finds, one .stringsdata file per Swift file of the app, "
+                             "into build/l10n/stringsdata/<platform>-<commit>-<stamp>/ of the main checkout")
     parser.add_argument("--agent", default=os.environ.get("BBS_AGENT", "someone"), help="who runs it, for the lock and the results' folder")
     # Three hours, as run_locked.py waits: since November 8, 2026 heavy jobs run strictly one
     # after the other, with an hourly train first in line, so a wait of an hour could run out.
@@ -815,6 +901,8 @@ def main(argv):
         parser.error("--tests-census is for --platform ios, without --census or --tests")
     if args.tests and args.census:
         parser.error("--tests cannot be combined with --census")
+    if args.emit_strings and (args.census or args.tests or args.tests_census):
+        parser.error("--emit-strings is for the app alone: not with --census, --tests, or --tests-census")
     # What the test set is: the Mac's hosted target on the Mac, the iPhone's unit target on the iPhone, or the Mac's whole
     # target on the iPhone (the census).
     tests = "census" if args.tests_census else (("ios" if args.platform == "ios" else True) if args.tests else False)
@@ -824,18 +912,31 @@ def main(argv):
             print(f"typecheck: {text}", flush=True)
 
     repo = checkout_root()
+    # `tree` says where the files come from (a commit's short name, or WORKTREE); `commit` names the run: the commit's
+    # short name, or HEAD's with "-wt" for the working tree (whose files may differ from it).
+    tree = WORKTREE
     try:
-        commit = run(["git", "-C", str(repo), "rev-parse", "--short", args.ref]).stdout.strip()
-        pins = pinned_packages(repo, commit)
-    except subprocess.CalledProcessError as error:
-        print(f"typecheck: cannot read {args.ref}: {error.stderr.strip()}", file=sys.stderr)
+        commit = run(["git", "-C", str(repo), "rev-parse", "--short", "HEAD" if args.worktree else args.ref]).stdout.strip()
+        if args.worktree:
+            commit += "-wt"
+        else:
+            tree = commit
+        pins = pinned_packages(repo, tree)
+    except (subprocess.CalledProcessError, OSError) as error:
+        print(f"typecheck: cannot read {'the working tree' if args.worktree else args.ref}: "
+              f"{getattr(error, 'stderr', None) or error}", file=sys.stderr)
         return 2
-    mode = "census" if args.census else "tests-census" if args.tests_census else "tests" if args.tests else "strict"
-    # The packages are shared by every mode of a platform; each mode builds in a folder of its own.
+    mode = ("census" if args.census else "tests-census" if args.tests_census else "tests" if args.tests
+            else "strings" if args.emit_strings else "strict")
+    # The packages are shared by every mode of a platform; each mode builds in a folder of its own (the strict check keeps
+    # the plain one, so that the string extraction, which recompiles everything, never undoes its incremental build).
     pkgs = WORK_ROOT / args.platform / "pkgs"
-    work = WORK_ROOT / (f"{args.platform}-{mode}" if tests else args.platform)
+    work = WORK_ROOT / (f"{args.platform}-{mode}" if tests or args.emit_strings else args.platform)
     stamp = datetime.datetime.now().strftime("%m%d-%H%M%S")
     out = RESULTS / f"{re.sub(r'[^A-Za-z0-9_-]', '_', args.agent)}-{args.platform}-{mode}-{commit}-{stamp}"
+    # The folder the compiler writes the strings to: new for each run, so that a source file removed since an earlier run
+    # leaves no old file behind (nobody deletes anything, so an old folder is never reused).
+    strings_folder = STRINGS_ROOT / f"{args.platform}-{commit}-{stamp}" if args.emit_strings else None
 
     def waiting(owner):
         say(f"waiting for the heavy-work lock, held by {owner.get('name', '?') if owner else '?'} "
@@ -848,11 +949,14 @@ def main(argv):
         if not taken:
             print(f"typecheck: the heavy-work lock stayed busy for {args.wait:g} minutes; try again later", file=sys.stderr)
             return 3
+    manifest = None
     try:
         say(f"{args.platform} {mode} check of {commit} from {repo}")
         prepare_packages(pkgs, pins, say)
         src = work / "src"
-        rewritten = prepare_sources(repo, commit, src, args.census, tests)
+        rewritten = prepare_sources(repo, tree, src, args.census, tests)
+        if strings_folder is not None:
+            strings_folder.mkdir(parents=True, exist_ok=False)
         sdk = run(["xcrun", "--sdk", "iphoneos" if args.platform == "ios" else "macosx", "--show-sdk-path"]).stdout.strip()
         command = ["swift", "build", "--sdk", sdk, "-j", str(args.jobs), "--scratch-path", str(work / "spm")]
         if args.platform == "ios":
@@ -872,7 +976,7 @@ def main(argv):
 
         def build(skipped=()):
             """Writes the package (without the `skipped` test files), builds each target, and returns the logs' text, joined."""
-            write_package(src, pkgs, args.platform, args.ios_target, tests, skipped)
+            write_package(src, pkgs, args.platform, args.ios_target, tests, skipped, strings_folder)
             say("building (about two minutes for the app alone)")
             logs = []
             for one in commands:
@@ -898,13 +1002,18 @@ def main(argv):
         origins = {}
         if tests:
             _target, listed_folder, project_target = test_names(test_kind(tests))
-            origins = {f"{listed_folder}/{Path(path).name}": path for path in listed_test_files(repo, commit, project_target)}
+            origins = {f"{listed_folder}/{Path(path).name}": path for path in listed_test_files(repo, tree, project_target)}
         summary, count, _link_failed, succeeded = summarize(log_text, src, header, out, bool(tests), origins, len(commands))
+        manifest = collect_strings(strings_folder, src, args.platform, commit, tree) if strings_folder is not None else None
     finally:
         if taken and not args.no_lock:
             heavy_lock.release()
     print(summary)
     print(f"\nWritten: {out}/summary.md, errors.txt, warnings.txt, build.log")
+    if manifest is not None:
+        # The sync reads the last line: the folder of this run's strings (see l10n.py's strings_folder_of).
+        print(f"Strings: {len(manifest['files'])} .stringsdata files for {manifest['swiftFiles']} Swift files")
+        print(f"{STRINGS_FOLDER_LINE}{strings_folder}")
     return 0 if succeeded else 1
 
 
