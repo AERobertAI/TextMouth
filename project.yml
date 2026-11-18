@@ -827,6 +827,11 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         ARCHS: arm64
         USE_HEADERMAP: NO
+        # Textual includes, as the FFmpegLibrary template's (92d1f63c4): main.c needs no Clang
+        # module, and with modules on Xcode precompiles the session's and the protocol's headers as
+        # modules of this target's own, which a restored runner cache can claim and lack after a
+        # change to them (break run 44226031638: "module file ..._Builtin_stddef-*.pcm not found").
+        CLANG_ENABLE_MODULES: NO
         GCC_OPTIMIZATION_LEVEL: s
         SKIP_INSTALL: YES
       configs:
