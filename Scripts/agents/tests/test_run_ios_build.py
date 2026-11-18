@@ -208,9 +208,14 @@ STALE_ERROR = ("error: Clang dependency scanner failure: fatal error: file '/App
 
 # What train 1117-0527 (TextMouthBrailleLibrary.c, a race) and train 1117-1219 (a restored cache) printed: the error has a
 # file in front of it as "fatal error:", so the error census reads no error line, and it is not the stale-module error.
-MISSING_ERROR = ("/Users/runner/work/TextMouth/TextMouth/TextMouthBraille/Sources/TextMouthBrailleLibrary.c:1:10: fatal error: "
-                 "module file '/Users/runner/work/TextMouth/TextMouth/build/remote-DerivedData-ios/ModuleCache.noindex/"
-                 "1TV4X376J16CB/_Builtin_stdint-FTUUUU4ZHFEK.pcm' not found: module file not found")
+MISSING_ERROR = ("/Users/runner/work/TextMouth/TextMouth/TextMouthBraille/TextMouthBrailleLibrary.c:39:2: fatal error: module "
+                 "file '/Users/runner/work/TextMouth/TextMouth/build/remote-DerivedData-ios/Build/Intermediates.noindex/"
+                 "ExplicitPrecompiledModules/_Builtin_stdint-KLL6A9NC5YCI0GN88HDENJNR.pcm' not found: module file not found")
+# Train 1117-1219's line, from the toolchain's own header.
+MISSING_ERROR_STDDEF = ("/Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/"
+                        "include/stddef.h:89:2: fatal error: module file '/Users/runner/work/TextMouth/TextMouth/build/"
+                        "remote-DerivedData-ios/Build/Intermediates.noindex/ExplicitPrecompiledModules/"
+                        "_Builtin_stddef-9GGUBAMBUN08H8VY1LWYJDQUK.pcm' not found: module file not found")
 
 
 class RetryTests(unittest.TestCase):
@@ -285,6 +290,42 @@ class RetryTests(unittest.TestCase):
         retried = [line for line in files["ios-summary.txt"].splitlines() if line.startswith("Retried: ")]
         self.assertEqual(len(retried), 1)
         self.assertIn(ios.runner_module_cache.MISSING_MARKER, retried[0])
+
+    def test_a_module_file_not_found_starts_from_an_empty_folder_on_a_runner_and_restamps(self):
+        # The build database still claims the missing module, so emptying the caches is not the cure (TL06 review 2).
+        for line in (MISSING_ERROR, MISSING_ERROR_STDDEF):
+            (self.derived / "Build" / "Products").mkdir(parents=True, exist_ok=True)
+            (self.derived / "Build" / "Products" / "kept.o").write_text("x")
+            (self.derived / "tried-marker-folder").mkdir(exist_ok=True)
+            stamped = []
+            (self.folder / "tried").unlink(missing_ok=True)
+            with mock.patch.dict(ios.os.environ, {"GITHUB_ACTIONS": "true"}), \
+                    mock.patch.object(ios.runner_module_cache, "prepare", lambda derived: stamped.append(Path(derived))):
+                _, files, _ = self.run_main(self.fake_build(line, "** TEST BUILD SUCCEEDED **"))
+            self.assertTrue(files["ios-summary.txt"].startswith("iOS build: PASSED"), files["ios-summary.txt"])
+            self.assertFalse((self.derived / "Build" / "Products" / "kept.o").exists(), "the whole folder was started over")
+            self.assertFalse((self.derived / "tried-marker-folder").exists())
+            # Once before the first build, and once more for the folder that was started over.
+            self.assertEqual([path.resolve() for path in stamped], [self.derived.resolve()] * 2,
+                             "the toolchain's stamp is written again for the folder")
+
+    def test_a_module_file_not_found_off_a_runner_only_empties_the_caches(self):
+        with mock.patch.dict(ios.os.environ, {"GITHUB_ACTIONS": "false"}):
+            _, files, _ = self.run_main(self.fake_build(MISSING_ERROR, "** TEST BUILD SUCCEEDED **"))
+        self.assertTrue((self.derived / "Build" / "Products" / "kept.o").exists())
+        self.assertEqual(files["ios.log"].count("MODULE CACHE gone"), 1)
+
+    def test_a_stale_module_on_a_runner_still_keeps_everything_but_the_caches(self):
+        stamped = []
+        with mock.patch.dict(ios.os.environ, {"GITHUB_ACTIONS": "true"}), \
+                mock.patch.object(ios.runner_module_cache, "prepare", lambda derived: stamped.append(derived)):
+            self.run_main(self.fake_build(STALE_ERROR, "** TEST BUILD SUCCEEDED **"))
+        self.assertTrue((self.derived / "Build" / "Products" / "kept.o").exists())
+
+    def test_the_folder_started_over_is_never_the_repositorys_root(self):
+        with mock.patch.dict(ios.os.environ, {"GITHUB_ACTIONS": "true"}), mock.patch.object(ios, "ROOT", self.folder):
+            self.assertFalse(ios.start_device_folder_over(self.folder, names=(self.folder.name,)))
+        self.assertTrue(self.folder.is_dir())
 
     def test_a_module_file_not_found_that_fails_again_is_named_not_reported_as_no_error_line(self):
         _, files, _ = self.run_main(self.fake_build(MISSING_ERROR, MISSING_ERROR))

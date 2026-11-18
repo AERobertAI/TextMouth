@@ -247,8 +247,11 @@ class ReadingErrorsTests(unittest.TestCase):
     def test_one_error_of_the_codes_makes_the_failure_the_codes(self):
         self.assertFalse(cache.stale_cache_only([self.ERROR, "TextMouth/A.swift:1:2: error: cannot find 'x' in scope"]))
 
-    MISSING = ("/r/work/TextMouthBrailleLibrary.c:1:10: fatal error: module file '/r/ModuleCache.noindex/X/"
-               "_Builtin_stddef-ABC.pcm' not found: module file not found")
+    # Train 1117-1219's line, as the log printed it (its paths are the runner's).
+    MISSING = ("/Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/"
+               "stddef.h:89:2: fatal error: module file '/Users/runner/work/TextMouth/TextMouth/build/remote-DerivedData-ios/"
+               "Build/Intermediates.noindex/ExplicitPrecompiledModules/_Builtin_stddef-9GGUBAMBUN08H8VY1LWYJDQUK.pcm' "
+               "not found: module file not found")
 
     def test_a_precompiled_module_that_is_not_there_is_named_as_the_caches_failure(self):
         # TL06 and train 1117-1219: neither the stale-module words nor an "error:" line.

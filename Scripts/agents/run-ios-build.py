@@ -228,14 +228,16 @@ def device_build_command(derived_data):
     return load_app_size().build_command(derived_data)
 
 
-def start_device_folder_over(derived_data):
-    """Removes the whole device build folder `derived_data`, so that the build after it starts from nothing, and returns
-    whether it did. It acts only on a GitHub Actions runner and only on a folder named DEVICE_FOLDER (never the
-    Simulator build's folder, never a link followed), and says nothing is done anywhere else. Emptying only the module
+def start_device_folder_over(derived_data, names=(DEVICE_FOLDER,)):
+    """Removes the whole build folder `derived_data`, so that the build after it starts from nothing, and returns
+    whether it did. It acts only on a GitHub Actions runner and only on a folder whose name is one of `names` (the
+    device build's, DEVICE_FOLDER, unless the caller names another: the Simulator build's retry names its own derived-data
+    folder), never on the repository's root and never through a link, and says nothing is done anywhere else. Emptying only the module
     caches is not enough here: Xcode's build database in the folder still claims the precompiled modules it made, and
     the build then fails with "module file ... not found" (hand runs 44025566537 and 44039539045, November 17, 2026)."""
     path = Path(derived_data)
-    if not runner_module_cache.on_github_runner(os.environ) or path.name != DEVICE_FOLDER or path.is_symlink():
+    if not runner_module_cache.on_github_runner(os.environ) or path.name not in names or path.is_symlink() \
+            or path.resolve() == ROOT.resolve():
         return False
     if not path.is_dir():
         return False
@@ -317,8 +319,17 @@ def main(argv):
             # The caches that failed the build are emptied and the build runs again in what is left of the limit. Its
             # output is added to the same log, and only that part is read for the result.
             failure = runner_module_cache.cache_failure(log_text)
-            print(f"run-ios-build: {failure}; emptying the module caches and building once more", flush=True)
-            runner_module_cache.empty_module_caches(derived)
+            # A module the build database claims and the folder lacks is not cured by emptying the caches: the database
+            # still claims it (the device build found this, hand run 44039539045; trains 1117-0527 and 1117-1219 failed so
+            # with ExplicitPrecompiledModules/*.pcm "not found"). That failure starts from an empty folder, on a runner
+            # only, and the toolchain's stamp is written again.
+            if failure == runner_module_cache.MISSING_MARKER and start_device_folder_over(derived, names=(derived.name,)):
+                print(f"run-ios-build: {failure}; starting from an empty derived-data folder and building once more",
+                      flush=True)
+                runner_module_cache.prepare(derived)
+            else:
+                print(f"run-ios-build: {failure}; emptying the module caches and building once more", flush=True)
+                runner_module_cache.empty_module_caches(derived)
             first_size = log.stat().st_size
             status, timed_out = run_build(command, log, left, append=True)
             log_text = log.read_bytes()[first_size:].decode("utf-8", errors="replace")
