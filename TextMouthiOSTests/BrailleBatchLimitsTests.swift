@@ -146,6 +146,36 @@ final class BrailleBatchLimitsTests: XCTestCase {
         XCTAssertEqual(try read(paragraphs, with: tight).count, paragraphs.count)
     }
 
+    /// A call abandoned past its time is told by the book's whole time, as a
+    /// stop for time is, not by what was left of it, which cut the call (the
+    /// check of the FMT54 review's fixes, item 4, as finding 5 did for
+    /// FFmpeg): by a clock that spends all but a millionth of a book's two
+    /// seconds in its first batch, the second batch is allowed that
+    /// millionth, and an engine with no grace abandons it as the library
+    /// works; its sentence says the translation ran longer than 2 seconds,
+    /// where the millionth would have said 1.
+    func testAnAbandonedBatchIsToldByTheBooksTime() throws {
+        let readings = OSAllocatedUnfairLock(initialState: 0)
+        // The first batch's two readings, as it starts and as it ends, all but a millionth of the book's time apart.
+        let uptime: @Sendable () -> TimeInterval = {
+            readings.withLock { count -> TimeInterval in
+                count += 1
+                return count == 1 ? 1_000 : count == 2 ? 1_001.999_999 : 1_002
+            }
+        }
+        var tight = tool(limits: { limits, _ in limits.maximumSeconds = 2 })
+        tight.clock = RunningClock(countingWhole: uptime)
+        let noGrace = InProcessEngine(name: "test-batch-limits-cut", work: "the braille translation", grace: 0)
+        XCTAssertThrowsError(try read(book(filling: 2), with: tight, on: noGrace)) {
+            XCTAssertEqual($0 as? InProcessEngine.Failure, .abandoned(work: "the braille translation", limit: 2))
+            XCTAssertEqual(
+                ($0 as? LocalizedError)?.errorDescription,
+                "TextMouth stopped the braille translation because it ran longer than 2 seconds, "
+                    + "and won't try again until TextMouth is closed and opened again."
+            )
+        }
+    }
+
     /// The app's braille tool and engine count only the time TextMouth runs,
     /// by the app's one clock (B18).
     func testTheBrailleToolAndEngineAreTimedByTheAppsClock() {
