@@ -42,3 +42,7 @@ Part merged 098398533 (formats/ffmpeg-form, full Mac suite 13313/105/0): sound t
 ### 2026-11-18, ffmpegleft, 1 line
 
 ffmpegleft, branch formats/ffmpeg-leftovers at 342d0fc16 (train 1118-0221 PASSED: Mac 4165 tests, 31 skipped, 0 failures; iPhone 145 tests, 0 failures). Done: a Debug-only signalcheck mode of the helper (main.c, under DEBUG; a Release helper answers the usage error and carries none of its code); FFmpegHelperHostileFileTests.testEachFatalSignalEndsTheHelperWithItsOwnStatus (GitHub only) shows a null write, an abort, a stack overflow, and a double free each end with 70 by the guard's own _exit, not by the signal. Left: the workflow cache of FFmpeg's build keyed on build.py's key, a .github change that waits for the user's next push.
+
+### 2026-11-18, orchestrator, 1 line
+
+Part merged c5e4c226c on November 18, 2026: the helper's signal-guard self-test (a Debug-only signalcheck mode, run on GitHub only). Still open here: a workflow cache of FFmpeg's build, a .github change held for a release push.
