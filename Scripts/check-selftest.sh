@@ -264,13 +264,14 @@ STUB
   ln -s "$(command -v jq)" "$WORK/stubs-without-xcodegen/jq"
 }
 
-# write_ios_size_fixture <file> <verdict> <size>: writes a summary like the
-# one the iPhone size tool prints, for an app of <size> that stands <verdict>.
+# write_ios_size_fixture <file> <verdict> <size> [download verdict]: writes a
+# summary like the one the iPhone size tool prints, for an app of <size> that
+# stands <verdict>; the download estimate stands the same unless told otherwise.
 write_ios_size_fixture() {
   {
     printf 'Size: iPhone app: %s in 41 files, %s.\n' "$3" "$2"
     printf 'Size: iPhone app IPA: 10.0 MB (10,000,000 bytes).\n'
-    printf 'Size: iPhone app App Store download, estimated (Mach-O files at full size): 11.0 MB (11,000,000 bytes), %s.\n' "$2"
+    printf 'Size: iPhone app App Store download, estimated (Mach-O files at full size): 11.0 MB (11,000,000 bytes), %s.\n' "${4:-$2}"
     printf 'Size detail: 8.0 MB (8,000,000 bytes)  TextMouth\n'
   } > "$FIXTURES/$1"
 }
@@ -379,6 +380,8 @@ write_fixtures() {
   write_ios_size_fixture ios-size-ok.txt "within the 30 MB limit" "12.3 MB (12,345,678 bytes)"
   write_ios_size_fixture ios-size-warn.txt "over the 30 MB limit, within the strict 40 MB" "35.0 MB (35,000,000 bytes)"
   write_ios_size_fixture ios-size-over.txt "over the strict 40 MB limit" "41.0 MB (41,000,000 bytes)"
+  # An app within the limit whose estimated download is over the warning size.
+  write_ios_size_fixture ios-size-download.txt "within the 30 MB limit" "12.3 MB (12,345,678 bytes)" "over the 30 MB limit, within the strict 40 MB"
 
   printf '** TEST SUCCEEDED **\n' > "$FIXTURES/tests-without-totals.log"
   {
@@ -873,12 +876,26 @@ real_run_cases() {
   end_case
 
   begin_case "a failed iPhone device build fails the gate before the tests, naming the log"
-  run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-over.txt" STUB_IOS_SIZE_STATUS=1
+  run_gate STUB_IOS_SIZE_OUTPUT= STUB_IOS_SIZE_STATUS=1
   expect_status 1
   expect_commands "make generate" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
   expect_report "failed with exit status 1"
   expect_report "full log: build/check/ios-size.log"
-  expect_verdict "check: FAILED: step 3 of 4 (build the Release app)"
+  expect_report "The iPhone device build (Scripts/ios/app-size.py) failed, not the Mac's build."
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app, the iPhone app's device build)"
+  end_case
+
+  begin_case "a download estimate over the warning size does not call a small iPhone app over the limit"
+  run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-download.txt"
+  expect_status 0
+  refute_report "WARNING: the iPhone app"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "an iPhone app whose headline is over the strict limit fails even when the tool exits 0"
+  run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-over.txt"
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app is more than the $APP_SIZE_LIMIT_MB MB strict limit"
   end_case
 
   begin_case "an iPhone size tool that prints no size fails the gate, never passing on silence"

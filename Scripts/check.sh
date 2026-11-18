@@ -555,7 +555,7 @@ require_app_free_of_mac_paths() {
 # directly, not through run_locked.py: this gate's caller already holds the
 # heavy-work lock, which a second wait for it would never get.
 require_ios_app_within_size_limit() {
-  local status=0 headlines
+  local status=0 headlines app_line
   run_step ios-size yes python3 -I -B "$IOS_SIZE_TOOL" build --summary --check || status=$?
   if (( dry_run )); then
     if (( status != 0 )); then
@@ -566,17 +566,22 @@ require_ios_app_within_size_limit() {
   fi
   # The headline lines of the tool's summary: the app, the IPA, the download.
   headlines=$(sed -n -E 's/^Size: //p' "$LOG_DIR/ios-size.log")
-  if (( status == 3 )); then
+  # The app's own headline: the IPA and download lines follow it, and only the app is held to the limits.
+  app_line=$(grep -m 1 -E '^iPhone app: ' <<<"$headlines")
+  # Exit status 3 says the app is over the strict limit; so does its headline, a second guard.
+  if (( status == 3 )) || grep -q -F -e "over the strict" <<<"$app_line"; then
     detail_lines "" "$headlines"
     detail "the limits are APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh; the biggest files and libraries are in $LOG_DIR/ios-size.log"
     fail "step $step_number of $STEP_COUNT ($step_title): the iPhone app is more than the $APP_SIZE_LIMIT_MB MB strict limit"
   elif (( status != 0 )); then
-    step_failed ios-size "$status"
+    # Name the iPhone in the verdict: a failed Mac build ends the same line.
+    step_title="$step_title, the iPhone app's device build"
+    step_failed ios-size "$status" "The iPhone device build (Scripts/ios/app-size.py) failed, not the Mac's build."
   fi
-  if [[ -z $headlines ]]; then
+  if [[ -z $app_line ]]; then
     fail "step $step_number of $STEP_COUNT ($step_title): $LOG_DIR/ios-size.log has no size lines, so the iPhone app's size is unknown"
   fi
-  if grep -q -F -e "over the $APP_SIZE_WARNING_MB MB limit" <<<"$headlines"; then
+  if grep -q -F -e "over the $APP_SIZE_WARNING_MB MB limit" <<<"$app_line"; then
     detail "WARNING: the iPhone app is more than the $APP_SIZE_WARNING_MB MB limit; the gate fails above $APP_SIZE_LIMIT_MB MB"
   fi
   detail_lines "" "$headlines"
