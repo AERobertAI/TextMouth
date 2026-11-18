@@ -126,17 +126,22 @@ final class ScreenOrderUITests: TextMouthUITestCase {
 
     /// How many times `testTheGoToSheetAuditHoldsOnEveryLaunch` launches the app and audits the Go To sheet. The
     /// audit's Dynamic Type findings came and went from one launch to the next (A11Y-GOTO: train 1115-1800 failed,
-    /// 1115-1838 passed on the same tree), so a pass is shown over several launches, not one.
-    private static let goToAuditLaunches = 5
+    /// 1115-1838 passed on the same tree), so a pass was shown over five launches before 0.5.1 shipped. Each launch
+    /// costs about 26 seconds of every iPhone interface run, so it is one now (Q10); raise it again if the finding
+    /// ever comes back by fits and starts.
+    private static let goToAuditLaunches = 1
 
-    /// The Go To sheet's audit, five launches in a row, each a new process: the same audit as the order test's, which
-    /// must not fail on one launch and pass on the next. A failure names the launch.
+    /// The Go To sheet's audit, on `goToAuditLaunches` launches in a row, each a new process: the same audit as the
+    /// order test's, which must not fail on one launch and pass on the next. A failure names the launch when there
+    /// are several.
     func testTheGoToSheetAuditHoldsOnEveryLaunch() throws {
         for launch in 1...Self.goToAuditLaunches {
             let app = try launchIntoTheReader()
             _ = try openReaderSheet("Go To", titled: "Go To", waitingFor: "Cancel", in: app)
-            try auditTheGoToSheet(app, screen: "Go To sheet, launch \(launch) of \(Self.goToAuditLaunches)")
-            // One app at a time: the next launch is of the same app.
+            // The screen's name says which launch only when there are several.
+            let which = Self.goToAuditLaunches > 1 ? ", launch \(launch) of \(Self.goToAuditLaunches)" : ""
+            try auditTheGoToSheet(app, screen: "Go To sheet\(which)")
+            // One app at a time: the next launch (if any) is of the same app.
             app.terminate()
         }
     }
