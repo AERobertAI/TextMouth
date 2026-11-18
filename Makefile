@@ -126,7 +126,7 @@ help:
 	@echo "  make lint-a11y  - Check the SwiftUI lines this branch adds for accessibility mistakes"
 	@echo "  make lint-ogg   - Check the app lines this branch adds for audio readers that must refuse Ogg first"
 	@echo "  make lint-docs  - Check that no doc page has more rule violations than its baseline records (.claude/skills/doc-library/lint-baseline.json)"
-	@echo "  make lint-l10n  - Check that no Swift file has more unlocalized interface text than Scripts/l10n/scan-baseline.json records for it (L10N_ARGS=--update-baseline lowers the baseline)"
+	@echo "  make lint-l10n  - Check that no Swift file has more unlocalized interface text than Scripts/l10n/scan-baseline.json records for it (a branch never edits the baseline: the merge lowers it)"
 	@echo "  make check-ios-plist - Fail if the iOS Info.plist is not what the Mac's gives (Scripts/ios/sync-info-plist.py --check)"
 	@echo "  make check-ios-licenses - Fail if a library the iPhone app links has no licence in the app (Scripts/ios/check-licenses.py)"
 	@echo "  make ios-size   - Build the iPhone app for a device (Release, unsigned) under the heavy-work lock, then measure it: app, IPA, App Store estimate, biggest files, libraries"
@@ -369,7 +369,8 @@ lint-docs:
 ## key of String(localized:), LocalizedStringResource, or a SwiftUI literal such as
 ## Text("..."); a line ending with `// l10n: no` is left out on purpose. A failure
 ## prints each literal, on the lines this branch added (since LINT_BASE) when git
-## can tell. L10N_ARGS=--update-baseline lowers the counts that fell; the
+## can tell. A branch never edits the baseline (a baseline left high fails nothing): the
+## merge chain lowers it after every merge (L10N_ARGS=--update-baseline does the same by hand); the
 ## orchestrator alone rebuilds the baseline (--rebuild-baseline). No building.
 lint-l10n:
 	@python3 -I -B Scripts/l10n/scan.py lint --base $(LINT_BASE) $(L10N_ARGS)
