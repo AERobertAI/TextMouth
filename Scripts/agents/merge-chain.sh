@@ -47,16 +47,6 @@
 # when the merged tree has no scanner; on L10N_LINT_FAILED the merge is aborted
 # and the chain stops.
 #
-# Then, when the merged tree has the localization scanner (Scripts/l10n/scan.py),
-# its lint runs on the merged tree (scan.py lint --base HEAD), since a branch
-# that adds interface text that is not localized must not reach main. On
-# success the baseline is lowered to the merged code (scan.py lint
-# --update-baseline) and Scripts/l10n/scan-baseline.json is staged into the
-# merge itself, so main's baseline falls with every merge and no extra commit is
-# made; branches never edit it. The log gets L10N_LINT_OK, or L10N_LINT_SKIPPED
-# when the merged tree has no scanner; on L10N_LINT_FAILED the merge is aborted
-# and the chain stops.
-#
 # A merge whose changed files all end in .md gets MARKDOWN_ONLY_NO_SUITE: it is
 # committed and the chain goes on to the next branch with no project check and
 # no suite, since the docs lint is the check on documentation.
