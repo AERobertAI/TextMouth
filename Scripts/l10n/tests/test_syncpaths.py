@@ -49,6 +49,28 @@ class ReadingTests(unittest.TestCase):
         self.assertEqual(l10n.load_sync_paths(self.file), ["TextMouth/A.swift"])
 
 
+class UnmatchedGlobsTests(unittest.TestCase):
+    """`unmatched_globs`: which globs match no file, and how fast."""
+
+    def test_plain_and_wildcard_globs_are_told_apart_and_order_is_kept(self):
+        files = ["TextMouth/A/One.swift", "TextMouth/B/Two.swift"]
+        globs = ["TextMouth/Z.swift", "TextMouth/A/**", "TextMouth/B/One.swift", "TextMouth/*/Two.swift", "TextMouth/Q/**",
+                 "TextMouth/A/One.swift"]
+        self.assertEqual(l10n.unmatched_globs(globs, files), ["TextMouth/Z.swift", "TextMouth/B/One.swift", "TextMouth/Q/**"])
+
+    def test_900_one_file_globs_against_4000_paths_take_under_a_second(self):
+        import time
+        files = [f"TextMouth/Views/Area{n % 50}/File{n}.swift" for n in range(4000)]
+        globs = sorted(files[n * 4] for n in range(900))
+        started = time.monotonic()
+        self.assertEqual(l10n.unmatched_globs(globs, files), [])
+        self.assertLess(time.monotonic() - started, 1.0)
+        # A few wildcard globs among them stay fast too.
+        started = time.monotonic()
+        self.assertEqual(l10n.unmatched_globs(globs + ["TextMouth/Views/Area7/**"], files), [])
+        self.assertLess(time.monotonic() - started, 1.0)
+
+
 @unittest.skipUnless(HAS_GIT, "git is not installed")
 class MatchingTests(GitCase):
     """A glob that matches no file of the checkout is refused."""

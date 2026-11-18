@@ -138,6 +138,22 @@ def tracked_files(root):
     return done.stdout.splitlines() if done.returncode == 0 else None
 
 
+def unmatched_globs(globs, files):
+    """The globs that match none of `files` (repository-relative paths), in order. Each glob's matcher is built once, and a
+    glob with no wildcard is a set lookup, so hundreds of one-file globs against thousands of files stay fast."""
+    names = set(files)
+    missing = []
+    for glob in globs:
+        if not any(ch in glob for ch in "*?"):
+            found = glob in names
+        else:
+            matches = path_matcher([glob])
+            found = any(matches(name) for name in files)
+        if not found:
+            missing.append(glob)
+    return missing
+
+
 def load_sync_paths(path, root=None):
     """The globs in the sync-paths file `path`: one per line, blank lines and whole-line `#` comments skipped, repeats
     dropped (the first stays), in file order. A missing file is no globs. When `root` is a repository, a ValueError names
@@ -153,7 +169,7 @@ def load_sync_paths(path, root=None):
             globs.append(glob)
     files = tracked_files(root) if root is not None else None
     if files is not None:
-        nothing = [glob for glob in globs if not any(path_matcher([glob])(name) for name in files)]
+        nothing = unmatched_globs(globs, files)
         if nothing:
             raise ValueError("matches no file: " + ", ".join(nothing))
     return globs
