@@ -20,6 +20,9 @@ suite (run_suite.py --remote) go through here:
 4. `find_run` and `wait_for_run` find the run that push started, by the
    commit's SHA, and wait for it, up to a limit.
 5. `download` brings the run's artifacts to a folder.
+6. A run watched through a lost connection: a poll that fails is a missed poll (`wait_for_run`), and a run whose
+   results were not collected stays recorded with the tree it tested (`record_run`), so that the next send of the
+   same tree collects that run's results instead of running it again (`recorded_run`).
 
 Every wait has a limit. A step that cannot finish raises RemoteFailure with a
 sentence for the agents and the orchestrator; callers then leave nothing half
@@ -91,6 +94,17 @@ GH_ATTEMPTS = 4
 GH_RETRY_SECONDS = 15
 # How long one `gh` or `git` call may take before it counts as failed.
 CALL_SECONDS = 120
+# The words with which `gh run download` says the run has no such artifact (a run that was cancelled or broke before its
+# upload), which no retry will change; any other failure of the download is a lost connection, and is retried.
+NO_ARTIFACT_WORDS = ("no artifact", "no valid artifact")
+# The words of a failed `gh run view` that say the run is not there at all (a record of a run that has since gone).
+NO_SUCH_RUN_WORDS = ("404", "not found", "could not find")
+# The parts of a request that do not say what is tested, and so are left out when a recorded run is matched with a new
+# request: the train's own name, which is new at every train.
+REQUEST_KEYS_NOT_TESTED = ("train",)
+# How many times in all a record may be used to collect a run before it is ignored: a record whose run keeps failing to
+# be collected must not keep a train from ever pushing.
+MAX_COLLECT_TRIES = 3
 # The clock and the pause, which tests replace so that no test really waits.
 CLOCK = time.monotonic
 SLEEP = time.sleep
@@ -354,45 +368,164 @@ def find_run(sha):
         SLEEP(min(POLL_SECONDS, 10))
 
 
-def wait_for_run(run, limit_minutes=RUN_LIMIT_MINUTES):
-    """Waits for `run` (as find_run returns it) to complete; returns its final
-    state: {"status", "conclusion", "url"}. Past `limit_minutes` is a RemoteFailure."""
+def wait_for_run(run, limit_minutes=RUN_LIMIT_MINUTES, progress=None):
+    """Waits for `run` (as find_run returns it) to complete; returns its final state: {"status", "conclusion", "url"},
+    plus "lost_minutes" (how long, in all, GitHub could not be asked) when any poll was missed.
+
+    A poll that fails (gh_json has already tried it GH_ATTEMPTS times) is a missed poll, not the end: the run goes on, on
+    GitHub, whatever the Mac can see (the lid closed on battery cut the connection for 35 and 90 minutes on November 17,
+    2026, and a passed run's results were never collected). So the wait goes on until `limit_minutes` on CLOCK, which
+    does not count the Mac's sleep, and `progress` (when given) is told when the connection is lost and when it is back,
+    with how long it was out. Past the limit is a RemoteFailure, which says so when the connection was still lost."""
     started = CLOCK()
     state = run
+    lost_since = None
+    lost_seconds = 0.0
+    last_failure = ""
     while state.get("status") != "completed":
         if CLOCK() - started > limit_minutes * 60:
-            raise RemoteFailure(f"run {run['url']} had not ended after {limit_minutes} minutes")
+            still_lost = (f"; GitHub could not be asked for the last {(CLOCK() - lost_since) / 60:.0f} minutes "
+                          f"({last_failure})") if lost_since is not None else ""
+            raise RemoteFailure(f"run {run['url']} had not ended after {limit_minutes} minutes{still_lost}")
         SLEEP(POLL_SECONDS)
-        state = gh_json("run", "view", str(run["databaseId"]), "-R", REPO, "--json", "status,conclusion,url")
+        try:
+            state = gh_json("run", "view", str(run["databaseId"]), "-R", REPO, "--json", "status,conclusion,url")
+        except RemoteFailure as failure:
+            # A missed poll: the last known state stands, and the watch goes on.
+            last_failure = str(failure)
+            if lost_since is None:
+                lost_since = CLOCK()
+                if progress:
+                    progress(f"lost GitHub while watching {run['url']} ({last_failure}); still watching")
+            continue
+        if lost_since is not None:
+            lost_seconds += CLOCK() - lost_since
+            lost_since = None
+            if progress:
+                progress(f"GitHub is back; it could not be asked for {lost_seconds / 60:.0f} minutes in all")
         state.setdefault("url", run["url"])
+    if lost_seconds:
+        state["lost_minutes"] = round(lost_seconds / 60, 1)
     return state
 
 
 def download(run_id, destination):
-    """Downloads the run's results artifact into the folder `destination`,
-    made if need be. Returns True when the artifact was there to download."""
+    """Downloads the run's results artifact into the folder `destination`, made if need be. Returns True when the artifact
+    was there to download, and False when the run has none (NO_ARTIFACT_WORDS). Any other failure is a lost connection:
+    it is tried again up to GH_ATTEMPTS times in all, GH_RETRY_SECONDS apart, as gh_json does, and a download that
+    still fails is a RemoteFailure (never a False, which would read as a run with no results)."""
     Path(destination).mkdir(parents=True, exist_ok=True)
-    result = call([GH, "run", "download", str(run_id), "-R", REPO, "-n", ARTIFACT, "-D", str(destination)])
-    return result.returncode == 0
+    for attempt in range(1, GH_ATTEMPTS + 1):
+        result = call([GH, "run", "download", str(run_id), "-R", REPO, "-n", ARTIFACT, "-D", str(destination)])
+        if result.returncode == 0:
+            return True
+        said = (result.stderr or result.stdout).strip()
+        if any(words in said.lower() for words in NO_ARTIFACT_WORDS):
+            return False
+        if attempt < GH_ATTEMPTS:
+            SLEEP(GH_RETRY_SECONDS)
+    raise RemoteFailure(f"gh run download failed: {said[:300]}")
 
 
-def run_remotely(cwd, parent, request, destination, message, limit_minutes=RUN_LIMIT_MINUTES, progress=print):
+def request_key(cwd, parent, request):
+    """What a run tested, as a dictionary that two sends share exactly when they test the same thing: the tree of
+    `parent` (the tree, not the commit's id, since a merge made twice differs in id and time only) and the request
+    without the keys that do not say what is tested (REQUEST_KEYS_NOT_TESTED)."""
+    return {"tree": git(cwd, "rev-parse", f"{parent}^{{tree}}"),
+            "request": {name: value for name, value in request.items() if name not in REQUEST_KEYS_NOT_TESTED}}
+
+
+def read_record(path):
+    """The run recorded in the file `path`, or None when there is none, it cannot be read, or it is not a record."""
+    try:
+        record = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return record if isinstance(record, dict) and record.get("run_id") else None
+
+
+def write_record(path, record):
+    """Writes `record` (a dictionary, or None for no record) to the file `path`. A record is never deleted, only replaced
+    by an empty one, so that nothing here removes a file. A file that cannot be written is left: the record is a help."""
+    try:
+        Path(path).write_text(json.dumps(record or {}, indent=2) + "\n", encoding="utf-8")
+    except OSError:
+        pass
+
+
+def record_run(path, key, run, commit):
+    """Records, in `path`, the run that `commit` started and what it tests (`key`), so that a train that cannot collect
+    the results leaves the next send of the same tree a run to collect (see recorded_run). `tries` counts the uses."""
+    write_record(path, {**key, "run_id": run["databaseId"], "url": run["url"], "commit": commit, "tries": 0})
+
+
+def recorded_run(path, key, progress=None):
+    """The run to collect instead of pushing again, or None. The file `path` must hold a record whose tree and request
+    equal `key` exactly, that has been used fewer than MAX_COLLECT_TRIES times, and whose run GitHub still has, built
+    from the recorded commit, and not ended without a verdict (a cancelled run has no results). The run comes back as
+    find_run's does, with its current status and conclusion, and the record's commit. A record that does not match is
+    ignored, and left for the next push to replace.
+
+    Asking GitHub about the run can fail by a lost connection; that is a RemoteFailure (the record stays, and the train
+    waits its turn, rather than pushing a run that would only repeat the first). A run that is not there
+    (NO_SUCH_RUN_WORDS) is ignored."""
+    record = read_record(path)
+    if record is None or record.get("tree") != key["tree"] or record.get("request") != key["request"] \
+            or record.get("tries", 0) >= MAX_COLLECT_TRIES:
+        return None
+    try:
+        state = gh_json("run", "view", str(record["run_id"]), "-R", REPO, "--json", "status,conclusion,url,headSha")
+    except RemoteFailure as failure:
+        if any(words in str(failure).lower() for words in NO_SUCH_RUN_WORDS):
+            return None
+        raise
+    over_without_results = state.get("status") == "completed" and state.get("conclusion") not in ("success", "failure")
+    if state.get("headSha") != record.get("commit") or over_without_results:
+        return None
+    write_record(path, {**record, "tries": record.get("tries", 0) + 1})
+    if progress:
+        progress(f"collecting run {record['url']} of the same tree, which an earlier send left, instead of pushing again")
+    return {"databaseId": record["run_id"], "url": state.get("url") or record["url"], "status": state.get("status"),
+            "conclusion": state.get("conclusion"), "commit": record["commit"]}
+
+
+def run_remotely(cwd, parent, request, destination, message, limit_minutes=RUN_LIMIT_MINUTES, progress=print,
+                 pending=None):
     """Pushes `parent` plus `request` to TestBuild, waits for its run, and
     downloads the results into `destination`. Returns a dictionary with the
     pushed "commit", the run's "url", its "conclusion", the "minutes" from the
-    push to the end, and "downloaded" (whether the results artifact came).
+    push to the end, "downloaded" (whether the results artifact came), and
+    "lost_minutes" when GitHub could not be asked for a while (see wait_for_run).
     A run that ends without results (cancelled, timed out, or broken before the
     tests) comes back with downloaded False, and the caller decides what that
-    means; a step that could not finish raises RemoteFailure."""
-    commit = commit_with_request(cwd, parent, request, message)
-    # The minutes count from the push itself, not from the wait for the run in front of it.
-    started = push(cwd, commit, progress=progress)
-    progress(f"pushed {commit[:8]} to {BRANCH}; waiting for its run")
-    run = find_run(commit)
+    means; a step that could not finish raises RemoteFailure.
+
+    `pending`, when given, is the path of the file that keeps the run of the last send until its results are in hand:
+    the run is recorded once GitHub shows it, and the record is emptied once the results came (or the run has none). A
+    send that finds a record of the same tree and request collects that run's results instead of pushing again
+    (recorded_run); one that ends in a RemoteFailure leaves the record for the next."""
+    key = request_key(cwd, parent, request) if pending else None
+    run = recorded_run(pending, key, progress) if pending else None
+    if run is not None:
+        commit, started = run["commit"], CLOCK()
+    else:
+        commit = commit_with_request(cwd, parent, request, message)
+        # The minutes count from the push itself, not from the wait for the run in front of it.
+        started = push(cwd, commit, progress=progress)
+        progress(f"pushed {commit[:8]} to {BRANCH}; waiting for its run")
+        run = find_run(commit)
+        if pending:
+            record_run(pending, key, run, commit)
     progress(f"run {run['url']}")
-    state = wait_for_run(run, limit_minutes)
+    state = wait_for_run(run, limit_minutes, progress)
     downloaded = download(run["databaseId"], destination)
+    if pending:
+        # The run is over and its results are in hand, or it has none to collect: nothing is left to collect later.
+        write_record(pending, None)
     # From the push to the results in hand, which is what the Mac waits for.
     minutes = round((CLOCK() - started) / 60, 1)
-    return {"commit": commit, "url": state["url"], "conclusion": state.get("conclusion") or "unknown",
-            "minutes": minutes, "downloaded": downloaded}
+    result = {"commit": commit, "url": state["url"], "conclusion": state.get("conclusion") or "unknown",
+              "minutes": minutes, "downloaded": downloaded}
+    if state.get("lost_minutes"):
+        result["lost_minutes"] = state["lost_minutes"]
+    return result

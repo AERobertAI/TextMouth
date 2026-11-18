@@ -94,6 +94,8 @@ TRAINS = TRAIN_DIR / "trains"
 RESULTS = TRAIN_DIR / "results"
 LOCK = TRAIN_DIR / "lock"
 NEXT = TRAIN_DIR / "next.txt"
+# The file (in TRAIN_DIR) that keeps the run of a remote train until its results are in hand (github_run.recorded_run).
+PENDING_RUN_NAME = "pending-run.json"
 WORKTREE = ROOT / ".claude" / "worktrees" / "train"
 # The train's build cache. It is kept beside the train's records, not in the user's temporary folder
 # under /var/folders, because macOS sweeps that folder of files unused for three days: on 2026-11-04
@@ -549,8 +551,10 @@ def remote_run_tests(merged, train_dir):
     while (train_dir / f"remote-{attempt}").exists():
         attempt += 1
     folder = train_dir / f"remote-{attempt}"
+    # TRAIN_DIR / PENDING_RUN_NAME keeps a run the train could not collect (a lost connection) for the next train (TL07).
     result = github_run.run_remotely(WORKTREE, head, request, folder, f"Test build: train {train_dir.name}",
-                                     progress=lambda text: set_state(f"train {train_dir.name}: {text}"))
+                                     progress=lambda text: set_state(f"train {train_dir.name}: {text}"),
+                                     pending=TRAIN_DIR / PENDING_RUN_NAME)
     (train_dir / "remote.json").write_text(json.dumps(result, indent=2) + "\n")
     if result["conclusion"] in UNFINISHED_RUNS:
         raise github_run.RemoteFailure(f"the run ended {result['conclusion']} after {result['minutes']} minutes: "
