@@ -1,0 +1,245 @@
+"""The classifier: one case per bucket and per rule, from real lines of the app.
+
+Each test's comment names the file and line of the real code its snippet is taken from, as the
+line stood on November 18, 2026 (commit 5a067cde6); the snippet keeps the code around the
+literal that the rule looks at. A snippet marked "synthetic" is for a form the app does not
+use yet (it uses no String(localized:) before the conversion starts).
+"""
+
+from __future__ import annotations
+
+import unittest
+
+from scan_case import PARSER, WORDING, ScanCase, scan_snippet
+
+
+class CountedBucketTests(ScanCase):
+    """The four buckets that are interface text: ui, wording, error, prose, and word."""
+
+    def test_ui_a_text_in_a_call_that_shows_text(self) -> None:
+        # Views/Library/LibraryView.swift:588. A ternary inside Label is not a bare literal,
+        # so the compiler shows both strings as is: the bucket is ui, the status unlocalized.
+        found = scan_snippet('Label(isEditMode ? "Done" : "Edit", systemImage: "checkmark.circle")')
+        self.assertEqual([(l.text, l.bucket, l.rule, l.status) for l in found], [
+            ("Done", "ui", "ui-call", "unlocalized"),
+            ("Edit", "ui", "ui-call", "unlocalized"),
+            ("checkmark.circle", "code", "code-label", ""),
+        ])
+
+    def test_wording_a_literal_in_a_wording_type(self) -> None:
+        # Models/LibraryCloudWording.swift:312 (a file whose name holds Wording).
+        code = 'enum LibraryCloudWording {\n    static func note() -> String {\n        return "\\(subject) downloaded. Try again."\n    }\n}'
+        self.assertClass(code, "wording", "wording-type", "unlocalized", path=WORDING)
+
+    def test_wording_by_the_type_not_the_file(self) -> None:
+        # Views/Settings/LogsSettingsSection.swift:5 and :22: a Wording type inside a view file.
+        code = 'enum LogsSettingsWording {\n    static let pickerLabel = "Log location"\n}'
+        self.assertClass(code, "wording", "wording-type", "unlocalized")
+
+    def test_error_the_body_of_error_description(self) -> None:
+        # Services/SavedFile.swift:105.
+        code = ('struct InCloudError: LocalizedError {\n    var errorDescription: String? {\n'
+                '        "\\(fileName) is only in the cloud and isn\'t on this Mac yet."\n    }\n}')
+        self.assertClass(code, "error", "error-decl", "unlocalized")
+
+    def test_prose_a_sentence_outside_the_known_places(self) -> None:
+        # Views/Library/LibraryIndexRecoveryViews.swift:42.
+        code = 'enum Recovery {\n    static let quit = "Quits TextMouth without writing the library index."\n}'
+        self.assertClass(code, "prose", "sentence", "unlocalized")
+
+    def test_word_a_capitalized_single_word_returned_from_code(self) -> None:
+        # Services/MediaGestureDetector.swift:58.
+        code = 'var displayName: String {\n    switch self {\n    case .play: return "Play"\n    }\n}'
+        self.assertClass(code, "word", "capitalized-word", "unlocalized")
+
+    def test_plural_nouns_of_a_hand_built_plural_are_words(self) -> None:
+        # Models/CountWording.swift:34 (phrase's callers), e.g. books(_:).
+        found = scan_snippet('static func books(_ count: Int) -> String {\n    phrase(count, singular: "book", plural: "books")\n}')
+        self.assertEqual([(l.bucket, l.rule, l.status, l.findings) for l in found],
+                         [("word", "plural-noun", "unlocalized", ("plural",))] * 2)
+
+
+class UncountedBucketTests(ScanCase):
+    """The buckets that are not interface text, and the rule that puts a literal in each."""
+
+    def test_code_no_letters(self) -> None:
+        # Services/TextMouthPaths.swift:696.
+        found = scan_snippet('s = s.replacingOccurrences(of: " ", with: "_")')
+        self.assertEqual([(l.bucket, l.rule) for l in found], [("code", "no-letters")] * 2)
+
+    def test_code_a_label_that_names_a_key_or_a_symbol(self) -> None:
+        # Models/KeyboardShortcut.swift:1701 and Views/Library/LibraryView.swift:963.
+        self.assertClass('KeyBinding(key: "w", isDoublePress: true)', "code", "code-label")
+        self.assertClass('return String(format: "%d:%02d", minutes, secs)', "code", "code-label")
+
+    def test_code_a_call_whose_arguments_are_code(self) -> None:
+        # Parsers/ODTStyles.swift:213.
+        self.assertClass('name.hasPrefix("style:")', "code", "code-call")
+
+    def test_code_a_path_or_a_url(self) -> None:
+        # Services/SoundEffectService.swift:194.
+        self.assertClass('static let systemSoundsPath = "/System/Library/Sounds"', "code", "path-or-url")
+        self.assertClass('let site = "https://example.com/feed.xml"', "code", "path-or-url")
+        self.assertClass('let who = "reader@example.com"', "code", "path-or-url")
+
+    def test_code_punctuation_that_no_sentence_has(self) -> None:
+        # Services/Export/RTFExportWriter.swift:86.
+        self.assertClass('lines.append(#"{\\rtf1\\ansi\\ansicpg1252\\deff0\\uc1"#)', "code", "code-punctuation")
+
+    def test_code_a_date_format(self) -> None:
+        # Services/RecordingTake.swift:76 and Views/Library/TextInputView.swift:19.
+        self.assertClass('private static let nameDateFormat = "yyyy-MM-dd HH.mm.ss"', "code", "date-format")
+        self.assertClass('formatter.dateFormat = "yyyy-MM-dd HH:mm"', "code", "date-format")
+
+    def test_code_the_raw_value_of_an_enum_case(self) -> None:
+        # ViewModels/SettingsViewModel.swift:7: stored as is, so never translated.
+        self.assertClass('enum RewindUnit: String {\n    case none = "None"\n}', "code", "raw-value")
+
+    def test_token_an_identifier(self) -> None:
+        # Parsers/DOCXParser+Sections.swift:22.
+        self.assertClass('case "lowerRoman": self = .lowerRoman', "token", "identifier")
+
+    def test_token_a_lowercase_word_outside_a_known_call(self) -> None:
+        # Services/AudioEditing/FFmpeg.swift:113: command-line options, not words to say.
+        found = scan_snippet('arguments += ["-f", "ffmetadata", "-i", file.path]')
+        self.assertEqual([(l.text, l.bucket, l.rule) for l in found], [
+            ("-f", "token", "lowercase-word"), ("ffmetadata", "token", "identifier"), ("-i", "token", "lowercase-word")])
+
+    def test_log_by_the_call(self) -> None:
+        # Services/Feeds/FeedItemPackage.swift:209 and Parsers/DAISYParser+Audio.swift:628.
+        self.assertClass('DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_CACHE_LEFT: \\(row.title) could not be removed")',
+                         "log", "log-call")
+        self.assertClass('print("Warning: Failed to copy remaining audio file \\(path)")', "log", "log-call")
+
+    def test_log_by_the_function_it_is_in(self) -> None:
+        # Models/CloudStorageContract.swift:452: a log line's words, made by logReason.
+        code = ('enum BookCloudWording {\n    static func logReason(_ doubt: CloudCopyDoubt) -> String {\n'
+                '        switch doubt {\n        case .uploadNotReported: return "the sync service gave no upload state"\n'
+                '        }\n    }\n}')
+        self.assertClass(code, "log", "log-block", path=WORDING)
+
+    def test_a_wording_type_about_the_logs_is_not_log_text(self) -> None:
+        # Views/Settings/LogsSettingsSection.swift:5 and :14: the Logs settings' own words.
+        code = 'enum LogsSettingsWording {\n    static func optionTitle() -> String {\n        return "Inside the data directory"\n    }\n}'
+        self.assertClass(code, "wording", "wording-type")
+
+    def test_log_by_a_tag_at_the_start_of_a_line_built_outside_a_log_call(self) -> None:
+        # Services/TextMouthPaths.swift:79.
+        self.assertClass('return "DATA_DIRECTORY_FOUND: \\(name) was missing; its bookmark "', "log", "log-tag")
+
+    def test_diag_a_parsers_damage_reason(self) -> None:
+        # Parsers/DOCXParser.swift:164.
+        self.assertClass('reportIncompleteContent(.malformedXML(file: notesPart, reason: "it could not be unpacked"))',
+                         "diag", "diag-reason", path=PARSER)
+
+    def test_a_single_word_in_a_parser_is_a_token(self) -> None:
+        # Parsers/PageImageArchive.swift:291.
+        found = scan_snippet('private static let names: Set<String> = ["Title", "Series"]', path=PARSER)
+        self.assertEqual([(l.bucket, l.rule) for l in found], [("token", "diag-single-word")] * 2)
+
+    def test_comment_the_translators_note(self) -> None:
+        # Synthetic: the app uses no String(localized:) before the conversion starts.
+        found = scan_snippet('String(localized: "Pause", comment: "The button that pauses speech")')
+        self.assertEqual([(l.text, l.bucket, l.rule) for l in found], [
+            ("Pause", "ui", "localized-key"),
+            ("The button that pauses speech", "comment", "comment-label"),
+        ])
+        self.assertEqual(found[1].status, "")
+
+
+class LocalizedStatusTests(ScanCase):
+    """Which literals the compiler extracts, and which it shows as is."""
+
+    def test_a_swiftui_literal_is_localized(self) -> None:
+        # Views/Settings/SettingsView.swift:429 and App/MenuCommands.swift:314.
+        self.assertClass('.accessibilityLabel("End of book behavior")', "ui", "localized-key", "localized")
+        self.assertClass('Button("Next Heading") {\n    action()\n}', "ui", "localized-key", "localized")
+
+    def test_other_swiftui_calls_with_a_title_are_localized(self) -> None:
+        for call in ('Toggle("Read aloud", isOn: $on)', 'Picker("Speed", selection: $speed)',
+                     'Label("Sort", systemImage: "arrow")', '.navigationTitle("Library")',
+                     '.accessibilityHint("Opens the sheet")', '.help("Shows the list")',
+                     'Section("Options")', 'TextField("Name", text: $name)'):
+            self.assertEqual(scan_snippet(call)[0].status, "localized", call)
+
+    def test_labeled_localized_arguments(self) -> None:
+        self.assertEqual(only_status('.searchable(text: $q, prompt: "Search books")'), "localized")
+        self.assertEqual(only_status('.accessibilityAction(named: "Delete") { }'), "localized")
+
+    def test_string_localized_is_localized_and_its_comment_is_not_counted(self) -> None:
+        # Synthetic.
+        self.assertEqual(only_status('let t = String(localized: "Sleep timer", comment: "Menu title")'), "localized")
+        self.assertEqual(only_status('let t = AttributedString(localized: "Sleep timer")'), "localized")
+
+    def test_localized_string_resource_and_key_and_value(self) -> None:
+        # Synthetic.
+        for code in ('let a = LocalizedStringResource("Pause", comment: "Button")', 'let b = LocalizedStringKey("Pause")',
+                     'let c = String.LocalizationValue("Pause")'):
+            self.assertEqual(scan_snippet(code)[0].status, "localized", code)
+
+    def test_text_verbatim_is_unlocalized(self) -> None:
+        # Synthetic: the compiler shows a verbatim string as it is.
+        self.assertClass('Text(verbatim: "Library title")', "ui", "verbatim-text", "unlocalized")
+
+    def test_a_ternary_of_literals_in_text_is_not_localized(self) -> None:
+        # Views/Settings/SubstitutionsSettingsView.swift:215: Button(rule.isEnabled ? "Disable" : "Enable").
+        found = scan_snippet('Button(rule.isEnabled ? "Disable" : "Enable") { toggle() }')
+        self.assertEqual([l.status for l in found], ["unlocalized", "unlocalized"])
+
+    def test_a_literal_in_an_interpolation_is_never_the_key(self) -> None:
+        found = scan_snippet('Text("Now \\(paused ? "paused" : "playing")")')
+        self.assertEqual([(l.text, l.status) for l in found], [("Now %@", "localized"), ("paused", ""), ("playing", "")])
+
+    def test_a_parameter_typed_localized_string_resource_makes_its_arguments_localized(self) -> None:
+        # Synthetic: a helper whose parameter is a LocalizedStringResource.
+        helper = 'func announce(_ message: LocalizedStringResource, priority: Int = 0) {}'
+        code = 'announce("Sleep timer set")\nannounce("Sleep timer off", priority: 1)\nother("Not a resource")'
+        found = scan_snippet(code, extra={"TextMouth/Services/Announcer.swift": helper})
+        self.assertEqual([(l.text, l.status) for l in found],
+                         [("Sleep timer set", "localized"), ("Sleep timer off", "localized"), ("Not a resource", "unlocalized")])
+
+    def test_a_labeled_resource_parameter_is_found_by_its_label(self) -> None:
+        helper = 'func show(title: String.LocalizationValue, detail: String) {}'
+        found = scan_snippet('show(title: "Done", detail: "All saved")', extra={"TextMouth/Services/Show.swift": helper})
+        self.assertEqual([(l.text, l.status) for l in found], [("Done", "localized"), ("All saved", "unlocalized")])
+
+
+class MarkerTests(ScanCase):
+    """`// l10n: no` leaves a literal out of the count."""
+
+    def test_the_marker_at_the_end_of_the_line(self) -> None:
+        lit = only_literal('let label = "Pause button" // l10n: no')
+        self.assertEqual((lit.bucket, lit.status), ("prose", "marked"))
+
+    def test_the_marker_with_a_reason(self) -> None:
+        for comment in ("// l10n: no (test hook)", "// l10n: no: shown only in tests", "// l10n: no - a name the system gives"):
+            self.assertEqual(only_literal(f'let label = "Pause button" {comment}').status, "marked", comment)
+
+    def test_a_different_comment_does_not_mark(self) -> None:
+        for comment in ("// l10n: nothing", "// l10n yes", "// not l10n: no here", "// TODO l10n: no"):
+            self.assertEqual(only_literal(f'let label = "Pause button" {comment}').status, "unlocalized", comment)
+
+    def test_the_marker_covers_the_whole_line_and_a_multi_line_literal_by_its_last_line(self) -> None:
+        found = scan_snippet('let a = "Pause the speech"; let b = "Resume the speech" // l10n: no')
+        self.assertEqual([l.status for l in found], ["marked", "marked"])
+        multi = only_literal('let a = """\n    Some long text here.\n    """ // l10n: no')
+        self.assertEqual(multi.status, "marked")
+
+    def test_a_localized_literal_stays_localized_under_the_marker(self) -> None:
+        self.assertEqual(only_literal('Text("Pause the speech") // l10n: no').status, "localized")
+
+
+def only_literal(code: str):
+    """The snippet's one literal, classified."""
+    found = scan_snippet(code)
+    assert len(found) == 1, [l.text for l in found]
+    return found[0]
+
+
+def only_status(code: str) -> str:
+    """The status of the first literal of a snippet."""
+    return scan_snippet(code)[0].status
+
+
+if __name__ == "__main__":
+    unittest.main()
