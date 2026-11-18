@@ -846,7 +846,7 @@ enum MarkdownCacheService {
 
     /// The shared work of both parsers above: split `markdown` at its chapter
     /// markers (or take it whole), parse each chapter, and keep a refused
-    /// chapter's raw text in its place, counting the refusal.
+    /// chapter's words as written (`RawChapterLines.readingText`) in its place, counting the refusal.
     private static func parseChapters(
         _ markdown: String,
         bookTitle: String,
@@ -857,7 +857,8 @@ enum MarkdownCacheService {
         var refusedCount = 0
         var firstRefusal: RefusedChapter?
 
-        /// The chapter `text` parses to, or its raw text when it is refused.
+        /// The chapter `text` parses to, or its words as written
+        /// (`RawChapterLines.readingText`) when it is refused.
         /// `number` is the chapter's place among the chapter markers, from 1,
         /// for the refusal to name; nil for a text without markers.
         func chapter(of text: String, titled title: String, number: Int?) -> Chapter {
