@@ -117,16 +117,10 @@ final class MarkdownNestingCacheTests: XCTestCase {
             contentWithAMiddleChapter(writtenDeepChapter), bookTitle: "Book", bookAuthor: ""
         )
 
-        let text = content.chapters[1].text
-        XCTAssertEqual(
-            text,
-            deepQuotes(around: "He said: \"Done.\" Costs $5!") + "\n\nSecond paragraph, line one.\nline two."
-        )
-        XCTAssertFalse(text.contains("<!--"))
-        XCTAssertFalse(text.contains("\\"))
-        // The neighbours are untouched.
-        XCTAssertEqual(content.chapters[0].text, "First chapter words.")
-        XCTAssertEqual(content.chapters[2].text, "Third chapter words.")
+        // The deep chapter's words as written; its neighbours are untouched.
+        let words = deepQuotes(around: "He said: \"Done.\" Costs $5!") + "\n\nSecond paragraph, line one.\nline two."
+        XCTAssertEqual(content.chapters.map(\.text), ["First chapter words.", words, "Third chapter words."])
+        XCTAssertFalse(words.contains("<!--") || words.contains("\\"), "the expected words carry no marker or escape")
     }
 
     /// A bookmark saved in a deep chapter before the fix, at its offset in
@@ -138,7 +132,8 @@ final class MarkdownNestingCacheTests: XCTestCase {
         // The text before the fix: each chapter's text, the deep one raw.
         let before = ["First chapter words.", try XCTUnwrap(deepSectionAsWritten(of: markdown)), "Third chapter words."]
         let after = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: "Book", bookAuthor: "")
-        XCTAssertNotEqual(before[1], after.chapters[1].text, "the chapter's text changed, so its offsets do")
+        let deepAfter = try XCTUnwrap(after.chapters.dropFirst().first).text
+        XCTAssertNotEqual(before[1], deepAfter, "the chapter's text changed, so its offsets do")
 
         // A bookmark at "line two" in the raw text, as one saved then.
         let offset = try Phrase.offset(of: "line two", in: before[1])
@@ -152,7 +147,7 @@ final class MarkdownNestingCacheTests: XCTestCase {
 
         let moved = try XCTUnwrap(outcome.places.bookmarks.first)
         XCTAssertEqual(moved.chapterIndex, 1)
-        XCTAssertEqual(moved.characterOffset, try Phrase.offset(of: "line two", in: after.chapters[1].text))
+        XCTAssertEqual(moved.characterOffset, try Phrase.offset(of: "line two", in: deepAfter))
         XCTAssertNotEqual(moved.characterOffset, offset, "the offset moved, with the words")
     }
 
