@@ -84,7 +84,7 @@ Details: [DAISY and braille books](reads-daisy-and-braille.md).
 - The iPhone reads braille books with the defaults of the Braille tab, and has no Braille settings or Braille Code pop-up yet, and a book that needs one of a Mac's own tables is refused there (see [DAISY and braille books](reads-daisy-and-braille.md)).
 
 ## Audiobooks and other sound
-<!-- id: formats-list-audio; keys: MP3, M4B, M4A, WAV, FLAC, Ogg, MP4, converted audio; src: TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Parsers/AudioContentSniffer.swift, TextMouth/Parsers/NeroChapterReader.swift; status: incomplete; issues: FMT54 -->
+<!-- id: formats-list-audio; keys: MP3, M4B, M4A, WAV, FLAC, Ogg, MP4, converted audio; src: TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Parsers/AudioContentSniffer.swift, TextMouth/Parsers/NeroChapterReader.swift; status: incomplete; issues: FMT55, Q13 -->
 
 Details: [Audiobooks](reads-audiobooks.md).
 Audio gets its title, author, and duration from its tags, and its chapters, where the file has them, as headings.
@@ -100,7 +100,7 @@ Audio gets its title, author, and duration from its tags, and its chapters, wher
 - AC-3 (.ac3), E-AC-3 (.ec3, .eac3), MP2 (.mp2), AMR (.amr), 3GPP audio (.3gp), NeXT/Sun audio (.au), AIFC (.aifc), CAF (.caf), and Wave64 (.w64): converted to .m4a at import by afconvert; iPhone: no; Tested with made samples.
 - MP1 (.mp1) and the alternative extensions .mpa, .snd, .awb, .3g2, and .3ga: converted the same way; iPhone: no; Basic.
 - TTA (.tta), WavPack (.wv, with a .wvc correction file beside it), and Monkey's Audio (.ape, version 3.99 and later): read by TextMouth's own decoders and written as Apple Lossless in .m4a, with their tags; iPhone: no; Tested with made samples.
-- WMA (.wma, .asf), Speex (.spx), Musepack (.mpc, .mp+), WebM and Matroska audio (.webm, .weba, .mka), RealAudio (.ra, .rm, .rmvb), and the sound of .wmv, .avi, .flv, and .mkv videos: converted with the converter built into the app, keeping tags and chapters; iPhone: no; Tested with made samples.
+- WMA (.wma, .asf), Speex (.spx), Musepack (.mpc, .mp+), WebM and Matroska audio (.webm, .weba, .mka), RealAudio (.ra, .rm, .rmvb), and the sound of .wmv, .avi, .flv, and .mkv videos: converted by the app's converter, keeping tags and chapters; iPhone: yes; Tested with made samples, not Musepack.
 - Nothing needs installing for those: TextMouth carries the converter.
 - Copy-protected audio (.aa, .aax, .aaxc, .m4p, and copy-protected ASF) is refused and never read.
 - Chapters come from more than tags: CUE sheets (.cue, or one in a FLAC file), markers in WAV, AIFF, and CAF files, CHAPTER comments in Ogg files, and Audacity label files (.txt) beside a folder's audio.
@@ -160,7 +160,7 @@ Details: [Exporting books](exporting-books.md), [braille](exporting-braille.md),
 - Export writes no .docx, OpenDocument, PDF, or Kindle file.
 
 ## What TextMouth refuses
-<!-- id: formats-list-refusals; keys: unsupported file format, refused, advice, Attach Transcript, protected, 64 MB, empty file; src: TextMouth/Services/FileImportService.swift, TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Phone/PhoneImportRefusal.swift -->
+<!-- id: formats-list-refusals; keys: unsupported file format, refused, advice, Attach Transcript, protected, 64 MB, empty file; src: TextMouth/Services/FileImportService.swift, TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Phone/PhoneImportRefusal.swift; status: incomplete; issues: FMT55 -->
 
 Each refusal names the file and says what to do next (see [Adding books](import-progress-and-errors.md) for the sentences).
 

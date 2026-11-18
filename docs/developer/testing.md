@@ -114,7 +114,7 @@ Delete a kept sandbox when you are done with it.
   The performance baselines tests skip too, since their baselines belong to the development Mac's model (so a request for strict baselines checks no baseline on a runner).
 
 ### A test that may crash the host
-<!-- id: test-may-crash-host; keys: skipUnlessGitHubRunner, isGitHubRunner, TEXTMOUTH_TEST_TIME_SCALE, Objective-C exception, stack overflow, crash report, no-crash rule; src: TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/ObjCExceptionTests.swift, TextMouthProductionTests/AudioEditRenderingTests+WideSamples.swift, TextMouthProductionTests/MarkdownDepthLimitTests.swift, TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift, Scripts/agents/run-on-runner.py, TextMouthProductionTests/StackProbe.swift, TextMouthProductionTests/FFmpegHelperHostileFileTests.swift -->
+<!-- id: test-may-crash-host; keys: skipUnlessGitHubRunner, isGitHubRunner, TEXTMOUTH_TEST_TIME_SCALE, Objective-C exception, stack overflow, crash report, no-crash rule; src: TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/ObjCExceptionTests.swift, TextMouthProductionTests/AudioEditRenderingTests+WideSamples.swift, TextMouthProductionTests/MarkdownDepthLimitTests.swift, TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift, Scripts/agents/run-on-runner.py, TextMouthProductionTests/StackProbe.swift, TextMouthProductionTests/FFmpegHelperHostileFileTests.swift; status: incomplete; issues: B20 -->
 
 - A test that crashes the test host when the code it checks is broken runs on GitHub's runner only, because a crash on the user's Mac puts macOS's crash report on their screen, and on a runner it is only a failed run.
   Such a test raises an Objective-C exception on purpose with only the code under test to catch it, or fills a thread's stack with a pattern to measure how much of it a walk of a deep tree uses.
@@ -126,6 +126,8 @@ Delete a kept sandbox when you are done with it.
   The type-select probe uses it too, though for a beep and not a crash.
   StackProbe (TextMouthProductionTests/StackProbe.swift) measures a walk's stack use instead of surviving an overflow: it runs the code on a thread of 8 MiB whose unused stack it filled with a pattern, and says how far the code wrote past a margin.
   A fix for a crash is shown by a break proof on GitHub: a scratch branch with the fix removed, sent by hand, never run on the Mac.
+- **No test may let a real liblouis call be abandoned,** on any platform: liblouis is not thread-safe, and an abandoned call runs on beside the next test's call, which crashed a train's iPhone run with SIGSEGV.
+  The test of the iPhone's abandonment sentence for braille waits for a stand-in for the liblouis call, a seam like FFmpeg's `openSession` (B20).
 
 ### Benchmarks of the performance work
 <!-- id: benchmarks-performance-work; keys: opt-in benchmarks, timing tests, speed tests, Release build, TEST_RUNNER prefix; src: TextMouthProductionTests/ViewsAndWindowsBenchmarks.swift, TextMouthProductionTests/DuplicateFinderTests.swift, TextMouthProductionTests/TextPipelineBenchmarkTests.swift, TextMouthProductionTests/PersistenceCostTests.swift, TextMouthProductionTests/LibraryModelBenchmarkTests.swift, TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift, TextMouthProductionTests/SpeechEngineCreationTests.swift, TextMouthProductionTests/SpeechVoiceWarmUpTests.swift, TextMouthProductionTests/AudioEngineBehaviorTests.swift, TextMouthProductionTests/CompletionGenerationTests.swift -->

@@ -13,9 +13,9 @@ project.yml defines two apps over one source folder.
 - It compiles the TextMouth source folder less `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`, so it compiles the files both apps share and `TextMouth/Platform/iOS/`.
 - It is the product TextMouth, with the module name TextMouth, for iOS 26.0, and has a bundle identifier of its own, `com.textmouth.TextMouth.iOS`.
   It takes the same two Swift packages (ZIPFoundation and swift-cmark), the vendored SwiftSoup through its own library target, SwiftSoup_iOS, and its own builds of the four C libraries it links.
-  They are `LAME_iOS`, `ObjCExceptionCatcher_iOS`, `liblouis_iOS`, and TextMouthBrailleLibrary_iOS (the braille translation, DR34).
+  They are `LAME_iOS`, `ObjCExceptionCatcher_iOS`, `liblouis_iOS`, TextMouthBrailleLibrary_iOS (the braille translation, DR34), and FFmpeg_iOS (FFmpeg with TextMouth's session, FMT54; see [The FFmpeg build](building.md#the-ffmpeg-build)).
   The file project.yml defines each library, SwiftSoup included, once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
-- It has no helper program, since iOS lets an app start none, so it runs liblouis inside the app (see [The translator on the iPhone](../architecture/state/imports-braille-tables.md#the-translator-on-the-iphone)).
+- It has no helper program, since iOS lets an app start none, so it runs liblouis and FFmpeg's session inside the app (see [The translator on the iPhone](../architecture/state/imports-braille-tables.md#the-translator-on-the-iphone)).
 - It is the iPhone app: the Library, the reader, Settings, and importing, built from research/IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)).
   Nothing has run on a phone.
 - Its scheme, `TextMouthiOS`, is committed.
@@ -33,6 +33,7 @@ Each reads the commit as it was when it started (`Scripts/ios/typecheck.py` take
 
 - **`make typecheck-ios`** copies the committed sources of HEAD into a work folder of its own, writes a Swift package around them, and builds it with SwiftPM and the iOS SDK, for iOS 26.0, compiling the sources the iOS app compiles and linking its four C libraries.
   It never changes the repository.
+  It builds no FFmpeg: its package links a C stand-in for the session's functions, written against the session's real header (see [The FFmpeg build](building.md#the-ffmpeg-build)).
   A clean run means the iOS app's sources compile and link; because it builds a package of its own and not the Xcode target, it does not test the target's build settings.
   It takes about two minutes once it has the lock.
   `CENSUS=1` reads each `import AppKit` as `import UIKit` in the copy, so that a file does not stop at "no such module 'AppKit'" and every AppKit name left in it is reported; it counts what is left, and is not what the app must pass.
@@ -174,6 +175,7 @@ The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see
   The device build is only run when asked, and took about 7 to 11 minutes of the iPhone job.
   A device build that fails or runs late says `Size: not measured` and changes nothing else: the Simulator build's verdict stands.
   It checks the toolchain stamp as the Simulator build does, and any failure but the time limit runs once more from an empty device folder, on a runner only, since emptying the module caches alone left the build database claiming modules that were gone.
+- With FFmpeg inside it (FMT54), the iPhone app is 16.1 MB (16,078,689 bytes), where it was 13.7 MB, and the Mac app 21.0 MB.
 - `make check` measures the Mac app alone: a step that measures the iPhone app too is TL05, not built.
 
 ## Building TextMouthiOS for the simulator

@@ -311,14 +311,15 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   Count the AppKit uses left by compiling, not by searching for `import AppKit`: SwiftUI brings AppKit's names in, and a file that imports it without using it shows no census error, so check strict mode or list the bare imports before calling the census done.
 
 ## What the iPhone's import refuses
-<!-- id: iphone-import-refusals; keys: PhoneImportRefusal, convertedAudio, ffmpegAudio, PhoneImportWording, tracksLeftOut, refuseConversion; src: TextMouth/Phone/PhoneImportRefusal.swift, TextMouth/Phone/PhoneImportWording.swift, TextMouth/Services/FileImportService+AudioConversion.swift; status: incomplete; issues: FMT54 -->
+<!-- id: iphone-import-refusals; keys: PhoneImportRefusal, convertedAudio, PhoneImportWording, tracksLeftOut, refuseConversion, copy protection; src: TextMouth/Phone/PhoneImportRefusal.swift, TextMouth/Phone/PhoneImportWording.swift, TextMouth/Services/FileImportService+AudioConversion.swift; status: incomplete; issues: FMT55 -->
 
 - PhoneImportRefusal is thrown only on iOS (`#if os(iOS)`), where the Mac would start a program or, for TextMouth's own audio readers, still converts: FileImportService.convertImportedAudio finds the tracks the import converts and refuses them by kind.
   - `.convertedAudio` for what afconvert converts (Ogg, AC-3, CAF, and the rest), and for the files TextMouth's own readers decode (TTA, WavPack, Monkey's Audio): the iPhone compiles those readers, but this refusal still stops the import before they run, and the plist leaves their type out.
-  - `.ffmpegAudio` for a file only FFmpeg reads (FFmpegAudioConverter.converts), whose sentence ends with ffmpegRefusalNextStep, "Add it on your Mac, then send the book here".
-    The iPhone runs no FFmpeg helper until FMT54.
+  - The files only FFmpeg reads are no longer refused: the iPhone converts them in the app (FMT54).
+    `refuseConversion` throws `FFmpegAudioConverter.Failure.copyProtected`, the Mac's own sentence, first for a copy-protected one, under the conversion's step, before it refuses another file for its kind.
+    Ogg and the formats the Mac converts with afconvert are FMT55.
   - `.wordSixOrNinetyFive` for the format that needs textutil.
   - `.macBrailleTable` for a braille book that needs one of a Mac's own tables, thrown by BrailleBookReader.markdown before anything is read.
     The iPhone reads other braille books itself (see [The translator on the iPhone](state/imports-braille-tables.md#the-translator-on-the-iphone)).
-- A folder, ZIP, or playlist leaves out the files only FFmpeg reads, with PhoneImportWording.ffmpegTracksLeftOut for its notice, and refuses what is left that needs converting.
-  A book with no other track is refused.
+- A folder, ZIP, or playlist leaves out a file named like one only FFmpeg reads whose bytes are of none, with the Mac's notice (`FFmpegImportWording.tracksLeftOutNotice`), and refuses what is left that needs converting.
+  The iPhone's converter is never missing, so it leaves out no file for that.

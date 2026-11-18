@@ -102,7 +102,7 @@ Run these from the repository root:
 - `make help` lists these targets.
 
 ## The FFmpeg build
-<!-- id: ffmpeg-build; keys: FFmpeg, build.py, libtmffmpeg.a, Build FFmpeg, FFmpegLibrary, tmff-cc, configure, patches; src: Scripts/vendor/ffmpeg/build.py, Scripts/vendor/ffmpeg/test_build.py, Scripts/vendor/ffmpeg/patches/, project.yml, Scripts/check.sh; status: incomplete; issues: FMT54, FU01 -->
+<!-- id: ffmpeg-build; keys: FFmpeg, build.py, libtmffmpeg.a, Build FFmpeg, FFmpegLibrary, tmff-cc, configure, patches; src: Scripts/vendor/ffmpeg/build.py, Scripts/vendor/ffmpeg/test_build.py, Scripts/vendor/ffmpeg/patches/, project.yml, Scripts/check.sh, Scripts/ios/typecheck.py; status: incomplete; issues: FU01 -->
 
 FFmpeg is not in the repository.
 The targets FFmpeg and FFmpeg_iOS (the template FFmpegLibrary of project.yml) each run a build phase, Build FFmpeg, which calls `Scripts/vendor/ffmpeg/build.py --xcode`.
@@ -133,6 +133,9 @@ They then merge the result, `libtmffmpeg.a`, into the library they link, which t
   A build with the same key ends in 0.16 s; a cold build took about 34 s on the development Mac and 1.5 to 2 minutes on a GitHub runner.
 - **No path of this Mac** is in the result: the compiler is a wrapper, `tmff-cc`, that maps the work folder and the shared source away.
   The build fails when `strings` finds a home folder, checkout, temporary folder, or work folder in the archive or the headers, and `make check` repeats the test on the app.
+- **Clang modules are off** (`CLANG_ENABLE_MODULES: NO`) for FFmpeg's C: the FFmpegLibrary template and the TextMouthFFmpeg target.
+  With them on, Xcode precompiles the session's headers as modules of the target's own, and a restored runner cache can claim a module it lacks ("module file ... not found"); the objects are the same either way.
+- **The type-check** (`make typecheck-ios`) builds no FFmpeg: its package links a C stand-in for the session's functions (`Scripts/ios/typecheck.py`), written against the session's real header, and a test in `test_typecheck.py` fails when the header gains or loses a function the stand-in lacks.
 - `python3 -I -B Scripts/vendor/ffmpeg/build.py --readme` writes the notice both apps ship, and `test_build.py` (in `make check-selftest`) tests the script without downloading.
 
 ## The Mac app's size

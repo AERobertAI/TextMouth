@@ -67,7 +67,9 @@ The source folders:
 - Models: value types and small rule tables, such as Book, BookInfo, Library, BookContentIndex, SettingsPolicy, StoredPreference, and the wording helpers.
 - Parsers: one reader per format, each turning a source file into DocumentContent (chapters, headings, and an index), plus shared readers for archives, packages, and text encodings.
 - Services: everything that owns a file, a queue, or a system resource.
-  - InProcessEngine, which runs a C library inside the app on a thread of its own with a time limit, since the iPhone starts no helper program (see [Imports: braille tables and the translator](state/imports-braille-tables.md));
+  - InProcessEngine, which runs a C library inside the app on a thread of its own with a time limit, since the iPhone starts no helper program, timed by RunningClock:
+    - liblouis, for braille (see [Imports: braille tables and the translator](state/imports-braille-tables.md));
+    - FFmpeg's session (see [Imports: audio only FFmpeg reads](state/imports-audio-ffmpeg.md));
   - Services/Feeds holds the feed engine, whose FeedCenter.shared LibraryViewModel starts and offers as feeds;
   - Services/AudioEditing the audio editing engine, which works without a window (see [Audio edits](state/audio-edits.md));
   - Services/Export the model, walker, and writers of text export, which the Export dialog's Convert to picker chooses among (see [Exports](state/exports.md));
@@ -97,12 +99,14 @@ Its line protocol with the app, protocol 2, is defined once, in TextMouthBraille
 The Mac app target copies it into Contents/MacOS, and only BrailleTranslator starts it, under WatchedProcess (see Braille files, in [Imports: braille tables and the translator](state/imports-braille-tables.md)).
 
 ## TextMouthFFmpeg, the FFmpeg helper
-<!-- id: ffmpeg-helper-program; keys: FFmpeg, WMA, Matroska, WebM, helper program, C program, libtmffmpeg; src: TextMouthFFmpeg/main.c, TextMouthFFmpeg/Session/session.c, TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h, Scripts/vendor/ffmpeg/build.py, TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift; status: incomplete; issues: FMT54 -->
+<!-- id: ffmpeg-helper-program; keys: FFmpeg, WMA, Matroska, WebM, helper program, C program, libtmffmpeg; src: TextMouthFFmpeg/main.c, TextMouthFFmpeg/Session/session.c, TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h, Scripts/vendor/ffmpeg/build.py, TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Platform/iOS/Services/FFmpegInProcessRun.swift -->
 
 TextMouthFFmpeg, a folder beside the TextMouth source folder, is the C source of a third program built into the app: the helper that runs FFmpeg 9.0.2 (Scripts/vendor/ffmpeg/build.py builds it, as a static library of the Mac and one of the iPhone) to read the formats macOS cannot.
-Only FFmpegAudioConverter starts it, under WatchedProcess.runStreaming, and it confines itself with a sandbox once its file is open (see [Imports: audio only FFmpeg reads](state/imports-audio-ffmpeg.md)).
+Only FFmpegAudioConverter starts it, under WatchedProcess.runStreaming, and on the Mac it confines itself with a sandbox once its file is open (see [Imports: audio only FFmpeg reads](state/imports-audio-ffmpeg.md)).
 Its protocol with the app is defined once, in TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h.
-The iPhone starts no program, so it will run the same session (TextMouthFFmpeg/Session/session.c) inside the app once FMT54 is built.
+The iPhone starts no program, so the app links the same session (TextMouthFFmpeg/Session/session.c, in the library FFmpeg_iOS).
+FFmpegAudioConverter.runSession runs it in the app through InProcessEngine, the one place the two platforms part (see [Imports: audio only FFmpeg reads](state/imports-audio-ffmpeg.md)).
+Both builds of the C files have Clang modules off.
 
 ## Concurrency and threads
 <!-- id: concurrency-threads; keys: MainActor, data race, strict concurrency, thread safety, DispatchQueue, async await, deadlock, Swift concurrency; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/Services/LogWriter.swift, TextMouth/Services/TextCacheUpdateQueue.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/ViewModels/ChapterSpeechCache.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/VoiceCatalog.swift, TextMouth/Services/TranscriptionService.swift, TextMouth/ViewModels/TranscriptionJobCenter.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Services/RecordingCaptureBackend.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/AudioEditing/AudioEditHistoryStore.swift, TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift, TextMouth/Services/BookManifestEditing.swift, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift, project.yml, TextMouthTests/Package.swift, Scripts/check.sh -->
@@ -138,6 +142,8 @@ The files its after-playing sweep and newest-N rule remove go on the imports' qu
 Audio editing reads, renders (LAME encoding an MP3 within a render), and deletes originals off the main thread, as storage work (StorageWork.audioEditing).
 Each change of a book's edit history is made under one lock (AudioEditHistoryStore), and the FFmpeg helper and an installed ffmpeg (the editor's filters) run as child processes, never on the main thread.
 The editor window's model runs on the main actor, measuring the edited audio's levels off it, and plays through an AVPlayer.
+On the iPhone, the in-app engines of braille and FFmpeg count their time by RunningClock.app, which counts only the time TextMouth runs (B18).
+It does so because iOS keeps the system's clocks counting while it holds the app suspended (see [Imports: audio only FFmpeg reads](state/imports-audio-ffmpeg.md#the-in-app-run)).
 
 ### Swift 6 mode and unchecked declarations
 <!-- id: swift6-mode-unchecked-declarations; keys: Swift 6, strict concurrency, unchecked Sendable, nonisolated(unsafe), isolation checks, UncheckedConcurrencyPolicyTests; src: project.yml, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Services/LibraryPersistenceService.swift -->
@@ -150,7 +156,8 @@ SpeechService handles every callback of its direct synthesizer on the main queue
 A render's RenderCancellationObserver, called on whatever thread the synthesizer uses, only sets a flag in an OSAllocatedUnfairLock and signals the semaphore the render queue waits on.
 It is Sendable, as the SDK makes every synthesizer delegate (AVSpeechSynthesizerDelegate is NS_SWIFT_SENDABLE), and the compiler checks it, with no `@unchecked`.
 Speak Info's LibraryInfoSpeechDelegate ends an announcement at once when called on the main thread, and otherwise on the next turn of the main queue, and the reader's WhereAmIDelegateHelper hands each finish and cancel of an announcement to the main queue.
-UncheckedConcurrencyPolicyTests requires a comment naming a lock, queue, actor, or thread on the three lines above each `@unchecked Sendable` or `nonisolated(unsafe)` declaration and pins their counts (30 and 16).
+UncheckedConcurrencyPolicyTests requires a comment naming a lock, queue, actor, or thread on the three lines above each `@unchecked Sendable` or `nonisolated(unsafe)` declaration and pins their counts (31 and 16).
+One `@unchecked Sendable` is LinkedFFmpegSession, the iPhone's open FFmpeg session, whose pointer and descriptor only the FFmpeg engine's one thread uses, one call at a time.
 One `@unchecked Sendable` is ManifestOwedFields, the record of the title and author a manifest is owed, whose one stored property is a constant and UserDefaults is documented thread-safe.
 One `nonisolated(unsafe)` is the record of each feed's index on disk, LibraryPersistenceService.feedIndexesOnDisk, confined to the save queue, and another the record of library.json on disk beside it, libraryIndexOnDisk, confined the same way.
 Work that can block for good, such as listing voices or decoding audio with `AVAssetReader`, runs on a dispatch queue with a deadline and never in Swift's concurrency pool, which has one thread for each core: a blocked task there starves every other task of the process.
