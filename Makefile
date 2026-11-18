@@ -310,12 +310,13 @@ check-selftest:
 	@python3 -I -B Scripts/ios/app-size.py --selftest
 
 ## Build the iPhone app for a device (Release, unsigned, small code) in its own
-## derived data folder under build/, and measure it the way `make check` measures
+## derived data folder, build/ios-size-DerivedData (an absolute path, which
+## app-size.py defines once and `make check` uses too), and measure it the way `make check` measures
 ## the Mac app, plus the IPA and the App Store download estimate. The build takes
 ## the heavy-work lock, so it waits behind any build or test run already going.
 ## IOS_SIZE_ARGS passes options to Scripts/ios/app-size.py build, such as --json.
 ios-size: generate
-	@python3 -I -B Scripts/agents/run_locked.py ios-size python3 -I -B Scripts/ios/app-size.py build --derived-data "$(BUILD_DIR)/ios-size-DerivedData" $(IOS_SIZE_ARGS)
+	@python3 -I -B Scripts/agents/run_locked.py ios-size python3 -I -B Scripts/ios/app-size.py build $(IOS_SIZE_ARGS)
 
 ## Define the merge driver that .gitattributes names for Issues/*.md, in this
 ## repository's config, which every worktree (the train's too) shares; run it once.
