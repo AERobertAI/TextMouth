@@ -177,8 +177,9 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
     /// returned. The bound counts every channel: in Matroska made by the
     /// test, one PCM block of exactly that many samples in stereo (8,388,608
     /// a channel) and in eight channels (2,097,152 a channel) decodes whole,
-    /// and one of a sample frame more gives no frame and ends with status 6,
-    /// damaged, as a file of only refused packets does. A minute of 48 kHz
+    /// and one of a sample frame more ends the decode with status 13, a frame
+    /// too large, said in its own sentence, not as a damaged packet whose
+    /// loss the length check would blame on the file. A minute of 48 kHz
     /// stereo in one chunk (5.76 million) is well within it.
     func testNoDecodedFrameHoldsMoreSamplesThanTheBound() async throws {
         for channels in [2, 8] {
@@ -193,8 +194,20 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
                 try matroskaOfOnePCMBlock(channels: channels, framesPerChannel: atTheBound + 1, named: "past-the-bound-\(channels).mka"),
                 demuxer: "matroska"
             )
-            XCTAssertEqual(pastIt.ending, WatchedProcess.Ending(outcome: .exited(status: 6)), "\(channels) channels: a frame past the bound was decoded")
+            XCTAssertEqual(pastIt.ending, WatchedProcess.Ending(outcome: .exited(status: 13)), "\(channels) channels: a frame past the bound was not told as such")
             XCTAssertNil(pastIt.frames, "\(channels) channels")
+        }
+        // The conversion says so in its own sentence.
+        let copy = try matroskaOfOnePCMBlock(channels: 2, framesPerChannel: 8_388_609, named: "Long Chunk.mka")
+        do {
+            _ = try await FFmpegAudioConverter.convert(copy, using: try bundledFFmpegTool())
+            XCTFail("a frame past the bound was converted")
+        } catch {
+            XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .frameTooLarge(fileName: "Long Chunk.mka"))
+            XCTAssertEqual(
+                error.localizedDescription,
+                "TextMouth can't convert “Long Chunk.mka”: part of its sound is stored in one piece too large for TextMouth to decode."
+            )
         }
     }
 

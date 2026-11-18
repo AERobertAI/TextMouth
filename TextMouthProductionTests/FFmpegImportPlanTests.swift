@@ -163,7 +163,7 @@ final class FFmpegImportPlanTests: XCTestCase {
     /// sentence, and any other the converter's code.
     func testEachExitStatusHasItsFailure() {
         let limits = WatchedProcess.Limits(maximumSeconds: 10, maximumResidentBytes: 1, maximumStalledSeconds: 10)
-        let words = [Int32](arrayLiteral: 2, 3, 4, 5, 6, 7, 9, 12, 70, 71, 1, 8, 10, 99).map {
+        let words = [Int32](arrayLiteral: 2, 3, 4, 5, 6, 7, 9, 12, 13, 70, 71, 1, 8, 10, 99).map {
             FFmpegAudioConverter.failure(forExitStatus: $0, fileName: "Lecture.wma", kind: "WMA", limits: limits).localizedDescription
         }
         XCTAssertEqual(words, [
@@ -176,6 +176,7 @@ final class FFmpegImportPlanTests: XCTestCase {
             "Converting Lecture.wma was stopped because it needed more memory than it may use.",
             "TextMouth's converter could not make itself safe before reading “Lecture.wma”, so it did not read the file. "
                 + "Install TextMouth again, then import the file again.",
+            "TextMouth can't convert “Lecture.wma”: part of its sound is stored in one piece too large for TextMouth to decode.",
             "TextMouth's converter stopped unexpectedly while reading “Lecture.wma”. The file may be damaged.",
             "Converting Lecture.wma was stopped because it used more than 40 seconds of processor time.",
             "Converting Lecture.wma failed (the converter ended with code 1).",

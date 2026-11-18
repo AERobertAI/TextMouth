@@ -72,7 +72,8 @@ enum { READ_BUFFER_BYTES = 64 * 1024 };
    eight channels; Monkey's Audio's largest frame, about 2.4 million in stereo; FLAC's largest
    block, about 0.5 million in eight channels. Past it, a crafted packet of PCM or an ALAC frame
    length could make one decoder call allocate hundreds of megabytes, which nothing could stop
-   until the call returned. */
+   until the call returned. The session's own buffer callback (frame_buffer) keeps it, so that a
+   frame past it is told for what it is (TMFF_EXIT_FRAME_TOO_LARGE), not as a damaged packet. */
 #define MAX_DECODED_SAMPLES (16 * 1024 * 1024)
 
 /* About how many bytes of samples one PCM record holds: a quarter of a megabyte, a second and a
@@ -182,6 +183,8 @@ struct tmff_session {
     uint64_t frames_written;
     uint32_t packet_errors;
     uint32_t frame_errors;
+    /* Set by frame_buffer when the decoder asked for a frame past MAX_DECODED_SAMPLES. */
+    int frame_too_large;
 
     /* The record being given, header and payload. */
     unsigned char *record;
@@ -442,6 +445,21 @@ static int open_failure(const tmff_session *session, int error) {
     return TMFF_EXIT_NOT_RECOGNIZED;
 }
 
+/* The decoder's buffer callback (AVCodecContext.get_buffer2, whose context's opaque is the
+   session): FFmpeg's own buffers (avcodec_default_get_buffer2) for a frame of at most
+   MAX_DECODED_SAMPLES samples over its channels, and AVERROR(EINVAL) for a larger one, before any
+   of it is allocated, with frame_too_large set, so that the decode ends saying so. FFmpeg sets an
+   audio frame's samples and channel layout before it asks for its buffers. */
+static int frame_buffer(AVCodecContext *decoder, AVFrame *frame, int flags) {
+    tmff_session *session = decoder->opaque;
+    const int channels = frame->ch_layout.nb_channels > 0 ? frame->ch_layout.nb_channels : decoder->ch_layout.nb_channels;
+    if ((int64_t)frame->nb_samples * (channels > 0 ? channels : 1) > MAX_DECODED_SAMPLES) {
+        session->frame_too_large = 1;
+        return AVERROR(EINVAL);
+    }
+    return avcodec_default_get_buffer2(decoder, frame, flags);
+}
+
 /* Opens the decoder of the chosen stream; 0, or a TMFF_EXIT_ number. */
 static int open_decoder(tmff_session *session) {
     const AVStream *stream = session->format->streams[session->stream_index];
@@ -461,9 +479,10 @@ static int open_decoder(tmff_session *session) {
        up (a fault on a decoding thread of FFmpeg's own would not meet it), and no thread's stack
        is left out of the helper's memory count. Set before avcodec_open2, which starts threads. */
     session->decoder->thread_count = 1;
-    /* No decoded frame larger than MAX_DECODED_SAMPLES: FFmpeg refuses one before allocating it,
-       and the session counts the refusal as a damaged packet. */
-    session->decoder->max_samples = MAX_DECODED_SAMPLES;
+    /* No decoded frame larger than MAX_DECODED_SAMPLES: the session's own buffer callback refuses
+       one before any of it is allocated. */
+    session->decoder->opaque = session;
+    session->decoder->get_buffer2 = frame_buffer;
     const int error = avcodec_open2(session->decoder, codec, NULL);
     if (error < 0) {
         return error == AVERROR(ENOMEM) ? TMFF_EXIT_MEMORY : TMFF_EXIT_DAMAGED;
@@ -733,6 +752,10 @@ static int next_frame(tmff_session *session) {
             return -TMFF_EXIT_MEMORY;
         }
         if (received != AVERROR(EAGAIN)) {
+            /* A frame past the bound ends the decode as such, never skipped as damaged. */
+            if (session->frame_too_large) {
+                return -TMFF_EXIT_FRAME_TOO_LARGE;
+            }
             session->frame_errors++;
             if (++errors_in_a_row > MAX_ERRORS_IN_A_ROW) {
                 return -TMFF_EXIT_DAMAGED;
@@ -770,6 +793,10 @@ static int next_frame(tmff_session *session) {
                 return -TMFF_EXIT_MEMORY;
             }
             if (sent < 0 && sent != AVERROR(EAGAIN)) {
+                if (session->frame_too_large) {
+                    av_packet_unref(session->packet);
+                    return -TMFF_EXIT_FRAME_TOO_LARGE;
+                }
                 session->packet_errors++;
             }
         }

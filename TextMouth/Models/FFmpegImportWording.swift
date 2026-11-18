@@ -113,6 +113,15 @@ enum FFmpegImportWording {
         "TextMouth can't convert “\(fileName)”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."
     }
 
+    /// Why a file was not imported one frame of whose sound holds more
+    /// samples than TextMouth decodes at once (16,777,216 over its channels,
+    /// almost three minutes of 48 kHz stereo in one piece), where a good file
+    /// holds far fewer: "TextMouth can't convert “Radio.mkv”: part of its
+    /// sound is stored in one piece too large for TextMouth to decode."
+    static func frameTooLarge(fileName: String) -> String {
+        "TextMouth can't convert “\(fileName)”: part of its sound is stored in one piece too large for TextMouth to decode."
+    }
+
     /// Why a file was not imported when the converter stopped unexpectedly
     /// reading it, as a damaged file can make it do (the TODO's FU-FFMPEG
     /// item: a crashed helper's own sentence): "TextMouth's converter stopped

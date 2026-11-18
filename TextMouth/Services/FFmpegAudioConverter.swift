@@ -421,6 +421,8 @@ enum FFmpegAudioConverter {
             return ImportAudioConverter.Failure.notRead(fileName: fileName, problem: .damaged)
         case TMFF_EXIT_FORM_CHANGED:
             return Failure.formChanged(fileName: fileName)
+        case TMFF_EXIT_FRAME_TOO_LARGE:
+            return Failure.frameTooLarge(fileName: fileName)
         case TMFF_EXIT_MEMORY:
             return ImportAudioConverter.Failure.killed(fileName: fileName, reason: FFmpegImportWording.neededTooMuchMemory)
         case TMFF_EXIT_NOT_CONFINED:
@@ -536,6 +538,9 @@ enum FFmpegAudioConverter {
         case soundNotDecoded(fileName: String)
         /// The sound changes its rate, channels, or form partway through.
         case formChanged(fileName: String)
+        /// One frame of the sound holds more samples than the session
+        /// decodes at once (TMFF_EXIT_FRAME_TOO_LARGE).
+        case frameTooLarge(fileName: String)
         /// The helper crashed (a fatal signal) reading the file (the TODO's
         /// FU-FFMPEG item: a crashed helper's own sentence).
         case crashed(fileName: String)
@@ -554,6 +559,7 @@ enum FFmpegAudioConverter {
             case let .noSound(fileName): return FFmpegImportWording.noSound(fileName: fileName)
             case let .soundNotDecoded(fileName): return FFmpegImportWording.soundNotDecoded(fileName: fileName)
             case let .formChanged(fileName): return FFmpegImportWording.formChanged(fileName: fileName)
+            case let .frameTooLarge(fileName): return FFmpegImportWording.frameTooLarge(fileName: fileName)
             case let .notConfined(fileName): return FFmpegImportWording.notConfined(fileName: fileName)
             case let .crashed(fileName): return FFmpegImportWording.crashed(fileName: fileName)
             case let .endedEarly(fileName): return FFmpegImportWording.endedEarly(fileName: fileName)
