@@ -408,6 +408,9 @@ final class FFmpegImportSnifferTests: XCTestCase {
             ("no sound", matroskaFile(tracks: [MatroskaTrack(type: 1, encryption: 5)])),
             ("no tracks", matroskaFile(tracks: [])),
             ("tracks after a cluster", matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5)], clusterFirst: true)),
+            // RFC 9559: a ContentEncryption counts only when its encoding's type is 1, and the type's default is 0.
+            ("an encryption in a compression's encoding", matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5, encodingType: 0)])),
+            ("an encryption with no encoding type", matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5, encodingType: nil)])),
         ]
         for (name, bytes) in cases {
             XCTAssertFalse(MatroskaHeader.isCopyProtected(bytes: bytes), name)
@@ -532,6 +535,10 @@ struct MatroskaTrack {
     var type: UInt8
     var encryption: Int?
     var compressed = false
+    /// The ContentEncodingType written with the encryption: 1, as it is for
+    /// an encrypted track; 0 is compression, and `nil` leaves it out (its
+    /// default is 0).
+    var encodingType: Int? = 1
 }
 
 extension XCTestCase {
@@ -565,7 +572,7 @@ extension XCTestCase {
             var fields = ebmlByte([0xD7], index + 1) + ebmlByte([0x83], Int(track.type)) + ebmlElement([0x86], Array("A_TEST".utf8))
             var encodings: [UInt8] = ebmlByte([0x50, 0x31], 0) + ebmlByte([0x50, 0x32], 1)
             if let algorithm = track.encryption {
-                encodings += ebmlByte([0x50, 0x33], 1)
+                if let type = track.encodingType { encodings += ebmlByte([0x50, 0x33], type) }
                 encodings += ebmlElement([0x50, 0x35], ebmlByte([0x47, 0xE1], algorithm) + ebmlElement([0x47, 0xE2], [1, 2, 3]))
             }
             if track.compressed {

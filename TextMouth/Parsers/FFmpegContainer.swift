@@ -259,12 +259,18 @@ enum ASFHeader {
 // MARK: - The Matroska Header
 
 /// What TextMouth reads of a Matroska or WebM file's header (B19): only
-/// whether its sound is encrypted. The Matroska specification puts an
+/// whether its sound is encrypted. The format is the Matroska specification,
+/// RFC 9559 (Matroska Media Container Format, 2024), whose elements are
+/// EBML, RFC 8794 (Extensible Binary Meta Language, 2020): the identifiers,
+/// variable-size integers, and "unknown size" below are its. It puts an
 /// encrypted track's mark in its track entry, before any sound:
 /// Segment > Tracks > TrackEntry > ContentEncodings > ContentEncoding >
-/// ContentEncryption, whose ContentEncAlgo is 0 for "not encrypted" and
-/// 1 to 5 for DES, 3DES, Twofish, Blowfish, and AES. (A ContentCompression
-/// beside it, which many good files carry to strip headers, is no mark.)
+/// ContentEncryption, which counts only when the ContentEncoding's
+/// ContentEncodingType (0x5033, default 0) is 1 (encryption; 0 is
+/// compression, and a ContentEncryption beside it MUST be ignored), and
+/// whose ContentEncAlgo is 0 for "not encrypted" and 1 to 5 for DES, 3DES,
+/// Twofish, Blowfish, and AES. (A ContentCompression, which many good files
+/// carry to strip headers, is no mark.)
 ///
 /// The file is a tree of EBML elements: an identifier of 1 to 4 bytes (its
 /// first byte's leading zeros give its length, and its marker bit is kept),
@@ -272,7 +278,10 @@ enum ASFHeader {
 /// ones means "unknown"), then the body. The walk reads each top-level
 /// element's header alone and skips its body by its size, so a large file
 /// costs a few small reads, and stops at the first Cluster (the sound
-/// itself), which no good file puts before its Tracks. Every read is
+/// itself). The specification lets Tracks follow the Clusters when a
+/// SeekHead names it, which the walk does not follow: such a file, rare
+/// since writers put Tracks first, is not told as protected and goes on to
+/// the session as it did before B19. Every read is
 /// checked against the bytes at hand, every size must end inside its
 /// parent, and the counts and sizes walked are bounded, so a damaged or
 /// hostile header costs a bounded walk and is judged by what came before it.
@@ -293,6 +302,7 @@ enum MatroskaHeader {
         static let trackType: UInt32 = 0x83
         static let contentEncodings: UInt32 = 0x6D80
         static let contentEncoding: UInt32 = 0x6240
+        static let contentEncodingType: UInt32 = 0x5033
         static let contentEncryption: UInt32 = 0x5035
         static let contentEncAlgo: UInt32 = 0x47E1
     }
@@ -388,12 +398,20 @@ enum MatroskaHeader {
         return audio > 0 && encrypted == audio
     }
 
+    /// The ContentEncodingType's value for encryption (0, its default, is compression).
+    private static let encryptionEncodingType: UInt64 = 1
+
     /// Whether a track entry's `fields` (elements of `bytes`) hold a
-    /// ContentEncryption whose algorithm is not 0 ("not encrypted").
+    /// ContentEncoding of type 1 (encryption) with a ContentEncryption whose
+    /// algorithm is not 0 ("not encrypted"). A ContentEncryption in an
+    /// encoding of any other type is ignored, as RFC 9559 says.
     private static func isEncrypted(trackFields fields: [Element], in bytes: [UInt8]) -> Bool {
         for encodings in fields where encodings.id == ID.contentEncodings {
             for encoding in elements(in: bytes, from: encodings.start, to: encodings.end) where encoding.id == ID.contentEncoding {
-                for part in elements(in: bytes, from: encoding.start, to: encoding.end) where part.id == ID.contentEncryption {
+                let parts = elements(in: bytes, from: encoding.start, to: encoding.end)
+                let type = parts.first { $0.id == ID.contentEncodingType }.flatMap { unsigned(bytes, $0) } ?? 0
+                guard type == encryptionEncodingType else { continue }
+                for part in parts where part.id == ID.contentEncryption {
                     let algorithm = elements(in: bytes, from: part.start, to: part.end)
                         .first { $0.id == ID.contentEncAlgo }.flatMap { unsigned(bytes, $0) }
                     if let algorithm, algorithm != 0 { return true }
