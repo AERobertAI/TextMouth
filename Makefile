@@ -132,7 +132,7 @@ help:
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
 	@echo "  make typecheck-tests - The same for the Mac's hosted test target too, before a train request (REF=commit checks that commit)"
-	@echo "  make typecheck-ios-tests - The iPhone's unit tests (and the Mac test files they share) compiled for iOS"
+	@echo "  make typecheck-ios-tests - The iPhone's unit tests (and the Mac test files they share) and its interface tests compiled for iOS"
 	@echo "  make typecheck-tests-census - Which of the Mac's tests compile for the iPhone (slow; writes census.md)"
 	@echo "  make mac-projection BASE=main - Show what a branch changes in the code the Mac compiles (DIFF=1 for every line)"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
@@ -393,9 +393,11 @@ typecheck-tests:
 	@python3 -I Scripts/ios/typecheck.py --platform macos --tests $(if $(REF),--ref $(REF),)
 
 ## The iPhone's unit tests (TextMouthiOSTests, with the Mac test files that
-## project.yml lists for it by path) compiled for the iPhone with SwiftPM, no
-## simulator needed: run it, with typecheck-tests, before a train request that
-## touches either bundle's files (REF=<commit> as above).
+## project.yml lists for it by path) and its interface tests (TextMouthiOSUITests,
+## the XCUITest bundle that runs only on GitHub) compiled for the iPhone with
+## SwiftPM, no simulator needed: run it, with typecheck-tests, before a train
+## request that touches either bundle's files (REF=<commit> as above). One
+## target covers both bundles, so that the interface tests' check cannot be skipped.
 typecheck-ios-tests:
 	@python3 -I Scripts/ios/typecheck.py --platform ios --tests $(if $(REF),--ref $(REF),)
 

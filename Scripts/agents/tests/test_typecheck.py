@@ -68,6 +68,8 @@ FILES = {
     "TextMouthTests/Sources/Tests/ListedB.swift": "// b\n",
     "TextMouthTests/Sources/Tests/NotMine.swift": "// not listed for the tests\n",
     "TextMouthiOSTests/PhoneTests.swift": "// the iPhone's own\n",
+    "TextMouthiOSUITests/LibraryUITests.swift": "import XCTest\n",
+    "TextMouthiOSUITests/Notes.txt": "not Swift\n",
     "Scripts/test/areas.conf": "[demo] a demo area\nFirstTests\n",
     str(typecheck.RESOLVED): json.dumps({"pins": [
         {"identity": identity, "location": f"https://example.invalid/{identity}", "state": {"revision": "0" * 40}}
@@ -135,6 +137,15 @@ class SourceTests(TypecheckTestsCase):
         found = sorted(str(p.relative_to(self.src / typecheck.IOS_TEST_TARGET)) for p in
                        (self.src / typecheck.IOS_TEST_TARGET).rglob("*") if p.is_file())
         self.assertEqual(found, ["PhoneTests.swift", "_SharedWithTheMac/FirstTests.swift"])
+
+    def test_the_iphone_tests_copy_holds_the_interface_tests_swift_files_only(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="ios")
+        found = sorted(p.name for p in (self.src / typecheck.IOS_UI_TEST_TARGET).rglob("*") if p.is_file())
+        self.assertEqual(found, ["LibraryUITests.swift"])
+
+    def test_the_mac_tests_copy_holds_no_interface_tests(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests=True)
+        self.assertFalse((self.src / typecheck.IOS_UI_TEST_TARGET).exists())
 
     def test_the_census_copy_holds_all_of_the_mac_tests_and_the_area_list(self):
         typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="census")
@@ -220,6 +231,24 @@ class PackageTests(TypecheckTestsCase):
         self.assertIn(f'path: "{typecheck.IOS_TEST_TARGET}"', text)
         self.assertIn('"-F", "/platform/Developer/Library/Frameworks"', text)
 
+    def test_the_iphone_package_has_the_interface_test_target_on_xctest_alone(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="ios")
+        with mock.patch.object(typecheck, "run", lambda *a, **k: SimpleNamespace(stdout="/platform\n")):
+            typecheck.write_package(self.src, self.folder / "pkgs", "ios", "26.0", "ios")
+        text = (self.src / "Package.swift").read_text()
+        block = text.split(f'name: "{typecheck.IOS_UI_TEST_TARGET}"')[1].split("),")[0]
+        self.assertIn(f'path: "{typecheck.IOS_UI_TEST_TARGET}"', block)
+        self.assertNotIn("dependencies", block, "the interface tests drive the app from outside and link none of it")
+        self.assertIn('"-F", "/platform/Developer/Library/Frameworks"', block, "XCTest is found as the unit tests find it")
+        self.assertEqual(text.count(".testTarget("), 2)
+
+    def test_only_the_iphone_tests_package_has_the_interface_test_target(self):
+        for kind, platform in ((True, "macos"), ("census", "ios"), (False, "ios")):
+            typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests=kind)
+            with mock.patch.object(typecheck, "run", lambda *a, **k: SimpleNamespace(stdout="/platform\n")):
+                typecheck.write_package(self.src, self.folder / "pkgs", platform, "26.0", kind)
+            self.assertNotIn(typecheck.IOS_UI_TEST_TARGET, (self.src / "Package.swift").read_text(), (kind, platform))
+
     def test_files_to_skip_are_left_out_of_the_target(self):
         typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="census")
         typecheck.write_package(self.src, self.folder / "pkgs", "macos", "26.0", "census", ["FirstTests.swift"])
@@ -283,6 +312,21 @@ class SummaryTests(TypecheckTestsCase):
             self.line("TextMouthProductionTests/FirstTests.swift", "error", "a", 713),
             self.line(f"{typecheck.LISTED_TESTS_FOLDER}/ListedB.swift", "error", "b", 256)])
         self.assertEqual(count, 2)
+
+    def test_an_error_in_an_interface_test_is_reported_under_its_path(self):
+        _, count, errors = self.summarize([
+            self.line("TextMouthiOSUITests/LibraryUITests.swift", "error", "cannot find 'x' in scope", 42)])
+        self.assertEqual(count, 1)
+        self.assertEqual(errors, "TextMouthiOSUITests/LibraryUITests.swift:42:3: error: cannot find 'x' in scope\n")
+
+    def test_two_builds_succeed_only_when_both_finished(self):
+        one = "Build of target: 'TextMouthiOSTests' complete! (1.00s)"
+        two = "Build of target: 'TextMouthiOSUITests' complete! (1.00s)"
+        out = self.folder / "out"
+        for log, builds, wanted in ((f"{one}\n{two}\n", 2, True), (f"{one}\n[1/2] Compiling\n", 2, False),
+                                    (f"{one}\n", 1, True)):
+            _, _, _, succeeded = typecheck.summarize(log, self.src, "# header", out, True, builds=builds)
+            self.assertEqual(succeeded, wanted, (log, builds))
 
     def test_a_warning_in_a_test_file_counts_and_one_in_vendored_code_does_not(self):
         summary, count, _ = self.summarize([
@@ -370,10 +414,43 @@ class MainTests(TypecheckTestsCase):
 
     def test_the_iphone_tests_build_the_iphone_target_under_the_lock_in_a_folder_of_their_own(self):
         self.assertEqual(self.main("--platform", "ios", "--tests"), 0)
-        self.assertEqual(self.commands[0][self.commands[0].index("--target") + 1], typecheck.IOS_TEST_TARGET)
-        self.assertIn("--triple", self.commands[0])
-        self.assertEqual(self.lock_seen, [True])
+        # Two builds, the unit tests' and then the interface tests', both for the iPhone and both under the one lock.
+        self.assertEqual([c[c.index("--target") + 1] for c in self.commands],
+                         [typecheck.IOS_TEST_TARGET, typecheck.IOS_UI_TEST_TARGET])
+        self.assertTrue(all("--triple" in c for c in self.commands))
+        self.assertEqual(self.lock_seen, [True, True])
+        self.assertTrue((typecheck.WORK_ROOT / "ios-tests" / "src" / typecheck.IOS_UI_TEST_TARGET).is_dir())
         self.assertTrue((typecheck.WORK_ROOT / "ios-tests" / "src" / typecheck.IOS_TEST_TARGET / "_SharedWithTheMac").is_dir())
+
+    def test_an_interface_test_that_does_not_compile_fails_the_run_even_when_the_unit_tests_do(self):
+        """The unit tests' build is clean and the interface tests' is not: the run fails and names the file, as GitHub would."""
+        bad = typecheck.WORK_ROOT / "ios-tests" / "src" / "TextMouthiOSUITests" / "LibraryUITests.swift"
+        logs = iter(["Build of target: 'TextMouthiOSTests' complete! (1s)\n",
+                     f"{bad}:9:5: error: cannot find 'nothing' in scope\n"])
+
+        def build(command, **options):
+            """`swift build` with the next canned log; any other command runs for real."""
+            if command[0] != "swift":
+                return self.real_run(command, **options)
+            self.commands.append(command)
+            return SimpleNamespace(stdout=next(logs), stderr="", returncode=0)
+        with mock.patch.object(typecheck.subprocess, "run", build):
+            self.assertEqual(self.main("--platform", "ios", "--tests"), 1)
+        errors = (next(typecheck.RESULTS.iterdir()) / "errors.txt").read_text()
+        self.assertEqual(errors, "TextMouthiOSUITests/LibraryUITests.swift:9:5: error: cannot find 'nothing' in scope\n")
+        self.assertEqual(len(self.commands), 2, "the interface tests were not built after the unit tests")
+
+    def test_an_interface_test_build_that_never_finishes_fails_the_run(self):
+        """A second build that stops with no recognizable error (a package problem) is not a pass."""
+        logs = iter(["Build of target: 'TextMouthiOSTests' complete! (1s)\n", "error: something odd\n"])
+
+        def build(command, **options):
+            """`swift build` with the next canned log; any other command runs for real."""
+            if command[0] != "swift":
+                return self.real_run(command, **options)
+            return SimpleNamespace(stdout=next(logs), stderr="", returncode=1)
+        with mock.patch.object(typecheck.subprocess, "run", build):
+            self.assertEqual(self.main("--platform", "ios", "--tests"), 1)
 
     def test_a_census_that_finds_no_error_is_one_build(self):
         with mock.patch.object(typecheck, "census_report", lambda result, src: "report\n"):
