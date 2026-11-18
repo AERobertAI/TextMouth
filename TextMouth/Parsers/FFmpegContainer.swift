@@ -3,7 +3,8 @@ import Foundation
 /// The containers only ffmpeg reads (FMT31, FMT32), told from a file's first
 /// bytes alone, so the import names ffmpeg's demuxer itself (`-f`) and ffmpeg
 /// never guesses a format from bytes it cannot trust; and whether a Windows
-/// Media file is copy-protected, which is refused before any program runs.
+/// Media file, or a Matroska or WebM file, is copy-protected, which is refused
+/// before any program runs.
 ///
 /// Nothing here uses an Apple audio API or decodes a sample: the bytes are
 /// read with `AudioContentSniffer.firstBytes(of:upTo:from:)` (one open, a
@@ -252,5 +253,196 @@ enum ASFHeader {
             value = value << 8 | UInt64(bytes[offset + index])
         }
         return value
+    }
+}
+
+// MARK: - The Matroska Header
+
+/// What TextMouth reads of a Matroska or WebM file's header (B19): only
+/// whether its sound is encrypted. The Matroska specification puts an
+/// encrypted track's mark in its track entry, before any sound:
+/// Segment > Tracks > TrackEntry > ContentEncodings > ContentEncoding >
+/// ContentEncryption, whose ContentEncAlgo is 0 for "not encrypted" and
+/// 1 to 5 for DES, 3DES, Twofish, Blowfish, and AES. (A ContentCompression
+/// beside it, which many good files carry to strip headers, is no mark.)
+///
+/// The file is a tree of EBML elements: an identifier of 1 to 4 bytes (its
+/// first byte's leading zeros give its length, and its marker bit is kept),
+/// a size of 1 to 8 bytes (the same, with the marker bit taken off; all
+/// ones means "unknown"), then the body. The walk reads each top-level
+/// element's header alone and skips its body by its size, so a large file
+/// costs a few small reads, and stops at the first Cluster (the sound
+/// itself), which no good file puts before its Tracks. Every read is
+/// checked against the bytes at hand, every size must end inside its
+/// parent, and the counts and sizes walked are bounded, so a damaged or
+/// hostile header costs a bounded walk and is judged by what came before it.
+///
+/// Only audio tracks (TrackType 2) count, and the file is protected only
+/// when it has one and every audio track is encrypted: a good file, whose
+/// picture is encrypted and whose sound is not, or which has a plain sound
+/// track beside an encrypted one, must never be called protected. A file
+/// that names none of this is not protected.
+enum MatroskaHeader {
+    /// The identifiers (marker bits kept) of the elements the walk names.
+    private enum ID {
+        static let ebml: UInt32 = 0x1A45_DFA3
+        static let segment: UInt32 = 0x1853_8067
+        static let cluster: UInt32 = 0x1F43_B675
+        static let tracks: UInt32 = 0x1654_AE6B
+        static let trackEntry: UInt32 = 0xAE
+        static let trackType: UInt32 = 0x83
+        static let contentEncodings: UInt32 = 0x6D80
+        static let contentEncoding: UInt32 = 0x6240
+        static let contentEncryption: UInt32 = 0x5035
+        static let contentEncAlgo: UInt32 = 0x47E1
+    }
+
+    /// TrackType's value for an audio track.
+    private static let audioTrackType: UInt64 = 2
+
+    /// The most top-level elements stepped over before Tracks is found.
+    static let maximumTopLevelElements = 1_000
+
+    /// The most of a Tracks element read: 4 MB, far more than any file's
+    /// track entries hold (a track's codec private data is the large part).
+    static let maximumTracksBytes = 4 * 1_048_576
+
+    /// The most elements walked inside one parent, so a body of a million
+    /// tiny elements costs a bounded walk.
+    static let maximumElements = 10_000
+
+    /// An element's header: its identifier, where its body starts (from the
+    /// header's own start), and the body's size (nil when it is "unknown").
+    private struct Header {
+        var id: UInt32
+        var bodyStart: Int
+        var size: UInt64?
+    }
+
+    /// An element inside bytes at hand: its identifier and its body's range.
+    private struct Element {
+        var id: UInt32
+        var start: Int
+        var end: Int
+    }
+
+    /// Whether the Matroska or WebM file at `url` is encrypted; false when
+    /// it is not such a file or cannot be read. Reads the headers of the
+    /// elements before Tracks, and Tracks whole (`maximumTracksBytes`).
+    static func isCopyProtected(fileAt url: URL) -> Bool {
+        isCopyProtected { offset, count in
+            AudioContentSniffer.firstBytes(of: url, upTo: count, from: Int(clamping: offset)) ?? []
+        }
+    }
+
+    /// Whether `bytes`, a file's bytes, whole or in part, hold an encrypted
+    /// sound: the same walk over bytes at hand (the form the tests use).
+    static func isCopyProtected(bytes: [UInt8]) -> Bool {
+        isCopyProtected { offset, count in
+            guard offset < UInt64(bytes.count) else { return [] }
+            return Array(bytes[Int(offset)..<min(bytes.count, Int(offset) + count)])
+        }
+    }
+
+    /// The walk over the file as `read` gives it: the bytes at an offset, up
+    /// to a count, fewer (or none) where the file ends.
+    private static func isCopyProtected(read: (UInt64, Int) -> [UInt8]) -> Bool {
+        /// The header of the element that starts at `offset`, nil when the
+        /// bytes there are no element's header.
+        func header(at offset: UInt64) -> Header? {
+            header(in: read(offset, 12), at: 0)
+        }
+        // The EBML header comes first, then the Segment that holds the rest.
+        guard let first = header(at: 0), first.id == ID.ebml, let firstSize = first.size,
+              firstSize < UInt64(maximumTracksBytes) else { return false }
+        var position = UInt64(first.bodyStart) + firstSize
+        guard let segment = header(at: position), segment.id == ID.segment else { return false }
+        position += UInt64(segment.bodyStart)
+        for _ in 0..<maximumTopLevelElements {
+            guard let element = header(at: position), element.id != ID.cluster, let size = element.size else { return false }
+            let bodyAt = position + UInt64(element.bodyStart)
+            if element.id == ID.tracks {
+                guard size <= UInt64(maximumTracksBytes) else { return false }
+                let body = read(bodyAt, Int(size))
+                return UInt64(body.count) == size && holdsOnlyEncryptedSound(tracks: body)
+            }
+            let (next, overflowed) = bodyAt.addingReportingOverflow(size)
+            guard !overflowed else { return false }
+            position = next
+        }
+        return false
+    }
+
+    /// Whether `tracks`, the body of a Tracks element, holds an audio track
+    /// and every one of its audio tracks is encrypted.
+    private static func holdsOnlyEncryptedSound(tracks: [UInt8]) -> Bool {
+        var audio = 0
+        var encrypted = 0
+        for entry in elements(in: tracks, from: 0, to: tracks.count) where entry.id == ID.trackEntry {
+            let fields = elements(in: tracks, from: entry.start, to: entry.end)
+            let type = fields.first { $0.id == ID.trackType }.flatMap { unsigned(tracks, $0) }
+            guard type == audioTrackType else { continue }
+            audio += 1
+            if isEncrypted(trackFields: fields, in: tracks) { encrypted += 1 }
+        }
+        return audio > 0 && encrypted == audio
+    }
+
+    /// Whether a track entry's `fields` (elements of `bytes`) hold a
+    /// ContentEncryption whose algorithm is not 0 ("not encrypted").
+    private static func isEncrypted(trackFields fields: [Element], in bytes: [UInt8]) -> Bool {
+        for encodings in fields where encodings.id == ID.contentEncodings {
+            for encoding in elements(in: bytes, from: encodings.start, to: encodings.end) where encoding.id == ID.contentEncoding {
+                for part in elements(in: bytes, from: encoding.start, to: encoding.end) where part.id == ID.contentEncryption {
+                    let algorithm = elements(in: bytes, from: part.start, to: part.end)
+                        .first { $0.id == ID.contentEncAlgo }.flatMap { unsigned(bytes, $0) }
+                    if let algorithm, algorithm != 0 { return true }
+                }
+            }
+        }
+        return false
+    }
+
+    /// The elements, in order, between `start` and `end` of `bytes`, at most
+    /// `maximumElements`. The walk stops at the first element whose header
+    /// is broken, whose size is unknown, or whose body runs past `end`.
+    private static func elements(in bytes: [UInt8], from start: Int, to end: Int) -> [Element] {
+        var found: [Element] = []
+        var position = start
+        while position < end, found.count < maximumElements {
+            let window = Array(bytes[position..<min(end, position + 12)])
+            guard let head = header(in: window, at: 0), let size = head.size,
+                  size <= UInt64(end - position - head.bodyStart) else { break }
+            let bodyStart = position + head.bodyStart
+            found.append(Element(id: head.id, start: bodyStart, end: bodyStart + Int(size)))
+            position = bodyStart + Int(size)
+        }
+        return found
+    }
+
+    /// The element header at `offset` of `bytes`: an identifier of 1 to 4
+    /// bytes, then a size of 1 to 8; nil when either is cut short or its
+    /// first byte (0, or too many zeros) gives no such length.
+    private static func header(in bytes: [UInt8], at offset: Int) -> Header? {
+        guard offset < bytes.count else { return nil }
+        let idLength = bytes[offset].leadingZeroBitCount + 1
+        guard idLength <= 4, offset + idLength < bytes.count else { return nil }
+        let id = bytes[offset..<(offset + idLength)].reduce(UInt32(0)) { $0 << 8 | UInt32($1) }
+        let sizeAt = offset + idLength
+        let sizeLength = bytes[sizeAt].leadingZeroBitCount + 1
+        guard sizeLength <= 8, sizeAt + sizeLength <= bytes.count else { return nil }
+        // The size's marker bit is taken off; every other bit set is "unknown".
+        var size = UInt64(bytes[sizeAt] & (0xFF >> UInt8(sizeLength)))
+        for byte in bytes[(sizeAt + 1)..<(sizeAt + sizeLength)] { size = size << 8 | UInt64(byte) }
+        let unknown = size == (UInt64(1) << UInt64(7 * sizeLength)) - 1
+        return Header(id: id, bodyStart: sizeAt + sizeLength - offset, size: unknown ? nil : size)
+    }
+
+    /// The big-endian unsigned number an element's body holds (up to eight
+    /// bytes; nil for an empty or longer body).
+    private static func unsigned(_ bytes: [UInt8], _ element: Element) -> UInt64? {
+        let length = element.end - element.start
+        guard length > 0, length <= 8 else { return nil }
+        return bytes[element.start..<element.end].reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
     }
 }

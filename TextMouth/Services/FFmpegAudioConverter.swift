@@ -63,13 +63,22 @@ enum FFmpegAudioConverter {
         return container != .ogg
     }
 
-    /// Whether the file at `url`, whose bytes are of `container`, is a
-    /// copy-protected Windows Media file (`ASFHeader.isCopyProtected`), which
-    /// no converter could help: the one check `convert` makes before anything
-    /// runs, and the iPhone's import before it refuses any other format
-    /// (`PhoneImportRefusal.refuseConversion`, FU-FFMPEG).
+    /// Whether the file at `url`, whose bytes are of `container`, is
+    /// copy-protected, as its container's own header says: a Windows Media
+    /// file with a protection object (`ASFHeader.isCopyProtected`), or a
+    /// Matroska or WebM file whose every sound track is encrypted
+    /// (`MatroskaHeader.isCopyProtected`, B19). No converter could help
+    /// either: the one check `convert` makes before anything runs, and the
+    /// iPhone's import before it refuses any other format
+    /// (`PhoneImportRefusal.refuseConversion`, FU-FFMPEG). RealMedia's DRM
+    /// has no mark in its public format description to look for, so a
+    /// protected RealMedia file still ends as a damaged one (B19).
     static func isCopyProtected(_ url: URL, container: FFmpegContainer?) -> Bool {
-        container == .asf && ASFHeader.isCopyProtected(fileAt: url)
+        switch container {
+        case .asf: return ASFHeader.isCopyProtected(fileAt: url)
+        case .matroska: return MatroskaHeader.isCopyProtected(fileAt: url)
+        default: return false
+        }
     }
 
     /// The files a book of several tracks leaves out rather than be refused

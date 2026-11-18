@@ -119,6 +119,33 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(try names(in: folder), ["Locked.wma"])
     }
 
+    /// An encrypted Matroska or WebM file is refused as copy-protected too
+    /// (B19), as a Windows Media file is: with the helper or without, before
+    /// anything runs, and not told as damaged. A file of the same containers
+    /// that is not encrypted still goes on to the session (the sample imports
+    /// in `FFmpegImportRealTests`).
+    func testAnEncryptedMatroskaFileIsRefusedAsCopyProtected() async throws {
+        let folder = try makeSandboxDirectory("FFmpegProtectedMatroska")
+        let locked = [("Locked.mka", "matroska"), ("Locked.webm", "webm"), ("Locked.mkv", "matroska")]
+        for (name, doctype) in locked {
+            try Data(matroskaFile(tracks: [MatroskaTrack(type: 1), MatroskaTrack(type: 2, encryption: 5)], doctype: doctype))
+                .write(to: folder.appendingPathComponent(name))
+        }
+        for (name, _) in locked {
+            for helper in [try bundledFFmpegHelper(), nil] {
+                let (tool, starts) = countingSessionStarts(of: ffmpegTool(helper: helper))
+                do {
+                    _ = try await FFmpegAudioConverter.convert(folder.appendingPathComponent(name), using: tool)
+                    XCTFail("\(name): an encrypted file must be refused")
+                } catch {
+                    XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .copyProtected, name)
+                }
+                XCTAssertEqual(starts(), 0, "\(name): the session ran before the copy protection was told")
+            }
+        }
+        XCTAssertEqual(try names(in: folder), ["Locked.mka", "Locked.mkv", "Locked.webm"])
+    }
+
     /// Importing a copy-protected Windows Media file, alone or as a track of
     /// a book, says why as the Mac says it, on both platforms: "Could not
     /// import “Locked.wma”. Converting its audio failed: TextMouth cannot open

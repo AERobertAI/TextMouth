@@ -360,6 +360,98 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertFalse(ASFHeader.isCopyProtected(header: Array(repeating: 0, count: 64)))
     }
 
+    // MARK: - Matroska and WebM Copy Protection (B19)
+
+    /// None of the repository's Matroska or WebM samples is protected, and
+    /// the import's one check (`FFmpegAudioConverter.isCopyProtected`) says
+    /// so of each, as it does of Windows Media samples.
+    func testTheMatroskaSamplesAreNotCopyProtected() throws {
+        for sample in ["mka/tones-2tracks.mka", "mka/tones-5.1-ac3.mka", "mka/tones-aac.mka", "mka/tones-long-title.mka",
+                       "mka/mp3-form-changes.mka", "mkv/three-tones-flac.mkv", "webm/tones-opus.webm", "webm/tones-vorbis.weba",
+                       "ffmpeg-edge/flac-7.1-24bit-65535.mka"] {
+            let file = try formatSampleURL(sample)
+            XCTAssertFalse(MatroskaHeader.isCopyProtected(fileAt: file), sample)
+            XCTAssertFalse(FFmpegAudioConverter.isCopyProtected(file, container: FFmpegContainer.of(fileAt: file)), sample)
+        }
+    }
+
+    /// A sound track that names a ContentEncryption with an algorithm other
+    /// than 0 marks the file protected, in Matroska and in WebM, with every
+    /// algorithm the specification lists (1 to 5), whatever the width of the
+    /// sizes, an unknown segment size, and a picture's track beside it.
+    func testAnEncryptedSoundTrackMarksAMatroskaFileProtected() {
+        for algorithm in 1...5 {
+            for doctype in ["matroska", "webm"] {
+                let file = matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: algorithm)], doctype: doctype)
+                XCTAssertTrue(MatroskaHeader.isCopyProtected(bytes: file), "algorithm \(algorithm) in \(doctype)")
+            }
+        }
+        XCTAssertTrue(MatroskaHeader.isCopyProtected(bytes: matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5)], unknownSegmentSize: true)))
+        XCTAssertTrue(MatroskaHeader.isCopyProtected(bytes: matroskaFile(tracks: [MatroskaTrack(type: 1), MatroskaTrack(type: 2, encryption: 5)])))
+        XCTAssertTrue(MatroskaHeader.isCopyProtected(bytes: matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5), MatroskaTrack(type: 2, encryption: 1)])))
+    }
+
+    /// A good file is never called protected: an algorithm of 0 ("not
+    /// encrypted"), a compression of the track's headers (which many good
+    /// files carry), a picture track alone encrypted, a plain sound track
+    /// beside an encrypted one, a file with no sound track or none at all,
+    /// and a protection mark that comes only after the first cluster.
+    func testAGoodMatroskaFileIsNeverCalledProtected() {
+        let plain = MatroskaTrack(type: 2)
+        let cases: [(String, [UInt8])] = [
+            ("a plain file", matroskaFile(tracks: [plain])),
+            ("algorithm 0", matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 0)])),
+            ("compression", matroskaFile(tracks: [MatroskaTrack(type: 2, compressed: true)])),
+            ("compression and a picture", matroskaFile(tracks: [MatroskaTrack(type: 2, compressed: true), MatroskaTrack(type: 1)])),
+            ("an encrypted picture only", matroskaFile(tracks: [MatroskaTrack(type: 1, encryption: 5), plain])),
+            ("a plain sound track beside an encrypted one", matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5), plain])),
+            ("no sound", matroskaFile(tracks: [MatroskaTrack(type: 1, encryption: 5)])),
+            ("no tracks", matroskaFile(tracks: [])),
+            ("tracks after a cluster", matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5)], clusterFirst: true)),
+        ]
+        for (name, bytes) in cases {
+            XCTAssertFalse(MatroskaHeader.isCopyProtected(bytes: bytes), name)
+        }
+    }
+
+    /// A header that is cut short or lies about its sizes ends the walk
+    /// without a trap, and never calls a file protected on what it cannot
+    /// read: every cut of a protected file short of the end of its tracks is
+    /// told as not protected, the file cut just after them as protected, and
+    /// a first element of the biggest size there is, a Tracks of more than
+    /// 4 MB, and bytes of no element end the walk. Run on GitHub only, since
+    /// nothing damaged is read on the Mac.
+    func testADamagedMatroskaHeaderIsJudgedByWhatCameBefore() throws {
+        try TestMachine.skipUnlessGitHubRunner("A damaged header could trap the parser")
+        let protected = matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5)])
+        // The cluster that follows the tracks is 4 + 1 + 3 bytes, its Timecode (E7) the last three.
+        let tracksEnd = try XCTUnwrap(protected.lastIndex(of: 0xE7)) - 5
+        for length in 0..<tracksEnd {
+            XCTAssertFalse(MatroskaHeader.isCopyProtected(bytes: Array(protected.prefix(length))), "cut at \(length)")
+        }
+        XCTAssertTrue(MatroskaHeader.isCopyProtected(bytes: Array(protected.prefix(tracksEnd))))
+        let huge: [UInt8] = [0xEC, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE]
+        XCTAssertFalse(MatroskaHeader.isCopyProtected(bytes: matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5)], leading: huge)))
+        let tracksOfFourMegabytesAndOne: [UInt8] = [0x16, 0x54, 0xAE, 0x6B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x01]
+        XCTAssertFalse(MatroskaHeader.isCopyProtected(bytes: matroskaFile(tracks: [], leading: tracksOfFourMegabytesAndOne)))
+        XCTAssertFalse(MatroskaHeader.isCopyProtected(bytes: Array(repeating: 0xFF, count: 64)))
+        XCTAssertFalse(MatroskaHeader.isCopyProtected(bytes: Array(repeating: 0x00, count: 64)))
+        XCTAssertFalse(MatroskaHeader.isCopyProtected(bytes: []))
+    }
+
+    /// The file check reads the file: protected bytes written as a file are
+    /// protected, and the container is still Matroska. RealMedia has no mark
+    /// to look for, so the one check says no of it, and of no container.
+    func testTheMatroskaFileCheckReadsTheFile() throws {
+        let file = try makeSandboxDirectory("FFmpegSniffMatroska").appendingPathComponent("Locked.mka")
+        try Data(matroskaFile(tracks: [MatroskaTrack(type: 2, encryption: 5)])).write(to: file)
+        XCTAssertTrue(MatroskaHeader.isCopyProtected(fileAt: file))
+        XCTAssertEqual(FFmpegContainer.of(fileAt: file), .matroska)
+        XCTAssertTrue(FFmpegAudioConverter.isCopyProtected(file, container: .matroska))
+        XCTAssertFalse(FFmpegAudioConverter.isCopyProtected(file, container: .realMedia))
+        XCTAssertFalse(FFmpegAudioConverter.isCopyProtected(file, container: nil))
+    }
+
     // MARK: - Making ASF Headers
 
     /// A Header object holding `objects`, with its size and count right.
@@ -428,5 +520,68 @@ extension XCTestCase {
         let extended = try XCTUnwrap(ASFHeader.protectionObjectIDs.dropFirst().first, "No Extended Content Encryption identifier")
         let object = asfObject(extended, body: [0, 0, 0, 0])
         return try asfFile([UInt8](try Data(contentsOf: url)), adding: object).file
+    }
+}
+
+// MARK: - Matroska Files Made Here
+
+/// One track of a Matroska file made here: its TrackType (1 picture, 2
+/// sound), the ContentEncryption algorithm it names (nil: none), and
+/// whether it names a ContentCompression.
+struct MatroskaTrack {
+    var type: UInt8
+    var encryption: Int?
+    var compressed = false
+}
+
+extension XCTestCase {
+    /// An EBML size for `count` bytes, in one, two, or eight bytes as the count needs.
+    private func ebmlSize(_ count: Int) -> [UInt8] {
+        if count < 0x7F { return [0x80 | UInt8(count)] }
+        if count < 0x3FFF { return [0x40 | UInt8(count >> 8), UInt8(count & 0xFF)] }
+        return [0x01] + (0..<7).reversed().map { UInt8((count >> ($0 * 8)) & 0xFF) }
+    }
+
+    /// An EBML element: `identifier`, its size, and `payload`.
+    private func ebmlElement(_ identifier: [UInt8], _ payload: [UInt8] = []) -> [UInt8] {
+        identifier + ebmlSize(payload.count) + payload
+    }
+
+    /// An unsigned-integer element of one byte.
+    private func ebmlByte(_ identifier: [UInt8], _ value: Int) -> [UInt8] {
+        ebmlElement(identifier, [UInt8(value)])
+    }
+
+    /// The bytes of a Matroska file as the specification lays its elements
+    /// out: the EBML header of `doctype`, then a segment of a Void element
+    /// (or `leading`'s bytes, as they are), the tracks, and a cluster; no
+    /// sound to decode, since the protection check reads only the headers.
+    /// `clusterFirst` puts the cluster before the tracks, and
+    /// `unknownSegmentSize` gives the segment the size of a file written live.
+    func matroskaFile(tracks: [MatroskaTrack], doctype: String = "matroska", unknownSegmentSize: Bool = false,
+                      clusterFirst: Bool = false, leading: [UInt8]? = nil) -> [UInt8] {
+        let header = ebmlElement([0x1A, 0x45, 0xDF, 0xA3], ebmlByte([0x42, 0x86], 1) + ebmlElement([0x42, 0x82], Array(doctype.utf8)))
+        let entries = tracks.enumerated().flatMap { index, track -> [UInt8] in
+            var fields = ebmlByte([0xD7], index + 1) + ebmlByte([0x83], Int(track.type)) + ebmlElement([0x86], Array("A_TEST".utf8))
+            var encodings: [UInt8] = ebmlByte([0x50, 0x31], 0) + ebmlByte([0x50, 0x32], 1)
+            if let algorithm = track.encryption {
+                encodings += ebmlByte([0x50, 0x33], 1)
+                encodings += ebmlElement([0x50, 0x35], ebmlByte([0x47, 0xE1], algorithm) + ebmlElement([0x47, 0xE2], [1, 2, 3]))
+            }
+            if track.compressed {
+                encodings += ebmlByte([0x50, 0x33], 0)
+                encodings += ebmlElement([0x50, 0x34], ebmlByte([0x42, 0x54], 3) + ebmlElement([0x42, 0x55], [0xFF]))
+            }
+            if track.encryption != nil || track.compressed {
+                fields += ebmlElement([0x6D, 0x80], ebmlElement([0x62, 0x40], encodings))
+            }
+            return ebmlElement([0xAE], fields)
+        }
+        let padding = leading ?? ebmlElement([0xEC], [UInt8](repeating: 0, count: 200))
+        let cluster = ebmlElement([0x1F, 0x43, 0xB6, 0x75], ebmlByte([0xE7], 0))
+        let tracksElement = tracks.isEmpty ? [] : ebmlElement([0x16, 0x54, 0xAE, 0x6B], entries)
+        let children = clusterFirst ? padding + cluster + tracksElement : padding + tracksElement + cluster
+        let segmentSize: [UInt8] = unknownSegmentSize ? [0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF] : ebmlSize(children.count)
+        return header + [0x18, 0x53, 0x80, 0x67] + segmentSize + children
     }
 }
