@@ -171,7 +171,7 @@ extension ReaderViewModel {
             choice: choice,
             isBusy: switchingTheWindowCouldLoseWork,
             canSwitch: nextBookWindowSwitcher != nil,
-            nextBookIsOpenElsewhere: libraryViewModel.openBookIDs.contains(nextBookID)
+            nextBookIsOpenElsewhere: libraryViewModel.isBookOpenNow(nextBookID)
         )
         DiagnosticLog.trace(.playback, "next book: window choice \(choice.rawValue); \(action)")
         switch action {

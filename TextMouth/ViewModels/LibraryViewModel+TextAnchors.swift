@@ -101,7 +101,7 @@ extension LibraryViewModel {
             return
         }
         // A book a reader has open gives its places their words as it loads.
-        let open = openBookIDs
+        let open = openBookIDsNow
         let readable = candidates.filter { !open.contains($0.id) }
         let openCount = candidates.count - readable.count
         DispatchQueue.global(qos: .utility).async {
@@ -177,7 +177,7 @@ extension LibraryViewModel {
         counted read: TextAnchorBackfillOutcome
     ) -> TextAnchorBackfillOutcome {
         var outcome = read
-        let openedMeanwhile = Set(captures.keys).intersection(openBookIDs)
+        let openedMeanwhile = Set(captures.keys).intersection(openBookIDsNow)
         outcome.waiting += openedMeanwhile.count
         let adopted = adoptCapturedAnchors(captures, skipping: openedMeanwhile)
         outcome.books = adopted.count

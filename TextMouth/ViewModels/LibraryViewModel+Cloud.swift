@@ -1163,7 +1163,7 @@ final class LibraryCloudCommands {
         // Each book's package, or why its download stays without asking the
         // storage: the book is open in a reader, or kept on this Mac.
         let requests = targets.map { book -> Result<BookPackage, BookCloudError> in
-            if library.openBookIDs.contains(book.id) { return .failure(.bookIsOpen) }
+            if library.isBookOpenNow(book.id) { return .failure(.bookIsOpen) }
             // Both reasons are named at once, so the advice never leads to a
             // second refusal.
             switch (kept.contains(book.id), kept.isKeptForReadingList(book.id)) {

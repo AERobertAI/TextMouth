@@ -35,6 +35,20 @@ final class AudioEditActivity: Sendable {
         state.withLock { $0.openInReaders = ids }
     }
 
+    /// Notes that one book is open in a reader, or no longer is, at once:
+    /// the library's registry says so as a reader opens or closes, before
+    /// its published `openBookIDs` follows (B22).
+    func setOpenInReader(_ bookID: UUID, _ open: Bool) {
+        state.withLock { state in
+            if open { state.openInReaders.insert(bookID) } else { state.openInReaders.remove(bookID) }
+        }
+    }
+
+    /// The books open in readers now.
+    var openInReaders: Set<UUID> {
+        state.withLock { $0.openInReaders }
+    }
+
     /// Notes that `bookID`'s audio is being edited or rendered, until a
     /// matching `endUse(of:)`. Uses of one book add up, so a render begun
     /// from an open edit session ends without ending the session's use.
