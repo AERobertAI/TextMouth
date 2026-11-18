@@ -18,6 +18,9 @@ Commands (`--help` after each says more):
   todo     A JSON batch of the strings to translate into a language, each with its comment, placeholders, code context,
            glossary terms, and an earlier translation of a similar string.
   apply    Check a translated batch, string by string, and write the good translations (machine_translated).
+  prune    Delete the stale strings (the code no longer has them) that hold no translation; --all deletes every stale one.
+  reach    The hosted test classes a branch's localization could break, for a train request's --classes: the Mac tests
+           on one comma-separated line, the iPhone unit tests on a line of their own; --explain gives each reason.
   merge-driver
            Git's merge driver for the String Catalog (`make l10n-merge-driver` defines it): a three-way merge by key,
            language, and plural form.
@@ -48,6 +51,7 @@ import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import repo_paths  # noqa: E402
 import glossary as glossarylib  # noqa: E402
 import merge  # noqa: E402
+import reach  # noqa: E402
 import translate  # noqa: E402
 
 EXIT_OK = 0        # the command did its work
@@ -61,6 +65,9 @@ ROOT = HERE.parents[1]
 CATALOG_FOLDER = Path("TextMouth/Localization")
 TABLE = "Localizable"
 CONFIG_PATH = HERE / "config.json"
+# The converted files' globs, one per line, beside the configuration. It is a file of its own so that git can merge it by
+# union (`.gitattributes`): each conversion wave adds its lines, and two waves never conflict.
+SYNC_PATHS_FILE = "sync-paths.txt"
 # The type-check that extracts the strings.
 TYPECHECK = HERE.parent / "ios" / "typecheck.py"
 # Both apps must be extracted in one sync: a string only the other app has would be marked stale.
@@ -82,10 +89,10 @@ STRINGS_FOLDER_LINE = "Strings folder: "
 STRINGS_MANIFEST = "manifest.json"
 # The configuration's defaults: no language ships until Spanish is translated; the English budget in bytes (the
 # user's 150 KB for the interface text) only reports until the cutting is done.
-# `syncPaths` are repository-relative globs of the converted files: the sync keeps only the strings found in them (see
-# path_matcher), so the catalog holds exactly the converted areas and `check`'s comment rule can hold from the first commit.
-# The conversion waves add their globs, ending with "TextMouth/**".
-DEFAULT_CONFIG = {"languages": [], "budgetBytes": 150000, "budgetFails": False, "syncPaths": []}
+# The configuration has no `syncPaths`: the globs of the converted files are in SYNC_PATHS_FILE (see load_sync_paths).
+# The sync keeps only the strings found in them (see path_matcher), so the catalog holds exactly the converted areas and
+# `check`'s comment rule can hold from the first commit. The conversion waves add their globs, ending with "TextMouth/**".
+DEFAULT_CONFIG = {"languages": [], "budgetBytes": 150000, "budgetFails": False}
 # How many problems `check` prints unless --limit says otherwise.
 DEFAULT_LIMIT = 100
 # The longest a key is shown in a line.
@@ -120,8 +127,58 @@ def percent(part, whole):
     return f"{round(100 * part / whole)}%" if whole else "0%"
 
 
-def load_config(path=CONFIG_PATH):
-    """The configuration (see DEFAULT_CONFIG) read from `path`: its keys over the defaults, checked for type."""
+def tracked_files(root):
+    """The repository-relative paths of the files under `root` that git tracks or would add (untracked and not ignored),
+    or None when `root` is not a repository (a made-up checkout in a test) or git cannot run."""
+    try:
+        done = subprocess.run(["git", "-C", str(root), "ls-files", "--cached", "--others", "--exclude-standard"],
+                              capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return done.stdout.splitlines() if done.returncode == 0 else None
+
+
+def unmatched_globs(globs, files):
+    """The globs that match none of `files` (repository-relative paths), in order. Each glob's matcher is built once, and a
+    glob with no wildcard is a set lookup, so hundreds of one-file globs against thousands of files stay fast."""
+    names = set(files)
+    missing = []
+    for glob in globs:
+        if not any(ch in glob for ch in "*?"):
+            found = glob in names
+        else:
+            matches = path_matcher([glob])
+            found = any(matches(name) for name in files)
+        if not found:
+            missing.append(glob)
+    return missing
+
+
+def load_sync_paths(path, root=None):
+    """The globs in the sync-paths file `path`: one per line, blank lines and whole-line `#` comments skipped, repeats
+    dropped (the first stays), in file order. A missing file is no globs. When `root` is a repository, a ValueError names
+    each glob that matches none of its files, since a typo would otherwise leave a whole area out of the catalog."""
+    try:
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return []
+    globs = []
+    for line in lines:
+        glob = line.strip()
+        if glob and not glob.startswith("#") and glob not in globs:
+            globs.append(glob)
+    files = tracked_files(root) if root is not None else None
+    if files is not None:
+        nothing = unmatched_globs(globs, files)
+        if nothing:
+            raise ValueError("matches no file: " + ", ".join(nothing))
+    return globs
+
+
+def load_config(path=CONFIG_PATH, root=None):
+    """The configuration (see DEFAULT_CONFIG) read from `path`: its keys over the defaults, checked for type, and the key
+    `syncPaths` read from the sync-paths file beside `path`. `root` (the checkout whose files the globs must match; None
+    skips that check) is given by the commands that sync."""
     config = dict(DEFAULT_CONFIG)
     try:
         config.update(json.loads(Path(path).read_text(encoding="utf-8")))
@@ -129,14 +186,21 @@ def load_config(path=CONFIG_PATH):
         pass
     except (OSError, ValueError) as error:
         raise Refused(f"cannot read {path}: {error}", EXIT_USAGE)
+    if "syncPaths" in config:
+        # A branch from before the move would otherwise sync with no globs, or with two lists, without a word.
+        raise Refused(f"{path}: syncPaths is no longer kept here; put the globs, one per line, in "
+                      f"{Path(path).parent / SYNC_PATHS_FILE}", EXIT_USAGE)
     if not (isinstance(config["languages"], list) and all(isinstance(code, str) and code for code in config["languages"])):
         raise Refused(f"{path}: languages must be a list of language codes", EXIT_USAGE)
     if not (isinstance(config["budgetBytes"], int) and not isinstance(config["budgetBytes"], bool) and config["budgetBytes"] > 0):
         raise Refused(f"{path}: budgetBytes must be a whole number above zero", EXIT_USAGE)
     if not isinstance(config["budgetFails"], bool):
         raise Refused(f"{path}: budgetFails must be true or false", EXIT_USAGE)
-    if not (isinstance(config["syncPaths"], list) and all(isinstance(glob, str) and glob for glob in config["syncPaths"])):
-        raise Refused(f"{path}: syncPaths must be a list of repository-relative globs", EXIT_USAGE)
+    sync_paths = Path(path).parent / SYNC_PATHS_FILE
+    try:
+        config["syncPaths"] = load_sync_paths(sync_paths, root)
+    except (OSError, ValueError) as error:
+        raise Refused(f"{sync_paths}: {error}", EXIT_USAGE)
     return config
 
 
@@ -360,7 +424,7 @@ def sync_manifests(args, manifests, say, output=None):
     """The sync itself, from two strings folders' manifests: checks them, merges them into each catalog that has a table in
     them, writes the locations, and prints what changed. Returns the exit status."""
     check_manifests(manifests)
-    config = load_config(args.config)
+    config = load_config(args.config, ROOT)
     places, by_platform, everything, files = collect(sorted(manifests, key=lambda m: m["platform"]), path_matcher(config["syncPaths"]))
     # A sync with nothing kept would give xcstringstool no file; an empty one makes it drop every string it can.
     nothing = manifests[0]["folder"] / "filtered" / "none.stringsdata"
@@ -662,7 +726,7 @@ def check_catalog(cat, config):
             problems.append(f"{quote(key)}: the English key's placeholders cannot be read: {sentence}")
     for key, entry in sorted(cat.strings.items()):
         if cat.is_stale(entry):
-            problems.append(f"{quote(key)}: stale (the code no longer has it; sync, or delete it by hand)")
+            problems.append(f"{quote(key)}: stale (the code no longer has it; `prune` deletes it, `prune --all` even with a translation)")
     used, budget = cat.english_bytes(), config["budgetBytes"]
     note = f"English text: {number(used)} bytes of {number(budget)} ({percent(used, budget)})"
     if used > budget:
@@ -714,7 +778,7 @@ def precision_warnings(cat, languages):
 def cmd_check(args):
     """`check`: prints the problems (up to --limit), then the glossary's warnings (up to --limit, never a failure) and the
     budget note; exit status 1 when there is a problem. A glossary file that is malformed is a problem."""
-    cat, config = load_catalog(args), load_config(args.config)
+    cat, config = load_catalog(args), load_config(args.config, ROOT)
     problems, note = check_catalog(cat, config)
     # The rest reads the strings that are whole (check_catalog has reported the others).
     cat = readable(cat)[0]
@@ -750,6 +814,53 @@ def cmd_check(args):
 
 # The plural categories the `plural` command takes as options, in CLDR's order.
 PLURAL_OPTIONS = ("zero", "one", "two", "few", "many", "other")
+
+
+def has_translation(cat, key):
+    """Whether string `key` holds a translation: a text in a language other than the source language (the English forms
+    of a string, plural ones included, are not a translation, and neither is a localization without a value)."""
+    return any(unit.value.strip() for language in cat.strings[key].get("localizations", {})
+               if language != cat.source_language for unit in cat.units(key, language))
+
+
+def stale_to_prune(cat, everything):
+    """The stale keys `prune` deletes, sorted: those with no translation, or every stale key when `everything`."""
+    return sorted(key for key, entry in cat.strings.items()
+                  if cat.is_stale(entry) and (everything or not has_translation(cat, key)))
+
+
+def cmd_prune(args):
+    """`prune [--all] [--dry-run]`: deletes the stale strings that hold no translation (`--all`: every stale string, so
+    a stale string with a translation goes too). Prints each key it deletes (with --dry-run, each it would delete, and
+    nothing is written), then saves the catalog through catalog.py. Stale strings that were kept because they hold a
+    translation are counted, so the report says what is left for `check` to name. Running it twice changes nothing."""
+    cat = load_catalog(args)
+    gone = stale_to_prune(cat, args.all)
+    kept = sum(1 for entry in cat.strings.values() if cat.is_stale(entry)) - len(gone)
+    verb = "would delete" if args.dry_run else "deleted"
+    lines = [f"{verb} stale {quote(key)}" for key in gone]
+    lines.append(f"prune: {number(len(gone))} stale strings " + ("would be deleted" if args.dry_run else "deleted")
+                 + (f"; {number(kept)} stale with a translation kept (--all deletes them too)" if kept else ""))
+    if not args.dry_run:
+        for key in gone:
+            del cat.strings[key]
+        if gone:
+            cat.save(catalog_path(args))
+    emit(args, {"deleted": gone, "dryRun": args.dry_run, "keptWithTranslation": kept}, lines)
+    return EXIT_OK
+
+
+def cmd_reach(args):
+    """`reach [--base REF] [--explain]`: prints the hosted test classes this branch's localization could break (see
+    reach.py): the Mac classes as one comma-separated line for `build-train.py request --classes`, then the iPhone unit
+    test classes under a heading of their own. With --explain, a line for each class and reason. Writes nothing."""
+    try:
+        reached = reach.reach(ROOT, args.base)
+    except Exception as error:  # git failed (an unknown --base) or a test folder is unreadable
+        raise Refused(f"reach: {error}", EXIT_USAGE)
+    emit(args, {bundle: {name: reasons for name, reasons in sorted(classes.items())} for bundle, classes in reached.items()},
+         reach.format_reach(reached, args.explain))
+    return EXIT_OK
 
 
 def cmd_plural(args):
@@ -991,7 +1102,7 @@ def count_option(text):
 
 
 def build_parser():
-    """The command line's parser: one subcommand each for sync, status, size, check, plural, todo, apply, and merge-driver."""
+    """The command line's parser: one subcommand each for sync, status, size, check, prune, reach, plural, todo, apply, and merge-driver."""
     parser = argparse.ArgumentParser(prog="l10n.py", description=__doc__.split("\n\n")[0],
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog="Exit status: 0 done, 1 a check found problems or a sync was refused, 2 a bad command line.")
@@ -1018,6 +1129,13 @@ def build_parser():
     add("size", "the English bytes against the budget, and each language's shipped size in each format", cmd_size)
     check = add("check", "the rules a catalog keeps: translations, placeholders, plurals, comments, stale strings, the budget", cmd_check)
     check.add_argument("--limit", type=count_option, default=DEFAULT_LIMIT, help=f"print at most this many problems, 0 for all (default {DEFAULT_LIMIT})")
+    prune = add("prune", "delete the stale strings that hold no translation (--all: every stale string)", cmd_prune)
+    prune.add_argument("--all", action="store_true", help="delete every stale string, translated or not")
+    prune.add_argument("--dry-run", action="store_true", help="list what would be deleted and write nothing")
+    reach_command = add("reach", "the Mac and iPhone test classes this branch's localization could break, for a train request",
+                        cmd_reach)
+    reach_command.add_argument("--base", default="main", help="the branch to compare with (default main)")
+    reach_command.add_argument("--explain", action="store_true", help="a line for each class and the reason it is reached")
     plural = add("plural", "write a string's plural forms in one language, English included", cmd_plural)
     plural.add_argument("key", help="the string's key, such as '%%lld books'")
     plural.add_argument("--lang", required=True, help="the language, such as en or es")

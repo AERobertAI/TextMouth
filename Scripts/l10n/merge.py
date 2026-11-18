@@ -13,6 +13,8 @@ to the other side's state). For each path of the three versions:
 - the same on both sides: that value (a path both sides added or removed alike is taken);
 - changed on one side only (base equals the other): the changed side's value, so an added or removed piece is taken;
 - changed differently on both: a conflict, and ours is kept.
+One exception: a key's `comment` that both sides changed is merged by its lines (see merge_comments), since it is the one
+piece that several branches legitimately write for the same key (each file that uses "Cancel" adds its own comment).
 A key one side deleted and the other changed is a conflict of its own (the key is not merged piece by piece), and
 ours is kept as it is. After the merge, a language's
 localization that holds both a plain text and plural forms (the sides wrote it two ways) is a conflict of its own, and
@@ -86,9 +88,47 @@ def unflatten(pieces):
     return root
 
 
+def is_comment_path(path):
+    """Whether `path` is a string's own comment: (`strings`, the key, `comment`)."""
+    return len(path) == 3 and path[0] == "strings" and path[2] == "comment"
+
+
+def comment_lines(comment):
+    """The lines of a comment value (ABSENT is none)."""
+    return [] if comment is ABSENT else comment.split("\n")
+
+
+def merge_comments(base, ours, theirs):
+    """The comment of a key that both sides changed differently, or ABSENT when no line is left; None when the values are
+    not texts (the caller then reports a conflict).
+
+    What `xcstringstool sync` writes (measured, Xcode 26): the key's distinct comments, one for each use that has one,
+    sorted by code point and joined with a line break, the same whatever the order of its --stringsdata arguments, and a
+    comment already in the catalog is replaced, never added to. So a merged tree's next sync writes the sorted union of
+    both sides' comments, less any a side cut. This is that, by lines: a line stays when both sides have it or a side
+    added it, and goes when a side dropped it from the base.
+
+    The catalog alone cannot tell where one use's comment ends when a comment has a line break inside it, and the sync sorts
+    whole comments. When a side's lines are not in sorted order, some comment must be multi-line, so the lines are not
+    sorted: ours' lines come first, then theirs' lines that ours lacks. The next sync rewrites the comment either way."""
+    if any(value is not ABSENT and not isinstance(value, str) for value in (base, ours, theirs)):
+        return None
+    was, mine, yours = comment_lines(base), comment_lines(ours), comment_lines(theirs)
+    dropped = (set(was) - set(mine)) | (set(was) - set(yours))
+    lines = []
+    for line in mine + yours:
+        if line not in dropped and line not in lines:
+            lines.append(line)
+    # A key's comment sorted in the sync's order is the sorted union; any other order is kept (ours, then theirs).
+    if all(side == sorted(set(side)) for side in (mine, yours)):
+        lines.sort()
+    lines = [line for line in lines if line]
+    return "\n".join(lines) if lines else ABSENT
+
+
 def merge_pieces(base, ours, theirs):
     """The three-way merge of flattened versions: (the merged {path: value}, the Conflicts). Paths sort, so conflicts
-    come in a stable order."""
+    come in a stable order. A comment both sides changed is merged (merge_comments), not a conflict."""
     merged, conflicts = {}, []
     for path in sorted(set(base) | set(ours) | set(theirs)):
         was, mine, yours = base.get(path, ABSENT), ours.get(path, ABSENT), theirs.get(path, ABSENT)
@@ -97,8 +137,15 @@ def merge_pieces(base, ours, theirs):
         elif mine == was:
             chosen = yours
         else:
-            conflicts.append(Conflict(path, was, mine, yours))
-            chosen = mine
+            both = merge_comments(was, mine, yours) if is_comment_path(path) else None
+            if both is None:
+                conflicts.append(Conflict(path, was, mine, yours))
+                chosen = mine
+            else:
+                chosen = both
+                if both is ABSENT:
+                    # The key stays, as an entry with nothing in it: its comment was the only piece that held it.
+                    merged.setdefault(path[:2], {})
         if chosen is not ABSENT:
             merged[path] = chosen
     return merged, conflicts

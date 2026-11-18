@@ -105,6 +105,7 @@ def scan_texts(texts: Mapping[str, str]) -> List[Literal]:
             lit.bucket, lit.rule = classify.classify(lit, wording_file, localizer)
             lit.status = classify.status_of(lit)
             lit.findings = tuple(classify.findings_of(lit))
+            lit.needs_comment = classify.needs_comment(lit, text)
             literals.append(lit)
     return literals
 

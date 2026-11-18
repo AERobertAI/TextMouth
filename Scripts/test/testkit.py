@@ -33,6 +33,8 @@ import test_tries  # noqa: E402
 # The folder of hosted test sources, the project and scheme, and the wrapper
 # that holds one of the machine's three build slots (all relative to the root).
 TESTS_FOLDER = "TextMouthProductionTests"
+# The iPhone unit bundle's folder: `hosted_test_classes` reads it too, with `folder_name`.
+IOS_TESTS_FOLDER = "TextMouthiOSTests"
 TEST_TARGET = "TextMouthProductionTests"
 PROJECT = "TextMouth.xcodeproj"
 SCHEME = "TextMouth"
@@ -92,8 +94,9 @@ _TEST_METHOD = re.compile(
     r"func\s+test\w*\s*\(\s*\)")
 
 
-def hosted_test_classes(root: Path) -> Dict[str, HostedClass]:
-    """Scans TextMouthProductionTests/*.swift and returns {class name: HostedClass}.
+def hosted_test_classes(root: Path, folder_name: str = TESTS_FOLDER) -> Dict[str, HostedClass]:
+    """Scans TextMouthProductionTests/*.swift (or the folder `folder_name`, such as the iPhone bundle's) and returns
+    {class name: HostedClass}.
 
     This is a line scanner, not a Swift parser, and it has limits:
       * a scope opens at a column-0 `class`/`extension` line and closes at the
@@ -109,7 +112,7 @@ def hosted_test_classes(root: Path) -> Dict[str, HostedClass]:
     """
     declared: Dict[str, Tuple[str, int, Optional[str]]] = {}  # name -> path, line, superclass
     own_tests: Dict[str, int] = {}
-    folder = root / TESTS_FOLDER
+    folder = root / folder_name
     for source in sorted(folder.glob("*.swift")):
         relative = str(source.relative_to(root))
         current: Optional[str] = None

@@ -13,7 +13,11 @@ Commands:
         area covers, and the report says how many files are in it.
     show FILE [--all] [--width N] [--json]
         Each unlocalized interface literal of one file, with its line and bucket, and the
-        file's findings; --all adds the localized and the marked literals.
+        file's findings; --all adds the localized and the marked literals. A section of its own
+        lists the SwiftUI literals (Text, Button, Label, Toggle, .accessibilityLabel, .help, ...) that
+        the compiler extracts with no comment, which `l10n.py check` refuses: move each into a wording
+        static with String(localized:comment:). Text("...", comment: "...") and a line marked
+        `// l10n: no` are not listed. They count as localized: the lint and the baseline do not change.
     lint [--base REF] [--update-baseline | --rebuild-baseline] [--renamed OLD NEW]
         The ratchet behind `make lint-l10n`: fails when a file has more unlocalized interface
         literals than Scripts/l10n/scan-baseline.json records for it (or a file the baseline
@@ -51,7 +55,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from swiftscan import areas, ratchet, report  # noqa: E402
-from swiftscan.classify import FINDING_HELP  # noqa: E402
+from swiftscan.classify import FINDING_HELP, NEEDS_COMMENT_HELP  # noqa: E402
 from swiftscan.scanner import Scan, scan_tree  # noqa: E402
 
 EXIT_OK = 0      # the command did its work
@@ -130,9 +134,12 @@ def cmd_show(args: argparse.Namespace, scan: Scan, root: Path) -> int:
     items = [lit for lit in scan.literals if lit.file == file and lit.status in wanted]
     counts = {s: sum(1 for lit in scan.literals if lit.file == file and lit.status == s)
               for s in ("unlocalized", "localized", "marked")}
+    # SwiftUI literals the compiler extracts with no comment: counted localized, but `check` refuses them once synced.
+    bare = [lit for lit in scan.literals if lit.file == file and lit.needs_comment]
     if args.json:
         print(json.dumps({
             "file": file, "area": areas.area_of(file), **{s: n for s, n in counts.items()},
+            "extractedWithoutComment": [{"line": lit.line, "call": lit.call, "text": lit.text} for lit in bare],
             "literals": [{"line": lit.line, "bucket": lit.bucket, "rule": lit.rule, "status": lit.status,
                           "text": lit.text, "findings": list(lit.findings)} for lit in items],
         }, indent=2, ensure_ascii=False))
@@ -142,6 +149,11 @@ def cmd_show(args: argparse.Namespace, scan: Scan, root: Path) -> int:
     for lit in items:
         label = f"line {lit.line} [{lit.bucket}]" + (f" {lit.status}" if args.all else "")
         print(f"  {label} {quote(lit.text, max(20, args.width - len(label) - 3))}")
+    if bare:
+        print(f"{NEEDS_COMMENT_HELP} ({len(bare)}):")
+        for lit in bare:
+            label = f"line {lit.line} [{lit.call}]"
+            print(f"  {label} {quote(lit.text, max(20, args.width - len(label) - 3))}")
     found = [(lit.line, kind) for lit in scan.literals if lit.file == file for kind in lit.findings]
     if found:
         print("findings:")

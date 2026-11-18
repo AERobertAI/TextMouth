@@ -47,13 +47,32 @@ Run every command as `python3 -I -B Scripts/l10n/l10n.py COMMAND`; `--help` afte
 
 A translation more than three times as long as an English of at least 12 characters is only a warning, and so is a different number of line breaks inside the text.
 
+## Syncing, pruning, and the test classes
+<!-- id: translation-around-the-steps; keys: sync-paths.txt, syncPaths, prune, reach, stale, test classes, scan.py show; src: Scripts/l10n/l10n.py, Scripts/l10n/reach.py, Scripts/l10n/sync-paths.txt, Scripts/l10n/scan.py -->
+
+`sync` keeps only the strings found in the files that `Scripts/l10n/sync-paths.txt` lists, one glob a line.
+Blank lines and `#` comments are skipped, and repeats are dropped; a glob that matches no file is refused.
+Each conversion wave adds its own lines there, kept sorted, and `.gitattributes` merges the file by union, so two waves never conflict.
+An old `config.json` that still has a `syncPaths` key is refused with a sentence naming that file.
+
+- After a cut, `check` fails until the strings the code no longer has are gone.
+  `prune` deletes the stale strings that hold no translation in any language and prints each key; `prune --all` deletes every stale string, and `prune --dry-run` lists them and writes nothing.
+- `reach [--base REF] [--explain]` prints the hosted test classes that the branch's localization could break, for `build-train.py request --classes`.
+  The first line holds the Mac classes, comma-separated; the iPhone unit test classes follow on a line of their own, since a train names them by the area `phone`.
+  It finds the classes whose files hold an English text the branch localized (cut at its first interpolation, 12 characters or more), name a converted file (they read its source), or are what `run-area.py --changed` finds; `--explain` gives each reason.
+- `scan.py show FILE` lists, apart from the unlocalized text, the SwiftUI literals the compiler extracts with no comment (`Button("…")`, `.accessibilityLabel("…")`, and the like): `check` refuses them once the file is synced, so move each into a wording static with `String(localized:comment:)`.
+
 ## The catalog's merge driver
-<!-- id: translation-merge-driver; keys: merge driver, .gitattributes, xcstrings, merge conflict, make l10n-merge-driver; src: Scripts/l10n/merge.py, Scripts/l10n/l10n.py, Makefile -->
+<!-- id: translation-merge-driver; keys: merge driver, .gitattributes, xcstrings, merge conflict, make l10n-merge-driver, shared keys, comment; src: Scripts/l10n/merge.py, Scripts/l10n/l10n.py, Makefile -->
 
 Two branches that each add or translate strings merge without a conflict, because `.gitattributes` gives `*.xcstrings` the driver `merge=xcstrings`, which merges by key, language, and plural form.
 Git reads the driver's definition from the repository's configuration, so define it once for each clone with `make l10n-merge-driver`.
 The merge worktrees share that configuration, so one definition serves them all.
 Without it git merges the catalog as text, and neighbouring keys conflict.
+
+Many waves add the same short key ("Cancel", "Done"), each with its own comment, and a key main already has can gain a comment line on both branches.
+`xcstringstool sync` writes such a comment as the distinct comments, sorted by code point and joined by line breaks, so the driver merges the two sides' comment lines into that sorted union, less any line a side cut, with no conflict.
+Where a side's lines are not in sorted order (a comment that itself holds a line break), the driver keeps ours' lines and then theirs' new ones, and the next `sync` rewrites the comment.
 
 The driver refuses (exit 2, your file untouched) a file that is not a catalog: not JSON, not an object, or with `strings` that is not an object of objects.
 It writes the result through a temporary file and a rename, so an interrupted merge never leaves half a catalog.
