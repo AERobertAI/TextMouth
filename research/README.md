@@ -24,6 +24,7 @@ The reference pages are under `docs/` (see `README.md` and `ARCHITECTURE.md`).
 - [KFX-FORMAT-NOTES-2026-11-05.md](KFX-FORMAT-NOTES-2026-11-05.md): KFX format notes (2026-11-05)
 - [LIBRARY-SEARCH-RESEARCH-2026-11-13.md](LIBRARY-SEARCH-RESEARCH-2026-11-13.md): Searching the whole library's text (November 13, 2026)
 - [LIBRARY-VIEWS-RESEARCH-2026-10-30.md](LIBRARY-VIEWS-RESEARCH-2026-10-30.md): Library views: research and design (October 30, 2026)
+- [LOCALIZATION-RESEARCH-2026-11-18.md](LOCALIZATION-RESEARCH-2026-11-18.md): Localizing TextMouth: String Catalogs, the text's size, tools, and a plan
 - [LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md](LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md): A library on each device, with a safer library in the cloud
 - [LOCAL-FIRST-PHASE1-DESIGN-2026-11-15.md](LOCAL-FIRST-PHASE1-DESIGN-2026-11-15.md): The cloud store's Phase 1, as seven branches to build
 - [NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md](NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md): Next book in this window (0.2.5), design note
