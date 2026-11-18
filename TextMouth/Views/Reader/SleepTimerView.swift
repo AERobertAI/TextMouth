@@ -227,14 +227,17 @@ struct SleepTimerView: View {
                     .accessibilityValue(customMinutesSpoken)
                     .accessibilityHint(Self.customMinutesHint)
                 // Its value is the field's, unit and all: it was the bare
-                // number, "Adjust minutes, 30" (TODO A10). Its own title is
-                // its label, hidden from the eye as the empty title was: an
-                // empty title was a string of its own for translators, with
-                // nothing to translate (FR35).
-                Stepper(Self.adjustMinutesLabel, value: $customMinutes, in: 1...480, step: Self.customMinutesStep)
-                    .labelsHidden()
-                    .accessibilityLabel(Self.adjustMinutesLabel)
-                    .accessibilityValue(customMinutesSpoken)
+                // number, "Adjust minutes, 30" (TODO A10). It has no title of
+                // its own: an empty title was a string of its own for
+                // translators, with nothing to translate (FR35), and a hidden
+                // title is read before the label on the Mac ("Adjust minutes,
+                // Adjust minutes", board #121), so the label stands alone.
+                Stepper(value: $customMinutes, in: 1...480, step: Self.customMinutesStep) {
+                    EmptyView()
+                }
+                .labelsHidden()
+                .accessibilityLabel(Self.adjustMinutesLabel)
+                .accessibilityValue(customMinutesSpoken)
                 Text(Self.minutesUnit)
                     .foregroundColor(.secondary)
                     .accessibilityHidden(true)
