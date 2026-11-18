@@ -248,11 +248,17 @@ def prepare_sources(repo, commit, src, census, tests=False):
     return rewritten
 
 
+# The folder of TextMouth/ that holds the String Catalog (FR34): a resource Xcode compiles into each language's strings
+# files, which a Swift package would report as an unhandled file ("found 1 file(s) which are unhandled").
+LOCALIZATION_FOLDER = "Localization"
+
+
 def excluded_folders(src, platform):
     """The folders of TextMouth/ the platform does not compile, as the target's
-    exclude list (only those that exist, so SwiftPM does not warn)."""
+    exclude list (only those that exist, so SwiftPM does not warn): the Mac's
+    Resources, the other platform's folder, and the String Catalog's."""
     other = "macOS" if platform == "ios" else "iOS"
-    candidates = ["Resources", f"Platform/{other}"]
+    candidates = ["Resources", LOCALIZATION_FOLDER, f"Platform/{other}"]
     return [c for c in candidates if (src / "TextMouth" / c).exists()]
 
 

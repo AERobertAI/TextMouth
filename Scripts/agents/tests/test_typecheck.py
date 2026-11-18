@@ -59,6 +59,7 @@ FILES = {
     "project.yml": PROJECT_YML,
     "TextMouth/App.swift": "// app\n",
     "TextMouth/Resources/R.txt": "resource\n",
+    "TextMouth/Localization/Localizable.xcstrings": "{}",
     "Vendor/lame/include/lame.h": "// h\n",
     "TextMouthBraille/include/b.h": "// h\n",
     "TextMouthFFmpeg/include/f.h": "// h\n",
@@ -249,6 +250,16 @@ class PackageTests(TypecheckTestsCase):
             with mock.patch.object(typecheck, "run", lambda *a, **k: SimpleNamespace(stdout="/platform\n")):
                 typecheck.write_package(self.src, self.folder / "pkgs", platform, "26.0", kind)
             self.assertNotIn(typecheck.IOS_UI_TEST_TARGET, (self.src / "Package.swift").read_text(), (kind, platform))
+
+    def test_the_string_catalog_is_not_an_unhandled_resource_of_either_platforms_app(self):
+        # The catalog is a resource of the Xcode apps; SwiftPM warns about every file of a target it does not handle, and a
+        # warning about it is a failure of the type-check, so both platforms' app targets leave its folder out.
+        for platform in ("macos", "ios"):
+            typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests=False)
+            with mock.patch.object(typecheck, "run", lambda *a, **k: SimpleNamespace(stdout="/platform\n")):
+                typecheck.write_package(self.src, self.folder / "pkgs", platform, "26.0", False)
+            block = (self.src / "Package.swift").read_text().split('path: "TextMouth",')[1].split("swiftSettings")[0]
+            self.assertIn('"Localization"', block, platform)
 
     def test_files_to_skip_are_left_out_of_the_target(self):
         typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="census")
