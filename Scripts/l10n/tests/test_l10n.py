@@ -97,8 +97,10 @@ class SyncCase(TemporaryCase):
         self.set_sync_paths("TextMouth/**")
 
     def set_sync_paths(self, *globs):
-        """Writes the sync's configuration with these `syncPaths`."""
-        self.config.write_text(json.dumps({"syncPaths": list(globs)}))
+        """Writes the sync's configuration (without `syncPaths`, which the file beside it holds) and that file with these
+        globs, one per line."""
+        self.config.write_text("{}")
+        (self.folder / l10n.SYNC_PATHS_FILE).write_text("".join(glob + "\n" for glob in globs))
 
     def manifests(self):
         """The two runs' manifests, as the sync reads them."""
@@ -801,8 +803,7 @@ class CommandTests(TemporaryCase):
 
     def test_a_bad_configuration_exits_2_and_says_which_file(self):
         config = self.folder / "config.json"
-        for text in ('{"languages": "es"}', '{"budgetBytes": 0}', '{"budgetFails": "yes"}', '{"syncPaths": "TextMouth/**"}',
-                     '{"syncPaths": [""]}', "not json"):
+        for text in ('{"languages": "es"}', '{"budgetBytes": 0}', '{"budgetFails": "yes"}', "not json"):
             config.write_text(text)
             status, _out, err = self.run_main("check", "--config", str(config))
             self.assertEqual(status, 2, text)
@@ -826,8 +827,9 @@ class CommandTests(TemporaryCase):
     def test_the_repositorys_configuration_ships_no_language_and_reports_the_budget(self):
         """Only what must hold is pinned: no language ships until the orchestrator ships one (change `languages` here then),
         the budget, and that it only reports. `syncPaths` grows with every branch that converts files, so it is checked for its
-        type and not its value (l10npilot's finding, #6564)."""
-        config = l10n.load_config()
+        type and not its value (l10npilot's finding, #6564). Its globs are read from sync-paths.txt, each of which must match
+        a file of this checkout."""
+        config = l10n.load_config(root=l10n.ROOT)
         self.assertEqual(config["languages"], [])
         self.assertEqual(config["budgetBytes"], 150000)
         self.assertIs(config["budgetFails"], False)

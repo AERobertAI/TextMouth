@@ -1,6 +1,5 @@
 {
   "languages": [],
   "budgetBytes": 150000,
-  "budgetFails": false,
-  "syncPaths": []
+  "budgetFails": false
 }
