@@ -20,6 +20,7 @@ carry `"keepEnglish": true`, which says the translation is deliberately the Engl
 """
 import difflib
 import sys
+import unicodedata
 from pathlib import Path
 
 import catalog
@@ -37,8 +38,10 @@ CONTEXT_RADIUS = 2
 CONTEXT_USES = 2
 # An earlier translation is offered when its English is at least this like the new one (difflib's ratio, 0 to 1).
 SIMILARITY = 0.6
-# A translation more than this many times as long as its English is listed as a warning.
+# A translation more than this many times as long as its English is listed as a warning, when the English has at least this
+# many characters (a short word grows a lot in any language).
 LENGTH_WARNING = 3
+LENGTH_MINIMUM = 12
 
 
 class Problems(Exception):
@@ -80,6 +83,16 @@ def english_text_for(english, key, unit):
     if english:
         return english[sorted(english)[0]]
     return key
+
+
+def unit_placeholder_problems(english, key, unit, language):
+    """The sentences about the placeholders of one finished unit of `language` (what `check` tests): a top-level plural form
+    is compared with the key, and a `one` form may drop the number where the language's `one` means exactly 1 (see
+    plural_form_problems); any other unit is compared with the English text of the same place (english_text_for).
+    `english` is {path: value} of the English units."""
+    if unit.category and unit.path == f"plural.{unit.category}":
+        return catalog.compare_placeholders(key, unit.value, unit.category == "one" and catalog.one_is_exactly_one(language))
+    return catalog.compare_placeholders(english_text_for(english, key, unit), unit.value)
 
 
 def english_shape(cat, key):
@@ -143,22 +156,67 @@ def category_problems(language, forms):
     return problems
 
 
-def form_problems(english, text):
-    """The sentences about one form `text` against its `english`: empty text, or placeholders that differ."""
+def edge_whitespace(text):
+    """(the whitespace `text` starts with, the whitespace it ends with): a space or a newline at the edge of a label is
+    part of what the code lays out (a title followed by a value), so a translation keeps it exactly."""
+    return text[:len(text) - len(text.lstrip())], text[len(text.rstrip()):]
+
+
+def line_breaks(text):
+    """How many line breaks `text` has inside it (those at its edges are the whitespace edge_whitespace compares)."""
+    return text.strip().count("\n")
+
+
+def control_characters(text):
+    """The control characters of `text` other than a newline and a tab (a NUL, a carriage return, an escape, ...): they
+    have no place in an interface text, and some end a string early."""
+    return sorted({character for character in text if unicodedata.category(character) == "Cc" and character not in "\n\t"})
+
+
+def form_problems(english, text, reference=None, may_drop_numbers=False):
+    """The sentences about one form `text` against its `english`: empty text, control characters, whitespace at the edges
+    that differs, and placeholders (and `%%`) that differ from those of `reference` (default: `english`; a plural form is
+    compared with the key). `may_drop_numbers` lets the form leave out a number placeholder (see plural_form_problems)."""
     if not text.strip():
         return ["empty text"]
-    return catalog.compare_placeholders(english, text)
+    problems = []
+    found = control_characters(text)
+    if found:
+        problems.append("control character " + ", ".join(f"U+{ord(character):04X}" for character in found))
+    for edge, wanted, got in zip(("leading", "trailing"), edge_whitespace(english), edge_whitespace(text)):
+        if wanted != got:
+            problems.append(f"{edge} whitespace is {got!r} where the English has {wanted!r}")
+    return problems + catalog.compare_placeholders(english if reference is None else reference, text, may_drop_numbers)
+
+
+def numberless_problem(key):
+    """The sentence that says a key cannot have plural forms because it has no number placeholder (`%lld`, `%d`, `%f`) for
+    them to vary on, or None."""
+    return None if catalog.has_number(key) else (
+        "a plural variation needs a number placeholder (%lld, %d, %f) in the key, and this key has none")
+
+
+def plural_form_problems(language, key, category, text, english):
+    """The sentences about the plural form `category` of `key` in `language` (`text`, against `english`, the English form of
+    that category): every form is compared with the key's placeholders, and a `one` form may leave out the number when the
+    language's `one` means exactly 1 ("Un libro"): French's covers 0 and Russian's 21, so theirs must show the number."""
+    return form_problems(english, text, reference=key,
+                         may_drop_numbers=category == "one" and catalog.one_is_exactly_one(language))
 
 
 def plural_problems(cat, key, language, forms):
-    """The sentences that say why `forms` ({category: text}) cannot be the plural forms of `key` in `language`: a form the
-    language does not use, a missing form, an empty form, and a form whose placeholders differ. The English forms are
-    compared with the key (its placeholders); another language's with the English form of the same category (so Spanish
-    may say "Un libro" where the English `one` says "One book" too), else with the key."""
+    """The sentences that say why `forms` ({category: text}) cannot be the plural forms of `key` in `language`: a key with
+    no number, a form the language does not use, a missing form, an empty form, and a form whose placeholders differ from
+    the key's (a `one` form may drop the number where the language allows it, see plural_form_problems). The English forms
+    are compared with the key; another language's with the key too, and its edges with the English form of the same
+    category."""
     problems = category_problems(language, forms)
+    if numberless_problem(key):
+        problems.append(numberless_problem(key))
     for category, text in forms.items():
         english = key if language == cat.source_language else english_form(cat, key, category)
-        problems += [f"the {category} form: {sentence}" for sentence in form_problems(english, text)]
+        problems += [f"the {category} form: {sentence}"
+                     for sentence in plural_form_problems(language, key, category, text, english)]
     return problems
 
 
@@ -348,18 +406,23 @@ def build_batch(cat, language, glossary, locations, root, keys=None, limit=DEFAU
 # apply
 # ---------------------------------------------------------------------------------------------------------------
 
-def text_problems(glossary, english, text, keep_english):
-    """(the problems, the warnings) of one translated text `text` against its `english`: empty, placeholders that differ,
-    the English left as it was (unless `keep_english`, or it has nothing to translate), a do-not-translate name of the
-    English that is gone; and, as a warning, a text over LENGTH_WARNING times as long."""
-    problems = form_problems(english, text)
+def text_problems(glossary, english, text, keep_english, found=None):
+    """(the problems, the warnings) of one translated text `text` against its `english`: what form_problems finds (empty,
+    control characters, edge whitespace, placeholders; pass `found` when the caller has already compared a plural form with
+    the key), the English left as it was (unless `keep_english`, or it has nothing to translate), a do-not-translate name of
+    the English that is gone; and, as a warning, a text over LENGTH_WARNING times as long (for a text of at least
+    LENGTH_MINIMUM characters in the English: "OK" to "Aceptar" is not news)."""
+    problems = list(form_problems(english, text) if found is None else found)
     if not problems:
         if text.strip() == english.strip() and not keep_english and not glossary.nothing_to_translate(english):
             problems.append('the English left as it was (if that is right, set "keepEnglish": true on the item)')
         problems += [f"lost the name {name}, which is never translated" for name in glossary.missing_names(english, text)]
     warnings = []
-    if english.strip() and len(text) > LENGTH_WARNING * len(english):
+    if len(english.strip()) >= LENGTH_MINIMUM and len(text) > LENGTH_WARNING * len(english):
         warnings.append(f"{len(text) / len(english):.1f} times as long as the English")
+    # A line break inside the text lays the text out in lines; a translation may reflow, but the loss of one is worth a look.
+    if line_breaks(english) != line_breaks(text):
+        warnings.append(f"{line_breaks(text)} line breaks where the English has {line_breaks(english)}")
     return problems, warnings
 
 
@@ -380,14 +443,22 @@ def item_problems(cat, item, language, glossary):
     keep = item.get("keepEnglish") is True
     problems, warnings = [], []
     if isinstance(translation, dict):
-        # Plural forms: the language's categories exactly, each form checked against the English form of its category.
+        # Plural forms: only for English that has plural forms and a key with a number to vary on; the language's categories
+        # exactly, each form checked against the key's placeholders (a `one` form may drop the number where the language
+        # allows it) and against the English form of its category for what the English keeps (edges, names).
+        if shape != "plural":
+            problems.append("the English has no plural forms, so the translation must be one text (give the English its "
+                            "forms with `plural --lang en` first)")
         problems += category_problems(language, translation)
+        if numberless_problem(key):
+            problems.append(numberless_problem(key))
         for category, text in translation.items():
             if not isinstance(text, str):
                 problems.append(f"the {category} form is not text")
                 continue
             form_english = english_form(cat, key, category)
-            found, warned = text_problems(glossary, form_english, text, keep)
+            found, warned = text_problems(glossary, form_english, text, keep,
+                                          plural_form_problems(language, key, category, text, form_english))
             problems += [f"the {category} form: {sentence}" for sentence in found]
             warnings += [f"the {category} form: {sentence}" for sentence in warned]
     elif isinstance(translation, str):
@@ -454,6 +525,9 @@ def apply_batch(cat, batch, glossary, state=None, expected_language=None):
             result.rejected.append({**item, "problems": problems})
             continue
         result.warnings += [(key, sentence) for sentence in warnings]
+        # A form a person reviewed that the machine's text would have replaced stays as the person wrote it.
+        result.warnings += [(key, f"kept the {unit_path.rsplit('.', 1)[-1] if unit_path else 'text'} form a person marked "
+                                  "translated, which this machine translation differs from") for unit_path in outcome[2]]
         if outcome[0] == "unchanged":
             result.unchanged.append(key)
         else:
@@ -468,19 +542,48 @@ def forms_of(translation):
 
 
 def decide_write(cat, key, language, translation, state):
-    """What to do with a good `translation` of `key`: ("unchanged", None) when the text is already there in a state at
-    least as good as `state`; ("refused", reason) when it would replace a person's translation with a machine's or drop
-    forms this module does not write; else ("write", the localization to store)."""
+    """What to do with a good `translation` of `key`, unit by unit (a plain string is one unit; plural forms are one each):
+    `(action, payload, kept)`.
+    - A unit whose text is already there, in a state at least as good as `state`, is left as it is (never downgraded).
+    - A unit a person marked `translated`, whose text differs from the new text, is kept when `state` is a machine's: a
+      machine never replaces a review. The paths of those units are `kept`.
+    - Every other unit is written in `state`.
+    The action is "unchanged" when nothing changes, "refused" (payload: the reason) when nothing changes only because units
+    were kept, or the localization holds forms this module does not write, else "write" (payload: the localization to
+    store; the units that were kept are in it as they were)."""
     existing = cat.strings[key].get("localizations", {}).get(language, {})
     if protected_forms(existing):
-        return "refused", "its localization holds substitutions or device variations, which would be replaced; edit it by hand"
-    localization = plural_localization(translation, state) if isinstance(translation, dict) else plain_localization(translation, state)
-    held = {unit.path: unit.value for unit in cat.units(key, language)}
-    status = cat.status(key, language)
-    same = held == forms_of(translation)
-    if same and catalog.STATUS_ORDER.index(status) >= catalog.STATUS_ORDER.index(state):
-        return "unchanged", None
-    if not same and status == "translated" and state != "translated":
-        return "refused", ("already translated by a person; a machine translation does not replace it "
-                           "(use --state translated to replace it on purpose)")
-    return "write", localization
+        return "refused", "its localization holds substitutions or device variations, which would be replaced; edit it by hand", []
+    held = {unit.path: unit for unit in cat.units(key, language)}
+    order = catalog.STATUS_ORDER.index
+    units, kept = {}, []
+    for unit_path, text in forms_of(translation).items():
+        current = held.get(unit_path)
+        if current and current.value == text and order(unit_status(current)) >= order(state):
+            units[unit_path] = (current.state, text)
+        elif current and current.state == "translated" and current.value != text and state != "translated":
+            units[unit_path] = (current.state, current.value)
+            kept.append(unit_path)
+        else:
+            units[unit_path] = (state, text)
+    if units == {unit_path: (unit.state, unit.value) for unit_path, unit in held.items()}:
+        if kept:
+            return "refused", ("already translated by a person; a machine translation does not replace it "
+                               "(use --state translated to replace it on purpose)"), kept
+        return "unchanged", None, []
+    return "write", localization_of(translation, units), kept
+
+
+def unit_status(unit):
+    """The status (see Catalog.status) of one unit: its state, or `missing` when its value is empty (nothing is there)."""
+    return unit.state if unit.value.strip() else "missing"
+
+
+def localization_of(translation, units):
+    """The localization that holds `translation`'s forms, each with the state and text `units` gives it ({unit path:
+    (state, text)}, the paths of forms_of)."""
+    if isinstance(translation, str):
+        state, text = units[""]
+        return plain_localization(text, state)
+    forms = {category: plain_localization(units[f"plural.{category}"][1], units[f"plural.{category}"][0]) for category in translation}
+    return {"variations": {"plural": forms}}

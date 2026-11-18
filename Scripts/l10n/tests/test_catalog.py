@@ -199,6 +199,30 @@ class PlaceholderTests(unittest.TestCase):
                          ["missing placeholder books (substitution)", "extra placeholder libros (substitution)"])
 
 
+class PercentTests(unittest.TestCase):
+    """`%%` and the lone `%`: counted, and compared between the English and a translation."""
+
+    def test_percent_signs_are_counted_by_kind(self):
+        self.assertEqual(catalog.percent_signs("Rate: %lld%%"), (1, 0, 1))
+        self.assertEqual(catalog.percent_signs("100%% sure"), (1, 0, 0))
+        self.assertEqual(catalog.percent_signs("Tasa: %lld %"), (0, 1, 1))
+        self.assertEqual(catalog.percent_signs("50% of the book")[1], 0, "`% o` reads as a placeholder, as Foundation reads it")
+        self.assertEqual(catalog.percent_signs("Save 5%")[1], 1)
+
+    def test_a_different_number_of_literal_percent_signs_is_a_problem(self):
+        self.assertEqual(catalog.compare_placeholders("Rate: %lld%%", "Tasa: %lld"),
+                         ["0 literal percent signs (%%) where the English has 1"])
+        self.assertEqual(catalog.compare_placeholders("Rate: %lld", "Tasa: %lld%%"),
+                         ["1 literal percent sign (%%) where the English has 0"])
+        self.assertEqual(catalog.compare_placeholders("Rate: %lld%%", "Tasa: %lld%%"), [])
+
+    def test_a_lone_percent_is_a_problem_in_a_format_string_and_not_in_plain_text(self):
+        self.assertIn("a lone % that is no placeholder: write %% for a percent sign",
+                      catalog.compare_placeholders("Rate: %lld%%", "Tasa: %lld %"))
+        self.assertIn("a lone %", catalog.compare_placeholders("Done %lld", "Hecho %lld 5%")[0])
+        self.assertEqual(catalog.compare_placeholders("Save 5%.", "Ahorra el 5%."), [], "plain text is not a format string")
+
+
 class PluralCategoryTests(unittest.TestCase):
     """CLDR's plural categories, one test for each family of languages."""
 

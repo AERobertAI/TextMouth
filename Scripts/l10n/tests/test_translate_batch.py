@@ -288,8 +288,8 @@ class ApplyTests(ApplyCase):
         self.refused("%lld books", {"one": "a %lld", "many": "b %lld", "other": "c %lld", "few": "d %lld"}, "does not use the plural form few")
 
     def test_plural_forms_are_checked_one_by_one(self):
-        self.refused("%lld books", {"one": "un libro", "many": "%lld de libros", "other": "%lld libros"},
-                     "the one form: missing placeholder")
+        self.refused("%lld books", {"one": "%lld libro", "many": "de libros", "other": "%lld libros"},
+                     "the many form: missing placeholder")
 
     def test_a_plain_text_for_plural_english_is_refused(self):
         self.refused("%lld books", "%lld libros", "must give one text for each")
@@ -327,10 +327,17 @@ class ApplyTests(ApplyCase):
         self.refused("Open %@ in TextMouth", "Abrir %@ en TextoBoca", "lost the name TextMouth")
 
     def test_a_translation_much_longer_than_the_english_is_a_warning_only(self):
+        long_text = "Añade %@ ahora mismo a tu biblioteca personal de libros y de audiolibros favoritos"
+        status, out = self.apply(self.translated(**{"Add %@ to your Library": long_text}))
+        self.assertEqual(status, 0, out)
+        self.assertRegex(out, r'warning "Add %@ to your Library": translation: \d\.\d times as long as the English')
+        self.assertEqual(self.values("Add %@ to your Library", "es"), {"": ("machine_translated", long_text)})
+
+    def test_a_short_english_word_is_not_warned_about_however_long_its_translation_is(self):
+        """"OK" to "Aceptar" is three times as long, and it is right."""
         status, out = self.apply(self.translated(Play="Reproducir ahora mismo todo el libro"))
         self.assertEqual(status, 0, out)
-        self.assertRegex(out, r'warning "Play": translation: \d\.\d times as long as the English')
-        self.assertEqual(self.values("Play", "es"), {"": ("machine_translated", "Reproducir ahora mismo todo el libro")})
+        self.assertIn("0 warnings", out)
 
     def test_the_refused_go_to_a_file_for_a_second_try_and_a_clean_run_empties_it(self):
         path = self.translated(Play="")
@@ -453,6 +460,134 @@ class ApplyLanguageTests(ApplyCase):
         status, _, err = shared.run("apply", str(self.batch_in("es-419")), "--catalog", str(self.path), "--glossary", str(self.glossary))
         self.assertEqual(status, 0, err)
         self.assertEqual(self.values("Play", "es-419"), {"": ("machine_translated", "Lanzar")})
+
+
+class ApplyTextChecksTests(ApplyCase):
+    """What `apply` refuses in a text itself: edges, `%%`, control characters, plural forms with no meaning, a `one` form
+    without its number, and a machine write over a reviewed form (review findings 4, 5, and 6)."""
+
+    def add(self, **strings):
+        """Adds strings (key to entry) to the fixtures' catalog."""
+        cat = self.load()
+        cat.strings.update(strings)
+        cat.save()
+
+    def try_item(self, key, translation, language="es", state=None, **extra):
+        """Applies a batch of one item; returns (status, standard output)."""
+        path = self.folder / "one.json"
+        self.write_batch(path, {"language": language, "items": [{"key": key, "translation": translation, **extra}]})
+        return self.apply(path, *(("--state", state) if state else ()))
+
+    def assert_refused(self, key, translation, reason, language="es"):
+        """The item is refused with `reason` and nothing is written."""
+        before = catalog.read_text(self.path)
+        status, out = self.try_item(key, translation, language)
+        self.assertEqual(status, 1, out)
+        self.assertRegex(out, "refused .*" + re.escape(reason))
+        self.assertEqual(catalog.read_text(self.path), before)
+
+    def assert_written(self, key, translation, language="es"):
+        """The item is written."""
+        status, out = self.try_item(key, translation, language)
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.load().status(key, language), "machine_translated")
+
+    # ---- whitespace at the edges ----
+
+    def test_whitespace_at_the_edges_must_be_the_englishs(self):
+        self.add(**{"Page ": base.entry("A label before a number"), " of %lld": base.entry("After a number"),
+                    "Open %@\n": base.entry("A line"), "Plain": base.entry("No edges")})
+        self.assert_refused("Page ", "Página", "trailing whitespace is '' where the English has ' '")
+        self.assert_refused(" of %lld", "de %lld", "leading whitespace is '' where the English has ' '")
+        self.assert_refused("Open %@\n", "Abrir %@", "trailing whitespace is '' where the English has '\\n'")
+        self.assert_refused("Plain", " Simple ", "leading whitespace is ' ' where the English has ''")
+        self.assert_written("Page ", "Página ")
+        self.assert_written(" of %lld", " de %lld")
+        self.assert_written("Open %@\n", "Abrir %@\n")
+
+    def test_whitespace_at_the_edges_is_checked_form_by_form(self):
+        self.add(**{"%lld books ": base.entry("A count", en=base.plural(one=base.unit("%lld book "), other=base.unit("%lld books ")))})
+        self.assert_refused("%lld books ", {"one": "%lld libro ", "many": "%lld de libros", "other": "%lld libros "},
+                            "the many form: trailing whitespace")
+
+    def test_a_lost_line_break_inside_a_text_is_a_warning(self):
+        self.add(**{"Line one\nLine two": base.entry("Two lines")})
+        status, out = self.try_item("Line one\nLine two", "Línea uno y línea dos")
+        self.assertEqual(status, 0, out)
+        self.assertIn("0 line breaks where the English has 1", out)
+
+    # ---- percent signs ----
+
+    def test_literal_percent_signs_must_agree_and_a_lone_percent_is_refused(self):
+        self.add(**{"Rate: %lld%%": base.entry("A speed in percent")})
+        self.assert_refused("Rate: %lld%%", "Tasa: %lld", "0 literal percent signs (%%) where the English has 1")
+        self.assert_refused("Rate: %lld%%", "Tasa: %lld %", "a lone %")
+        self.assert_written("Rate: %lld%%", "Tasa: %lld%%")
+
+    # ---- control characters ----
+
+    def test_control_characters_other_than_a_line_break_and_a_tab_are_refused(self):
+        self.add(**{"Open %@ now": base.entry("A menu item"), "Two\nlines\there": base.entry("Layout")})
+        for character, name in (("\x00", "U+0000"), ("\x07", "U+0007"), ("\x1b", "U+001B"), ("\r", "U+000D")):
+            self.assert_refused("Open %@ now", f"Abrir{character} %@ ahora", f"control character {name}")
+        self.assert_written("Two\nlines\there", "Dos\nlíneas\taquí")
+
+    # ---- plural forms that make no sense ----
+
+    def test_a_plural_object_for_english_with_no_plural_forms_is_refused(self):
+        self.assert_refused("Open %@ in TextMouth", {"one": "Abrir %@ en TextMouth", "many": "Abrir %@ en TextMouth",
+                                                     "other": "Abrir %@ en TextMouth"}, "the English has no plural forms")
+
+    def test_plural_forms_for_a_key_with_no_number_are_refused_in_apply(self):
+        self.add(**{"Open %@": base.entry("A menu item", en=base.plural(one=base.unit("Open %@"), other=base.unit("Open %@")))})
+        self.assert_refused("Open %@", {"one": "Abrir %@", "many": "Abrir %@", "other": "Abrir %@"}, "needs a number placeholder")
+
+    # ---- a `one` form without its number ----
+
+    def test_one_may_say_one_in_words_in_spanish_and_must_show_the_number_in_french(self):
+        spanish = {"one": "Un libro", "many": "%lld de libros", "other": "%lld libros"}
+        french = {"one": "Un livre", "many": "%lld de livres", "other": "%lld livres"}
+        self.assert_written("%lld books", spanish)
+        self.assert_refused("%lld books", french, "the one form: missing placeholder number 1", language="fr")
+        self.assert_written("%lld books", {**french, "one": "%lld livre"}, language="fr")
+
+    # ---- a machine write over a reviewed form ----
+
+    def reviewed_plural(self):
+        """%lld books in Spanish with a reviewed `one` and machine `many` and `other`."""
+        cat = self.load()
+        forms = {"one": base.unit("%lld libro", "translated"), "many": base.unit("%lld de libros", "machine_translated"),
+                 "other": base.unit("%lld libros", "machine_translated")}
+        cat.strings["%lld books"]["localizations"]["es"] = base.plural(**forms)
+        cat.save()
+
+    def test_a_machine_write_keeps_a_reviewed_plural_form_and_updates_the_others(self):
+        self.reviewed_plural()
+        status, out = self.try_item("%lld books", {"one": "%lld ejemplar", "many": "%lld de libros nuevos", "other": "%lld libros nuevos"})
+        self.assertEqual(status, 0, out)
+        forms = self.values("%lld books", "es")
+        self.assertEqual(forms["plural.one"], ("translated", "%lld libro"), "the reviewed form is as the person wrote it")
+        self.assertEqual(forms["plural.many"], ("machine_translated", "%lld de libros nuevos"))
+        self.assertEqual(forms["plural.other"], ("machine_translated", "%lld libros nuevos"))
+        self.assertRegex(out, r'warning "%lld books": kept the one form a person marked translated')
+
+    def test_a_machine_write_that_could_change_only_reviewed_forms_is_refused(self):
+        self.reviewed_plural()
+        cat = self.load()
+        for category in ("many", "other"):
+            cat.strings["%lld books"]["localizations"]["es"]["variations"]["plural"][category]["stringUnit"]["state"] = "translated"
+        cat.save()
+        status, out = self.try_item("%lld books", {"one": "%lld ejemplar", "many": "%lld de libros x", "other": "%lld libros x"})
+        self.assertEqual(status, 1, out)
+        self.assertIn("already translated by a person", out)
+        self.assertEqual(self.values("%lld books", "es")["plural.one"], ("translated", "%lld libro"))
+
+    def test_a_person_can_replace_a_reviewed_form_on_purpose(self):
+        self.reviewed_plural()
+        status, out = self.try_item("%lld books", {"one": "%lld ejemplar", "many": "%lld de libros", "other": "%lld libros"},
+                                    state="translated")
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.values("%lld books", "es")["plural.one"], ("translated", "%lld ejemplar"))
 
 
 class RefusalLoopTests(ApplyCase):

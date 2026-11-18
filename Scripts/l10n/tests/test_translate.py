@@ -108,8 +108,50 @@ class PluralTests(CatalogCase):
     def test_placeholders_that_differ_from_the_key_are_refused(self):
         self.assertRefused("%lld books", "--lang", "en", "--one", "%@ book", "--other", "%lld books",
                            reason="the one form: ")
-        self.assertRefused("%lld books", "--lang", "en", "--one", "one book", "--other", "%lld books",
-                           reason="missing placeholder number 1")
+        # Only a `one` form may drop the number (see the tests of the one rule below); `other` may not.
+        self.assertRefused("%lld books", "--lang", "en", "--one", "%lld book", "--other", "many books",
+                           reason="the other form: missing placeholder number 1")
+
+    def test_a_key_with_no_number_placeholder_cannot_have_plural_forms(self):
+        """A plural variation varies on a number: `Open %@` has none, in English or any other language."""
+        for language, forms in (("en", ("--one", "Open %@", "--other", "Open %@")), ("es", ("--one", "Abrir %@", "--many", "Abrir %@",
+                                                                                                "--other", "Abrir %@"))):
+            cat = self.load()
+            cat.strings["Open %@"] = base.entry("A menu item")
+            cat.save()
+            self.assertRefused("Open %@", "--lang", language, *forms, reason="needs a number placeholder")
+
+    def test_a_float_placeholder_is_a_number_to_vary_on(self):
+        cat = self.load()
+        cat.strings["%.1f hours"] = base.entry("A length of time")
+        cat.save()
+        status, _, err = run("plural", "%.1f hours", "--lang", "en", "--one", "%.1f hour", "--other", "%.1f hours", "--catalog", str(self.path))
+        self.assertEqual(status, 0, err)
+
+    def test_one_may_leave_out_the_number_where_one_means_exactly_1(self):
+        for language, forms in (("en", ("--one", "One book", "--other", "%lld books")),
+                                ("es", ("--one", "Un libro", "--many", "%lld de libros", "--other", "%lld libros"))):
+            status, _, err = run("plural", "%lld books", "--lang", language, *forms, "--catalog", str(self.path))
+            self.assertEqual(status, 0, f"{language}: {err}")
+
+    def test_one_must_show_the_number_where_one_covers_more_than_1(self):
+        # French's `one` covers 0 and Russian's 21: "Un livre" would be said of 0 books, "Одна книга" of 21.
+        self.assertRefused("%lld books", "--lang", "fr", "--one", "Un livre", "--many", "%lld de livres", "--other", "%lld livres",
+                           reason="the one form: missing placeholder number 1")
+        self.assertRefused("%lld books", "--lang", "ru", "--one", "Одна книга", "--few", "%lld книги", "--many", "%lld книг",
+                           "--other", "%lld книги", reason="the one form: missing placeholder number 1")
+        status, _, err = run("plural", "%lld books", "--lang", "fr", "--one", "%lld livre", "--many", "%lld de livres", "--other",
+                             "%lld livres", "--catalog", str(self.path))
+        self.assertEqual(status, 0, err)
+
+    def test_a_form_other_than_one_may_not_drop_the_number_and_a_one_may_not_drop_another_placeholder(self):
+        self.assertRefused("%lld books", "--lang", "es", "--one", "Un libro", "--many", "de libros", "--other", "%lld libros",
+                           reason="the many form: missing placeholder number 1")
+        cat = self.load()
+        cat.strings["%lld books in %@"] = base.entry("A count and a shelf")
+        cat.save()
+        self.assertRefused("%lld books in %@", "--lang", "es", "--one", "Un libro", "--many", "%lld de libros en %@",
+                           "--other", "%lld libros en %@", reason="the one form: missing placeholder number 2 (object)")
 
     def test_a_key_not_in_the_catalog_is_refused(self):
         self.assertRefused("%lld pages", "--lang", "en", "--one", "%lld page", "--other", "%lld pages", reason="has no string")

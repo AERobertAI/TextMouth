@@ -228,6 +228,33 @@ def placeholder_problems(text):
     return slots(text)[1]
 
 
+def percent_signs(text):
+    """(how many `%%` literal percent signs `text` has, how many lone `%` it has, how many placeholders it has): a lone `%`
+    starts no placeholder and is not part of `%%`. In a text that is a format string (it has a placeholder or `%%`) a lone
+    `%` is invalid and prints as garbage or nothing."""
+    literals = other = 0
+    for match in _SPECIFIER.finditer(text):
+        if match.group("percent"):
+            literals += 1
+        else:
+            other += 1
+    return literals, text.count("%") - 2 * literals - other, other
+
+
+def percent_problems(english, translation):
+    """The sentences about the `%%` of `translation` against `english`: a different number of literal percent signs, and a
+    lone `%` in a translation that is a format string (see percent_signs). A translation that has neither a placeholder nor
+    a `%%` is plain text, where `%` is only a percent sign."""
+    wanted, _, _ = percent_signs(english)
+    got, lone, placeholders_found = percent_signs(translation)
+    problems = []
+    if got != wanted:
+        problems.append(f"{got} literal percent sign{'s' if got != 1 else ''} (%%) where the English has {wanted}")
+    if lone and (got or placeholders_found):
+        problems.append("a lone % that is no placeholder: write %% for a percent sign")
+    return problems
+
+
 # The types of a number argument: the ones a plural variation can vary on (an integer or a floating-point number).
 NUMBER_TYPES = ("int32", "int64", "uint32", "uint64", "double", "long double")
 
@@ -245,7 +272,7 @@ def compare_placeholders(english, translation, may_drop_numbers=False):
     words); one it has that the English lacks still is."""
     wanted, _ = slots(english)
     got, problems = slots(translation)
-    problems = list(problems)
+    problems = list(problems) + percent_problems(english, translation)
     for slot in sorted(set(wanted) | set(got), key=lambda s: (isinstance(s, str), s)):
         if slot not in got:
             if not (may_drop_numbers and wanted[slot] in NUMBER_TYPES):

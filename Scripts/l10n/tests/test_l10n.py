@@ -542,11 +542,19 @@ class CheckTests(TemporaryCase):
         self.assertNotEqual(self.problems({"%@ has %lld": entry(es=unit("%lld tiene %@"))}), [])
 
     def test_placeholders_are_compared_plural_form_by_plural_form(self):
-        # The `one` form forgets its number; the English is the key, which holds one.
-        problems = self.problems({"%lld books": entry(es=plural(one=unit("un libro"), many=unit("%lld de libros"), other=unit("%lld libros")))})
+        # The `many` form forgets its number; the English is the key, which holds one.
+        problems = self.problems({"%lld books": entry(es=plural(one=unit("%lld libro"), many=unit("de libros"), other=unit("%lld libros")))})
         self.assertEqual(len(problems), 1, problems)
-        self.assertIn("(plural.one)", problems[0])
+        self.assertIn("(plural.many)", problems[0])
         self.assertIn("missing placeholder number 1", problems[0])
+
+    def test_the_one_form_may_say_one_in_words_only_where_one_means_exactly_1(self):
+        forms = {"%lld books": entry(es=plural(one=unit("un libro"), many=unit("%lld de libros"), other=unit("%lld libros")),
+                                     fr=plural(one=unit("un livre"), many=unit("%lld de livres"), other=unit("%lld livres")))}
+        self.assertEqual(self.problems(forms), [], "Spanish: one means 1")
+        problems = self.problems(forms, languages=["fr"])
+        self.assertEqual(len(problems), 1, "French: one covers 0, so the number stays")
+        self.assertIn("(plural.one)", problems[0])
 
     def test_a_plural_form_the_english_has_is_the_one_compared(self):
         strings = {"%lld books": entry(en=plural(one=unit("%lld book"), other=unit("%lld books")),

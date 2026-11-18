@@ -569,7 +569,7 @@ def check_language(cat, language):
                 problems.append(f"{label}{where}: not translated (state {unit.state})")
             else:
                 problems += [f"{label}{where}: {sentence}"
-                             for sentence in catalog.compare_placeholders(english_text_for(english, key, unit), unit.value)]
+                             for sentence in translate.unit_placeholder_problems(english, key, unit, language)]
         problems += [f"{label}: {sentence}" for sentence in plural_problems(units, english, required)]
         problems += [f"{label}: {sentence}" for sentence in substitution_problems(cat, key, language)]
     return problems
