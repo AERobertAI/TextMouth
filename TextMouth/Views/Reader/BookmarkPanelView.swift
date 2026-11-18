@@ -459,7 +459,7 @@ extension BookmarkPanelView {
     /// The panel's title, read as its heading, and the name of its rotor.
     nonisolated static var title: String {
         String(localized: "Bookmarks",
-               comment: "Title of the Bookmarks list over a book's reader, read by VoiceOver as its heading; also the name of the list's VoiceOver rotor.")
+               comment: "The name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.")
     }
 
     /// The Add Bookmark button's visible words, and the Add panel's heading.
@@ -478,7 +478,7 @@ extension BookmarkPanelView {
     /// The button that closes the panel.
     nonisolated static var doneTitle: String {
         String(localized: "Done",
-               comment: "Button that closes the Bookmarks list over a book's reader.")
+               comment: "Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.")
     }
 
     /// What the panel says while the book has no bookmark.
@@ -508,7 +508,7 @@ extension BookmarkPanelView {
     /// The button that leaves the Add or Edit panel without a change.
     nonisolated static var cancelTitle: String {
         String(localized: "Cancel",
-               comment: "Button that leaves the panel for adding a bookmark or editing its note, changing nothing.")
+               comment: "Button that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.")
     }
 
     /// The Add panel's button that adds the bookmark.
@@ -520,7 +520,7 @@ extension BookmarkPanelView {
     /// The Edit panel's button that keeps the note.
     nonisolated static var saveTitle: String {
         String(localized: "Save",
-               comment: "Button of the panel for editing a bookmark's note: keeps the note.")
+               comment: "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.")
     }
 
     /// The Edit panel's heading, as in "Edit Bookmark 3".

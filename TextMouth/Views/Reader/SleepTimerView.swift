@@ -323,13 +323,13 @@ struct SleepTimerView: View {
     /// The sheet's title, read as its heading.
     nonisolated static var title: String {
         String(localized: "Sleep Timer",
-               comment: "Title of the sleep timer sheet over a book's reader, read by VoiceOver as its heading.")
+               comment: "The name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.")
     }
 
     /// The button that closes the sheet.
     nonisolated static var closeTitle: String {
         String(localized: "Close",
-               comment: "Button that closes a sheet, such as the sleep timer sheet over a book's reader.")
+               comment: "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.")
     }
 
     /// What VoiceOver says the Close button does: the result, which its
