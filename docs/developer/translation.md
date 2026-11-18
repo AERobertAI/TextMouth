@@ -15,9 +15,12 @@ Run every command as `python3 -I -B Scripts/l10n/l10n.py COMMAND`; `--help` afte
 
 1. `sync` type-checks both apps and merges the strings the compiler finds into the catalog.
    The agent that changed the code runs it, and it takes the heavy-work lock for about four minutes, so a translator does not.
-   It also writes `build/l10n/locations.json`, the file and line of each string, which `todo` reads for the code around a string.
+   It also writes `build/l10n/locations.json`, the file and line of each string and the commit it read them from, which `todo` reads for the code around a string.
 2. `todo --lang es --out batch.json` writes a batch of up to 300 strings that still need Spanish.
-   `--keys-from FILE`, `--file PATH...`, and `--area NAME` pick the strings (a list of keys, the strings some files use, or one of the scanner's areas); `--limit N` sets the batch size, and 0 means all.
+   `--keys-from FILE`, `--file PATH...`, and `--area NAME` pick the strings (a list of keys, the strings some files use, or one of the scanner's areas); `--limit N` sets the batch size, and 0 means all (a negative number is refused).
+   `--area` needs the unlocalized-text scanner (its area table, from the `l10n/scan` branch); without it `--area` says so, and `--file` and `--keys-from` still work.
+   `todo` warns when `locations.json` was made from other code than this checkout's, and then leaves out the code of any use where the string's text is not within the five lines shown.
+   An item's `previous` is an earlier translation of a nearly identical stale string, with its placeholders; it is offered only when the placeholders are the key's.
 3. Fill in `translation` in each item of the batch: a text, or for a string with plural forms an object with one text for each plural category the language uses.
    Nothing else in an item is changed, except `"keepEnglish": true` where the English is right in the language too (a word both share).
 4. `apply batch.json` checks each translation and writes the good ones as `machine_translated`; it is safe to run twice.
@@ -32,12 +35,29 @@ Run every command as `python3 -I -B Scripts/l10n/l10n.py COMMAND`; `--help` afte
 `apply` refuses:
 - placeholders that differ from the English's, plural form by plural form;
 - a plural category the language does not use, or one it uses that is missing;
-- empty text;
+- plural forms for an English string that has none, or for a key with no number placeholder (`%lld`, `%d`, `%f`);
+- a `one` form that leaves out the number, except in a language whose `one` means exactly 1 (Spanish, English, German, Italian, Dutch, Portuguese of Portugal): in French `one` also covers 0 and in Russian 21, so there the number stays;
+- empty text, and control characters other than a line break and a tab;
+- leading or trailing whitespace that differs from the English's, form by form;
+- a different number of `%%` (a literal percent sign), and a lone `%` in a text that has placeholders;
 - the English left as it was, unless the item has `keepEnglish` or the text is only names, numbers, and placeholders;
 - a name from the glossary's `doNotTranslate` list that the English has and the translation lacks;
-- a string whose English changed after the batch was made, a stale string, and a machine translation over a person's.
+- a batch whose language is the source language or one the tools do not know, or differs from `--lang`;
+- a string whose English changed after the batch was made, a stale string, and a machine translation over a person's: a form a person marked `translated` is kept as it is (a warning), and the other forms are written.
 
-A translation more than three times as long as its English is only a warning.
+A translation more than three times as long as an English of at least 12 characters is only a warning, and so is a different number of line breaks inside the text.
+
+## The catalog's merge driver
+<!-- id: translation-merge-driver; keys: merge driver, .gitattributes, xcstrings, merge conflict, make l10n-merge-driver; src: Scripts/l10n/merge.py, Scripts/l10n/l10n.py, Makefile -->
+
+Two branches that each add or translate strings merge without a conflict, because `.gitattributes` gives `*.xcstrings` the driver `merge=xcstrings`, which merges by key, language, and plural form.
+Git reads the driver's definition from the repository's configuration, so define it once for each clone with `make l10n-merge-driver`.
+The merge worktrees share that configuration, so one definition serves them all.
+Without it git merges the catalog as text, and neighbouring keys conflict.
+
+The driver refuses (exit 2, your file untouched) a file that is not a catalog: not JSON, not an object, or with `strings` that is not an object of objects.
+It writes the result through a temporary file and a rename, so an interrupted merge never leaves half a catalog.
+When both sides changed one piece differently it keeps ours, prints the key and the three values on standard error, and exits 1, so git reports the file conflicted.
 
 ## States
 <!-- id: translation-states; keys: machine_translated, translated, needs_review, stale, new, review; src: Scripts/l10n/catalog.py, Scripts/l10n/translate.py -->
@@ -63,6 +83,7 @@ Every state is compiled into the app, so an empty value would ship as empty text
   The English has `one` and `other`; Spanish also has `many`, used for exact millions ("1 000 000 de libros"), so it needs a form of its own.
 - Use the glossary's translation of each term in the item's `glossary`, and mark a doubt in your report rather than invent a second word.
   A glossary entry with `"check": true` is a word a native speaker has not yet confirmed.
+  A term is never found inside a name (Windows-1252 is the name Windows), and a command word that is also an everyday word (Close, Open, Done, Play) is found only as a whole label or in a title-case phrase, so a sentence such as "close to the end" has no hit.
 - Never change a name in `doNotTranslate`: TextMouth, VoiceOver, EPUB, DAISY, and the other product and format names.
 - Never translate what a person does not read: the debug log's lines, a stored key or identifier, a file extension, a URL, a format's element names, or code.
   Such a string should not be in a batch; set `keepEnglish` on it, and name it in your report so it can be marked `shouldTranslate: false`.
