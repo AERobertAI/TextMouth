@@ -14,7 +14,7 @@ The licence files of all ten ship inside the Mac app, in Contents/Resources/Lice
 - Licenses/swift-cmark holds COPYING;
 - Licenses/TrueAudio holds COPYRIGHT and README, Licenses/WavPack holds COPYING, and Licenses/MonkeysAudio holds License.txt: the notices of the decoders TextMouth's own TTA, WavPack, and Monkey's Audio readers are ported from.
 
-Both apps ship the same folders except FFmpeg's, which the iPhone app does not link yet (FMT54).
+Both apps ship the same folders.
 The file project.yml copies them from Vendor, never into the repository a second time, so each stays its author's own text.
 The package and decoder licences are in Vendor/package-licenses, unchanged from their sources.
 BundledLicenseTests and BundledLicenseIOSTests check that they reach the built apps.
