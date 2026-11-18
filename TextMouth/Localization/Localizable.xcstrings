@@ -749,8 +749,16 @@
     "Where the next item opens when listening goes on from one of this feed's items: in this window, in a new window, or as the global setting says" : {
       "comment" : "VoiceOver hint of the Open the next item in pop-up button in a feed's Feed Info."
     },
-    "With \"Stop\", Play on a finished book says it is finished; with \"Stop, and Play Starts Over\", Play starts it again from the beginning." : {
-      "comment" : "Caption under the When book ends picker in Settings, Playback. \"Stop\" and \"Stop, and Play Starts Over\" are the names of two of the picker's choices."
+    "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
+      "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning."
+          }
+        }
+      }
     },
     "article" : {
       "comment" : "A noun put inside a sentence about a feed's next or previous item, as in \"Downloading the next article\". Lowercase, singular."
