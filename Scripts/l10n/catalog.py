@@ -228,16 +228,28 @@ def placeholder_problems(text):
     return slots(text)[1]
 
 
-def compare_placeholders(english, translation):
+# The types of a number argument: the ones a plural variation can vary on (an integer or a floating-point number).
+NUMBER_TYPES = ("int32", "int64", "uint32", "uint64", "double", "long double")
+
+
+def has_number(text):
+    """Whether `text` has a number placeholder (`%lld`, `%d`, `%f`, ...), which a plural variation needs."""
+    return any(placeholder.type in NUMBER_TYPES for placeholder in placeholders(text))
+
+
+def compare_placeholders(english, translation, may_drop_numbers=False):
     """The sentences that say how the placeholders of `translation` differ from those of `english`, none when they
     agree: the same slots with the same types. A translation may put them in another order only with positions
-    (`%2$@ ... %1$@`), since unnumbered ones are taken in order."""
+    (`%2$@ ... %1$@`), since unnumbered ones are taken in order. With `may_drop_numbers`, a number placeholder the
+    translation leaves out is not a problem (the `one` form of a language whose `one` means exactly 1 may say "one" in
+    words); one it has that the English lacks still is."""
     wanted, _ = slots(english)
     got, problems = slots(translation)
     problems = list(problems)
     for slot in sorted(set(wanted) | set(got), key=lambda s: (isinstance(s, str), s)):
         if slot not in got:
-            problems.append(f"missing placeholder {_describe(slot, wanted[slot])}")
+            if not (may_drop_numbers and wanted[slot] in NUMBER_TYPES):
+                problems.append(f"missing placeholder {_describe(slot, wanted[slot])}")
         elif slot not in wanted:
             problems.append(f"extra placeholder {_describe(slot, got[slot])}")
         elif wanted[slot] != got[slot]:
@@ -254,21 +266,23 @@ def _describe(slot, kind):
 # Plural categories.
 # ---------------------------------------------------------------------------------------------------------------
 
-# The plural categories each language uses, from CLDR's plural rules: the release-49 file
-# common/supplemental/plurals.xml of github.com/unicode-org/cldr, whose chart is
-# https://www.unicode.org/cldr/charts/49/supplemental/language_plural_rules.html. Read on November 18, 2026: the
-# file's header names no release number, so its tag's contents are what was read. Each family below shares one rule.
+# The plural categories each language uses, from CLDR's cardinal plural rules: the file
+# common/supplemental/plurals.xml of github.com/unicode-org/cldr at the tag `release-49` (published October 21, 2026;
+# the file's own header names no release), whose chart is
+# https://www.unicode.org/cldr/charts/49/supplemental/language_plural_rules.html. Every language below was checked against
+# that file on November 18, 2026 (Galician has `many`, as Catalan and Italian do; Vietnamese has `one`, which covers 0 and 1,
+# since release 49). Each family below shares one rule. A test (test_catalog.PluralTableTests) keeps the table.
 _ONE_OTHER = ("one", "other")
 _ONE_MANY_OTHER = ("one", "many", "other")
 _ONLY_OTHER = ("other",)
 _SLAVIC = ("one", "few", "many", "other")
 PLURAL_CATEGORIES = {
     # One and other: the Germanic languages, Turkish (and its group), Finnish, Hungarian, Greek, Hindi, Danish, ...
-    **{code: _ONE_OTHER for code in ("en", "de", "nl", "sv", "da", "nb", "nn", "no", "fi", "et", "tr", "hu", "el", "hi", "af")},
+    **{code: _ONE_OTHER for code in ("en", "de", "nl", "sv", "da", "nb", "nn", "no", "fi", "et", "tr", "hu", "el", "hi", "af", "vi")},
     # One, many (exact millions), and other: Spanish, French, Italian, Portuguese (Brazil and Portugal), Catalan.
     **{code: _ONE_MANY_OTHER for code in ("es", "fr", "it", "pt", "pt-PT", "ca", "gl")},
     # Other alone: Chinese, Japanese, Korean, and the languages with no plural.
-    **{code: _ONLY_OTHER for code in ("ja", "zh", "zh-Hans", "zh-Hant", "ko", "id", "ms", "th", "vi")},
+    **{code: _ONLY_OTHER for code in ("ja", "zh", "zh-Hans", "zh-Hant", "ko", "id", "ms", "th")},
     # One, few, many, and other: the Slavic languages that decline by count.
     **{code: _SLAVIC for code in ("ru", "uk", "pl", "cs", "sk")},
     "ro": ("one", "few", "other"),
@@ -278,18 +292,76 @@ PLURAL_CATEGORIES = {
 }
 
 
-def plural_categories(language):
-    """The plural categories of `language` (a code such as "es", "pt-BR", or "zh-Hans"), in CLDR's order, as a
-    tuple. The language's own code is tried first, then the code without its region or script, so `pt-BR` and `es-419`
-    use Portuguese's and Spanish's rules. A language this table lacks raises KeyError: add it with its CLDR rule."""
+def by_language(table, language):
+    """The entry of `table` ({language code: value}) for `language`: its own code first (`pt-BR`), then the code without
+    its region or script (`pt`), so `pt-BR` and `es-419` use Portuguese's and Spanish's entries. Raises KeyError when the
+    table has neither."""
     code = language.replace("_", "-")
     while code:
-        if code in PLURAL_CATEGORIES:
-            return PLURAL_CATEGORIES[code]
+        if code in table:
+            return table[code]
         if "-" not in code:
             break
         code = code.rsplit("-", 1)[0]
-    raise KeyError(f"no plural rule is recorded for {language!r}; add it to PLURAL_CATEGORIES from CLDR")
+    raise KeyError(language)
+
+
+def plural_categories(language):
+    """The plural categories of `language` (a code such as "es", "pt-BR", or "zh-Hans"), in CLDR's order, as a
+    tuple. A language this table lacks raises KeyError: add it with its CLDR rule."""
+    try:
+        return by_language(PLURAL_CATEGORIES, language)
+    except KeyError:
+        raise KeyError(f"no plural rule is recorded for {language!r}; add it to PLURAL_CATEGORIES from CLDR")
+
+
+# CLDR's rule for the `one` category of each language that has it, as the file writes it (release 49), grouped by rule.
+# They say what `one` means: "n = 1" and "i = 1 and v = 0" mean exactly the number 1; French and Portuguese's "i = 0..1"
+# covers 0, Hindi's and Vietnamese's "i = 0 or n = 1" covers 0, and Russian's and Ukrainian's covers 21, 31, 101, and so on.
+_ONE_RULE_GROUPS = {
+    "n = 1": ("af", "ar", "el", "es", "hu", "nb", "nn", "no", "tr"),
+    "i = 1 and v = 0": ("ca", "cs", "de", "en", "et", "fi", "gl", "it", "nl", "pl", "pt-PT", "ro", "sk", "sv"),
+    "n = 1 or t != 0 and i = 0,1": ("da",),
+    "i = 0..1": ("fr", "pt"),
+    "i = 1 and v = 0 or i = 0 and v != 0": ("he",),
+    "i = 0 or n = 1": ("hi", "vi"),
+    "v = 0 and i % 10 = 1 and i % 100 != 11": ("ru", "uk"),
+}
+ONE_RULES = {code: rule for rule, codes in _ONE_RULE_GROUPS.items() for code in codes}
+
+
+def _relation_holds(relation, value):
+    """Whether one CLDR relation (`i % 10 = 1`, `n != 2..4`, `i = 0,1`) holds when every operand is `value` that is an
+    integer (so `v`, `w`, `f`, `t`, `c`, and `e` are 0, and `n` and `i` are the number). Only the relations of the `one`
+    rules above are read: an operand, an optional `% modulus`, `=` or `!=`, and a list of numbers and `a..b` ranges."""
+    match = re.fullmatch(r"([a-z]) (?:% (\d+) )?(!?=) (.+)", relation)
+    operand, modulus, sign, ranges = match.groups()
+    number = value if operand in "ni" else 0
+    if modulus:
+        number %= int(modulus)
+    inside = False
+    for part in ranges.split(","):
+        low, _, high = part.partition("..")
+        inside = inside or int(low) <= number <= int(high or low)
+    return inside if sign == "=" else not inside
+
+
+def one_selects(language, number):
+    """Whether CLDR's rule for `one` in `language` selects the integer `number`. Raises KeyError when the language has no
+    `one` rule (it has no `one` category, or is not in the table)."""
+    rule = by_language(ONE_RULES, language)
+    return any(all(_relation_holds(relation, number) for relation in alternative.split(" and "))
+               for alternative in rule.split(" or "))
+
+
+def one_is_exactly_one(language):
+    """Whether `language`'s `one` form is for the number 1 and nothing else, so that its text may say "one" in words ("Un
+    libro") instead of showing the number. False for French (`one` covers 0 too), Russian (21, 31, ...), Hindi, and a
+    language with no `one` category. Decided from CLDR's rule on the integers up to 1000 (the rules repeat by 10, 100, ...)."""
+    try:
+        return [number for number in range(1001) if one_selects(language, number)] == [1]
+    except KeyError:
+        return False
 
 
 # ---------------------------------------------------------------------------------------------------------------

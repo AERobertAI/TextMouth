@@ -233,6 +233,68 @@ class PluralCategoryTests(unittest.TestCase):
             catalog.plural_categories("xx")
 
 
+class PluralTableTests(unittest.TestCase):
+    """The table of plural categories against CLDR release 49 (common/supplemental/plurals.xml at the tag `release-49`),
+    language by language, written out here as an independent copy so that a change to the table must change this too."""
+
+    CLDR_49 = {
+        "af": "one other", "ar": "zero one two few many other", "ca": "one many other", "cs": "one few many other",
+        "da": "one other", "de": "one other", "el": "one other", "en": "one other", "es": "one many other",
+        "et": "one other", "fi": "one other", "fr": "one many other",
+        # Galician shares Catalan's and Italian's rule, `many` included (a reviewer believed it had only one and other).
+        "gl": "one many other", "he": "one two other", "hi": "one other", "hu": "one other", "id": "other",
+        "it": "one many other", "ja": "other", "ko": "other", "ms": "other", "nb": "one other", "nl": "one other",
+        "nn": "one other", "no": "one other", "pl": "one few many other", "pt": "one many other",
+        "pt-PT": "one many other", "ro": "one few other", "ru": "one few many other", "sk": "one few many other",
+        "sv": "one other", "th": "other", "tr": "one other", "uk": "one few many other",
+        # Vietnamese has `one` (0 and 1) in release 49; it had only `other` before.
+        "vi": "one other", "zh": "other", "zh-Hans": "other", "zh-Hant": "other",
+    }
+
+    def test_every_language_of_the_table_has_cldrs_categories(self):
+        for language, categories in self.CLDR_49.items():
+            self.assertEqual(catalog.plural_categories(language), tuple(categories.split()), language)
+
+    def test_the_table_has_no_language_this_check_does_not_know(self):
+        self.assertEqual(sorted(catalog.PLURAL_CATEGORIES), sorted(self.CLDR_49))
+
+    def test_every_language_with_a_one_category_has_a_one_rule_and_no_other_does(self):
+        with_one = {language for language, categories in catalog.PLURAL_CATEGORIES.items() if "one" in categories}
+        self.assertEqual(with_one, set(catalog.ONE_RULES))
+
+    def test_one_means_exactly_the_number_1_in_the_languages_whose_rule_says_so(self):
+        for language in ("en", "es", "de", "it", "nl", "pt-PT", "ca", "gl", "pl", "cs", "ar", "he", "da", "tr", "sv", "ro"):
+            self.assertTrue(catalog.one_is_exactly_one(language), language)
+
+    def test_one_covers_more_than_the_number_1_in_french_portuguese_russian_and_hindi(self):
+        for language in ("fr", "pt", "pt-BR", "ru", "uk", "hi", "vi"):
+            self.assertFalse(catalog.one_is_exactly_one(language), language)
+        self.assertTrue(catalog.one_selects("fr", 0), "French's one covers 0")
+        self.assertTrue(catalog.one_selects("ru", 21), "Russian's one covers 21")
+        self.assertFalse(catalog.one_selects("ru", 11))
+
+    def test_a_language_with_no_one_category_or_no_rule_is_not_exactly_one(self):
+        self.assertFalse(catalog.one_is_exactly_one("ja"))
+        self.assertFalse(catalog.one_is_exactly_one("xx"))
+
+    def test_a_region_uses_its_languages_one_rule_unless_it_has_its_own(self):
+        self.assertTrue(catalog.one_is_exactly_one("es-419"))
+        self.assertFalse(catalog.one_is_exactly_one("pt-BR"), "Brazil's Portuguese is `pt`, whose one covers 0")
+        self.assertTrue(catalog.one_is_exactly_one("pt-PT"), "Portugal's has its own rule")
+
+    def test_a_number_placeholder_may_be_dropped_only_when_asked(self):
+        self.assertEqual(catalog.compare_placeholders("%lld book", "Un libro"), ["missing placeholder number 1 (int64)"])
+        self.assertEqual(catalog.compare_placeholders("%lld book", "Un libro", may_drop_numbers=True), [])
+        self.assertEqual(catalog.compare_placeholders("%lld in %@", "Uno", may_drop_numbers=True), ["missing placeholder number 2 (object)"])
+        self.assertEqual(catalog.compare_placeholders("One", "%lld uno", may_drop_numbers=True), ["extra placeholder number 1 (int64)"])
+
+    def test_has_number_finds_integers_and_floats_but_not_objects(self):
+        self.assertTrue(catalog.has_number("%lld books"))
+        self.assertTrue(catalog.has_number("%.1f hours"))
+        self.assertFalse(catalog.has_number("Open %@"))
+        self.assertFalse(catalog.has_number("100%% done"))
+
+
 class EnglishTextTests(unittest.TestCase):
     """The English text of a catalog, in UTF-8 bytes, each text once."""
 
