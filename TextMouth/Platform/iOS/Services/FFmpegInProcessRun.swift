@@ -128,6 +128,27 @@ struct RunMemory: Sendable, Equatable {
     /// half of what it began with.
     var beganShort: Bool { floor < reader.bytes }
 
+    /// The memory the app has left now when that is under the run's floor,
+    /// or none (over its limit, even in a run that began so): the app is
+    /// then too near its limit to go on. Nil when it has enough, and when
+    /// the system sets it no limit. The one test of the floor, for an FFmpeg
+    /// session's stop check and for TextMouth's own readers' conversions.
+    func leftWhenCrossed() -> Int? {
+        guard let left = reader.left, left == 0 || left < floor else { return nil }
+        return left
+    }
+
+    /// Why the run stopped with `left` bytes of memory left (what
+    /// `leftWhenCrossed()` gave): a run that began short of memory says that
+    /// it did, with what it began with; any other, what the app's memory
+    /// grew by since it began (at least 1 MB).
+    func stopReason(whenLeft left: Int) -> WatchedProcess.KillReason {
+        let leftAtStart = leftAtStart ?? left
+        return beganShort
+            ? .beganShortOfMemory(freeBytes: Int64(leftAtStart))
+            : .memoryGrew(bytes: Int64(max(leftAtStart - left, 1_048_576)))
+    }
+
     static func == (lhs: RunMemory, rhs: RunMemory) -> Bool {
         lhs.floor == rhs.floor && lhs.allocationCap == rhs.allocationCap && lhs.leftAtStart == rhs.leftAtStart
             && lhs.reader.bytes == rhs.reader.bytes
@@ -167,7 +188,7 @@ final class SessionStopCheck {
     /// in a run that began so), which stops it for good.
     var shouldStop: Bool {
         if memoryLeftWhenStopped != nil || call.shouldStop { return true }
-        guard let left = memory.reader.left, left == 0 || left < memory.floor else { return false }
+        guard let left = memory.leftWhenCrossed() else { return false }
         memoryLeftWhenStopped = left
         return true
     }
@@ -489,10 +510,7 @@ private actor InProcessFFmpegRun {
     private func end(with status: Int32, memoryLeft: Int? = nil) {
         self.status = status
         if let memoryLeft {
-            let leftAtStart = memory.leftAtStart ?? memoryLeft
-            stopped = memory.beganShort
-                ? .beganShortOfMemory(freeBytes: Int64(leftAtStart))
-                : .memoryGrew(bytes: Int64(max(leftAtStart - memoryLeft, 1_048_576)))
+            stopped = memory.stopReason(whenLeft: memoryLeft)
             return
         }
         guard status == TMFF_EXIT_STOPPED, !Task.isCancelled else { return }
