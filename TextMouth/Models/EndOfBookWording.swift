@@ -190,8 +190,7 @@ enum EndOfBookWording {
     /// sentences are made whole (FR34): a translated noun inside an English
     /// sentence read "Downloading the next episodio: ...".
     static func kind(isArticle: Bool) -> String {
-        // l10n: no (inside FolderNavigationWording's English sentences until that area converts)
-        isArticle ? "article" : "episode"
+        isArticle ? "article" : "episode" // l10n: no (inside FolderNavigationWording's English sentences until that area converts)
     }
 
     // MARK: - A Book Resting at Its End

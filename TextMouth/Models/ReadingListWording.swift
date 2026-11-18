@@ -124,8 +124,7 @@ enum ReadingListWording {
         // English until the cloud's sentences (LibraryCloudWording, CloudStorageContract) convert: a translated
         // fragment inside an English sentence read "...can't be removed. Quitalo de la lista de lectura ... first."
         // `keepBooksLabel` stays the checkbox's shown name, whatever the language.
-        // l10n: no (inside LibraryCloudWording's and CloudStorageContract's English sentences until that area converts)
-        let advice = "\(plural ? "take them" : "take it") off the reading list, or clear \(keepBooksLabel) in the Reading List's options"
+        let advice = "\(plural ? "take them" : "take it") off the reading list, or clear \(keepBooksLabel) in the Reading List's options" // l10n: no (inside LibraryCloudWording's and CloudStorageContract's English sentences until that area converts)
         // The sentence-initial form capitalizes its first letter.
         return capitalized ? advice.prefix(1).uppercased() + advice.dropFirst() : advice
     }
