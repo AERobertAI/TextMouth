@@ -107,6 +107,7 @@ final class FFmpegImportConversionTests: XCTestCase {
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: wma)
         let tool = try bundledFFmpegTool()
         let imported = try FFmpegAudioConverter.$tool.withValue(tool) { try FileImportService.importFileWithReport(from: link) }
+        addTeardownBlock { try? FileManager.default.removeItem(at: imported.book.tmbDirectory) }
         XCTAssertTrue(imported.book.format.isAudio)
         XCTAssertEqual(imported.book.bookFileURL.pathExtension, "m4a")
         XCTAssertNil(imported.notice)
@@ -162,11 +163,13 @@ final class FFmpegImportConversionTests: XCTestCase {
         let imported = try FFmpegAudioConverter.$tool.withValue(ffmpegTool(helper: try standInOfTwoSeconds(refusedPackets: 3))) {
             try FileImportService.importFileWithReport(from: try source())
         }
+        addTeardownBlock { try? FileManager.default.removeItem(at: imported.book.tmbDirectory) }
         XCTAssertEqual(imported.notice, "Part of “tones.wma” could not be decoded and is kept as silence.")
         XCTAssertTrue(imported.book.format.isAudio)
         let whole = try FFmpegAudioConverter.$tool.withValue(ffmpegTool(helper: try standInOfTwoSeconds(refusedPackets: 0))) {
             try FileImportService.importFileWithReport(from: try source())
         }
+        addTeardownBlock { try? FileManager.default.removeItem(at: whole.book.tmbDirectory) }
         XCTAssertNil(whole.notice)
     }
 
