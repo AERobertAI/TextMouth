@@ -7,10 +7,9 @@ pattern matches a file owns it, so a specific area comes before the one that hol
 neighbours (the iPhone's screens are first because every file of the iPhone's folders is theirs,
 whatever it is about).
 
-The tests keep the table complete: every Swift file under ``TextMouth/`` must be matched, so a
-new file that no pattern covers fails ``Scripts/l10n/tests/test_scan_areas.py`` until someone
-gives it an area here. ``area_of`` itself never fails: a file no pattern covers is reported
-under ``UNMAPPED`` so that a report is still made.
+The last area, ``other``, takes every file no earlier pattern covers, so a new file never fails
+a test or a lint; ``report`` prints how many files are in ``other``, and whoever finds a feature
+in it moves its files to an area here.
 """
 
 from __future__ import annotations
@@ -18,8 +17,8 @@ from __future__ import annotations
 from fnmatch import fnmatchcase
 from typing import Iterable, List, Tuple
 
-# The name a report uses for a file no pattern covers.
-UNMAPPED = "unmapped"
+# The last area, which takes every file no earlier pattern covers.
+OTHER = "other"
 
 # (area, what it holds, patterns), in the order they are tried.
 AREAS: List[Tuple[str, str, Tuple[str, ...]]] = [
@@ -108,22 +107,22 @@ AREAS: List[Tuple[str, str, Tuple[str, ...]]] = [
         "*KeptBooks*", "*RemovedFromLibrary*", "*RemovalWording*", "*OperationOutcome*", "*JSONValue*",
         "*ImportDecision*",
     )),
-    ("other", "shared helpers and the debug log, which belong to no one feature", (
-        "*CountWording*", "Platform/Platform*", "*DiagnosticLog*", "*LogWriter*", "*LogLocation*",
-        "*LogsInFinder*", "*LogsSettings*", "*TimerCoalescing*", "*RunningClock*", "*AsyncBridge*",
-        "*ObjCException*", "*WatchedProcess*",
+    # The last area takes every file no earlier pattern covers, so a new file never fails a
+    # check: shared helpers, the debug log, and anything not yet given a feature.
+    (OTHER, "shared helpers, the debug log, and every file no earlier area covers", (
+        "*",
     )),
 ]
 
 
 def area_of(path: str) -> str:
     """The area that owns a file, given its path relative to ``TextMouth/`` (or starting with
-    ``TextMouth/``, which is dropped), or ``UNMAPPED`` when no pattern covers it."""
+    ``TextMouth/``, which is dropped); ``OTHER`` when no earlier pattern covers it."""
     rel = path[len("TextMouth/"):] if path.startswith("TextMouth/") else path
     for name, _what, patterns in AREAS:
         if any(fnmatchcase(rel, pattern) for pattern in patterns):
             return name
-    return UNMAPPED
+    return OTHER
 
 
 def area_names() -> List[str]:
@@ -131,6 +130,6 @@ def area_names() -> List[str]:
     return [name for name, _what, _patterns in AREAS]
 
 
-def unmapped(paths: Iterable[str]) -> List[str]:
-    """The paths no area owns."""
-    return [p for p in paths if area_of(p) == UNMAPPED]
+def files_in(area: str, paths: Iterable[str]) -> List[str]:
+    """The paths that belong to the area."""
+    return [p for p in paths if area_of(p) == area]

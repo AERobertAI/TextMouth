@@ -150,9 +150,26 @@ def format_table(groups: List[Group], heading: str, name_width: int, limit: int 
     return lines
 
 
+def restrict_to_area(literals: List[Literal], files: List[str],
+                     area: Optional[str]) -> Tuple[List[Literal], List[str]]:
+    """The literals and the files of one area, or all of them when no area is named."""
+    if area is None:
+        return literals, files
+    return [lit for lit in literals if areas.area_of(lit.file) == area], areas.files_in(area, files)
+
+
+def other_files_line(files: List[str]) -> str:
+    """How many files are in the last area, ``other``, which takes every file no earlier area covers."""
+    return (f"{_num(len(areas.files_in(areas.OTHER, files)))} files are in {areas.OTHER} (shared helpers, and any file "
+            "no earlier area covers): give a feature's files an area in Scripts/l10n/swiftscan/areas.py")
+
+
 def text_report(literals: List[Literal], files: List[str], seconds: float, by: str = "area",
                 area: Optional[str] = None, top: int = 0) -> str:
-    """The whole text report: the header, the buckets, and the table by area or by file."""
+    """The whole text report: the header, the buckets, and the table by area or by file. With an
+    area, the header and the table hold that area's own totals, not the whole app's."""
+    all_files = files
+    literals, files = restrict_to_area(literals, files, area)
     interface = interface_literals(literals)
     unloc = [lit for lit in interface if lit.status == "unlocalized"]
     loc = [lit for lit in interface if lit.status == "localized"]
@@ -160,7 +177,8 @@ def text_report(literals: List[Literal], files: List[str], seconds: float, by: s
     size = lambda items: sum(len(lit.text.encode("utf-8")) for lit in items)  # noqa: E731
     cp = certain_probable(literals)
     lines = [
-        f"Interface text of {_num(len(files))} Swift files: {_num(len(literals))} string literals, scanned in {seconds:.1f} s.",
+        f"Interface text of {f'the {area} area, ' if area else ''}{_num(len(files))} Swift files: "
+        f"{_num(len(literals))} string literals, scanned in {seconds:.1f} s.",
         f"  certain (ui, wording, error): {_num(cp['certain'][0])} unique texts, {_num(cp['certain'][1])} bytes.",
         f"  probable (prose, word): {_num(cp['probable'][0])} unique texts, {_num(cp['probable'][1])} bytes.",
         f"  raw values shown as titles (rawtitle): {_num(cp['raw'][0])} unique texts, {_num(cp['raw'][1])} bytes.",
@@ -179,26 +197,26 @@ def text_report(literals: List[Literal], files: List[str], seconds: float, by: s
     lines.append(f"    {findings['raw-title']} raw values shown as titles ({FINDING_HELP['raw-title']}).")
     lines.append("")
     if by == "file":
-        pool = [lit for lit in literals if area is None or areas.area_of(lit.file) == area]
-        groups = sorted_groups(group_by(pool, by_file))
+        groups = sorted_groups(group_by(literals, by_file))
         lines += format_table(groups, f"By file{f' of area {area}' if area else ''}, the most unlocalized bytes first:", 56, top)
     else:
         groups = sorted_groups(group_by(literals, by_area))
         lines += format_table(groups, "By area, the most unlocalized bytes first:", 16, top)
-        unmapped = [g for g in groups if g.name == areas.UNMAPPED]
-        if unmapped:
-            lines.append(f"  {len(unmapped[0].files)} files are in no area: add them to areas.py")
+    lines.append(f"  {other_files_line(all_files)}")
     return "\n".join(lines)
 
 
 def json_report(literals: List[Literal], files: List[str], seconds: float, by: str = "area",
                 area: Optional[str] = None) -> dict:
     """The same report as JSON-ready data."""
-    pool = literals if area is None else [lit for lit in literals if areas.area_of(lit.file) == area]
-    groups = sorted_groups(group_by(pool, by_file if by == "file" else by_area))
+    all_files = files
+    literals, files = restrict_to_area(literals, files, area)
+    groups = sorted_groups(group_by(literals, by_file if by == "file" else by_area))
     totals = bucket_totals(literals)
     return {
+        "area": area,
         "files": len(files),
+        "files_in_other": len(areas.files_in(areas.OTHER, all_files)),
         "literals": len(literals),
         "seconds": round(seconds, 2),
         "certain_probable": {k: {"unique_texts": v[0], "bytes": v[1]} for k, v in certain_probable(literals).items()},

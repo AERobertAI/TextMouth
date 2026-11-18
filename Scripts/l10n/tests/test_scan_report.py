@@ -76,11 +76,33 @@ class ReportTests(TreeCase):
         self.assertEqual(status, 2)
         self.assertIn("no area named nonesuch", err)
 
-    def test_a_file_in_no_area_is_named_in_the_report(self) -> None:
-        self.write("Models/ZzzNoSuchFeature.swift", 'enum Zzz { static let a = "A sentence of text" }\n')
+    def test_the_report_says_how_many_files_are_in_other(self) -> None:
+        # Two files of known areas, none in other.
         _status, out, _err = run_main("--root", str(self.root), "report")
-        self.assertIn("unmapped", out)
-        self.assertIn("1 files are in no area", out)
+        self.assertIn("0 files are in other", out)
+        # A file no earlier pattern covers lands in other, is counted there, and fails nothing.
+        self.write("Models/ZzzNoSuchFeature.swift", 'enum Zzz { static let a = "A sentence of text" }\n')
+        status, out, _err = run_main("--root", str(self.root), "report")
+        self.assertEqual(status, 0)
+        self.assertIn("1 files are in other", out)
+        self.assertRegex(out, r"(?m)^other +1 +1 ")
+        data = json.loads(run_main("--root", str(self.root), "report", "--json")[1])
+        self.assertEqual(data["files_in_other"], 1)
+
+    def test_report_for_one_area_prints_that_areas_own_totals(self) -> None:
+        # The header above the table holds the area's numbers, not the whole app's.
+        _status, out, _err = run_main("--root", str(self.root), "report", "--by", "file", "--area", "sleep-timer")
+        lines = out.splitlines()
+        self.assertTrue(lines[0].startswith("Interface text of the sleep-timer area, 1 Swift files: 1 string literals"), lines[0])
+        self.assertIn("  unlocalized: 1 literals, 18 bytes.", lines)
+        self.assertIn("  localized: 0 literals, 0 bytes.", lines)
+        self.assertNotIn("Café feeds", out)
+        data = json.loads(run_main("--root", str(self.root), "report", "--area", "sleep-timer", "--json")[1])
+        self.assertEqual((data["area"], data["files"], data["literals"]), ("sleep-timer", 1, 1))
+        self.assertEqual([g["name"] for g in data["groups"]], ["sleep-timer"])
+        # With no area the header is the whole app's.
+        whole = json.loads(run_main("--root", str(self.root), "report", "--json")[1])
+        self.assertEqual((whole["area"], whole["files"]), (None, 2))
 
     def test_a_missing_source_folder_is_a_usage_error(self) -> None:
         status, _out, err = run_main("--root", str(self.root / "TextMouth"), "report")

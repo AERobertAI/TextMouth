@@ -8,7 +8,9 @@ Run from anywhere inside the repository or one of its worktrees:
 Commands:
     report [--by area|file] [--area NAME] [--top N] [--json]
         For each area (a feature) or file: the unlocalized and the localized interface
-        strings with their bytes, and the findings the conversion must restructure.
+        strings with their bytes, and the findings the conversion must restructure. With --area, the
+        totals above the table are that area's own. The last area, other, takes every file no earlier
+        area covers, and the report says how many files are in it.
     show FILE [--all] [--width N] [--json]
         Each unlocalized interface literal of one file, with its line and bucket, and the
         file's findings; --all adds the localized and the marked literals.
@@ -93,7 +95,7 @@ def quote(text: str, room: int) -> str:
 
 def cmd_report(args: argparse.Namespace, scan: Scan) -> int:
     """Prints the totals by area or by file."""
-    if args.area and args.area not in areas.area_names() + [areas.UNMAPPED]:
+    if args.area and args.area not in areas.area_names():
         print(f"scan: no area named {args.area}; the areas are: {', '.join(areas.area_names())}", file=sys.stderr)
         return EXIT_USAGE
     if args.json:
@@ -205,7 +207,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     rep = sub.add_parser("report", help="totals by area or by file, with the findings")
     rep.add_argument("--by", choices=("area", "file"), default="area", help="what to total by (default: area)")
-    rep.add_argument("--area", help="with --by file, only the files of this area")
+    rep.add_argument("--area", help="only this area: its own totals above its table (by file lists its files)")
     rep.add_argument("--top", type=int, default=0, metavar="N", help="show only the N rows with the most unlocalized bytes")
     rep.add_argument("--json", action="store_true", help="print JSON instead of text")
 
