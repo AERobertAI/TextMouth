@@ -77,7 +77,7 @@ extension ReaderViewModel {
             // Remove the nearby bookmark
             let number = existing.number
             removeBookmark(existing)
-            announceToVoiceOver("Bookmark \(number) removed")
+            announceToVoiceOver(Self.bookmarkRemovedAnnouncement(number: number))
         } else {
             // Add a new bookmark, adjusting position if it would overlap with an existing one
             let chapterLength = content?.chapters.indices.contains(currentChapterIndex) == true
@@ -179,14 +179,31 @@ extension ReaderViewModel {
     /// library holds no record of the book, as when the book was removed
     /// while its reader was open. It does not say that nothing was changed:
     /// the reader's own list of bookmarks is emptied too.
-    static func bookmarkNotAddedAnnouncement(bookTitle: String) -> String {
-        "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library."
+    nonisolated static func bookmarkNotAddedAnnouncement(bookTitle: String) -> String {
+        String(localized: "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library.",
+               comment: "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.")
     }
 
     /// What VoiceOver says when a bookmark could not be removed because the
     /// library holds no record of the book.
-    static func bookmarkNotRemovedAnnouncement(bookTitle: String) -> String {
-        "Could not remove the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library."
+    nonisolated static func bookmarkNotRemovedAnnouncement(bookTitle: String) -> String {
+        String(localized: "Could not remove the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library.",
+               comment: "VoiceOver announcement when a bookmark could not be removed because the book left the library while its reader was open. %@ is the book's title, in quotation marks.")
+    }
+
+    /// What VoiceOver says once a bookmark was added, by the number it was
+    /// given: "Bookmark 3 added". The Mac's toggle and Add, and the phone's
+    /// Add, say it alike.
+    nonisolated static func bookmarkAddedAnnouncement(number: Int) -> String {
+        String(localized: "Bookmark \(number) added",
+               comment: "VoiceOver announcement after a bookmark was added at the reading position. %lld is the new bookmark's number.")
+    }
+
+    /// What VoiceOver says once the toggle removed the bookmark near the
+    /// reading position: "Bookmark 3 removed".
+    nonisolated static func bookmarkRemovedAnnouncement(number: Int) -> String {
+        String(localized: "Bookmark \(number) removed",
+               comment: "VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %lld is that bookmark's number.")
     }
 
     /// Says `sentence`, which tells that a bookmark command did nothing, a
@@ -208,7 +225,7 @@ extension ReaderViewModel {
     /// (`announceBookmarkNotDone`).
     private func announceBookmarkAdded(_ added: Bookmark?) {
         if let added {
-            announceToVoiceOver("Bookmark \(added.number) added")
+            announceToVoiceOver(Self.bookmarkAddedAnnouncement(number: added.number))
         } else {
             announceBookmarkNotDone(Self.bookmarkNotAddedAnnouncement(bookTitle: book.title))
         }
@@ -240,7 +257,7 @@ extension ReaderViewModel {
             return
         }
         navigatePreservingReturnPosition(chapterIndex: next.chapterIndex, characterOffset: next.characterOffset)
-        announceToVoiceOver("Bookmark \(next.number)")
+        announceToVoiceOver(next.name)
     }
 
     /// Navigate to the nearest bookmark before the current position in the
@@ -251,7 +268,7 @@ extension ReaderViewModel {
             return
         }
         navigatePreservingReturnPosition(chapterIndex: previous.chapterIndex, characterOffset: previous.characterOffset)
-        announceToVoiceOver("Bookmark \(previous.number)")
+        announceToVoiceOver(previous.name)
     }
 
     /// Delete a bookmark
@@ -432,7 +449,8 @@ extension ReaderViewModel {
         guard hasSavedPosition else { return }
         hasSavedPosition = false
         navigateTo(chapterIndex: savedChapterIndex, characterOffset: savedCharacterOffset)
-        announceToVoiceOver("Returned to previous position")
+        announceToVoiceOver(String(localized: "Returned to previous position",
+                                   comment: "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result."))
     }
 
     // MARK: - Metadata Editing
@@ -508,7 +526,8 @@ extension ReaderViewModel {
         book.applyEditableMetadata(from: saved)
         // The row's fields, over the edit for the rest, as for an EPUB.
         audioMetadata = saved.mergingEditableAudioMetadata(metadata)
-        announceToVoiceOver("Metadata updated")
+        announceToVoiceOver(String(localized: "Metadata updated",
+                                   comment: "VoiceOver announcement after an audiobook's edited title, artist, album, genre, or year was saved."))
         showSavedMetadataInNowPlaying()
     }
 

@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ adds a bookmark at the current position." : {
+      "comment" : "Help under \"No bookmarks yet.\" in the Bookmarks list. %@ is the keyboard shortcut that adds a bookmark, spelled out in words, such as Command + B."
+    },
+    "%@ adds one at the current position." : {
+      "comment" : "Help under \"No bookmarks yet.\" in the Bookmarks list, when the add command has no keyboard shortcut. %@ is the name of the Add Bookmark button above the list."
+    },
     "%@ remaining" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59."
     },
@@ -30,6 +36,15 @@
     "A New Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays."
     },
+    "Add" : {
+      "comment" : "Button of the panel for adding a bookmark: adds it, with the note written."
+    },
+    "Add Bookmark" : {
+      "comment" : "Button of the Bookmarks list that adds a bookmark at the reading position, and the heading of the panel where its note is written."
+    },
+    "Add bookmark at current position" : {
+      "comment" : "VoiceOver label of the Bookmarks list's Add Bookmark button."
+    },
     "Adjust minutes" : {
       "comment" : "VoiceOver label of the stepper beside the sleep timer sheet's custom minutes field."
     },
@@ -45,6 +60,68 @@
     "Available only while this folder's books go on to another book when one ends" : {
       "comment" : "VoiceOver hint of the dimmed Open the next book in pop-up button in a folder's settings: when it can be used."
     },
+    "Bookmark %lld" : {
+      "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %lld is the bookmark's number."
+    },
+    "Bookmark %lld added" : {
+      "comment" : "VoiceOver announcement after a bookmark was added at the reading position. %lld is the new bookmark's number."
+    },
+    "Bookmark %lld removed" : {
+      "comment" : "VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %lld is that bookmark's number."
+    },
+    "Bookmark %lld, %@, Note: %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$lld is the bookmark's number; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$lld, %2$@, Note: %3$@, added %4$@"
+          }
+        }
+      }
+    },
+    "Bookmark %lld, %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$lld is the bookmark's number; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$lld, %2$@, added %3$@"
+          }
+        }
+      }
+    },
+    "Bookmark %lld, Note: %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$lld is the bookmark's number; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$lld, Note: %2$@, added %3$@"
+          }
+        }
+      }
+    },
+    "Bookmark %lld, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$lld is the bookmark's number; %2$@ the day it was added, such as October 9, 2026.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$lld, added %2$@"
+          }
+        }
+      }
+    },
+    "Bookmark note" : {
+      "comment" : "VoiceOver label of the note field when adding a bookmark or editing its note."
+    },
+    "Bookmarks" : {
+      "comment" : "Title of the Bookmarks list over a book's reader, read by VoiceOver as its heading; also the name of the list's VoiceOver rotor."
+    },
+    "Cancel" : {
+      "comment" : "Button that leaves the panel for adding a bookmark or editing its note, changing nothing."
+    },
     "Cancel Timer" : {
       "comment" : "Button of the sleep timer sheet that stops the running timer."
     },
@@ -53,6 +130,12 @@
     },
     "Close the sleep timer and return to the book" : {
       "comment" : "VoiceOver hint of the sleep timer sheet's Close button."
+    },
+    "Could not add the bookmark: “%@” is no longer in the library." : {
+      "comment" : "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks."
+    },
+    "Could not remove the bookmark: “%@” is no longer in the library." : {
+      "comment" : "VoiceOver announcement when a bookmark could not be removed because the book left the library while its reader was open. %@ is the book's title, in quotation marks."
     },
     "Current Timer" : {
       "comment" : "Heading of the sleep timer sheet's section about the timer running now."
@@ -63,6 +146,15 @@
     "Custom:" : {
       "comment" : "Shown before the sleep timer sheet's field of a custom number of minutes. Hidden from VoiceOver, which reads the field's label."
     },
+    "Delete" : {
+      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark."
+    },
+    "Delete bookmark %lld" : {
+      "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %lld is the bookmark's number."
+    },
+    "Done" : {
+      "comment" : "Button that closes the Bookmarks list over a book's reader."
+    },
     "Download cancelled, so playback stopped." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of a feed's next episode or article, which playback was waiting for."
     },
@@ -71,6 +163,15 @@
     },
     "Downloading the next episode: %@" : {
       "comment" : "A sentence of the announcement as a feed's episode ends: the next episode is being downloaded. %@ is that episode's title."
+    },
+    "Edit Bookmark %lld" : {
+      "comment" : "Heading of the panel for editing a bookmark's note. %lld is the bookmark's number."
+    },
+    "Edit Note" : {
+      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: edits the bookmark's note."
+    },
+    "Edit note for bookmark %lld" : {
+      "comment" : "VoiceOver label of the button beside a bookmark's row that edits its note. %lld is the bookmark's number."
     },
     "End of book" : {
       "comment" : "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader."
@@ -93,6 +194,18 @@
     "Finished: %@" : {
       "comment" : "VoiceOver announcement as a book ends with no book to follow it. %@ is the book's title. Sentences saying why may follow it."
     },
+    "Go To" : {
+      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark."
+    },
+    "Go to bookmark %lld" : {
+      "comment" : "VoiceOver label of a button that moves the book to a bookmark. %lld is the bookmark's number."
+    },
+    "Goes to this bookmark and closes the list." : {
+      "comment" : "VoiceOver hint of a bookmark's row in the Bookmarks list."
+    },
+    "Metadata updated" : {
+      "comment" : "VoiceOver announcement after an audiobook's edited title, artist, album, genre, or year was saved."
+    },
     "Minutes" : {
       "comment" : "Placeholder of the sleep timer sheet's field of a custom number of minutes."
     },
@@ -102,6 +215,9 @@
     "Next book not started because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the next book was not started, because the sleep timer would not stop it. Written without its full stop."
     },
+    "No bookmarks yet." : {
+      "comment" : "Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it."
+    },
     "No more books in folder" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": its library folder has no book after it. Written without its full stop."
     },
@@ -110,6 +226,12 @@
     },
     "Not restarted because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book set to loop ends: it did not start again, because the sleep timer stopped it. Written without its full stop."
+    },
+    "Note" : {
+      "comment" : "Placeholder of the note field when editing a bookmark's note."
+    },
+    "Note (optional)" : {
+      "comment" : "Placeholder of the note field when adding a bookmark."
     },
     "Off" : {
       "comment" : "VoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs."
@@ -126,6 +248,9 @@
     "Open the next item in" : {
       "comment" : "Label of the pop-up button in a feed's Feed Info, choosing where the feed's next item opens."
     },
+    "Optional note to describe this bookmark" : {
+      "comment" : "VoiceOver hint of the note field when adding a bookmark."
+    },
     "Pause playback after:" : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes."
     },
@@ -138,6 +263,9 @@
     "Pauses playback where the heading playing now ends: where the next heading begins, or the book ends." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of heading button."
     },
+    "Remove Bookmark %lld?" : {
+      "comment" : "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %lld is the bookmark's number."
+    },
     "Reset Timer" : {
       "comment" : "Button of the sleep timer sheet that starts the running timer again from its whole length."
     },
@@ -146,6 +274,12 @@
     },
     "Restarting: %@" : {
       "comment" : "VoiceOver announcement as a book set to loop starts again from its beginning. %@ is the book's title."
+    },
+    "Returned to previous position" : {
+      "comment" : "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result."
+    },
+    "Save" : {
+      "comment" : "Button of the panel for editing a bookmark's note: keeps the note."
     },
     "Set" : {
       "comment" : "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes."

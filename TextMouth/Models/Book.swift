@@ -2707,6 +2707,13 @@ struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
         try container.encodeIfPresent(anchor, forKey: .anchor)
     }
 
+    /// The bookmark's name, by its number, as its row shows it and VoiceOver
+    /// says it after a move to it: "Bookmark 3". Localized (FR35).
+    var name: String {
+        String(localized: "Bookmark \(number)",
+               comment: "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %lld is the bookmark's number.")
+    }
+
     /// Concise label shared by bookmark rows and the bookmarks rotor, such as
     /// "Bookmark 3, The Battle, Note: Check this, added October 9, 2026".
     /// `headingText` names the heading containing the bookmark. When it is
@@ -2714,14 +2721,25 @@ struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     /// location is simply omitted: internal content-unit numbers are never
     /// shown in its place. The date is the one the row shows (`dateText`),
     /// which VoiceOver did not hear until TODO A10.
+    ///
+    /// Localized as one whole label for each set of parts a bookmark has
+    /// (FR35), not parts joined by commas, so a language may order them as it
+    /// needs.
     func accessibilityLabel(headingText: String?) -> String {
-        var parts = ["Bookmark \(number)"]
-        if let headingText = headingText?.nonBlank {
-            parts.append(headingText)
+        switch (headingText?.nonBlank, label.isEmpty ? nil : label) {
+        case let (heading?, note?):
+            return String(localized: "Bookmark \(number), \(heading), Note: \(note), added \(dateText)",
+                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$lld is the bookmark's number; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.")
+        case let (heading?, nil):
+            return String(localized: "Bookmark \(number), \(heading), added \(dateText)",
+                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$lld is the bookmark's number; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.")
+        case let (nil, note?):
+            return String(localized: "Bookmark \(number), Note: \(note), added \(dateText)",
+                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$lld is the bookmark's number; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.")
+        case (nil, nil):
+            return String(localized: "Bookmark \(number), added \(dateText)",
+                          comment: "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$lld is the bookmark's number; %2$@ the day it was added, such as October 9, 2026.")
         }
-        if !label.isEmpty { parts.append("Note: \(label)") }
-        parts.append("added \(dateText)")
-        return parts.joined(separator: ", ")
     }
 
     /// The day the bookmark was added, as its row shows it and its label

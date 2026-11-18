@@ -90,36 +90,51 @@ final class PhoneBookmarksModelTests: XCTestCase {
     }
 }
 
-/// `PhoneBookmarksVocabulary`: each word is the Mac's Bookmarks sheet's,
-/// read from its own source.
+/// `PhoneBookmarksVocabulary`: each word is the Mac's Bookmarks sheet's, the
+/// static the Mac's sheet shows, with its English as it was.
 final class PhoneBookmarksVocabularyTests: XCTestCase {
-    /// Every inline word is in `BookmarkPanelView` as the phone has it.
+    /// Every word the phone takes from the Mac's sheet is the Mac's own
+    /// static, which the Mac's sheet shows where the word once sat inline
+    /// (`shownAs`, read from its source), and its English has not changed.
+    /// The words were inline literals of `BookmarkPanelView`, which this test
+    /// found in its source; they became its localized statics (FR35), which
+    /// both sheets read, so the source check looks for each static instead.
     func testEveryWordIsTheMacsBookmarksSheets() throws {
         let macView = try String(
             contentsOf: AppSourceFile.folder.appendingPathComponent("Views/Reader/BookmarkPanelView.swift"),
             encoding: .utf8
         )
-        let words = [
-            "Text(\"\(PhoneBookmarksVocabulary.title)\")",
-            "Button(\"\(PhoneBookmarksVocabulary.done)\")",
-            "Label(\"\(PhoneBookmarksVocabulary.addBookmark)\", systemImage: \"plus\")",
-            "Text(\"\(PhoneBookmarksVocabulary.addBookmark)\")",
-            ".accessibilityLabel(\"\(PhoneBookmarksVocabulary.addBookmarkLabel)\")",
-            "Text(\"\(PhoneBookmarksVocabulary.empty)\")",
-            "\"\(PhoneBookmarksVocabulary.rowHint)\"",
-            "TextField(\"\(PhoneBookmarksVocabulary.addNoteField)\", text: $noteText)",
-            "TextField(\"\(PhoneBookmarksVocabulary.editNoteField)\", text: $noteText)",
-            ".accessibilityLabel(\"\(PhoneBookmarksVocabulary.noteLabel)\")",
-            ".accessibilityHint(\"\(PhoneBookmarksVocabulary.addNoteHint)\")",
-            "Button(\"\(PhoneAppWording.cancel)\")",
-            "Button(\"\(PhoneBookmarksVocabulary.add)\")",
-            "Button(\"\(PhoneAppWording.save)\")",
-            "Text(\"Edit Bookmark \\(bookmark.number)\")",
+        let words: [(phone: String, mac: String, english: String, shownAs: String)] = [
+            (PhoneBookmarksVocabulary.title, BookmarkPanelView.title, "Bookmarks", "Text(Self.title)"),
+            (PhoneBookmarksVocabulary.done, BookmarkPanelView.doneTitle, "Done", "Button(Self.doneTitle)"),
+            (PhoneBookmarksVocabulary.addBookmark, BookmarkPanelView.addBookmarkTitle,
+             "Add Bookmark", "Label(Self.addBookmarkTitle, systemImage: \"plus\")"),
+            (PhoneBookmarksVocabulary.addBookmark, BookmarkPanelView.addBookmarkTitle,
+             "Add Bookmark", "Text(Self.addBookmarkTitle)"),
+            (PhoneBookmarksVocabulary.addBookmarkLabel, BookmarkPanelView.addBookmarkLabel,
+             "Add bookmark at current position", ".accessibilityLabel(Self.addBookmarkLabel)"),
+            (PhoneBookmarksVocabulary.empty, BookmarkPanelView.emptyList, "No bookmarks yet.", "Text(Self.emptyList)"),
+            (PhoneBookmarksVocabulary.rowHint, BookmarkRow.hint,
+             "Goes to this bookmark and closes the list.", ".accessibilityHint(row.accessibilityHintText)"),
+            (PhoneBookmarksVocabulary.addNoteField, BookmarkPanelView.addNoteField,
+             "Note (optional)", "TextField(Self.addNoteField, text: $noteText)"),
+            (PhoneBookmarksVocabulary.editNoteField, BookmarkPanelView.editNoteField,
+             "Note", "TextField(Self.editNoteField, text: $noteText)"),
+            (PhoneBookmarksVocabulary.noteLabel, BookmarkPanelView.noteLabel,
+             "Bookmark note", ".accessibilityLabel(Self.noteLabel)"),
+            (PhoneBookmarksVocabulary.addNoteHint, BookmarkPanelView.addNoteHint,
+             "Optional note to describe this bookmark", ".accessibilityHint(Self.addNoteHint)"),
+            (PhoneAppWording.cancel, BookmarkPanelView.cancelTitle, "Cancel", "Button(Self.cancelTitle)"),
+            (PhoneBookmarksVocabulary.add, BookmarkPanelView.addTitle, "Add", "Button(Self.addTitle)"),
+            (PhoneAppWording.save, BookmarkPanelView.saveTitle, "Save", "Button(Self.saveTitle)"),
+            (PhoneBookmarksVocabulary.editTitle(number: 3), BookmarkPanelView.editTitle(number: 3),
+             "Edit Bookmark 3", "Text(Self.editTitle(number: bookmark.number))"),
         ]
 
         for word in words {
-            XCTAssertTrue(macView.contains(word), "The Mac's Bookmarks sheet no longer says \(word)")
+            XCTAssertEqual(word.phone, word.mac, "The phone's word is not the Mac's \(word.shownAs)")
+            XCTAssertEqual(word.mac, word.english, "The Mac's \(word.shownAs) changed its English")
+            XCTAssertTrue(macView.contains(word.shownAs), "The Mac's Bookmarks sheet no longer shows \(word.shownAs)")
         }
-        XCTAssertEqual(PhoneBookmarksVocabulary.editTitle(number: 3), "Edit Bookmark 3")
     }
 }
