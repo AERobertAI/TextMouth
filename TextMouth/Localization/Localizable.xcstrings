@@ -379,6 +379,17 @@
         }
       }
     },
+    "Asks for an optional note, then marks the reading position." : {
+      "comment" : "VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pide una nota opcional y luego marca la posición de lectura."
+          }
+        }
+      }
+    },
     "Available only while this feed's articles go on to another article when one ends" : {
       "comment" : "VoiceOver hint of the dimmed Open the next article in pop-up button in a news feed's Feed Info: when it can be used.",
       "localizations" : {
@@ -423,103 +434,103 @@
         }
       }
     },
-    "Bookmark %lld" : {
-      "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %lld is the bookmark's number.",
+    "Bookmark %@" : {
+      "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %lld"
+            "value" : "Marcador %@"
           }
         }
       }
     },
-    "Bookmark %lld added" : {
-      "comment" : "VoiceOver announcement after a bookmark was added at the reading position. %lld is the new bookmark's number.",
+    "Bookmark %@ added" : {
+      "comment" : "VoiceOver announcement after a bookmark was added at the reading position. %@ is the new bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %lld agregado"
+            "value" : "Marcador %@ agregado"
           }
         }
       }
     },
-    "Bookmark %lld removed" : {
-      "comment" : "VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %lld is that bookmark's number.",
+    "Bookmark %@ removed" : {
+      "comment" : "VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %@ is that bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %lld eliminado"
+            "value" : "Marcador %@ eliminado"
           }
         }
       }
     },
-    "Bookmark %lld, %@, Note: %@, added %@" : {
-      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$lld is the bookmark's number; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.",
+    "Bookmark %@, %@, Note: %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Bookmark %1$lld, %2$@, Note: %3$@, added %4$@"
+            "value" : "Bookmark %1$@, %2$@, Note: %3$@, added %4$@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %1$lld, %2$@, Nota: %3$@, agregado el %4$@"
+            "value" : "Marcador %1$@, %2$@, Nota: %3$@, agregado el %4$@"
           }
         }
       }
     },
-    "Bookmark %lld, %@, added %@" : {
-      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$lld is the bookmark's number; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.",
+    "Bookmark %@, %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Bookmark %1$lld, %2$@, added %3$@"
+            "value" : "Bookmark %1$@, %2$@, added %3$@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %1$lld, %2$@, agregado el %3$@"
+            "value" : "Marcador %1$@, %2$@, agregado el %3$@"
           }
         }
       }
     },
-    "Bookmark %lld, Note: %@, added %@" : {
-      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$lld is the bookmark's number; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.",
+    "Bookmark %@, Note: %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Bookmark %1$lld, Note: %2$@, added %3$@"
+            "value" : "Bookmark %1$@, Note: %2$@, added %3$@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %1$lld, Nota: %2$@, agregado el %3$@"
+            "value" : "Marcador %1$@, Nota: %2$@, agregado el %3$@"
           }
         }
       }
     },
-    "Bookmark %lld, added %@" : {
-      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$lld is the bookmark's number; %2$@ the day it was added, such as October 9, 2026.",
+    "Bookmark %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the day it was added, such as October 9, 2026.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Bookmark %1$lld, added %2$@"
+            "value" : "Bookmark %1$@, added %2$@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %1$lld, agregado el %2$@"
+            "value" : "Marcador %1$@, agregado el %2$@"
           }
         }
       }
@@ -536,7 +547,7 @@
       }
     },
     "Bookmarks" : {
-      "comment" : "Title of the Bookmarks list over a book's reader, read by VoiceOver as its heading; also the name of the list's VoiceOver rotor.",
+      "comment" : "The name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -547,7 +558,7 @@
       }
     },
     "Cancel" : {
-      "comment" : "Button that leaves the panel for adding a bookmark or editing its note, changing nothing.",
+      "comment" : "Button that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -574,18 +585,18 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elige qué hace al terminar un libro abierto desde la lista."
+            "value" : "Elige qué hace un libro abierto desde la lista al terminar."
           }
         }
       }
     },
-    "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@, this window closes." : {
+    "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes." : {
       "comment" : "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. %@ is the name of its choice This Window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elige dónde se abre el siguiente libro: en esta ventana o en una nueva. Un libro abierto en otra ventana pasa al frente y, con %@, esta ventana se cierra."
+            "value" : "Elige dónde se abre el siguiente libro: en esta ventana o en una nueva. Un libro abierto en otra ventana pasa al frente y, si eliges %@, esta ventana se cierra."
           }
         }
       }
@@ -635,7 +646,7 @@
       }
     },
     "Close" : {
-      "comment" : "Button that closes a sheet, such as the sleep timer sheet over a book's reader.",
+      "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -711,24 +722,24 @@
         }
       }
     },
-    "Delete bookmark %lld" : {
-      "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %lld is the bookmark's number.",
+    "Delete bookmark %@" : {
+      "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eliminar el marcador %lld"
+            "value" : "Eliminar marcador %@"
           }
         }
       }
     },
     "Done" : {
-      "comment" : "Button that closes the Bookmarks list over a book's reader.",
+      "comment" : "Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hecho"
+            "value" : "OK"
           }
         }
       }
@@ -766,13 +777,13 @@
         }
       }
     },
-    "Edit Bookmark %lld" : {
-      "comment" : "Heading of the panel for editing a bookmark's note. %lld is the bookmark's number.",
+    "Edit Bookmark %@" : {
+      "comment" : "Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Editar marcador %lld"
+            "value" : "Editar marcador %@"
           }
         }
       }
@@ -788,13 +799,13 @@
         }
       }
     },
-    "Edit note for bookmark %lld" : {
-      "comment" : "VoiceOver label of the button beside a bookmark's row that edits its note. %lld is the bookmark's number.",
+    "Edit note for bookmark %@" : {
+      "comment" : "VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Editar la nota del marcador %lld"
+            "value" : "Editar nota del marcador %@"
           }
         }
       }
@@ -920,13 +931,13 @@
         }
       }
     },
-    "Go to bookmark %lld" : {
-      "comment" : "VoiceOver label of a button that moves the book to a bookmark. %lld is the bookmark's number.",
+    "Go to bookmark %@" : {
+      "comment" : "VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ir al marcador %lld"
+            "value" : "Ir al marcador %@"
           }
         }
       }
@@ -959,18 +970,18 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conservar estos libros en este Mac"
+            "value" : "Conservar estos libros en esta Mac"
           }
         }
       }
     },
-    "Keeps the list's books downloaded on this Mac alone. Clearing it removes no download." : {
+    "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download." : {
       "comment" : "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mantiene descargados los libros de la lista solo en este Mac. Desmarcarlo no quita ninguna descarga."
+            "value" : "Mantiene descargados en esta Mac los libros de la lista; cada Mac elige por su cuenta. Desmarcarlo no elimina ninguna descarga."
           }
         }
       }
@@ -982,17 +993,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mantiene el orden que fijas con Move Book Up, Move Book Down o arrastrando."
-          }
-        }
-      }
-    },
-    "Marks the reading position." : {
-      "comment" : "VoiceOver hint of the Bookmarks list's Add Bookmark button: the bookmark is added where the book is being read.",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Marca la posición de lectura."
           }
         }
       }
@@ -1036,7 +1036,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El siguiente libro no se inició por el temporizador de apagado"
+            "value" : "El siguiente libro no se inició debido al temporizador de apagado"
           }
         }
       }
@@ -1069,7 +1069,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No hay un libro siguiente en la lista de lectura."
+            "value" : "No hay ningún libro siguiente en la lista de lectura."
           }
         }
       }
@@ -1080,7 +1080,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No hay un libro siguiente en la lista de lectura: todos los libros de abajo están terminados."
+            "value" : "No hay ningún libro siguiente en la lista de lectura: todos los libros de abajo están terminados."
           }
         }
       }
@@ -1091,7 +1091,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No hay un libro anterior en la lista de lectura."
+            "value" : "No hay ningún libro anterior en la lista de lectura."
           }
         }
       }
@@ -1102,7 +1102,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No hay un libro anterior en la lista de lectura: todos los libros de arriba están terminados."
+            "value" : "No hay ningún libro anterior en la lista de lectura: todos los libros de arriba están terminados."
           }
         }
       }
@@ -1113,7 +1113,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No hay un temporizador de apagado anterior que reiniciar."
+            "value" : "No hay ningún temporizador de apagado anterior para activar de nuevo."
           }
         }
       }
@@ -1135,7 +1135,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se reinició por el temporizador de apagado"
+            "value" : "No se reinició debido al temporizador de apagado"
           }
         }
       }
@@ -1366,6 +1366,17 @@
         }
       }
     },
+    "Remove" : {
+      "comment" : "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar"
+          }
+        }
+      }
+    },
     "Remove %lld Books from Reading List" : {
       "comment" : "Context menu item for the books selected in the Library: takes them off the reading list. Title case. %lld is the number of books selected.",
       "localizations" : {
@@ -1460,13 +1471,13 @@
         }
       }
     },
-    "Remove Bookmark %lld?" : {
-      "comment" : "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %lld is the bookmark's number.",
+    "Remove Bookmark %@?" : {
+      "comment" : "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "¿Eliminar el marcador %lld?"
+            "value" : "¿Eliminar el marcador %@?"
           }
         }
       }
@@ -1526,13 +1537,13 @@
         }
       }
     },
-    "Restarts the timer at its full length." : {
-      "comment" : "VoiceOver hint of the sleep timer sheet's Reset Timer button: the running timer starts again from the length it was set to.",
+    "Restarts the timer at its full length and plays the book." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's Reset Timer button: the running timer starts again from the length it was set to, and the book plays.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Reinicia el temporizador con su duración completa."
+            "value" : "Reinicia el temporizador con su duración completa y reproduce el libro."
           }
         }
       }
@@ -1560,7 +1571,7 @@
       }
     },
     "Save" : {
-      "comment" : "Button of the panel for editing a bookmark's note: keeps the note.",
+      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1640,7 +1651,7 @@
       }
     },
     "Sleep Timer" : {
-      "comment" : "Title of the sleep timer sheet over a book's reader, read by VoiceOver as its heading.",
+      "comment" : "The name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1906,30 +1917,8 @@
         }
       }
     },
-    "Take it off the reading list, or clear %@ in the Reading List's options" : {
-      "comment" : "Advice that begins a sentence of the iCloud library's messages, on letting go of a book this Mac keeps for the reading list; the sentence goes on after it. %@ is the name of the checkbox Keep these books on this Mac.",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Quítalo de la lista de lectura o desmarca %@ en las opciones de la lista de lectura"
-          }
-        }
-      }
-    },
-    "Take them off the reading list, or clear %@ in the Reading List's options" : {
-      "comment" : "Advice that begins a sentence of the iCloud library's messages, on letting go of several books this Mac keeps for the reading list; the sentence goes on after it. %@ is the name of the checkbox Keep these books on this Mac.",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Quítalos de la lista de lectura o desmarca %@ en las opciones de la lista de lectura"
-          }
-        }
-      }
-    },
     "Takes %lld to %lld minutes." : {
-      "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
+      "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1945,13 +1934,30 @@
         }
       }
     },
-    "Takes each finished book off the list when its window moves on or closes. Books finished before stay." : {
+    "Takes %lld to %lld minutes. Return sets the timer and plays the book." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the Mac: the fewest and most minutes it takes, and what the Return key does there. %1$lld is the fewest (1); %2$lld the most (480). Return is the name of the key.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Admite de %1$lld a %2$lld minutos. Retorno programa el temporizador y reproduce el libro."
+          }
+        }
+      }
+    },
+    "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay." : {
       "comment" : "VoiceOver hint of the Reading List's Remove books when finished checkbox.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Quita de la lista cada libro terminado cuando su ventana avanza o se cierra. Los libros terminados antes se quedan."
+            "value" : "Quita de la lista cada libro terminado cuando su ventana pasa a otro libro o se cierra. Los libros terminados antes de activarlo se quedan."
           }
         }
       }
@@ -2191,29 +2197,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con “%1$@”, Reproducir en un libro terminado dice que está terminado; con “%2$@”, Reproducir lo empieza de nuevo desde el principio."
-          }
-        }
-      }
-    },
-    "article" : {
-      "comment" : "A noun put inside a sentence about a feed's next or previous item, as in \"Downloading the next article\". Lowercase, singular.",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "artículo"
-          }
-        }
-      }
-    },
-    "episode" : {
-      "comment" : "A noun put inside a sentence about a feed's next or previous item, as in \"Downloading the next episode\". Lowercase, singular.",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "episodio"
+            "value" : "Con “%1$@”, Play en un libro terminado avisa que ya está terminado; con “%2$@”, Play lo vuelve a empezar desde el principio."
           }
         }
       }
@@ -2258,28 +2242,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "se detiene al final de este encabezado"
-          }
-        }
-      }
-    },
-    "take it off the reading list, or clear %@ in the Reading List's options" : {
-      "comment" : "Advice inside a sentence of the iCloud library's messages, after \"To let it go,\" or \"Then\": on letting go of a book this Mac keeps for the reading list. Lowercase. %@ is the name of the checkbox Keep these books on this Mac.",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "quítalo de la lista de lectura o desmarca %@ en las opciones de la lista de lectura"
-          }
-        }
-      }
-    },
-    "take them off the reading list, or clear %@ in the Reading List's options" : {
-      "comment" : "Advice inside a sentence of the iCloud library's messages, after \"To let them go,\": on letting go of several books this Mac keeps for the reading list. Lowercase. %@ is the name of the checkbox Keep these books on this Mac.",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "quítalos de la lista de lectura o desmarca %@ en las opciones de la lista de lectura"
           }
         }
       }

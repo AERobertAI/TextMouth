@@ -41,12 +41,16 @@ final class SpanishLocalizationTests: XCTestCase {
             ("Sleep timer expired. Playback paused.",
              "El temporizador de apagado terminó. Reproducción en pausa."),  // ReaderViewModel.sleepTimerExpiredAnnouncement
             ("Bookmarks", "Marcadores"),  // BookmarkPanelView.title
-            ("Bookmark %lld", "Marcador %lld"),  // Bookmark.name
+            ("Bookmark %@", "Marcador %@"),  // Bookmark.name; the number is an identifier, so %@, not %lld
             ("Goes to this bookmark and closes the list.", "Va a este marcador y cierra la lista."),  // BookmarkRow.hint
             ("Reading List Order", "Orden de la lista de lectura"),  // ReadingListWording.orderName
             ("Reading list, book %lld of %lld", "Lista de lectura, libro %1$lld de %2$lld"),  // ReadingListReaderWording.place
             ("No next book in the reading list.",
-             "No hay un libro siguiente en la lista de lectura."),  // ReadingListReaderWording.noNeighbor
+             "No hay ningún libro siguiente en la lista de lectura."),  // ReadingListReaderWording.noNeighbor
+            ("Restarts the timer at its full length and plays the book.",
+             "Reinicia el temporizador con su duración completa y reproduce el libro."),  // SleepTimerView.resetTimerHint
+            ("Keep these books on this Mac", "Conservar estos libros en esta Mac"),  // the glossary's rule: esta Mac (Latin American)
+            ("Remove", "Eliminar"),  // PhoneBookmarksWording.removeButton: removing a bookmark deletes it
         ]
         var wrong: [String] = []
         for (key, spanish) in expected where strings[key] as? String != spanish {
@@ -55,6 +59,15 @@ final class SpanishLocalizationTests: XCTestCase {
         XCTAssertTrue(wrong.isEmpty, "es.lproj/Localizable.strings:\n" + wrong.joined(separator: "\n"))
         let empty = strings.filter { ($0.value as? String)?.isEmpty ?? true }.map(\.key)
         XCTAssertTrue(empty.isEmpty, "Empty Spanish text ships for: \(empty)")
+
+        // A fragment inside another area's English sentences has no Spanish until that area converts (finding 3 of the
+        // review): "Downloading the next episodio: ..." read half Spanish. The old keys of the identifiers are gone too.
+        for key in ["article", "episode", "Bookmark %lld",
+                    "Take it off the reading list, or clear %@ in the Reading List's options"] {
+            XCTAssertNil(strings[key], "\(key) must not ship in es.lproj")
+        }
+        // The Spanish never says este Mac, which is Spain's: this Spanish is Latin American (esta Mac).
+        XCTAssertTrue(strings.values.compactMap { $0 as? String }.filter { $0.contains("este Mac") }.isEmpty)
 
         let plurals = try spanishTable("stringsdict")
         for key in ["%lld minutes", "Set timer for %lld minutes", "Add %lld Books to Reading List", "%lld books were already in it."] {
