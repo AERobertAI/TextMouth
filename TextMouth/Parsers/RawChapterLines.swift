@@ -30,8 +30,16 @@ import Foundation
 ///   U+FEFF or a hand edit, and decoding the named ones would need a table of
 ///   two thousand names, which half a table would only make inconsistent.
 ///
-/// The reader's raw chapter and the plain text export keep their own paths,
-/// whose text offsets are positions and bookmarks.
+/// The walk of an export keeps the paragraphs, with their markers as places;
+/// the reader keeps the words alone (`readingText(of:)`, B16), so a chapter
+/// kept raw shows, speaks, and exports as Plain Text without a marker or an
+/// escape. That moves the text offsets inside such a chapter. A saved place
+/// that has words (every one saved since T06's anchors) is carried by them
+/// (`PlaceRelocator`). A place with none, saved by an older build and never
+/// given words since, stands at its old numbers at load, and the launch pass
+/// then gives it the words that are there in the shorter text: it can land on
+/// other words. No offset map is kept for it; a chapter nested past the limit
+/// is rare, and such a place in one is rarer.
 enum RawChapterLines {
 
     /// One piece of a paragraph, in the order it is written.
@@ -56,7 +64,9 @@ enum RawChapterLines {
     // MARK: Paragraphs
 
     /// The paragraphs of `content`, a chapter of content.md, in order. A line
-    /// ends at a line feed or a CR LF; a line with nothing but spaces and tabs
+    /// ends at any newline `Character.isNewline` names (a line feed, a CR LF,
+    /// a lone CR, U+0085, U+2028, U+2029), each of which is one line feed in
+    /// the words, so no offset moves for it; a line with nothing but spaces and tabs
     /// is blank and ends a paragraph, and a paragraph with no words or markers
     /// is none.
     static func paragraphs(of content: String) -> [Paragraph] {
@@ -79,6 +89,26 @@ enum RawChapterLines {
         }
         endParagraph()
         return paragraphs
+    }
+
+    /// The reading text of `content`, a chapter of content.md that nests too
+    /// deeply to be parsed, as the reader keeps it (B16): the words of its
+    /// paragraphs, with a blank line between one paragraph and the next, and
+    /// the markers and the escapes of content.md left out. A paragraph of
+    /// markers alone has no words and is no paragraph here; a chapter with
+    /// no words at all is empty.
+    ///
+    /// This is the one reading of a raw chapter's words: the export's walk
+    /// (`ExportDocumentWalker`) keeps the same paragraphs, with their markers
+    /// as places, and the reader and Plain Text export take these words.
+    static func readingText(of content: String) -> String {
+        paragraphs(of: content).compactMap { paragraph in
+            // Markers carry no words; the pieces' words, in order, are the paragraph.
+            let words = paragraph.pieces.reduce(into: "") { text, piece in
+                if case let .words(more) = piece { text += more }
+            }
+            return words.isEmpty ? nil : words
+        }.joined(separator: "\n\n")
     }
 
     /// The pieces of one line, already trimmed of the spaces and tabs at its
@@ -200,6 +230,27 @@ enum RawChapterLines {
         }
     }
 
+    /// `pieces` with neighbouring words made one piece. The words are appended
+    /// in place to one string and flushed at each marker, so a paragraph of
+    /// thousands of lines is joined in one pass, not copied once for every
+    /// line (internal, so a test can time it alone).
+    static func joiningNeighbouringWords(_ pieces: [Piece]) -> [Piece] {
+        var joined: [Piece] = []
+        var pendingWords: String?
+        for piece in pieces {
+            switch piece {
+            case let .words(text):
+                if pendingWords == nil { pendingWords = text } else { pendingWords?.append(text) }
+            case .marker:
+                if let words = pendingWords { joined.append(.words(words)) }
+                pendingWords = nil
+                joined.append(piece)
+            }
+        }
+        if let words = pendingWords { joined.append(.words(words)) }
+        return joined
+    }
+
     /// The paragraph whose lines have the pieces `lines`, in order: a line
     /// feed between two lines (none before a line of markers alone, which
     /// names a place and is no line of words), neighbouring words made one
@@ -213,15 +264,7 @@ enum RawChapterLines {
             }
             flat += line
         }
-        // Neighbouring words are one piece.
-        var merged: [Piece] = []
-        for piece in flat {
-            if case let .words(text) = piece, case let .words(before)? = merged.last {
-                merged[merged.count - 1] = .words(before + text)
-            } else {
-                merged.append(piece)
-            }
-        }
+        var merged = joiningNeighbouringWords(flat)
         // The markers that begin the block come out, and the white space
         // between them and the words, and at the block's end, goes.
         var leading: [MarkdownMarker] = []

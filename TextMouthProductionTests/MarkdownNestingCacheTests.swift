@@ -87,7 +87,7 @@ final class MarkdownNestingCacheTests: XCTestCase {
 
     // MARK: - Reading content.md
 
-    /// A refused chapter keeps its place and its raw text; its neighbours read as they did.
+    /// A refused chapter keeps its place and its words as written (`RawChapterLines.readingText`); its neighbours read as they did.
     func testARefusedChapterIsKeptAsWritten() {
         let deep = deepQuotes(around: "Quoted words")
         let content = MarkdownCacheService.parseMultiChapterMarkdown(
@@ -100,6 +100,95 @@ final class MarkdownNestingCacheTests: XCTestCase {
         XCTAssertEqual(content.chapters[2].text, "Third chapter words.")
         // A titled chapter appears in the heading list, as every titled chapter does.
         XCTAssertEqual(content.chapters[1].headings.map(\.text), ["Second"])
+    }
+
+    /// A raw chapter, as content.md's converters write it: a page marker,
+    /// words with the backslash before each punctuation mark, a marker in the
+    /// middle of a line, and a line of marks past the limit.
+    private var writtenDeepChapter: String {
+        "<!-- page: 7 -->\n\(deepQuotes(around: "He said\\: \\\"Done\\.\\\" <!-- page: 8 -->Costs \\$5\\!"))\n\n"
+            + "Second paragraph\\, line one\\.   \nline two\\.\n"
+    }
+
+    /// The reader's raw chapter shows and speaks no marker comment and no
+    /// escape (B16): its text is the words as written, one paragraph a block of lines.
+    func testARefusedChapterHasNoMarkerAndNoEscape() {
+        let content = MarkdownCacheService.parseMultiChapterMarkdown(
+            contentWithAMiddleChapter(writtenDeepChapter), bookTitle: "Book", bookAuthor: ""
+        )
+
+        // The deep chapter's words as written; its neighbours are untouched.
+        let words = deepQuotes(around: "He said: \"Done.\" Costs $5!") + "\n\nSecond paragraph, line one.\nline two."
+        XCTAssertEqual(content.chapters.map(\.text), ["First chapter words.", words, "Third chapter words."])
+        XCTAssertFalse(words.contains("<!--") || words.contains("\\"), "the expected words carry no marker or escape")
+    }
+
+    /// A bookmark saved in a deep chapter before the fix, at its offset in
+    /// the raw text with the words round it, is found again in the text the
+    /// reader now makes of the chapter, on the same words: the load check
+    /// carries a place by its words (B16).
+    func testABookmarkInARefusedChapterIsCarriedToTheSameWords() throws {
+        let markdown = contentWithAMiddleChapter(writtenDeepChapter)
+        // The text before the fix: each chapter's text, the deep one raw.
+        let before = ["First chapter words.", try XCTUnwrap(deepSectionAsWritten(of: markdown)), "Third chapter words."]
+        let after = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: "Book", bookAuthor: "")
+        let deepAfter = try XCTUnwrap(after.chapters.dropFirst().first).text
+        XCTAssertNotEqual(before[1], deepAfter, "the chapter's text changed, so its offsets do")
+
+        // A bookmark at "line two" in the raw text, as one saved then.
+        let offset = try Phrase.offset(of: "line two", in: before[1])
+        let saved = Bookmark(
+            number: 1, chapterIndex: 1, characterOffset: offset,
+            anchor: try SavedPlace.anchor(at: TextPlace(chapter: 1, offset: offset), in: before)
+        )
+        let outcome = try XCTUnwrap(PlaceRelocator.relocate(
+            PlaceRelocator.Places(bookmarks: [saved]), within: after, movedAt: SavedPlace.moveDate
+        ))
+
+        let moved = try XCTUnwrap(outcome.places.bookmarks.first)
+        XCTAssertEqual(moved.chapterIndex, 1)
+        XCTAssertEqual(moved.characterOffset, try Phrase.offset(of: "line two", in: deepAfter))
+        XCTAssertNotEqual(moved.characterOffset, offset, "the offset moved, with the words")
+    }
+
+    /// A paragraph of many lines is joined in one pass, not copied once for
+    /// every line (B16's review): a deep quote has no blank line, so a whole
+    /// chapter is one paragraph. The join is timed alone, on thousands of tiny
+    /// pieces, where a copy of the paragraph for each one is all there is to
+    /// see. A fixed bound would depend on the machine, so one run is compared
+    /// with another on four times as many pieces: a linear join takes about
+    /// four times as long, a quadratic one about sixteen. The best of three
+    /// runs of each is compared, against a limit of ten.
+    func testTheJoinOfAParagraphsWordsIsLinear() {
+        /// The shortest of three runs over `count` pieces of words, in seconds.
+        func best(_ count: Int) -> Double {
+            let pieces = Array(repeating: RawChapterLines.Piece.words("ab"), count: count)
+            return (0..<3).map { _ in
+                let start = Date()
+                XCTAssertEqual(RawChapterLines.joiningNeighbouringWords(pieces).count, 1)
+                return Date().timeIntervalSince(start)
+            }.min() ?? 0
+        }
+        let small = best(25_000)
+        let large = best(100_000)
+        // A clock too coarse to time the small run proves nothing about it.
+        guard small > 0.0005 else { return }
+        XCTAssertLessThan(large / small, 10, "4x the pieces took \(large / small)x as long")
+    }
+
+    /// The words of a chapter of many lines read as one paragraph, a line
+    /// feed between the lines.
+    func testAChapterOfManyLinesIsOneParagraph() {
+        let lines = (0..<3_000).map { "line \($0) with some words\\." }
+        let text = RawChapterLines.readingText(of: lines.joined(separator: "\n"))
+        XCTAssertEqual(text, (0..<3_000).map { "line \($0) with some words." }.joined(separator: "\n"))
+    }
+
+    /// The text of the middle chapter of `markdown` as it was kept before
+    /// B16: the section's own raw lines.
+    private func deepSectionAsWritten(of markdown: String) -> String? {
+        let parts = markdown.components(separatedBy: "<!-- chapter: Second -->\n")
+        return parts.dropFirst().first?.components(separatedBy: "\n\n<!-- chapter: Third -->").first
     }
 
     /// Where every chapter is refused, each still holds its words: the text holds something

@@ -199,7 +199,7 @@ enum AsyncBridge {
     /// own does.
     struct AbandonedEarlier: LocalizedError, Equatable {
         var errorDescription: String? {
-            "TextMouth stopped reading this audio earlier because it took too long, and won't try again until TextMouth is opened again."
+            AsyncBridgeWording.abandonedEarlier
         }
     }
 
@@ -276,6 +276,17 @@ enum AsyncBridge {
             lock.unlock()
         }
     }
+}
+
+/// The sentences of `AsyncBridge` a listener may read.
+enum AsyncBridgeWording {
+    /// What an audio read refused at once says: "TextMouth stopped reading
+    /// this audio earlier because it took too long, and won't try again
+    /// until TextMouth is closed and opened again." The remedy is the one
+    /// `InProcessEngineWording` gives, so it is written once, and it is true
+    /// on both platforms: an iPhone app only switched back to keeps its
+    /// process, and with it the abandoned read (B17).
+    static let abandonedEarlier = InProcessEngineWording.refused("reading this audio")
 }
 
 private extension Duration {

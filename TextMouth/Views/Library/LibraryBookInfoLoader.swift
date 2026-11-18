@@ -54,7 +54,7 @@ struct LibraryBookInfoReader: Sendable {
     /// short one.
     var audioTagsTimeLimit: Duration = AsyncBridge.audioTagsTimeLimit
     /// The audio files whose tag read passed its limit, which are not read
-    /// again until TextMouth is opened again. Tests pass their own.
+    /// again until TextMouth is closed and opened again. Tests pass their own.
     var abandonedReads: AsyncBridge.AbandonedReads = .session
 
     /// The reads the app uses. An EPUB is read with dataless files left in
