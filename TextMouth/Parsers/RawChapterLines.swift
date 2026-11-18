@@ -33,8 +33,13 @@ import Foundation
 /// The walk of an export keeps the paragraphs, with their markers as places;
 /// the reader keeps the words alone (`readingText(of:)`, B16), so a chapter
 /// kept raw shows, speaks, and exports as Plain Text without a marker or an
-/// escape. That moves the text offsets inside such a chapter, which the
-/// load check of saved places carries by their words (`PlaceRelocator`).
+/// escape. That moves the text offsets inside such a chapter. A saved place
+/// that has words (every one saved since T06's anchors) is carried by them
+/// (`PlaceRelocator`). A place with none, saved by an older build and never
+/// given words since, stands at its old numbers at load, and the launch pass
+/// then gives it the words that are there in the shorter text: it can land on
+/// other words. No offset map is kept for it; a chapter nested past the limit
+/// is rare, and such a place in one is rarer.
 enum RawChapterLines {
 
     /// One piece of a paragraph, in the order it is written.
@@ -59,7 +64,9 @@ enum RawChapterLines {
     // MARK: Paragraphs
 
     /// The paragraphs of `content`, a chapter of content.md, in order. A line
-    /// ends at a line feed or a CR LF; a line with nothing but spaces and tabs
+    /// ends at any newline `Character.isNewline` names (a line feed, a CR LF,
+    /// a lone CR, U+0085, U+2028, U+2029), each of which is one line feed in
+    /// the words, so no offset moves for it; a line with nothing but spaces and tabs
     /// is blank and ends a paragraph, and a paragraph with no words or markers
     /// is none.
     static func paragraphs(of content: String) -> [Paragraph] {
@@ -236,15 +243,22 @@ enum RawChapterLines {
             }
             flat += line
         }
-        // Neighbouring words are one piece.
+        // Neighbouring words are one piece. The words are appended in place to
+        // one string and flushed at each marker, so a paragraph of thousands
+        // of lines is joined in one pass, not copied once for every line.
         var merged: [Piece] = []
+        var pendingWords: String?
         for piece in flat {
-            if case let .words(text) = piece, case let .words(before)? = merged.last {
-                merged[merged.count - 1] = .words(before + text)
-            } else {
+            switch piece {
+            case let .words(text):
+                if pendingWords == nil { pendingWords = text } else { pendingWords?.append(text) }
+            case .marker:
+                if let words = pendingWords { merged.append(.words(words)) }
+                pendingWords = nil
                 merged.append(piece)
             }
         }
+        if let words = pendingWords { merged.append(.words(words)) }
         // The markers that begin the block come out, and the white space
         // between them and the words, and at the block's end, goes.
         var leading: [MarkdownMarker] = []
