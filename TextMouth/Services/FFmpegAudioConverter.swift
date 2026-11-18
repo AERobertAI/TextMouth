@@ -541,7 +541,9 @@ enum FFmpegAudioConverter {
         /// The helper is missing from the app (it is damaged); `kind` names
         /// the format.
         case helperMissing(kind: String)
-        /// A Windows Media file is copy-protected.
+        /// The file is copy-protected: a Windows Media file with a protection
+        /// object, or a Matroska or WebM file whose every sound track is
+        /// encrypted (`isCopyProtected(_:container:)`).
         case copyProtected
         /// The file's bytes are not of the format `kind` its name says, or
         /// the helper's FFmpeg could not read them.
@@ -652,7 +654,8 @@ enum FFmpegAudioConverter {
     ///
     /// In order: a file that is missing or only in the cloud is unreadable;
     /// one whose bytes are of no container only FFmpeg reads is not
-    /// recognized; a copy-protected Windows Media file is refused; an app
+    /// recognized; a copy-protected file (Windows Media, Matroska, or WebM,
+    /// `isCopyProtected(_:container:)`) is refused; an app
     /// whose helper is missing refuses; then the session (the Mac's helper,
     /// or the iPhone's in the app) says what the file holds, a source of no
     /// stated length is refused when the volume lacks room for what it may

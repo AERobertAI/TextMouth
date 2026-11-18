@@ -176,12 +176,17 @@ static int confinement_report(int descriptor, int prepared_features) {
 
 #ifdef DEBUG
 /* Recurses without end, each call holding a kilobyte the compiler must keep, until the stack is
-   gone. Its result is used by the caller so the recursion is never taken out. */
+   gone. Its result is used by the caller so the recursion is never taken out. The compiler's
+   warning that it never ends is the point of the function, and is silenced for it alone, as the
+   deprecated sandbox calls' is. */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winfinite-recursion"
 static unsigned recurse_until_the_stack_ends(unsigned depth) {
     volatile char frame[1024];
     frame[0] = (char)depth;
     return recurse_until_the_stack_ends(depth + 1) + (unsigned)frame[0];
 }
+#pragma clang diagnostic pop
 
 /* The Debug-only proof of the signal guard (TMFF_MODE_SIGNALCHECK): crashes the way `kind` names.
    With the guard installed it never returns, since the process ends with TMFF_EXIT_CRASHED; it
