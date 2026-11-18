@@ -73,6 +73,7 @@ class Literal:
     status: str = ""
     wording: bool = False          # whether it sits in a Wording or Vocabulary type or file
     findings: Tuple[str, ...] = ()  # what the conversion must restructure, see classify.findings_of
+    needs_comment: bool = False    # a SwiftUI literal the compiler extracts with no comment, see classify.needs_comment
 
 
 class Lexer:

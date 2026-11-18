@@ -127,6 +127,15 @@ KEY_CALLS: Dict[str, KeySpec] = {
     "LocalizationValue": (frozenset({"stringLiteral"}), True, False),
 }
 
+# The SwiftUI calls whose first literal is a key the compiler extracts but that can carry no comment of their own (only
+# `Text` takes `comment:`): the calls of the table above that take no label.
+SWIFTUI_KEY_CALLS = frozenset(name for name, (labels, positional, _whole) in KEY_CALLS.items() if positional and not labels
+                              and name in _SWIFTUI_TITLE_CALLS)
+# What `show` tells the converter about such a literal.
+NEEDS_COMMENT_HELP = "extracted without a comment: move into a wording static with `String(localized:comment:)`"
+# How far past a literal `call_has_comment` reads for the call's closing parenthesis.
+_COMMENT_SCAN_LIMIT = 800
+
 # The marker that leaves a literal out of the lint: `// l10n: no`, alone or followed by anything
 # (a reason in parentheses, after a comma, a colon, a dash, or in plain words), to the end of the
 # line. The word boundary keeps `// l10n: nothing` from marking.
@@ -271,6 +280,44 @@ def status_of(lit: Literal) -> str:
     if lit.bucket not in COUNTED:
         return ""
     return "marked" if is_marked(lit) else "unlocalized"
+
+
+def call_has_comment(source: str, start: int) -> bool:
+    """Whether the call whose argument ends at `start` in `source` has a `comment:` argument: reads on to the call's
+    closing parenthesis, skipping string literals (an interpolation inside one is part of the string), and looks for
+    the label `comment:` at the call's own level."""
+    depth, i, end = 0, start, min(len(source), start + _COMMENT_SCAN_LIMIT)
+    while i < end:
+        ch = source[i]
+        if ch == '"':
+            # Skip a string literal, with its escapes (and its interpolations, which sit inside the escape `\(`).
+            i += 1
+            while i < end and source[i] != '"':
+                i += 2 if source[i] == "\\" else 1
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            if depth == 0:
+                return False
+            depth -= 1
+        elif depth == 0 and source.startswith("comment", i) and not (source[i - 1].isalnum() or source[i - 1] == "_"):
+            after = source[i + len("comment"):].lstrip()
+            if after.startswith(":"):
+                return True
+        i += 1
+    return False
+
+
+def needs_comment(lit: Literal, source: str) -> bool:
+    """Whether the literal is a SwiftUI key that the compiler extracts with no comment, which `l10n.py check` refuses
+    once the file is synced: a first argument of `Text`, `Button`, `Label`, `Toggle`, `.accessibilityLabel`,
+    `.accessibilityHint`, `.accessibilityValue`, `.help`, `.navigationTitle`, and the other calls of SWIFTUI_KEY_CALLS.
+    Only `Text` can carry a comment (`Text("...", comment: "...")`, which is not listed); the others must move
+    into a wording static. A literal marked `// l10n: no` is not listed. It is not counted unlocalized: the lint and
+    the baseline do not see it."""
+    if lit.rule != "localized-key" or lit.call not in SWIFTUI_KEY_CALLS or lit.label is not None or is_marked(lit):
+        return False
+    return not (lit.call == "Text" and call_has_comment(source, lit.end))
 
 
 def is_marked(lit: Literal) -> bool:
