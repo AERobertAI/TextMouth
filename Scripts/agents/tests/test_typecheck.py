@@ -528,10 +528,11 @@ class MainTests(TypecheckTestsCase):
         self.assertEqual((out / "census.md").read_text(), "report\n")
         self.assertTrue(json.loads((out / "census.json").read_text())["ok"])
 
-    def run_strings(self, *arguments, files=("TextMouth/App.swift",), foreign=True):
+    def run_strings(self, *arguments, files=("TextMouth/App.swift",), foreign=True, during_build=None):
         """main() with --emit-strings, a `swift build` that writes a .stringsdata file for each of `files` (repository paths
-        of the app's sources) and, with `foreign`, one for a dependency, into the folder the package names; returns
-        (the exit status, what main() printed, the strings folder it used)."""
+        of the app's sources) and, with `foreign`, one for a dependency, into the folder the package names, after calling
+        `during_build` (a function, to change the tree while the build runs); returns (the exit status, what main() printed,
+        the strings folder it used)."""
         written = []
 
         def build(command, **options):
@@ -539,6 +540,8 @@ class MainTests(TypecheckTestsCase):
             if command[0] != "swift":
                 return self.real_run(command, **options)
             self.commands.append(command)
+            if during_build:
+                during_build()
             folder = Path(re.search(r'"-emit-localized-strings-path", "([^"]+)"',
                                     (Path(options["cwd"]) / "Package.swift").read_text()).group(1))
             written.append(folder)
@@ -606,15 +609,37 @@ class MainTests(TypecheckTestsCase):
         # The run is named for the commit it is on, with -wt: its results folder says so.
         self.assertIn(f"-{self.git('rev-parse', '--short', 'HEAD')}-wt-", next(typecheck.RESULTS.iterdir()).name)
 
+    def copy_id(self):
+        """The sources' id of a fresh copy of the working tree's TextMouth/ (as a run makes it)."""
+        copy = Path(tempfile.mkdtemp(dir=self.folder))
+        typecheck.extract_worktree(self.repo, ["TextMouth"], copy)
+        return typecheck.sources_id(self.repo, typecheck.WORKTREE, copy)
+
     def test_the_sources_id_of_the_working_tree_changes_with_a_file_and_not_with_the_run(self):
         ids = []
         for edit in (None, None, "// edited\n"):
             if edit:
                 (self.repo / "TextMouth" / "App.swift").write_text(edit)
-            ids.append(typecheck.tree_id(self.repo, typecheck.WORKTREE))
+            ids.append(self.copy_id())
         self.assertEqual(ids[0], ids[1])
         self.assertNotEqual(ids[1], ids[2])
-        self.assertEqual(typecheck.tree_id(self.repo, self.commit), self.git("rev-parse", f"{self.commit}:TextMouth"))
+        copy = Path(tempfile.mkdtemp(dir=self.folder))
+        self.assertEqual(typecheck.sources_id(self.repo, self.commit, copy), self.git("rev-parse", f"{self.commit}:TextMouth"))
+
+    def test_the_sources_id_is_the_copys_and_not_the_working_trees_after_a_file_changes_during_the_build(self):
+        """A file edited while the build runs must not change what the run says it read (the review's finding 1): the id
+        was taken after the build, so it named the new content while the strings came from the old copy."""
+        before = self.copy_id()
+
+        def edit_during_the_build():
+            """What an editor does while the Mac's two-minute build is running."""
+            (self.repo / "TextMouth" / "App.swift").write_text("// edited during the build\n")
+
+        status, _, folder = self.run_strings("--worktree", during_build=edit_during_the_build)
+        self.assertEqual(status, 0)
+        manifest = json.loads((folder / typecheck.STRINGS_MANIFEST).read_text())
+        self.assertEqual(manifest["treeId"], before, "the id is of the files the run copied")
+        self.assertNotEqual(manifest["treeId"], self.copy_id(), "and no longer the working tree's, which has changed")
 
     def test_the_ref_run_still_copies_the_commit_and_not_the_working_tree(self):
         (self.repo / "TextMouth" / "App.swift").write_text("// changed after the commit\n")

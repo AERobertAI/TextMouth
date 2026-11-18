@@ -561,26 +561,28 @@ let package = Package(
 """)
 
 
-def tree_id(repo, tree):
-    """An identifier of the app's sources (TextMouth/) in `tree`, equal for two runs only when they read the same files:
-    git's own id of the folder at a commit, or a digest of the names and contents of the files git lists there
-    (tracked and new, less what .gitignore hides) in the working tree."""
+def sources_id(repo, tree, src):
+    """An identifier of the app's sources (TextMouth/) in `tree`, equal for two runs only when they read the same files.
+    For a commit it is git's own id of the folder (the sources of a commit cannot change). For the working tree it is a
+    digest of the names and contents of the files in the run's own copy, `src`/TextMouth: a file edited while the run builds
+    changes the working tree but not the copy, so the id says what the run read, never what the tree has become. Call it
+    right after prepare_sources, before the build."""
     if tree != WORKTREE:
         return run(["git", "-C", str(repo), "rev-parse", f"{tree}:TextMouth"]).stdout.strip()
-    listing = run(["git", "-C", str(repo), "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "TextMouth"])
     digest = hashlib.sha256()
-    for name in sorted(set(filter(None, listing.stdout.split("\0")))):
-        path = Path(repo) / name
-        if path.is_file():
-            digest.update(name.encode("utf-8") + b"\0" + path.read_bytes() + b"\0")
+    copied = Path(src) / "TextMouth"
+    # Names relative to the copy's root, with "/" and in code-point order (as git lists them), so that the id does not
+    # depend on the file system's listing order.
+    for path in sorted((p for p in copied.rglob("*") if p.is_file()), key=lambda p: p.relative_to(src).as_posix()):
+        digest.update(path.relative_to(src).as_posix().encode("utf-8") + b"\0" + path.read_bytes() + b"\0")
     return digest.hexdigest()
 
 
-def collect_strings(folder, src, platform, commit, tree, sources_id):
+def collect_strings(folder, src, platform, commit, tree, copied_id):
     """Writes STRINGS_MANIFEST into the strings `folder` and returns it (a dict): which of the .stringsdata files in it
     belong to the app's own sources (those whose source file is inside `src`/TextMouth, as the compiler recorded it),
     the root they were compiled under (so that a source path can be made relative to the repository), the id of the
-    sources (see tree_id), by which the sync checks that both platforms' runs read the same tree, and how many
+    sources (see sources_id; `copied_id` is its value), by which the sync checks that both platforms' runs read the same tree, and how many
     Swift files the platform's target compiles, which a complete run matches with one .stringsdata file each. Files of
     other sources (a dependency built with the flags) are listed in no way and so are never read by the sync."""
     app_root = (src / "TextMouth").resolve()
@@ -597,7 +599,7 @@ def collect_strings(folder, src, platform, commit, tree, sources_id):
     swift_files = sum(1 for path in app_root.rglob("*.swift")
                       if not any(str(path.relative_to(app_root)).startswith(name + "/") for name in left_out))
     manifest = {"platform": platform, "commit": commit, "tree": "worktree" if tree == WORKTREE else "commit",
-                "treeId": sources_id, "sourceRoot": str(src.resolve()), "swiftFiles": swift_files, "files": kept}
+                "treeId": copied_id, "sourceRoot": str(src.resolve()), "swiftFiles": swift_files, "files": kept}
     (folder / STRINGS_MANIFEST).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return manifest
 
@@ -972,6 +974,8 @@ def main(argv):
         prepare_packages(pkgs, pins, say)
         src = work / "src"
         rewritten = prepare_sources(repo, tree, src, args.census, tests)
+        # The sources' id comes from the copy, now: a file edited while the build runs must not change what this run says it read.
+        copied_id = sources_id(repo, tree, src) if strings_folder is not None else None
         if strings_folder is not None:
             strings_folder.mkdir(parents=True, exist_ok=False)
         sdk = run(["xcrun", "--sdk", "iphoneos" if args.platform == "ios" else "macosx", "--show-sdk-path"]).stdout.strip()
@@ -1021,7 +1025,7 @@ def main(argv):
             _target, listed_folder, project_target = test_names(test_kind(tests))
             origins = {f"{listed_folder}/{Path(path).name}": path for path in listed_test_files(repo, tree, project_target)}
         summary, count, _link_failed, succeeded = summarize(log_text, src, header, out, bool(tests), origins, len(commands))
-        manifest = collect_strings(strings_folder, src, args.platform, commit, tree, tree_id(repo, tree)) if strings_folder is not None else None
+        manifest = collect_strings(strings_folder, src, args.platform, commit, tree, copied_id) if strings_folder is not None else None
     finally:
         if taken and not args.no_lock:
             heavy_lock.release()
