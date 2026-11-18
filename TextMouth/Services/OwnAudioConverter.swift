@@ -143,7 +143,8 @@ enum OwnAudioConverter {
     /// `target` says: Apple Lossless at `target.appleLosslessBitDepth`, or
     /// AAC. Nothing is left at `staged` by a failure.
     /// - Throws: `ImportAudioConverter.Failure` (`notRead` when the reader
-    ///   gives the file up, `notWritten` when the encoder does), or
+    ///   gives the file up, `notWritten` when the encoder does, and on the
+    ///   iPhone `killed` when the app is short of memory), or
     ///   `CancellationError`.
     static func write(
         _ source: URL,
@@ -155,7 +156,15 @@ enum OwnAudioConverter {
         do {
             guard let bytes = OwnAudioBytes(path: source.path) else { throw OwnAudioError.truncated }
             var decoder = try format.decoder(of: bytes, companion: companionBytes(of: source))
-            try await write(&decoder, tags: OwnAudioTagReader.read(bytes), to: staged, target: target)
+            #if os(iOS)
+            // A header may ask for far more memory a block than a recording needs, and iOS ends the app
+            // past its limit: the iPhone asks the memory floor between blocks (`OwnAudioMemoryWatch`).
+            let beforeEachBlock = OwnAudioMemoryWatch(fileName: name).check
+            #else
+            let beforeEachBlock: () throws -> Void = {}
+            #endif
+            try await write(
+                &decoder, tags: OwnAudioTagReader.read(bytes), to: staged, target: target, beforeEachBlock: beforeEachBlock)
         } catch let problem as OwnAudioError {
             try? FileManager.default.removeItem(at: staged)
             throw ImportAudioConverter.Failure.notRead(fileName: name, problem: problem)
@@ -170,16 +179,22 @@ enum OwnAudioConverter {
     }
 
     /// The pass of one of the own readers: `writeBlocks` with `decoder`'s
-    /// stream and blocks.
-    /// - Throws: `OwnAudioError` from the decoder, `AudioEditError` naming
-    ///   an AVFoundation error's domain and code, or `CancellationError`.
+    /// stream and blocks, `beforeEachBlock` run before each is decoded (the
+    /// iPhone's memory check; nothing on the Mac).
+    /// - Throws: `OwnAudioError` from the decoder, what `beforeEachBlock`
+    ///   throws, `AudioEditError` naming an AVFoundation error's domain and
+    ///   code, or `CancellationError`.
     private static func write(
         _ decoder: inout any OwnAudioDecoder,
         tags: OwnAudioTags,
         to staged: URL,
-        target: ImportAudioConverter.Target
+        target: ImportAudioConverter.Target,
+        beforeEachBlock: () throws -> Void
     ) async throws {
-        try await writeBlocks(of: decoder.stream, tags: tags, to: staged, target: target) { try decoder.nextBlock() }
+        try await writeBlocks(of: decoder.stream, tags: tags, to: staged, target: target) {
+            try beforeEachBlock()
+            return try decoder.nextBlock()
+        }
     }
 
     /// The pass every conversion that decodes in TextMouth's own code writes

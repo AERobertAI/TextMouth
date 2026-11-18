@@ -248,6 +248,26 @@
 		<dict>
 			<key>CFBundleTypeExtensions</key>
 			<array>
+				<string>tta</string>
+				<string>wv</string>
+				<string>ape</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Lossless Audio Read by TextMouth</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.true-audio</string>
+				<string>com.textmouth.wavpack</string>
+				<string>com.textmouth.monkeys-audio</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
 				<string>mp4</string>
 				<string>m4v</string>
 				<string>mov</string>
@@ -1012,6 +1032,57 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>audio/webm</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>True Audio</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.true-audio</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>tta</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>WavPack Audio</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.wavpack</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>wv</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Monkey's Audio</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.monkeys-audio</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>ape</string>
 				</array>
 			</dict>
 		</dict>

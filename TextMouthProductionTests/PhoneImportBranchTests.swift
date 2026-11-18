@@ -39,6 +39,42 @@ final class PhoneImportBranchTests: XCTestCase {
         }
     }
 
+    /// The iPhone refuses no file of TextMouth's own readers (True Audio,
+    /// WavPack, Monkey's Audio): the refusal asks the one shared rule
+    /// (`isReadByOwnReader`) beside FFmpeg's, and the converter's one iPhone
+    /// branch, where afinfo would have answered, tells a file named for such
+    /// a format whose bytes are of none unreadable, as the Mac does; every
+    /// other file that gets there is still told "not available on iPhone yet".
+    func testTheOwnReadersFormatsAreNotRefusedOnThePhone() throws {
+        let refusal = try Self.source("Phone/PhoneImportRefusal.swift")
+        XCTAssertTrue(refusal.contains("!FFmpegAudioConverter.converts($0) && !isReadByOwnReader($0)"))
+        XCTAssertFalse(refusal.contains("OwnAudioFormat.allCases"), "the refusal still names the own readers' formats")
+        let converter = try Self.source("Services/ImportAudioConverter.swift")
+        let branch = try Self.iOSBranch(after: "var described = try OwnAudioConverter.sourceInfo(of: source)", in: converter)
+        XCTAssertTrue(branch.contains("guard ownReaderExtensions.contains(source.pathExtension.lowercased()) else {"))
+        XCTAssertTrue(branch.contains("throw IOSUnavailable.feature(\"Converting this kind of file\")"))
+        XCTAssertTrue(branch.contains("throw Failure.unreadable(fileName: name)"))
+    }
+
+    /// A conversion by TextMouth's own readers asks the memory floor before
+    /// each block on the iPhone alone (`OwnAudioMemoryWatch`); the Mac's
+    /// check is nothing, and the one writer FFmpeg's import shares
+    /// (`writeBlocks`) is not changed. The watch itself is tested on the
+    /// iPhone (`OwnAudioMemoryWatchTests`).
+    func testTheOwnReadersAskTheMemoryFloorBeforeEachBlockOnThePhoneOnly() throws {
+        let source = try Self.source("Services/OwnAudioConverter.swift")
+        let branch = try Self.iOSBranch(after: "var decoder = try format.decoder(of: bytes, companion: companionBytes(of: source))", in: source)
+        XCTAssertTrue(branch.contains("let beforeEachBlock = OwnAudioMemoryWatch(fileName: name).check"))
+        XCTAssertTrue(source.contains("#else\n            let beforeEachBlock: () throws -> Void = {}\n            #endif"))
+        XCTAssertTrue(source.contains("try beforeEachBlock()\n            return try decoder.nextBlock()"))
+        let writer = try XCTUnwrap(source.range(of: "static func writeBlocks("), "writeBlocks moved")
+        let tags = try XCTUnwrap(source.range(of: "// MARK: - Tags"), "the Tags section moved")
+        XCTAssertFalse(source[writer.lowerBound..<tags.lowerBound].contains("OwnAudioMemoryWatch"), "the shared writer asks the floor")
+        let watch = try Self.source("Platform/iOS/Services/OwnAudioMemoryWatch+iOS.swift")
+        XCTAssertTrue(watch.contains("memory.leftWhenCrossed()"), "the watch does not ask the one floor")
+        XCTAssertTrue(watch.contains("ImportAudioConverter.Failure.killed("))
+    }
+
     /// A book of several tracks leaves out what only ffmpeg reads and can't
     /// be converted (review9 finding 2) by one shared line on both platforms,
     /// asking the FFmpeg tool where its session runs (the iPhone's is in the

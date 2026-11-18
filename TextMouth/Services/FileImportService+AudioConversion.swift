@@ -57,9 +57,10 @@ extension FileImportService {
             guard !found.isEmpty else { return nil }
             let (sources, notice) = try leavingOutWhatOnlyFFmpegReads(found, from: bookURL) { FFmpegAudioConverter.tool.locate() }
             #if os(iOS)
-            // The iPhone converts what only FFmpeg reads in the app itself
-            // (FMT54), and has no converter for the rest: a copy-protected
-            // file is told first, then the rest refused, naming the kind. The
+            // The iPhone converts in the app itself what only FFmpeg reads
+            // (FMT54) and what TextMouth's own readers decode, and has no
+            // converter for the rest: a copy-protected file is told first,
+            // then the rest refused, naming the kind. The
             // conversion's step begins first: a copy-protected file's refusal
             // is the Mac's own failure, told under the step under way, as on
             // the Mac (the FMT54 review, finding 3); the phone's own refusals
@@ -79,10 +80,11 @@ extension FileImportService {
             let needed = try AsyncBridge.waitForResult { try await ImportAudioConverter.needsConversion(among: [bookURL]) }
             guard !needed.isEmpty else { return nil }
             #if os(iOS)
-            // The iPhone converts a file only FFmpeg reads in the app itself
-            // (FMT54); any other it has no converter for, and the book is
-            // refused, naming the kind, a copy-protected file told first,
-            // under the conversion's step, as above.
+            // The iPhone converts in the app itself a file only FFmpeg reads
+            // (FMT54) or one of TextMouth's own readers decodes; any other it
+            // has no converter for, and the book is refused, naming the kind,
+            // a copy-protected file told first, under the conversion's step,
+            // as above.
             try run.begin(.convertingImportedAudio(done: 0, of: needed.count), in: staging.directory)
             try PhoneImportRefusal.refuseConversion(of: needed)
             #endif

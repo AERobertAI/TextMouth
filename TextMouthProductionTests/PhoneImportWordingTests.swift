@@ -117,15 +117,15 @@ final class PhoneImportWordingTests: XCTestCase {
 
     /// Every extension the import converts is named among the Mac's names
     /// of its formats, never by the capitals fallback, so no refusal says
-    /// "OGG" or "AIFC"; those only ffmpeg reads by their names (FMT31).
+    /// "OGG" or "AIFC"; those only ffmpeg reads by their names (FMT31). The
+    /// formats of TextMouth's own readers are never refused, so have none.
     func testEveryConvertedExtensionHasAName() {
-        // The formats TextMouth's own readers decode are named as their readers name them.
-        let names = Set([
+        let names: Set<String> = [
             "Ogg", "Opus", "AC-3", "CAF", "AIFF-C", "AU", "Wave64", "AMR", "3GPP", "MP1", "MP2",
             "WMA", "WMV video", "Windows Media", "Speex", "Musepack", "WebM", "Matroska", "AVI video", "Flash video",
             "RealMedia",
-        ]).union(OwnAudioFormat.allCases.map(\.displayName))
-        for ext in ImportAudioConverter.convertedExtensions {
+        ]
+        for ext in ImportAudioConverter.convertedExtensions.subtracting(ImportAudioConverter.ownReaderExtensions) {
             let name = PhoneImportRefusal.audioKindName(content: .unknown, fileExtension: ext)
             XCTAssertTrue(names.contains(name), "\(ext) is named \(name)")
         }
