@@ -85,8 +85,9 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.5.1 (tag `v0.5.1`) plus the merges bound for 0.5.2, and the user still runs 0.4.2.
-- 0.5.1 fixed B12 (64-bit float books edit), B13 and B14 (a move's saves and temporary files), #5512 (one Markdown nesting limit), and Q-flake, and added the issue tracker.
-- Done since 0.5.1: FFmpeg 9.0.2 built into a sandboxed helper on the Mac, so Homebrew's ffmpeg is no longer used (FMT50; the Release app is 21.0 MB); `make ios-size`; the runner's stale-cache retry (TL01, TL02); and A11Y-GOTO's accepted finding.
+- Main is version 0.5.2 (tag `v0.5.2`) plus the merges bound for 0.5.3, and the user still runs 0.4.2.
+- 0.5.2 built FFmpeg 9.0.2 into a sandboxed helper on the Mac, so Homebrew's ffmpeg is no longer used (FMT50; the Release app is 21.0 MB), and added braille on the iPhone (DR34), `make ios-size`, and the runner's stale-cache retry (TL01, TL02).
+- Done since 0.5.2: FFmpeg inside the iPhone app (FMT54; the iPhone app is 16.1 MB) with the running clock that survives iOS suspending the app (B18), and the train watcher's retries (TL07, TL06).
 - Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22 and FR23 and the iCloud store, the audio decoders, C11's follow-ups), and the hand checks there.
-- Open: `issuelib list`, the files in `Issues/`, among them FFmpeg on the iPhone (FMT54), FFmpeg's leftovers (FU-FFMPEG2, FU01), and the iPhone's size in `make check` (TL05).
+- Open: `issuelib list`, the files in `Issues/`, among them Ogg and Apple's converter's formats on the iPhone (FMT55), FFmpeg's leftovers (FU-FFMPEG2, FU01, FU03, FU04, B19, Q13), and braille's abandonment sentence (B20).
+  Also the iPhone's size in `make check` (TL05), and the train's census (TL08) and cache (TL09).
