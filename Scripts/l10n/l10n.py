@@ -56,8 +56,10 @@ TYPECHECK = HERE.parent / "ios" / "typecheck.py"
 # Both apps must be extracted in one sync: a string only the other app has would be marked stale.
 PLATFORMS = ("macos", "ios")
 PLATFORM_NAMES = {"macos": "Mac", "ios": "iPhone"}
-# The folder of the main checkout the tools write to (gitignored), and the files in it.
-OUTPUT_FOLDER = Path("build/l10n")
+# The main checkout, which holds the tools' output whichever worktree runs them, and the folder in it they write to
+# (gitignored; the type-check's strings folders are there too), and the file that maps each key to its places.
+MAIN = repo_paths.main_checkout()
+OUTPUT = MAIN / "build" / "l10n"
 LOCATIONS_FILE = "locations.json"
 # The line `typecheck.py --emit-strings` ends with, naming the folder of the strings it wrote, and the file in that folder
 # that says what the run found (both defined by typecheck.py; repeated here because that script is run, not imported).
@@ -307,7 +309,7 @@ def sync_manifests(args, manifests, say, output=None):
                 say(f"  {label}: {describe(keys, len(keys))}")
             elif keys:
                 say(f"  {label}: {describe(keys)}")
-    destination = output or (repo_paths.main_checkout() / OUTPUT_FOLDER / LOCATIONS_FILE)
+    destination = output or (OUTPUT / LOCATIONS_FILE)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(places, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
     say(f"wrote {destination.name}: the files and lines of {number(sum(found.values()))} strings, in {destination.parent}")
@@ -409,8 +411,7 @@ def cmd_size(args):
     bytes_now, budget = cat.english_bytes(), config["budgetBytes"]
     path = catalog_path(args)
     languages = [language for language in languages_of(cat, config) if language in cat.languages()]
-    output = repo_paths.main_checkout() / OUTPUT_FOLDER / "size"
-    sizes = compile_sizes(path, languages, output) if languages else {}
+    sizes = compile_sizes(path, languages, OUTPUT / "size") if languages else {}
     data = {"englishBytes": bytes_now, "budgetBytes": budget, "overBudget": bytes_now > budget, "catalogBytes": path.stat().st_size,
             "encodingSetting": encoding_setting(), "languages": sizes}
     over = bytes_now - budget
@@ -491,7 +492,8 @@ def plural_problems(units, english, required):
         missing = [category for category in required if category not in categories]
         if missing:
             problems.append(f"plural form{'s' if len(missing) > 1 else ''} missing: {', '.join(missing)}")
-    english_prefixes = {path.rsplit(".", 1)[0] + "." for path in english if ".plural." in "." + path or path.startswith("plural.")}
+    # The English's own plural variations, by the path up to and including "plural." (as `groups` keys them).
+    english_prefixes = {path.rsplit(".", 1)[0] + "." for path in english if ".plural." in "." + path}
     for prefix in sorted(english_prefixes):
         if prefix not in groups:
             problems.append("the English has plural forms and the translation has none")

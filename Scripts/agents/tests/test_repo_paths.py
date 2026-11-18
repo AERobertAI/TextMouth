@@ -49,6 +49,9 @@ TOOLS = {
         "MAIN": main,
         "WORK_ROOT": main / "build" / "typecheck",
         "CHECKOUTS": main / "build" / "DerivedData" / "SourcePackages" / "checkouts"},
+    "l10n/l10n.py": lambda main, home: {
+        "MAIN": main,
+        "OUTPUT": main / "build" / "l10n"},
     "test/markup-stack-proof.py": lambda main, home: {
         "MAIN": main,
         "OUT": main / "build" / "markup-stack"},

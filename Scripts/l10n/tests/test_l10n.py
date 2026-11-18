@@ -333,7 +333,7 @@ class SizeTests(TemporaryCase):
     def run_size(self, path, config=None):
         """Runs `size` with its output folder in the temporary folder; returns what it printed."""
         out = io.StringIO()
-        with mock.patch.object(l10n.repo_paths, "main_checkout", lambda: self.folder), contextlib.redirect_stdout(out):
+        with mock.patch.object(l10n, "OUTPUT", self.folder / "build" / "l10n"), contextlib.redirect_stdout(out):
             l10n.cmd_size(args_for("size", path, config=config or self.folder / "none.json"))
         return out.getvalue()
 
