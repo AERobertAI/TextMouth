@@ -71,7 +71,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A file that is valid, but whose samples are 64-bit integers or another form no decoder reads, is refused with that form and what to convert it to, not as damaged (see [Adding books](import-progress-and-errors.md#audio-whose-samples-textmouth-cant-decode)).
 
 ## True Audio, WavPack, and Monkey's Audio
-<!-- id: true-audio-wavpack-monkeys-audio; keys: TTA, .tta, WavPack, .wv, .wvc, Monkey's Audio, .ape, hybrid; src: TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift; status: incomplete; issues: DR31 -->
+<!-- id: true-audio-wavpack-monkeys-audio; keys: TTA, .tta, WavPack, .wv, .wvc, Monkey's Audio, .ape, hybrid; src: TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift; status: incomplete; issues: DR31, B21 -->
 
 - TextMouth decodes True Audio (.tta), WavPack (.wv), and Monkey's Audio (.ape, version 3.99 and later) with readers of its own, inside the app, so no program has to be installed for them.
 - Each file becomes an .m4a file in the book's package, as the other converted audio does (see above), and holds the source's samples exactly.
@@ -80,6 +80,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A file is known by what it holds, not its name, so a TTA file named .mp3 is read as TTA.
 - A WavPack hybrid file (a lossy .wv) with its correction file (.wvc, the same name) beside it is lossless.
   - The .wvc is copied with the .wv, and kept with it when Keep originals of converted audio is on.
+  - On the iPhone, a hybrid book keeps its full quality only through Import Folder or a ZIP: Open Book and "Open in" copy each file alone and leave its .wvc behind, so the book becomes AAC, with no word why.
   - Without it the hybrid file becomes AAC.
   - A correction file that is damaged or belongs to another recording fails the import with "The correction file NAME.wvc is damaged or belongs to another recording, so NAME.wv could not be converted."
 - Audio of more than two channels is mixed to stereo, as the other converted audio is.
@@ -94,7 +95,9 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - "The audio file NAME ends before its audio does, so it could not be converted.";
   - "The audio file NAME is damaged, so it could not be converted." for a checksum that fails or a value no encoder writes.
 - A file that claims to last more than a year is refused as damaged.
-- The iPhone refuses these formats.
+- The iPhone imports these formats too, with the same readers, built into the app, and each file becomes the same book as on the Mac.
+  An Ogg file named .tta is still refused with its true sentence, as Ogg, and a file of no format named so fails as unreadable.
+  While one converts, the app's memory is watched as FFmpeg's is (see below), and a file that needs more is stopped with "Converting NAME was stopped because the app's memory grew by more than N MB while it ran."
 
 ## Formats only ffmpeg reads
 <!-- id: formats-only-ffmpeg-reads; keys: FFmpeg, WMA, Speex, Musepack, WebM, Matroska, converter; src: TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Parsers/FFmpegContainer.swift, TextMouth/Services/FFmpegReport.swift, TextMouth/Models/FFmpegImportWording.swift; status: incomplete; issues: Q13, B19 -->
@@ -151,7 +154,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - "Converting NAME was stopped because the iPhone had only N MB of memory free when it began, and TextMouth keeps half of that free."
 - A conversion stuck beyond its time is given up with "TextMouth stopped the audio conversion because it ran longer than 62 seconds, and won't try again until TextMouth is closed and opened again.", with the seconds it ran.
   Until TextMouth is closed and opened again, every conversion says "TextMouth stopped the audio conversion earlier because it took too long, and won't try again until TextMouth is closed and opened again."
-- The iPhone still refuses Ogg and the audio the Mac converts with Apple's converter (Opus, AC-3, AMR, MP2, CAF, and the rest), with "“NAME” is in Ogg, which TextMouth on iPhone can't play yet.
+- The iPhone still refuses Ogg and the audio the Mac converts with Apple's converter (Opus, AC-3, AMR, MP2, CAF, and the rest, but True Audio, WavPack, and Monkey's Audio), with "“NAME” is in Ogg, which TextMouth on iPhone can't play yet.
   Add it on your Mac, then send the book here."
 - A folder, ZIP, or playlist with such a file still refuses the whole book, and one with a file named for these formats whose bytes are of none leaves it out, as on the Mac.
 

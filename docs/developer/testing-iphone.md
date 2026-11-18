@@ -162,6 +162,9 @@ A test that makes sound is never shared: the check in `test_run_ios_ui_tests.py`
   Each difference and its reason is under Where the iPhone differs in [The two apps and the platform folders](../architecture/platforms.md).
   `BundledLicenseTests` and `UncheckedConcurrencyPolicyTests` (it scans the repository) are left Mac-only.
 - **The FFmpeg classes** (the helper's protocol and hostile-file ones too), `InProcessEngineTests`, and `RunningClockTests` are shared, so each shows that the iPhone makes the Mac's streams, books, and sentences.
+- **The own readers:** `OwnAudioImportTests` and `OwnAudioSampleSupport` are shared, and name no audio framework, which the iPhone bundle forbids.
+  The reads that need one (`AVAudioFile`, afinfo) are in `OwnAudioConvertedFileSupport.swift`, Mac-only, so the iPhone checks a converted file's length with `AudioMediaProbe`, within 1 ms of its frames over its rate; the Mac also checks its codec, depth, and samples.
+  `OwnAudioMemoryWatchTests` script the floor.
   `FFmpegInAppTests` is the iPhone's own (see [FFmpeg in the iPhone app](testing-formats.md#ffmpeg-in-the-iphone-app)).
 - **The type-checks:** `make typecheck-ios-tests` compiles the unit bundle and its shared files for iOS, and takes the lock itself.
   Run it with `make typecheck-tests` before a train request that changes a shared test file.

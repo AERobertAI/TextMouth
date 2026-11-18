@@ -152,7 +152,7 @@ A file the import converts keeps its chapters through the conversion:
 - FLAC files' cue sheets are read by FLACCueSheetReader (above).
 
 ## TextMouth's own TTA, WavPack, and Monkey's Audio readers
-<!-- id: own-audio-readers; keys: OwnAudioFormat, OwnAudioConverter, TTADecoder, WavPackDecoder, MonkeysAudioDecoder, OwnAudioError, .wvc, APEv2; src: TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift, TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/WavPackUnpack.swift, TextMouth/Parsers/OwnAudio/MonkeysAudioDecoder.swift, TextMouth/Parsers/OwnAudio/TTADecoder.swift -->
+<!-- id: own-audio-readers; keys: OwnAudioFormat, OwnAudioConverter, TTADecoder, WavPackDecoder, MonkeysAudioDecoder, OwnAudioError, .wvc, APEv2; src: TextMouth/Parsers/OwnAudio/OwnAudioFormat.swift, TextMouth/Parsers/OwnAudio/OwnAudioSource.swift, TextMouth/Parsers/OwnAudio/OwnAudioTags.swift, TextMouth/Services/OwnAudioConverter.swift, TextMouth/Parsers/OwnAudio/WavPackUnpack.swift, TextMouth/Parsers/OwnAudio/MonkeysAudioDecoder.swift, TextMouth/Parsers/OwnAudio/TTADecoder.swift, TextMouth/Platform/iOS/Services/OwnAudioMemoryWatch+iOS.swift; status: incomplete; issues: B21 -->
 
 - Owner: OwnAudioFormat (trueAudio, wavPack, monkeysAudio) tells a file by its signature, after any ID3v2 tag (OwnAudioFormat.of), and gives each reader a decoder (format.decoder(of:companion:)).
   The readers are Swift ports of BSD-licensed decoders (the TTA hardware players library 1.2, WavPack 5.9.0, and Monkey's Audio SDK 13.47), compiled into both apps from TextMouth/Parsers/OwnAudio.
@@ -169,7 +169,11 @@ A file the import converts keeps its chapters through the conversion:
   Stop is seen between blocks and in the writer's wait, and the decode runs off the main actor.
 - Header shifts: WavPack files of 12 or 20 valid bits, or of 24 in 32, are shifted back to their own width after the unpack, so the samples handed to the encoder are exact (review10 finding 1).
 - Not read: Monkey's Audio before 3.99 and WavPack before 4 (refused with their sentences), True Audio with a password or of floats, DSD, and a later WavPack block that changes the first block's sample format (crafted files only).
-- The iPhone compiles the readers, and its import refuses the files (see the iPhone's import refusals).
+- The iPhone runs the same readers and conversion, with no helper program (see [What the iPhone's import refuses](../platforms-phone-interface.md#what-the-iphones-import-refuses)).
+  A crafted header may ask for a frame of 24 million samples, about 200 MB, and four conversions of one ZIP run at once, so before each block `OwnAudioMemoryWatch` asks `SessionMemoryFloor`, as FFmpeg's in-app run does.
+  A conversion that crosses the floor ends with FFmpeg's memory sentence in `ImportAudioConverter.Failure.killed`: "Converting a.ape was stopped because the app's memory grew by more than 700 MB while it ran."
+  The Mac has no such watch.
+  Open Book and "Open in" copy each file alone (`PhoneImportCopy`), so a hybrid WavPack book loses its .wvc and becomes AAC; Import Folder and a ZIP keep it (B21).
 
 ## Audio only ffmpeg reads
 <!-- id: audio-only-ffmpeg-pointer; keys: WMA, Matroska, WebM, FFmpeg; src: TextMouth/Services/FFmpegAudioConverter.swift -->
