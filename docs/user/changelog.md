@@ -28,6 +28,10 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### On the Mac and the iPhone
 - A file with a piece of sound too large for TextMouth to decode, as no good file has, is refused with "TextMouth can't convert “Radio.mkv”: part of its sound is stored in one piece too large for TextMouth to decode."
 
+### Deep chapters and slow audio
+- A book with a chapter nested too deeply no longer reads out or exports its markup: the reader, the speech, and the Plain Text export now give that chapter's words as written.
+- The message after audio took too long now says to close and reopen TextMouth: "TextMouth stopped reading this audio earlier because it took too long, and won't try again until TextMouth is closed and opened again."
+
 ### Not changed
 - How any other format imports, reads, or plays.
 

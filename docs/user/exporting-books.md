@@ -142,7 +142,7 @@ The text is the book's content.md, the Markdown TextMouth reads, with any edits 
 Markdown stays the base: Markdown, HTML, RTF, Word 97-2003, EPUB, BRF, and PEF are each written from it, none copied.
 
 ### A chapter nested too deeply
-<!-- id: export-nested-too-deeply; keys: nesting limit, Export as Written, Cancel Export, quotes, lists, emphasis, flatten, Edit Text; src: TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/ExportDeepChapter.swift, TextMouth/Models/BookExportDeepChapterWording.swift, TextMouth/Parsers/RawChapterLines.swift, TextMouth/Platform/macOS/Views/Export/ExportDeepChapterAlert.swift, TextMouth/Models/MarkdownNestingWording.swift; status: incomplete; issues: B16 -->
+<!-- id: export-nested-too-deeply; keys: nesting limit, Export as Written, Cancel Export, quotes, lists, emphasis, flatten, Edit Text; src: TextMouth/Services/Export/ExportDocumentWalker.swift, TextMouth/Services/Export/ExportDeepChapter.swift, TextMouth/Models/BookExportDeepChapterWording.swift, TextMouth/Parsers/RawChapterLines.swift, TextMouth/Platform/macOS/Views/Export/ExportDeepChapterAlert.swift, TextMouth/Models/MarkdownNestingWording.swift -->
 
 A chapter whose text nests quotes, lists, or emphasis more than 128 levels deep can't be exported with its structure, to any text format but Plain Text.
 No real book comes near it: the deepest nests 12 levels.
@@ -169,7 +169,9 @@ What as written means:
   Another HTML comment stays as words.
 - Nothing nests: a chapter of a thousand ">" marks is one paragraph holding them.
 
-The Plain Text export never asks: it writes a deep chapter's text as it is, with its marker comments and backslashes left in (B16).
+The Plain Text export never asks: it writes a deep chapter's words as written, without TextMouth's marker comments or its backslashes.
+The reader shows and speaks such a chapter the same way.
+A place saved in one before TextMouth kept the words of its places may land on other words.
 An export that can't ask, with no one to ask, says "Couldn't export Deep Notes - Text.md: Chapter 1 of this book nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't export safely.
 Choose Edit Text, flatten the nesting, and save; then export again." for that book, and writes the others.
 
