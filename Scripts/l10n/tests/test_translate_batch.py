@@ -150,6 +150,14 @@ class TodoTests(BatchCase):
         self.assertEqual([entry["key"] for entry in batch["skipped"]], ["Tap"])
         self.assertIn("device variations", batch["skipped"][0]["reason"])
 
+    def test_an_empty_key_is_skipped(self):
+        cat = self.load()
+        cat.strings[""] = base.entry("An empty label")
+        cat.save()
+        _, batch, _ = self.todo()
+        self.assertNotIn("", [item["key"] for item in batch["items"]])
+        self.assertIn({"key": "", "reason": "the text is empty"}, batch["skipped"])
+
     def test_the_limit_cuts_the_batch_and_counts_the_rest(self):
         _, batch, _ = self.todo("--limit", "2")
         self.assertEqual((batch["count"], batch["remaining"]), (2, 4))  # six are pending: Tap is skipped later

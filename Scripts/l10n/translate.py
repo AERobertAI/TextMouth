@@ -330,6 +330,10 @@ def build_batch(cat, language, glossary, locations, root, keys=None, limit=DEFAU
         if limit and len(items) >= limit:
             remaining = len(pending) - index
             break
+        if not key.strip():
+            # An empty key is a literal the compiler found (an empty label, say): there is no text to translate.
+            skipped.append({"key": key, "reason": "the text is empty"})
+            continue
         item, reason = batch_item(cat, key, language, glossary, locations.get(key, []), root, cache, earlier)
         if item:
             items.append(item)
