@@ -400,13 +400,16 @@ def wait_for_run(run, limit_minutes=RUN_LIMIT_MINUTES, progress=None):
                           f"({last_failure})") if lost_since is not None else ""
             raise RemoteFailure(f"run {run['url']} had not ended after {limit_minutes} minutes{still_lost}")
         SLEEP(POLL_SECONDS)
+        # Read before the poll, which itself takes GH_ATTEMPTS tries and their pauses: a connection lost during it was
+        # lost from its start.
+        polled = CLOCK()
         try:
             state = gh_json("run", "view", str(run["databaseId"]), "-R", REPO, "--json", "status,conclusion,url")
         except RemoteFailure as failure:
             # A missed poll: the last known state stands, and the watch goes on.
             last_failure = str(failure)
             if lost_since is None:
-                lost_since = CLOCK()
+                lost_since = polled
                 if progress:
                     progress(f"lost GitHub while watching {run['url']} ({last_failure}); still watching")
             continue

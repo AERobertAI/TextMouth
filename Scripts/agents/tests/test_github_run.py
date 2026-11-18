@@ -355,6 +355,12 @@ class LostConnectionTests(RemoteTestCase):
         self.assertGreater(self.now, 10 * 60, "it watched until the limit, not 45 seconds")
         self.assertLess(self.now, 10 * 60 + 2 * github_run.POLL_SECONDS + 2 * github_run.GH_ATTEMPTS * github_run.GH_RETRY_SECONDS)
 
+    def test_the_lost_minutes_count_from_the_start_of_the_first_failed_poll(self):
+        # Polls begin at 30 s (the pause), 105 s, and 180 s; the third gets through at 210 s after two failed tries.
+        # The connection was lost from 30 s, so 180 s = 3.0 minutes (counted from the poll's end, it was 2.2).
+        self.gh_state({"view": [self.DONE], "fail_first": {"view": 10}})
+        self.assertEqual(github_run.wait_for_run(STARTED)["lost_minutes"], 3.0)
+
     def test_a_connection_that_never_dropped_adds_no_lost_minutes(self):
         self.gh_state({"view": [self.DONE]})
         self.assertNotIn("lost_minutes", github_run.wait_for_run(STARTED))
