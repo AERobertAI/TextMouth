@@ -108,6 +108,12 @@ final class ScreenOrderUITests: TextMouthUITestCase {
     /// fields, and a Page field before them when the book has pages. The
     /// sheet puts the keyboard in its first field, which clicks only when a
     /// key is pressed, and none is.
+    /// Its audit is the one A11Y-GOTO settled: the audit's Dynamic Type findings
+    /// had come and gone from one launch to the next (train 1115-1800 failed,
+    /// 1115-1838 passed on the same tree), and the fields' finding is accepted
+    /// now (`auditTheGoToSheet`). A separate test launched the app five times
+    /// to show that, then once (Q10), and is gone: this test's launch and
+    /// audit are the same.
     func testTheGoToSheetHasTheSpecsOrder() throws {
         let app = try launchIntoTheReader()
         let elements = try openReaderSheet("Go To", titled: "Go To", waitingFor: "Cancel", in: app)
@@ -122,28 +128,6 @@ final class ScreenOrderUITests: TextMouthUITestCase {
             XCTAssertLessThan(page, percent, "Page is after Percent through the book")
         }
         try auditTheGoToSheet(app, screen: "Go To sheet")
-    }
-
-    /// How many times `testTheGoToSheetAuditHoldsOnEveryLaunch` launches the app and audits the Go To sheet. The
-    /// audit's Dynamic Type findings came and went from one launch to the next (A11Y-GOTO: train 1115-1800 failed,
-    /// 1115-1838 passed on the same tree), so a pass was shown over five launches before 0.5.1 shipped. Each launch
-    /// costs about 26 seconds of every iPhone interface run, so it is one now (Q10); raise it again if the finding
-    /// ever comes back by fits and starts.
-    private static let goToAuditLaunches = 1
-
-    /// The Go To sheet's audit, on `goToAuditLaunches` launches in a row, each a new process: the same audit as the
-    /// order test's, which must not fail on one launch and pass on the next. A failure names the launch when there
-    /// are several.
-    func testTheGoToSheetAuditHoldsOnEveryLaunch() throws {
-        for launch in 1...Self.goToAuditLaunches {
-            let app = try launchIntoTheReader()
-            _ = try openReaderSheet("Go To", titled: "Go To", waitingFor: "Cancel", in: app)
-            // The screen's name says which launch only when there are several.
-            let which = Self.goToAuditLaunches > 1 ? ", launch \(launch) of \(Self.goToAuditLaunches)" : ""
-            try auditTheGoToSheet(app, screen: "Go To sheet\(which)")
-            // One app at a time: the next launch (if any) is of the same app.
-            app.terminate()
-        }
     }
 
     /// Audits the Go To sheet showing in `app`. The fields' Dynamic Type finding is accepted
