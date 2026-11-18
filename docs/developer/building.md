@@ -91,7 +91,7 @@ Run these from the repository root:
 <!-- id: type-checks-other-targets; keys: typecheck-ios, typecheck-mac, typecheck-tests, mac-projection, check-ios-plist, make xcode, make clean; src: Makefile, Scripts/ios/typecheck.py, Scripts/ios/mac-projection.py, Scripts/ios/sync-info-plist.py -->
 
 - `make typecheck-ios` compiles and links the app's committed sources for iOS, as the iOS app compiles them, with SwiftPM and the iOS SDK Xcode includes, and `make typecheck-ios CENSUS=1` counts every AppKit use left in them.
-  `make typecheck-mac` does the same for the Mac, `make typecheck-tests` adds the Mac's hosted tests, and `make typecheck-ios-tests` compiles the iPhone's unit tests for iOS (`make typecheck-tests-census` counts which Mac tests compile there).
+  `make typecheck-mac` does the same for the Mac, `make typecheck-tests` adds the Mac's hosted tests, and `make typecheck-ios-tests` compiles the iPhone's unit and interface tests for iOS (`make typecheck-tests-census` counts which Mac tests compile there).
   `make mac-projection BASE=main` shows what a branch changes in the code the Mac compiles, and with `DIFF=1` prints every line it changes.
   Each is described under [The iOS app](building-ios.md).
 - `make check-ios-plist` fails when the iOS app's `TextMouth/Platform/iOS/Info.plist` is not what `Scripts/ios/sync-info-plist.py` writes from the Mac's `TextMouth/Resources/Info.plist`.
@@ -258,7 +258,7 @@ The script, Scripts/set-version.sh:
   Its cases cover both bumps (carries such as 0.2.9 to 0.2.10, numbers beyond 64 bits, and a project.yml whose version cannot be read) and the Makefile's version targets.
 
 ## The make check gate
-<!-- id: make-check-gate; keys: check.sh, reproducible build, APP_SIZE_LIMIT_MB, APP_SIZE_WARNING_MB, SIGN_APP, check-selftest, --without-tests, dry run; src: Scripts/check.sh, Scripts/check-selftest.sh, Scripts/make-signing-identity.sh, Scripts/agents/run-on-runner.py, .github/workflows/check.yml, .github/workflows/tests.yml, project.yml, Makefile; status: incomplete; issues: TL05 -->
+<!-- id: make-check-gate; keys: check.sh, reproducible build, APP_SIZE_LIMIT_MB, APP_SIZE_WARNING_MB, SIGN_APP, check-selftest, --without-tests, dry run; src: Scripts/check.sh, Scripts/check-selftest.sh, Scripts/make-signing-identity.sh, Scripts/agents/run-on-runner.py, .github/workflows/check.yml, .github/workflows/tests.yml, project.yml, Makefile, Scripts/ios/app-size.py -->
 
 **Reproducible builds and `make check`.**
 TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark.
@@ -270,7 +270,7 @@ Run `make check` before merging.
 - and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
 
 It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 30 MB limit".
-It warns, without failing, when the app is larger than 30 MB, and fails when it is larger than 40 MB, limits set once, as APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh, and it measures the Mac app alone (the same check of the iPhone app is TL05, not built).
+It warns, without failing, above 30 MB and fails above 40 MB, limits set once, as APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh, which `app-size.py` reads for the iPhone app too ([the gate's step](#the-iphone-app-in-the-gate)).
 Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
 In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
 It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.
@@ -297,6 +297,13 @@ The `suite` job runs the hosted suite through `.github/workflows/tests.yml`, the
 It runs only for a push and for a pull request from this repository, not from a fork, because it starts 5 macOS jobs and GitHub runs 5 at once.
 It asks for a build from nothing (`"cold": true`, since xcodebuild prints a file's warnings only when it compiles that file) and no Swift warning in it (`"no_warnings": true`, which `run-on-runner.py` checks with the same pattern as `check.sh`).
 One machine could not finish the whole suite in the old job's 60-minute limit (run 42765562754 was cancelled at it); the shards finish it in about 20 minutes cold.
+
+### The iPhone app in the gate
+<!-- id: make-check-iphone-size; keys: ios-size, app-size.py, check.sh, without-tests, GITHUB_ACTIONS, TL05; src: Scripts/check.sh, Scripts/ios/app-size.py -->
+
+Still in step 3 it builds the iPhone app for a device (`app-size.py build`, about 8 minutes the first time and 1 after, in `build/ios-size-DerivedData`, always an absolute folder) and holds it to the same two limits, a warning above 30 MB and a failure above 40 MB.
+That step runs under `--without-tests` too, since the release gate runs `make check --without-tests`; only a GitHub runner (`GITHUB_ACTIONS=true`) skips it, with a line saying so, because the trains measure the iPhone app there.
+`TEXTMOUTH_CHECK_SIMULATE_FAILURE=ios-size` fails that step on purpose.
 
 ## What the GitHub suite is not
 <!-- id: what-github-suite-not; keys: runner-skips.conf, TestMachine.timeScale, strict_performance, PerformanceBaselineSupport, hostile file tests; src: Scripts/agents/runner-skips.conf, Scripts/agents/run-on-runner.py, TextMouthProductionTests/KF8HostileFileTests.swift, TextMouthProductionTests/MOBIHostileFileTests.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/PerformanceBaselineSupport.swift -->

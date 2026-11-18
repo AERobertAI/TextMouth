@@ -22,6 +22,7 @@ description: TextMouth's issue tracker, one Markdown file per issue in Issues/ (
 
 ## Writing
 
+Options and positionals may come in any order (`comment ID --as NAME "text"` works), and a `--` before the first positional parses as it always did.
 Each command changes one file, prints one line saying what it did, and takes `--as NAME`, the name it acts and comments under; `close` and `reopen` also tick and untick the issue's pointer line in the TODO.
 
 - `issuelib new --kind K --title T --platform X (--description TEXT | --file F) [--priority P] [--found-by WHO] [--related IDS] [--docs IDS] [--labels L] [--family F | --id ID]`: files the next free ID of the kind's family (bug B, feature FR, format FMT, follow-up FU, test Q, tooling TL, docs DOC, question QN). On a branch it is refused, unless the orchestrator asked for it there: then `--on-branch`, and the ID said on the board, since another branch could take it too.

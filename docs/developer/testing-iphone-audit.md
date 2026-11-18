@@ -79,7 +79,7 @@ Part of [TextMouth's documentation](../../README.md).
 - **When to remove it.**
   `PhoneTextFieldScalingTests.testSwiftUIStillLeavesTheDynamicTypeSwitchOff` fails once SwiftUI turns the switch on.
   Then delete the `Accepted` values, their uses in `ScreenOrderUITests` and `SearchUITests`, and the canary.
-- The finding came and went from one launch to the next (A11Y-GOTO), so `testTheGoToSheetAuditHoldsOnEveryLaunch` audits Go To on five launches in a row.
+- The finding came and went from one launch to the next (A11Y-GOTO), so `testTheGoToSheetHasTheSpecsOrder` launches and audits Go To once, and the old test that audited it on five launches in a row is gone.
 
 ## Audits that report without failing
 <!-- id: audits-that-report-without-failing; keys: soft audit, report only, XCTAttachment, warning; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LibraryUITests.swift, TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
