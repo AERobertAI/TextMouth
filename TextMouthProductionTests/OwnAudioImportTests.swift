@@ -19,14 +19,18 @@ final class OwnAudioImportTests: XCTestCase {
     private static let sampleFolders = ["tta", "wv", "ape"]
 
     override func setUpWithError() throws {
-        folder = try AudioTestFixtures.makeTemporaryDirectory()
+        folder = try makeSandboxDirectory("OwnAudioImport")
     }
 
     override func tearDown() {
         for package in importedPackages { try? FileManager.default.removeItem(at: package) }
         importedPackages = []
-        if let folder { try? FileManager.default.removeItem(at: folder) }
         folder = nil
+    }
+
+    /// The names of the files in `folder`, hidden ones included, sorted.
+    private func names(in folder: URL) -> [String] {
+        ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).sorted()
     }
 
     // MARK: - Helpers
@@ -143,8 +147,7 @@ final class OwnAudioImportTests: XCTestCase {
         XCTAssertFalse(ArchiveEntryLimits.isAudio("Disc/track.wvc"))
     }
 
-    /// Each format has a name a listener hears, used by the iPhone's
-    /// refusal too, by content and by extension.
+    /// Each format has a name a listener hears.
     func testEachFormatHasAName() {
         XCTAssertEqual(OwnAudioFormat.trueAudio.displayName, "True Audio")
         XCTAssertEqual(OwnAudioFormat.wavPack.displayName, "WavPack")
@@ -156,10 +159,44 @@ final class OwnAudioImportTests: XCTestCase {
             XCTAssertFalse(format.signatures.isEmpty)
             XCTAssertTrue(format.signatures.allSatisfy { $0.utf8.count == 4 })
             XCTAssertEqual(format.formatID.count, 4)
-            XCTAssertEqual(PhoneImportRefusal.audioKindName(content: .ownReader(format), fileExtension: "mp3"), format.displayName)
-            for ext in format.fileExtensions {
-                XCTAssertEqual(PhoneImportRefusal.audioKindName(content: .unknown, fileExtension: ext), format.displayName)
-            }
+        }
+    }
+
+    /// The iPhone's import refuses none of these formats, which the app decodes itself as the
+    /// Mac's does: not by content, with any name (also behind an ID3v2 tag), and not by name
+    /// alone, a file whose bytes are of none of them failing the conversion as unreadable
+    /// (never sending anyone to a Mac) on both platforms. A file of another format that
+    /// the phone cannot convert is still refused, among them.
+    func testTheIPhoneRefusesNoFileOfTheOwnReaders() throws {
+        var files: [URL] = []
+        for (path, name) in [("tta/mono16.tta", "A.mp3"), ("wv/hybridmono16.wv", "B.m4a"), ("ape/mono16-fast.ape", "C.APE"),
+                             ("tta/stereo16.tta", "D.tta"), ("wv/stereo16.wv", "E.wv")] {
+            files.append(try copySample(path, as: name))
+        }
+        // A file named for a format whose bytes are of none of them (or nothing at all) is let by too.
+        files.append(try writeFile([UInt8](repeating: 0x41, count: 64), named: "Noise.tta"))
+        files.append(URL(fileURLWithPath: "/nonexistent/Gone.wv"))
+        for file in files {
+            XCTAssertTrue(PhoneImportRefusal.isReadByOwnReader(file), file.lastPathComponent)
+        }
+        XCTAssertNoThrow(try PhoneImportRefusal.refuseConversion(of: files))
+        // What the phone can't convert is refused still, whatever it is among.
+        let ogg = URL(fileURLWithPath: "/nonexistent/Radio Drama.ogg")
+        XCTAssertFalse(PhoneImportRefusal.isReadByOwnReader(ogg))
+        XCTAssertThrowsError(try PhoneImportRefusal.refuseConversion(of: files + [ogg])) { error in
+            XCTAssertEqual(error as? PhoneImportRefusal, .convertedAudio(kind: "Ogg"))
+        }
+    }
+
+    /// A file named for a format of the own readers, whose bytes are of none of them, is
+    /// unreadable as a file afinfo can't read is (the Mac's own failure), also on the
+    /// iPhone, which has no afinfo: not "not available on iPhone yet".
+    func testAFileNamedForAFormatButOfNoneIsUnreadable() async throws {
+        for name in ["Noise.tta", "Noise.wv", "Noise.ape"] {
+            let file = try writeFile([UInt8](repeating: 0x41, count: 64), named: name)
+            let failure = await conversionFailure(of: file)
+            XCTAssertEqual(failure, .unreadable(fileName: name), name)
+            XCTAssertEqual(names(in: file.deletingLastPathComponent()), [name], name)
         }
     }
 
@@ -456,7 +493,7 @@ final class OwnAudioImportTests: XCTestCase {
             let source = try copySample(path)
             let failure = await conversionFailure(of: source)
             XCTAssertEqual(failure, .unlabelledChannels(fileName: name, channels: 6), path)
-            XCTAssertEqual(OggTestFixtures.names(in: source.deletingLastPathComponent()), [name], path)
+            XCTAssertEqual(names(in: source.deletingLastPathComponent()), [name], path)
         }
     }
 
@@ -504,7 +541,7 @@ final class OwnAudioImportTests: XCTestCase {
             damagedFailure?.errorDescription,
             "The audio file Damaged.tta is damaged, so it could not be converted."
         )
-        XCTAssertEqual(OggTestFixtures.names(in: damagedFile.deletingLastPathComponent()), ["Damaged.tta"])
+        XCTAssertEqual(names(in: damagedFile.deletingLastPathComponent()), ["Damaged.tta"])
 
         let whole = try ownAudioSampleBytes("tta/mono16.tta")
         let cutFile = try writeFile(Array(whole.prefix(whole.count / 2)), named: "Cut.tta")
@@ -552,7 +589,7 @@ final class OwnAudioImportTests: XCTestCase {
             failure?.errorDescription,
             "The correction file hybrid16.wvc is damaged or belongs to another recording, "
                 + "so hybrid16.wv could not be converted.")
-        XCTAssertEqual(OggTestFixtures.names(in: source.deletingLastPathComponent()), ["hybrid16.wv", "hybrid16.wvc"])
+        XCTAssertEqual(names(in: source.deletingLastPathComponent()), ["hybrid16.wv", "hybrid16.wvc"])
     }
 
     /// A header that promises more than a year of audio is refused as
@@ -570,7 +607,7 @@ final class OwnAudioImportTests: XCTestCase {
         XCTAssertEqual(failure, .notRead(fileName: "Endless.wv", problem: .damaged))
         XCTAssertGreaterThan(
             try WavPackDecoder(OwnAudioBytes(bytes)).stream.duration, AudioFileInfo.maximumPlausibleDuration)
-        XCTAssertEqual(OggTestFixtures.names(in: file.deletingLastPathComponent()), ["Endless.wv"])
+        XCTAssertEqual(names(in: file.deletingLastPathComponent()), ["Endless.wv"])
     }
 
     /// A conversion stops when its task is cancelled, and leaves nothing.
@@ -583,7 +620,7 @@ final class OwnAudioImportTests: XCTestCase {
             // A conversion this short may finish before it sees the cancellation.
         } catch {
             XCTAssertTrue(error is CancellationError, "\(error)")
-            XCTAssertEqual(OggTestFixtures.names(in: source.deletingLastPathComponent()), ["tones.tta"])
+            XCTAssertEqual(names(in: source.deletingLastPathComponent()), ["tones.tta"])
         }
     }
 
@@ -595,14 +632,14 @@ final class OwnAudioImportTests: XCTestCase {
         let removed = try copySample("wv/hybridmono16.wv")
         let removedConversion = try await ImportAudioConverter.convert(removed)
         try ImportAudioConverter.removeSources(of: [removedConversion])
-        XCTAssertEqual(OggTestFixtures.names(in: removed.deletingLastPathComponent()), ["hybridmono16.m4a"])
+        XCTAssertEqual(names(in: removed.deletingLastPathComponent()), ["hybridmono16.m4a"])
 
         let package = folder.appendingPathComponent("Package")
         let audio = package.appendingPathComponent("audio/Disc 1")
         let kept = try copySample("wv/hybridmono16.wv", into: audio)
         let keptConversion = try await ImportAudioConverter.convert(kept)
         try ImportAudioConverter.keepSources(of: [keptConversion], from: package.appendingPathComponent("audio"), inPackage: package)
-        XCTAssertEqual(OggTestFixtures.names(in: audio), ["hybridmono16.m4a"])
+        XCTAssertEqual(names(in: audio), ["hybridmono16.m4a"])
         let originals = ImportAudioConverter.keptOriginals(inPackage: package)
         XCTAssertEqual(originals.map(\.lastPathComponent), ["hybridmono16.wv", "hybridmono16.wvc"])
         XCTAssertEqual(Set(originals.map { $0.deletingLastPathComponent().lastPathComponent }), ["Disc 1"])
@@ -626,7 +663,7 @@ final class OwnAudioImportTests: XCTestCase {
         let audio = URL(fileURLWithPath: imported.book.filePath)
         XCTAssertEqual(audio.lastPathComponent, "tagged16.m4a")
         XCTAssertTrue(FileManager.default.fileExists(atPath: audio.path))
-        XCTAssertEqual(OggTestFixtures.names(in: audio.deletingLastPathComponent()).filter { $0.hasSuffix(".tta") }, [])
+        XCTAssertEqual(names(in: audio.deletingLastPathComponent()).filter { $0.hasSuffix(".tta") }, [])
         XCTAssertEqual(imported.book.title, "Ferry Timetables")
         XCTAssertEqual(imported.book.author, "Odalys Brennecke")
         XCTAssertEqual(imported.book.audioAlbum, "Harbour Notices")
@@ -638,7 +675,7 @@ final class OwnAudioImportTests: XCTestCase {
     /// file is left in the package, and both originals are untouched.
     func testAHybridFileImportsWithItsCorrectionFile() throws {
         let source = try copySample("wv/hybrid16.wv")
-        let before = OggTestFixtures.names(in: source.deletingLastPathComponent())
+        let before = names(in: source.deletingLastPathComponent())
 
         let imported = try FileImportService.importFileWithReport(from: source)
         importedPackages.append(imported.book.tmbDirectory)
@@ -651,9 +688,9 @@ final class OwnAudioImportTests: XCTestCase {
         let stored = storedFormat.streamDescription.pointee.mFormatID
         XCTAssertEqual(stored, kAudioFormatAppleLossless)
         XCTAssertTrue(try samplesOfConvertedFile(at: audio) == (try samplesToBeWritten(of: "wv/hybrid16.wv")))
-        let left = OggTestFixtures.names(in: audio.deletingLastPathComponent())
+        let left = names(in: audio.deletingLastPathComponent())
         XCTAssertEqual(left.filter { $0.hasSuffix(".wv") || $0.hasSuffix(".wvc") }, [])
-        XCTAssertEqual(OggTestFixtures.names(in: source.deletingLastPathComponent()), before)
+        XCTAssertEqual(names(in: source.deletingLastPathComponent()), before)
     }
 
     /// A folder of a True Audio track, an MP3, a hybrid WavPack track with
@@ -674,8 +711,8 @@ final class OwnAudioImportTests: XCTestCase {
         XCTAssertEqual(try AudioBookParser.trackPaths(in: audio), ["01.m4a", "02.mp3", "03.m4a", "04.m4a"])
         let sourceEndings: Set<String> = ["tta", "wv", "wvc"]
         XCTAssertEqual(
-            OggTestFixtures.names(in: audio).filter { sourceEndings.contains(($0 as NSString).pathExtension.lowercased()) }, [])
-        XCTAssertEqual(OggTestFixtures.names(in: source), ["01.tta", "02.mp3", "03.wv", "03.wvc", "04.TTA"])
+            names(in: audio).filter { sourceEndings.contains(($0 as NSString).pathExtension.lowercased()) }, [])
+        XCTAssertEqual(names(in: source), ["01.tta", "02.mp3", "03.wv", "03.wvc", "04.TTA"])
     }
 
     /// A damaged True Audio file fails the import at Converting its audio,
@@ -684,7 +721,7 @@ final class OwnAudioImportTests: XCTestCase {
         var damaged = try ownAudioSampleBytes("tta/mono16.tta")
         damaged[damaged.count / 2] ^= 0x10
         let source = try writeFile(damaged, named: "Noise.tta")
-        let libraryBefore = OggTestFixtures.names(in: TextMouthPaths.libraryDir)
+        let libraryBefore = names(in: TextMouthPaths.libraryDir)
 
         do {
             let imported = try FileImportService.importFileWithReport(from: source)
@@ -702,6 +739,6 @@ final class OwnAudioImportTests: XCTestCase {
                     + "The audio file Noise.tta is damaged, so it could not be converted."
             )
         }
-        XCTAssertEqual(OggTestFixtures.names(in: TextMouthPaths.libraryDir), libraryBefore)
+        XCTAssertEqual(names(in: TextMouthPaths.libraryDir), libraryBefore)
     }
 }

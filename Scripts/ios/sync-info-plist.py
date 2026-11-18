@@ -24,10 +24,11 @@ is left out by name, with the declaration of any type nothing else names:
   Mac converts with the FFmpeg helper it carries. Since FMT54 the iPhone runs
   the same FFmpeg session in the app itself, so they are offered as on the
   Mac, with the declarations of their own types.)
-- "Lossless Audio Read by TextMouth" (True Audio, WavPack, and Monkey's Audio,
-  with their type declarations): TextMouth's own readers decode them inside the
-  app, so nothing stops the iPhone, but its import still refuses every
-  converted format in one place. They come in when that refusal lets them by.
+- (Until November 18, 2026, also "Lossless Audio Read by TextMouth" (True
+  Audio, WavPack, and Monkey's Audio, with their type declarations):
+  TextMouth's own readers decode them inside the app, so nothing stopped the
+  iPhone but its import's refusal of every converted format. Since that refusal
+  lets them by, they are offered as on the Mac.)
 - "ALAC Audio": the one type it names, `com.apple.coreaudio-format`, is the
   system's type for `.caf` files too (the system types `tones-*.caf` so), which
   are converted at import with afconvert. Leaving the type in would offer every
@@ -70,7 +71,6 @@ IOS_PLIST = Path("TextMouth/Platform/iOS/Info.plist")
 REFUSED = {
     "Ogg Audio",
     "Audio Converted at Import",
-    "Lossless Audio Read by TextMouth",
     "ALAC Audio",
 }
 
@@ -101,8 +101,7 @@ def ios_plist(mac):
     result["CFBundleDocumentTypes"] = document_types
 
     # The declaration of a type that a kept document type names stays; one
-    # that only a refused type named (the formats TextMouth's own readers
-    # decode) goes with it.
+    # that only a refused type named goes with it.
     named = {uti for entry in document_types for uti in entry["LSItemContentTypes"]}
     imported = []
     for declaration in mac["UTImportedTypeDeclarations"]:

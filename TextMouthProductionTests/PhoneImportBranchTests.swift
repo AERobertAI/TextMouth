@@ -39,6 +39,23 @@ final class PhoneImportBranchTests: XCTestCase {
         }
     }
 
+    /// The iPhone refuses no file of TextMouth's own readers (True Audio,
+    /// WavPack, Monkey's Audio): the refusal asks the one shared rule
+    /// (`isReadByOwnReader`) beside FFmpeg's, and the converter's one iPhone
+    /// branch, where afinfo would have answered, tells a file named for such
+    /// a format whose bytes are of none unreadable, as the Mac does; every
+    /// other file that gets there is still told "not available on iPhone yet".
+    func testTheOwnReadersFormatsAreNotRefusedOnThePhone() throws {
+        let refusal = try Self.source("Phone/PhoneImportRefusal.swift")
+        XCTAssertTrue(refusal.contains("!FFmpegAudioConverter.converts($0) && !isReadByOwnReader($0)"))
+        XCTAssertFalse(refusal.contains("OwnAudioFormat.allCases"), "the refusal still names the own readers' formats")
+        let converter = try Self.source("Services/ImportAudioConverter.swift")
+        let branch = try Self.iOSBranch(after: "var described = try OwnAudioConverter.sourceInfo(of: source)", in: converter)
+        XCTAssertTrue(branch.contains("guard ownReaderExtensions.contains(source.pathExtension.lowercased()) else {"))
+        XCTAssertTrue(branch.contains("throw IOSUnavailable.feature(\"Converting this kind of file\")"))
+        XCTAssertTrue(branch.contains("throw Failure.unreadable(fileName: name)"))
+    }
+
     /// A book of several tracks leaves out what only ffmpeg reads and can't
     /// be converted (review9 finding 2) by one shared line on both platforms,
     /// asking the FFmpeg tool where its session runs (the iPhone's is in the

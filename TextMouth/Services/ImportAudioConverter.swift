@@ -893,8 +893,14 @@ enum ImportAudioConverter {
             // iOS has no afinfo, so `inspect` has no answer for any format but
             // Ogg, and every file reaching this line is one the import would
             // convert. It is not unreadable: the phone cannot convert it, and
-            // says so as Ogg's refusal does, in `WatchedProcess.run`.
-            throw IOSUnavailable.feature("Converting this kind of file")
+            // says so as Ogg's refusal does, in `WatchedProcess.run`. The one
+            // exception is a file named for a format of TextMouth's own
+            // readers whose bytes are of none: the phone could convert such a
+            // file, so it is unreadable, as it is where afinfo can't read it.
+            guard ownReaderExtensions.contains(source.pathExtension.lowercased()) else {
+                throw IOSUnavailable.feature("Converting this kind of file")
+            }
+            throw Failure.unreadable(fileName: name)
             #else
             throw Failure.unreadable(fileName: name)
             #endif

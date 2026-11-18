@@ -6,9 +6,11 @@ import Foundation
 /// braille book that needs one of a Mac's own braille tables, which only
 /// that Mac has. (Braille, refused here until November 16, 2026, is
 /// translated in the app itself since DR34, with the tables TextMouth
-/// bundles; and the formats only FFmpeg reads, refused here until November
-/// 17, are converted in the app itself since FMT54, with the FFmpeg
-/// TextMouth links.)
+/// bundles; the formats only FFmpeg reads, refused here until November 17,
+/// are converted in the app itself since FMT54, with the FFmpeg TextMouth
+/// links; and True Audio, WavPack, and Monkey's Audio, refused here until
+/// November 18, are decoded in the app by TextMouth's own readers, as on
+/// the Mac.)
 ///
 /// The shared import wraps it in an `ImportFailure`, as every failure is,
 /// and on iOS that failure's sentence is this refusal's, naming the file and
@@ -18,7 +20,7 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     /// Audio the import converts with Apple's converter on the Mac (Ogg,
     /// Opus, AC-3, AMR, MP2, CAF, and the rest of
     /// `ImportAudioConverter.convertedExtensions` but the formats only FFmpeg
-    /// reads), named as `kind`.
+    /// reads and those of TextMouth's own readers), named as `kind`.
     case convertedAudio(kind: String)
     /// A Word 6 or Word 95 document, which TextMouth's own Word reader
     /// leaves to textutil.
@@ -72,14 +74,27 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     ///   file is refused and before the phone sends anyone to the Mac.
     /// - **`.convertedAudio`**, naming its kind, for the first file the phone
     ///   has no converter for: every format the import converts but those
-    ///   only FFmpeg reads (`FFmpegAudioConverter.converts(_:)`), which the
-    ///   app converts itself since FMT54, as the Mac does.
+    ///   only FFmpeg reads (`FFmpegAudioConverter.converts(_:)`) and those of
+    ///   TextMouth's own readers (`isReadByOwnReader(_:)`), which the app
+    ///   converts itself, as the Mac does.
     static func refuseConversion(of sources: [URL]) throws {
         if sources.contains(where: { FFmpegAudioConverter.isCopyProtected($0, container: FFmpegContainer.of(fileAt: $0)) }) {
             throw FFmpegAudioConverter.Failure.copyProtected
         }
-        guard let first = sources.first(where: { !FFmpegAudioConverter.converts($0) }) else { return }
+        guard let first = sources.first(where: { !FFmpegAudioConverter.converts($0) && !isReadByOwnReader($0) }) else { return }
         throw PhoneImportRefusal.convertedAudio(kind: audioKindName(of: first))
+    }
+
+    /// Whether the file at `url` is one TextMouth's own readers decode
+    /// (`OwnAudioFormat`: True Audio, WavPack, Monkey's Audio), which the
+    /// app converts itself with no helper program, as on the Mac
+    /// (`OwnAudioConverter`): its bytes are of such a format whatever its
+    /// name, or its name is such a format's and its bytes are of none, which
+    /// the conversion then fails as the Mac does, saying it can't be read,
+    /// rather than sending anyone to a Mac that could not read it either.
+    static func isReadByOwnReader(_ url: URL) -> Bool {
+        OwnAudioConverter.format(of: url) != nil
+            || ImportAudioConverter.ownReaderExtensions.contains(url.pathExtension.lowercased())
     }
 
     /// The name of the audio format the file at `url` holds, as the Mac's
@@ -108,8 +123,8 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
         case .threeGPP: return "3GPP"
         case .mpegLayerI: return "MP1"
         case .mpegLayerII: return "MP2"
-        case let .ownReader(format): return format.displayName
-        case .aiff, .wave, .flac, .mpegLayerIII, .adts, .mpeg4, .unknown:
+        // A file of TextMouth's own readers is never refused (`isReadByOwnReader(_:)`).
+        case .aiff, .wave, .flac, .mpegLayerIII, .adts, .mpeg4, .ownReader, .unknown:
             return audioKindName(fileExtension: ext)
         }
     }
@@ -133,10 +148,6 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
         case "mp1": return "MP1"
         case "mp2", "mpa": return "MP2"
         default:
-            // A format of TextMouth's own readers is named as its reader names it.
-            if let own = OwnAudioFormat.allCases.first(where: { $0.fileExtensions.contains(ext) }) {
-                return own.displayName
-            }
             return ext.isEmpty ? "this format" : ext.uppercased()
         }
     }
