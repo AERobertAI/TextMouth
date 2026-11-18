@@ -363,6 +363,47 @@ extension XCTestCase {
     }
 }
 
+extension XCTestCase {
+    /// A Matroska file of one audio track of `channels` channels of 16-bit
+    /// little-endian PCM at 48,000 Hz, holding one block of
+    /// `framesPerChannel` sample frames, all silence, written as `name` to a
+    /// sandbox folder of the test's own: one block is one packet and one
+    /// decoded frame of `framesPerChannel` times `channels` samples, as large
+    /// as a test needs, in as many channels (the check of the FMT54 review's
+    /// fixes, item 1). The layout is Matroska's EBML: the EBML header, then a
+    /// segment of its info, its track, and one cluster of one SimpleBlock,
+    /// each element's size in eight bytes.
+    func matroskaOfOnePCMBlock(channels: Int, framesPerChannel: Int, named name: String) throws -> URL {
+        /// `value` as `count` big-endian bytes.
+        func bigEndian(_ value: UInt64, bytes count: Int) -> [UInt8] {
+            (0..<count).reversed().map { UInt8((value >> UInt64($0 * 8)) & 0xFF) }
+        }
+        /// An element: its ID, its size as an eight-byte EBML number, and `payload`.
+        func element(_ id: [UInt8], _ payload: [UInt8]) -> [UInt8] {
+            id + [0x01] + bigEndian(UInt64(payload.count), bytes: 7) + payload
+        }
+        /// An unsigned integer element of eight bytes.
+        func unsigned(_ id: [UInt8], _ value: Int) -> [UInt8] { element(id, bigEndian(UInt64(value), bytes: 8)) }
+        /// A string element.
+        func string(_ id: [UInt8], _ value: String) -> [UInt8] { element(id, Array(value.utf8)) }
+        let header = element([0x1A, 0x45, 0xDF, 0xA3], unsigned([0x42, 0x86], 1) + unsigned([0x42, 0xF7], 1)
+            + unsigned([0x42, 0xF2], 4) + unsigned([0x42, 0xF3], 8) + string([0x42, 0x82], "matroska")
+            + unsigned([0x42, 0x87], 4) + unsigned([0x42, 0x85], 2))
+        let info = element([0x15, 0x49, 0xA9, 0x66], unsigned([0x2A, 0xD7, 0xB1], 1_000_000)
+            + string([0x4D, 0x80], "TextMouth tests") + string([0x57, 0x41], "TextMouth tests"))
+        let audio = element([0xE1], element([0xB5], bigEndian(Double(48_000).bitPattern, bytes: 8))
+            + unsigned([0x9F], channels) + unsigned([0x62, 0x64], 16))
+        let tracks = element([0x16, 0x54, 0xAE, 0x6B], element([0xAE], unsigned([0xD7], 1) + unsigned([0x73, 0xC5], 1)
+            + unsigned([0x83], 2) + string([0x86], "A_PCM/INT/LIT") + audio))
+        // Track 1, at time 0 of the cluster, a key frame; then the samples.
+        let block = element([0xA3], [0x81, 0x00, 0x00, 0x80] + [UInt8](repeating: 0, count: framesPerChannel * channels * 2))
+        let cluster = element([0x1F, 0x43, 0xB6, 0x75], unsigned([0xE7], 0) + block)
+        let file = try makeSandboxDirectory("FFmpegMatroska").appendingPathComponent(name)
+        try Data(header + element([0x18, 0x53, 0x80, 0x67], info + tracks + cluster)).write(to: file)
+        return file
+    }
+}
+
 #if os(iOS)
 // MARK: - The iPhone's Stand-In Sessions (FMT54)
 

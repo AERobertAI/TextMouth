@@ -169,21 +169,33 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
         }
     }
 
-    /// No decoded frame holds more than 4,194,304 samples over its channels
-    /// (`MAX_DECODED_SAMPLES` in session.c; the FMT54 review, finding 2):
-    /// FFmpeg refuses a larger one before allocating it, so one crafted
-    /// packet cannot make one decoder call take hundreds of megabytes, which
-    /// nothing could stop until the call returned. An FLV of one PCM packet
-    /// of that many samples decodes whole; one of a sample more gives no
-    /// frame, and ends with status 6, damaged, as a file of only refused
-    /// packets does.
+    /// No decoded frame holds more than 16,777,216 samples over all its
+    /// channels (`MAX_DECODED_SAMPLES` in session.c; the FMT54 review,
+    /// finding 2, and its check, item 1): FFmpeg refuses a larger one before
+    /// allocating it, so one crafted packet cannot make one decoder call take
+    /// hundreds of megabytes, which nothing could stop until the call
+    /// returned. The bound counts every channel: in Matroska made by the
+    /// test, one PCM block of exactly that many samples in stereo (8,388,608
+    /// a channel) and in eight channels (2,097,152 a channel) decodes whole,
+    /// and one of a sample frame more gives no frame and ends with status 6,
+    /// damaged, as a file of only refused packets does. A minute of 48 kHz
+    /// stereo in one chunk (5.76 million) is well within it.
     func testNoDecodedFrameHoldsMoreSamplesThanTheBound() async throws {
-        let atTheBound = try await decode(try flvOfOnePCMTag(samples: 4_194_304, named: "at-the-bound.flv"), demuxer: "flv")
-        XCTAssertEqual(atTheBound.ending, WatchedProcess.Ending(outcome: .exited(status: 0)))
-        XCTAssertEqual(atTheBound.frames, 4_194_304, "the frame at the bound was not decoded whole")
-        let pastIt = try await decode(try flvOfOnePCMTag(samples: 4_194_305, named: "past-the-bound.flv"), demuxer: "flv")
-        XCTAssertEqual(pastIt.ending, WatchedProcess.Ending(outcome: .exited(status: 6)), "a frame past the bound was decoded")
-        XCTAssertNil(pastIt.frames)
+        for channels in [2, 8] {
+            let atTheBound = 16_777_216 / channels
+            let whole = try await decode(
+                try matroskaOfOnePCMBlock(channels: channels, framesPerChannel: atTheBound, named: "at-the-bound-\(channels).mka"),
+                demuxer: "matroska"
+            )
+            XCTAssertEqual(whole.ending, WatchedProcess.Ending(outcome: .exited(status: 0)), "\(channels) channels")
+            XCTAssertEqual(whole.frames, UInt64(atTheBound), "\(channels) channels: the frame at the bound was not decoded whole")
+            let pastIt = try await decode(
+                try matroskaOfOnePCMBlock(channels: channels, framesPerChannel: atTheBound + 1, named: "past-the-bound-\(channels).mka"),
+                demuxer: "matroska"
+            )
+            XCTAssertEqual(pastIt.ending, WatchedProcess.Ending(outcome: .exited(status: 6)), "\(channels) channels: a frame past the bound was decoded")
+            XCTAssertNil(pastIt.frames, "\(channels) channels")
+        }
     }
 
     /// A file in which no packet decodes (`flac-all-bad-packets.mka`: every one of its 1,400

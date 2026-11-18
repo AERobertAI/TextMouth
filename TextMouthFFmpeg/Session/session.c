@@ -66,12 +66,14 @@ __asm__(".linker_option \"-lz\"");
 enum { READ_BUFFER_BYTES = 64 * 1024 };
 
 /* The most samples, over all its channels, one decoded frame may hold (AVCodecContext's
-   max_samples): what a 16 MiB frame of 32-bit samples holds, as large as the converted frames the
-   session hands on. The largest frame a sound file means to hold is far smaller (Monkey's Audio's
-   "insane" level, about 2.4 million in stereo; FLAC's largest block, about 0.5 million in eight
-   channels); past it, a crafted packet of PCM or an ALAC frame length could make one decoder call
-   allocate hundreds of megabytes, which nothing could stop until the call returned. */
-#define MAX_DECODED_SAMPLES (4 * 1024 * 1024)
+   max_samples): 16,777,216, 64 MiB of 32-bit samples and 128 MiB of 64-bit ones, under
+   av_max_alloc's 256 MB and the iPhone's memory floor. A good file's frames are within it: one
+   chunk of PCM in AVI, ASF, or Matroska of almost three minutes of 48 kHz stereo, or 44 seconds of
+   eight channels; Monkey's Audio's largest frame, about 2.4 million in stereo; FLAC's largest
+   block, about 0.5 million in eight channels. Past it, a crafted packet of PCM or an ALAC frame
+   length could make one decoder call allocate hundreds of megabytes, which nothing could stop
+   until the call returned. */
+#define MAX_DECODED_SAMPLES (16 * 1024 * 1024)
 
 /* About how many bytes of samples one PCM record holds: a quarter of a megabyte, a second and a
    half of 44.1 kHz stereo in 32 bits, small for the pipe and few records a book. */
