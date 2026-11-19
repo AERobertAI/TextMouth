@@ -12,43 +12,78 @@ import SwiftUI
 enum BrailleExportWording {
     /// What the language pop-up does, spoken after its label and value
     /// (October 20, 2026).
-    static let languageHint = "The language of the braille code the book is written in."
+    static var languageHint: String {
+        String(localized: "The language of the braille code the book is written in.",
+               comment: "The hint of the language pop-up in the Export dialog's braille options.")
+    }
     /// What the braille code pop-up does, spoken after its label and value.
-    static let codeHint = "The braille code the book is written in."
+    static var codeHint: String {
+        String(localized: "The braille code the book is written in.",
+               comment: "The hint of the braille code pop-up in the Export dialog's braille options.")
+    }
     /// What the contraction pop-up does, spoken after its label and value.
-    static let contractionHint = "Whether that code's braille is contracted."
+    static var contractionHint: String {
+        String(localized: "Whether that code's braille is contracted.",
+               comment: "The hint of the contraction pop-up in the Export dialog's braille options.")
+    }
 
     /// The label of the stepper that sets the cells in a line.
-    static let cellsLabel = "Cells per line"
+    static var cellsLabel: String {
+        String(localized: "Cells per line",
+               comment: "The label of the stepper in the Export dialog's braille options that sets how many braille cells each line holds.")
+    }
     /// What the cells stepper does.
-    static let cellsHint = "How many braille cells each line holds, from 18 to 80."
+    static var cellsHint: String {
+        String(localized: "How many braille cells each line holds, from 18 to 80.",
+               comment: "The hint of the Cells per line stepper in the Export dialog's braille options.")
+    }
     /// The cells stepper's spoken value, such as "40 cells".
     static func cellsValue(_ count: Int) -> String {
-        "\(count) cells"
+        String(localized: "\(count) cells",
+               comment: "The value of the Cells per line stepper in the Export dialog's braille options. %lld is the number of braille cells in a line.")
     }
 
     /// The label of the stepper that sets the lines on a page.
-    static let linesLabel = "Lines per page"
+    static var linesLabel: String {
+        String(localized: "Lines per page",
+               comment: "The label of the stepper in the Export dialog's braille options that sets how many lines each braille page holds.")
+    }
     /// What the lines stepper does.
-    static let linesHint = "How many lines each braille page holds, from 4 to 50."
+    static var linesHint: String {
+        String(localized: "How many lines each braille page holds, from 4 to 50.",
+               comment: "The hint of the Lines per page stepper in the Export dialog's braille options.")
+    }
     /// The lines stepper's spoken value, such as "25 lines".
     static func linesValue(_ count: Int) -> String {
-        "\(count) lines"
+        String(localized: "\(count) lines",
+               comment: "The value of the Lines per page stepper in the Export dialog's braille options. %lld is the number of lines on a page.")
     }
 
     /// The label of the switch that numbers the pages.
-    static let numbersLabel = "Braille page numbers"
+    static var numbersLabel: String {
+        String(localized: "Braille page numbers",
+               comment: "The label of the switch in the Export dialog's braille options that numbers the braille pages.")
+    }
     /// What the page numbers switch does.
-    static let numbersHint = "Whether each page's last line carries its braille page number."
+    static var numbersHint: String {
+        String(localized: "Whether each page's last line carries its braille page number.",
+               comment: "The hint of the Braille page numbers switch in the Export dialog's braille options.")
+    }
 
     /// The label of the pop-up that chooses the line end (BRF only).
-    static let lineEndsLabel = "Line ends"
+    static var lineEndsLabel: String {
+        String(localized: "Line ends",
+               comment: "The label of the pop-up in the Export dialog's braille options that chooses how each line of a BRF file ends.")
+    }
     /// What the line ends pop-up does.
-    static let lineEndsHint = "CR LF suits most braille displays and embossers."
+    static var lineEndsHint: String {
+        String(localized: "CR LF suits most braille displays and embossers.",
+               comment: "The hint of the Line ends pop-up in the Export dialog's braille options. CR LF is a technical name for a line end.")
+    }
     /// The line end of carriage return and line feed, as the pop-up lists it.
-    static let crlfName = "CR LF"
+    static let crlfName = "CR LF" // l10n: no (a line end's technical name, as a file format writes it)
     /// The line end of line feed alone, as the pop-up lists it.
-    static let lfName = "LF"
+    static let lfName = "LF" // l10n: no (a line end's technical name, as a file format writes it)
 
     /// The pop-up's name for `lineEnd`.
     static func name(of lineEnd: BrailleLineEnd) -> String {
@@ -63,8 +98,10 @@ enum BrailleExportWording {
     /// as written only by German-style embossers and software, and a PEF
     /// needs no such choice, so the hint points there for sharing
     /// (BRAILLE-CODES-RESEARCH-2026-10-25.md, section 8.9).
-    static let fileCodeHint =
-        "How the BRF file writes each braille cell. Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille. To share braille with a reader elsewhere, export a PEF."
+    static var fileCodeHint: String {
+        String(localized: "How the BRF file writes each braille cell. Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille. To share braille with a reader elsewhere, export a PEF.",
+               comment: "The hint of the braille file characters pop-up in the Export dialog's braille options. BRF and PEF are braille file formats, and North American Braille ASCII and Eurobraille are names of braille character codes.")
+    }
 
     /// What the options say when the Braille setting's table, `table`, is one
     /// of this Mac's that this Mac cannot use, and the export starts from
@@ -73,8 +110,9 @@ enum BrailleExportWording {
     /// Mac no longer offers it (review F6).
     static func startsFromDefault(replacing table: String) -> String {
         let name = BrailleTableCatalog.table(withID: table)?.displayName ?? BrailleTableSource.parse(table).fileName
-        return "TextMouth can't use the braille table chosen in Settings, \u{201C}\(name)\u{201D}, so this export starts from "
-            + "\(BrailleTableCatalog.description(ofTableID: BrailleTableCatalog.defaultTableID))."
+        let defaultTable = BrailleTableCatalog.description(ofTableID: BrailleTableCatalog.defaultTableID)
+        return String(localized: "TextMouth can't use the braille table chosen in Settings, \u{201C}\(name)\u{201D}, so this export starts from \(defaultTable).",
+                      comment: "Shown in the Export dialog's braille options when the table chosen in Settings can't be used. %1$@ is that table's name as macOS gives it and %2$@ the table the export starts from, in words such as \"Unified English Braille, uncontracted\".")
     }
 }
 

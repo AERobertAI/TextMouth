@@ -89,20 +89,26 @@ enum BrailleTranslator {
 
         var errorDescription: String? {
             switch self {
+            // A table's name is liblouis's or macOS's own, and a liblouis
+            // version is a version identifier: neither is translated.
             case let .unknownTable(name):
-                return "TextMouth has no braille table named \u{201C}\(name)\u{201D}."
+                return String(localized: "TextMouth has no braille table named \u{201C}\(name)\u{201D}.",
+                              comment: "Why a braille translation was refused: no braille table has this name. %@ is the table's name as liblouis or macOS gives it.")
             case let .stopped(reason):
-                return "TextMouth stopped the braille translation because \(reason)."
+                return String(localized: "TextMouth stopped the braille translation because \(reason).",
+                              comment: "Why a braille translation ended. %@ is the reason, a clause such as \"an earlier call was abandoned\", which stays English until the engine's sentences convert.")
             case .failed:
-                return "TextMouth could not translate this braille."
+                return String(localized: "TextMouth could not translate this braille.",
+                              comment: "Why a braille translation failed, when no more is known.")
             case let .uncheckedTable(name, why):
-                return "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again."
+                return String(localized: "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again.",
+                              comment: "Why a braille translation was refused: one of this Mac's braille tables could not be checked. %1$@ is the table's name as macOS gives it and %2$@ the reason, which stays English.")
             case let .changedTable(name, then, now?):
-                return "This Mac's braille table \u{201C}\(name)\u{201D} has changed since the book was read with it, "
-                    + "from liblouis \(then) to \(now), so TextMouth keeps the book's text as it was."
+                return String(localized: "This Mac's braille table \u{201C}\(name)\u{201D} has changed since the book was read with it, from liblouis \(then) to \(now), so TextMouth keeps the book's text as it was.",
+                              comment: "Why a book is not read with its braille table again: the table changed. %1$@ is the table's name as macOS gives it, %2$@ the liblouis version the book was read with, and %3$@ the version now.")
             case let .changedTable(name, then, nil):
-                return "This Mac's braille table \u{201C}\(name)\u{201D} may have changed since the book was read with "
-                    + "liblouis \(then), so TextMouth keeps the book's text as it was."
+                return String(localized: "This Mac's braille table \u{201C}\(name)\u{201D} may have changed since the book was read with liblouis \(then), so TextMouth keeps the book's text as it was.",
+                              comment: "Why a book is not read with its braille table again: the table may have changed. %1$@ is the table's name as macOS gives it and %2$@ the liblouis version the book was read with.")
             }
         }
     }
@@ -746,7 +752,7 @@ enum BrailleTranslator {
     /// program. A call past its time is abandoned, and every later
     /// translation is refused until TextMouth is closed and opened again, in
     /// the engine's sentences (`InProcessEngineWording`).
-    static let libraryEngine = InProcessEngine(name: "liblouis", work: "the braille translation")
+    static let libraryEngine = InProcessEngine(name: "liblouis", work: "the braille translation") // l10n: no (a fragment inside InProcessEngineWording's English sentences until that area converts)
 
     /// The engine translations run on: `libraryEngine`, unless a test binds
     /// one of its own with `$engine.withValue(_:operation:)`, so that a test
@@ -947,7 +953,7 @@ enum BrailleTranslator {
             }
         } catch let failure as InProcessEngine.Failure {
             let what = failure == .refused(work: engine.work)
-                ? "refused, as an earlier call was abandoned" : "abandoned past its time"
+                ? "refused, as an earlier call was abandoned" : "abandoned past its time" // l10n: no (a debug log reason, which stays English)
             DiagnosticLog.event(.import, "BRAILLE_HELPER_FAILED: \(mode) \(table): the call was \(what)")
             throw failure
         }

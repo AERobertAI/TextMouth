@@ -166,12 +166,25 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
     /// table that says neither its contraction nor its grade, "As the table
     /// defines". A table with no grade leaves the bracket out.
     var contractionLabel: String {
-        let bracket = grade.map { " (Grade \($0))" } ?? ""
-        switch contraction {
-        case .no: return "Uncontracted" + bracket
-        case .full: return "Contracted" + bracket
-        case .partial: return "Partly contracted"
-        case .unstated: return "As the table defines"
+        switch (contraction, grade) {
+        case (.no, let grade?):
+            return String(localized: "Uncontracted (Grade \(grade))",
+                          comment: "How a braille table contracts, for a table of one grade that writes every letter out. %@ is the grade, an identifier such as 1.")
+        case (.no, nil):
+            return String(localized: "Uncontracted",
+                          comment: "How a braille table contracts, for a table with no grade that writes every letter out.")
+        case (.full, let grade?):
+            return String(localized: "Contracted (Grade \(grade))",
+                          comment: "How a braille table contracts, for a table of one grade that shortens words with contractions. %@ is the grade, an identifier such as 2.")
+        case (.full, nil):
+            return String(localized: "Contracted",
+                          comment: "How a braille table contracts, for a table with no grade that shortens words with contractions.")
+        case (.partial, _):
+            return String(localized: "Partly contracted",
+                          comment: "How a braille table contracts: it shortens some words, not all.")
+        case (.unstated, _):
+            return String(localized: "As the table defines",
+                          comment: "How a braille table contracts, for a table that says neither its contraction nor its grade: it writes as its own rules define.")
         }
     }
 }
@@ -712,8 +725,9 @@ enum BrailleTableCatalog {
     /// added later, or one of this Mac's, is named with no change here.
     static func codeName(of table: BrailleTable) -> String {
         switch table.system {
-        case "ueb": return "Unified English Braille"
-        case "ebae": return "English Braille, American Edition"
+        // The names of braille codes are their own official names, as liblouis and macOS list them, so they are never translated.
+        case "ueb": return "Unified English Braille" // l10n: no (a braille code's own name, as liblouis and macOS list it)
+        case "ebae": return "English Braille, American Edition" // l10n: no (a braille code's own name, as liblouis and macOS list it)
         default: return withoutContractionWords(table.displayName)
         }
     }
@@ -721,7 +735,7 @@ enum BrailleTableCatalog {
     /// The words that say how far a table contracts, as display names put
     /// them. " partially contracted" holds " contracted", so the phrase that
     /// begins first in the name is the one removed.
-    private static let contractionPhrases = [" uncontracted", " partially contracted", " contracted"]
+    private static let contractionPhrases = [" uncontracted", " partially contracted", " contracted"] // l10n: no (matches the English display names liblouis and macOS give their tables)
 
     /// `name` without the first contraction phrase in it, and its first
     /// letter capitalized.
@@ -808,9 +822,14 @@ enum BrailleTableCatalog {
         let label = table.contractionLabel
         var words = codeName(of: table)
         if table.contraction != .unstated {
-            words += ", \(label.prefix(1).lowercased() + label.dropFirst())"
+            let contraction = label.prefix(1).lowercased() + label.dropFirst()
+            words = String(localized: "\(words), \(contraction)",
+                           comment: "A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).")
         }
-        return language.map { "\(words), in \($0)" } ?? words
+        return language.map {
+            String(localized: "\(words), in \($0)",
+                   comment: "A braille table in words, then the language it is in. %1$@ is the table in words, such as Unified English Braille, uncontracted, and %2$@ the language's name, such as English.")
+        } ?? words
     }
 }
 
