@@ -314,7 +314,7 @@ final class PhoneSession: ObservableObject {
             return
         }
         let opened = makeOpenReader(for: book)
-        opened.holdUntilLoaded(beginHold("Going on to the next book"))
+        opened.holdUntilLoaded(beginHold("Going on to the next book")) // l10n: no (a background task's name, in the system's diagnostics only)
         opened.reader.nowPlayingService.updateNowPlayingInfo(
             title: book.title,
             author: book.author,
@@ -539,7 +539,7 @@ final class PhoneSession: ObservableObject {
         guard let book = bookInReach else { return false }
         // A Play that wakes a killed app opens the book in the background; the
         // app is held until it has loaded, as a hand-over's is (`goOn`).
-        let endHold = beginHold("Playing from the lock screen")
+        let endHold = beginHold("Playing from the lock screen") // l10n: no (a background task's name, in the system's diagnostics only)
         guard let opened = open(book) else {
             endHold()
             return false

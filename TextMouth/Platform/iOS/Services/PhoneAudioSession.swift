@@ -308,7 +308,7 @@ final class PhoneAudioSession {
             Self.observe(AVAudioSession.interruptionNotification, in: center, reading: Self.interruptionEvent(in:)),
             Self.observe(AVAudioSession.routeChangeNotification, in: center, reading: Self.routeChangeEvent(in:)),
             Self.observe(AVAudioSession.mediaServicesWereResetNotification, in: center) { _ in
-                (.mediaServicesReset, "media services were reset")
+                (.mediaServicesReset, "media services were reset") // l10n: no (a debug-log line)
             },
         ]
     }
@@ -365,12 +365,12 @@ final class PhoneAudioSession {
             let reason = reasonValue.flatMap(AVAudioSession.InterruptionReason.init(rawValue:))
             return (
                 .interruptionBegan(becauseRouteDisconnected: reason == .routeDisconnected),
-                "interruption began reason=\(reasonValue.map(String.init) ?? "none")"
+                "interruption began reason=\(reasonValue.map(String.init) ?? "none")" // l10n: no (a debug-log line)
             )
         case .ended:
             let optionsValue = info[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
             let shouldResume = AVAudioSession.InterruptionOptions(rawValue: optionsValue).contains(.shouldResume)
-            return (.interruptionEnded(shouldResume: shouldResume), "interruption ended shouldResume=\(shouldResume)")
+            return (.interruptionEnded(shouldResume: shouldResume), "interruption ended shouldResume=\(shouldResume)") // l10n: no (a debug-log line)
         @unknown default:
             return nil
         }
@@ -387,7 +387,7 @@ final class PhoneAudioSession {
         let current = outputs(of: AVAudioSession.sharedInstance().currentRoute)
         return (
             .routeChanged(routeChangeReason(reason)),
-            "route changed reason=\(reasonValue) from=\(previous) to=\(current)"
+            "route changed reason=\(reasonValue) from=\(previous) to=\(current)" // l10n: no (a debug-log line)
         )
     }
 

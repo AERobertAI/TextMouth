@@ -48,7 +48,7 @@ final class IOSBranchTests: XCTestCase {
         XCTAssertFalse(afterQuestion.contains("throw "), "A throw stops every M4B at Converting its audio")
 
         let beforeQuestion = String(source[..<question.lowerBound])
-        XCTAssertTrue(beforeQuestion.contains("throw IOSUnavailable.feature(\"Converting this kind of file\")"))
+        XCTAssertTrue(beforeQuestion.contains("throw IOSUnavailable.convertingThisKindOfFile"))
     }
 
     /// With no answer from afinfo, a file the import converts says the spec's

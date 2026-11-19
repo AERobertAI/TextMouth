@@ -25,9 +25,9 @@ import Foundation
 final class PhoneBackgroundHold {
     /// The name of the hold through a silent gap, which the system shows in its
     /// own diagnostics.
-    nonisolated static let gapHoldName = "Waiting for the book's next audio"
+    nonisolated static let gapHoldName = "Waiting for the book's next audio" // l10n: no (a background task's name, in the system's diagnostics only)
     /// The name of the hold around the save after the book stops.
-    nonisolated static let saveHoldName = "Saving the book's place"
+    nonisolated static let saveHoldName = "Saving the book's place" // l10n: no (a background task's name, in the system's diagnostics only)
 
     /// Begins a hold named by its argument, and gives back what ends it.
     private let beginHold: @MainActor (_ name: String) -> (@MainActor () -> Void)

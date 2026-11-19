@@ -67,7 +67,7 @@ struct PhoneGoToSheet: View {
             // No prompt: a long one ("Percent through the book") was found
             // clipped at large sizes by the audit. The name is shown above
             // for sight and is the field's label for VoiceOver.
-            TextField("", text: text(of: field), selection: selection(of: field)) // lint-ok: named by the .accessibilityLabel below
+            TextField(String(), text: text(of: field), selection: selection(of: field)) // lint-ok: named by the .accessibilityLabel below
                 .keyboardType(.numbersAndPunctuation)
                 .submitLabel(.go)
                 .autocorrectionDisabled()
