@@ -101,7 +101,9 @@ A feed whose record doesn't hold its size yet, as one subscribed in an earlier v
 Each feed is listed once.
 In Folders, a feed's folder has no row of its own, since the feed's row in the Feeds section stands for it: the row opens the folder, and its context menu ends with the folder's Rename Folder… and Move Folder….
 A feed's folder holding only its items offers no Delete Folder…: Delete Feed… (see [Commands](feed-commands.md)) deletes the feed, and its folder when nothing else is in it, so a feed has one command that deletes it.
-A feed's folder that also holds books or folders of your own does offer Delete Folder…; its first question ends "It is the folder of the feed “Finish It!”. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.", and its second names the feed as staying without a folder.
+A feed's folder that also holds books or folders of your own does offer Delete Folder…; its first question ends
+"It is the folder of the feed “Finish It!”.
+Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.", and its second names the feed as staying without a folder.
 Delete Folder… on a folder holding feeds' folders, at any depth, asks first and never deletes a feed: its first question ends, as in "It holds the folder of the feed “Planet Money”.
 With Move Contents Out, the feed's folder moves with the rest.
 With Move Everything to Trash, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.", and its second, "The feed “Planet Money” stays, with its downloads, without a folder until Feed Info gives it another."

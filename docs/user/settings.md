@@ -19,6 +19,14 @@ Four tabs have pages of their own, and this page holds the rest:
 - [Settings: the Library tab](settings-library.md), with its views, titles, and the view editor.
 - [Settings: the Storage tab](settings-storage.md), with the library folder, imports, duplicates, and maintenance.
 
+## The language of the interface
+<!-- id: interface-language; keys: language, Spanish, English, localization, translated interface, String Catalog; src: TextMouth/Localization/Localizable.xcstrings; status: incomplete; issues: FR34 -->
+
+TextMouth's own words, its menus, buttons, hints, and messages, follow the language the Mac or iPhone is set to for TextMouth.
+On the Mac, choose it in System Settings; on the iPhone, in Settings, TextMouth, Language.
+English is the language so far, and Spanish is on its way; a language TextMouth does not have yet shows English.
+This is separate from the voice, which speaks a book in the voice's own language, from the transcription language (see [Transcribing an audiobook](transcribing.md)), and from the braille language (see the Braille tab).
+
 ## Open the next book in
 <!-- id: open-next-book; keys: nextBookWindow, End of Book, When book ends, This Window, A New Window, next book; src: TextMouth/Models/NextBookWindow.swift, TextMouth/Views/NextBookWindowPicker.swift, TextMouth/Views/Settings/SettingsView.swift -->
 
