@@ -15,7 +15,10 @@ enum LibraryBookInfo {
     case simple
 
     /// What the sheet says while some details wait for a download.
-    static let cloudOnlyNote = "Some details appear once the book is downloaded."
+    static var cloudOnlyNote: String {
+        String(localized: "Some details appear once the book is downloaded.",
+               comment: "Note in Book Information when the book's file is only in the cloud, so the sheet shows the details the library keeps and the others wait for a download.")
+    }
 
     /// Whether the book's file was only in the cloud, so the sheet shows the
     /// details the library keeps and says `cloudOnlyNote`.
@@ -31,8 +34,12 @@ enum LibraryBookInfo {
     /// it first, while the interface waited. Nil when the save can go ahead.
     static func writeRefusal(isCloudOnly: Bool, writesToFile: Bool) -> String? {
         guard isCloudOnly, writesToFile else { return nil }
-        return "The book's EPUB file is only in the cloud, so it can't be written until the book is downloaded. "
-            + "Turn off writing to the file, or download the book first."
+        return SentenceWording.joined([
+            String(localized: "The book's EPUB file is only in the cloud, so it can't be written until the book is downloaded.",
+                   comment: "First sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud, and writing to the file is on. EPUB is a format name."),
+            String(localized: "Turn off writing to the file, or download the book first.",
+                   comment: "Second sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud: what to do."),
+        ])
     }
 }
 

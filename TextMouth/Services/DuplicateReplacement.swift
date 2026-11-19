@@ -67,8 +67,16 @@ import Foundation
 ///    package that cannot be removed stays, its record naming a listed
 ///    book, which no launch adopts (`FileImportService.adoptOrphanedTMBPackages`).
 enum DuplicateReplacement {
-    /// What a refusal asks the user to do once its cause is gone.
-    static let retry = "choose Replace Existing again"
+    /// The name of the button that answers a duplicate question by replacing
+    /// the library's copy, as the question's sheet shows it. The sentences
+    /// below name it by this, so they agree with the button. It stays English
+    /// until the import area converts `ImportDecisionSheet`, whose literal it
+    /// copies.
+    static let replaceExistingName = "Replace Existing" // l10n: no (the button's English name in ImportDecisionSheet until the import area converts)
+
+    /// What a refusal asks the user to do once its cause is gone, as
+    /// `FeedBookUse`'s English sentences end with it.
+    static let retry = "choose \(replaceExistingName) again" // l10n: no (inside FeedBookUse's English sentences until the feeds area converts)
 
     // MARK: Refusals
 
@@ -113,17 +121,19 @@ enum DuplicateReplacement {
             case .readingAgain(let sentence), .copyNotReadAgain(let sentence):
                 return sentence
             case .inUse(let use, let title):
-                return use.refusal(of: "“\(title)”", doing: "replacing it", retry: DuplicateReplacement.retry)
+                return use.refusal(of: "“\(title)”", doing: "replacing it", retry: DuplicateReplacement.retry) // l10n: no (inside FeedBookUse's English sentences until the feeds area converts)
             case .audioBeingEdited(let title):
-                return "The audio of “\(title)” is being edited. Close the audio editor, or wait until it has saved, "
-                    + "then \(DuplicateReplacement.retry)."
+                return String(localized: "The audio of “\(title)” is being edited. Close the audio editor or wait for it to save, then choose \(DuplicateReplacement.replaceExistingName) again.",
+                              comment: "Why Replace Existing waits: the library's copy has its audio open in the audio editor. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
             case .filesInCloud(let title):
-                return "Some of the files of “\(title)” are only in the cloud, and replacing it now would leave them behind. "
-                    + "Download the book, then \(DuplicateReplacement.retry)."
+                return String(localized: "Some files of “\(title)” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose \(DuplicateReplacement.replaceExistingName) again.",
+                              comment: "Why Replace Existing waits: some files of the library's copy are only in the cloud. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
             case .storageBusy(.movingBooksBetweenFolders):
-                return "TextMouth is moving books between folders. Wait until that finishes, then \(DuplicateReplacement.retry)."
+                return String(localized: "TextMouth is moving books between folders. Wait until that finishes, then choose \(DuplicateReplacement.replaceExistingName) again.",
+                              comment: "Why Replace Existing waits: TextMouth is moving books between folders. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
             case .storageBusy(.rebuildingDirectory):
-                return "TextMouth is rebuilding its data directory. Wait until that finishes, then \(DuplicateReplacement.retry)."
+                return String(localized: "TextMouth is rebuilding its data directory. Wait until that finishes, then choose \(DuplicateReplacement.replaceExistingName) again.",
+                              comment: "Why Replace Existing waits: TextMouth is rebuilding its data directory, the folder that holds the library. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
             case .storageBusy(.movingDataDirectory):
                 return DataDirectoryMoveWording.importAnswerRefusal
             case .storageBusy(let reason):
@@ -142,8 +152,8 @@ enum DuplicateReplacement {
     /// copy's: nothing was replaced, and the question stays.
     struct TextNotKept: LocalizedError, Equatable {
         var errorDescription: String? {
-            "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, "
-                + "so it left both copies as they are."
+            String(localized: "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+                   comment: "Error shown when Replace Existing could not keep the edited text of the library's copy beside the new copy's text. Nothing was replaced.")
         }
     }
 
@@ -152,7 +162,8 @@ enum DuplicateReplacement {
     /// now. Nothing was replaced, and the question stays.
     struct IndexNotSaved: LocalizedError, Equatable {
         var errorDescription: String? {
-            "TextMouth couldn't save the library's index, so it left both copies as they are."
+            String(localized: "TextMouth couldn't save the library's index, so it left both copies as they are.",
+                   comment: "Error shown when Replace Existing could not save the library's index, which must name the new copy before the old one goes. Nothing was replaced.")
         }
     }
 
@@ -200,7 +211,11 @@ enum DuplicateReplacement {
     /// (`BookTextEditWording.earlierTextKept(_:)`, which a re-read in another
     /// encoding says too), so the user knows where the earlier text is.
     static func keptTextAnnouncement(title: String, copy: URL) -> String {
-        "Replaced “\(title)”. \(BookTextEditWording.earlierTextKept(copy))"
+        SentenceWording.joined([
+            String(localized: "Replaced “\(title)”.",
+                   comment: "First sentence of the announcement after Replace Existing put the new copy in place of a book and kept the old copy's text beside the new text. %@ is the book's title. A sentence about where the earlier text is kept follows."),
+            BookTextEditWording.earlierTextKept(copy),
+        ])
     }
 
     /// What the library's alert says when the package of the copy titled
@@ -208,9 +223,12 @@ enum DuplicateReplacement {
     /// place, which stands: moved to the Trash, or deleted, as
     /// `movesToTrash` says, and the old files stay in their folder.
     static func oldCopyLeftMessage(title: String, movesToTrash: Bool, reason: String) -> String {
-        let removal = movesToTrash ? "moved to the Trash" : "deleted"
-        return "The new copy took the place of “\(title)”, but the old copy's files could not be \(removal), "
-            + "so they stay in its folder: \(reason)"
+        if movesToTrash {
+            return String(localized: "The new copy replaced “\(title)”, but the old copy's files could not be moved to the Trash and stay in its folder: \(reason)",
+                          comment: "Alert after Replace Existing when the old copy's files could not be moved to the Trash. %1$@ is the book's title. %2$@ is why they could not be moved.")
+        }
+        return String(localized: "The new copy replaced “\(title)”, but the old copy's files could not be deleted and stay in its folder: \(reason)",
+                      comment: "Alert after Replace Existing when the old copy's files could not be deleted. %1$@ is the book's title. %2$@ is why they could not be deleted.")
     }
 
     // MARK: The Row
@@ -1379,7 +1397,7 @@ enum DuplicateReplacement {
             PackageFileBeforeInstall.putBack(
                 filesBefore.map { (file: $0, written: FileStamp(of: $0.url)) },
                 of: copy,
-                after: "the replacement",
+                after: "the replacement", // l10n: no (log-only: the debug log's wording)
                 logTag: DuplicateReplacement.undoneLogTag
             )
         }

@@ -50,7 +50,7 @@ enum JSONValue: Codable, Equatable, Sendable {
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
                     codingPath: decoder.codingPath,
-                    debugDescription: "A JSON value is nested deeper than the limit of \(Self.maximumDepth) levels."
+                    debugDescription: "A JSON value is nested deeper than the limit of \(Self.maximumDepth) levels." // l10n: no (damage reason: what is wrong inside a file stays English, question 3)
                 )
             )
         }
@@ -76,7 +76,7 @@ enum JSONValue: Codable, Equatable, Sendable {
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
                     codingPath: decoder.codingPath,
-                    debugDescription: "The value is not a JSON null, bool, number, string, array, or object."
+                    debugDescription: "The value is not a JSON null, bool, number, string, array, or object." // l10n: no (damage reason: what is wrong inside a file stays English, question 3)
                 )
             )
         }

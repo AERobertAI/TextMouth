@@ -15,6 +15,8 @@ TextMouth/Models/AudioEditWording.swift
 TextMouth/Models/AudioFilterChain.swift
 TextMouth/Models/AudioSampleForm.swift
 TextMouth/Models/Book.swift
+TextMouth/Models/BookContentIndex.swift
+TextMouth/Models/BookInfo.swift
 TextMouth/Models/BookManifestEditWording.swift
 TextMouth/Models/BookPages.swift
 TextMouth/Models/BookTextEditWording.swift
@@ -30,10 +32,13 @@ TextMouth/Models/FeedDownloadProgressWording.swift
 TextMouth/Models/FeedItem.swift
 TextMouth/Models/FeedSettings.swift
 TextMouth/Models/FFmpegImportWording.swift
+TextMouth/Models/FolderNavigationHistory.swift
 TextMouth/Models/FolderNavigationWording.swift
+TextMouth/Models/FolderOperationConflict.swift
 TextMouth/Models/FolderSettingsWording.swift
 TextMouth/Models/ImportDecision.swift
 TextMouth/Models/ImportProgressWording.swift
+TextMouth/Models/JSONValue.swift
 TextMouth/Models/KeyboardShortcut.swift
 TextMouth/Models/LeadingArticleWording.swift
 TextMouth/Models/LenientFields.swift
@@ -42,6 +47,9 @@ TextMouth/Models/LibraryComparisonWording.swift
 TextMouth/Models/LibraryFileWaitWording.swift
 TextMouth/Models/LibraryInfoWording.swift
 TextMouth/Models/LibrarySearchWording.swift
+TextMouth/Models/LibrarySortState.swift
+TextMouth/Models/LibraryViewDefinition.swift
+TextMouth/Models/LibraryViewDefinitionList.swift
 TextMouth/Models/LibraryViewEditorWording.swift
 TextMouth/Models/LibraryViewPickerWording.swift
 TextMouth/Models/LibraryViewsSettingsWording.swift
@@ -57,6 +65,7 @@ TextMouth/Models/ReadingListReaderWording.swift
 TextMouth/Models/ReadingListWording.swift
 TextMouth/Models/RefusedFormatAdvice.swift
 TextMouth/Models/RemovalWording.swift
+TextMouth/Models/RemovedFromLibraryMarker.swift
 TextMouth/Models/SentenceWording.swift
 TextMouth/Models/SettingsPolicy.swift
 TextMouth/Models/ShortcutEdits.swift
@@ -100,6 +109,7 @@ TextMouth/Services/ConflictCopies.swift
 TextMouth/Services/DataDirectoryAvailability.swift
 TextMouth/Services/DataDirectoryMigrator.swift
 TextMouth/Services/DiagnosticLog.swift
+TextMouth/Services/DuplicateReplacement.swift
 TextMouth/Services/Export/TimedTextWriters.swift
 TextMouth/Services/Feeds/FeedCenter+DeleteFeed.swift
 TextMouth/Services/Feeds/FeedCenter.swift
@@ -120,6 +130,7 @@ TextMouth/Services/Feeds/FeedTransfer.swift
 TextMouth/Services/FileImportService.swift
 TextMouth/Services/ImportAudioConverter.swift
 TextMouth/Services/ImportFailure.swift
+TextMouth/Services/KeptBooks.swift
 TextMouth/Services/KeyboardShortcutManager.swift
 TextMouth/Services/LegacyBookMigration.swift
 TextMouth/Services/LibraryCopyReader.swift
@@ -171,6 +182,12 @@ TextMouth/ViewModels/LibraryViewModel+MoveToLibrary.swift
 TextMouth/ViewModels/LibraryViewModel+OggConversion.swift
 TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift
 TextMouth/ViewModels/OggConversionProgress.swift
+TextMouth/ViewModels/LibraryViewModel+BookOperations.swift
+TextMouth/ViewModels/LibraryViewModel+Duplicates.swift
+TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift
+TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift
+TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift
+TextMouth/ViewModels/LibraryViewModel.swift
 TextMouth/ViewModels/ReaderViewModel+BookMoves.swift
 TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift
 TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift
@@ -206,6 +223,13 @@ TextMouth/Views/Feeds/LibraryFeedsWindowSupport.swift
 TextMouth/Views/Feeds/OPMLImportSheet.swift
 TextMouth/Views/Library/FeedItemBookInfoSheet.swift
 TextMouth/Views/Library/ImportDecisionSheet.swift
+TextMouth/Views/ContentView.swift
+TextMouth/Views/Library/LibraryBookInfoLoader.swift
+TextMouth/Views/Library/LibraryFolderSettingsTarget.swift
+TextMouth/Views/Library/LibrarySheetViews.swift
+TextMouth/Views/Library/LibrarySubviews.swift
+TextMouth/Views/Library/LibraryView.swift
+TextMouth/Views/Library/TextInputView.swift
 TextMouth/Views/Reader/BookReaderWindowView.swift
 TextMouth/Views/Reader/BookSearchView.swift
 TextMouth/Views/Reader/BookmarkPanelView.swift

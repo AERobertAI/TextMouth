@@ -20,12 +20,12 @@ enum LibraryViewsSettingsWording {
     }
     /// What the list is, and where a new window opens.
     static var orderCaption: String {
-        String(localized: "The Library window's View pop-up offers these views, in this order. A new Library window opens at the first one it offers.",
+        String(localized: "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered.",
                comment: "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the list is, and where a new window opens.")
     }
     /// What the three visibilities do, and that a window keeps its view.
     static var visibilityCaption: String {
-        String(localized: "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, an episode, or an article, and Feeds while there is a feed. Hidden leaves it out. A window showing a view keeps it until you choose another.",
+        String(localized: "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
                comment: "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the three visibilities do, and that a window keeps its view.")
     }
 
@@ -176,12 +176,12 @@ enum LibraryViewsSettingsWording {
     }
     /// The Move Up button's hint.
     static var moveUpHint: String {
-        String(localized: "Moves the view one place up the list",
+        String(localized: "Moves it one place up",
                comment: "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's hint.")
     }
     /// The Move Down button's hint.
     static var moveDownHint: String {
-        String(localized: "Moves the view one place down the list",
+        String(localized: "Moves it one place down",
                comment: "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's hint.")
     }
     /// Move Up's hint while the view is first, when it is dimmed.
@@ -206,7 +206,7 @@ enum LibraryViewsSettingsWording {
 
     /// Duplicate's hint.
     static var duplicateHint: String {
-        String(localized: "Makes a view of your own with this view's conditions and sort.",
+        String(localized: "Makes your own view with these conditions and sort.",
                comment: "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint.")
     }
     /// Duplicate's hint for Folders and the Reading List, when it is dimmed.

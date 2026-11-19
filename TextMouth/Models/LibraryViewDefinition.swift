@@ -21,7 +21,7 @@ enum LibraryViewID: Hashable, Sendable {
 
     /// The Feeds view's stored identity, which is also its shipped name, as
     /// each category's name is its saved name.
-    static let feedsStoredValue = "Feeds"
+    static let feedsStoredValue = "Feeds" // l10n: no (stored id: config.json keeps the Feeds view's name as written; built-in view names stay English)
 
     /// The identity as config.json keeps it: the category's name, "Feeds",
     /// or the UUID's text.

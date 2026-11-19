@@ -8,20 +8,29 @@ final class PhoneAppWordingTests: XCTestCase {
     func testTheAlertSaysWhatTheMacsSays() throws {
         let macView = try Self.source("Views/ContentView.swift")
 
-        XCTAssertTrue(macView.contains("libraryViewModel.errorTitle ?? \"\(PhoneAppWording.errorTitle)\""))
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneAppWording.errorDismiss)\", role: .cancel)"))
-        XCTAssertTrue(macView.contains("libraryViewModel.errorMessage ?? \"\(PhoneAppWording.unknownError)\""))
+        // The Mac's alert shows the shared words, so one definition serves both apps (FR34).
+        XCTAssertTrue(macView.contains("libraryViewModel.errorTitle ?? LibraryWindowWording.errorTitle"))
+        XCTAssertTrue(macView.contains("Button(LibraryWindowWording.errorDismiss, role: .cancel)"))
+        XCTAssertTrue(macView.contains("libraryViewModel.errorMessage ?? LibraryWindowWording.unknownError"))
+        XCTAssertEqual(PhoneAppWording.errorTitle, LibraryWindowWording.errorTitle)
+        XCTAssertEqual(PhoneAppWording.errorDismiss, LibraryWindowWording.errorDismiss)
+        XCTAssertEqual(PhoneAppWording.unknownError, LibraryWindowWording.unknownError)
+        XCTAssertEqual(LibraryWindowWording.errorTitle, "Error")
+        XCTAssertEqual(LibraryWindowWording.errorDismiss, "OK")
+        XCTAssertEqual(LibraryWindowWording.unknownError, "An unknown error occurred.")
     }
 
     /// Every phone sheet and question says one "Cancel", the Mac's word.
     func testCancelIsTheMacsWord() {
         XCTAssertEqual(PhoneAppWording.cancel, "Cancel")
+        XCTAssertEqual(PhoneAppWording.cancel, LibraryWindowWording.cancel)
     }
 
     /// Close and Save are the Mac's words, said once for every phone sheet.
     func testCloseAndSaveAreTheMacsWords() {
         XCTAssertEqual(PhoneAppWording.close, "Close")
         XCTAssertEqual(PhoneAppWording.save, "Save")
+        XCTAssertEqual(PhoneAppWording.save, LibraryWindowWording.save)
     }
 
     /// The Play button's words are PlaybackControlsView's, by its rule: Pause

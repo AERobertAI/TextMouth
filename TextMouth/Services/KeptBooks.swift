@@ -81,14 +81,14 @@ final class KeptBooks: ObservableObject {
             Self.loadContents(
                 KeptBooksFile.self,
                 from: $0,
-                standIn: "no book is kept on this Mac until one is kept again"
+                standIn: "no book is kept on this Mac until one is kept again" // l10n: no (log-only: the debug log's stand-in wording)
             )
         }.map { Set($0.books) } ?? []
         keepsReadingListBooks = settingFile.flatMap {
             Self.loadContents(
                 ReadingListKeepFile.self,
                 from: $0,
-                standIn: "the choice reads as on, so the reading list's books stay kept on this Mac until it is cleared again"
+                standIn: "the choice reads as on, so the reading list's books stay kept on this Mac until it is cleared again" // l10n: no (log-only: the debug log's stand-in wording)
             )
         }?.keepsReadingListBooks ?? true
     }

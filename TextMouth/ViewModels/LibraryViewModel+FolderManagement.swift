@@ -46,9 +46,9 @@ extension LibraryViewModel {
         var outcome: OperationOutcome {
             switch self {
             case .refused(let conflict):
-                return LibraryViewModel.outcome(refusing: conflict, context: "Could not create folder")
+                return LibraryViewModel.outcome(refusing: conflict, context: LibraryViewModelWording.couldNotCreateFolder)
             case .directory(let error):
-                return .failure("Could not create folder", error)
+                return .failure(LibraryViewModelWording.couldNotCreateFolder, error)
             }
         }
     }
@@ -107,7 +107,7 @@ extension LibraryViewModel {
         } catch {
             return Self.outcome(
                 refusing: error,
-                context: "Could not delete \"\(folder.name)\" and move its contents"
+                context: LibraryViewModelWording.couldNotDeleteFolderAndMoveContents(folder.name)
             )
         }
 
@@ -118,7 +118,7 @@ extension LibraryViewModel {
             try await performLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
             return .success(nil)
         } catch {
-            return .failure("Could not relocate folder contents", error)
+            return .failure(LibraryViewModelWording.couldNotRelocateFolderContents, error)
         }
     }
 
@@ -142,7 +142,7 @@ extension LibraryViewModel {
         // confirmation may refer to a folder moved in another window.
         guard !path.isEmpty, BookFolder.isValidLibraryPath(path),
               library.folders.contains(where: { $0.id == folder.id && $0.fullPath == path }) else {
-            errorMessage = "Could not remove folder: its library path is invalid or has changed."
+            errorMessage = LibraryViewModelWording.couldNotRemoveFolderPathInvalid
             showError = true
             return
         }
@@ -210,13 +210,13 @@ extension LibraryViewModel {
         do {
             try proposed.moveFolderThrowing(id: folder.id, toParentPath: newParentPath)
         } catch {
-            return Self.outcome(refusing: error, context: "Could not move \"\(folder.name)\"")
+            return Self.outcome(refusing: error, context: LibraryViewModelWording.couldNotMoveNamedFolder(folder.name))
         }
         do {
             try await performLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
             return .success(nil)
         } catch {
-            return .failure("Could not move folder", error)
+            return .failure(LibraryViewModelWording.couldNotMoveFolder, error)
         }
     }
 
@@ -241,13 +241,13 @@ extension LibraryViewModel {
         do {
             try proposed.renameFolderThrowing(id: folder.id, to: newName, equivalence: equivalence)
         } catch {
-            return Self.outcome(refusing: error, context: "Could not rename \"\(folder.name)\"")
+            return Self.outcome(refusing: error, context: LibraryViewModelWording.couldNotRenameNamedFolder(folder.name))
         }
         // The rename just found this folder in the library, so both exist;
         // should either be missing, nothing changed, and the outcome says so.
         guard let oldPath = library.folders.first(where: { $0.id == folder.id })?.fullPath,
               let newPath = proposed.folders.first(where: { $0.id == folder.id })?.fullPath else {
-            return Self.outcome(refusing: .folderNotFound, context: "Could not rename \"\(folder.name)\"")
+            return Self.outcome(refusing: .folderNotFound, context: LibraryViewModelWording.couldNotRenameNamedFolder(folder.name))
         }
 
         // A case-only or normalization-only rename still names the same
@@ -287,7 +287,7 @@ extension LibraryViewModel {
                 // Best effort: give the directory back its original spelling.
                 _ = try? TextMouthPaths.respellLibrarySubfolder(from: newPath, to: oldPath)
             }
-            return .failure("Could not rename folder", error)
+            return .failure(LibraryViewModelWording.couldNotRenameFolder, error)
         }
     }
 

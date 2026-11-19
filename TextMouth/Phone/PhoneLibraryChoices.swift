@@ -55,7 +55,7 @@ enum PhoneLibraryChoices {
         guard !location.keepsItsOwnOrder else {
             return [PhoneChoice(id: .readingListOrder, label: ReadingListWording.orderName)]
         }
-        var choices = LibrarySortField.allCases.map { PhoneChoice(id: SortChoice.field($0), label: $0.rawValue) }
+        var choices = LibrarySortField.allCases.map { PhoneChoice(id: SortChoice.field($0), label: $0.title) }
         choices.append(PhoneChoice(
             id: .reverseDirection,
             label: sort.directionCommandTitle,

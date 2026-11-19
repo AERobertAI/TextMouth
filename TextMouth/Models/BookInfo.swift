@@ -262,7 +262,7 @@ struct BookMetadata: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     )
 
     init(
-        title: String = "Untitled",
+        title: String = "Untitled", // l10n: no (stored id: the library keeps this placeholder title as written)
         author: String = Book.unknownAuthor,
         format: BookFormat = .txt,
         md5Hash: String = "",

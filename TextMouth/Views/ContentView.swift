@@ -1,6 +1,45 @@
 import SwiftUI
 import Combine
 
+/// The words of the Library window's frame, and the buttons and alert words
+/// every Library sheet shares (FR34): Cancel, Save, the error alert's title,
+/// its OK button, and its message when nothing more is known. The Mac's views
+/// say them through here, since no file outside the iPhone's folders may name
+/// an iPhone type (`IOSBranchTests`); the iPhone's `PhoneAppWording` says the
+/// same words with the same keys.
+enum LibraryWindowWording {
+    /// The title of the overlay shown while the library's text is extracted.
+    static var extractingTextTitle: String {
+        String(localized: "Extracting Text",
+               comment: "Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it.")
+    }
+
+    /// The button that closes a sheet or answers a question with nothing done.
+    static var cancel: String {
+        String(localized: "Cancel", comment: "Button that closes a sheet or answers a question without doing or changing anything.")
+    }
+
+    /// The button that saves the changes made in a sheet.
+    static var save: String {
+        String(localized: "Save", comment: "Button that saves the changes made in a sheet.")
+    }
+
+    /// The title of the alert about a problem, when it has no more specific title.
+    static var errorTitle: String {
+        String(localized: "Error", comment: "Title of an alert about a problem, when the problem has no more specific title.")
+    }
+
+    /// The button that dismisses an alert about a problem.
+    static var errorDismiss: String {
+        String(localized: "OK", comment: "Button that dismisses an alert about a problem.")
+    }
+
+    /// The message of an alert about a problem, when nothing more is known about it.
+    static var unknownError: String {
+        String(localized: "An unknown error occurred.", comment: "Message of an alert about a problem, when nothing more is known about it.")
+    }
+}
+
 /// Root view for a library window. Each library window has its own navigation state.
 struct LibraryWindowView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
@@ -97,7 +136,7 @@ struct LibraryWindowView: View {
                 ProgressObserver(progress: libraryViewModel.textExtraction) { extraction in
                     if extraction.isExtracting {
                         ProgressOverlay(
-                            title: "Extracting Text",
+                            title: LibraryWindowWording.extractingTextTitle,
                             current: extraction.current,
                             total: extraction.total,
                             message: extraction.message,
@@ -187,10 +226,10 @@ struct LibraryWindowView: View {
                 libraryViewModel.showError = true
             }
         }
-        .alert(libraryViewModel.errorTitle ?? "Error", isPresented: $libraryViewModel.showError) {
-            Button("OK", role: .cancel) {}
+        .alert(libraryViewModel.errorTitle ?? LibraryWindowWording.errorTitle, isPresented: $libraryViewModel.showError) {
+            Button(LibraryWindowWording.errorDismiss, role: .cancel) {}
         } message: {
-            Text(libraryViewModel.errorMessage ?? "An unknown error occurred.")
+            Text(libraryViewModel.errorMessage ?? LibraryWindowWording.unknownError)
         }
         // Remove book confirmation dialog (supports single or multiple books).
         // Its words say whether the files go to the Trash, are deleted
@@ -218,7 +257,7 @@ struct LibraryWindowView: View {
                     libraryViewModel.pendingRemoveBooks = []
                 }
             }
-            Button("Cancel", role: .cancel) {
+            Button(LibraryWindowWording.cancel, role: .cancel) {
                 libraryViewModel.pendingRemoveBooks = []
             }
         } message: {
@@ -578,7 +617,7 @@ struct ProgressOverlay: View {
             }
 
             if let onCancel {
-                Button("Cancel", action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.cancelAction)
                     .accessibilityLabel(Self.cancelButtonLabel)
                     .accessibilityHint(Self.cancelButtonHint)
@@ -605,9 +644,9 @@ struct ProgressOverlay: View {
             return spokenSummary
         }
         if total > 0 {
-            return "\(title): \(CountWording.part(current, of: total, itemNoun))"
+            return SentenceWording.labelled(title, CountWording.part(current, of: total, itemNoun))
         }
-        return message.isEmpty ? title : "\(title): \(message)"
+        return message.isEmpty ? title : SentenceWording.labelled(title, message)
     }
 }
 

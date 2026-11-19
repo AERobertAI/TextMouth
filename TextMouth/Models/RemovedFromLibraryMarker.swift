@@ -219,8 +219,11 @@ enum LibraryRemovalError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .couldNotMarkPackage(let packageName, let underlying):
-            return "TextMouth could not record the removal in its package, \(packageName). "
-                + underlying.localizedDescription
+            return SentenceWording.joined([
+                String(localized: "TextMouth could not record the removal in its package, \(packageName).",
+                       comment: "First sentence of the error shown when Remove from Library Only cannot mark the book's package, so the book stays in the library. %@ is the package's folder name. The sentence that says why follows it."),
+                underlying.localizedDescription,
+            ])
         }
     }
 }

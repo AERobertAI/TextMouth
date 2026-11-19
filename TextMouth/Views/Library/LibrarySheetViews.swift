@@ -1,5 +1,194 @@
 import SwiftUI
 
+// MARK: - Wording
+
+/// Every word the Library's sheets say that no other wording enum owns
+/// (FR34): Book Information's rows, the New Folder, Move, Rename, and Move
+/// Contents sheets, and their announcements. Shared words come from
+/// `LibraryWindowWording` (Cancel, Save) and `MetadataEditorWording` (the book's
+/// fields), one definition for each.
+enum LibrarySheetWording {
+    // MARK: Book Information
+
+    /// The heading of the Book Information sheet.
+    static var bookInformation: String {
+        String(localized: "Book Information", comment: "Heading of the sheet that shows and edits a book's title and author, and lists its other details.")
+    }
+
+    /// What VoiceOver says for the author field, before "edited by hand".
+    static var bookAuthorLabel: String {
+        String(localized: "Book author", comment: "What VoiceOver says for the book information sheet's field for the book's author.")
+    }
+
+    /// The row that shows when the book was added.
+    static var addedRow: String {
+        String(localized: "Added", comment: "Name of the book information sheet's row that shows the date the book was added to the library.")
+    }
+
+    /// The row that shows when the book was last opened.
+    static var lastOpenedRow: String {
+        String(localized: "Last Opened", comment: "Name of the book information sheet's row that shows the date the book was last opened.")
+    }
+
+    /// The row that shows how many words the book has.
+    static var wordCountRow: String {
+        String(localized: "Word Count", comment: "Name of the book information sheet's row that shows how many words the book has.")
+    }
+
+    /// The window title of the Book Information sheet.
+    static func infoTitle(_ bookTitle: String) -> String {
+        String(localized: "Info: \(bookTitle)", comment: "Window title of the sheet that shows a book's information. %@ is the book's title.")
+    }
+
+    // MARK: Folder fields
+
+    /// The title of the New Folder sheet and of its fields' group.
+    static var newFolderTitle: String {
+        String(localized: "New Folder", comment: "Heading of the sheet that makes a new folder, and of the group of fields that makes one inside a folder chooser.")
+    }
+
+    /// The name field of a folder sheet.
+    static var folderNameField: String {
+        String(localized: "Folder name", comment: "Name of the text field that holds a folder's name, in the New Folder and Rename Folder sheets.")
+    }
+
+    /// What VoiceOver says for the name field of a folder that is made or renamed.
+    static var newFolderNameLabel: String {
+        String(localized: "New folder name", comment: "What VoiceOver says for the text field that holds the name a folder is made or renamed with.")
+    }
+
+    /// The pop-up that chooses a new folder's parent.
+    static var parentFolder: String {
+        String(localized: "Parent folder", comment: "Name of the pop-up that chooses the folder a new folder is made in.")
+    }
+
+    /// What VoiceOver says for the parent pop-up of the new folder's fields in a folder chooser.
+    static var parentFolderForNewFolder: String {
+        String(localized: "Parent folder for new folder", comment: "What VoiceOver says for the pop-up that chooses the folder a new folder is made in, among a folder chooser's new folder fields.")
+    }
+
+    /// The button that makes the folder.
+    static var create: String {
+        String(localized: "Create", comment: "Button that makes the new folder.")
+    }
+
+    /// The button that opens the new folder's fields.
+    static var newFolderButton: String {
+        String(localized: "New Folder...", comment: "Button in a folder chooser that shows the fields that make a new folder. The three dots mean more fields open.")
+    }
+
+    // MARK: Move
+
+    /// The button that moves the books or the folder.
+    static var move: String {
+        String(localized: "Move", comment: "Button that moves the books or the folder to the place chosen.")
+    }
+
+    /// The caption of the destination pop-up in the Move sheet.
+    static var destinationCaption: String {
+        String(localized: "Destination", comment: "Caption of the pop-up that chooses the folder the books move into.")
+    }
+
+    /// What VoiceOver says for the destination pop-up in the Move sheet.
+    static var destinationFolderLabel: String {
+        String(localized: "Destination folder", comment: "What VoiceOver says for the pop-up that chooses the folder the books move into.")
+    }
+
+    /// The heading of the Move sheet for one book.
+    static func moveTitle(bookTitle: String) -> String {
+        String(localized: "Move \"\(bookTitle)\"", comment: "Heading of the sheet that moves one book to a folder. %@ is the book's title.")
+    }
+
+    /// The heading of the Move sheet for several books.
+    static func moveTitle(count: Int) -> String {
+        String(localized: "Move \(count) Books", comment: "Heading of the sheet that moves several books to a folder. %lld is how many books.")
+    }
+
+    /// What the Move sheet says while the books move.
+    static func movingBooks(count: Int) -> String {
+        String(localized: "Moving \(count) books...", comment: "Status shown and spoken in the Move sheet while the books' packages move. %lld is how many books. The three dots mean it is in progress.")
+    }
+
+    /// The heading of the sheet that moves a folder under a new parent.
+    static func moveTitle(folderName: String) -> String {
+        String(localized: "Move \"\(folderName)\"", comment: "Heading of the sheet that moves a folder under a new parent folder. %@ is the folder's name.")
+    }
+
+    /// The pop-up that chooses the folder's new parent.
+    static var newParentFolder: String {
+        String(localized: "New parent folder", comment: "Caption of the pop-up that chooses the folder a moved folder goes into.")
+    }
+
+    /// What VoiceOver says for the new parent pop-up.
+    static var destinationParentFolder: String {
+        String(localized: "Destination parent folder", comment: "What VoiceOver says for the pop-up that chooses the folder a moved folder goes into.")
+    }
+
+    /// The window title of the sheet that moves a folder.
+    static func moveFolderNavigationTitle(_ name: String) -> String {
+        String(localized: "Move Folder: \(name)", comment: "Window title of the sheet that moves a folder. %@ is the folder's name.")
+    }
+
+    /// What the sheet says while the folder moves.
+    static var movingTheFolder: String {
+        String(localized: "Moving the folder...", comment: "Status shown and spoken in the sheet that moves a folder, while its books' packages move. The three dots mean it is in progress.")
+    }
+
+    // MARK: Rename
+
+    /// The heading and window title of the Rename Folder sheet.
+    static var renameFolderTitle: String {
+        String(localized: "Rename Folder", comment: "Heading and window title of the sheet that renames a folder.")
+    }
+
+    /// The button that renames the folder.
+    static var rename: String {
+        String(localized: "Rename", comment: "Button that gives the folder the new name.")
+    }
+
+    /// What the sheet says while the folder is renamed.
+    static var renamingTheFolder: String {
+        String(localized: "Renaming the folder...", comment: "Status shown and spoken in the Rename Folder sheet while the folder's books' packages move to the new name. The three dots mean it is in progress.")
+    }
+
+    // MARK: Delete a folder, moving its contents
+
+    /// The heading of the sheet that asks where a deleted folder's contents go.
+    static func moveContentsTitle(_ name: String) -> String {
+        String(localized: "Move Contents of \"\(name)\"", comment: "Heading of the sheet that chooses where the books and subfolders of a folder go before it is deleted. %@ is the folder's name.")
+    }
+
+    /// What the sheet explains under its heading.
+    static func moveContentsExplanation(_ name: String) -> String {
+        String(localized: "Choose where to move the books and subfolders before deleting \"\(name)\".", comment: "Explanation in the sheet that chooses where a folder's contents go before the folder is deleted. %@ is the folder's name.")
+    }
+
+    /// The pop-up that chooses where the contents go.
+    static var moveContentsTo: String {
+        String(localized: "Move contents to", comment: "Caption of the pop-up that chooses the folder a deleted folder's books and subfolders move into.")
+    }
+
+    /// What VoiceOver says for that pop-up.
+    static var destinationForContents: String {
+        String(localized: "Destination for folder contents", comment: "What VoiceOver says for the pop-up that chooses the folder a deleted folder's books and subfolders move into.")
+    }
+
+    /// The button that moves the contents and deletes the folder.
+    static var moveContentsAndDelete: String {
+        String(localized: "Move Contents & Delete Folder", comment: "Button that moves a folder's books and subfolders to the chosen place and then deletes the folder.")
+    }
+
+    /// The window title of that sheet.
+    static func moveContentsNavigationTitle(_ name: String) -> String {
+        String(localized: "Move Contents: \(name)", comment: "Window title of the sheet that chooses where a folder's contents go before it is deleted. %@ is the folder's name.")
+    }
+
+    /// What the sheet says while the contents move.
+    static var movingTheFoldersContents: String {
+        String(localized: "Moving the folder's contents...", comment: "Status shown and spoken while a deleted folder's books and subfolders move to their new place. The three dots mean it is in progress.")
+    }
+}
+
 // MARK: - Book Info Sheet
 
 /// Book info editor accessible from the library context menu, and the
@@ -71,19 +260,19 @@ struct LibraryBookInfoSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Book Information")
+            Text(LibrarySheetWording.bookInformation)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
             Form {
                 // Each label says "edited by hand" when the user typed the
                 // value (`Book.handEdits`).
-                TextField("Title", text: $title)
-                    .accessibilityLabel(MetadataEditorWording.fieldLabel("Book title", for: .title, in: book.handEdits))
-                TextField("Author", text: $author)
-                    .accessibilityLabel(MetadataEditorWording.fieldLabel("Book author", for: .author, in: book.handEdits))
+                TextField(MetadataEditorWording.titleField, text: $title)
+                    .accessibilityLabel(MetadataEditorWording.fieldLabel(MetadataEditorWording.bookTitleLabel, for: .title, in: book.handEdits))
+                TextField(MetadataEditorWording.authorField, text: $author)
+                    .accessibilityLabel(MetadataEditorWording.fieldLabel(LibrarySheetWording.bookAuthorLabel, for: .author, in: book.handEdits))
 
-                LabeledContent("Format") {
+                LabeledContent(MetadataEditorWording.formatRow) {
                     Text(book.format.displayName)
                 }
                 // A braille book names its code (FMT21) and offers others:
@@ -134,17 +323,17 @@ struct LibraryBookInfoSheet: View {
                 if book.offersTextEncodingChoice {
                     BookRereadPopUp(model: encoding, label: TextEncodingWording.bookInfoLabel, hint: TextEncodingWording.popUpHint)
                 }
-                LabeledContent("Added") {
+                LabeledContent(LibrarySheetWording.addedRow) {
                     Text(book.dateAdded, style: .date)
                 }
                 if let lastOpened = book.lastOpened {
-                    LabeledContent("Last Opened") {
+                    LabeledContent(LibrarySheetWording.lastOpenedRow) {
                         Text(lastOpened, style: .date)
                     }
                 }
                 if let words = book.totalWordCount {
-                    LabeledContent("Word Count") {
-                        Text("\(words)")
+                    LabeledContent(LibrarySheetWording.wordCountRow) {
+                        Text(words.formatted())
                     }
                 }
             }
@@ -161,7 +350,7 @@ struct LibraryBookInfoSheet: View {
             }
 
             HStack {
-                Button("Cancel") {
+                Button(LibraryWindowWording.cancel) {
                     dismiss()
                 }
                 .keyboardShortcut(.escape, modifiers: [])
@@ -171,7 +360,7 @@ struct LibraryBookInfoSheet: View {
 
                 Spacer()
 
-                Button("Save") {
+                Button(LibraryWindowWording.save) {
                     // Capture state before dismissing
                     guard let edit = Self.edit(from: opened, title: title, author: author) else { return }
                     let vm = libraryViewModel
@@ -195,7 +384,7 @@ struct LibraryBookInfoSheet: View {
         // File Characters one, and room for a refusal of a few lines below
         // the form.
         .frame(width: 400, height: offersRereadChoice ? 470 : 350)
-        .navigationTitle("Info: \(book.title)")
+        .navigationTitle(LibrarySheetWording.infoTitle(book.title))
         .task {
             // What the file is read in, worked out off the main actor, so the
             // sheet never waits on a large file; and the braille file
@@ -289,7 +478,7 @@ struct BookRereadPopUp<Model: BookRereadChoosing>: View {
             Button(TextEncodingWording.confirmButton) {
                 Task { await model.confirm(confirmation.option) }
             }
-            Button("Cancel", role: .cancel) {
+            Button(LibraryWindowWording.cancel, role: .cancel) {
                 model.cancel()
             }
         } message: { confirmation in
@@ -324,7 +513,8 @@ struct OperationFailureNotice: View {
     /// What VoiceOver reads for a failure: the message, introduced as an
     /// error.
     nonisolated static func accessibilityLabel(for message: String) -> String {
-        "Error: \(message)"
+        String(localized: "Error: \(message)",
+               comment: "What VoiceOver reads for the reason an operation failed in a sheet: the word Error, then the reason. %@ is the reason.")
     }
 
     /// The message a sheet shows after `outcome`: nil after a success, when
@@ -419,36 +609,37 @@ struct NewFolderSheet: View {
     /// the focus was on are gone by then, so the window says it.
     nonisolated static func createdAnnouncement(name: String, parentPath: String) -> String {
         let place = parentPath.isEmpty ? LibraryFolderOption.rootLabel : parentPath
-        return "Folder \(name) created in \(place)."
+        return String(localized: "Folder \(name) created in \(place).",
+                      comment: "VoiceOver announcement once the New Folder sheet has closed on a folder made. %1$@ is the new folder's name. %2$@ is the place it is in: its parent folder's path, or the name of the library's top level.")
     }
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("New Folder")
+            Text(LibrarySheetWording.newFolderTitle)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            TextField("Folder name", text: $folderName)
+            TextField(LibrarySheetWording.folderNameField, text: $folderName)
                 .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("Folder name")
+                .accessibilityLabel(LibrarySheetWording.folderNameField)
 
-            Picker("Parent folder", selection: $parentPath) {
-                Text("Library Root").tag("")
+            Picker(LibrarySheetWording.parentFolder, selection: $parentPath) {
+                Text(LibraryFolderOption.rootLabel).tag("")
                 ForEach(folders.sortedTreeOrder()) { folder in
                     if folder.depth < BookFolder.maxDepth {
                         Text(folder.fullPath).tag(folder.fullPath)
                     }
                 }
             }
-            .accessibilityLabel("Parent folder")
+            .accessibilityLabel(LibrarySheetWording.parentFolder)
 
             OperationFailureNotice(message: failureMessage)
 
             HStack {
-                Button("Cancel", action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
-                Button("Create") {
+                Button(LibrarySheetWording.create) {
                     failureMessage = OperationFailureNotice.message(after: onCreate())
                 }
                 .keyboardShortcut(.return, modifiers: [])
@@ -457,7 +648,7 @@ struct NewFolderSheet: View {
         }
         .padding()
         .frame(width: 300)
-        .navigationTitle("New Folder")
+        .navigationTitle(LibrarySheetWording.newFolderTitle)
         .clearingFailure($failureMessage, whenChanged: folderName)
         .clearingFailure($failureMessage, whenChanged: parentPath)
     }
@@ -474,7 +665,7 @@ struct LibraryFolderOption: Hashable {
     let path: String
 
     /// What the library's top level is called in every folder picker.
-    static let rootLabel = "Library Root"
+    nonisolated static var rootLabel: String { FolderOperationConflict.libraryRootName }
 
     /// "Library Root", when `includingRoot`, then every folder of `library`
     /// in tree order that `includes` accepts.
@@ -546,10 +737,16 @@ struct LibraryFolderPicker: View {
     /// The title of the button that closes the new folder's fields: not
     /// "Cancel", which the sheet's own button is, so VoiceOver tells the
     /// two apart.
-    nonisolated static let cancelNewFolderTitle = "Cancel New Folder"
+    nonisolated static var cancelNewFolderTitle: String {
+        String(localized: "Cancel New Folder",
+               comment: "Title of the button, in a folder chooser, that closes the new folder's fields without making a folder. It is not named Cancel, so VoiceOver tells it apart from the sheet's own Cancel.")
+    }
     /// What that button does, for VoiceOver: the fields close, and the
     /// folder chosen in the pop-up stays chosen.
-    nonisolated static let cancelNewFolderHint = "Closes the new folder's fields and keeps the folder chosen."
+    nonisolated static var cancelNewFolderHint: String {
+        String(localized: "Closes the new folder's fields and keeps the folder chosen.",
+               comment: "Hint of the button, in a folder chooser, that closes the new folder's fields: the folder chosen in the pop-up stays chosen.")
+    }
 
     /// What VoiceOver hears as the new folder's fields close without a
     /// folder made, by Escape or Cancel New Folder: that New Folder was
@@ -557,8 +754,12 @@ struct LibraryFolderPicker: View {
     /// chosen in it, as in "New Folder cancelled. Destination folder:
     /// Reports."; the cancel alone when no place offered is chosen.
     nonisolated static func newFolderCancelledAnnouncement(pickerLabel: String, chosen: String?) -> String {
-        guard let chosen else { return "New Folder cancelled." }
-        return "New Folder cancelled. \(pickerLabel): \(chosen)."
+        guard let chosen else {
+            return String(localized: "New Folder cancelled.",
+                          comment: "VoiceOver announcement when the new folder's fields close without a folder made, and no place is chosen in the pop-up.")
+        }
+        return String(localized: "New Folder cancelled. \(pickerLabel): \(chosen).",
+                      comment: "VoiceOver announcement when the new folder's fields close without a folder made. %1$@ is the pop-up's spoken label, such as Destination folder. %2$@ is the place still chosen in it.")
     }
 
     /// What VoiceOver hears as a folder is made with the fields' Create: the
@@ -568,7 +769,8 @@ struct LibraryFolderPicker: View {
     /// full path. Without it the focus, on the Create button that goes away
     /// with the fields, would land nowhere and VoiceOver would say nothing.
     nonisolated static func newFolderCreatedAnnouncement(name: String, pickerLabel: String, chosen: String) -> String {
-        "Folder \(name) created. \(pickerLabel): \(chosen)."
+        String(localized: "Folder \(name) created. \(pickerLabel): \(chosen).",
+               comment: "VoiceOver announcement when a folder is made with the new folder's fields. %1$@ is the new folder's name. %2$@ is the pop-up's spoken label, such as Destination folder. %3$@ is the new folder's full path, now chosen in the pop-up.")
     }
 
     /// The picker with its pop-up's `options`, the `newFolderParents` a new
@@ -615,7 +817,7 @@ struct LibraryFolderPicker: View {
             } else {
                 HStack {
                     Spacer()
-                    Button("New Folder...") {
+                    Button(LibrarySheetWording.newFolderButton) {
                         showNewFolder = true
                     }
                     .disabled(isDisabled)
@@ -632,19 +834,19 @@ struct LibraryFolderPicker: View {
     /// The new folder's name and parent, with Cancel and Create, which
     /// Return presses. The name field takes the keyboard as they appear.
     private var newFolderFields: some View {
-        GroupBox("New Folder") {
+        GroupBox(LibrarySheetWording.newFolderTitle) {
             VStack(spacing: 8) {
-                TextField("Folder name", text: $newFolderName)
+                TextField(LibrarySheetWording.folderNameField, text: $newFolderName)
                     .textFieldStyle(.roundedBorder)
                     .focused($isNameFieldFocused)
-                    .accessibilityLabel("New folder name")
+                    .accessibilityLabel(LibrarySheetWording.newFolderNameLabel)
 
-                Picker("Parent folder", selection: $newFolderParent) {
+                Picker(LibrarySheetWording.parentFolder, selection: $newFolderParent) {
                     ForEach(newFolderParents, id: \.path) { option in
                         Text(option.label).tag(option.path)
                     }
                 }
-                .accessibilityLabel("Parent folder for new folder")
+                .accessibilityLabel(LibrarySheetWording.parentFolderForNewFolder)
 
                 HStack {
                     // Named apart from the sheet's own Cancel, which closes
@@ -665,7 +867,7 @@ struct LibraryFolderPicker: View {
                     // Create stands down while the owner gives the key to
                     // a button of its own (`createTakesReturn`), so one
                     // button at a time is the default.
-                    Button("Create", action: createFolder)
+                    Button(LibrarySheetWording.create, action: createFolder)
                         .keyboardShortcut(createTakesReturn ? KeyboardShortcut.defaultAction : nil)
                         .disabled(BookFolder.normalizedName(newFolderName) == nil)
                 }
@@ -791,9 +993,9 @@ struct MoveFolderSheet: View {
             return heading
         }
         if books.count == 1, let book = books.first {
-            return "Move \"\(book.title)\""
+            return LibrarySheetWording.moveTitle(bookTitle: book.title)
         }
-        return "Move \(books.count) Books"
+        return LibrarySheetWording.moveTitle(count: books.count)
     }
 
     /// All available destination paths, including "Library Root" (empty string)
@@ -822,8 +1024,8 @@ struct MoveFolderSheet: View {
                 options: folderOptions,
                 newFolderParents: LibraryFolderOption.options(in: library) { $0.depth < BookFolder.maxDepth },
                 selection: $selectedPath,
-                caption: "Destination",
-                accessibilityLabel: "Destination folder",
+                caption: LibrarySheetWording.destinationCaption,
+                accessibilityLabel: LibrarySheetWording.destinationFolderLabel,
                 onCreateFolder: onCreateFolder,
                 failureMessage: $failureMessage,
                 isDisabled: isWorking,
@@ -833,11 +1035,11 @@ struct MoveFolderSheet: View {
             OperationFailureNotice(message: failureMessage)
 
             if isWorking {
-                SheetWorkIndicator(label: "Moving \(CountWording.books(books.count))...")
+                SheetWorkIndicator(label: LibrarySheetWording.movingBooks(count: books.count))
             }
 
             HStack {
-                Button("Cancel", action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     // Escape closes the sheet, except while the new
                     // folder's fields are shown, when it closes them first
                     // (their Cancel New Folder) and a second Escape closes
@@ -849,7 +1051,7 @@ struct MoveFolderSheet: View {
                 // No hint: the explanation, read in order after the
                 // heading, already says what moving does, and a hint would
                 // say it a second time (REV13 feeds 8).
-                Button("Move") {
+                Button(LibrarySheetWording.move) {
                     OperationFailureNotice.run(
                         { await onMove(selectedPath) },
                         isWorking: $isWorking,
@@ -872,7 +1074,7 @@ struct MoveFolderSheet: View {
             // report of an empty sheet can be checked against the log. Only
             // counts: never a title or a path.
             DiagnosticLog.event(.app, Self.shownLine(
-                command: heading == nil ? "Move to Folder" : "Move to Library",
+                command: heading == nil ? "Move to Folder" : "Move to Library", // l10n: no (log-only: the debug log's wording)
                 places: folderOptions.count,
                 items: books.count
             ))
@@ -958,26 +1160,26 @@ struct RenameFolderSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Rename Folder")
+            Text(LibrarySheetWording.renameFolderTitle)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            TextField("Folder name", text: $newName)
+            TextField(LibrarySheetWording.folderNameField, text: $newName)
                 .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("New folder name")
+                .accessibilityLabel(LibrarySheetWording.newFolderNameLabel)
                 .disabled(isWorking)
 
             OperationFailureNotice(message: failureMessage)
 
             if isWorking {
-                SheetWorkIndicator(label: "Renaming the folder...")
+                SheetWorkIndicator(label: LibrarySheetWording.renamingTheFolder)
             }
 
             HStack {
-                Button("Cancel", action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
-                Button("Rename") {
+                Button(LibrarySheetWording.rename) {
                     OperationFailureNotice.run(onRename, isWorking: $isWorking, failureMessage: $failureMessage)
                 }
                 .keyboardShortcut(.return, modifiers: [])
@@ -988,7 +1190,7 @@ struct RenameFolderSheet: View {
         }
         .padding()
         .frame(width: 300)
-        .navigationTitle("Rename Folder")
+        .navigationTitle(LibrarySheetWording.renameFolderTitle)
         .clearingFailure($failureMessage, whenChanged: newName)
         .interactiveDismissDisabled(isWorking)
     }
@@ -1016,7 +1218,7 @@ struct MoveFolderToParentSheet: View {
     /// Valid destinations: all folders except the folder itself, its descendants, and its current parent
     private var validDestinations: [(label: String, path: String)] {
         let selfPath = folder.fullPath
-        var options: [(String, String)] = [("Library Root", "")]
+        var options: [(String, String)] = [(LibraryFolderOption.rootLabel, "")]
         for f in library.folders.sortedTreeOrder() {
             // Exclude: the folder itself, its descendants, and check depth limit
             if f.fullPath == selfPath { continue }
@@ -1031,29 +1233,29 @@ struct MoveFolderToParentSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Move \"\(folder.name)\"")
+            Text(LibrarySheetWording.moveTitle(folderName: folder.name))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            Picker("New parent folder", selection: $selectedParent) {
+            Picker(LibrarySheetWording.newParentFolder, selection: $selectedParent) {
                 ForEach(validDestinations, id: \.path) { option in
                     Text(option.label).tag(option.path)
                 }
             }
-            .accessibilityLabel("Destination parent folder")
+            .accessibilityLabel(LibrarySheetWording.destinationParentFolder)
             .disabled(isWorking)
 
             OperationFailureNotice(message: failureMessage)
 
             if isWorking {
-                SheetWorkIndicator(label: "Moving the folder...")
+                SheetWorkIndicator(label: LibrarySheetWording.movingTheFolder)
             }
 
             HStack {
-                Button("Cancel", action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
-                Button("Move") {
+                Button(LibrarySheetWording.move) {
                     OperationFailureNotice.run(
                         { await onMove(selectedParent) },
                         isWorking: $isWorking,
@@ -1067,7 +1269,7 @@ struct MoveFolderToParentSheet: View {
         }
         .padding()
         .frame(width: 400)
-        .navigationTitle("Move Folder: \(folder.name)")
+        .navigationTitle(LibrarySheetWording.moveFolderNavigationTitle(folder.name))
         .clearingFailure($failureMessage, whenChanged: selectedParent)
         .interactiveDismissDisabled(isWorking)
         .onAppear {
@@ -1098,7 +1300,7 @@ struct DeleteFolderMoveContentsSheet: View {
     /// Valid destinations: all folders except the folder being deleted and its descendants
     private var validDestinations: [(label: String, path: String)] {
         let selfPath = folder.fullPath
-        var options: [(String, String)] = [("Library Root", "")]
+        var options: [(String, String)] = [(LibraryFolderOption.rootLabel, "")]
         for f in library.folders.sortedTreeOrder() {
             if f.fullPath == selfPath { continue }
             if f.fullPath.hasPrefix(selfPath + "/") { continue }
@@ -1109,33 +1311,33 @@ struct DeleteFolderMoveContentsSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Move Contents of \"\(folder.name)\"")
+            Text(LibrarySheetWording.moveContentsTitle(folder.name))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            Text("Choose where to move the books and subfolders before deleting \"\(folder.name)\".")
+            Text(LibrarySheetWording.moveContentsExplanation(folder.name))
                 .font(.callout)
                 .foregroundColor(.secondary)
 
-            Picker("Move contents to", selection: $selectedDestination) {
+            Picker(LibrarySheetWording.moveContentsTo, selection: $selectedDestination) {
                 ForEach(validDestinations, id: \.path) { option in
                     Text(option.label).tag(option.path)
                 }
             }
-            .accessibilityLabel("Destination for folder contents")
+            .accessibilityLabel(LibrarySheetWording.destinationForContents)
             .disabled(isWorking)
 
             OperationFailureNotice(message: failureMessage)
 
             if isWorking {
-                SheetWorkIndicator(label: "Moving the folder's contents...")
+                SheetWorkIndicator(label: LibrarySheetWording.movingTheFoldersContents)
             }
 
             HStack {
-                Button("Cancel", action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
-                Button("Move Contents & Delete Folder") {
+                Button(LibrarySheetWording.moveContentsAndDelete) {
                     OperationFailureNotice.run(
                         { await onConfirm(selectedDestination) },
                         isWorking: $isWorking,
@@ -1148,7 +1350,7 @@ struct DeleteFolderMoveContentsSheet: View {
         }
         .padding()
         .frame(width: 450)
-        .navigationTitle("Move Contents: \(folder.name)")
+        .navigationTitle(LibrarySheetWording.moveContentsNavigationTitle(folder.name))
         .clearingFailure($failureMessage, whenChanged: selectedDestination)
         .interactiveDismissDisabled(isWorking)
         .onAppear {

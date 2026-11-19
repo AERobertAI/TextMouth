@@ -574,12 +574,12 @@ final class LibraryOnlyRemovalTests: XCTestCase {
             "These books could not be removed from the library and remain in it:\n"
                 + "Atlas: no permission\nBestiary: read-only volume\n\n"
                 + "This book was removed from the library, but its bookInfo.json file could not be deleted. "
-                + "It will still stay out of the library:\nChronicle: locked"
+                + "It stays out of the library:\nChronicle: locked"
         )
         XCTAssertEqual(
             LibraryViewModel.libraryOnlyRemovalProblems(refused: [], recordsLeft: ["Atlas: locked", "Bestiary: locked"]),
             "These books were removed from the library, but their bookInfo.json files could not be deleted. "
-                + "They will still stay out of the library:\nAtlas: locked\nBestiary: locked"
+                + "They stay out of the library:\nAtlas: locked\nBestiary: locked"
         )
     }
 

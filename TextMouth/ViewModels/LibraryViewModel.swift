@@ -3,14 +3,27 @@ import Combine
 import ZIPFoundation
 
 enum LibrarySortField: String, CaseIterable, Codable {
-    case title = "Title"
-    case author = "Author"
-    case dateAdded = "Date Added"
-    case lastOpened = "Last Opened"
-    case fileSize = "File Size"
-    case manual = "Manual Order"
+    case title = "Title" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case author = "Author" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case dateAdded = "Date Added" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case lastOpened = "Last Opened" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case fileSize = "File Size" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case manual = "Manual Order" // l10n: no (stored id: config.json keeps it; `title` is shown)
 
-    var accessibilityLabel: String { rawValue }
+    /// The field's name as the interface shows and speaks it. The raw value
+    /// is what config.json keeps.
+    var title: String {
+        switch self {
+        case .title: return String(localized: "Title", comment: "Name of a way to sort the books: by the title. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.")
+        case .author: return String(localized: "Author", comment: "Name of a way to sort the books: by the author. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.")
+        case .dateAdded: return String(localized: "Date Added", comment: "Name of a way to sort the books: by the date the book was added. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.")
+        case .lastOpened: return String(localized: "Last Opened", comment: "Name of a way to sort the books: by the date the book was last opened. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.")
+        case .fileSize: return String(localized: "File Size", comment: "Name of a way to sort the books: by the size of the book's file. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.")
+        case .manual: return String(localized: "Manual Order", comment: "Name of a way to sort the books: by the order the user arranges by hand, with no direction. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.")
+        }
+    }
+
+    var accessibilityLabel: String { title }
 }
 
 /// The views of the library a Library window shows, as its View picker
@@ -20,26 +33,26 @@ enum LibrarySortField: String, CaseIterable, Codable {
 /// replaced No Folder, which listed the root's books; Folders still lists
 /// those at the root. Recently Opened was called Recent until FR13.
 enum LibraryCategory: String, CaseIterable, Codable {
-    case folders = "Folders"
-    case allItems = "All Items"
+    case folders = "Folders" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
+    case allItems = "All Items" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
     /// Every book never opened, from every folder, and the feeds with items
     /// not yet played.
-    case unopened = "Unopened"
+    case unopened = "Unopened" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
     /// The books opened last, newest first, and of each feed's episodes
     /// and articles the one opened last (FR11): named for what it lists,
     /// as the listener asked on October 9, 2026 (FR13).
-    case recent = "Recently Opened"
+    case recent = "Recently Opened" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
     /// The reading list (FR09): books from any folder, in the order the
     /// user arranges, which no sort changes.
-    case readingList = "Reading List"
+    case readingList = "Reading List" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
 
     /// What the category Unopened replaced was called. A category saved
     /// under that name reads as Unopened.
-    static let formerNoFolderName = "No Folder"
+    static let formerNoFolderName = "No Folder" // l10n: no (stored id: a name an older library saved)
     /// What Recently Opened was called until FR13. A category saved under
     /// that name reads as Recently Opened, and is saved under its new name
     /// from then on; its sort is kept under the same key (`__recent__`).
-    static let formerRecentName = "Recent"
+    static let formerRecentName = "Recent" // l10n: no (stored id: a name an older library saved)
     /// The key that category's sort was saved under. It is read as the
     /// Unopened sort until one is chosen at Unopened (`Library.sortSetting(at:)`)
     /// and never written, and no folder can take it as a name.
@@ -99,7 +112,7 @@ enum LibraryCategory: String, CaseIterable, Codable {
         guard let category = LibraryCategory(savedName: name) else {
             throw DecodingError.dataCorrupted(DecodingError.Context(
                 codingPath: decoder.codingPath,
-                debugDescription: "No library category is named \(name)."
+                debugDescription: "No library category is named \(name)." // l10n: no (damage reason: stays English, question 3)
             ))
         }
         self = category
@@ -784,7 +797,7 @@ extension LibraryViewModel {
         guard checkDataDirectory() else {
             if let reason = dataDirectoryUnavailability {
                 announcedUnavailability = reason
-                VoiceOverAnnouncer.announce("The library is still not available. \(reason.explanation)")
+                VoiceOverAnnouncer.announce(LibraryViewModelWording.stillNotAvailable(reason.explanation))
             }
             return false
         }
@@ -809,7 +822,7 @@ extension LibraryViewModel {
         }
         announcedUnavailability = nil
         NotificationCenter.default.post(name: .dataDirectoryDidBecomeAvailable, object: nil)
-        VoiceOverAnnouncer.announce("The library is available.", from: unavailabilityWindow)
+        VoiceOverAnnouncer.announce(LibraryViewModelWording.available, from: unavailabilityWindow)
     }
 
     // MARK: The Library Not Available Screen
@@ -893,4 +906,128 @@ extension LibraryViewModel {
 
 extension Notification.Name {
     static let openBookWindow = Notification.Name("openBookWindow")
+}
+
+// MARK: - Wording
+
+/// What the library's view model says that no other wording enum owns: what
+/// VoiceOver hears as the library comes back (FR34).
+enum LibraryViewModelWording {
+    /// What VoiceOver hears when Try Again finds the library still missing:
+    /// "The library is still not available. <why>".
+    static func stillNotAvailable(_ explanation: String) -> String {
+        String(localized: "The library is still not available. \(explanation)",
+               comment: "VoiceOver announcement when Try Again on the Library Not Available screen finds the library still missing. %@ is the sentence that says why it is not available.")
+    }
+
+    /// What VoiceOver hears when the library is found again.
+    static var available: String {
+        String(localized: "The library is available.",
+               comment: "VoiceOver announcement when the library, which had been missing, is found again.")
+    }
+
+    // MARK: Failure contexts
+
+    /// What begins the error alert's message when a library operation fails:
+    /// `OperationOutcome.failure(_:_:)` writes "<context>: <reason>".
+
+    /// The context of a folder that could not be created.
+    static var couldNotCreateFolder: String {
+        String(localized: "Could not create folder",
+               comment: "Start of the error message when a new folder could not be created. The reason follows it after a colon.")
+    }
+
+    /// The context of books that could not be moved to a folder.
+    static var couldNotMoveBooks: String {
+        String(localized: "Could not move books",
+               comment: "Start of the error message when books could not be moved to a folder. The reason follows it after a colon.")
+    }
+
+    /// The context of a duplicate's new copy that could not be discarded.
+    static var couldNotDiscardDuplicateImport: String {
+        String(localized: "Could not discard duplicate import",
+               comment: "Start of the error message when the new copy of a duplicate book could not be discarded. The reason follows it after a colon.")
+    }
+
+    /// The context of a replacement that could not go ahead.
+    static var couldNotReplaceDuplicate: String {
+        String(localized: "Could not replace duplicate",
+               comment: "Start of the error message when Replace Existing could not put the new copy in place of the library's copy. The reason follows it after a colon.")
+    }
+
+    /// The context of the books of an imported ZIP archive that could not be filed in their new folder.
+    static var couldNotOrganizeImportedZIPBooks: String {
+        String(localized: "Could not organize imported ZIP books",
+               comment: "Start of the error message when the books of an imported ZIP archive could not be moved into the folder made for them. The reason follows it after a colon.")
+    }
+
+    /// The context of a folder that could not be deleted with its contents moved out.
+    static func couldNotDeleteFolderAndMoveContents(_ name: String) -> String {
+        String(localized: "Could not delete \"\(name)\" and move its contents",
+               comment: "Start of the error message when a folder could not be deleted and its contents moved to its parent. %@ is the folder's name. The reason follows it after a colon.")
+    }
+
+    /// The context of a folder's contents that could not be relocated.
+    static var couldNotRelocateFolderContents: String {
+        String(localized: "Could not relocate folder contents",
+               comment: "Start of the error message when the books of a deleted folder could not be moved to their new place. The reason follows it after a colon.")
+    }
+
+    /// What the alert says when a folder to remove has an invalid or changed library path.
+    static var couldNotRemoveFolderPathInvalid: String {
+        String(localized: "Could not remove folder: its library path is invalid or has changed.",
+               comment: "Error message when a folder cannot be removed because its place in the library is not valid any more, or it moved.")
+    }
+
+    /// The context of a refused move of the folder named `name`.
+    static func couldNotMoveNamedFolder(_ name: String) -> String {
+        String(localized: "Could not move \"\(name)\"",
+               comment: "Start of the error message when a folder was refused a move. %@ is the folder's name. The reason follows it after a colon.")
+    }
+
+    /// The context of a folder move that failed after the library accepted it.
+    static var couldNotMoveFolder: String {
+        String(localized: "Could not move folder",
+               comment: "Start of the error message when moving a folder failed on disk, and everything was put back. The reason follows it after a colon.")
+    }
+
+    /// The context of a refused rename of the folder named `name`.
+    static func couldNotRenameNamedFolder(_ name: String) -> String {
+        String(localized: "Could not rename \"\(name)\"",
+               comment: "Start of the error message when a folder was refused a new name. %@ is the folder's current name. The reason follows it after a colon.")
+    }
+
+    /// The context of a folder rename that failed after the library accepted it.
+    static var couldNotRenameFolder: String {
+        String(localized: "Could not rename folder",
+               comment: "Start of the error message when renaming a folder failed on disk, and everything was put back. The reason follows it after a colon.")
+    }
+
+    /// The reason a move is refused when a destination folder's path is not a safe library path.
+    static var invalidDestinationFolderPath: String {
+        String(localized: "A destination folder path is invalid.",
+               comment: "Error shown when books or folders cannot be moved because the destination folder's path is not a valid place in the library.")
+    }
+
+    // MARK: Remove from Library Only
+
+    /// The heading of the books Remove from Library Only kept, which the
+    /// error alert lists one a line under it. `count` is how many.
+    static func removalRefusedHeading(count: Int) -> String {
+        count == 1
+            ? String(localized: "This book could not be removed from the library and remains in it:",
+                     comment: "Heading of the error alert's list when Remove from Library Only could not mark one book's package, so it stays in the library. The book's title and the reason follow on the next line.")
+            : String(localized: "These books could not be removed from the library and remain in it:",
+                     comment: "Heading of the error alert's list when Remove from Library Only could not mark the packages of several books, so they stay in the library. Each book's title and the reason follow on their own lines.")
+    }
+
+    /// The heading of the books Remove from Library Only removed but whose
+    /// bookInfo.json file stays.
+    static func removalRecordLeftHeading(count: Int) -> String {
+        count == 1
+            ? String(localized: "This book was removed from the library, but its bookInfo.json file could not be deleted. It stays out of the library:",
+                     comment: "Heading of the error alert's list when Remove from Library Only removed one book but could not delete the bookInfo.json file in its package. bookInfo.json is a file name. The book's title and the reason follow on the next line.")
+            : String(localized: "These books were removed from the library, but their bookInfo.json files could not be deleted. They stay out of the library:",
+                     comment: "Heading of the error alert's list when Remove from Library Only removed several books but could not delete the bookInfo.json files in their packages. bookInfo.json is a file name. Each book's title and the reason follow on their own lines.")
+    }
 }

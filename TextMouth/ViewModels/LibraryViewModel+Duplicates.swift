@@ -16,7 +16,7 @@ import SwiftUI
 extension LibraryViewModel {
 
     /// How a duplicate's new copy that cannot be discarded is reported.
-    private static let discardFailureContext = "Could not discard duplicate import"
+    private static var discardFailureContext: String { LibraryViewModelWording.couldNotDiscardDuplicateImport }
 
     // MARK: - Asking
 
@@ -455,7 +455,7 @@ extension LibraryViewModel {
     // MARK: - Replacing (ST04)
 
     /// How a replacement that could not go ahead is reported.
-    private static let replaceFailureContext = "Could not replace duplicate"
+    private static var replaceFailureContext: String { LibraryViewModelWording.couldNotReplaceDuplicate }
 
     /// Answers Replace Existing (ST04): the new copy takes the place of the
     /// library's copy that matches now, which an earlier answer may have
@@ -847,7 +847,7 @@ extension LibraryViewModel {
         do {
             folder = try proposed.createFolderThrowing(name: name, parentPath: batch.folderPath)
         } catch {
-            return Self.outcome(refusing: error, context: "Could not create folder")
+            return Self.outcome(refusing: error, context: LibraryViewModelWording.couldNotCreateFolder)
         }
         // Books are told apart by ID: keeping both copies of a book is
         // allowed, so its content cannot tell which copy this archive added.
@@ -860,7 +860,7 @@ extension LibraryViewModel {
             try commitLibraryTransition(proposed, affectedBookIDs: affectedIDs)
             return .success(nil)
         } catch {
-            return .failure("Could not organize imported ZIP books", error)
+            return .failure(LibraryViewModelWording.couldNotOrganizeImportedZIPBooks, error)
         }
     }
 
@@ -966,7 +966,7 @@ extension LibraryViewModel {
         var trashed: [String] = []
         for package in unanswered.packages where !asked.contains(package.lastPathComponent) {
             let named = "DUPLICATE_UNANSWERED: \(DiagnosticLog.loggablePath(package)): "
-                + "the duplicate question about this new copy was never answered"
+                + "the duplicate question about this new copy was never answered" // l10n: no (debug log line)
             guard Self.questionIsOlderThanGrace(of: package, now: now) else {
                 DiagnosticLog.event(
                     .storage,
