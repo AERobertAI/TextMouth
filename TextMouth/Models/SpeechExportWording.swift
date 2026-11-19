@@ -26,7 +26,7 @@ enum SpeechExportWording {
     /// (`MP3Tag.maximumChapters`).
     static var formatHint: String {
         // The limit is a fixed number of the format, written without grouping.
-        String(localized: "The kind of audio file. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for each of the first \(String(MP3Tag.maximumChapters)).",
+        String(localized: "Chooses the file format. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for the first \(String(MP3Tag.maximumChapters)).",
                comment: "The hint of the Format pop-up in the Export dialog's spoken audio options. M4B, M4A, and MP3 are audio file formats. %@ is the number of chapters an MP3 can have, 255.")
     }
 
@@ -34,14 +34,14 @@ enum SpeechExportWording {
     /// more headings than an MP3 has chapters for, `headings` of them: what
     /// is lost, and what keeps it.
     static func mp3ChapterLimit(headings: Int) -> String {
-        String(localized: "This range has \(headings) headings, and an MP3 has chapters for the first \(String(MP3Tag.maximumChapters)) only. Choose M4B to have a chapter for each of them.",
+        String(localized: "This range has \(headings) headings, but an MP3 has chapters for the first \(String(MP3Tag.maximumChapters)) only. Choose M4B for a chapter for each.",
                comment: "The line under the Format pop-up in the Export dialog's spoken audio options while MP3 is chosen for a range with more headings than an MP3 has chapters. %1$lld is the number of headings in the range and %2$@ the number of chapters an MP3 can have, 255. M4B and MP3 are audio file formats.")
     }
 
     /// The sentence the Export dialog adds after an MP3 of `chapters`
     /// chapters is made, more than an MP3 has chapters for.
     static func mp3ChaptersKept(of chapters: Int) -> String {
-        String(localized: "The MP3 has chapters for the first \(String(MP3Tag.maximumChapters)) of its \(chapters) headings; export it as M4B to have a chapter for each.",
+        String(localized: "The MP3 has chapters for the first \(String(MP3Tag.maximumChapters)) of its \(chapters) headings; export as M4B for a chapter for each.",
                comment: "A sentence the Export dialog adds after it made an MP3 of more headings than an MP3 has chapters for. %1$@ is the number of chapters an MP3 can have, 255, and %2$lld the number of headings. M4B and MP3 are audio file formats.")
     }
 
@@ -54,7 +54,7 @@ enum SpeechExportWording {
     }
     /// What the From pop-up chooses.
     static var fromHint: String {
-        String(localized: "Where the spoken audio begins: the beginning of the book, or a heading.",
+        String(localized: "Where the audio begins: the book's beginning, or a heading.",
                comment: "The hint of the From pop-up in the Export dialog's spoken audio options.")
     }
     /// The From pop-up's first item: the book's beginning, with any text
@@ -71,7 +71,7 @@ enum SpeechExportWording {
     }
     /// What the To pop-up chooses.
     static var throughHint: String {
-        String(localized: "The heading whose section ends the spoken audio, with any headings under it, or the end of the book.",
+        String(localized: "The heading whose section ends the audio, with its subheadings, or the end of the book.",
                comment: "The hint of the To pop-up in the Export dialog's spoken audio options.")
     }
     /// The To pop-up's last item: the book's end.
@@ -102,7 +102,7 @@ enum SpeechExportWording {
     /// Why Export refuses the folder chosen: it is the folder speech exports
     /// keep their spoken chapters in, or inside it, which TextMouth empties.
     static var destinationInKeptChapters: String {
-        String(localized: "Export can't write into the folder where TextMouth keeps spoken chapters, since TextMouth empties it. Choose another folder.",
+        String(localized: "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
                comment: "Why the Export dialog refuses the folder chosen: it is the folder where TextMouth keeps the chapters of a spoken audio export, or inside it.")
     }
 
@@ -137,7 +137,7 @@ enum SpeechExportWording {
     }
     /// What the Speed slider sets.
     static var speedHint: String {
-        String(localized: "How fast the voice speaks in the audio file. It starts at this book's speed.",
+        String(localized: "How fast the voice speaks in the file. It starts at the book's speed.",
                comment: "The hint of the Speed slider in the Export dialog's spoken audio options.")
     }
 
@@ -153,7 +153,7 @@ enum SpeechExportWording {
     }
     /// What the Pitch slider sets.
     static var pitchHint: String {
-        String(localized: "How high the voice sounds in the audio file. It starts at this book's pitch.",
+        String(localized: "How high the voice sounds in the file. It starts at the book's pitch.",
                comment: "The hint of the Pitch slider in the Export dialog's spoken audio options.")
     }
 
@@ -173,7 +173,7 @@ enum SpeechExportWording {
     /// The line about the licence the Mac's voices come with (the user's
     /// answer to question 20 asked for it).
     static var licence: String {
-        String(localized: "Speech made with the Mac's voices is for your personal, non-commercial use, under Apple's licence.",
+        String(localized: "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
                comment: "The line in the Export dialog's spoken audio options about the licence the Mac's voices come with.")
     }
 
@@ -243,7 +243,7 @@ enum SpeechExportWording {
     /// pauses changes what the same range would speak, so it speaks every
     /// chapter again.
     static var stopHint: String {
-        String(localized: "Stops the export. The chapters already spoken are kept, so exporting the same range at the same speed and pitch goes on from there, before TextMouth quits, a different export of spoken audio starts, or the book's voice, text, substitution rules, or pauses change.",
+        String(localized: "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.",
                comment: "The hint of the Stop button in the Export dialog while a spoken audio export runs.")
     }
 
@@ -255,13 +255,13 @@ enum SpeechExportWording {
         guard done > 0 else { return nil }
         guard done >= total else {
             // Chapter numbers name places in the book, so they are written without grouping.
-            return String(localized: "Kept \(String(done)) of \(total) chapters: export the same range at the same speed and pitch to go on from chapter \(String(done + 1)), before TextMouth quits, a different export of spoken audio starts, or the book's voice, text, substitution rules, or pauses change.",
+            return String(localized: "Kept \(String(done)) of \(total) chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter \(String(done + 1)), export the same range at the same speed and pitch.",
                           comment: "What the Export dialog says after a spoken audio export ended without its file and kept some of its chapters. %1$@ is how many chapters are kept, %2$lld how many there are, and %3$@ the number of the chapter to go on from, both written without digit grouping.")
         }
         return total == 1
-            ? String(localized: "Kept the spoken chapter: export the same range at the same speed and pitch to make the audio file from it, before TextMouth quits, a different export of spoken audio starts, or the book's voice, text, substitution rules, or pauses change.",
+            ? String(localized: "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
                      comment: "What the Export dialog says after a spoken audio export ended without its file and kept its only chapter.")
-            : String(localized: "Kept all \(total) spoken chapters: export the same range at the same speed and pitch to make the audio file from them, before TextMouth quits, a different export of spoken audio starts, or the book's voice, text, substitution rules, or pauses change.",
+            : String(localized: "Kept all \(total) spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
                      comment: "What the Export dialog says after a spoken audio export ended without its file and kept every one of its chapters. %lld is the number of chapters, more than one.")
     }
 

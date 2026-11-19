@@ -46,11 +46,11 @@ enum BookExportDeepChapterWording {
         ]
         if question.offersEveryOne {
             sentences.append(
-                String(localized: "\(exportEveryOneAsWrittenTitle) does the same for every chapter of this export that nests too deeply, without asking again.",
+                String(localized: "\(exportEveryOneAsWrittenTitle) does the same for every such chapter of this export, without asking again.",
                        comment: "The third sentence of the alert an export shows when a chapter nests too deeply and others may too. %@ is the name of the Export Every Such Chapter as Written button.")
             )
         }
-        sentences.append(String(localized: "\(cancelTitle) stops the whole export: nothing more is written, and the files already written stay.",
+        sentences.append(String(localized: "\(cancelTitle) stops the whole export. Files already written stay.",
                                 comment: "The last sentence of the alert an export shows when a chapter nests too deeply. %@ is the name of the Cancel Export button."))
         return SentenceWording.joined(sentences)
     }
@@ -84,13 +84,13 @@ enum BookExportDeepChapterWording {
 
     /// What Export Every Such Chapter as Written does, as its hint.
     static var exportEveryOneAsWrittenHint: String {
-        String(localized: "Writes this chapter and every other chapter of this export that nests too deeply as plain paragraphs of their lines, without asking again.",
+        String(localized: "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
                comment: "The hint of the Export Every Such Chapter as Written button in the alert an export shows when a chapter nests too deeply.")
     }
 
     /// What Cancel Export does, as its hint.
     static var cancelHint: String {
-        String(localized: "Stops the whole export. Files already written stay, and nothing more is written.",
+        String(localized: "Stops the whole export. Files already written stay.",
                comment: "The hint of the Cancel Export button in the alert an export shows when a chapter nests too deeply.")
     }
 }

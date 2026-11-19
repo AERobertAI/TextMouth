@@ -24,7 +24,7 @@ enum BrailleSettingsWording {
     }
     /// What the language pop-up does, spoken after its label and value.
     static var languageHint: String {
-        String(localized: "The language of the braille code TextMouth reads braille files with and writes braille in.",
+        String(localized: "The language of the braille code for reading and writing braille.",
                comment: "The hint of the language pop-up in the Braille tab of Settings.")
     }
     /// The label of the pop-up that chooses the braille code.
@@ -34,7 +34,7 @@ enum BrailleSettingsWording {
     }
     /// What the code pop-up does, spoken after its label and value.
     static var codeHint: String {
-        String(localized: "The braille code TextMouth reads braille files with and writes braille in.",
+        String(localized: "The braille code for reading and writing braille.",
                comment: "The hint of the braille code pop-up in the Braille tab of Settings.")
     }
     /// The label of the pop-up that chooses how far the code contracts.
@@ -44,7 +44,7 @@ enum BrailleSettingsWording {
     }
     /// What the contraction pop-up does, spoken after its label and value.
     static var contractionHint: String {
-        String(localized: "Whether that code's braille is contracted. Contracted braille writes common words and letter groups in fewer cells.",
+        String(localized: "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells.",
                comment: "The hint of the contraction pop-up in the Braille tab of Settings.")
     }
     /// The label of the pop-up that chooses how a BRF or BRL file writes
@@ -59,13 +59,13 @@ enum BrailleSettingsWording {
     /// after its label and value (BRAILLE-CODES-RESEARCH-2026-10-25.md,
     /// section 8.3).
     static var fileCodeHint: String {
-        String(localized: "How a BRF or BRL file writes each braille cell as a character. Most files use North American Braille ASCII.",
+        String(localized: "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII.",
                comment: "The hint of the braille file characters pop-up in the Braille tab of Settings. BRF and BRL are braille file formats, and North American Braille ASCII is the name of a braille character code.")
     }
     /// The caption under the code pop-ups: where the code is used, and what it
     /// leaves alone.
     static var caption: String {
-        String(localized: "TextMouth reads braille files (BRF, BRL, and PEF) with this code, and exports braille with it unless you choose another in the Export dialog. A book keeps the code it was imported with.",
+        String(localized: "TextMouth reads braille files (BRF, BRL, and PEF) with this code and exports with it unless the Export dialog chooses another. A book keeps the code it was imported with.",
                comment: "The caption under the code pop-ups in the Braille tab of Settings. BRF, BRL, and PEF are braille file formats.")
     }
     /// The caption under the braille file characters pop-up, which follows
@@ -74,7 +74,7 @@ enum BrailleSettingsWording {
     /// to, that Unicode braille patterns are recognized rather than chosen,
     /// that a BRF export starts with them, and what a book keeps.
     static var fileCodeCaption: String {
-        String(localized: "TextMouth reads BRF and BRL files you add from now on with these characters; a file of Unicode braille patterns is recognized by itself. The Export dialog starts a BRF with them. A book keeps the characters it was imported with, which Book Information can change.",
+        String(localized: "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
                comment: "The caption under the braille file characters pop-up in the Braille tab of Settings. BRF and BRL are braille file formats, and Book Information is a window.")
     }
     /// The label of the switch that turns the guess of a braille book's code
@@ -85,12 +85,12 @@ enum BrailleSettingsWording {
     }
     /// What the switch does, spoken after its label and value.
     static var guessHint: String {
-        String(localized: "When on, a braille file read as Unified English Braille, contracted, that is clearly English Braille, American Edition, is read with that code instead.",
+        String(localized: "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
                comment: "The hint of the guess switch in the Braille tab of Settings. Unified English Braille and English Braille, American Edition are the names of braille codes.")
     }
     /// The caption under the switch: when the guess is made and where it shows.
     static var guessCaption: String {
-        String(localized: "Only a book that clearly shows English Braille, American Edition is changed, when it is added. Book Information says the code was guessed and can choose another.",
+        String(localized: "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another.",
                comment: "The caption under the guess switch in the Braille tab of Settings. English Braille, American Edition is the name of a braille code, and Book Information is a window.")
     }
     /// What the group says in place of the pop-ups when the app's bundle
@@ -130,7 +130,7 @@ enum BrailleSettingsWording {
     /// (review R7).
     static func refusal(ofTableNamed name: String, because refusal: MacBrailleTableCheck.Refusal) -> String {
         if refusal.isUnchecked {
-            return String(localized: "TextMouth could not check this Mac's table \u{201C}\(name)\u{201D}: \(refusal.reason). Choose it again to try once more.",
+            return String(localized: "TextMouth could not check this Mac's table \u{201C}\(name)\u{201D}: \(refusal.reason). Choose it again to retry.",
                           comment: "Announced when one of this Mac's braille tables, just chosen, could not be checked. %1$@ is the table's name as macOS gives it and %2$@ the reason, a clause.")
         }
         return String(localized: "TextMouth can't use this Mac's table \u{201C}\(name)\u{201D}: \(refusal.reason).",

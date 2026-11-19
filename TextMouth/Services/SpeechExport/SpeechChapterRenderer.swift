@@ -33,16 +33,16 @@ enum SpeechRenderFailure: LocalizedError, Equatable {
             return String(localized: "The Mac's speech engine refused to speak part of “\(title)”, even with its brackets made silent.",
                           comment: "Why a chapter of a spoken audio export could not be spoken. %@ is the chapter's title.")
         case .noSound(let title):
-            return String(localized: "The voice made no sound for “\(title)”. Check that the book's voice speaks the book's language.",
+            return String(localized: "The voice made no sound for “\(title)”. Check that it speaks the book's language.",
                           comment: "Why a chapter of a spoken audio export could not be spoken: the voice made no sound. %@ is the chapter's title.")
         case .stalled(let title):
-            return String(localized: "The voice stopped making sound partway through “\(title)”, and TextMouth stopped waiting for it.",
+            return String(localized: "The voice stopped partway through “\(title)”, and TextMouth stopped waiting.",
                           comment: "Why a chapter of a spoken audio export could not be spoken: the voice stalled. %@ is the chapter's title.")
         case .formatChanged(let title):
             return String(localized: "The voice changed its kind of audio partway through “\(title)”.",
                           comment: "Why a chapter of a spoken audio export could not be spoken: the voice changed its audio format. %@ is the chapter's title.")
         case .unusableVoice:
-            return String(localized: "The book's voice can't be recorded to a file. Choose another voice for this book with the \(Self.voiceButtonName) button in its reader, then export again.",
+            return String(localized: "The book's voice can't be recorded to a file. Choose another voice with the \(Self.voiceButtonName) button in the reader, then export again.",
                           comment: "Why a spoken audio export was refused: the book's voice can't be recorded. %@ is the name of the Voice button in the book's reader.")
         }
     }

@@ -190,7 +190,7 @@ final class ChapterListExportTests: XCTestCase {
         }
         XCTAssertEqual(
             ChapterListExportError.noHeadings.errorDescription,
-            "TextMouth has not read this book's headings yet. Open the book once, then export them again."
+            "TextMouth hasn't read this book's headings yet. Open the book once, then export again."
         )
     }
 
@@ -313,12 +313,12 @@ final class ChapterListExportTests: XCTestCase {
             BookExportConversionChoice(
                 id: "chapter-list-cue",
                 name: "CUE sheet",
-                hint: "Each heading's title and where it begins, as a CUE sheet that names the audio as Audio exports it."
+                hint: "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it."
             ),
             BookExportConversionChoice(
                 id: "chapter-list-labels",
                 name: "Audacity labels",
-                hint: "Each heading's title and where it begins, as Audacity labels, for a book whose audio is one file."
+                hint: "Each heading's title and start, as Audacity labels, for a book with one audio file."
             ),
         ])
         XCTAssertEqual(model.conversionID(for: .headings), "chapter-list-cue")
@@ -360,7 +360,7 @@ final class ChapterListExportTests: XCTestCase {
         XCTAssertEqual(model.label(for: bookmarks), "Bookmarks as Audacity labels")
         XCTAssertEqual(
             model.hint(for: .bookmarks),
-            "Each bookmark's name and place, as Audacity labels, for a book whose audio is one file."
+            "Each bookmark's name and place, as Audacity labels, for a book with one audio file."
         )
     }
 

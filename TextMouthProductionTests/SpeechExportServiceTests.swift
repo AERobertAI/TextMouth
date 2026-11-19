@@ -417,8 +417,9 @@ final class SpeechExportServiceTests: XCTestCase {
         ])
         XCTAssertEqual(
             BookExportWording.failureSentence(outcome.failures),
-            "Couldn't export \(stem) - Audio.m4b: “Test Personal” is a Personal Voice, which macOS can't record to a file. "
-                + "Choose another voice for this book with the Voice button in its reader, then export again."
+            "Couldn't export \(stem) - Audio.m4b: “Test Personal” is a Personal Voice, which macOS can't "
+                + "record to a file. Choose another voice with the Voice button in the reader, then export "
+                + "again."
         )
         XCTAssertEqual(synthesizer.written, [], "a word was spoken")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["\(stem) - Text.txt"])

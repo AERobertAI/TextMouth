@@ -37,7 +37,7 @@ struct EPUBExportWriter: TextExportWriter {
     let fileExtension = "epub"
     /// What the picker's hint says while this writer is chosen.
     var hint: String {
-        String(localized: "An e-book with the book's headings, contents, and page numbers where it has them, for Apple Books and other reading apps. It holds no pictures.",
+        String(localized: "An e-book with the book's headings, contents, and any page numbers, for Apple Books and other reading apps. It holds no pictures.",
                comment: "The hint of the Convert to picker in the Export dialog while EPUB is chosen. Apple Books is an app's name.")
     }
 

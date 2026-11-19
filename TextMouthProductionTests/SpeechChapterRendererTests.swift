@@ -486,13 +486,15 @@ final class SpeechChapterRendererTests: XCTestCase {
         let title = "The Weighbridge"
         let expected: [(SpeechRenderFailure, String)] = [
             (.refused(title), "The Mac's speech engine refused to speak part of “The Weighbridge”, even with its brackets made silent."),
-            (.noSound(title), "The voice made no sound for “The Weighbridge”. Check that the book's voice speaks the book's language."),
-            (.stalled(title), "The voice stopped making sound partway through “The Weighbridge”, and TextMouth stopped waiting for it."),
+            (.noSound(title), "The voice made no sound for “The Weighbridge”. Check that it speaks the book's "
+                                  + "language."),
+            (.stalled(title), "The voice stopped partway through “The Weighbridge”, and TextMouth stopped "
+                                  + "waiting."),
             (.formatChanged(title), "The voice changed its kind of audio partway through “The Weighbridge”."),
             (
                 .unusableVoice,
-                "The book's voice can't be recorded to a file. "
-                    + "Choose another voice for this book with the Voice button in its reader, then export again."
+                "The book's voice can't be recorded to a file. Choose another voice with the Voice button in "
+                    + "the reader, then export again."
             ),
         ]
         for (failure, words) in expected {

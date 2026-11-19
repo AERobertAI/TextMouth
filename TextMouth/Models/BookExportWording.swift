@@ -57,7 +57,7 @@ enum BookExportWording {
         case .bookmarks:
             return chapterListChoiceHint(for: .audacityLabels, source: .bookmarks)
         case .originalFile:
-            return String(localized: "The book's own file, as it was imported; for an audiobook, its audio files as they were before TextMouth converted them.",
+            return String(localized: "The book's file as imported; for an audiobook, its audio files before TextMouth converted them.",
                           comment: "The hint of the Original file checkbox in the Export dialog.")
         case .markdown:
             return markdownChoiceHint
@@ -144,7 +144,7 @@ enum BookExportWording {
     /// conversion (nil), keeps `hint(for:)`.
     static func hint(for kind: BookExportKind, convertedTo conversionName: String?) -> String {
         guard let conversionName, kind.convertsText else { return hint(for: kind) }
-        return String(localized: "The book's text as \(conversionName), made from the Markdown TextMouth reads it from.",
+        return String(localized: "The book's text as \(conversionName), made from its Markdown.",
                       comment: "The hint of a text checkbox in the Export dialog while its text is converted. %@ is the name of the format, such as HTML or RTF.")
     }
 
@@ -155,13 +155,13 @@ enum BookExportWording {
     static func chapterListChoiceHint(for format: ChapterListFormat, source: ChapterListSource) -> String {
         switch (format, source) {
         case (.cueSheet, _):
-            return String(localized: "Each heading's title and where it begins, as a CUE sheet that names the audio as Audio exports it.",
+            return String(localized: "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
                           comment: "The hint of the Headings checkbox in the Export dialog while CUE sheet is chosen. \"Audio\" is the name of the Audio checkbox.")
         case (.audacityLabels, .headings):
-            return String(localized: "Each heading's title and where it begins, as Audacity labels, for a book whose audio is one file.",
+            return String(localized: "Each heading's title and start, as Audacity labels, for a book with one audio file.",
                           comment: "The hint of the Headings checkbox in the Export dialog while Audacity labels are chosen.")
         case (.audacityLabels, .bookmarks):
-            return String(localized: "Each bookmark's name and place, as Audacity labels, for a book whose audio is one file.",
+            return String(localized: "Each bookmark's name and place, as Audacity labels, for a book with one audio file.",
                           comment: "The hint of the Bookmarks checkbox in the Export dialog.")
         }
     }
@@ -177,7 +177,7 @@ enum BookExportWording {
     /// Why a book's headings were not written: it keeps no record of them
     /// yet, after the file's name in the export's failure sentence.
     static var noHeadingsReason: String {
-        String(localized: "TextMouth has not read this book's headings yet. Open the book once, then export them again.",
+        String(localized: "TextMouth hasn't read this book's headings yet. Open the book once, then export again.",
                comment: "Why a book's headings could not be exported, after the file's name in a failure sentence such as \"Couldn't export Headings: ...\".")
     }
 
@@ -216,10 +216,10 @@ enum BookExportWording {
     static func transcriptChoiceHint(for format: TranscriptExportFormat) -> String {
         switch format {
         case .webVTT:
-            return String(localized: "Captions in \(format.name), which web browsers and most players read: one file for the book, timed from the start of its audio.",
+            return String(localized: "Captions in \(format.name), which web browsers and most players read: one file, timed from the start of the audio.",
                           comment: "The hint of the Transcript's Convert to picker in the Export dialog while WebVTT is chosen. %@ is the format's name, WebVTT.")
         case .subRip:
-            return String(localized: "Captions in \(format.name) (.\(format.fileExtension)), which nearly every player reads: one file for the book, timed from the start of its audio.",
+            return String(localized: "Captions in \(format.name) (.\(format.fileExtension)), which nearly every player reads: one file, timed from the start of the audio.",
                           comment: "The hint of the Transcript's Convert to picker in the Export dialog while SubRip is chosen. %1$@ is the format's name, SubRip, and %2$@ its file extension, srt.")
         }
     }
@@ -234,7 +234,7 @@ enum BookExportWording {
     /// What the Transcript checkbox exports while its transcript is written
     /// as captions in `format`: its hint.
     static func transcriptHint(as format: TranscriptExportFormat) -> String {
-        String(localized: "The transcript as \(format.name) captions, one file for the book, timed from the start of its audio.",
+        String(localized: "The transcript as \(format.name) captions, one file timed from the start of the audio.",
                comment: "The hint of the Transcript checkbox in the Export dialog while its transcript is written as captions. %@ is the format's name, such as WebVTT or SubRip.")
     }
 
@@ -243,7 +243,7 @@ enum BookExportWording {
     /// transcript's text as HTML, made from the Markdown TextMouth reads it
     /// from."
     static func transcriptTextHint(as writerName: String) -> String {
-        String(localized: "The transcript's text as \(writerName), made from the Markdown TextMouth reads it from.",
+        String(localized: "The transcript's text as \(writerName), made from its Markdown.",
                comment: "The hint of the Transcript checkbox in the Export dialog while its text is written by a text writer. %@ is the writer's name, such as HTML or RTF.")
     }
 
@@ -274,7 +274,7 @@ enum BookExportWording {
     /// What File > Export… says when a Library window or a book is open, but
     /// another window, such as Settings, is in front.
     static var noWindowInFront: String {
-        String(localized: "To export, switch to a Library window or a book's window, then choose Export again.",
+        String(localized: "Switch to a Library or book window, then choose Export again.",
                comment: "What choosing File, Export says when another window, such as Settings, is in front of the Library and book windows.")
     }
 
@@ -429,7 +429,7 @@ enum BookExportWording {
     /// The Export button's hint while a braille table just chosen in the
     /// options is still being checked, which an export waits for (review R5).
     static var exportWaitsHint: String {
-        String(localized: "Exports the checked items to the folder once the braille table just chosen has been checked.",
+        String(localized: "Exports the checked items once the braille table just chosen is checked.",
                comment: "The hint of the Export button in the Export dialog while a braille table just chosen in the braille options is still being checked.")
     }
 
@@ -520,7 +520,7 @@ enum BookExportWording {
                comment: "The spoken label of the Playback settings checkbox that shows the Export button in the reader's toolbar.")
     }
     static var settingHint: String {
-        String(localized: "Adds a button to each reader's toolbar that opens the Export dialog. File, Export is there either way.",
+        String(localized: "Adds an Export button to each reader's toolbar. File, Export works either way.",
                comment: "The hint of the Playback settings checkbox that shows the Export button in the reader's toolbar. \"File, Export\" is the menu command.")
     }
 

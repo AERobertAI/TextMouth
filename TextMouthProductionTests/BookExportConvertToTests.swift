@@ -40,11 +40,11 @@ final class BookExportConvertToTests: XCTestCase {
         )
         XCTAssertEqual(
             BookExportWording.hint(for: .markdown, convertedTo: "HTML"),
-            "The book's text as HTML, made from the Markdown TextMouth reads it from."
+            "The book's text as HTML, made from its Markdown."
         )
         XCTAssertEqual(
             BookExportWording.hint(for: .markdown, convertedTo: "Word 97-2003 (.doc)"),
-            "The book's text as Word 97-2003 (.doc), made from the Markdown TextMouth reads it from."
+            "The book's text as Word 97-2003 (.doc), made from its Markdown."
         )
         // Without a conversion, and for a kind that converts nothing, every
         // word is today's.
@@ -139,7 +139,8 @@ final class BookExportConvertToTests: XCTestCase {
                 BookExportConversionChoice(
                     id: "doc",
                     name: "Word 97-2003 (.doc)",
-                    hint: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them."
+                    hint: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits "
+                              + "them."
                 ),
             ]
         )
@@ -183,7 +184,7 @@ final class BookExportConvertToTests: XCTestCase {
         XCTAssertEqual(model.label(for: markdownChoice), "Text as HTML", "a conversion says no size")
         XCTAssertEqual(
             model.hint(for: .markdown),
-            "The book's text as HTML, made from the Markdown TextMouth reads it from."
+            "The book's text as HTML, made from its Markdown."
         )
 
         model.setConversionID("markdown", for: .markdown)

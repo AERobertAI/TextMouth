@@ -99,7 +99,7 @@ enum BrailleExportWording {
     /// needs no such choice, so the hint points there for sharing
     /// (BRAILLE-CODES-RESEARCH-2026-10-25.md, section 8.9).
     static var fileCodeHint: String {
-        String(localized: "How the BRF file writes each braille cell. Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille. To share braille with a reader elsewhere, export a PEF.",
+        String(localized: "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
                comment: "The hint of the braille file characters pop-up in the Export dialog's braille options. BRF and PEF are braille file formats, and North American Braille ASCII and Eurobraille are names of braille character codes.")
     }
 

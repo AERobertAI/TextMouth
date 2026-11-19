@@ -32,7 +32,7 @@ struct WordDocExportWriter: TextExportWriter {
     let name = "Word 97-2003 (.doc)" // l10n: no (a file format's name)
     let fileExtension = "doc"
     var hint: String {
-        String(localized: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them.",
+        String(localized: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits them.",
                comment: "The hint of the Convert to picker in the Export dialog while Word 97-2003 is chosen. Word is an app's name.")
     }
 
