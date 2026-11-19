@@ -322,14 +322,14 @@ extension AudioEditList: Codable {
             throw DecodingError.dataCorruptedError(
                 forKey: .cursor,
                 in: container,
-                debugDescription: "cursor \(cursor) is outside 0 to \(entries.count)"
+                debugDescription: "cursor \(cursor) is outside 0 to \(entries.count)" // l10n: no (a decoding error's debug text, English like a parser's damage reasons)
             )
         }
         if let renderedCursor, !(0...entries.count).contains(renderedCursor) {
             throw DecodingError.dataCorruptedError(
                 forKey: .renderedCursor,
                 in: container,
-                debugDescription: "renderedCursor \(renderedCursor) is outside 0 to \(entries.count)"
+                debugDescription: "renderedCursor \(renderedCursor) is outside 0 to \(entries.count)" // l10n: no (a decoding error's debug text, English like a parser's damage reasons)
             )
         }
     }

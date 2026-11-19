@@ -6,80 +6,132 @@ import SwiftUI
 /// its announcements, and the tests.
 enum AudioFilterPresetsWording {
     /// The sheet's title.
-    static let title = "Filter Presets"
+    static var title: String {
+        String(localized: "Filter Presets", comment: "Title of the sheet, opened from Storage settings, that lists the audio editor's filter presets.")
+    }
+
     /// What the presets are.
-    static let explanation = "The presets the audio editor's Apply Filter lists, in this order. Each is a chain of "
-        + "filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, and every "
-        + "filter ffmpeg has when ffmpeg is installed and turned on above."
+    static var explanation: String {
+        String(localized: "The presets the audio editor's Apply Filter lists, in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, and every filter ffmpeg has when ffmpeg is installed and turned on above.",
+               comment: "Explains the filter presets sheet. Apply Filter is the audio editor's command. \"highpass=f=80,volume=3dB\" is filter syntax and stays as it is. ffmpeg is the name of a program. \"turned on above\" refers to the Use ffmpeg for filters switch in Storage settings.")
+    }
+
     /// The button that adds a preset.
-    static let addButton = "Add Preset"
+    static var addButton: String {
+        String(localized: "Add Preset", comment: "Button in the filter presets sheet that adds a new filter preset.")
+    }
+
     /// The button that puts the premade presets back.
-    static let resetAllButton = "Reset All to Defaults"
+    static var resetAllButton: String {
+        String(localized: "Reset All to Defaults", comment: "Button in the filter presets sheet that puts back TextMouth's premade presets.")
+    }
+
     /// What Reset All does.
-    static let resetAllHint = "Puts back TextMouth's premade presets, removing the ones you added."
+    static var resetAllHint: String {
+        String(localized: "Puts back TextMouth's premade presets, removing the ones you added.",
+               comment: "Hint of the Reset All to Defaults button in the filter presets sheet.")
+    }
+
     /// The button that closes the sheet.
-    static let doneButton = "Done"
+    static var doneButton: String {
+        String(localized: "Done", comment: "Button that closes a sheet, such as the filter presets sheet.")
+    }
+
     /// Shown when there are no presets.
-    static let noPresets = "No filter presets. Add one, or reset to the defaults."
+    static var noPresets: String {
+        String(localized: "No filter presets. Add one, or reset to the defaults.",
+               comment: "Shown in the filter presets sheet when the list is empty.")
+    }
+
     /// The editor's titles.
-    static let newTitle = "New Filter Preset"
-    static let editTitle = "Edit Filter Preset"
+    static var newTitle: String {
+        String(localized: "New Filter Preset", comment: "Title of the editor opened by Add Preset in the filter presets sheet.")
+    }
+
+    static var editTitle: String {
+        String(localized: "Edit Filter Preset", comment: "Title of the editor opened by a filter preset's Edit button.")
+    }
+
     /// The editor's fields.
-    static let nameLabel = "Name"
-    static let chainLabel = "Chain"
+    static var nameLabel: String {
+        String(localized: "Name", comment: "Label of the name field of a filter preset or an audio marker.")
+    }
+
+    static var chainLabel: String {
+        String(localized: "Chain", comment: "Label of the field that holds a filter preset's chain of filters, and of the line that shows it in the audio editor's Apply Filter.")
+    }
+
     /// The chain field's hint.
-    static let chainHint = "Filters in ffmpeg's syntax, separated by commas, each with its options after an equals sign, "
-        + "separated by colons."
+    static var chainHint: String {
+        String(localized: "Filters in ffmpeg's syntax, separated by commas, each with its options after an equals sign, separated by colons.",
+               comment: "Hint of the chain field of a filter preset. ffmpeg is the name of a program.")
+    }
+
     /// The editor's buttons.
-    static let saveButton = "Save"
-    static let cancelButton = "Cancel"
+    static var saveButton: String {
+        String(localized: "Save", comment: "Button that saves what a sheet or window edited, such as a filter preset or the audio editor's edits.")
+    }
+
+    static var cancelButton: String {
+        String(localized: "Cancel", comment: "Button that closes a sheet or dialog without making its change.")
+    }
 
     /// A preset's row, as VoiceOver reads it: its name, its chain, and
     /// whether it is a premade one changed.
     static func row(_ preset: AudioFilterPreset, isChangedPremade: Bool) -> String {
-        "\(preset.name): \(preset.chain)\(isChangedPremade ? ", changed from its default" : "")"
+        guard isChangedPremade else { return AudioEditorWording.labeled(preset.title, preset.chain) }
+        return String(localized: "\(preset.title): \(preset.chain), changed from its default",
+                      comment: "A filter preset's row as VoiceOver reads it, for a premade preset the user changed. %1$@ is the preset's name and %2$@ its chain of filters, in filter syntax.")
     }
 
     /// Said as a preset moves.
     static func moved(_ name: String, to index: Int, of count: Int) -> String {
-        "\(name) moved to position \(index + 1) of \(count)"
+        String(localized: "\(name) moved to position \(index + 1) of \(count)",
+               comment: "Said as a filter preset moves in the list. %1$@ is the preset's name, %2$lld its new place and %3$lld how many presets the list holds.")
     }
 
     /// Said as a preset is deleted.
     static func deleted(_ name: String) -> String {
-        "\(name) deleted"
+        String(localized: "\(name) deleted", comment: "Said as a filter preset is deleted. %@ is the preset's name.")
     }
 
     /// Said as a premade preset is put back as it came.
     static func reset(_ name: String) -> String {
-        "\(name) reset to its default"
+        String(localized: "\(name) reset to its default", comment: "Said as a premade filter preset is put back as it came. %@ is the preset's name.")
     }
 
     /// Said as every preset is put back.
-    static let resetAll = "The filter presets are reset to the defaults."
+    static var resetAll: String {
+        String(localized: "The filter presets are reset to the defaults.", comment: "Said as every filter preset is put back to TextMouth's premade ones.")
+    }
 
     /// Said as a preset is added.
     static func added(_ name: String) -> String {
-        "Added \(name)"
+        String(localized: "Added \(name)", comment: "Said as a filter preset is added. %@ is the preset's name.")
     }
 
     /// Said as a preset is saved.
     static func saved(_ name: String) -> String {
-        "Saved \(name)"
+        String(localized: "Saved \(name)", comment: "Said as an edited filter preset is saved. %@ is the preset's name.")
     }
 
     /// What the editor says of a chain: that TextMouth's own filters run
     /// it, or why they don't (ffmpeg may), or why it isn't a chain at all.
     static func chainCheck(_ chain: String) -> String {
         let trimmed = chain.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return "Type a chain of filters." }
+        guard !trimmed.isEmpty else {
+            return String(localized: "Type a chain of filters.", comment: "Shown under a filter preset's chain field while it is empty.")
+        }
         do {
             let parsed = try AudioFilterChain.parse(trimmed)
             do {
                 _ = try parsed.builtInFilters()
-                return "TextMouth's own filters run this chain."
+                return String(localized: "TextMouth's own filters run this chain.", comment: "Shown under a filter preset's chain field: every filter in it is one TextMouth runs itself.")
             } catch {
-                return "\(error.localizedDescription) It runs only through ffmpeg."
+                return SentenceWording.joined([
+                    error.localizedDescription,
+                    String(localized: "It runs only through ffmpeg.", comment: "Ends a line under a filter preset's chain field that says why TextMouth's own filters can't run it: only the ffmpeg program can. ffmpeg is the program's name.")
+                ])
             }
         } catch {
             return error.localizedDescription
@@ -105,11 +157,16 @@ enum AudioFilterPresetCommand: CaseIterable {
     /// The command's name.
     var title: String {
         switch self {
-        case .edit: return "Edit"
-        case .reset: return "Reset"
-        case .moveUp: return "Move Up"
-        case .moveDown: return "Move Down"
-        case .delete: return "Delete"
+        case .edit:
+            return String(localized: "Edit", comment: "Name of a filter preset's Edit button, also its VoiceOver action and context menu item.")
+        case .reset:
+            return String(localized: "Reset", comment: "Name of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.")
+        case .moveUp:
+            return String(localized: "Move Up", comment: "Name of a filter preset's Move Up button, also its VoiceOver action and context menu item.")
+        case .moveDown:
+            return String(localized: "Move Down", comment: "Name of a filter preset's Move Down button, also its VoiceOver action and context menu item.")
+        case .delete:
+            return String(localized: "Delete", comment: "Name of a filter preset's Delete button, also its VoiceOver action and context menu item.")
         }
     }
 
@@ -254,20 +311,20 @@ struct AudioFilterPresetsView: View {
     private func perform(_ command: AudioFilterPresetCommand, on preset: AudioFilterPreset) {
         switch command {
         case .edit:
-            draft = AudioFilterPresetDraft(id: preset.id, name: preset.name, chain: preset.chain, isNew: false)
+            draft = AudioFilterPresetDraft(id: preset.id, name: preset.title, chain: preset.chain, isNew: false)
         case .reset:
             guard let premade = AudioFilterPresetCommand.premade(preset) else { return }
-            change(saying: AudioFilterPresetsWording.reset(premade.name)) { try library.update(premade) }
+            change(saying: AudioFilterPresetsWording.reset(premade.title)) { try library.update(premade) }
         case .moveUp, .moveDown:
             guard let direction = command.moveDirection else { return }
             change(saying: nil) {
                 try library.move(preset.id, direction)
                 if let index = library.presets.firstIndex(where: { $0.id == preset.id }) {
-                    VoiceOverAnnouncer.announce(AudioFilterPresetsWording.moved(preset.name, to: index, of: library.presets.count))
+                    VoiceOverAnnouncer.announce(AudioFilterPresetsWording.moved(preset.title, to: index, of: library.presets.count))
                 }
             }
         case .delete:
-            change(saying: AudioFilterPresetsWording.deleted(preset.name)) { try library.remove(preset.id) }
+            change(saying: AudioFilterPresetsWording.deleted(preset.title)) { try library.remove(preset.id) }
         }
     }
 
@@ -334,7 +391,7 @@ struct AudioFilterPresetRow: View {
         let isChangedPremade = AudioFilterPresetCommand.reset.isAvailable(for: preset, at: index, of: count)
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(preset.name)
+                Text(preset.title)
                     .font(.headline)
                 Text(preset.chain)
                     .font(.system(.caption, design: .monospaced))
@@ -350,7 +407,7 @@ struct AudioFilterPresetRow: View {
                 .buttonStyle(.borderless)
                 .disabled(!command.isAvailable(for: preset, at: index, of: count))
                 .help(command.title)
-                .accessibilityLabel("\(command.title) \(preset.name)")
+                .accessibilityLabel(AudioEditorWording.rowButton(command.title, preset.title))
             }
         }
         .accessibilityElement(children: .contain)

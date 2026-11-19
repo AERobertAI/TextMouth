@@ -87,25 +87,41 @@ struct AudioSampleForm: Equatable, Sendable {
 /// file it converts all come from `refusal(fileName:form:)`.
 enum AudioSampleFormWording {
     /// What a listener can do about it: the sentence that ends every refusal.
-    static let advice = "Convert it to 16-bit or 24-bit integer samples, then import it again."
+    static var advice: String {
+        String(localized: "Convert it to 16-bit or 24-bit integer samples, then import it again.",
+               comment: "Ends every refusal of an audio file whose samples TextMouth can't decode: what the listener can do about it.")
+    }
 
     /// The form in words a listener knows, as an adjective of "samples":
     /// "64-bit integer", "16-bit floating-point".
     static func phrase(for form: AudioSampleForm) -> String {
-        "\(form.bits)-bit \(form.isFloat ? "floating-point" : "integer")"
+        // The bit depth names a form, as an identifier does, so it is
+        // written without digit grouping.
+        let bits = String(form.bits)
+        return form.isFloat
+            ? String(localized: "\(bits)-bit floating-point",
+                     comment: "An audio file's sample form, an adjective of \"samples\" in a refusal such as \"uses 16-bit floating-point samples\". %@ is the number of bits, an identifier written without digit grouping.")
+            : String(localized: "\(bits)-bit integer",
+                     comment: "An audio file's sample form, an adjective of \"samples\" in a refusal such as \"uses 64-bit integer samples\". %@ is the number of bits, an identifier written without digit grouping.")
     }
 
     /// What is wrong with a form no decoder reads, as a clause for a log or a
     /// message that names the problem (`AudioMediaProblem.reason`): never said
     /// to a listener, who hears `refusal(fileName:form:)`.
     static func clause(for form: AudioSampleForm) -> String {
-        "its samples are \(phrase(for: form)) numbers, which TextMouth cannot decode"
+        // English like a parser's damage reason: the clause goes into the
+        // import's log and a bug report, so it never takes the interface's
+        // language from `phrase(for:)`.
+        let english = "\(form.bits)-bit \(form.isFloat ? "floating-point" : "integer")" // l10n: no (the log's English twin of phrase(for:))
+        return "its samples are \(english) numbers, which TextMouth cannot decode" // l10n: no (a damage reason, English like a parser's; log only)
     }
 
     /// The sentence that refuses the file `fileName`, which is not damaged:
     /// "“Talk.wav” uses 64-bit integer samples, which TextMouth can't play.
     /// Convert it to 16-bit or 24-bit integer samples, then import it again."
     static func refusal(fileName: String, form: AudioSampleForm) -> String {
-        "“\(fileName)” uses \(phrase(for: form)) samples, which TextMouth can't play. \(advice)"
+        let problem = String(localized: "“\(fileName)” uses \(phrase(for: form)) samples, which TextMouth can't play.",
+                             comment: "Refuses an audio file whose samples TextMouth can't decode, which is not damaged. %1$@ is the file's name and %2$@ its sample form, such as \"64-bit integer\".")
+        return SentenceWording.joined([problem, advice])
     }
 }

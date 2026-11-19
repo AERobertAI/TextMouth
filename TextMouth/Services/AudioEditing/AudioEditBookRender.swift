@@ -173,7 +173,7 @@ enum AudioEditBookRender {
         let allowed = format == .mp3 ? FFmpeg.mp3Excess(sampleRate: written.sampleRate) : 0
         guard excess >= -Self.lengthTolerance, excess <= allowed + Self.lengthTolerance else {
             throw AudioEditError.renderFailed(
-                "the rendered file lasts \(writtenSeconds) seconds, not \(timeline.duration)"
+                "the rendered file lasts \(writtenSeconds) seconds, not \(timeline.duration)" // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
             )
         }
 

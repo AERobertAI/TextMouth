@@ -170,7 +170,7 @@ struct AudioEditorInfoSheet: View {
                     }),
                     in: Int(SettingsPolicy.recordingOriginalDays.range.lowerBound)...Int(SettingsPolicy.recordingOriginalDays.range.upperBound)
                 ) {
-                    Text("\(AudioEditingSettingsWording.daysLabel): \(AudioEditingSettingsWording.days(days))")
+                    Text(AudioEditingSettingsWording.daysTitle(days))
                 }
                 // A stepper's title does not become its accessibility label.
                 .accessibilityLabel(AudioEditingSettingsWording.daysLabel)
@@ -192,7 +192,7 @@ struct AudioEditorInfoSheet: View {
 
     /// One fact: its label and value, read by VoiceOver as one element.
     private func fact(_ label: String, _ value: String) -> some View {
-        Text("\(label): \(value)")
+        Text(AudioEditorWording.labeled(label, value))
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityElement(children: .ignore)

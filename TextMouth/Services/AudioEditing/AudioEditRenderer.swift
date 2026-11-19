@@ -412,7 +412,7 @@ enum AudioChapterTrack {
             ],
             kCMTextFormatDescriptionExtension_HorizontalJustification as String: 0,
             kCMTextFormatDescriptionExtension_VerticalJustification as String: 0,
-            kCMTextFormatDescriptionExtension_FontTable as String: ["1": "Helvetica"],
+            kCMTextFormatDescriptionExtension_FontTable as String: ["1": "Helvetica"], // l10n: no (a font name)
         ]
         var format: CMFormatDescription?
         let status = CMFormatDescriptionCreate(
@@ -759,7 +759,7 @@ enum AudioEditRenderer {
             input = try makingWithoutRaising { AVAssetWriterInput(mediaType: .audio, outputSettings: settings.outputSettings) }
         }
         input.expectsMediaDataInRealTime = false
-        guard writer.canAdd(input) else { throw AudioEditError.renderFailed("the writer refused the audio") }
+        guard writer.canAdd(input) else { throw AudioEditError.renderFailed("the writer refused the audio") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         writer.add(input)
 
         var chapterInput: AVAssetWriterInput?
@@ -769,7 +769,7 @@ enum AudioEditRenderer {
             let titles = AVAssetWriterInput(mediaType: .text, outputSettings: nil, sourceFormatHint: format)
             titles.marksOutputTrackAsEnabled = false
             titles.mediaDataLocation = .beforeMainMediaDataNotInterleaved
-            guard writer.canAdd(titles) else { throw AudioEditError.renderFailed("the writer refused the chapter list") }
+            guard writer.canAdd(titles) else { throw AudioEditError.renderFailed("the writer refused the chapter list") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
             writer.add(titles)
             input.addTrackAssociation(withTrackOf: titles, type: AVAssetTrack.AssociationType.chapterList.rawValue)
             chapterInput = titles
@@ -812,7 +812,7 @@ enum AudioEditRenderer {
         of made: AudioEditComposition
     ) async throws -> (reader: AVAssetReader, output: AVAssetReaderOutput, storedFormat: CMFormatDescription?) {
         let tracks = try await made.composition.loadTracks(withMediaType: .audio)
-        guard let track = tracks.first else { throw AudioEditError.renderFailed("the composition has no audio") }
+        guard let track = tracks.first else { throw AudioEditError.renderFailed("the composition has no audio") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         let reader: AVAssetReader
         do {
             reader = try AVAssetReader(asset: made.composition)
@@ -821,7 +821,7 @@ enum AudioEditRenderer {
         }
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
         output.alwaysCopiesSampleData = false
-        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
+        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         reader.add(output)
         return (reader, output, try await track.load(.formatDescriptions).first)
     }
@@ -1047,13 +1047,13 @@ enum AudioEditRenderer {
         let missing = frames - handed
         guard missing > 0 else { return }
         guard Double(missing) <= settings.sampleRate * fillableShortfall else {
-            throw AudioEditError.renderFailed("a stretch of the edits decoded to \(handed) of \(frames) frames")
+            throw AudioEditError.renderFailed("a stretch of the edits decoded to \(handed) of \(frames) frames") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         }
         // Should no buffer have been read yet, the format is the one the
         // settings describe, which differs from the readers' only in making
         // 8-bit integers unsigned (`silence` fills those with their middle).
         guard let silentFormat = format ?? AVAudioFormat(settings: settings.readerSettings)?.formatDescription else {
-            throw AudioEditError.renderFailed("the decoded audio has no format")
+            throw AudioEditError.renderFailed("the decoded audio has no format") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         }
         try await consume(try silence(missing, in: silentFormat, at: start + handed, rate: settings.sampleRate))
         progress?(total > 0 ? min(1, Double(start + frames) / Double(total)) : 1)
@@ -1079,7 +1079,7 @@ enum AudioEditRenderer {
             AVAssetReaderAudioMixOutput(audioTracks: [piece.track], audioSettings: settings.readerSettings)
         }
         output.alwaysCopiesSampleData = false
-        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
+        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         reader.add(output)
         guard reader.startReading() else { throw failure(reader.error) }
         return (reader, output)
@@ -1091,7 +1091,7 @@ enum AudioEditRenderer {
     /// - Throws: `AudioEditError.renderFailed` when the buffer can't be made.
     private static func silence(_ frames: Int, in format: CMFormatDescription, at frame: Int, rate: Double) throws -> CMSampleBuffer {
         guard let stream = CMAudioFormatDescriptionGetStreamBasicDescription(format)?.pointee, stream.mBytesPerFrame > 0 else {
-            throw AudioEditError.renderFailed("the decoded audio has no frame size")
+            throw AudioEditError.renderFailed("the decoded audio has no frame size") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         }
         let length = frames * Int(stream.mBytesPerFrame)
         var block: CMBlockBuffer?
@@ -1184,7 +1184,7 @@ enum AudioEditRenderer {
     /// `error`, from AVFoundation, as a render failure naming its domain and
     /// code only: its description can name files by their full paths.
     static func failure(_ error: Error?) -> AudioEditError {
-        guard let error else { return .renderFailed("no error was given") }
+        guard let error else { return .renderFailed("no error was given") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         let failure = error as NSError
         return .renderFailed("\(failure.domain) \(failure.code)")
     }

@@ -127,7 +127,7 @@ enum AudioEditHistoryStore {
         if let version = try? decoder.decode(LayoutProbe.self, from: bytes).version,
            version != AudioEditHistory.currentVersion {
             guard version > 0 else {
-                let reason = "version \(version) is not a layout any TextMouth writes"
+                let reason = "version \(version) is not a layout any TextMouth writes" // l10n: no (a damage reason for the debug log and the kept copy; the listener hears AudioEditError.historyUnusable)
                 preserveUnusable(url, bytes: bytes, because: reason)
                 return .unusable(reason)
             }
@@ -298,7 +298,7 @@ enum AudioEditHistoryStore {
             because: reason,
             logging: logTag,
             in: .storage,
-            standIn: "the book's audio can't be edited until its history is started over"
+            standIn: "the book's audio can't be edited until its history is started over" // l10n: no (a damage reason for the debug log and the kept copy; the listener hears AudioEditError.historyUnusable)
         )
     }
 }
