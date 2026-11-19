@@ -11,10 +11,10 @@ final class PhoneReaderVocabularyTests: XCTestCase {
 
         XCTAssertEqual(PhoneReaderVocabulary.skipBackward(by: .sentence), "Skip backward: Sentence")
         XCTAssertEqual(PhoneReaderVocabulary.skipBackward(by: .sentence), PlaybackControlsWording.skipBackward(unit: "Sentence"))
-        XCTAssertTrue(macView.contains(".accessibilityLabel(PlaybackControlsWording.skipBackward(unit: viewModel.playbackSkipBackwardUnit.rawValue))"))
+        XCTAssertTrue(macView.contains(".accessibilityLabel(PlaybackControlsWording.skipBackward(unit: viewModel.playbackSkipBackwardUnit.title))"))
         XCTAssertEqual(PhoneReaderVocabulary.skipForward(by: .page), "Skip forward: Page")
         XCTAssertEqual(PhoneReaderVocabulary.skipForward(by: .page), PlaybackControlsWording.skipForward(unit: "Page"))
-        XCTAssertTrue(macView.contains(".accessibilityLabel(PlaybackControlsWording.skipForward(unit: viewModel.playbackSkipForwardUnit.rawValue))"))
+        XCTAssertTrue(macView.contains(".accessibilityLabel(PlaybackControlsWording.skipForward(unit: viewModel.playbackSkipForwardUnit.title))"))
         XCTAssertEqual(PhoneReaderVocabulary.navigationUnit, PlaybackControlsWording.unitLabel)
         XCTAssertTrue(macView.contains(".accessibilityLabel(PlaybackControlsWording.unitLabel)"))
         XCTAssertEqual(PhoneReaderVocabulary.removeBookmark, PlaybackControlsWording.removeBookmark)
