@@ -1534,8 +1534,7 @@ extension LibraryViewModel {
                comment: "Begins the message when Reset to Default failed; the reason follows after a colon.")
     }
     private static var moveFailureContext: String {
-        String(localized: "Failed to move directory",
-               comment: "Begins the message when moving the data directory failed; the reason follows after a colon.")
+        StorageSettingsWording.moveFailureContext
     }
 
     /// Rebuild the .TextMouth directory structure, migrate all books,
