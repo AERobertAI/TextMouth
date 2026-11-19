@@ -23,6 +23,16 @@ extension XCTestCase {
         wait(for: [turn], timeout: 5)
     }
 
+    /// The wait for one turn of the main queue, for a test that is `async`:
+    /// it suspends instead of blocking the main actor, which the blocking
+    /// wait cannot do there (B22).
+    @MainActor
+    func waitForMainQueueTurnAsync() async {
+        await withCheckedContinuation { (turn: CheckedContinuation<Void, Never>) in
+            DispatchQueue.main.async { turn.resume() }
+        }
+    }
+
     /// Run the main run loop until `condition` holds or `timeout` passes.
     ///
     /// - Returns: Whether `condition` came to hold.

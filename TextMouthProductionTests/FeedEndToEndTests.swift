@@ -54,7 +54,7 @@ final class FeedEndToEndTests: XCTestCase {
         let reader = try openReader(for: book, in: world)
         await waitFor("the episode loads in its reader") { !reader.isLoading }
         XCTAssertNil(reader.errorMessage)
-        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
+        await waitForMainQueueTurnAsync() // the published set follows a turn after the registry (B22)
         XCTAssertTrue(world.library.openBookIDs.contains(book.id))
 
         reader.handleEndOfBook()
