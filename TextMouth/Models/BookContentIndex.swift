@@ -422,7 +422,7 @@ extension BookContentIndex {
     ///   comparison still runs.
     func alignmentFailure(with chapters: [Chapter], countingWords: Bool = true) -> String? {
         guard self.chapters.count == chapters.count else {
-            return "chapters has \(self.chapters.count) entries, but the reading text has \(chapters.count)"
+            return "chapters has \(self.chapters.count) entries, but the reading text has \(chapters.count)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         var characters = 0
         var words = 0
@@ -430,7 +430,7 @@ extension BookContentIndex {
             let field = "chapters[\(position)]"
             let length = chapter.text.utf16Length
             if stored.characterCount != length {
-                return "\(field).characterCount is \(stored.characterCount), but the reading text holds \(length)"
+                return "\(field).characterCount is \(stored.characterCount), but the reading text holds \(length)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if let failure = headingAlignmentFailure(of: stored, with: chapter, field: field) {
                 return failure
@@ -438,17 +438,17 @@ extension BookContentIndex {
             if countingWords {
                 let wordCount = chapter.wordCount
                 if stored.wordCount != wordCount {
-                    return "\(field).wordCount is \(stored.wordCount), but the reading text holds \(wordCount)"
+                    return "\(field).wordCount is \(stored.wordCount), but the reading text holds \(wordCount)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
                 }
                 words += wordCount
             }
             characters += length
         }
         if totalCharacterCount != characters {
-            return "totalCharacterCount is \(totalCharacterCount), but the reading text holds \(characters)"
+            return "totalCharacterCount is \(totalCharacterCount), but the reading text holds \(characters)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         if countingWords, totalWordCount != words {
-            return "totalWordCount is \(totalWordCount), but the reading text holds \(words)"
+            return "totalWordCount is \(totalWordCount), but the reading text holds \(words)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         return nil
     }
@@ -466,23 +466,23 @@ extension BookContentIndex {
         field: String
     ) -> String? {
         guard stored.headings.count == chapter.headings.count else {
-            return "\(field).headings has \(stored.headings.count) entries, but the reading text has \(chapter.headings.count)"
+            return "\(field).headings has \(stored.headings.count) entries, but the reading text has \(chapter.headings.count)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         for (position, (storedHeading, heading)) in zip(stored.headings, chapter.headings).enumerated() {
             let field = "\(field).headings[\(position)]"
             let offset = Self.indexedHeadingOffset(heading.characterOffset, chapterLength: stored.characterCount)
             if storedHeading.characterOffset != offset {
-                return "\(field).characterOffset is \(storedHeading.characterOffset), but the reading text has it at \(offset)"
+                return "\(field).characterOffset is \(storedHeading.characterOffset), but the reading text has it at \(offset)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if storedHeading.text != heading.text {
                 // A label is the book's text, which the debug log never
                 // holds: say where the two part and how long each is.
                 let difference = Self.firstDifferingUTF16Offset(storedHeading.text, heading.text)
-                return "\(field).text differs from the reading text's label at UTF-16 offset \(difference) "
-                    + "(lengths \(storedHeading.text.utf16Length) and \(heading.text.utf16Length))"
+                return "\(field).text differs from the reading text's label at UTF-16 offset \(difference) " // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
+                    + "(lengths \(storedHeading.text.utf16Length) and \(heading.text.utf16Length))" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if storedHeading.level != heading.level {
-                return "\(field).level is \(storedHeading.level), but the reading text has \(heading.level)"
+                return "\(field).level is \(storedHeading.level), but the reading text has \(heading.level)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
         }
         return nil
@@ -499,13 +499,13 @@ extension BookContentIndex {
     /// Whether the current builder made this index for a book of `format`.
     private func identityFailure(for format: BookFormat) -> String? {
         if !isCurrent {
-            return "version \(String(reflecting: version)) is not the current \(String(reflecting: Self.currentVersion))"
+            return "version \(String(reflecting: version)) is not the current \(String(reflecting: Self.currentVersion))" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         if self.format != format {
-            return "format \(self.format.rawValue) does not match the book's format \(format.rawValue)"
+            return "format \(self.format.rawValue) does not match the book's format \(format.rawValue)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         if kind != (format.isAudio ? .audio : .text) {
-            return "kind \(kind.rawValue) does not match format \(format.rawValue)"
+            return "kind \(kind.rawValue) does not match format \(format.rawValue)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         return nil
     }
@@ -516,27 +516,27 @@ extension BookContentIndex {
     /// sums stay far from overflow. Ranges are formed only from counts
     /// already known to be non-negative, because a reversed range traps.
     private func chapterFailure() -> String? {
-        guard !chapters.isEmpty else { return "chapters is empty" }
+        guard !chapters.isEmpty else { return "chapters is empty" } // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         var characters = 0
         var words = 0
         for (position, chapter) in chapters.enumerated() {
             let field = "chapters[\(position)]"
             if chapter.chapterIndex != position {
-                return "\(field).chapterIndex is \(chapter.chapterIndex), expected \(position)"
+                return "\(field).chapterIndex is \(chapter.chapterIndex), expected \(position)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if chapter.characterCount < 0 {
-                return "\(field).characterCount is \(chapter.characterCount), below 0"
+                return "\(field).characterCount is \(chapter.characterCount), below 0" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if chapter.characterCount > Self.maximumCharacterCount {
-                return "\(field).characterCount is \(chapter.characterCount), above the limit of \(Self.maximumCharacterCount)"
+                return "\(field).characterCount is \(chapter.characterCount), above the limit of \(Self.maximumCharacterCount)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             // Every word holds at least one character, so the character
             // count also bounds the word count (and the word total).
             if !(0...chapter.characterCount).contains(chapter.wordCount) {
-                return "\(field).wordCount is \(chapter.wordCount), outside 0 through \(chapter.characterCount)"
+                return "\(field).wordCount is \(chapter.wordCount), outside 0 through \(chapter.characterCount)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if chapter.startCharacterOffset != characters {
-                return "\(field).startCharacterOffset is \(chapter.startCharacterOffset), expected \(characters)"
+                return "\(field).startCharacterOffset is \(chapter.startCharacterOffset), expected \(characters)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if let failure = headingFailure(in: chapter, field: field) {
                 return failure
@@ -544,15 +544,15 @@ extension BookContentIndex {
             characters += chapter.characterCount
             words += chapter.wordCount
             if characters > Self.maximumCharacterCount {
-                return "the chapters hold \(characters) characters, above the limit of \(Self.maximumCharacterCount)"
+                return "the chapters hold \(characters) characters, above the limit of \(Self.maximumCharacterCount)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
         }
         if totalCharacterCount != characters {
-            return "totalCharacterCount is \(totalCharacterCount), expected \(characters)"
+            return "totalCharacterCount is \(totalCharacterCount), expected \(characters)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         // Audio chapters hold placeholder spaces, which count as no words.
         if kind == .text, totalWordCount != words {
-            return "totalWordCount is \(totalWordCount), expected \(words)"
+            return "totalWordCount is \(totalWordCount), expected \(words)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         return nil
     }
@@ -565,21 +565,21 @@ extension BookContentIndex {
         for (position, heading) in chapter.headings.enumerated() {
             let field = "\(field).headings[\(position)]"
             if !Self.headingLevels.contains(heading.level) {
-                return "\(field).level is \(heading.level), outside \(Self.headingLevels.lowerBound) through \(Self.headingLevels.upperBound)"
+                return "\(field).level is \(heading.level), outside \(Self.headingLevels.lowerBound) through \(Self.headingLevels.upperBound)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if heading.id.isEmpty {
-                return "\(field).id is empty"
+                return "\(field).id is empty" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             // A heading may sit at the very end of its chapter, but not past it.
             if !(0...chapter.characterCount).contains(heading.characterOffset) {
-                return "\(field).characterOffset is \(heading.characterOffset), outside 0 through \(chapter.characterCount)"
+                return "\(field).characterOffset is \(heading.characterOffset), outside 0 through \(chapter.characterCount)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if heading.characterOffset < previousOffset {
-                return "\(field).characterOffset is \(heading.characterOffset), before the previous heading's \(previousOffset)"
+                return "\(field).characterOffset is \(heading.characterOffset), before the previous heading's \(previousOffset)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             let expectedGlobalOffset = chapter.startCharacterOffset + heading.characterOffset
             if heading.globalCharacterOffset != expectedGlobalOffset {
-                return "\(field).globalCharacterOffset is \(heading.globalCharacterOffset), expected \(expectedGlobalOffset)"
+                return "\(field).globalCharacterOffset is \(heading.globalCharacterOffset), expected \(expectedGlobalOffset)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             previousOffset = heading.characterOffset
         }
@@ -590,13 +590,13 @@ extension BookContentIndex {
     /// not come from the builder, which writes none for text.
     private func textFailure() -> String? {
         if audioLayout != nil {
-            return "audioLayout is present in a text index"
+            return "audioLayout is present in a text index" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         if totalAudioDuration != nil {
-            return "totalAudioDuration is present in a text index"
+            return "totalAudioDuration is present in a text index" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         if let position = chapters.firstIndex(where: { $0.audio != nil }) {
-            return "chapters[\(position)].audio is present in a text index"
+            return "chapters[\(position)].audio is present in a text index" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         return nil
     }
@@ -606,7 +606,7 @@ extension BookContentIndex {
     /// duration total. `audioBaseURL` is the folder those files must stay
     /// inside, as for `validationFailure(for:audioBaseURL:)`.
     private func audioFailure(audioBaseURL: URL?) -> String? {
-        guard let audioLayout else { return "audioLayout is missing" }
+        guard let audioLayout else { return "audioLayout is missing" } // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         var files = audioLayout.namesChapterFiles ? AudioFileCheck(folder: audioBaseURL) : nil
         var duration: TimeInterval = 0
         for (position, chapter) in chapters.enumerated() {
@@ -614,10 +614,10 @@ extension BookContentIndex {
             // The parser gives every audio chapter at least one placeholder
             // character, and playback restores exactly that many.
             if chapter.characterCount == 0 {
-                return "\(field).characterCount is 0, but an audio chapter holds at least 1 placeholder character"
+                return "\(field).characterCount is 0, but an audio chapter holds at least 1 placeholder character" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             guard let audio = chapter.audio else {
-                return "\(field).audio is missing"
+                return "\(field).audio is missing" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if let failure = Self.timeFailure(audio.startTime, field: "\(field).audio.startTime")
                 ?? Self.timeFailure(audio.duration, field: "\(field).audio.duration") {
@@ -633,11 +633,11 @@ extension BookContentIndex {
             duration += audio.duration
         }
         guard let totalAudioDuration else {
-            return "totalAudioDuration is missing"
+            return "totalAudioDuration is missing" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         // A NaN total fails `isFinite`; comparing it would always pass.
         if !totalAudioDuration.isFinite || abs(totalAudioDuration - duration) > Self.audioDurationTolerance {
-            return "totalAudioDuration is \(totalAudioDuration), expected \(duration)"
+            return "totalAudioDuration is \(totalAudioDuration), expected \(duration)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         return nil
     }
@@ -662,10 +662,10 @@ extension BookContentIndex {
         files: inout AudioFileCheck?
     ) -> String? {
         guard layout == .segmented else {
-            return "\(field).clips is present in a \(layout.rawValue) index"
+            return "\(field).clips is present in a \(layout.rawValue) index" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         guard let first = clips.first else {
-            return "\(field).clips is empty"
+            return "\(field).clips is empty" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         var duration: TimeInterval = 0
         for (number, clip) in clips.enumerated() {
@@ -675,7 +675,7 @@ extension BookContentIndex {
                 return failure
             }
             if clip.duration == 0 {
-                return "\(clipField).duration is 0.0, but every clip a chapter plays lasts some time"
+                return "\(clipField).duration is 0.0, but every clip a chapter plays lasts some time" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if let failure = files?.failure(for: clip.audioFilePath, field: "\(clipField).relativeFilePath") {
                 return failure
@@ -684,14 +684,14 @@ extension BookContentIndex {
         }
         // Both paths were checked above, so neither is missing here.
         if audio.relativeFilePath != first.relativeFilePath {
-            return "\(field).relativeFilePath is \(String(reflecting: audio.relativeFilePath ?? "")), "
-                + "but its first clip's is \(String(reflecting: first.relativeFilePath ?? ""))"
+            return "\(field).relativeFilePath is \(String(reflecting: audio.relativeFilePath ?? "")), " // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
+                + "but its first clip's is \(String(reflecting: first.relativeFilePath ?? ""))" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         if audio.startTime != first.startTime {
-            return "\(field).startTime is \(audio.startTime), but its first clip's is \(first.startTime)"
+            return "\(field).startTime is \(audio.startTime), but its first clip's is \(first.startTime)" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         if abs(audio.duration - duration) > Self.audioDurationTolerance {
-            return "\(field).duration is \(audio.duration), expected \(duration), its clips' together"
+            return "\(field).duration is \(audio.duration), expected \(duration), its clips' together" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
         }
         return nil
     }
@@ -702,7 +702,7 @@ extension BookContentIndex {
         if seconds.isFinite && seconds >= 0 {
             return nil
         }
-        return "\(field) is \(seconds), expected a finite number of seconds, 0 or more"
+        return "\(field) is \(seconds), expected a finite number of seconds, 0 or more" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
     }
 
     /// Checks the audio file each chapter names: first the path's own form,
@@ -737,15 +737,15 @@ extension BookContentIndex {
         /// only to what exists on disk.
         mutating func failure(for path: String?, field: String) -> String? {
             guard let path else {
-                return "\(field) is missing"
+                return "\(field) is missing" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             let quotedPath = String(reflecting: path)
             let components = path.split(separator: "/")
             if path.hasPrefix("/") {
-                return "\(field) \(quotedPath) is absolute"
+                return "\(field) \(quotedPath) is absolute" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             if components.contains("..") {
-                return "\(field) \(quotedPath) contains a \"..\" component"
+                return "\(field) \(quotedPath) contains a \"..\" component" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
             }
             guard let folder, let canonicalFolder, !checkedPaths.contains(path) else { return nil }
             // Resolve the deepest part of the path that exists, starting with
@@ -759,10 +759,10 @@ extension BookContentIndex {
                 ) else { continue }
                 // A symbolic link inside the folder can point anywhere on disk.
                 guard Self.isWithin(canonicalFolder, canonical) else {
-                    return "\(field) \(quotedPath) resolves outside the audio folder"
+                    return "\(field) \(quotedPath) resolves outside the audio folder" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
                 }
                 if depth == components.count, !Self.isRegularFile(atPath: canonical) {
-                    return "\(field) \(quotedPath) is not a regular file"
+                    return "\(field) \(quotedPath) is not a regular file" // l10n: no (damage reason: the debug log records it, and it stays English, question 3)
                 }
                 break
             }

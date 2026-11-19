@@ -951,7 +951,7 @@ enum LibraryPersistenceService {
             return "its source was replaced (MD5 \(analyzed.md5Hash) is now \(latest.md5Hash))"
         }
         if latest.format != analyzed.format {
-            return "its format changed from \(analyzed.format.displayName) to \(latest.format.displayName)"
+            return "its format changed from \(analyzed.format.logName) to \(latest.format.logName)"
         }
         if latest.filePath != analyzed.filePath {
             return "its source file moved from \(DiagnosticLog.loggablePath(analyzed.filePath)) "

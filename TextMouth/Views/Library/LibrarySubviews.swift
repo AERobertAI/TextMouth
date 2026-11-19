@@ -1,6 +1,198 @@
 import Combine
 import SwiftUI
 
+// MARK: - Wording
+
+/// The words of the Library list's bars and rows (FR34): the edit bar, the
+/// time-remaining bar, the breadcrumbs, and a book row's labels and menu. The
+/// words that say how many are whole sentences with their own plural forms.
+enum LibrarySubviewWording {
+    // MARK: Edit bar
+
+    /// The edit bar's count of books selected, as it shows it.
+    static func selectedOf(selected: Int, total: Int) -> String {
+        String(localized: "\(selected) of \(total) selected",
+               comment: "Text of the edit bar in the Library list: how many of the listed books are selected. %1$lld is the number selected. %2$lld is how many books are listed.")
+    }
+
+    /// What the edit bar's selection button says while some books are not selected.
+    static var selectAll: String {
+        String(localized: "Select All", comment: "Button of the edit bar that selects every listed book.")
+    }
+
+    /// What the edit bar's selection button says once every book is selected.
+    static var deselectAll: String {
+        String(localized: "Deselect All", comment: "Button of the edit bar that deselects every book.")
+    }
+
+    /// What VoiceOver calls the selection button once every book is selected.
+    static var deselectAllBooks: String {
+        String(localized: "Deselect all books", comment: "Spoken label of the edit bar's button that deselects every book.")
+    }
+
+    /// What VoiceOver calls the selection button while books are listed.
+    static func selectAllLabel(count: Int) -> String {
+        String(localized: "Select all \(count) books", comment: "Spoken label of the edit bar's button that selects every listed book. %lld is how many books are listed.")
+    }
+
+    /// What VoiceOver calls the selection button while no book is listed.
+    static var selectAllBooks: String {
+        String(localized: "Select all books", comment: "Spoken label of the edit bar's button that selects every listed book, while no book is listed and the button is dimmed.")
+    }
+
+    /// What VoiceOver calls the edit bar's Move button.
+    static func moveToFolderLabel(count: Int) -> String {
+        String(localized: "Move \(count) books to folder", comment: "Spoken label of the edit bar's Move button. %lld is how many books are selected.")
+    }
+
+    /// What VoiceOver calls the edit bar.
+    static func editModeLabel(selected: Int, total: Int) -> String {
+        total == 1
+            ? String(localized: "Edit mode, \(selected) of \(total) book selected",
+                     comment: "Spoken label of the edit bar when one book is listed. %1$lld is how many are selected, 0 or 1. %2$lld is how many are listed, 1.")
+            : String(localized: "Edit mode, \(selected) of \(total) books selected",
+                     comment: "Spoken label of the edit bar when several books, or none, are listed. %1$lld is how many are selected. %2$lld is how many are listed.")
+    }
+
+    // MARK: Time remaining bar
+
+    /// The bar's time left, as it shows it.
+    static func remaining(_ time: String) -> String {
+        String(localized: "\(time) remaining", comment: "Text of the time bar under the Library list: the time left to read the listed books. %@ is a time, such as 3:20:00.")
+    }
+
+    /// The bar's count of books not opened yet, as it shows it.
+    static func notYetOpened(count: Int) -> String {
+        String(localized: "(\(count) books not yet opened)", comment: "Text of the time bar: how many listed books have not been opened, so their time is unknown. The parentheses are part of the text. %lld is the number of books.")
+    }
+
+    /// The time left, as the bar's spoken label says it.
+    static func totalRemaining(_ time: String) -> String {
+        String(localized: "\(time) total remaining at current speed", comment: "Part of the time bar's spoken label: the time left for the listed books at the reading speed now set. %@ is a spoken time, such as 3 hours 20 minutes.")
+    }
+
+    /// The books not opened yet, as the bar's spoken label says it.
+    static func notBeenOpened(count: Int) -> String {
+        String(localized: "\(count) books have not been opened yet", comment: "Part of the time bar's spoken label: how many listed books have not been opened. %lld is the number of books.")
+    }
+
+    /// The bar's visible count of books in the cloud.
+    static func inCloud(count: Int) -> String {
+        String(localized: "\(count) books in the cloud", comment: "Text of the time bar: how many listed books are only in the cloud, not downloaded. %lld is the number of books.")
+    }
+
+    /// The bar's visible count of books kept on this Mac.
+    static func keptOnThisMac(count: Int) -> String {
+        String(localized: "\(count) books kept on this Mac", comment: "Text of the time bar: how many listed books are kept downloaded on this Mac. %lld is the number of books.")
+    }
+
+    /// The bar's spoken count of books in the cloud.
+    static func spokenInCloud(count: Int) -> String {
+        String(localized: "\(count) books are in the cloud", comment: "Part of the time bar's spoken label: how many listed books are only in the cloud. %lld is the number of books.")
+    }
+
+    /// The bar's spoken count of books kept on this Mac.
+    static func spokenKept(count: Int) -> String {
+        String(localized: "\(count) books are kept on this Mac", comment: "Part of the time bar's spoken label: how many listed books are kept downloaded on this Mac. %lld is the number of books.")
+    }
+
+    // MARK: Breadcrumbs
+
+    /// What VoiceOver calls the breadcrumb that goes to the library's top level.
+    static var navigateToLibraryRoot: String {
+        String(localized: "Navigate to library root", comment: "Spoken label of the first breadcrumb button, which goes to the library's top level.")
+    }
+
+    /// What VoiceOver calls a breadcrumb that goes to a folder.
+    static func navigateTo(_ folderName: String) -> String {
+        String(localized: "Navigate to \(folderName)", comment: "Spoken label of a breadcrumb button that goes to a folder. %@ is the folder's name.")
+    }
+
+    // MARK: Rows
+
+    /// What VoiceOver says a folder's row does.
+    static var opensTheFolder: String {
+        String(localized: "Opens the folder.", comment: "Hint of a folder's row in the Library list.")
+    }
+
+    /// What VoiceOver says a book's row does.
+    static var opensTheBook: String {
+        String(localized: "Opens the book.", comment: "Hint of a book's row in the Library list.")
+    }
+
+    /// What VoiceOver says a book's row does in edit mode, while it is not selected.
+    static var selectsThisBook: String {
+        String(localized: "Selects this book.", comment: "Hint of a book's row in the Library list in edit mode, while the book is not selected.")
+    }
+
+    /// What VoiceOver says a book's row does in edit mode, while it is selected.
+    static var deselectsThisBook: String {
+        String(localized: "Deselects this book.", comment: "Hint of a book's row in the Library list in edit mode, while the book is selected.")
+    }
+
+    /// The badge on a book never opened.
+    static var new: String {
+        String(localized: "New", comment: "Badge on a book's row in the Library list: the book has never been opened.")
+    }
+
+    /// The badge on the book open in a window.
+    static var nowReading: String {
+        String(localized: "Now Reading", comment: "Badge on a book's row in the Library list: the book is open in a reader window now.")
+    }
+
+    /// The row's first word while its book is selected, in edit mode.
+    static var selected: String {
+        String(localized: "Selected", comment: "First part of a book's spoken row label in edit mode, when the book is selected.")
+    }
+
+    /// The row's author part.
+    static func byAuthor(_ author: String) -> String {
+        String(localized: "by \(author)", comment: "Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.")
+    }
+
+    /// A reading progress spoken, "42 percent".
+    static func spokenPercent(_ percent: String) -> String {
+        String(localized: "\(percent) percent", comment: "A book's reading progress as VoiceOver says it. %@ is a whole number, such as 42.")
+    }
+
+    /// A reading progress spoken beside a download's percentage, "42 percent read".
+    static func percentRead(_ spokenProgress: String) -> String {
+        String(localized: "\(spokenProgress) read", comment: "A book's reading progress as VoiceOver says it when the row also says a download's percentage. %@ is the progress, such as 42 percent.")
+    }
+
+    /// The time left after the reading position, as the row shows it.
+    static func left(_ time: String) -> String {
+        String(localized: "\(time) left", comment: "A book's time left to read, as its row shows it. %@ is a time, such as 16:00.")
+    }
+
+    // MARK: Row menu and actions
+
+    /// The row's menu item that moves a book one place up in a manual order.
+    static var moveUp: String {
+        String(localized: "Move Up", comment: "Menu item and VoiceOver action of a book's row that moves the book one place toward the top of an order the user arranges.")
+    }
+
+    /// The row's menu item that moves a book one place down in a manual order.
+    static var moveDown: String {
+        String(localized: "Move Down", comment: "Menu item and VoiceOver action of a book's row that moves the book one place toward the bottom of an order the user arranges.")
+    }
+
+    /// The row's menu item that opens the book.
+    static var open: String {
+        String(localized: "Open", comment: "Menu item of a book's row that opens the book in a reader window.")
+    }
+
+    /// The row's menu item that shows the book's information.
+    static var bookInfo: String {
+        String(localized: "Book Info", comment: "Menu item of a book's row that opens the sheet with the book's information.")
+    }
+
+    /// The row's menu item that starts edit mode with the book selected.
+    static var select: String {
+        String(localized: "Select", comment: "Menu item of a book's row that starts edit mode with the book selected.")
+    }
+}
+
 // MARK: - Edit Mode Bar
 
 /// Toolbar shown at the top of the library when edit mode is active.
@@ -45,7 +237,7 @@ struct EditModeBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text("\(selectedCount) of \(totalCount) selected")
+            Text(LibrarySubviewWording.selectedOf(selected: selectedCount, total: totalCount))
                 .font(.callout)
                 .fontWeight(.medium)
 
@@ -54,7 +246,7 @@ struct EditModeBar: View {
             // Select All, or Deselect All once every book listed is
             // selected; with no book listed, Select All, dimmed.
             let deselects = Self.offersDeselectAll(selectedCount: selectedCount, totalCount: totalCount)
-            Button(deselects ? "Deselect All" : "Select All") {
+            Button(deselects ? LibrarySubviewWording.deselectAll : LibrarySubviewWording.selectAll) {
                 if deselects {
                     onDeselectAll()
                 } else {
@@ -64,9 +256,9 @@ struct EditModeBar: View {
             .disabled(totalCount == 0)
             .accessibilityLabel(Self.selectAllLabel(selectedCount: selectedCount, totalCount: totalCount))
 
-            Button("Move") { onMove() }
+            Button(LibrarySheetWording.move) { onMove() }
                 .disabled(selectedCount == 0)
-                .accessibilityLabel("Move \(CountWording.books(selectedCount)) to folder")
+                .accessibilityLabel(LibrarySubviewWording.moveToFolderLabel(count: selectedCount))
 
             // Add to Reading List and Remove from Reading List (FR09),
             // dimmed while they would act on no book.
@@ -93,7 +285,7 @@ struct EditModeBar: View {
     /// "Edit mode, 2 of 5 books selected", the noun agreeing with the books
     /// listed (TODO A10; it said "0 of 1 books").
     nonisolated static func accessibilityLabel(selectedCount: Int, totalCount: Int) -> String {
-        "Edit mode, \(CountWording.part(selectedCount, of: totalCount, singular: "book", plural: "books")) selected"
+        LibrarySubviewWording.editModeLabel(selected: selectedCount, total: totalCount)
     }
 
     /// Whether the bar's selection button deselects: once every book listed
@@ -109,9 +301,9 @@ struct EditModeBar: View {
     /// books", dimmed, while none is listed.
     nonisolated static func selectAllLabel(selectedCount: Int, totalCount: Int) -> String {
         if offersDeselectAll(selectedCount: selectedCount, totalCount: totalCount) {
-            return "Deselect all books"
+            return LibrarySubviewWording.deselectAllBooks
         }
-        return totalCount > 0 ? "Select all \(CountWording.books(totalCount))" : "Select all books"
+        return totalCount > 0 ? LibrarySubviewWording.selectAllLabel(count: totalCount) : LibrarySubviewWording.selectAllBooks
     }
 }
 
@@ -162,7 +354,7 @@ struct TimeRemainingBar: View {
             HStack(spacing: 12) {
                 Label {
                     if sum.known > 0 {
-                        Text("\(TimeFormatting.format(sum.time)) remaining")
+                        Text(LibrarySubviewWording.remaining(TimeFormatting.format(sum.time)))
                     }
                 } icon: {
                     Image(systemName: "clock")
@@ -171,7 +363,7 @@ struct TimeRemainingBar: View {
                 .font(.caption)
 
                 if sum.unknown > 0 {
-                    Text("(\(CountWording.books(sum.unknown)) not yet opened)")
+                    Text(LibrarySubviewWording.notYetOpened(count: sum.unknown))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -232,16 +424,16 @@ struct TimeRemainingBar: View {
         var parts: [String] = []
         parts.append(countText)
         if sum.known > 0 {
-            parts.append("\(TimeFormatting.spoken(sum.time)) total remaining at current speed")
+            parts.append(LibrarySubviewWording.totalRemaining(TimeFormatting.spoken(sum.time)))
         }
         if sum.unknown > 0 {
-            parts.append("\(CountWording.phrase(sum.unknown, singular: "book has", plural: "books have")) not been opened yet")
+            parts.append(LibrarySubviewWording.notBeenOpened(count: sum.unknown))
         }
         if booksInCloud > 0 {
-            parts.append(Self.spokenCount(booksInCloud, "in the cloud"))
+            parts.append(LibrarySubviewWording.spokenInCloud(count: booksInCloud))
         }
         if booksKept > 0 {
-            parts.append(Self.spokenCount(booksKept, "kept on this Mac"))
+            parts.append(LibrarySubviewWording.spokenKept(count: booksKept))
         }
         if let feedSummary {
             parts.append(feedSummary.check.visible)
@@ -258,19 +450,13 @@ struct TimeRemainingBar: View {
     /// The bar's visible count of books in the cloud: "1 book in the cloud",
     /// "3 books in the cloud".
     static func cloudCountText(_ count: Int) -> String {
-        "\(CountWording.books(count)) in the cloud"
+        LibrarySubviewWording.inCloud(count: count)
     }
 
     /// The bar's visible count of books kept on this Mac: "1 book kept on
     /// this Mac", "3 books kept on this Mac".
     static func keptCountText(_ count: Int) -> String {
-        "\(CountWording.books(count)) kept on this Mac"
-    }
-
-    /// `count` books said to be somewhere, as the bar's label speaks it:
-    /// "1 book is in the cloud", "3 books are kept on this Mac".
-    private static func spokenCount(_ count: Int, _ place: String) -> String {
-        "\(CountWording.phrase(count, singular: "book is", plural: "books are")) \(place)"
+        LibrarySubviewWording.keptOnThisMac(count: count)
     }
 }
 
@@ -283,9 +469,9 @@ struct BreadcrumbBar: View {
 
     var body: some View {
         HStack {
-            Button("Library") { onNavigateRoot() }
+            Button(FolderNavigationWording.libraryName) { onNavigateRoot() }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Navigate to library root")
+                .accessibilityLabel(LibrarySubviewWording.navigateToLibraryRoot)
 
             let parts = path.components(separatedBy: "/")
             ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
@@ -298,7 +484,7 @@ struct BreadcrumbBar: View {
                     onNavigate(subPath)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Navigate to \(part)")
+                .accessibilityLabel(LibrarySubviewWording.navigateTo(part))
             }
 
             Spacer()
@@ -354,7 +540,7 @@ struct FolderRow: View {
     /// What VoiceOver says the row does: its result, never a gesture or a
     /// key, since VoiceOver, a braille display, and the keyboard each do it
     /// their own way (TODO A10; it said "Double-tap to open folder").
-    nonisolated static let accessibilityHint = "Opens the folder."
+    nonisolated static var accessibilityHint: String { LibrarySubviewWording.opensTheFolder }
 
     /// What the row shows after the folder's name: its books counted, "12
     /// books", with the feeds below it beside them, "3 books, 2 feeds", or
@@ -372,7 +558,7 @@ struct FolderRow: View {
     /// row counts them, "Planet Money, Feed, 10 of 381 episodes listed, 3
     /// downloaded", never its downloads as books (FR03).
     static func accessibilityLabel(name: String, bookCount: Int, feedCounts: FeedItemCounts?, feedsBelow: Int = 0) -> String {
-        guard let feedCounts else { return "\(name), \(countText(bookCount: bookCount, feedCounts: nil, feedsBelow: feedsBelow))" }
+        guard let feedCounts else { return SentenceWording.commaJoined([name, countText(bookCount: bookCount, feedCounts: nil, feedsBelow: feedsBelow)]) }
         return FeedWording.folderAnnouncement(name: name, counts: feedCounts)
     }
 }
@@ -474,7 +660,7 @@ struct BookRow: View {
                         .font(.headline)
 
                     if book.isUnopened {
-                        Text("New")
+                        Text(LibrarySubviewWording.new)
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 5)
@@ -483,7 +669,7 @@ struct BookRow: View {
                             .foregroundColor(.white)
                             .cornerRadius(3)
                     } else if isOpenInWindow {
-                        Text("Now Reading")
+                        Text(LibrarySubviewWording.nowReading)
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 5)
@@ -509,7 +695,7 @@ struct BookRow: View {
                     }
                 }
                 HStack {
-                    Text(book.author)
+                    Text(Book.displayAuthor(book.author))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
 
@@ -568,8 +754,8 @@ struct BookRow: View {
     /// it their own way (TODO A10; it said "Double-tap to select" and "Press
     /// Enter to open, Command I for info").
     nonisolated static func accessibilityHint(isEditMode: Bool, isEditSelected: Bool) -> String {
-        guard isEditMode else { return "Opens the book." }
-        return isEditSelected ? "Deselects this book." : "Selects this book."
+        guard isEditMode else { return LibrarySubviewWording.opensTheBook }
+        return isEditSelected ? LibrarySubviewWording.deselectsThisBook : LibrarySubviewWording.selectsThisBook
     }
 
     /// The names of the row's own VoiceOver actions, in the order VoiceOver
@@ -593,19 +779,19 @@ struct BookRow: View {
     var rowAccessibilityLabel: String {
         var parts: [String] = []
         if isEditMode && isEditSelected {
-            parts.append("Selected")
+            parts.append(LibrarySubviewWording.selected)
         }
         parts.append(title)
-        parts.append("by \(book.author)")
+        parts.append(LibrarySubviewWording.byAuthor(Book.displayAuthor(book.author)))
         // Right after the title and author, so a book in the reading list
         // says so in the same place on every row (FR09).
         if isInReadingList {
             parts.append(ReadingListWording.inReadingListNote)
         }
         if book.isUnopened {
-            parts.append("New")
+            parts.append(LibrarySubviewWording.new)
         } else if isOpenInWindow {
-            parts.append("Now Reading")
+            parts.append(LibrarySubviewWording.nowReading)
         }
         if let cloudNote = cloudState?.spokenNote {
             parts.append(cloudNote)
@@ -643,7 +829,7 @@ struct BookRow: View {
         }
         guard let percent = book.percentComplete else { return nil }
         let wholePercent = String(format: "%.0f", percent)
-        return (visible: "\(wholePercent)%", spoken: "\(wholePercent) percent")
+        return (visible: "\(wholePercent)%", spoken: LibrarySubviewWording.spokenPercent(wholePercent))
     }
 
     /// The reading progress as the row's label speaks it: "42 percent", or
@@ -653,7 +839,7 @@ struct BookRow: View {
     /// no progress.
     nonisolated static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
         guard let progress = progressText(for: book) else { return nil }
-        return besideDownloadPercentage && !book.restsAtEnd ? "\(progress.spoken) read" : progress.spoken
+        return besideDownloadPercentage && !book.restsAtEnd ? LibrarySubviewWording.percentRead(progress.spoken) : progress.spoken
     }
 
     /// The time left after the reading position that the row shows and
@@ -670,7 +856,7 @@ struct BookRow: View {
     /// row, and a feed item's row for the place kept after its file went
     /// (FR11, `FeedKeptProgress`).
     nonisolated static func remainingText(_ remaining: TimeInterval) -> (visible: String, spoken: String) {
-        (visible: "\(TimeFormatting.format(remaining)) left", spoken: LibraryInfoWording.remaining(remaining))
+        (visible: LibrarySubviewWording.left(TimeFormatting.format(remaining)), spoken: LibraryInfoWording.remaining(remaining))
     }
 }
 
@@ -682,9 +868,9 @@ struct BookRow: View {
 /// it.
 struct LibraryManualMove: Identifiable, Equatable {
     /// Move Up: one place toward the top of the order.
-    static let up = LibraryManualMove(title: "Move Up", direction: -1)
+    static var up: LibraryManualMove { LibraryManualMove(title: LibrarySubviewWording.moveUp, direction: -1) }
     /// Move Down: one place toward the bottom of the order.
-    static let down = LibraryManualMove(title: "Move Down", direction: 1)
+    static var down: LibraryManualMove { LibraryManualMove(title: LibrarySubviewWording.moveDown, direction: 1) }
 
     /// The move's name in the row's context menu and its VoiceOver actions.
     let title: String
@@ -924,15 +1110,15 @@ struct LibraryBookListRow: View, Equatable {
         let isMulti = targets.count > 1
 
         if !isMulti {
-            Button("Open") {
+            Button(LibrarySubviewWording.open) {
                 actions.open(book)
             }
-            Button("Book Info") {
+            Button(LibrarySubviewWording.bookInfo) {
                 actions.showInfo(book)
             }
         }
         if !isEditMode {
-            Button("Select") {
+            Button(LibrarySubviewWording.select) {
                 actions.select(book)
             }
         }

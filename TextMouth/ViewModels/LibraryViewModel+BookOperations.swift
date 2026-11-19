@@ -83,17 +83,11 @@ extension LibraryViewModel {
     nonisolated static func libraryOnlyRemovalProblems(refused: [String], recordsLeft: [String]) -> String? {
         var paragraphs: [String] = []
         if !refused.isEmpty {
-            let heading = refused.count == 1
-                ? "This book could not be removed from the library and remains in it:"
-                : "These books could not be removed from the library and remain in it:"
+            let heading = LibraryViewModelWording.removalRefusedHeading(count: refused.count)
             paragraphs.append(([heading] + refused).joined(separator: "\n"))
         }
         if !recordsLeft.isEmpty {
-            let heading = recordsLeft.count == 1
-                ? "This book was removed from the library, but its bookInfo.json file could not be deleted. "
-                    + "It will still stay out of the library:"
-                : "These books were removed from the library, but their bookInfo.json files could not be deleted. "
-                    + "They will still stay out of the library:"
+            let heading = LibraryViewModelWording.removalRecordLeftHeading(count: recordsLeft.count)
             paragraphs.append(([heading] + recordsLeft).joined(separator: "\n"))
         }
         return paragraphs.isEmpty ? nil : paragraphs.joined(separator: "\n\n")
@@ -230,7 +224,7 @@ extension LibraryViewModel {
             downloads.isEmpty ? nil : FeedDownloadRemovalWording(mode, items: downloads)
                 .completionMessage(kept: downloads.compactMap { kept[$0.id] }),
         ].compactMap { $0 }
-        return sentences.isEmpty ? nil : sentences.joined(separator: " ")
+        return sentences.isEmpty ? nil : SentenceWording.joined(sentences)
     }
 
     /// Takes `book`, whose package was just deleted, out of the library
@@ -295,7 +289,7 @@ extension LibraryViewModel {
             }
             return .success(LibraryTransitionWording.feedItemsLeft(titles: left.map(\.title)))
         } catch {
-            return .failure("Could not move books", error)
+            return .failure(LibraryViewModelWording.couldNotMoveBooks, error)
         }
     }
 
@@ -422,7 +416,7 @@ extension LibraryViewModel {
         guard changedFolders.allSatisfy({ BookFolder.isValidLibraryPath($0.fullPath) }),
               proposed.books.filter({ affectedBookIDs.contains($0.id) })
                 .allSatisfy({ BookFolder.isValidLibraryPath($0.folderPath) }) else {
-            throw FileImportError.importFailed("A destination folder path is invalid.")
+            throw FileImportError.importFailed(LibraryViewModelWording.invalidDestinationFolderPath)
         }
         // Each book is found by ID once, not by a search per affected book,
         // which for a folder of hundreds of books took a tenth of a second.
@@ -837,7 +831,7 @@ extension LibraryViewModel {
                 // by name; the missing file's error would repeat the path.
                 let failure = error as NSError
                 let detail = isMissing
-                    ? "the file was not found"
+                    ? "the file was not found" // l10n: no (log-only: the debug log's wording)
                     : "\(failure.domain) \(failure.code): \(failure.localizedDescription)"
                 DiagnosticLog.event(
                     .storage,
@@ -1274,7 +1268,8 @@ enum LibraryTransitionWording {
     /// `announcedPackageCount`.
     static func completion(movingPackagesOf count: Int) -> String? {
         guard count >= announcedPackageCount else { return nil }
-        return "Done. Moved \(CountWording.books(count))."
+        return String(localized: "Done. Moved \(count) books.",
+                      comment: "VoiceOver announcement when a move of many books to a folder finishes. %lld is how many books were moved.")
     }
 
     /// The Move to Folder… command for `targets`, the books a row's commands
@@ -1285,7 +1280,11 @@ enum LibraryTransitionWording {
     static func moveToFolderTitle(for targets: [Book]) -> String? {
         let movable = targets.reduce(0) { $1.isFeedItem ? $0 : $0 + 1 }
         guard movable > 0 else { return nil }
-        return movable > 1 ? "Move \(movable) Books to Folder..." : "Move to Folder..."
+        return movable > 1
+            ? String(localized: "Move \(movable) Books to Folder...",
+                     comment: "Title of the command that moves several selected books to a folder, in a row's menu. %lld is how many books it moves.")
+            : String(localized: "Move to Folder...",
+                     comment: "Title of the command that moves the selected book to a folder, in a row's menu. The three dots mean a sheet opens to choose the folder.")
     }
 
     /// What VoiceOver hears when Move to Folder… leaves feed items titled
@@ -1298,11 +1297,18 @@ enum LibraryTransitionWording {
         guard !titles.isEmpty else { return nil }
         let shown = titles.prefix(3).map { "“\($0)”" }
         let rest = titles.count - shown.count
+        // The names: all of them when there are three or fewer, else the
+        // first three and how many more.
         let names = rest > 0
-            ? shown.joined(separator: ", ") + ", and \(rest) more"
+            ? String(localized: "\(shown.joined(separator: ", ")), and \(rest) more",
+                     comment: "The first three titles of the feed items that were left where they are, then how many others there were. %1$@ is the three titles, in quotes, separated by commas. %2$lld is how many more.")
             : CountWording.list(Array(shown))
-        let place = titles.count == 1 ? "where it is" : "where they are"
-        return "Left \(names) \(place): episodes and articles stay in their feeds; "
-            + "\(ShortcutAction.moveToLibrary.title) makes one a book of your library."
+        let command = ShortcutAction.moveToLibrary.title
+        if titles.count == 1 {
+            return String(localized: "Left \(names) where it is: episodes and articles stay in their feeds; \(command) makes one a book of your library.",
+                          comment: "VoiceOver announcement when Move to Folder left one feed item where it is. %1$@ is the item's title, in quotes. %2$@ is the name of the Move to Library command, which makes an item a book of the library.")
+        }
+        return String(localized: "Left \(names) where they are: episodes and articles stay in their feeds; \(command) makes one a book of your library.",
+                      comment: "VoiceOver announcement when Move to Folder left several feed items where they are. %1$@ is the items' titles, in quotes, such as \"A\", \"B\", and 2 more. %2$@ is the name of the Move to Library command, which makes an item a book of the library.")
     }
 }

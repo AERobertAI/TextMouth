@@ -2,6 +2,17 @@ import SwiftUI
 import Combine
 
 /// Root view for a library window. Each library window has its own navigation state.
+/// The words of the Library window's frame that no other wording enum owns
+/// (FR34). Its alert, its Cancel buttons, and its error title are the phone
+/// vocabulary's `PhoneAppWording`, one definition for both apps.
+enum LibraryWindowWording {
+    /// The title of the overlay shown while the library's text is extracted.
+    static var extractingTextTitle: String {
+        String(localized: "Extracting Text",
+               comment: "Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it.")
+    }
+}
+
 struct LibraryWindowView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var settingsViewModel: SettingsViewModel
@@ -97,7 +108,7 @@ struct LibraryWindowView: View {
                 ProgressObserver(progress: libraryViewModel.textExtraction) { extraction in
                     if extraction.isExtracting {
                         ProgressOverlay(
-                            title: "Extracting Text",
+                            title: LibraryWindowWording.extractingTextTitle,
                             current: extraction.current,
                             total: extraction.total,
                             message: extraction.message,
@@ -187,10 +198,10 @@ struct LibraryWindowView: View {
                 libraryViewModel.showError = true
             }
         }
-        .alert(libraryViewModel.errorTitle ?? "Error", isPresented: $libraryViewModel.showError) {
-            Button("OK", role: .cancel) {}
+        .alert(libraryViewModel.errorTitle ?? PhoneAppWording.errorTitle, isPresented: $libraryViewModel.showError) {
+            Button(PhoneAppWording.errorDismiss, role: .cancel) {}
         } message: {
-            Text(libraryViewModel.errorMessage ?? "An unknown error occurred.")
+            Text(libraryViewModel.errorMessage ?? PhoneAppWording.unknownError)
         }
         // Remove book confirmation dialog (supports single or multiple books).
         // Its words say whether the files go to the Trash, are deleted
@@ -218,7 +229,7 @@ struct LibraryWindowView: View {
                     libraryViewModel.pendingRemoveBooks = []
                 }
             }
-            Button("Cancel", role: .cancel) {
+            Button(PhoneAppWording.cancel, role: .cancel) {
                 libraryViewModel.pendingRemoveBooks = []
             }
         } message: {
@@ -578,7 +589,7 @@ struct ProgressOverlay: View {
             }
 
             if let onCancel {
-                Button("Cancel", action: onCancel)
+                Button(PhoneAppWording.cancel, action: onCancel)
                     .keyboardShortcut(.cancelAction)
                     .accessibilityLabel(Self.cancelButtonLabel)
                     .accessibilityHint(Self.cancelButtonHint)
@@ -605,9 +616,9 @@ struct ProgressOverlay: View {
             return spokenSummary
         }
         if total > 0 {
-            return "\(title): \(CountWording.part(current, of: total, itemNoun))"
+            return SentenceWording.labelled(title, CountWording.part(current, of: total, itemNoun))
         }
-        return message.isEmpty ? title : "\(title): \(message)"
+        return message.isEmpty ? title : SentenceWording.labelled(title, message)
     }
 }
 

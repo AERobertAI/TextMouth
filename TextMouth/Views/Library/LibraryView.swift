@@ -220,7 +220,7 @@ struct LibraryView: View {
     /// the views it offers. Until October 30, 2026 it was a segmented picker
     /// of the five categories, called "Library category"; the constant keeps
     /// the name the tests have always used.
-    static let categoryPickerLabel = "Library view"
+    static var categoryPickerLabel: String { LibraryListWording.viewPickerLabel }
     /// Which library folders hold feeds, and the feed engine they follow
     /// (FR03): the app's, unless a test shows its own. Observed, as it
     /// publishes only when a feed's folder changes; the views showing a
@@ -510,15 +510,15 @@ struct LibraryView: View {
                     }
                 }
             }
-            .searchable(text: $searchText, prompt: "Search books")
-            .accessibilityRotor("Books") {
+            .searchable(text: $searchText, prompt: LibraryListWording.searchPrompt)
+            .accessibilityRotor(LibraryListWording.booksRotor) {
                 // Each title as its row shows it ("Hobbit, The" while sorting
                 // passes over articles), in the list's order.
                 ForEach(libraryViewModel.booksRotorEntries(of: books, articles: articles)) { entry in
                     AccessibilityRotorEntry(entry.label, id: entry.id)
                 }
             }
-            .accessibilityRotor("Folders") {
+            .accessibilityRotor(LibraryListWording.foldersHeader) {
                 // Each folder here, as its row says it, or, for a feed's
                 // folder the Feeds section's row stands for, moving to that
                 // row (FR03).
@@ -570,9 +570,9 @@ struct LibraryView: View {
                     Button {
                         navigateUp()
                     } label: {
-                        Label("Up One Level", systemImage: "chevron.up")
+                        Label(LibraryListWording.upOneLevel, systemImage: "chevron.up")
                     }
-                    .accessibilityLabel("Go up one folder level")
+                    .accessibilityLabel(LibraryListWording.goUpOneFolderLevel)
                 }
 
                 addToLibraryButton(focusTarget: focusTarget)
@@ -585,9 +585,9 @@ struct LibraryView: View {
                         isEditMode = true
                     }
                 } label: {
-                    Label(isEditMode ? "Done" : "Edit", systemImage: isEditMode ? "checkmark.circle.fill" : "checkmark.circle")
+                    Label(isEditMode ? LibraryListWording.done : LibraryListWording.edit, systemImage: isEditMode ? "checkmark.circle.fill" : "checkmark.circle")
                 }
-                .accessibilityLabel(isEditMode ? "Exit edit mode" : "Enter edit mode")
+                .accessibilityLabel(isEditMode ? LibraryListWording.exitEditMode : LibraryListWording.enterEditMode)
                 .accessibilityHint(Self.editModeButtonHint(isEditMode: isEditMode, selectedCount: selectedBooks.count))
 
                 if showsFolders {
@@ -595,9 +595,9 @@ struct LibraryView: View {
                         newFolderParentPath = currentFolderPath
                         showNewFolderSheet = true
                     } label: {
-                        Label("New Folder", systemImage: "folder.badge.plus")
+                        Label(LibrarySheetWording.newFolderTitle, systemImage: "folder.badge.plus")
                     }
-                    .accessibilityLabel("Create new folder")
+                    .accessibilityLabel(LibraryListWording.createNewFolder)
                 }
 
                 // Feed Settings or Folder Settings for the folder shown (FR19).
@@ -881,16 +881,16 @@ struct LibraryView: View {
         // words say whether everything goes to the Trash or is deleted
         // permanently, as the Trash preference chooses (TODO A08).
         .alert(
-            "Delete Folder?",
+            LibraryListWording.deleteFolderQuestion,
             isPresented: $libraryViewModel.showDeleteFolderDialog
         ) {
-            Button("Move Contents Out") {
+            Button(LibraryListWording.moveContentsOut) {
                 libraryViewModel.showDeleteFolderDestinationSheet = true
             }
             Button(deleteEverythingWording.buttonTitle, role: .destructive) {
                 libraryViewModel.showDeleteEverythingConfirm = true
             }
-            Button("Cancel", role: .cancel) {
+            Button(PhoneAppWording.cancel, role: .cancel) {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
@@ -909,7 +909,7 @@ struct LibraryView: View {
                     libraryViewModel.pendingDeleteFolder = nil
                 }
             }
-            Button("Cancel", role: .cancel) {
+            Button(PhoneAppWording.cancel, role: .cancel) {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
@@ -941,7 +941,140 @@ struct LibraryView: View {
         }
     }
 
-    // MARK: - The Sort Menu
+    // MARK: - Wording
+
+/// The words of the Library window's list, its toolbar, and its folder
+/// menu that no other wording enum owns (FR34). Cancel and OK come from
+/// `PhoneAppWording`, "New Folder" from `LibrarySheetWording`, and the sort
+/// fields' names from `LibrarySortField.title`.
+enum LibraryListWording {
+    /// What VoiceOver calls the View pop-up, whose items are the views' names.
+    static var viewPickerLabel: String {
+        String(localized: "Library view", comment: "Spoken label of the View pop-up of a Library window, which chooses the view of the library shown, such as Unopened.")
+    }
+
+    /// The View pop-up's title.
+    static var view: String {
+        String(localized: "View", comment: "Title of the pop-up in a Library window that chooses the view of the library shown.")
+    }
+
+    /// The search field's prompt.
+    static var searchPrompt: String {
+        String(localized: "Search books", comment: "Prompt of the Library window's search field, which narrows the listed books.")
+    }
+
+    /// The rotor that moves between books.
+    static var booksRotor: String {
+        String(localized: "Books", comment: "Name of the VoiceOver rotor that moves between the books of the Library list.")
+    }
+
+    /// The Folders section's header and the rotor that moves between folders.
+    static var foldersHeader: String {
+        String(localized: "Folders", comment: "Header of the Library list's section of folders, and name of the VoiceOver rotor that moves between them.")
+    }
+
+    /// The toolbar button that goes to the parent folder.
+    static var upOneLevel: String {
+        String(localized: "Up One Level", comment: "Toolbar button of a Library window that goes up to the folder that holds the folder shown.")
+    }
+
+    /// What VoiceOver calls it.
+    static var goUpOneFolderLevel: String {
+        String(localized: "Go up one folder level", comment: "Spoken label of the toolbar button that goes up to the folder that holds the folder shown.")
+    }
+
+    /// The edit mode toolbar button's title while edit mode is on.
+    static var done: String {
+        String(localized: "Done", comment: "Title of the toolbar button that leaves edit mode in the Library list, shown while edit mode is on.")
+    }
+
+    /// The edit mode toolbar button's title while edit mode is off.
+    static var edit: String {
+        String(localized: "Edit", comment: "Title of the toolbar button that enters edit mode in the Library list, for selecting several books.")
+    }
+
+    /// What VoiceOver calls the button while edit mode is on.
+    static var exitEditMode: String {
+        String(localized: "Exit edit mode", comment: "Spoken label of the toolbar button that leaves edit mode in the Library list.")
+    }
+
+    /// What VoiceOver calls the button while edit mode is off.
+    static var enterEditMode: String {
+        String(localized: "Enter edit mode", comment: "Spoken label of the toolbar button that enters edit mode in the Library list.")
+    }
+
+    /// The edit button's hint while edit mode is on.
+    static func exitsEditMode(selectedCount: Int) -> String {
+        String(localized: "Exits edit mode. \(selectedCount) books selected.", comment: "Hint of the toolbar's edit mode button while edit mode is on. %lld is how many books are selected.")
+    }
+
+    /// The edit button's hint while edit mode is off.
+    static var entersEditMode: String {
+        String(localized: "Enters edit mode, for selecting several books to move or remove.", comment: "Hint of the toolbar's edit mode button while edit mode is off.")
+    }
+
+    /// What VoiceOver calls the toolbar's New Folder button.
+    static var createNewFolder: String {
+        String(localized: "Create new folder", comment: "Spoken label of the toolbar button that opens the sheet that makes a new folder.")
+    }
+
+    /// The title of the question about deleting a folder that holds books.
+    static var deleteFolderQuestion: String {
+        String(localized: "Delete Folder?", comment: "Title of the question asked before a folder that holds books or folders is deleted.")
+    }
+
+    /// The answer that moves a folder's contents out before it is deleted.
+    static var moveContentsOut: String {
+        String(localized: "Move Contents Out", comment: "Button of the question about deleting a folder: it moves the folder's books and subfolders to another place, then deletes the folder.")
+    }
+
+    /// The Sort menu's title.
+    static var sort: String {
+        String(localized: "Sort", comment: "Title of the Library window's toolbar menu that chooses how the books are sorted.")
+    }
+
+    /// The Sort menu's item that gives every subfolder this sort.
+    static var applySortToSubfolders: String {
+        String(localized: "Apply Sort to All Subfolders", comment: "Item of the Sort menu that gives every subfolder of the folder shown the sort chosen here.")
+    }
+
+    /// The Continue button's visible text.
+    static func continueVisible(_ title: String) -> String {
+        String(localized: "Continue: \(title)", comment: "Text of the Continue button at the top of the Library list. %@ is the title of the book last read.")
+    }
+
+    /// The Continue button's hint.
+    static var continueHint: String {
+        String(localized: "Opens the last book you were reading", comment: "Hint of the Continue button at the top of the Library list.")
+    }
+
+    /// What VoiceOver calls the Continue button, before its time.
+    static func continueListeningTo(_ title: String) -> String {
+        String(localized: "Continue listening to \(title)", comment: "Spoken label of the Continue button at the top of the Library list. %@ is the title of the book last read. The time left may follow it.")
+    }
+
+    /// The folder menu's item that renames the folder.
+    static var renameFolder: String {
+        String(localized: "Rename Folder...", comment: "Item of a folder's menu that opens the sheet that renames the folder. The three dots mean a sheet opens.")
+    }
+
+    /// The folder menu's item that moves the folder.
+    static var moveFolder: String {
+        String(localized: "Move Folder...", comment: "Item of a folder's menu that opens the sheet that moves the folder under another folder. The three dots mean a sheet opens.")
+    }
+
+    /// The folder menu's item that deletes the folder.
+    static var deleteFolder: String {
+        String(localized: "Delete Folder...", comment: "Item of a folder's menu that deletes the folder. The three dots mean a question follows.")
+    }
+
+    /// The Open Book choice's hint, which the Add to Library sheet reuses.
+    static var importBookHint: String {
+        String(localized: "Opens a file picker to import books in any format TextMouth reads.", comment: "Hint of the choice that opens a file picker to import books, in the Add to Library sheet.")
+    }
+}
+
+// MARK: - The Sort Menu
 
     /// The Sort menu. Every item reads the one sort the location shows and
     /// changes it only through userChangedSort, so the menu, the window
@@ -960,7 +1093,7 @@ struct LibraryView: View {
                 sortItems(hasSubfolders: hasSubfolders)
             }
         } label: {
-            Label("Sort", systemImage: "arrow.up.arrow.down")
+            Label(LibraryListWording.sort, systemImage: "arrow.up.arrow.down")
         }
         .accessibilityLabel(sortMenuLabel)
     }
@@ -996,7 +1129,7 @@ struct LibraryView: View {
         // screen; choosing that field again leaves the sort as it is and
         // says it (TODO A11), and only the direction command reverses it.
         ForEach(LibrarySortField.allCases, id: \.self) { field in
-            Toggle(field.rawValue, isOn: Binding(
+            Toggle(field.title, isOn: Binding(
                 get: { sort.isChecked(field) },
                 set: { _ in userChangedSort(.choose(field)) }
             ))
@@ -1017,7 +1150,7 @@ struct LibraryView: View {
                 libraryViewModel.applySortToSubfolders(sort.setting, from: currentFolderPath)
                 announceToVoiceOver(sort.subfolderAnnouncement)
             } label: {
-                Text("Apply Sort to All Subfolders")
+                Text(LibraryListWording.applySortToSubfolders)
             }
         }
     }
@@ -1069,7 +1202,7 @@ struct LibraryView: View {
                     Image(systemName: "play.fill")
                         .foregroundColor(.accentColor)
                         .accessibilityHidden(true)
-                    Text("Continue: \(lastBook.title)")
+                    Text(LibraryListWording.continueVisible(lastBook.title))
                         .lineLimit(1)
                         .truncationMode(.tail)
                     Spacer()
@@ -1085,7 +1218,7 @@ struct LibraryView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Self.continueAccessibilityLabel(for: lastBook, wpm: settingsViewModel.wordsPerMinute))
-            .accessibilityHint("Opens the last book you were reading")
+            .accessibilityHint(LibraryListWording.continueHint)
             .accessibilityIdentifier(voiceOverFocusID)
             .background(StandardVoiceOverFocus(delay: 1.2))
         }
@@ -1105,7 +1238,7 @@ struct LibraryView: View {
     /// speaks it. A book with no time left to show, as a finished one,
     /// leaves the time out: "Continue listening to Emma".
     nonisolated static func continueAccessibilityLabel(for book: Book, wpm: Double) -> String {
-        let label = "Continue listening to \(book.title)"
+        let label = LibraryListWording.continueListeningTo(book.title)
         guard let remaining = BookRow.timeRemaining(for: book, wpm: wpm) else { return label }
         return "\(label), \(BookRow.remainingText(remaining).spoken)"
     }
@@ -1313,7 +1446,7 @@ struct LibraryView: View {
                 }
             }
         } header: {
-            Text("Folders")
+            Text(LibraryListWording.foldersHeader)
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -1327,16 +1460,16 @@ struct LibraryView: View {
     /// question naming the feed (REV14 feeds 7).
     @ViewBuilder
     private func folderMenu(_ folder: BookFolder) -> some View {
-        Button("Rename Folder...") {
+        Button(LibraryListWording.renameFolder) {
             renameFolderText = folder.name
             folderToRename = folder
         }
-        Button("Move Folder...") {
+        Button(LibraryListWording.moveFolder) {
             folderToMove = folder
         }
         if libraryViewModel.offersDeleteFolder(folder) {
             Divider()
-            Button("Delete Folder...", role: .destructive) {
+            Button(LibraryListWording.deleteFolder, role: .destructive) {
                 if libraryViewModel.folderHasContents(folder) {
                     libraryViewModel.pendingDeleteFolder = folder
                     libraryViewModel.showDeleteFolderDialog = true
@@ -1766,8 +1899,8 @@ struct LibraryView: View {
     /// to select multiple books for moving or deleting", and "1 books").
     nonisolated static func editModeButtonHint(isEditMode: Bool, selectedCount: Int) -> String {
         isEditMode
-            ? "Exits edit mode. \(CountWording.books(selectedCount)) selected."
-            : "Enters edit mode, for selecting several books to move or remove."
+            ? LibraryListWording.exitsEditMode(selectedCount: selectedCount)
+            : LibraryListWording.entersEditMode
     }
 
     /// Clear all selections (both native and edit mode) and exit edit mode
@@ -2004,7 +2137,7 @@ struct LibraryView: View {
     /// so a long name never makes the window's content wider than the window.
     private func viewPicker(offering offered: [LibraryViewDefinition]) -> some View {
         HStack(spacing: 0) {
-            Picker("View", selection: $shownViewID) {
+            Picker(LibraryListWording.view, selection: $shownViewID) {
                 ForEach(offered) { view in
                     Text(view.name).tag(view.id)
                 }
@@ -2079,7 +2212,7 @@ struct LibraryView: View {
     /// The Open Book choice's hint, once the Import Book button's. It named
     /// four formats, which left out most of those TextMouth reads, its
     /// audiobooks among them (TODO A10). The Add to Library sheet reuses it.
-    nonisolated static let importBookHint = "Opens a file picker to import books in any format TextMouth reads."
+    nonisolated static var importBookHint: String { LibraryListWording.importBookHint }
 
     /// The Add to Library button (FR20), which replaced the Import, New from
     /// Text, and Add Feed buttons: it shows the sheet that lists those ways
@@ -2300,7 +2433,7 @@ struct LibraryView: View {
 /// window's name.
 private struct ClosedLibraryWindowPlaceholder: View {
     var body: some View {
-        Text("Library")
+        Text(FolderNavigationWording.libraryName)
             .font(.title2)
             .foregroundColor(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -2447,7 +2580,7 @@ private struct LibraryCloudWindowSupport: ViewModifier {
             // only place the refusal is said: nothing announces it besides
             // (#2094).
             .alert(refusal?.title ?? "", isPresented: isShowingRefusal, presenting: refusal) { _ in
-                Button("OK", role: .cancel) {}
+                Button(PhoneAppWording.errorDismiss, role: .cancel) {}
             } message: { refusal in
                 Text(refusal.message)
             }

@@ -51,6 +51,26 @@
         }
       }
     },
+    "%@ Ascending" : {
+      "comment" : "The sort in a Library window's title: a sort field and its direction, ascending. %@ is the sort field's name, such as Title or Date Added."
+    },
+    "%@ Copy" : {
+      "comment" : "Name Duplicate gives a copy of a Library view. %@ is the name of the view that was copied, such as \"Unopened\"; the copy is \"Unopened Copy\"."
+    },
+    "%@ Copy %@" : {
+      "comment" : "Name Duplicate gives a second or later copy of a Library view, the first copy's name being taken. %1$@ is the name of the view that was copied. %2$@ is the copy's number, 2 or more, an identifier written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ Copy %2$@"
+          }
+        }
+      }
+    },
+    "%@ Descending" : {
+      "comment" : "The sort in a Library window's title: a sort field and its direction, descending. %@ is the sort field's name, such as Title or Date Added."
+    },
     "%@ adds a bookmark at the current position." : {
       "comment" : "Help under \"No bookmarks yet.\" in the Bookmarks list. %@ is the keyboard shortcut that adds a bookmark, spelled out in words, such as Command + B.",
       "localizations" : {
@@ -131,6 +151,12 @@
           }
         }
       }
+    },
+    "%@ can't move down." : {
+      "comment" : "VoiceOver announcement when a book is at the bottom of a manual order and cannot move down. %@ is the book's title."
+    },
+    "%@ can't move up." : {
+      "comment" : "VoiceOver announcement when a book is at the top of a manual order and cannot move up. %@ is the book's title."
     },
     "%@ can't open while its edited text can't be used: %@" : {
       "comment" : "First part of the message a reader shows in place of a book whose edited text can't be used. %1$@ is the book's title; %2$@ is the reason, a clause that begins in lower case and ends with its full stop.",
@@ -338,6 +364,9 @@
     "%@ is an audiobook without a transcript, so it has no text to edit." : {
       "comment" : "First sentence of the message when Edit Text is chosen for an audiobook with no transcript. %@ is the book's title."
     },
+    "%@ is an item of a feed, and a feed's items can't be moved." : {
+      "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used on an episode or article of a feed in a folder. %@ is its title."
+    },
     "%@ is being transcribed. Cancel it, or attach the transcript once it finishes." : {
       "comment" : "Alert shown when Attach Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title."
     },
@@ -372,6 +401,9 @@
     "%@ is no longer in the library." : {
       "comment" : "Announcement when the book of a search match has left the library since the search. %@ is the book's title."
     },
+    "%@ is not a valid library folder location." : {
+      "comment" : "Error shown when a folder edit is refused because its location is not a safe library path. %@ is the location, in straight double quotes."
+    },
     "%@ is open in a reader. Close it, then choose Edit Audio again." : {
       "comment" : "Said when a book's reader did not close, so the audio editor can't open. %@ is the book's title. \"Edit Audio\" is the name of the command."
     },
@@ -385,6 +417,9 @@
           }
         }
       }
+    },
+    "%@ is that folder or one of its subfolders." : {
+      "comment" : "Second sentence of the error shown when a folder is moved into itself. %@ is the chosen destination's location, in straight double quotes."
     },
     "%@ is the newer. It has %@." : {
       "comment" : "Sentence of Use This Library's account of which copy is newer. %1$@ is a copy of the library, capitalized, and %2$@ lists what only it has, such as \"newer places in 3 books and 2 books the other lacks\".",
@@ -421,7 +456,7 @@
       "comment" : "Sentence that says what is kept of one deleted download. %@ is the parts and the verb, such as \"Its place and bookmarks are\"."
     },
     "%@ left" : {
-      "comment" : "Time left in the book as the reader's status row shows it. %@ is a clock time such as 3:44:01."
+      "comment" : "A book's time left to read, as its row shows it. %@ is a time, such as 16:00.\nTime left in the book as the reader's status row shows it. %@ is a clock time such as 3:44:01."
     },
     "%@ moved to position %@ of %@" : {
       "comment" : "Announcement after a substitution rule moves in the list. %1$@ is the rule's name, %2$@ is its new place counting from one, and %3$@ is how many rules the list holds.",
@@ -503,11 +538,17 @@
         }
       }
     },
+    "%@ percent" : {
+      "comment" : "A book's reading progress as VoiceOver says it. %@ is a whole number, such as 42."
+    },
     "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet." : {
       "comment" : "Said when Edit Audio… is chosen for a book whose sections are stretches of its audio tracks. %@ is the book's title."
     },
+    "%@ read" : {
+      "comment" : "A book's reading progress as VoiceOver says it when the row also says a download's percentage. %@ is the progress, such as 42 percent."
+    },
     "%@ remaining" : {
-      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. remaining as a row speaks a time left: \"2 hours, 5 minutes remaining\". Placeholders in order: TimeFormatting.spoken(remaining).\nThe sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.\nTime left in the book as Where Am I? speaks it. %@ is the time in words, such as \"3 hours\".\nTime left in the book as the copied reading position shows it. %@ is a clock time such as 3:44:01.",
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. remaining as a row speaks a time left: \"2 hours, 5 minutes remaining\". Placeholders in order: TimeFormatting.spoken(remaining).\nText of the time bar under the Library list: the time left to read the listed books. %@ is a time, such as 3:20:00.\nThe sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.\nTime left in the book as Where Am I? speaks it. %@ is the time in words, such as \"3 hours\".\nTime left in the book as the copied reading position shows it. %@ is a clock time such as 3:44:01.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -548,6 +589,9 @@
     },
     "%@ through the book" : {
       "comment" : "What VoiceOver says for the reader's percent button. %@ is the percent, such as 22.9%."
+    },
+    "%@ total remaining at current speed" : {
+      "comment" : "Part of the time bar's spoken label: the time left for the listed books at the reading speed now set. %@ is a spoken time, such as 3 hours 20 minutes."
     },
     "%@ tries again, %@ quits without saving, %@ keeps TextMouth open." : {
       "comment" : "Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.",
@@ -718,7 +762,7 @@
       }
     },
     "%@, %lld of %lld" : {
-      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a move: the view and its new place, \"Reading List, 4 of 6\", short enough to hear after each of many moves. Placeholders in order: name, number, count.",
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a move: the view and its new place, \"Reading List, 4 of 6\", short enough to hear after each of many moves. Placeholders in order: name, number, count.\nVoiceOver announcement after a book moved one place in an order the user arranges. %1$@ is the book's title. %2$lld is its new place, counted from 1. %3$lld is how many books the order holds.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -774,6 +818,29 @@
         }
       }
     },
+    "%@, and %lld more" : {
+      "comment" : "The first three titles of the feed items that were left where they are, then how many others there were. %1$@ is the three titles, in quotes, separated by commas. %2$lld is how many more.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@, and %lld more"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@, and %lld more"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%@, any subfolders, and the %lld books inside will be removed from the library." : {
       "comment" : "First sentence of the second confirmation that deletes a folder holding several books. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.",
       "localizations" : {
@@ -799,6 +866,9 @@
     },
     "%@, any subfolders, and the book inside will be removed from the library." : {
       "comment" : "First sentence of the second confirmation that deletes a folder holding one book. %@ is the folder's name in quotation marks."
+    },
+    "%@, ascending" : {
+      "comment" : "A sort, spoken: a sort field and its direction. %@ is the sort field's name, such as Title or Date Added. Used inside announcements and labels about the sort."
     },
     "%@, at %@" : {
       "comment" : "VoiceOver label and rotor entry of a search result in a transcribed audiobook. %1$@ is the match with its context and place, and %2$@ is the time it is heard, spoken.",
@@ -865,6 +935,9 @@
           }
         }
       }
+    },
+    "%@, descending" : {
+      "comment" : "A sort, spoken: a sort field and its direction. %@ is the sort field's name, such as Title or Date Added. Used inside announcements and labels about the sort."
     },
     "%@, edited by hand" : {
       "comment" : "What VoiceOver says for a field of the book information sheet that the user edited by hand. %@ is the field's name, such as \"Book title\"."
@@ -1223,6 +1296,52 @@
         }
       }
     },
+    "%lld books are in the cloud" : {
+      "comment" : "Part of the time bar's spoken label: how many listed books are only in the cloud. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book is in the cloud"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books are in the cloud"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books are kept on this Mac" : {
+      "comment" : "Part of the time bar's spoken label: how many listed books are kept downloaded on this Mac. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book is kept on this Mac"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books are kept on this Mac"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld books couldn't be read" : {
       "comment" : "Note on a finished search's status: the text of some books could not be read. %lld is the number of those books. Starts with a number and follows a semicolon.",
       "localizations" : {
@@ -1246,6 +1365,52 @@
         }
       }
     },
+    "%lld books have not been opened yet" : {
+      "comment" : "Part of the time bar's spoken label: how many listed books have not been opened. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book has not been opened yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books have not been opened yet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books in the cloud" : {
+      "comment" : "Text of the time bar: how many listed books are only in the cloud, not downloaded. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book in the cloud"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books in the cloud"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld books in the cloud weren't searched" : {
       "comment" : "Note on a finished search's status: some books are only in the cloud, and a search never downloads them. %lld is the number of those books. Starts with a number and follows a semicolon.",
       "localizations" : {
@@ -1262,6 +1427,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld books in the cloud weren't searched"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books kept on this Mac" : {
+      "comment" : "Text of the time bar: how many listed books are kept downloaded on this Mac. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book kept on this Mac"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books kept on this Mac"
                 }
               }
             }
@@ -1402,6 +1590,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld chapters"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld characters" : {
+      "comment" : "Spoken value of the text area of the New Book from Text sheet: how many characters it holds. %lld is the number of characters.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld character"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld characters"
                 }
               }
             }
@@ -1870,6 +2081,17 @@
         }
       }
     },
+    "%lld of %lld selected" : {
+      "comment" : "Text of the edit bar in the Library list: how many of the listed books are selected. %1$lld is the number selected. %2$lld is how many books are listed.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld selected"
+          }
+        }
+      }
+    },
     "%lld percent" : {
       "comment" : "Said at each quarter of a long save or export in the audio editor. %lld is how much is done, from 0 to 100.",
       "localizations" : {
@@ -2218,6 +2440,29 @@
     "(%@)" : {
       "comment" : "A voice's quality shown in parentheses beside its name in the voice sheet. %@ is the quality, such as Enhanced.\nA voice's quality, in parentheses, beside its name in the voice pop-up. %@ is the quality, such as Enhanced."
     },
+    "(%lld books not yet opened)" : {
+      "comment" : "Text of the time bar: how many listed books have not been opened, so their time is unknown. The parentheses are part of the text. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "(%lld book not yet opened)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "(%lld books not yet opened)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "(none)" : {
       "comment" : "The restart gesture's summary when it has no steps, which the editor does not normally allow."
     },
@@ -2258,8 +2503,22 @@
     "A copy was kept in the book's package. Start over with no edits, or cancel." : {
       "comment" : "Explains the question about an unreadable audio edit history: what Start Over and Cancel do."
     },
+    "A destination folder path is invalid." : {
+      "comment" : "Error shown when books or folders cannot be moved because the destination folder's path is not a valid place in the library."
+    },
     "A filter preset needs a name." : {
       "comment" : "Said when a filter preset is saved with a blank name."
+    },
+    "A folder named %@ already exists in %@." : {
+      "comment" : "Error shown when a folder's new name or place is taken. %1$@ is the existing folder's name, in straight double quotes. %2$@ is where it is: its folder's location in straight double quotes, or the name of the library's top level.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "A folder named %1$@ already exists in %2$@."
+          }
+        }
+      }
     },
     "A library in the cloud can take a while: files that are only in the cloud are brought to this Mac to be read." : {
       "comment" : "Sentence of what the Compare Libraries sheet says while it works: a library kept in a cloud drive is slow because files that are only in the cloud are downloaded first."
@@ -2500,8 +2759,14 @@
     "Add step" : {
       "comment" : "Title of the button that adds a step to the restart gesture in the Miscellaneous settings."
     },
+    "Add to Library" : {
+      "comment" : "Button of the New Book from Text sheet that adds the new book to the library."
+    },
     "Add to Reading List" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Adds the selected books to the end of the reading list. Also the title of the menu command of the same name."
+    },
+    "Added" : {
+      "comment" : "Name of the book information sheet's row that shows the date the book was added to the library."
     },
     "Added %@" : {
       "comment" : "Said as a filter preset is added. %@ is the preset's name.\nSpeak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\"."
@@ -2550,6 +2815,9 @@
     },
     "Adds speed buttons and the current speed" : {
       "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings."
+    },
+    "Adds the new book to your library" : {
+      "comment" : "Hint of the Add to Library button of the New Book from Text sheet."
     },
     "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page." : {
       "comment" : "Hint and caption of the Playback setting that adds the page to Where Am I?, a command that says where the reader is. \"Page 12 of 300\" is an example of how the page is said."
@@ -2625,11 +2893,17 @@
     "All Conditions" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A match as its pop-up names it. This is the form for the first case of the condition."
     },
+    "All Folders" : {
+      "comment" : "Name of the library's top level in the Folders view, where the window title and the folder announcements call it that. It holds every folder."
+    },
     "All books by the same author" : {
       "comment" : "Hint of the Same Author criterion of Find Duplicate Books."
     },
     "All levels" : {
       "comment" : "Choice of the headings sheet's level filter that shows every level."
+    },
+    "All subfolders now sorted by %@" : {
+      "comment" : "VoiceOver announcement after the sort is applied to every subfolder. %@ is the sort, such as \"Title, ascending\"."
     },
     "Already at the end." : {
       "comment" : "Said when a step forward in the audio editor can go no further."
@@ -2768,6 +3042,9 @@
     },
     "Apply Filter…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the choice of audio filters to apply to the selection."
+    },
+    "Apply Sort to All Subfolders" : {
+      "comment" : "Item of the Sort menu that gives every subfolder of the folder shown the sort chosen here."
     },
     "Apply to" : {
       "comment" : "Label of the choice in the audio editor's Apply Filter sheet of what to filter: the selection or the whole file."
@@ -2926,6 +3203,9 @@
         }
       }
     },
+    "Audio" : {
+      "comment" : "Name of the book format of an audiobook, a book made of audio files, shown in a book's information, the format column, and the duplicate finder."
+    },
     "Audio Editing" : {
       "comment" : "Heading of the Audio Editing group in Storage settings: what happens to originals of edited audio, ffmpeg, and the audio editor's behaviour."
     },
@@ -2957,7 +3237,10 @@
       "comment" : "Title of a premade audio filter preset: sets the whole audio's loudness to a level for audiobooks."
     },
     "Author" : {
-      "comment" : "Name of the book information sheet's field for a book's author; VoiceOver reads it as the field's label."
+      "comment" : "Name of a way to sort the books: by the author. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.\nName of the book information sheet's field for a book's author; VoiceOver reads it as the field's label."
+    },
+    "Author:" : {
+      "comment" : "Caption beside the author field of the New Book from Text sheet. VoiceOver skips it; the field has its own label."
     },
     "Auto-play after navigation" : {
       "comment" : "Title and VoiceOver label of the checkbox in the Playback settings that starts playing after a jump to a heading, bookmark, or search result."
@@ -3063,13 +3346,16 @@
       "comment" : "The object of a removal confirmation's title for one book, in title case, as in \"Move Book to Trash?\".\nThe word that begins the title of a reader window for a book, before its title and author: \"Book: <title> by <author>\".\nTitle of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it."
     },
     "Book Info" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book's information, such as title and author. Also the title of the menu command of the same name.\nTitle of the reader toolbar's button that opens the book's information sheet."
+      "comment" : "Menu item of a book's row that opens the sheet with the book's information.\nName of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book's information, such as title and author. Also the title of the menu command of the same name.\nTitle of the reader toolbar's button that opens the book's information sheet."
     },
     "Book Information" : {
-      "comment" : "Heading of the sheet in which the user edits a book's information (title, author and so on)."
+      "comment" : "Heading of the sheet in which the user edits a book's information (title, author and so on).\nHeading of the sheet that shows and edits a book's title and author, and lists its other details."
     },
     "Book Reader" : {
       "comment" : "Title of a window in which a book is read, before the window shows its own book's title. Also the name of the window group."
+    },
+    "Book author" : {
+      "comment" : "What VoiceOver says for the book information sheet's field for the book's author."
     },
     "Book content" : {
       "comment" : "What VoiceOver calls the scrolling area that holds the book's text in the reader."
@@ -3237,7 +3523,7 @@
       }
     },
     "Books" : {
-      "comment" : "Name of the VoiceOver rotor in the Search Library window that moves between the books that hold matches.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the books in the folder and every folder below it.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .books."
+      "comment" : "Name of the VoiceOver rotor in the Search Library window that moves between the books that hold matches.\nName of the VoiceOver rotor that moves between the books of the Library list.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the books in the folder and every folder below it.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .books."
     },
     "Books (%lld)" : {
       "comment" : "The header of a list's books, with their count: \"Books (743)\". %lld is the number of books.",
@@ -3262,8 +3548,17 @@
         }
       }
     },
+    "Books can be moved only in a folder sorted by %@, and this folder is not." : {
+      "comment" : "First sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort."
+    },
+    "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again." : {
+      "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used in a view that mixes books from many folders. Folders and Reading List are names of views in the View menu."
+    },
     "Books with the same title, regardless of author" : {
       "comment" : "Hint of the Same Title criterion of Find Duplicate Books."
+    },
+    "Braille" : {
+      "comment" : "Name of the book format of a braille file (.brf or .brl), shown in a book's information, the format column, and the duplicate finder."
     },
     "Braille Code" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row that names a braille book's code, and of its pop-up, which reads the book again with another."
@@ -3320,6 +3615,9 @@
     "Cancel Download" : {
       "comment" : "Button of the Transcribe Audio sheet that stops a speech model's download."
     },
+    "Cancel New Folder" : {
+      "comment" : "Title of the button, in a folder chooser, that closes the new folder's fields without making a folder. It is not named Cancel, so VoiceOver tells it apart from the sheet's own Cancel."
+    },
     "Cancel Timer" : {
       "comment" : "Button of the sleep timer sheet that stops the running timer.",
       "localizations" : {
@@ -3330,6 +3628,9 @@
           }
         }
       }
+    },
+    "Cancels creating a new book and closes this view" : {
+      "comment" : "Hint of the Cancel button of the New Book from Text sheet."
     },
     "Caret" : {
       "comment" : "Name of the punctuation key \"^\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Caret\"."
@@ -3437,11 +3738,17 @@
     "Check the criteria above, then %@." : {
       "comment" : "What Find Duplicate Books shows before its first scan. %@ is the title of the scan button."
     },
+    "Check the text, or save the file in the editor as UTF-8 and choose %@ again." : {
+      "comment" : "Second sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells: what to do. UTF-8 is the name of a text encoding. %@ is the name of the Reload from Editor button."
+    },
     "Checking the file" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value while the book's file is read to learn what it says of its encoding."
     },
     "Checking the speech model…" : {
       "comment" : "Line of the Transcribe Audio sheet while it checks whether the language's speech model is on this Mac."
+    },
+    "Choose %@ in the Sort menu, then try again." : {
+      "comment" : "Second sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort, a choice in the Sort menu."
     },
     "Choose Edit Text again to edit the new copy's text." : {
       "comment" : "Second sentence of that announcement: what to do to edit the new copy. Edit Text is a menu command."
@@ -3457,6 +3764,12 @@
     },
     "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio." : {
       "comment" : "Message of the file panel opened by Attach Transcript. %@ is the audiobook's title. WebVTT and SubRip are subtitle file formats, and .vtt and .srt their file extensions."
+    },
+    "Choose a destination outside %@." : {
+      "comment" : "First sentence of the error shown when a folder is moved into itself. %@ is the folder's location, in straight double quotes."
+    },
+    "Choose a folder name that is not empty, is not \".\" or \"..\", does not end in \".tmb\", and is not reserved by TextMouth." : {
+      "comment" : "Error shown when a folder's new name is refused: the name is empty, is a single or double dot, ends in .tmb, or is one TextMouth keeps for itself. The quoted pieces are literal text."
     },
     "Choose a voice for reading. Change takes effect immediately." : {
       "comment" : "VoiceOver hint of the voice pop-up in the Voice settings."
@@ -3499,6 +3812,9 @@
     },
     "Choose the language in Settings, Playback, Transcription." : {
       "comment" : "Line under the Transcribe Audio sheet's language line saying where the language is chosen. Settings, Playback, and Transcription are the names of the settings window, its Playback pane, and its Transcription group."
+    },
+    "Choose where to move the books and subfolders before deleting \"%@\"." : {
+      "comment" : "Explanation in the sheet that chooses where a folder's contents go before the folder is deleted. %@ is the folder's name."
     },
     "Chooses a folder holding another copy of this library and lists what differs. Nothing in either copy is changed." : {
       "comment" : "VoiceOver hint of the Compare Libraries button in Storage settings."
@@ -3653,6 +3969,9 @@
     "Closes Search Library; results stay for next time" : {
       "comment" : "VoiceOver hint of the Close button of the Search Library window. Search Library is the window's name."
     },
+    "Closes the new folder's fields and keeps the folder chosen." : {
+      "comment" : "Hint of the button, in a folder chooser, that closes the new folder's fields: the folder chosen in the pop-up stays chosen."
+    },
     "Closes this book's window" : {
       "comment" : "Hint of the Close button of the reader's view for a book that is not ready to read."
     },
@@ -3678,6 +3997,9 @@
     },
     "Colon" : {
       "comment" : "Name of the punctuation key \":\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Colon\"."
+    },
+    "Comic Book Archive (CBZ)" : {
+      "comment" : "Name of the book format of a comic book archive (.cbz), a ZIP of pictures (CBZ is a format name), shown in a book's information, the format column, and the duplicate finder."
     },
     "Comma" : {
       "comment" : "Name of the punctuation key \",\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Comma\"."
@@ -3754,8 +4076,14 @@
     "Continue" : {
       "comment" : "Button of the Edit Text explanation alert that goes on to open the text in the editor. Return presses it."
     },
+    "Continue listening to %@" : {
+      "comment" : "Spoken label of the Continue button at the top of the Library list. %@ is the title of the book last read. The time left may follow it."
+    },
     "Continue to Next Book" : {
       "comment" : "A choice of the When a Book Ends picker: the next book in the folder plays."
+    },
+    "Continue: %@" : {
+      "comment" : "Text of the Continue button at the top of the Library list. %@ is the title of the book last read."
     },
     "Continues the paused recording." : {
       "comment" : "VoiceOver hint of the Resume button in the Record window."
@@ -3787,6 +4115,9 @@
     "Copy at most 10 minutes at a time." : {
       "comment" : "Said when the selection is too long for the audio editor's Copy."
     },
+    "Copy some text, then paste again." : {
+      "comment" : "Second sentence of the announcement when Paste from Clipboard finds no text on the clipboard: what to do."
+    },
     "Could not add the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
       "localizations" : {
@@ -3798,6 +4129,42 @@
         }
       }
     },
+    "Could not create folder" : {
+      "comment" : "Start of the error message when a new folder could not be created. The reason follows it after a colon."
+    },
+    "Could not delete \"%@\" and move its contents" : {
+      "comment" : "Start of the error message when a folder could not be deleted and its contents moved to its parent. %@ is the folder's name. The reason follows it after a colon."
+    },
+    "Could not discard duplicate import" : {
+      "comment" : "Start of the error message when the new copy of a duplicate book could not be discarded. The reason follows it after a colon."
+    },
+    "Could not move \"%@\"" : {
+      "comment" : "Start of the error message when a folder was refused a move. %@ is the folder's name. The reason follows it after a colon."
+    },
+    "Could not move books" : {
+      "comment" : "Start of the error message when books could not be moved to a folder. The reason follows it after a colon."
+    },
+    "Could not move folder" : {
+      "comment" : "Start of the error message when moving a folder failed on disk, and everything was put back. The reason follows it after a colon."
+    },
+    "Could not open the text in an editor, because its file could not be written." : {
+      "comment" : "First sentence of the announcement when Open in Editor could not write the text to a file for the editor."
+    },
+    "Could not open the text in an editor, because no app opened its file." : {
+      "comment" : "First sentence of the announcement when Open in Editor wrote the file but no app opened it, as when nothing on this Mac opens plain text files."
+    },
+    "Could not organize imported ZIP books" : {
+      "comment" : "Start of the error message when the books of an imported ZIP archive could not be moved into the folder made for them. The reason follows it after a colon."
+    },
+    "Could not read the text back from the editor's file, so the text here is unchanged." : {
+      "comment" : "First sentence of the announcement when Reload from Editor could not read the editor's file back."
+    },
+    "Could not relocate folder contents" : {
+      "comment" : "Start of the error message when the books of a deleted folder could not be moved to their new place. The reason follows it after a colon."
+    },
+    "Could not remove folder: its library path is invalid or has changed." : {
+      "comment" : "Error message when a folder cannot be removed because its place in the library is not valid any more, or it moved."
+    },
     "Could not remove the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be removed because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
       "localizations" : {
@@ -3808,6 +4175,15 @@
           }
         }
       }
+    },
+    "Could not rename \"%@\"" : {
+      "comment" : "Start of the error message when a folder was refused a new name. %@ is the folder's current name. The reason follows it after a colon."
+    },
+    "Could not rename folder" : {
+      "comment" : "Start of the error message when renaming a folder failed on disk, and everything was put back. The reason follows it after a colon."
+    },
+    "Could not replace duplicate" : {
+      "comment" : "Start of the error message when Replace Existing could not put the new copy in place of the library's copy. The reason follows it after a colon."
     },
     "Could not save metadata to the library's copy of “%@”, because that file is missing from the library." : {
       "comment" : "First sentence of the message when the library's copy of an EPUB file is missing, so the metadata could not be written into it. %@ is the EPUB file's name."
@@ -3887,6 +4263,12 @@
         }
       }
     },
+    "Create" : {
+      "comment" : "Button that makes the new folder."
+    },
+    "Create new folder" : {
+      "comment" : "Spoken label of the toolbar button that opens the sheet that makes a new folder."
+    },
     "Current Timer" : {
       "comment" : "Heading of the sleep timer sheet's section about the timer running now.",
       "localizations" : {
@@ -3945,7 +4327,7 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the next one. Also the title of the menu command of the same name."
     },
     "Date Added" : {
-      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .addedWithin."
+      "comment" : "Name of a way to sort the books: by the date the book was added. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .addedWithin."
     },
     "Date Opened" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .openedWithin."
@@ -4055,6 +4437,12 @@
     "Delete Downloads" : {
       "comment" : "Title in title case of the button that deletes several feed items' downloads. The confirmation's title says how many."
     },
+    "Delete Folder..." : {
+      "comment" : "Item of a folder's menu that deletes the folder. The three dots mean a question follows."
+    },
+    "Delete Folder?" : {
+      "comment" : "Title of the question asked before a folder that holds books or folders is deleted."
+    },
     "Delete Line" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Line\"."
     },
@@ -4122,11 +4510,35 @@
     "Descending" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A direction as the pop-up names it. This is the form for the other case of the condition."
     },
+    "Deselect All" : {
+      "comment" : "Button of the edit bar that deselects every book."
+    },
+    "Deselect all books" : {
+      "comment" : "Spoken label of the edit bar's button that deselects every book."
+    },
+    "Deselects this book." : {
+      "comment" : "Hint of a book's row in the Library list in edit mode, while the book is selected."
+    },
+    "Destination" : {
+      "comment" : "Caption of the pop-up that chooses the folder the books move into."
+    },
+    "Destination folder" : {
+      "comment" : "What VoiceOver says for the pop-up that chooses the folder the books move into."
+    },
+    "Destination for folder contents" : {
+      "comment" : "What VoiceOver says for the pop-up that chooses the folder a deleted folder's books and subfolders move into."
+    },
+    "Destination parent folder" : {
+      "comment" : "What VoiceOver says for the pop-up that chooses the folder a moved folder goes into."
+    },
     "Differences" : {
       "comment" : "VoiceOver label of the list of differences the Compare Libraries sheet found between the two copies of the library."
     },
     "Disable" : {
       "comment" : "Title of the context menu item that turns a substitution rule off."
+    },
+    "Disabled. Enter some text content first." : {
+      "comment" : "Hint of the Add to Library button of the New Book from Text sheet while the text area is empty and the button is dimmed."
     },
     "Discard" : {
       "comment" : "Button of the audio editor's close question that undoes the unsaved edits.\nTitle of the button that deletes a recording, in the Record window's list of recordings left behind and in the question asked when it closes.\nTitle of the question's button that deletes the recording, when the Record window is closed."
@@ -4173,12 +4585,35 @@
       "comment" : "Explanation under the minimum pause stepper in the Playback settings."
     },
     "Done" : {
-      "comment" : "Button that closes a sheet, such as the filter presets sheet.\nButton that closes the Compare Libraries sheet.\nButton that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The title of the button that closes the sheet.\nTitle of the button that closes the Find Duplicate Books sheet.",
+      "comment" : "Button that closes a sheet, such as the filter presets sheet.\nButton that closes the Compare Libraries sheet.\nButton that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The title of the button that closes the sheet.\nTitle of the button that closes the Find Duplicate Books sheet.\nTitle of the toolbar button that leaves edit mode in the Library list, shown while edit mode is on.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "OK"
+          }
+        }
+      }
+    },
+    "Done. Moved %lld books." : {
+      "comment" : "VoiceOver announcement when a move of many books to a folder finishes. %lld is how many books were moved.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Done. Moved %lld book."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Done. Moved %lld books."
+                }
+              }
+            }
           }
         }
       }
@@ -4332,7 +4767,7 @@
       "comment" : "Second sentence of the Edit Text explanation. \"<!-- chapter:\" is the literal text that begins a chapter line in the file; it stays exactly as written."
     },
     "Edit" : {
-      "comment" : "Button of the track question that opens the audio editor on the track chosen, and the heading of the audio editor's editing buttons.\nName of a filter preset's Edit button, also its VoiceOver action and context menu item.\nName of the command that opens a substitution rule's editor: a row button's label and tooltip, a VoiceOver action, and a context menu item."
+      "comment" : "Button of the track question that opens the audio editor on the track chosen, and the heading of the audio editor's editing buttons.\nName of a filter preset's Edit button, also its VoiceOver action and context menu item.\nName of the command that opens a substitution rule's editor: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nTitle of the toolbar button that enters edit mode in the Library list, for selecting several books."
     },
     "Edit %@" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sheet's title for a view being changed. Placeholders in order: name."
@@ -4418,6 +4853,28 @@
     "Edit With" : {
       "comment" : "Button of the panel in which the user chooses an app to edit a book's text with."
     },
+    "Edit mode, %lld of %lld book selected" : {
+      "comment" : "Spoken label of the edit bar when one book is listed. %1$lld is how many are selected, 0 or 1. %2$lld is how many are listed, 1.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Edit mode, %1$lld of %2$lld book selected"
+          }
+        }
+      }
+    },
+    "Edit mode, %lld of %lld books selected" : {
+      "comment" : "Spoken label of the edit bar when several books, or none, are listed. %1$lld is how many are selected. %2$lld is how many are listed.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Edit mode, %1$lld of %2$lld books selected"
+          }
+        }
+      }
+    },
     "Edit note for bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
@@ -4455,6 +4912,9 @@
     },
     "Elapsed: %@" : {
       "comment" : "Line of the Transcribe Audio sheet while transcribing, saying how long it has run. %@ is a length of time in words, such as \"12 seconds\"."
+    },
+    "Empty" : {
+      "comment" : "Spoken value of the text area of the New Book from Text sheet while it holds no text."
     },
     "Enable" : {
       "comment" : "Title of the context menu item that turns a substitution rule on."
@@ -4531,6 +4991,21 @@
     "Enter a search term above." : {
       "comment" : "Status line of Search in Book before anything is typed."
     },
+    "Enter a title for the new book" : {
+      "comment" : "Hint of the title field of the New Book from Text sheet."
+    },
+    "Enter edit mode" : {
+      "comment" : "Spoken label of the toolbar button that enters edit mode in the Library list."
+    },
+    "Enter or paste the text for the new book" : {
+      "comment" : "Hint of the text area of the New Book from Text sheet."
+    },
+    "Enter the author name" : {
+      "comment" : "Hint of the author field of the New Book from Text sheet."
+    },
+    "Enters edit mode, for selecting several books to move or remove." : {
+      "comment" : "Hint of the toolbar's edit mode button while edit mode is off."
+    },
     "Episodes" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .episodes."
     },
@@ -4564,7 +5039,7 @@
       "comment" : "Title of an alert about a problem, when the problem has no more specific title.\nTitle of the reader's alert about a problem that is not an audio failure."
     },
     "Error: %@" : {
-      "comment" : "What VoiceOver says for the refusal shown under a jump panel's field. %@ is the refusal's sentence."
+      "comment" : "What VoiceOver reads for the reason an operation failed in a sheet: the word Error, then the reason. %@ is the reason.\nWhat VoiceOver says for the refusal shown under a jump panel's field. %@ is the refusal's sentence."
     },
     "Escape" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Escape\"."
@@ -4637,6 +5112,32 @@
     "Execute" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Execute\"."
     },
+    "Exit edit mode" : {
+      "comment" : "Spoken label of the toolbar button that leaves edit mode in the Library list."
+    },
+    "Exits edit mode. %lld books selected." : {
+      "comment" : "Hint of the toolbar's edit mode button while edit mode is on. %lld is how many books are selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Exits edit mode. %lld book selected."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Exits edit mode. %lld books selected."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires." : {
       "comment" : "Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written."
     },
@@ -4689,6 +5190,9 @@
     "Export…" : {
       "comment" : "Button of the audio editor's Export Audio sheet that asks where to save the file.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file."
     },
+    "Extracting Text" : {
+      "comment" : "Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it."
+    },
     "Fade In" : {
       "comment" : "Title of a premade audio filter preset: fades the audio in over one second."
     },
@@ -4715,6 +5219,12 @@
     "Failed to load book" : {
       "comment" : "Heading of the view shown in place of a book that could not be loaded; the reason follows it."
     },
+    "Feed Settings" : {
+      "comment" : "Title of the Library toolbar button, in the folder of a feed, that opens the feed's settings."
+    },
+    "Feed settings for %@" : {
+      "comment" : "Spoken label of the Library toolbar button, in the folder of a feed, that opens the feed's settings. %@ is the feed's title."
+    },
     "Feeds" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the feeds inside the folder, shown only when it has any.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .feeds."
     },
@@ -4737,6 +5247,9 @@
           }
         }
       }
+    },
+    "File Size" : {
+      "comment" : "Name of a way to sort the books: by the size of the book's file. Shown in the Sort menu, the library view editor, the window title, and in sort announcements."
     },
     "File format: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's file format row. %@ is the format, such as MP3."
@@ -4799,14 +5312,42 @@
     "Folder" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The kind a folder's summary names after the folder's name.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .folder."
     },
+    "Folder %@ created in %@." : {
+      "comment" : "VoiceOver announcement once the New Folder sheet has closed on a folder made. %1$@ is the new folder's name. %2$@ is the place it is in: its parent folder's path, or the name of the library's top level.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Folder %1$@ created in %2$@."
+          }
+        }
+      }
+    },
+    "Folder %@ created. %@: %@." : {
+      "comment" : "VoiceOver announcement when a folder is made with the new folder's fields. %1$@ is the new folder's name. %2$@ is the pop-up's spoken label, such as Destination folder. %3$@ is the new folder's full path, now chosen in the pop-up.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Folder %1$@ created. %2$@: %3$@."
+          }
+        }
+      }
+    },
     "Folder Settings" : {
-      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The sheet's navigation title (the window's title while it is open)."
+      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The sheet's navigation title (the window's title while it is open).\nTitle of the Library toolbar button, in a plain folder, that opens the folder's settings."
+    },
+    "Folder name" : {
+      "comment" : "Name of the text field that holds a folder's name, in the New Folder and Rename Folder sheets."
     },
     "Folder names stay as you typed them." : {
       "comment" : "Last sentence of the note under the Leading Articles pop-up: folder names are never changed by the setting."
     },
     "Folder or Feed Settings" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the settings of the folder or feed the Library window shows. Also the title of the menu command of the same name."
+    },
+    "Folder settings for %@" : {
+      "comment" : "Spoken label of the Library toolbar button, in a plain folder, that opens the folder's settings. %@ is the folder's name."
     },
     "Folder “%@” in %@ is “%@” in %@." : {
       "comment" : "A difference found by Compare Libraries: the same folder has two paths. %1$@ is its path in this copy, %2$@ is this copy, %3$@ is its path in the other copy, and %4$@ is the other copy.",
@@ -4829,6 +5370,9 @@
           }
         }
       }
+    },
+    "Folders" : {
+      "comment" : "Header of the Library list's section of folders, and name of the VoiceOver rotor that moves between them."
     },
     "Folders and the Reading List have no conditions to copy." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint for Folders and the Reading List, when it is dimmed."
@@ -5002,6 +5546,9 @@
           }
         }
       }
+    },
+    "Go up one folder level" : {
+      "comment" : "Spoken label of the toolbar button that goes up to the folder that holds the folder shown."
     },
     "Goes to this bookmark and closes the list." : {
       "comment" : "VoiceOver hint of a bookmark's row in the Bookmarks list.",
@@ -5201,7 +5748,7 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed faster. Also the title of the menu command of the same name."
     },
     "Info: %@" : {
-      "comment" : "Navigation title of the book information sheet. %@ is the book's title."
+      "comment" : "Navigation title of the book information sheet. %@ is the book's title.\nWindow title of the sheet that shows a book's information. %@ is the book's title."
     },
     "Information" : {
       "comment" : "Heading of the group of keyboard shortcuts that speak information, such as Where Am I, in Settings."
@@ -5413,6 +5960,12 @@
     "Kept" : {
       "comment" : "The original audio's state in the audio editor's Audio Info sheet: it is kept."
     },
+    "Kindle Book (KFX)" : {
+      "comment" : "Name of the book format of a Kindle book in the KFX format (KFX is a format name), shown in a book's information, the format column, and the duplicate finder."
+    },
+    "Kindle Book (MOBI)" : {
+      "comment" : "Name of the book format of a Kindle book in the MOBI format (MOBI is a format name), shown in a book's information, the format column, and the duplicate finder."
+    },
     "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain." : {
       "comment" : "Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas."
     },
@@ -5433,6 +5986,9 @@
         }
       }
     },
+    "Last Opened" : {
+      "comment" : "Name of a way to sort the books: by the date the book was last opened. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.\nName of the book information sheet's row that shows the date the book was last opened."
+    },
     "Last message" : {
       "comment" : "Label of the audio editor's line that repeats the last announcement, so a braille display can read it again."
     },
@@ -5447,6 +6003,28 @@
     },
     "Leaves the audiobook untranscribed; Transcribe Audio does it later." : {
       "comment" : "VoiceOver hint of the Not Now button of the question offered after an import. Transcribe Audio is the command's name."
+    },
+    "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library." : {
+      "comment" : "VoiceOver announcement when Move to Folder left one feed item where it is. %1$@ is the item's title, in quotes. %2$@ is the name of the Move to Library command, which makes an item a book of the library.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library."
+          }
+        }
+      }
+    },
+    "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library." : {
+      "comment" : "VoiceOver announcement when Move to Folder left several feed items where they are. %1$@ is the items' titles, in quotes, such as \"A\", \"B\", and 2 more. %2$@ is the name of the Move to Library command, which makes an item a book of the library.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library."
+          }
+        }
+      }
     },
     "Left Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Arrow\"."
@@ -5479,16 +6057,33 @@
       "comment" : "Choice of the headings sheet's level filter that shows levels from 1 to a deeper one. %lld is the deepest level shown."
     },
     "Library" : {
-      "comment" : "Heading of the group of Library window keyboard shortcuts in Settings, and the title of the Library menu.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The tab's name in the Settings window's toolbar.\nThe top of the library, as the Save in pop-up of the Record window names it.\nTitle of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.\nTitle of the first screen, the list of the user's books and folders."
+      "comment" : "Heading of the group of Library window keyboard shortcuts in Settings, and the title of the Library menu.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The tab's name in the Settings window's toolbar.\nThe name spoken for the library's top level, the place that holds the folders and the books outside any folder, as in \"Library, 743 books\" after going to it.\nThe top of the library, as the Save in pop-up of the Record window names it.\nTitle of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.\nTitle of the first screen, the list of the user's books and folders."
     },
     "Library / %@" : {
       "comment" : "A library folder in the Save in pop-up of the Record window: the library, then the folder's path, its folders separated by slashes. %@ is the path, such as \"Fiction / Sci-Fi\"."
     },
     "Library Root" : {
-      "comment" : "The folder name Find Duplicate Books gives a book at the top level of the library, in a duplicate's spoken label."
+      "comment" : "The folder name Find Duplicate Books gives a book at the top level of the library, in a duplicate's spoken label.\nThe name of the library's top level, the place that holds the folders and the books outside any folder. Shown as a folder choice, and in messages that say where a folder is."
+    },
+    "Library view" : {
+      "comment" : "Spoken label of the View pop-up of a Library window, which chooses the view of the library shown, such as Unopened."
     },
     "Library windows" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.\nNames where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed."
+    },
+    "Library: %@" : {
+      "comment" : "Title of a Library window that shows a view with one fixed order, such as the Reading List. %@ is the view's name."
+    },
+    "Library: %@ (%@)" : {
+      "comment" : "Title of a Library window. %1$@ is the name of the folder or view it shows. %2$@ is its sort, such as \"Title Ascending\" or \"Manual Order\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Library: %1$@ (%2$@)"
+          }
+        }
+      }
     },
     "Listen and Move" : {
       "comment" : "Heading of the audio editor's buttons for listening and moving the cursor."
@@ -5676,11 +6271,20 @@
     "Manifest updated" : {
       "comment" : "Announcement after the user saved an edited manifest.json and TextMouth took it as the book's arrangement of tracks."
     },
+    "Manual Order" : {
+      "comment" : "Name of a way to sort the books: by the order the user arranges by hand, with no direction. Shown in the Sort menu, the library view editor, the window title, and in sort announcements."
+    },
+    "Manual order has no direction" : {
+      "comment" : "Hint of the Sort menu's direction command, and of the library view editor's order pop-up, while the books are in manual order, which has no ascending or descending."
+    },
     "Mark In" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts a selection at the current position."
     },
     "Mark Out" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Ends the selection at the current position."
+    },
+    "Markdown" : {
+      "comment" : "Name of the book format of a Markdown file (.md), shown in a book's information, the format column, and the duplicate finder."
     },
     "Marker %@" : {
       "comment" : "A marker as the audio editor's list, its row's buttons, and announcements name it. %@ is the marker's number, an identifier written without digit grouping."
@@ -5870,6 +6474,12 @@
     "Most rows shown" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The limit field's spoken label."
     },
+    "Move" : {
+      "comment" : "Button that moves the books or the folder to the place chosen."
+    },
+    "Move \"%@\"" : {
+      "comment" : "Heading of the sheet that moves a folder under a new parent folder. %@ is the folder's name.\nHeading of the sheet that moves one book to a folder. %@ is the book's title."
+    },
     "Move %@" : {
       "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": moving a stretch of audio. %@ is its length in title-cased words, such as \"2.5 Seconds\"."
     },
@@ -5885,29 +6495,141 @@
     "Move %@ to the Trash" : {
       "comment" : "VoiceOver label of a removal button that moves files to the Trash. %@ is what is moved, such as \"“Notes”\", \"3 selected books\", or \"the original file\"."
     },
+    "Move %lld Books" : {
+      "comment" : "Heading of the sheet that moves several books to a folder. %lld is how many books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld Book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld Books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Move %lld Books to Folder..." : {
+      "comment" : "Title of the command that moves several selected books to a folder, in a row's menu. %lld is how many books it moves.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld Book to Folder..."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld Books to Folder..."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Move %lld books to folder" : {
+      "comment" : "Spoken label of the edit bar's Move button. %lld is how many books are selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld book to folder"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld books to folder"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Move Book Down" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place down in its folder. Also the title of the menu command of the same name."
     },
     "Move Book Up" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place up in its folder. Also the title of the menu command of the same name."
     },
+    "Move Contents & Delete Folder" : {
+      "comment" : "Button that moves a folder's books and subfolders to the chosen place and then deletes the folder."
+    },
+    "Move Contents Out" : {
+      "comment" : "Button of the question about deleting a folder: it moves the folder's books and subfolders to another place, then deletes the folder."
+    },
+    "Move Contents of \"%@\"" : {
+      "comment" : "Heading of the sheet that chooses where the books and subfolders of a folder go before it is deleted. %@ is the folder's name."
+    },
+    "Move Contents: %@" : {
+      "comment" : "Window title of the sheet that chooses where a folder's contents go before it is deleted. %@ is the folder's name."
+    },
     "Move Down" : {
-      "comment" : "Name of a filter preset's Move Down button, also its VoiceOver action and context menu item.\nName of the command that moves a substitution rule down the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place down."
+      "comment" : "Menu item and VoiceOver action of a book's row that moves the book one place toward the bottom of an order the user arranges.\nName of a filter preset's Move Down button, also its VoiceOver action and context menu item.\nName of the command that moves a substitution rule down the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place down."
+    },
+    "Move Folder..." : {
+      "comment" : "Item of a folder's menu that opens the sheet that moves the folder under another folder. The three dots mean a sheet opens."
+    },
+    "Move Folder: %@" : {
+      "comment" : "Window title of the sheet that moves a folder. %@ is the folder's name."
     },
     "Move Up" : {
-      "comment" : "Name of a filter preset's Move Up button, also its VoiceOver action and context menu item.\nName of the command that moves a substitution rule up the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place up, as a VoiceOver action and a context menu item."
+      "comment" : "Menu item and VoiceOver action of a book's row that moves the book one place toward the top of an order the user arranges.\nName of a filter preset's Move Up button, also its VoiceOver action and context menu item.\nName of the command that moves a substitution rule up the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place up, as a VoiceOver action and a context menu item."
+    },
+    "Move contents to" : {
+      "comment" : "Caption of the pop-up that chooses the folder a deleted folder's books and subfolders move into."
     },
     "Move to Folder" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected books into a folder."
     },
     "Move to Folder..." : {
-      "comment" : "Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows."
+      "comment" : "Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows.\nTitle of the command that moves the selected book to a folder, in a row's menu. The three dots mean a sheet opens to choose the folder."
     },
     "Move to Library…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves feed episodes or articles into a library folder as books of their own. Also the title of the menu command of the same name."
     },
     "Move to Trash" : {
       "comment" : "Title of the button that removes books and moves their files to the Trash, in title case."
+    },
+    "Moved %@ above %@" : {
+      "comment" : "VoiceOver announcement after a book moved up past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved above.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Moved %1$@ above %2$@"
+          }
+        }
+      }
+    },
+    "Moved %@ below %@" : {
+      "comment" : "VoiceOver announcement after a book moved down past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved below.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Moved %1$@ below %2$@"
+          }
+        }
+      }
     },
     "Moved %@ to %@." : {
       "comment" : "Said as a Paste right after a Cut moves the audio. %1$@ is the length moved and %2$@ the time it moved to, both in words.",
@@ -5988,14 +6710,52 @@
     "Moves the view one place up the list" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's hint."
     },
+    "Moving %lld books..." : {
+      "comment" : "Status shown and spoken in the Move sheet while the books' packages move. %lld is how many books. The three dots mean it is in progress.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Moving %lld book..."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Moving %lld books..."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Moving the folder's contents..." : {
+      "comment" : "Status shown and spoken while a deleted folder's books and subfolders move to their new place. The three dots mean it is in progress."
+    },
+    "Moving the folder..." : {
+      "comment" : "Status shown and spoken in the sheet that moves a folder, while its books' packages move. The three dots mean it is in progress."
+    },
     "Name" : {
       "comment" : "Label of the name field of a filter preset or an audio marker.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The name field's label."
     },
     "Name (optional)" : {
       "comment" : "Placeholder of the field that names a substitution rule in the rule editor."
     },
+    "Names that differ only in capitalization or accent encoding refer to the same folder on this disk." : {
+      "comment" : "Second sentence of the error about a folder name that is taken, added when the two names are spelled differently, in capital letters or in how an accent is stored."
+    },
     "Navigate" : {
       "comment" : "Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it."
+    },
+    "Navigate to %@" : {
+      "comment" : "Spoken label of a breadcrumb button that goes to a folder. %@ is the folder's name."
+    },
+    "Navigate to library root" : {
+      "comment" : "Spoken label of the first breadcrumb button, which goes to the library's top level."
     },
     "Navigation" : {
       "comment" : "Heading of the group of navigation keyboard shortcuts in Settings.\nHeading of the navigation group in the Playback settings."
@@ -6021,11 +6781,34 @@
     "Neither is newer: each has changes the other lacks." : {
       "comment" : "Sentence of Use This Library's account: each copy has changes the other lacks."
     },
+    "New" : {
+      "comment" : "Badge on a book's row in the Library list: the book has never been opened."
+    },
+    "New Book from Text" : {
+      "comment" : "Window title of the sheet that makes a new book from typed or pasted text."
+    },
     "New Filter Preset" : {
       "comment" : "Title of the editor opened by Add Preset in the filter presets sheet."
     },
     "New Folder" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Makes a new folder in the library. Also the title of the menu command of the same name."
+      "comment" : "Heading of the sheet that makes a new folder, and of the group of fields that makes one inside a folder chooser.\nName of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Makes a new folder in the library. Also the title of the menu command of the same name."
+    },
+    "New Folder cancelled." : {
+      "comment" : "VoiceOver announcement when the new folder's fields close without a folder made, and no place is chosen in the pop-up."
+    },
+    "New Folder cancelled. %@: %@." : {
+      "comment" : "VoiceOver announcement when the new folder's fields close without a folder made. %1$@ is the pop-up's spoken label, such as Destination folder. %2$@ is the place still chosen in it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "New Folder cancelled. %1$@: %2$@."
+          }
+        }
+      }
+    },
+    "New Folder..." : {
+      "comment" : "Button in a folder chooser that shows the fields that make a new folder. The three dots mean more fields open."
     },
     "New Items" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .hasNewItems."
@@ -6053,8 +6836,14 @@
     "New View…" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The Library tab's button that makes a view."
     },
+    "New folder name" : {
+      "comment" : "What VoiceOver says for the text field that holds the name a folder is made or renamed with."
+    },
     "New from Text…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Makes a new book from text the listener types or pastes. Also the title of the menu command of the same name."
+    },
+    "New parent folder" : {
+      "comment" : "Caption of the pop-up that chooses the folder a moved folder goes into."
     },
     "Next" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Next\"."
@@ -6111,6 +6900,9 @@
     },
     "No book is loaded." : {
       "comment" : "What Where Am I? says when no book is open."
+    },
+    "No book is selected. Select the book to move, then try again." : {
+      "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used with no book selected."
     },
     "No bookmarks yet." : {
       "comment" : "Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.",
@@ -6398,6 +7190,9 @@
     "Now %@ long." : {
       "comment" : "Ends the announcement of an edit in the audio editor: the audio's new length. %@ is the length in words."
     },
+    "Now Reading" : {
+      "comment" : "Badge on a book's row in the Library list: the book is open in a reader window now."
+    },
     "Number Sign" : {
       "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\"."
     },
@@ -6436,6 +7231,9 @@
     "Only the Latest from Each Feed" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The checkbox that keeps one item per feed."
     },
+    "Open" : {
+      "comment" : "Menu item of a book's row that opens the book in a reader window."
+    },
     "Open Book…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens a book file to import it. Also the title of the menu command of the same name."
     },
@@ -6444,6 +7242,12 @@
     },
     "Open Selected Book" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book in a reader."
+    },
+    "Open a folder first to see its settings" : {
+      "comment" : "VoiceOver announcement when the Folder Settings shortcut is pressed where the window shows no folder, at the top level or in a view other than Folders."
+    },
+    "Open in Editor" : {
+      "comment" : "Button of the New Book from Text sheet that opens the text in another app's text editor."
     },
     "Open in Reader" : {
       "comment" : "Title of the button in the Record window that opens the saved recording in a reader window."
@@ -6498,6 +7302,9 @@
         }
       }
     },
+    "OpenDocument Text" : {
+      "comment" : "Name of the book format of an OpenDocument text file (.odt), shown in a book's information, the format column, and the duplicate finder."
+    },
     "Opened Last" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .lastOpened."
     },
@@ -6521,6 +7328,9 @@
     "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe." : {
       "comment" : "VoiceOver hint of the Transcribe button of the question offered after an import. Transcribe Audio is the command's name; Transcribe is the sheet's button."
     },
+    "Opens a file picker to import books in any format TextMouth reads." : {
+      "comment" : "Hint of the choice that opens a file picker to import books, in the Add to Library sheet."
+    },
     "Opens jump to page controls" : {
       "comment" : "Hint of the status row's page button while no jump panel is open."
     },
@@ -6536,8 +7346,26 @@
     "Opens the book at this match" : {
       "comment" : "VoiceOver hint of a search match's row in the Search Library window."
     },
+    "Opens the book." : {
+      "comment" : "Hint of a book's row in the Library list."
+    },
     "Opens the filter presets, to edit, add, reorder, delete, or reset." : {
       "comment" : "Hint of the Filter Presets button in Storage settings."
+    },
+    "Opens the folder." : {
+      "comment" : "Hint of a folder's row in the Library list."
+    },
+    "Opens the last book you were reading" : {
+      "comment" : "Hint of the Continue button at the top of the Library list."
+    },
+    "Opens the settings of this feed: where its downloads go, what it lists and downloads, and what happens when an episode ends" : {
+      "comment" : "Hint of the Library toolbar button, in the folder of a feed, that opens the feed's settings."
+    },
+    "Opens the settings of this folder: what it holds, and what happens when one of its books ends" : {
+      "comment" : "Hint of the Library toolbar button, in a plain folder, that opens the folder's settings."
+    },
+    "Opens the text content in an external text editor" : {
+      "comment" : "Hint of the Open in Editor button of the New Book from Text sheet."
     },
     "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth." : {
       "comment" : "VoiceOver hint of the Edit Rules button of the Clean Up Transcript sheet. transcript-cleanup.json is a file name and stays as it is."
@@ -6615,6 +7443,12 @@
     "Paragraph" : {
       "comment" : "A unit of text a picker moves or rewinds by: one paragraph. Used by the rewind, skip, and navigation unit pickers."
     },
+    "Parent folder" : {
+      "comment" : "Name of the pop-up that chooses the folder a new folder is made in."
+    },
+    "Parent folder for new folder" : {
+      "comment" : "What VoiceOver says for the pop-up that chooses the folder a new folder is made in, among a folder chooser's new folder fields."
+    },
     "Part of the Title" : {
       "comment" : "A choice of the Leading Articles pop-up: the leading article counts like any other word of the title."
     },
@@ -6630,10 +7464,16 @@
       }
     },
     "Paste" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Inserts the copied audio at the current position.\nName of the Edit menu's Paste command, in a sentence saying why a keyboard shortcut cannot take its key."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Inserts the copied audio at the current position.\nName of the Edit menu's Paste command, in a sentence saying why a keyboard shortcut cannot take its key.\nThe first word of the title a book made from pasted text is given until the user types another, followed by the date and time, as in \"Paste 2026-10-04 06:30\"."
     },
     "Paste and Match Style" : {
       "comment" : "Name of the Edit menu's Paste and Match Style command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Paste from Clipboard" : {
+      "comment" : "Button of the New Book from Text sheet that replaces the text with the text on the system clipboard."
+    },
+    "Paste or type the text here instead, or try again." : {
+      "comment" : "Second sentence of the announcement when Open in Editor failed: what to do instead."
     },
     "Pasted %@ back where they were cut." : {
       "comment" : "Said as a Paste right after a Cut, at the cut's own place, puts the audio back. %@ is its length in words."
@@ -6737,11 +7577,17 @@
     "Period" : {
       "comment" : "Name of the punctuation key \".\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Period\"."
     },
+    "Picture" : {
+      "comment" : "Name of the book format of a picture of a page (a PNG, JPEG, HEIC, or TIFF photograph or scan) that text recognition reads, shown in a book's information, the format column, and the duplicate finder."
+    },
     "Pitch" : {
       "comment" : "Heading of the voice sheet's pitch group, and the label of its pitch slider.\nTitle of the default pitch slider in the Voice settings."
     },
     "Pitch: %@" : {
       "comment" : "Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x."
+    },
+    "Plain Text" : {
+      "comment" : "Name of the book format of a plain text file (.txt), shown in a book's information, the format column, and the duplicate finder."
     },
     "Play" : {
       "comment" : "Label of the button that starts playing the book.\nLabel of the reader's play and pause button while the book is not playing; it plays."
@@ -7295,6 +8141,12 @@
     "Release Media Controls" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Gives the Mac's media keys back to other apps. Also the title of the menu command of the same name."
     },
+    "Reload from Editor" : {
+      "comment" : "Button of the New Book from Text sheet that reads the text again from the file the other app's editor saved. Shown after Open in Editor."
+    },
+    "Reloads the text content from the external editor file" : {
+      "comment" : "Hint of the Reload from Editor button of the New Book from Text sheet."
+    },
     "Remove" : {
       "comment" : "Button of a chapter marker's row in the audio editor's list that removes the chapter marker.\nButton of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's visible title.",
       "localizations" : {
@@ -7553,7 +8405,16 @@
       "comment" : "Hint of the button that removes a text book's own voice, speed and pitch."
     },
     "Rename" : {
-      "comment" : "Button of a marker's row in the audio editor's list that gives the marker a name."
+      "comment" : "Button of a marker's row in the audio editor's list that gives the marker a name.\nButton that gives the folder the new name."
+    },
+    "Rename Folder" : {
+      "comment" : "Heading and window title of the sheet that renames a folder."
+    },
+    "Rename Folder..." : {
+      "comment" : "Item of a folder's menu that opens the sheet that renames the folder. The three dots mean a sheet opens."
+    },
+    "Renaming the folder..." : {
+      "comment" : "Status shown and spoken in the Rename Folder sheet while the folder's books' packages move to the new name. The three dots mean it is in progress."
     },
     "Replace %@" : {
       "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": replacing a stretch of audio with a new recording. %@ is the replaced length in title-cased words, such as \"2.5 Seconds\"."
@@ -7578,11 +8439,17 @@
         }
       }
     },
+    "Replaced “%@”." : {
+      "comment" : "First sentence of the announcement after Replace Existing put the new copy in place of a book and kept the old copy's text beside the new text. %@ is the book's title. A sentence about where the earlier text is kept follows."
+    },
     "Replacement (empty to skip)" : {
       "comment" : "Placeholder of the field that holds a substitution rule's replacement text in the rule editor. Leaving it empty removes the matched text."
     },
     "Replacement text. Leave empty to skip matched text." : {
       "comment" : "VoiceOver label of the replacement field in the substitution rule editor."
+    },
+    "Replaces the text content with text from the system clipboard" : {
+      "comment" : "Hint of the Paste from Clipboard button of the New Book from Text sheet."
     },
     "Replacing kept the existing copy's transcript." : {
       "comment" : "The reason, in a notice after an import, that a transcript file beside the audio was not attached: Replace Existing kept the existing copy's own transcript."
@@ -7747,6 +8614,9 @@
     "Reverse" : {
       "comment" : "Title of a premade audio filter preset: plays the audio backwards."
     },
+    "Reverses the order of the books" : {
+      "comment" : "Hint of the Sort menu's direction command: it reverses the order of the books shown."
+    },
     "Revert" : {
       "comment" : "Button of the audio editor's Revert to Original confirmation that reverts."
     },
@@ -7787,6 +8657,12 @@
     },
     "Rewind to" : {
       "comment" : "Title of the pop-up in the Playback settings that chooses how far playback rewinds when it resumes: to the start of a sentence, paragraph, or heading."
+    },
+    "Rich Text" : {
+      "comment" : "Name of the book format of a Rich Text Format file (.rtf), shown in a book's information, the format column, and the duplicate finder."
+    },
+    "Rich Text with Attachments" : {
+      "comment" : "Name of the book format of a Rich Text Format package with attachments (.rtfd), shown in a book's information, the format column, and the duplicate finder."
     },
     "Right Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Arrow\"."
@@ -7905,6 +8781,17 @@
     "Save the edits to “%@”?" : {
       "comment" : "Question asked as the audio editor's window with unsaved edits closes. %@ is the book's title."
     },
+    "Save the file in the editor, then choose %@ again, or choose %@ to start again." : {
+      "comment" : "Second sentence of the announcement when Reload from Editor could not read the editor's file back: what to do. %1$@ is the name of the Reload from Editor button. %2$@ is the name of the Open in Editor button.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Save the file in the editor, then choose %1$@ again, or choose %2$@ to start again."
+          }
+        }
+      }
+    },
     "Save the recording?" : {
       "comment" : "The question asked when the Record window is closed while it holds a recording that could not be saved yet."
     },
@@ -7985,6 +8872,9 @@
     "Search Results" : {
       "comment" : "Name of the VoiceOver rotor in Search in Book that moves between the search results."
     },
+    "Search books" : {
+      "comment" : "Prompt of the Library window's search field, which narrows the listed books."
+    },
     "Search in Book" : {
       "comment" : "Heading and navigation title of the Search in Book sheet, and the name of its command.\nName of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Searches the text of the open book. Also the title of the menu command of the same name."
     },
@@ -8053,13 +8943,39 @@
       "comment" : "Problem said of a typed time whose seconds, after minutes or hours, reach 60."
     },
     "Select" : {
-      "comment" : "Button of a pause's row in the audio editor's list that selects the pause.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Select\"."
+      "comment" : "Button of a pause's row in the audio editor's list that selects the pause.\nMenu item of a book's row that starts edit mode with the book selected.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Select\"."
     },
     "Select All" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Selects every row of the library list.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects all of the audio.\nName of the Edit menu's Select All command, in a sentence saying why a keyboard shortcut cannot take its key."
+      "comment" : "Button of the edit bar that selects every listed book.\nName of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Selects every row of the library list.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects all of the audio.\nName of the Edit menu's Select All command, in a sentence saying why a keyboard shortcut cannot take its key."
     },
     "Select Chapter" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects the chapter at the current position."
+    },
+    "Select all %lld books" : {
+      "comment" : "Spoken label of the edit bar's button that selects every listed book. %lld is how many books are listed.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Select all %lld book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Select all %lld books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Select all books" : {
+      "comment" : "Spoken label of the edit bar's button that selects every listed book, while no book is listed and the button is dimmed."
     },
     "Select and Mark" : {
       "comment" : "Heading of the audio editor's buttons for the selection and the markers."
@@ -8078,6 +8994,9 @@
     },
     "Select voice for this book" : {
       "comment" : "What VoiceOver calls the voice sheet's menu of voices."
+    },
+    "Selected" : {
+      "comment" : "First part of a book's spoken row label in edit mode, when the book is selected."
     },
     "Selected %@." : {
       "comment" : "Said as a selection is made in the audio editor. %@ is its length in words."
@@ -8127,6 +9046,9 @@
     },
     "Selects the chapter the cursor is in." : {
       "comment" : "Hint of the audio editor's Select Chapter button."
+    },
+    "Selects this book." : {
+      "comment" : "Hint of a book's row in the Library list in edit mode, while the book is not selected."
     },
     "Semicolon" : {
       "comment" : "Name of the punctuation key \";\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Semicolon\"."
@@ -8220,6 +9142,9 @@
     },
     "Settings" : {
       "comment" : "Name of the application menu's Settings command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Several books are selected, and a move shifts one book at a time. Select just one book, then try again." : {
+      "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used with several books selected."
     },
     "Shift" : {
       "comment" : "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\"."
@@ -8655,11 +9580,34 @@
     "Some Changes Could Not Be Saved" : {
       "comment" : "Title of the alert shown when TextMouth is asked to quit while some changes could not be written to disk."
     },
+    "Some details appear once the book is downloaded." : {
+      "comment" : "Note in Book Information when the book's file is only in the cloud, so the sheet shows the details the library keeps and the others wait for a download."
+    },
+    "Some of the files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again." : {
+      "comment" : "Why Replace Existing waits: some files of the library's copy are only in the cloud. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Some of the files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again."
+          }
+        }
+      }
+    },
+    "Sort" : {
+      "comment" : "Title of the Library window's toolbar menu that chooses how the books are sorted."
+    },
+    "Sort Ascending" : {
+      "comment" : "Title of the Sort menu's command that reverses the sort, while the books are sorted descending. It switches them to ascending."
+    },
     "Sort By" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sort field pop-up's label."
     },
+    "Sort Descending" : {
+      "comment" : "Title of the Sort menu's command that reverses the sort, while the books are sorted ascending. It switches them to descending."
+    },
     "Sort books by %@" : {
-      "comment" : "VoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order.",
+      "comment" : "Spoken label of the Sort button. %@ is the current sort, such as \"Title, ascending\" or \"Manual Order\".\nVoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -8673,7 +9621,7 @@
       "comment" : "Text of the Library window's View pop-up and Go to View. The Sort button's spoken label in a view listing only feeds."
     },
     "Sorted by %@" : {
-      "comment" : "VoiceOver announcement after the Reading List's order was chosen in its Sort menu. %@ is the order's name, Reading List Order.",
+      "comment" : "VoiceOver announcement after the Reading List's order was chosen in its Sort menu. %@ is the order's name, Reading List Order.\nVoiceOver announcement after the sort changes. %@ is the new sort, such as \"Author, descending\" or \"Manual Order\".",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -9061,6 +10009,9 @@
     "Text Encoding" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row, and pop-up, that names the encoding."
     },
+    "Text content" : {
+      "comment" : "Spoken label of the text area of the New Book from Text sheet."
+    },
     "Text encoding: %@" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for an encoding described as description (\"Windows-1251 (Cyrillic), guessed\"): \"Text encoding: Windows-1251 (Cyrillic), guessed\". Placeholders in order: description."
     },
@@ -9136,6 +10087,12 @@
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
     },
+    "TextMouth could not record the removal in its package, %@." : {
+      "comment" : "First sentence of the error shown when Remove from Library Only cannot mark the book's package, so the book stays in the library. %@ is the package's folder name. The sentence that says why follows it."
+    },
+    "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are." : {
+      "comment" : "Error shown when Replace Existing could not keep the edited text of the library's copy beside the new copy's text. Nothing was replaced."
+    },
     "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle was not read again: the text changed with Edit Text could not be kept beside the new reading, so nothing was replaced, as Replace Existing leaves both copies then (DuplicateReplacement.TextNotKept). Placeholders in order: bookTitle."
     },
@@ -9178,6 +10135,9 @@
           }
         }
       }
+    },
+    "TextMouth couldn't save the library's index, so it left both copies as they are." : {
+      "comment" : "Error shown when Replace Existing could not save the library's index, which must name the new copy before the old one goes. Nothing was replaced."
     },
     "TextMouth couldn't start recording from %@." : {
       "comment" : "Error in the Record window when recording from the chosen microphone failed to start. %@ is the microphone's name."
@@ -9223,6 +10183,9 @@
     "TextMouth is finishing up before it quits: %@. It quits when that is done." : {
       "comment" : "Panel text and announcement while TextMouth finishes work before quitting. %@ is the list of what is under way, such as \"saving the library and keeping downloads\", already joined in the language's own list style."
     },
+    "TextMouth is moving books between folders. Wait until that finishes, then choose %@ again." : {
+      "comment" : "Why Replace Existing waits: TextMouth is moving books between folders. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again."
+    },
     "TextMouth is not downloading right now." : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
       "localizations" : {
@@ -9248,6 +10211,9 @@
     },
     "TextMouth is reading “%@” again with other braille file characters. Try again when that finishes." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the braille book titled bookTitle waits while TextMouth reads it again with other braille file characters, as the encoding's sentence says it for any other book (TextEncodingWording.readingAgainRefusal(bookTitle:)): a second re-read of it, Edit Text, Redo Text Extraction, and Replace Existing (LibraryViewModel.readingAgainRefusal(of:)). Placeholders in order: bookTitle."
+    },
+    "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again." : {
+      "comment" : "Why Replace Existing waits: TextMouth is rebuilding its data directory, the folder that holds the library. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again."
     },
     "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone." : {
       "comment" : "Error in the Record window when macOS has denied TextMouth the microphone. Names the places in System Settings, as macOS words them, where the user can allow it."
@@ -9289,6 +10255,29 @@
     },
     "That match is no longer in the book's text. Search again to find it." : {
       "comment" : "Announcement when a search match is no longer in the book's text."
+    },
+    "That would place %@ %lld levels deep, but folders can be nested at most %lld levels." : {
+      "comment" : "Error shown when a folder edit would nest a folder too deep. %1$@ is the folder's location, in straight double quotes. %2$lld is how many levels deep it would be. %3$lld is the most levels allowed.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "That would place %@ %lld level deep, but folders can be nested at most %lld levels."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "That would place %@ %lld levels deep, but folders can be nested at most %lld levels."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "That's after the end of the audio, at %@." : {
       "comment" : "Said when a time typed into the audio editor's Go to Time lies past the end. %@ is the audio's length in words."
@@ -9510,11 +10499,25 @@
     "The audio of %@ couldn't be opened for editing." : {
       "comment" : "Said when the audio editor couldn't open a book. %@ is the book's title. A sentence giving the reason follows."
     },
+    "The audio of “%@” is being edited. Close the audio editor, or wait until it has saved, then choose %@ again." : {
+      "comment" : "Why Replace Existing waits: the library's copy has its audio open in the audio editor. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The audio of “%1$@” is being edited. Close the audio editor, or wait until it has saved, then choose %2$@ again."
+          }
+        }
+      }
+    },
     "The audiobook's audio, your place, and your bookmarks stay as they are." : {
       "comment" : "Sentence of the question asked before an audiobook's transcript is deleted or replaced by a file's: what stays."
     },
     "The audiobook's title in your library." : {
       "comment" : "VoiceOver hint and tooltip of the Title field in the Record window."
+    },
+    "The book" : {
+      "comment" : "How an announcement names a book whose title is not known, as in \"The book can't move up.\""
     },
     "The book can be transcribed again." : {
       "comment" : "Last sentence of the question asked before an audiobook's transcript is deleted, after what stays."
@@ -9548,6 +10551,9 @@
     "The book left the library during transcription, so its transcript wasn't saved." : {
       "comment" : "Error shown when the book was removed from the library during a transcription."
     },
+    "The book's EPUB file is only in the cloud, so it can't be written until the book is downloaded." : {
+      "comment" : "First sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud, and writing to the file is on. EPUB is a format name."
+    },
     "The book's audio changed since it was transcribed (%@), so the transcript no longer fits. Transcribe again." : {
       "comment" : "Error shown when the book's audio files changed since the transcription. %@ is the reason, a short phrase in English."
     },
@@ -9580,6 +10586,9 @@
     "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first: the braille is translated to print again with the code chosen, and nothing can tell whether it is the right one, since every braille text translates in every table, so a wrong one reads with no error."
     },
+    "The clipboard has no text to paste, so the text is unchanged." : {
+      "comment" : "First sentence of the announcement when Paste from Clipboard finds no text on the clipboard."
+    },
     "The cursor is %@." : {
       "comment" : "Announcement after Go to Page when the cursor is not on the page typed and there is no known reason. %@ says where the cursor is, such as \"on page 52\" or \"before page 1\"."
     },
@@ -9599,6 +10608,9 @@
           }
         }
       }
+    },
+    "The destination folder %@ is no longer in the library." : {
+      "comment" : "Error shown when a move is refused because the folder it goes into is gone from the library. %@ is that folder's location, in straight double quotes."
     },
     "The disk is almost full, so recording stopped. What was recorded is kept." : {
       "comment" : "Error in the Record window when the disk filled up while recording."
@@ -9662,8 +10674,31 @@
     "The folder %@ holds a different library, so nothing was compared." : {
       "comment" : "What the Compare Libraries sheet says when the chosen folder holds a different library. %@ is the folder's path."
     },
+    "The folder already has that name and location." : {
+      "comment" : "Error shown when a folder edit would leave the folder exactly as it is."
+    },
+    "The folder is no longer in the library. It may have been moved, renamed, or deleted in another window." : {
+      "comment" : "Error shown when a folder edit is refused because the folder is gone from the library."
+    },
+    "The folders %@ and %@ cannot both be moved into %@, because their names refer to the same folder on this disk." : {
+      "comment" : "Error shown when two folders moved together would land on the same name. %1$@ and %2$@ are the two folders' names, in straight double quotes. %3$@ is where they go: a folder's location in straight double quotes, or the name of the library's top level.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The folders %1$@ and %2$@ cannot both be moved into %3$@, because their names refer to the same folder on this disk."
+          }
+        }
+      }
+    },
     "The library folder the recording is saved in." : {
       "comment" : "VoiceOver hint of the Save in pop-up of the Record window."
+    },
+    "The library is available." : {
+      "comment" : "VoiceOver announcement when the library, which had been missing, is found again."
+    },
+    "The library is still not available. %@" : {
+      "comment" : "VoiceOver announcement when Try Again on the Library Not Available screen finds the library still missing. %@ is the sentence that says why it is not available."
     },
     "The library isn't available, so logs go to %@ until it is." : {
       "comment" : "The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written."
@@ -9696,6 +10731,28 @@
     },
     "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses." : {
       "comment" : "Explanation under the restart gesture's time window slider in the Miscellaneous settings."
+    },
+    "The new copy took the place of “%@”, but the old copy's files could not be deleted, so they stay in its folder: %@" : {
+      "comment" : "Alert after Replace Existing when the old copy's files could not be deleted. %1$@ is the book's title. %2$@ is why they could not be deleted.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The new copy took the place of “%1$@”, but the old copy's files could not be deleted, so they stay in its folder: %2$@"
+          }
+        }
+      }
+    },
+    "The new copy took the place of “%@”, but the old copy's files could not be moved to the Trash, so they stay in its folder: %@" : {
+      "comment" : "Alert after Replace Existing when the old copy's files could not be moved to the Trash. %1$@ is the book's title. %2$@ is why they could not be moved.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The new copy took the place of “%1$@”, but the old copy's files could not be moved to the Trash, so they stay in its folder: %2$@"
+          }
+        }
+      }
     },
     "The next article could not be downloaded, so playback stopped." : {
       "comment" : "First sentence of the VoiceOver announcement when Next in Folder could not download the next feed article while a book was playing, so playback was paused. A sentence with the reason follows it."
@@ -9839,6 +10896,9 @@
     "The text of %@ was read again from its own file." : {
       "comment" : "First sentence of the message after a book's text was read again from its own file. %@ is the book's title."
     },
+    "The text was reloaded, but the editor's file does not say what encoding it is in, so some characters may be wrong." : {
+      "comment" : "First sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells."
+    },
     "The transcript and the text made from it are deleted." : {
       "comment" : "First sentence of the question asked before an audiobook's transcript is deleted."
     },
@@ -9952,7 +11012,10 @@
       "comment" : "Heading over the books that could not be moved to the Trash, several of them. One line for each book follows."
     },
     "These books could not be removed from the library and remain in it:" : {
-      "comment" : "Heading over the books that could not be removed from the library, several of them. One line for each book follows."
+      "comment" : "Heading of the error alert's list when Remove from Library Only could not mark the packages of several books, so they stay in the library. Each book's title and the reason follow on their own lines.\nHeading over the books that could not be removed from the library, several of them. One line for each book follows."
+    },
+    "These books were removed from the library, but their bookInfo.json files could not be deleted. They will still stay out of the library:" : {
+      "comment" : "Heading of the error alert's list when Remove from Library Only removed several books but could not delete the bookInfo.json files in their packages. bookInfo.json is a file name. Each book's title and the reason follow on their own lines."
     },
     "These edits need the original audio, which is no longer kept." : {
       "comment" : "Said when the edits wait to be rendered from an original audio that is gone. A second sentence says what helps."
@@ -10002,7 +11065,7 @@
       "comment" : "Heading over the one book that could not be moved to the Trash. A line about it follows."
     },
     "This book could not be removed from the library and remains in it:" : {
-      "comment" : "Heading over the one book that could not be removed from the library. A line about it follows."
+      "comment" : "Heading of the error alert's list when Remove from Library Only could not mark one book's package, so it stays in the library. The book's title and the reason follow on the next line.\nHeading over the one book that could not be removed from the library. A line about it follows."
     },
     "This book follows the global setting now." : {
       "comment" : "Said as a book's original audio policy is set to follow the global setting. A sentence saying what that setting does follows."
@@ -10079,6 +11142,9 @@
         }
       }
     },
+    "This book was removed from the library, but its bookInfo.json file could not be deleted. It will still stay out of the library:" : {
+      "comment" : "Heading of the error alert's list when Remove from Library Only removed one book but could not delete the bookInfo.json file in its package. bookInfo.json is a file name. The book's title and the reason follow on the next line."
+    },
     "This book's only page is %@." : {
       "comment" : "First sentence of the Go to Page field's hint for a book of one page. %@ is that page's label, an identifier written without digit grouping."
     },
@@ -10087,6 +11153,9 @@
     },
     "This explanation appears only once." : {
       "comment" : "Last sentence of the Edit Manifest explanation: it is shown only the first time.\nLast sentence of the Edit Text explanation: it is shown only the first time."
+    },
+    "This folder has no stored name, so it cannot be changed safely." : {
+      "comment" : "Error shown when a folder edit is refused because the folder has no name on record."
     },
     "This folder holds another copy of the library TextMouth is using." : {
       "comment" : "First sentence of Use This Library's account of the folder the listener chose."
@@ -10237,13 +11306,16 @@
       "comment" : "Heading of the group in Playback settings that holds the setting about naming the speed beside times."
     },
     "Title" : {
-      "comment" : "Label of the audio editor's field for a chapter marker's title.\nLabel of the field in the Record window that names the recording, which becomes the audiobook's title.\nName of the book information sheet's field for the book's title.\nText of the Library window's View pop-up and Go to View. The one item of the Sort menu of a view listing only feeds, which are always listed by title."
+      "comment" : "Label of the audio editor's field for a chapter marker's title.\nLabel of the field in the Record window that names the recording, which becomes the audiobook's title.\nName of a way to sort the books: by the title. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.\nName of the book information sheet's field for the book's title.\nText of the Library window's View pop-up and Go to View. The one item of the Sort menu of a view listing only feeds, which are always listed by title."
     },
     "Title for a chapter marker at the cursor. One already there is renamed." : {
       "comment" : "Explains the title field of the audio editor's Insert Chapter Marker sheet."
     },
     "Title or Author" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .titleOrAuthorContains."
+    },
+    "Title:" : {
+      "comment" : "Caption beside the title field of the New Book from Text sheet. VoiceOver skips it; the field has its own label."
     },
     "Titles" : {
       "comment" : "Heading of the Library settings section that holds the Leading Articles pop-up, which decides how book titles are sorted and typed."
@@ -10445,6 +11517,9 @@
     "Try again once the book has downloaded." : {
       "comment" : "Ends a message saying a file of the book is only in the cloud and isn't on this Mac yet: what to do about it."
     },
+    "Turn off writing to the file, or download the book first." : {
+      "comment" : "Second sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud: what to do."
+    },
     "Turn off “%@” to save the metadata to the library only." : {
       "comment" : "Second sentence of that message. %@ is the shown name of the editor's switch that also writes the file, quoted."
     },
@@ -10551,6 +11626,9 @@
     "Undoes the newest edit." : {
       "comment" : "Hint of the audio editor's Undo button."
     },
+    "Unknown" : {
+      "comment" : "The author shown for a book whose author nothing names, in the library's author column and a book's information."
+    },
     "Unknown Length" : {
       "comment" : "A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's \"Cut Unknown Length\"."
     },
@@ -10635,7 +11713,7 @@
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Up Arrow\"."
     },
     "Up One Level" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes up one level, to the folder that holds the current one."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes up one level, to the folder that holds the current one.\nToolbar button of a Library window that goes up to the folder that holds the folder shown."
     },
     "Updates the default voice, speed, and pitch for every book without settings of its own." : {
       "comment" : "Hint and tooltip of the buttons that save a text book's voice, speed and pitch as the settings for every book."
@@ -10686,6 +11764,9 @@
     "Vertical Bar" : {
       "comment" : "Name of the punctuation key \"|\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Vertical Bar\"."
     },
+    "View" : {
+      "comment" : "Title of the pop-up in a Library window that chooses the view of the library shown."
+    },
     "Views" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The heading above the list.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver calls the list."
     },
@@ -10712,6 +11793,9 @@
     },
     "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash." : {
       "comment" : "First sentence of the warning shown under the metadata editor's switch while it is on. MD5 is the name of a checksum and stays as written."
+    },
+    "Web Archive" : {
+      "comment" : "Name of the book format of a Safari web archive (.webarchive), shown in a book's information, the format column, and the duplicate finder."
     },
     "What happens when a book finishes playing" : {
       "comment" : "VoiceOver hint of the When book ends pop-up in the Playback settings."
@@ -10884,6 +11968,18 @@
     },
     "Within the Last" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
+    },
+    "Word 2003 XML" : {
+      "comment" : "Name of the book format of a Word 2003 XML document, shown in a book's information, the format column, and the duplicate finder."
+    },
+    "Word 97-2003 Document" : {
+      "comment" : "Name of the book format of an old Microsoft Word document (.doc), from Word 97 to 2003, shown in a book's information, the format column, and the duplicate finder."
+    },
+    "Word Count" : {
+      "comment" : "Name of the book information sheet's row that shows how many words the book has."
+    },
+    "Word Document" : {
+      "comment" : "Name of the book format of a Microsoft Word document (.docx), shown in a book's information, the format column, and the duplicate finder."
     },
     "Words per minute" : {
       "comment" : "Label of the voice sheet's speed slider, shown beside it.\nTitle of the default speed slider in the Voice settings."
@@ -11077,6 +12173,9 @@
     },
     "built in" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The row's word for a view TextMouth made."
+    },
+    "by %@" : {
+      "comment" : "Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown."
     },
     "chapter %@" : {
       "comment" : "A reading place inside a sentence of Compare Libraries. %@ is the chapter's number, an identifier written without digit grouping."

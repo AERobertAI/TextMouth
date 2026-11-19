@@ -8,6 +8,13 @@ import Foundation
 /// translation never glues a noun into it.
 enum FolderNavigationWording {
 
+    /// The name the library's top level goes by, where a folder's name is
+    /// spoken: "Library, 743 books" after a move to the top.
+    nonisolated static var libraryName: String {
+        String(localized: "Library",
+               comment: "The name spoken for the library's top level, the place that holds the folders and the books outside any folder, as in \"Library, 743 books\" after going to it.")
+    }
+
     /// What the command says when no item lies the way it goes, or only
     /// finished ones do and the folder passes over them: the succession's own
     /// note, as the end of a book says it after "Finished: <title>.", with a

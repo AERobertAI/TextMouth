@@ -73,14 +73,41 @@ enum BookFormat: String, Codable, CaseIterable {
     // book of pages by the same reader. The same holds for older builds.
     case comic
 
+    /// The format's name as the interface shows it: a name that is a product
+    /// or standard ("EPUB", "PDF") reads the same in every language, and the
+    /// rest are localized.
     var displayName: String {
         switch self {
         case .epub: return "EPUB"
+        case .txt: return String(localized: "Plain Text", comment: "Name of the book format of a plain text file (.txt), shown in a book's information, the format column, and the duplicate finder.")
+        case .markdown: return String(localized: "Markdown", comment: "Name of the book format of a Markdown file (.md), shown in a book's information, the format column, and the duplicate finder.")
+        case .html: return "HTML"
+        case .webarchive: return String(localized: "Web Archive", comment: "Name of the book format of a Safari web archive (.webarchive), shown in a book's information, the format column, and the duplicate finder.")
+        case .ssml: return "SSML"
+        case .docx: return String(localized: "Word Document", comment: "Name of the book format of a Microsoft Word document (.docx), shown in a book's information, the format column, and the duplicate finder.")
+        case .rtf: return String(localized: "Rich Text", comment: "Name of the book format of a Rich Text Format file (.rtf), shown in a book's information, the format column, and the duplicate finder.")
+        case .rtfd: return String(localized: "Rich Text with Attachments", comment: "Name of the book format of a Rich Text Format package with attachments (.rtfd), shown in a book's information, the format column, and the duplicate finder.")
+        case .doc: return String(localized: "Word 97-2003 Document", comment: "Name of the book format of an old Microsoft Word document (.doc), from Word 97 to 2003, shown in a book's information, the format column, and the duplicate finder.")
+        case .odt: return String(localized: "OpenDocument Text", comment: "Name of the book format of an OpenDocument text file (.odt), shown in a book's information, the format column, and the duplicate finder.")
+        case .wordml: return String(localized: "Word 2003 XML", comment: "Name of the book format of a Word 2003 XML document, shown in a book's information, the format column, and the duplicate finder.")
+        case .braille: return String(localized: "Braille", comment: "Name of the book format of a braille file (.brf or .brl), shown in a book's information, the format column, and the duplicate finder.")
+        case .daisy: return "DAISY"
+        case .pdf: return "PDF"
+        case .audio: return String(localized: "Audio", comment: "Name of the book format of an audiobook, a book made of audio files, shown in a book's information, the format column, and the duplicate finder.")
+        case .mobi: return String(localized: "Kindle Book (MOBI)", comment: "Name of the book format of a Kindle book in the MOBI format (MOBI is a format name), shown in a book's information, the format column, and the duplicate finder.")
+        case .kfx: return String(localized: "Kindle Book (KFX)", comment: "Name of the book format of a Kindle book in the KFX format (KFX is a format name), shown in a book's information, the format column, and the duplicate finder.")
+        case .picture: return String(localized: "Picture", comment: "Name of the book format of a picture of a page (a PNG, JPEG, HEIC, or TIFF photograph or scan) that text recognition reads, shown in a book's information, the format column, and the duplicate finder.")
+        case .comic: return String(localized: "Comic Book Archive (CBZ)", comment: "Name of the book format of a comic book archive (.cbz), a ZIP of pictures (CBZ is a format name), shown in a book's information, the format column, and the duplicate finder.")
+        }
+    }
+
+    /// The format's name in English, for the debug log, which stays English
+    /// whatever language the interface speaks.
+    var logName: String {
+        switch self {
         case .txt: return "Plain Text"
         case .markdown: return "Markdown"
-        case .html: return "HTML"
         case .webarchive: return "Web Archive"
-        case .ssml: return "SSML"
         case .docx: return "Word Document"
         case .rtf: return "Rich Text"
         case .rtfd: return "Rich Text with Attachments"
@@ -88,13 +115,13 @@ enum BookFormat: String, Codable, CaseIterable {
         case .odt: return "OpenDocument Text"
         case .wordml: return "Word 2003 XML"
         case .braille: return "Braille"
-        case .daisy: return "DAISY"
-        case .pdf: return "PDF"
         case .audio: return "Audio"
         case .mobi: return "Kindle Book (MOBI)"
         case .kfx: return "Kindle Book (KFX)"
         case .picture: return "Picture"
         case .comic: return "Comic Book Archive (CBZ)"
+        // The names that read the same in every language.
+        case .epub, .html, .ssml, .daisy, .pdf: return displayName
         }
     }
 
@@ -1125,12 +1152,21 @@ struct Book: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     /// import, parser, and recording writes for it, which a reader leaves
     /// out of its window title and a metadata refresh may replace
     /// (`isUnknownAuthor(_:)`).
-    static let unknownAuthor = "Unknown"
+    static let unknownAuthor = "Unknown" // l10n: no (stored id: the library keeps this placeholder as written; the interface shows `displayAuthor`)
 
     /// Whether `author` is the placeholder for an author nothing named:
     /// empty, or `unknownAuthor`.
     static func isUnknownAuthor(_ author: String) -> Bool {
         author.isEmpty || author == unknownAuthor
+    }
+
+    /// The author as the interface shows it: the placeholder `unknownAuthor`
+    /// (which the library stores in English) in the interface language, and
+    /// any other author as written.
+    nonisolated static func displayAuthor(_ author: String) -> String {
+        author == unknownAuthor
+            ? String(localized: "Unknown", comment: "The author shown for a book whose author nothing names, in the library's author column and a book's information.")
+            : author
     }
 
     init(

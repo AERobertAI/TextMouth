@@ -5,9 +5,117 @@ import AppKit
 import UIKit
 #endif
 
+/// The words of the New Book from Text sheet that no other wording enum owns
+/// (FR34). Cancel is `PhoneAppWording.cancel`, and the Title and Author
+/// fields' names are `MetadataEditorWording`'s.
+enum TextInputWording {
+    /// The first word of the default title of a book made from pasted text.
+    static var defaultTitleName: String {
+        String(localized: "Paste", comment: "The first word of the title a book made from pasted text is given until the user types another, followed by the date and time, as in \"Paste 2026-10-04 06:30\".")
+    }
+
+    /// The sentence both Open in Editor failures end with.
+    static var pasteOrTypeInstead: String {
+        String(localized: "Paste or type the text here instead, or try again.",
+               comment: "Second sentence of the announcement when Open in Editor failed: what to do instead.")
+    }
+
+    /// The caption beside the title field, which VoiceOver skips.
+    static var titleCaption: String {
+        String(localized: "Title:", comment: "Caption beside the title field of the New Book from Text sheet. VoiceOver skips it; the field has its own label.")
+    }
+
+    /// What VoiceOver says the title field is for.
+    static var titleHint: String {
+        String(localized: "Enter a title for the new book", comment: "Hint of the title field of the New Book from Text sheet.")
+    }
+
+    /// The caption beside the author field, which VoiceOver skips.
+    static var authorCaption: String {
+        String(localized: "Author:", comment: "Caption beside the author field of the New Book from Text sheet. VoiceOver skips it; the field has its own label.")
+    }
+
+    /// What VoiceOver says the author field is for.
+    static var authorHint: String {
+        String(localized: "Enter the author name", comment: "Hint of the author field of the New Book from Text sheet.")
+    }
+
+    /// The button that puts the clipboard's text in the editor.
+    static var pasteFromClipboard: String {
+        String(localized: "Paste from Clipboard", comment: "Button of the New Book from Text sheet that replaces the text with the text on the system clipboard.")
+    }
+
+    /// The hint of that button.
+    static var pasteHint: String {
+        String(localized: "Replaces the text content with text from the system clipboard", comment: "Hint of the Paste from Clipboard button of the New Book from Text sheet.")
+    }
+
+    /// The button that opens the text in the user's own editor.
+    static var openInEditor: String {
+        String(localized: "Open in Editor", comment: "Button of the New Book from Text sheet that opens the text in another app's text editor.")
+    }
+
+    /// The hint of that button.
+    static var openInEditorHint: String {
+        String(localized: "Opens the text content in an external text editor", comment: "Hint of the Open in Editor button of the New Book from Text sheet.")
+    }
+
+    /// The button that brings the editor's saved file back.
+    static var reloadFromEditor: String {
+        String(localized: "Reload from Editor", comment: "Button of the New Book from Text sheet that reads the text again from the file the other app's editor saved. Shown after Open in Editor.")
+    }
+
+    /// The hint of that button.
+    static var reloadHint: String {
+        String(localized: "Reloads the text content from the external editor file", comment: "Hint of the Reload from Editor button of the New Book from Text sheet.")
+    }
+
+    /// The text area's label.
+    static var textContentLabel: String {
+        String(localized: "Text content", comment: "Spoken label of the text area of the New Book from Text sheet.")
+    }
+
+    /// The text area's hint.
+    static var textContentHint: String {
+        String(localized: "Enter or paste the text for the new book", comment: "Hint of the text area of the New Book from Text sheet.")
+    }
+
+    /// The text area's value: how much text it holds.
+    static func textContentValue(characterCount: Int) -> String {
+        characterCount == 0
+            ? String(localized: "Empty", comment: "Spoken value of the text area of the New Book from Text sheet while it holds no text.")
+            : String(localized: "\(characterCount) characters", comment: "Spoken value of the text area of the New Book from Text sheet: how many characters it holds. %lld is the number of characters.")
+    }
+
+    /// The hint of the Cancel button.
+    static var cancelHint: String {
+        String(localized: "Cancels creating a new book and closes this view", comment: "Hint of the Cancel button of the New Book from Text sheet.")
+    }
+
+    /// The button that adds the new book.
+    static var addToLibrary: String {
+        String(localized: "Add to Library", comment: "Button of the New Book from Text sheet that adds the new book to the library.")
+    }
+
+    /// The hint of that button while there is no text to add.
+    static var addDisabledHint: String {
+        String(localized: "Disabled. Enter some text content first.", comment: "Hint of the Add to Library button of the New Book from Text sheet while the text area is empty and the button is dimmed.")
+    }
+
+    /// The hint of that button once there is text.
+    static var addHint: String {
+        String(localized: "Adds the new book to your library", comment: "Hint of the Add to Library button of the New Book from Text sheet.")
+    }
+
+    /// The sheet's window title.
+    static var windowTitle: String {
+        String(localized: "New Book from Text", comment: "Window title of the sheet that makes a new book from typed or pasted text.")
+    }
+}
+
 enum TextImportPolicy {
     static func defaultTitle(for date: Date = Date()) -> String {
-        timestampedTitle("Paste", at: date)
+        timestampedTitle(TextInputWording.defaultTitleName, at: date)
     }
 
     /// `name` followed by `date` to the minute, as "Paste 2026-10-04 06:30":
@@ -28,35 +136,57 @@ enum TextImportPolicy {
 
     /// What VoiceOver says when Paste from Clipboard finds no text on the
     /// clipboard: nothing on the screen would tell a listener it did nothing.
-    static let noClipboardTextAnnouncement =
-        "The clipboard has no text to paste, so the text is unchanged. Copy some text, then paste again."
+    static var noClipboardTextAnnouncement: String {
+        SentenceWording.joined([
+            String(localized: "The clipboard has no text to paste, so the text is unchanged.",
+                   comment: "First sentence of the announcement when Paste from Clipboard finds no text on the clipboard."),
+            String(localized: "Copy some text, then paste again.",
+                   comment: "Second sentence of the announcement when Paste from Clipboard finds no text on the clipboard: what to do."),
+        ])
+    }
 
     /// What VoiceOver says when Open in Editor could not write the text to a
     /// file for the editor to open.
-    static let editorOpenFailedAnnouncement =
-        "Could not open the text in an editor, because its file could not be written. "
-        + "Paste or type the text here instead, or try again."
+    static var editorOpenFailedAnnouncement: String {
+        SentenceWording.joined([
+            String(localized: "Could not open the text in an editor, because its file could not be written.",
+                   comment: "First sentence of the announcement when Open in Editor could not write the text to a file for the editor."),
+            TextInputWording.pasteOrTypeInstead,
+        ])
+    }
 
     /// What VoiceOver says when Open in Editor wrote the file but no app
     /// opened it, as when nothing on this Mac opens plain text files.
-    static let editorNotOpenedAnnouncement =
-        "Could not open the text in an editor, because no app opened its file. "
-        + "Paste or type the text here instead, or try again."
+    static var editorNotOpenedAnnouncement: String {
+        SentenceWording.joined([
+            String(localized: "Could not open the text in an editor, because no app opened its file.",
+                   comment: "First sentence of the announcement when Open in Editor wrote the file but no app opened it, as when nothing on this Mac opens plain text files."),
+            TextInputWording.pasteOrTypeInstead,
+        ])
+    }
 
     /// What VoiceOver says when Reload from Editor could not read the editor's
     /// file back, so the text here is unchanged. The editor may have been
     /// closed, or the file moved, so Open in Editor is named as another way.
-    static let reloadFailedAnnouncement =
-        "Could not read the text back from the editor's file, so the text here is unchanged. "
-        + "Save the file in the editor, then choose Reload from Editor again, "
-        + "or choose Open in Editor to start again."
+    static var reloadFailedAnnouncement: String {
+        SentenceWording.joined([
+            String(localized: "Could not read the text back from the editor's file, so the text here is unchanged.",
+                   comment: "First sentence of the announcement when Reload from Editor could not read the editor's file back."),
+            String(localized: "Save the file in the editor, then choose \(TextInputWording.reloadFromEditor) again, or choose \(TextInputWording.openInEditor) to start again.",
+                   comment: "Second sentence of the announcement when Reload from Editor could not read the editor's file back: what to do. %1$@ is the name of the Reload from Editor button. %2$@ is the name of the Open in Editor button."),
+        ])
+    }
 
     /// What VoiceOver says after Reload from Editor read a file whose
     /// encoding nothing in it could tell, so some characters may be wrong.
-    static let reloadMayBeMisreadAnnouncement =
-        "The text was reloaded, but the editor's file does not say what encoding it is in, "
-        + "so some characters may be wrong. Check the text, or save the file in the editor as UTF-8 "
-        + "and choose Reload from Editor again."
+    static var reloadMayBeMisreadAnnouncement: String {
+        SentenceWording.joined([
+            String(localized: "The text was reloaded, but the editor's file does not say what encoding it is in, so some characters may be wrong.",
+                   comment: "First sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells."),
+            String(localized: "Check the text, or save the file in the editor as UTF-8 and choose \(TextInputWording.reloadFromEditor) again.",
+                   comment: "Second sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells: what to do. UTF-8 is the name of a text encoding. %@ is the name of the Reload from Editor button."),
+        ])
+    }
 
     /// The text to put in the editor from the clipboard's text: nil when the
     /// clipboard holds none, or an empty string, which pastes nothing.
@@ -112,7 +242,7 @@ enum TextImportPolicy {
     /// title of spaces is no title and no file named for spaces.
     static func resolvedTitle(_ title: String) -> String {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "Untitled" : trimmed
+        return trimmed.isEmpty ? "Untitled" : trimmed // l10n: no (stored id: the placeholder title a book is saved with)
     }
 
     /// Produces a single safe path component while keeping the book's
@@ -130,7 +260,7 @@ enum TextImportPolicy {
         let forbidden = CharacterSet(charactersIn: "/\\:?%*|\"<>")
         let pieces = resolvedTitle(title).components(separatedBy: forbidden)
         let base = pieces.filter { !$0.isEmpty }.joined(separator: "-")
-        return "\(base.isEmpty ? "Untitled" : base).\(fileExtension)"
+        return "\(base.isEmpty ? "Untitled" : base).\(fileExtension)" // l10n: no (a file name, not interface text)
     }
 }
 
@@ -165,43 +295,43 @@ struct TextInputView: View {
         VStack(spacing: 12) {
             // MARK: - Title and Author Fields
             HStack {
-                Text("Title:")
+                Text(TextInputWording.titleCaption)
                     .accessibilityHidden(true)
-                TextField("Title", text: $title)
+                TextField(MetadataEditorWording.titleField, text: $title)
                     .textFieldStyle(.roundedBorder)
-                    .accessibilityLabel("Title")
-                    .accessibilityHint("Enter a title for the new book")
+                    .accessibilityLabel(MetadataEditorWording.titleField)
+                    .accessibilityHint(TextInputWording.titleHint)
             }
 
             HStack {
-                Text("Author:")
+                Text(TextInputWording.authorCaption)
                     .accessibilityHidden(true)
-                TextField("Author", text: $author)
+                TextField(MetadataEditorWording.authorField, text: $author)
                     .textFieldStyle(.roundedBorder)
-                    .accessibilityLabel("Author")
-                    .accessibilityHint("Enter the author name")
+                    .accessibilityLabel(MetadataEditorWording.authorField)
+                    .accessibilityHint(TextInputWording.authorHint)
             }
 
             // MARK: - Top Button Bar
             HStack(spacing: 10) {
-                Button("Paste from Clipboard") {
+                Button(TextInputWording.pasteFromClipboard) {
                     pasteFromClipboard()
                 }
-                .accessibilityLabel("Paste from Clipboard")
-                .accessibilityHint("Replaces the text content with text from the system clipboard")
+                .accessibilityLabel(TextInputWording.pasteFromClipboard)
+                .accessibilityHint(TextInputWording.pasteHint)
 
-                Button("Open in Editor") {
+                Button(TextInputWording.openInEditor) {
                     openInEditor()
                 }
-                .accessibilityLabel("Open in Editor")
-                .accessibilityHint("Opens the text content in an external text editor")
+                .accessibilityLabel(TextInputWording.openInEditor)
+                .accessibilityHint(TextInputWording.openInEditorHint)
 
                 if showReload {
-                    Button("Reload from Editor") {
+                    Button(TextInputWording.reloadFromEditor) {
                         reloadFromEditor()
                     }
-                    .accessibilityLabel("Reload from Editor")
-                    .accessibilityHint("Reloads the text content from the external editor file")
+                    .accessibilityLabel(TextInputWording.reloadFromEditor)
+                    .accessibilityHint(TextInputWording.reloadHint)
                 }
 
                 Spacer()
@@ -211,9 +341,9 @@ struct TextInputView: View {
             TextEditor(text: $textContent)
                 .font(.body)
                 .border(Color.secondary.opacity(0.3), width: 1)
-                .accessibilityLabel("Text content")
-                .accessibilityHint("Enter or paste the text for the new book")
-                .accessibilityValue(textContent.isEmpty ? "Empty" : "\(textContent.count) characters")
+                .accessibilityLabel(TextInputWording.textContentLabel)
+                .accessibilityHint(TextInputWording.textContentHint)
+                .accessibilityValue(TextInputWording.textContentValue(characterCount: textContent.count))
 
             // MARK: - Why Something Did Not Work
             if let failureMessage {
@@ -230,31 +360,31 @@ struct TextInputView: View {
             HStack {
                 Spacer()
 
-                Button("Cancel") {
+                Button(PhoneAppWording.cancel) {
                     cleanupTempFile()
                     onCancel()
                 }
                 .keyboardShortcut(.cancelAction)
-                .accessibilityLabel("Cancel")
-                .accessibilityHint("Cancels creating a new book and closes this view")
+                .accessibilityLabel(PhoneAppWording.cancel)
+                .accessibilityHint(TextInputWording.cancelHint)
 
-                Button("Add to Library") {
+                Button(TextInputWording.addToLibrary) {
                     cleanupTempFile()
                     onAdd(title, author, textContent)
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!TextImportPolicy.canAdd(text: textContent))
-                .accessibilityLabel("Add to Library")
+                .accessibilityLabel(TextInputWording.addToLibrary)
                 .accessibilityHint(
                     !TextImportPolicy.canAdd(text: textContent)
-                        ? "Disabled. Enter some text content first."
-                        : "Adds the new book to your library"
+                        ? TextInputWording.addDisabledHint
+                        : TextInputWording.addHint
                 )
             }
         }
         .padding()
         .frame(width: 600, height: 500)
-        .navigationTitle("New Book from Text")
+        .navigationTitle(TextInputWording.windowTitle)
         // A reason that no longer applies is never read beside new input.
         .clearingFailure($failureMessage, whenChanged: textContent)
     }
