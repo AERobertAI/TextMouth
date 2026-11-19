@@ -6,7 +6,7 @@ import UIKit
 #endif
 
 /// The words of the New Book from Text sheet that no other wording enum owns
-/// (FR34). Cancel is `PhoneAppWording.cancel`, and the Title and Author
+/// (FR34). Cancel is `LibraryWindowWording.cancel`, and the Title and Author
 /// fields' names are `MetadataEditorWording`'s.
 enum TextInputWording {
     /// The first word of the default title of a book made from pasted text.
@@ -343,12 +343,12 @@ struct TextInputView: View {
             HStack {
                 Spacer()
 
-                Button(PhoneAppWording.cancel) {
+                Button(LibraryWindowWording.cancel) {
                     cleanupTempFile()
                     onCancel()
                 }
                 .keyboardShortcut(.cancelAction)
-                .accessibilityLabel(PhoneAppWording.cancel)
+                .accessibilityLabel(LibraryWindowWording.cancel)
                 .accessibilityHint(TextInputWording.cancelHint)
 
                 Button(TextInputWording.addToLibrary) {

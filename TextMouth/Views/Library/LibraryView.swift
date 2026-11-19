@@ -890,7 +890,7 @@ struct LibraryView: View {
             Button(deleteEverythingWording.buttonTitle, role: .destructive) {
                 libraryViewModel.showDeleteEverythingConfirm = true
             }
-            Button(PhoneAppWording.cancel, role: .cancel) {
+            Button(LibraryWindowWording.cancel, role: .cancel) {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
@@ -909,7 +909,7 @@ struct LibraryView: View {
                     libraryViewModel.pendingDeleteFolder = nil
                 }
             }
-            Button(PhoneAppWording.cancel, role: .cancel) {
+            Button(LibraryWindowWording.cancel, role: .cancel) {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
@@ -2447,7 +2447,7 @@ private struct LibraryCloudWindowSupport: ViewModifier {
             // only place the refusal is said: nothing announces it besides
             // (#2094).
             .alert(refusal?.title ?? "", isPresented: isShowingRefusal, presenting: refusal) { _ in
-                Button(PhoneAppWording.errorDismiss, role: .cancel) {}
+                Button(LibraryWindowWording.errorDismiss, role: .cancel) {}
             } message: { refusal in
                 Text(refusal.message)
             }
@@ -2504,7 +2504,7 @@ extension LibraryView {
 
 /// The words of the Library window's list, its toolbar, and its folder
 /// menu that no other wording enum owns (FR34). Cancel and OK come from
-/// `PhoneAppWording`, "New Folder" from `LibrarySheetWording`, and the sort
+/// `LibraryWindowWording`, "New Folder" from `LibrarySheetWording`, and the sort
 /// fields' names from `LibrarySortField.title`.
 enum LibraryListWording {
     /// What VoiceOver calls the View pop-up, whose items are the views' names.

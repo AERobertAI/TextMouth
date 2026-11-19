@@ -5,7 +5,7 @@ import SwiftUI
 /// Every word the Library's sheets say that no other wording enum owns
 /// (FR34): Book Information's rows, the New Folder, Move, Rename, and Move
 /// Contents sheets, and their announcements. Shared words come from
-/// `PhoneAppWording` (Cancel, Save) and `MetadataEditorWording` (the book's
+/// `LibraryWindowWording` (Cancel, Save) and `MetadataEditorWording` (the book's
 /// fields), one definition for each.
 enum LibrarySheetWording {
     // MARK: Book Information
@@ -350,7 +350,7 @@ struct LibraryBookInfoSheet: View {
             }
 
             HStack {
-                Button(PhoneAppWording.cancel) {
+                Button(LibraryWindowWording.cancel) {
                     dismiss()
                 }
                 .keyboardShortcut(.escape, modifiers: [])
@@ -360,7 +360,7 @@ struct LibraryBookInfoSheet: View {
 
                 Spacer()
 
-                Button(PhoneAppWording.save) {
+                Button(LibraryWindowWording.save) {
                     // Capture state before dismissing
                     guard let edit = Self.edit(from: opened, title: title, author: author) else { return }
                     let vm = libraryViewModel
@@ -478,7 +478,7 @@ struct BookRereadPopUp<Model: BookRereadChoosing>: View {
             Button(TextEncodingWording.confirmButton) {
                 Task { await model.confirm(confirmation.option) }
             }
-            Button(PhoneAppWording.cancel, role: .cancel) {
+            Button(LibraryWindowWording.cancel, role: .cancel) {
                 model.cancel()
             }
         } message: { confirmation in
@@ -636,7 +636,7 @@ struct NewFolderSheet: View {
             OperationFailureNotice(message: failureMessage)
 
             HStack {
-                Button(PhoneAppWording.cancel, action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
                 Button(LibrarySheetWording.create) {
@@ -1039,7 +1039,7 @@ struct MoveFolderSheet: View {
             }
 
             HStack {
-                Button(PhoneAppWording.cancel, action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     // Escape closes the sheet, except while the new
                     // folder's fields are shown, when it closes them first
                     // (their Cancel New Folder) and a second Escape closes
@@ -1176,7 +1176,7 @@ struct RenameFolderSheet: View {
             }
 
             HStack {
-                Button(PhoneAppWording.cancel, action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
                 Button(LibrarySheetWording.rename) {
@@ -1252,7 +1252,7 @@ struct MoveFolderToParentSheet: View {
             }
 
             HStack {
-                Button(PhoneAppWording.cancel, action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
                 Button(LibrarySheetWording.move) {
@@ -1334,7 +1334,7 @@ struct DeleteFolderMoveContentsSheet: View {
             }
 
             HStack {
-                Button(PhoneAppWording.cancel, action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
                 Button(LibrarySheetWording.moveContentsAndDelete) {

@@ -30,7 +30,7 @@ final class PhoneFolderVocabularyTests: XCTestCase {
         assertWord(PhoneFolderVocabulary.parentFolder, LibrarySheetWording.parentFolder, shownIn: mac,
                    as: "Picker(LibrarySheetWording.parentFolder, selection: $parentPath)")
         XCTAssertTrue(mac.contains(".accessibilityLabel(LibrarySheetWording.parentFolder)"))
-        XCTAssertTrue(mac.contains("Button(PhoneAppWording.cancel, action: onCancel)"))
+        XCTAssertTrue(mac.contains("Button(LibraryWindowWording.cancel, action: onCancel)"))
         assertWord(PhoneFolderVocabulary.create, LibrarySheetWording.create, shownIn: mac,
                    as: "Button(LibrarySheetWording.create) {")
     }
@@ -114,7 +114,7 @@ final class PhoneFolderVocabularyTests: XCTestCase {
         XCTAssertTrue(mac.contains("LibraryListWording.deleteFolderQuestion,\n            isPresented: $libraryViewModel.showDeleteFolderDialog"))
         assertWord(PhoneFolderVocabulary.moveContentsOut, LibraryListWording.moveContentsOut, shownIn: mac,
                    as: "Button(LibraryListWording.moveContentsOut) {")
-        XCTAssertTrue(mac.contains("Button(PhoneAppWording.cancel, role: .cancel) {\n                libraryViewModel.pendingDeleteFolder = nil"))
+        XCTAssertTrue(mac.contains("Button(LibraryWindowWording.cancel, role: .cancel) {\n                libraryViewModel.pendingDeleteFolder = nil"))
     }
 
     /// The Move Contents screen's words are the Mac's

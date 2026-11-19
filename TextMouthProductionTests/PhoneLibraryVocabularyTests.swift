@@ -61,7 +61,7 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
     func testRemovalsCancelIsTheMacs() throws {
         let macView = try Self.source("Views/ContentView.swift")
 
-        XCTAssertTrue(macView.contains("Button(PhoneAppWording.cancel, role: .cancel)"))
+        XCTAssertTrue(macView.contains("Button(LibraryWindowWording.cancel, role: .cancel)"))
     }
 
     /// Book Info's words are the Mac's simple Book Information sheet's, and
@@ -95,8 +95,10 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
             XCTAssertEqual(pair.phone, pair.mac, pair.shown)
             XCTAssertTrue(sheet.contains(pair.shown), "The sheet no longer says \(pair.shown)")
         }
-        XCTAssertTrue(sheet.contains("Button(PhoneAppWording.save)"))
-        XCTAssertTrue(sheet.contains("Button(PhoneAppWording.cancel)"))
+        XCTAssertEqual(PhoneAppWording.save, LibraryWindowWording.save)
+        XCTAssertEqual(PhoneAppWording.cancel, LibraryWindowWording.cancel)
+        XCTAssertTrue(sheet.contains("Button(LibraryWindowWording.save)"))
+        XCTAssertTrue(sheet.contains("Button(LibraryWindowWording.cancel)"))
         // The Mac reader's words after a save are its localized static, which the
         // phone reads rather than copies (FR35): the same words, their English
         // unchanged, and the reader's source says them through the static.
