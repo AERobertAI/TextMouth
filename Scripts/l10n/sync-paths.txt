@@ -3,3 +3,6 @@
 # any folders, `*` any name within one folder. A glob that matches no file is refused.
 # Each conversion wave adds its own lines here. Git merges this file by union (.gitattributes: merge=union), so two
 # waves that add lines never conflict; keep the file sorted when you add yours. The last wave adds "TextMouth/**".
+TextMouth/Models/CountWording.swift
+TextMouth/Models/SentenceWording.swift
+TextMouth/Phone/PhoneAppWording.swift

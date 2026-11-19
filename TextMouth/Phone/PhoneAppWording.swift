@@ -36,7 +36,7 @@ enum PhoneAppWording {
 
     /// The toolbar button that closes a sheet that has nothing to cancel.
     static var close: String {
-        String(localized: "Close", comment: "Button that closes a sheet that has nothing to cancel, such as the sleep timer sheet over a book's reader.")
+        String(localized: "Close", comment: "Button that closes a sheet, such as the sleep timer sheet over a book's reader.")
     }
 
     /// The button that saves a sheet's edits: the Mac's "Save".

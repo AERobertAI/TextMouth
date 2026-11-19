@@ -64,7 +64,7 @@ enum CountWording {
     /// spoken durations count them.
     static func minutes(_ count: Int) -> String {
         String(localized: "\(count) minutes",
-               comment: "A count of minutes inside a duration, or the length of a sleep timer. %lld is the number of minutes.")
+               comment: "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.")
     }
 
     /// `count` seconds: "1 second", "5 seconds".
