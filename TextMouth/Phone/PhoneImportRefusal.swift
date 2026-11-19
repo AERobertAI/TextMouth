@@ -117,12 +117,12 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     static func audioKindName(content kind: AudioContentSniffer.Kind, fileExtension: String) -> String {
         let ext = fileExtension.lowercased()
         switch kind {
-        case .ogg: return ext == "opus" ? "Opus" : "Ogg"
+        case .ogg: return ext == "opus" ? "Opus" : "Ogg" // l10n: no (a format's name)
         case .ac3: return "AC-3"
         case .caf: return "CAF"
         case .aifc: return "AIFF-C"
         case .au: return "AU"
-        case .wave64: return "Wave64"
+        case .wave64: return "Wave64" // l10n: no (a format's name)
         case .amr: return "AMR"
         case .threeGPP: return "3GPP"
         case .mpegLayerI: return "MP1"
@@ -140,19 +140,22 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     private static func audioKindName(fileExtension ext: String) -> String {
         if let ffmpegKind = FFmpegImportWording.kindName(forExtension: ext) { return ffmpegKind }
         switch ext {
-        case "ogg", "oga": return "Ogg"
-        case "opus": return "Opus"
+        case "ogg", "oga": return "Ogg" // l10n: no (a format's name)
+        case "opus": return "Opus" // l10n: no (a format's name)
         case "ac3", "ec3", "eac3": return "AC-3"
         case "caf": return "CAF"
         case "aifc": return "AIFF-C"
         case "au", "snd": return "AU"
-        case "w64": return "Wave64"
+        case "w64": return "Wave64" // l10n: no (a format's name)
         case "amr", "awb": return "AMR"
         case "3gp", "3g2", "3ga": return "3GPP"
         case "mp1": return "MP1"
         case "mp2", "mpa": return "MP2"
         default:
-            return ext.isEmpty ? "this format" : ext.uppercased()
+            return ext.isEmpty
+                ? String(localized: "this format",
+                         comment: "Stands for the name of a file's format inside a sentence about importing it, when the file's name and its bytes name none, as in \"TextMouth can't read “Clip” as this format.\"")
+                : ext.uppercased()
         }
     }
 }

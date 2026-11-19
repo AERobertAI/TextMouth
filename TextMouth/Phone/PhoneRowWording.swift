@@ -15,7 +15,7 @@ enum PhoneRowWording {
     /// any other view (the spec's).
     static func screenTitle(for location: LibraryLocation) -> String {
         guard location.view.kind == .folders else {
-            return "\(PhoneAppWording.libraryTitle): \(location.view.name)"
+            return SentenceWording.labelled(PhoneAppWording.libraryTitle, location.view.name)
         }
         return location.folderPath.isEmpty ? PhoneAppWording.libraryTitle : location.name
     }
@@ -29,19 +29,31 @@ enum PhoneRowWording {
 
     /// The Library view row's label, the Mac's "Library view", which the
     /// Mac keeps on its main-actor view.
-    @MainActor static let libraryViewLabel = LibraryView.categoryPickerLabel
+    @MainActor static var libraryViewLabel: String { LibraryView.categoryPickerLabel }
     /// What the Library view row does (the spec's).
-    static let libraryViewHint = "Chooses what the Library lists."
+    static var libraryViewHint: String {
+        String(localized: "Chooses what the Library lists.",
+               comment: "Hint of the iPhone Library's row that chooses which view of the library is listed.")
+    }
     /// Settings' label and title (the spec's).
-    static let settingsTitle = "Settings"
+    static var settingsTitle: String {
+        String(localized: "Settings",
+               comment: "Label and title of the iPhone Library's button that opens the app's settings.")
+    }
     /// What Settings does (the spec's).
-    static let settingsHint = "Opens TextMouth's settings."
+    static var settingsHint: String {
+        String(localized: "Opens TextMouth's settings.",
+               comment: "Hint of the iPhone Library's Settings button.")
+    }
     /// What Sort does (the spec's).
-    static let sortHint = "Chooses the order of the books."
+    static var sortHint: String {
+        String(localized: "Chooses the order of the books.",
+               comment: "Hint of the iPhone Library's Sort button.")
+    }
     /// What Add to Library does on a phone, which offers only these two ways
     /// (the spec's; the Mac's hint names ways a phone doesn't have): the
     /// import's own words, kept in one place.
-    static let addToLibraryHint = PhoneImportWording.addToLibraryButtonHint
+    static var addToLibraryHint: String { PhoneImportWording.addToLibraryButtonHint }
 
     // MARK: The Continue Row
 
@@ -57,13 +69,14 @@ enum PhoneRowWording {
     /// would change as the book plays, and its first cells differ from
     /// "Continue" for a braille display's Item Overview.
     static func nowPlayingLabel(title: String) -> String {
-        "Now Playing: \(title)"
+        String(localized: "Now Playing: \(title)",
+               comment: "What VoiceOver says for the iPhone Library's Continue row while that book plays. %@ is the book's title.")
     }
 
     /// What the Continue row shows, for sight: the Mac's "Continue: Emma",
     /// whose time left, "16:00 left", is `continueTimeText`.
     static func continueVisibleTitle(for book: Book) -> String {
-        PhoneLibraryVocabulary.continueVisiblePrefix + book.title
+        PhoneLibraryVocabulary.continueVisible(book.title)
     }
 
     /// The time left the Continue row shows beside its title, the Mac's
@@ -73,7 +86,7 @@ enum PhoneRowWording {
     }
 
     /// The Continue row's hint, the Mac's.
-    static let continueHint = PhoneLibraryVocabulary.continueHint
+    static var continueHint: String { PhoneLibraryVocabulary.continueHint }
 
     // MARK: Searching
 
@@ -87,17 +100,26 @@ enum PhoneRowWording {
     // MARK: Empty States
 
     /// The one row of a library with no books and no folders.
-    static let emptyLibrary = PhoneAppWording.emptyLibrary
+    static var emptyLibrary: String { PhoneAppWording.emptyLibrary }
     /// The row of a folder that holds no book and no folder.
-    static let emptyFolder = "This folder is empty."
+    static var emptyFolder: String {
+        String(localized: "This folder is empty.",
+               comment: "The only row of a folder in the iPhone Library that holds no book and no folder.")
+    }
     /// The row of a search that matches nothing.
-    static let noMatches = "No books match."
+    static var noMatches: String {
+        String(localized: "No books match.",
+               comment: "The only row of the iPhone Library's list while a search matches nothing; also what VoiceOver says then.")
+    }
     /// The row of an empty Reading List: the Mac's sentence without its
     /// Library menu, which a phone doesn't have (the spec, "Words that say
     /// Mac").
-    static let emptyReadingList = "The reading list is empty. To add a book, choose Add to Reading List from its actions."
+    static var emptyReadingList: String {
+        String(localized: "The reading list is empty. To add a book, choose Add to Reading List from its actions.",
+               comment: "The only row of the iPhone's empty Reading List. \"Add to Reading List\" is the name of a book's action, so keep it the same as that action's label.")
+    }
     /// The row of a view that lists nothing now, the Mac's.
-    static let emptyView = LibraryViewPickerWording.emptyView
+    static var emptyView: String { LibraryViewPickerWording.emptyView }
 
     /// The sentence of `note`.
     static func sentence(for note: PhoneRowNote) -> String {
@@ -134,8 +156,14 @@ enum PhoneRowWording {
 
     /// The removal question's message on a phone, which has no Trash a person
     /// can open (the spec's).
-    static let removalMessage = "This deletes the book and its files from this iPhone, and they can't be recovered. "
-        + "Your Mac's library isn't touched."
+    static var removalMessage: String {
+        SentenceWording.joined([
+            String(localized: "This deletes the book and its files from this iPhone, and they can't be recovered.",
+                   comment: "First sentence of the message of the iPhone's question before a book is removed: nothing is kept on this iPhone."),
+            String(localized: "Your Mac's library isn't touched.",
+                   comment: "Last sentence of the message of the iPhone's question before a book is removed: a copy of the book in a Mac's library stays."),
+        ])
+    }
 
     /// The removal question's title, the Mac's "Remove Book?".
     static func removalTitle(for book: Book) -> String {
@@ -144,7 +172,7 @@ enum PhoneRowWording {
 
     /// The removal question's button that deletes, the Mac's "Delete
     /// Permanently": the phone only ever deletes.
-    static let removalDeleteButton = RemovalMode.deletePermanently.buttonTitle()
+    static var removalDeleteButton: String { RemovalMode.deletePermanently.buttonTitle() }
 
     /// What VoiceOver says once `title` is deleted, the Mac's "Deleted “Dune”
     /// permanently.".
