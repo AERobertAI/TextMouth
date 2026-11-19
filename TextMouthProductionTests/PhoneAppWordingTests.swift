@@ -8,9 +8,13 @@ final class PhoneAppWordingTests: XCTestCase {
     func testTheAlertSaysWhatTheMacsSays() throws {
         let macView = try Self.source("Views/ContentView.swift")
 
-        XCTAssertTrue(macView.contains("libraryViewModel.errorTitle ?? \"\(PhoneAppWording.errorTitle)\""))
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneAppWording.errorDismiss)\", role: .cancel)"))
-        XCTAssertTrue(macView.contains("libraryViewModel.errorMessage ?? \"\(PhoneAppWording.unknownError)\""))
+        // The Mac's alert shows the shared words, so one definition serves both apps (FR34).
+        XCTAssertTrue(macView.contains("libraryViewModel.errorTitle ?? PhoneAppWording.errorTitle"))
+        XCTAssertTrue(macView.contains("Button(PhoneAppWording.errorDismiss, role: .cancel)"))
+        XCTAssertTrue(macView.contains("libraryViewModel.errorMessage ?? PhoneAppWording.unknownError"))
+        XCTAssertEqual(PhoneAppWording.errorTitle, "Error")
+        XCTAssertEqual(PhoneAppWording.errorDismiss, "OK")
+        XCTAssertEqual(PhoneAppWording.unknownError, "An unknown error occurred.")
     }
 
     /// Every phone sheet and question says one "Cancel", the Mac's word.

@@ -9,43 +9,59 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
     func testTheListsWordsAreLibraryViews() throws {
         let macView = try Self.source("Views/Library/LibraryView.swift")
 
-        XCTAssertTrue(macView.contains("Text(\"\(PhoneLibraryVocabulary.foldersHeader)\")"))
-        XCTAssertTrue(macView.contains("prompt: \"\(PhoneLibraryVocabulary.searchPrompt)\""))
-        XCTAssertTrue(macView.contains("Label(\"\(PhoneFolderVocabulary.newFolderTitle)\", systemImage:"))
-        XCTAssertTrue(macView.contains(".accessibilityLabel(\"\(PhoneLibraryVocabulary.newFolderLabel)\")"))
-        XCTAssertTrue(macView.contains("Label(\"\(PhoneLibraryVocabulary.sortTitle)\", systemImage:"))
-        XCTAssertTrue(macView.contains("Text(\"\(PhoneLibraryVocabulary.applySortToSubfolders)\")"))
+        // Each phone word is the Mac's static, and the Mac's view shows that static (FR34).
+        XCTAssertEqual(PhoneLibraryVocabulary.foldersHeader, LibraryListWording.foldersHeader)
+        XCTAssertTrue(macView.contains("Text(LibraryListWording.foldersHeader)"))
+        XCTAssertEqual(PhoneLibraryVocabulary.searchPrompt, LibraryListWording.searchPrompt)
+        XCTAssertTrue(macView.contains("prompt: LibraryListWording.searchPrompt"))
+        XCTAssertEqual(PhoneFolderVocabulary.newFolderTitle, LibrarySheetWording.newFolderTitle)
+        XCTAssertTrue(macView.contains("Label(LibrarySheetWording.newFolderTitle, systemImage:"))
+        XCTAssertEqual(PhoneLibraryVocabulary.newFolderLabel, LibraryListWording.createNewFolder)
+        XCTAssertTrue(macView.contains(".accessibilityLabel(LibraryListWording.createNewFolder)"))
+        XCTAssertEqual(PhoneLibraryVocabulary.sortTitle, LibraryListWording.sort)
+        XCTAssertTrue(macView.contains("Label(LibraryListWording.sort, systemImage:"))
+        XCTAssertEqual(PhoneLibraryVocabulary.applySortToSubfolders, LibraryListWording.applySortToSubfolders)
+        XCTAssertTrue(macView.contains("Text(LibraryListWording.applySortToSubfolders)"))
     }
 
     /// A folder's commands are LibraryView's.
     func testAFoldersCommandsAreLibraryViews() throws {
         let macView = try Self.source("Views/Library/LibraryView.swift")
 
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneLibraryVocabulary.renameFolder)\")"))
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneLibraryVocabulary.moveFolder)\")"))
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneLibraryVocabulary.deleteFolder)\", role: .destructive)"))
+        XCTAssertEqual(PhoneLibraryVocabulary.renameFolder, LibraryListWording.renameFolder)
+        XCTAssertTrue(macView.contains("Button(LibraryListWording.renameFolder)"))
+        XCTAssertEqual(PhoneLibraryVocabulary.moveFolder, LibraryListWording.moveFolder)
+        XCTAssertTrue(macView.contains("Button(LibraryListWording.moveFolder)"))
+        XCTAssertEqual(PhoneLibraryVocabulary.deleteFolder, LibraryListWording.deleteFolder)
+        XCTAssertTrue(macView.contains("Button(LibraryListWording.deleteFolder, role: .destructive)"))
     }
 
     /// Book Info is the book row's own command, in LibrarySubviews.
     func testBookInfoIsTheRowsCommand() throws {
         let macView = try Self.source("Views/Library/LibrarySubviews.swift")
 
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneLibraryVocabulary.bookInfo)\")"))
+        XCTAssertEqual(PhoneLibraryVocabulary.bookInfo, LibrarySubviewWording.bookInfo)
+        XCTAssertTrue(macView.contains("Button(LibrarySubviewWording.bookInfo)"))
     }
 
     /// The Continue row's visible title and hint are the Continue button's.
     func testTheContinueRowsWordsAreTheContinueButtons() throws {
         let macView = try Self.source("Views/Library/LibraryView.swift")
 
-        XCTAssertTrue(macView.contains("Text(\"\(PhoneLibraryVocabulary.continueVisiblePrefix)\\(lastBook.title)\")"))
-        XCTAssertTrue(macView.contains(".accessibilityHint(\"\(PhoneLibraryVocabulary.continueHint)\")"))
+        XCTAssertEqual(
+            LibraryListWording.continueVisible("Emma"),
+            PhoneLibraryVocabulary.continueVisiblePrefix + "Emma"
+        )
+        XCTAssertTrue(macView.contains("Text(LibraryListWording.continueVisible(lastBook.title))"))
+        XCTAssertEqual(PhoneLibraryVocabulary.continueHint, LibraryListWording.continueHint)
+        XCTAssertTrue(macView.contains(".accessibilityHint(LibraryListWording.continueHint)"))
     }
 
     /// Removal's Cancel is the Mac's Remove Book question's.
     func testRemovalsCancelIsTheMacs() throws {
         let macView = try Self.source("Views/ContentView.swift")
 
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneAppWording.cancel)\", role: .cancel)"))
+        XCTAssertTrue(macView.contains("Button(PhoneAppWording.cancel, role: .cancel)"))
     }
 
     /// Book Info's words are the Mac's simple Book Information sheet's, and
@@ -54,17 +70,33 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
         let sheet = try Self.source("Views/Library/LibrarySheetViews.swift")
         let reader = try Self.source("ViewModels/ReaderViewModel+Bookmarks.swift")
 
-        XCTAssertTrue(sheet.contains("Text(\"\(PhoneLibraryVocabulary.bookInformation)\")"))
-        XCTAssertTrue(sheet.contains("TextField(\"\(PhoneLibraryVocabulary.titleField)\", text: $title)"))
-        XCTAssertTrue(sheet.contains("MetadataEditorWording.fieldLabel(\"\(PhoneLibraryVocabulary.titleFieldLabel)\", for: .title"))
-        XCTAssertTrue(sheet.contains("TextField(\"\(PhoneLibraryVocabulary.authorField)\", text: $author)"))
-        XCTAssertTrue(sheet.contains("MetadataEditorWording.fieldLabel(\"\(PhoneLibraryVocabulary.authorFieldLabel)\", for: .author"))
-        XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.formatRow)\")"))
-        XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.addedRow)\")"))
-        XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.lastOpenedRow)\")"))
-        XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.wordCountRow)\")"))
-        XCTAssertTrue(sheet.contains("Button(\"\(PhoneAppWording.save)\")"))
-        XCTAssertTrue(sheet.contains("Button(\"\(PhoneAppWording.cancel)\")"))
+        // Each phone word is the Mac's static, and the sheet shows that static (FR34).
+        let pairs: [(phone: String, mac: String, shown: String)] = [
+            (PhoneLibraryVocabulary.bookInformation, LibrarySheetWording.bookInformation,
+             "Text(LibrarySheetWording.bookInformation)"),
+            (PhoneLibraryVocabulary.titleField, MetadataEditorWording.titleField,
+             "TextField(MetadataEditorWording.titleField, text: $title)"),
+            (PhoneLibraryVocabulary.titleFieldLabel, MetadataEditorWording.bookTitleLabel,
+             "MetadataEditorWording.fieldLabel(MetadataEditorWording.bookTitleLabel, for: .title"),
+            (PhoneLibraryVocabulary.authorField, MetadataEditorWording.authorField,
+             "TextField(MetadataEditorWording.authorField, text: $author)"),
+            (PhoneLibraryVocabulary.authorFieldLabel, LibrarySheetWording.bookAuthorLabel,
+             "MetadataEditorWording.fieldLabel(LibrarySheetWording.bookAuthorLabel, for: .author"),
+            (PhoneLibraryVocabulary.formatRow, MetadataEditorWording.formatRow,
+             "LabeledContent(MetadataEditorWording.formatRow)"),
+            (PhoneLibraryVocabulary.addedRow, LibrarySheetWording.addedRow,
+             "LabeledContent(LibrarySheetWording.addedRow)"),
+            (PhoneLibraryVocabulary.lastOpenedRow, LibrarySheetWording.lastOpenedRow,
+             "LabeledContent(LibrarySheetWording.lastOpenedRow)"),
+            (PhoneLibraryVocabulary.wordCountRow, LibrarySheetWording.wordCountRow,
+             "LabeledContent(LibrarySheetWording.wordCountRow)"),
+        ]
+        for pair in pairs {
+            XCTAssertEqual(pair.phone, pair.mac, pair.shown)
+            XCTAssertTrue(sheet.contains(pair.shown), "The sheet no longer says \(pair.shown)")
+        }
+        XCTAssertTrue(sheet.contains("Button(PhoneAppWording.save)"))
+        XCTAssertTrue(sheet.contains("Button(PhoneAppWording.cancel)"))
         // The Mac reader's words after a save are its localized static, which the
         // phone reads rather than copies (FR35): the same words, their English
         // unchanged, and the reader's source says them through the static.
