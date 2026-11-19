@@ -346,7 +346,9 @@ final class BrailleExportWriterTests: XCTestCase {
         XCTAssertEqual(BrailleSettingsWording.fileCodeLabel, "Braille file characters")
         XCTAssertEqual(
             BrailleExportWording.fileCodeHint,
-            "How the BRF file writes each braille cell. Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille. To share braille with a reader elsewhere, export a PEF."
+            "How the BRF writes each braille cell. Most braille displays and embossers read North American "
+                + "Braille ASCII; those set up for German read Eurobraille. To share with a reader "
+                + "elsewhere, export a PEF."
         )
         // The ranges the hints state are the layout's.
         XCTAssertEqual(BraillePageFormat.cellsPerLineRange, 18...80)
@@ -360,7 +362,7 @@ final class BrailleExportWriterTests: XCTestCase {
         XCTAssertEqual(BookExportWording.exportHint, "Exports the checked items to the folder.")
         XCTAssertEqual(
             BookExportWording.exportWaitsHint,
-            "Exports the checked items to the folder once the braille table just chosen has been checked."
+            "Exports the checked items once the braille table just chosen is checked."
         )
         XCTAssertEqual(BookExportWording.stopHint, "Stops the export. The file being made is not kept.")
     }
@@ -466,7 +468,9 @@ final class BrailleExportWriterTests: XCTestCase {
             let fileCode = try control(labelled: "Braille file characters", in: controls)
             XCTAssertEqual(
                 fileCode.hint,
-                "How the BRF file writes each braille cell. Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille. To share braille with a reader elsewhere, export a PEF."
+                "How the BRF writes each braille cell. Most braille displays and embossers read North American "
+                    + "Braille ASCII; those set up for German read Eurobraille. To share with a reader "
+                    + "elsewhere, export a PEF."
             )
             XCTAssertEqual(fileCode.role, .popUpButton)
             XCTAssertEqual(fileCode.element.accessibilityValue() as? String, "North American Braille ASCII")

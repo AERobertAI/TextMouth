@@ -277,8 +277,9 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertEqual(outcome.exported, [])
         XCTAssertEqual(
             model.summary,
-            "Couldn't export \(BookExportService.fileNameStem(for: dialog.book.title)) - Audio.m4b: "
-                + "No voice is installed to speak it. Add a voice in System Settings, Accessibility, Spoken Content, then export again."
+            "Couldn't export \(BookExportService.fileNameStem(for: dialog.book.title)) - Audio.m4b: No voice "
+                + "is installed. Add one in System Settings, Accessibility, Spoken Content, then export "
+                + "again."
         )
     }
 
@@ -410,8 +411,8 @@ final class SpeechExportDialogTests: XCTestCase {
         gate.open()
         let outcome = try await end(of: stopped)
 
-        let words = "Export stopped. Nothing was exported. Kept 2 of 3 chapters: export the same range at the same speed "
-            + "and pitch to go on from chapter 3, " + Self.keptUntil + "."
+        let words = "Export stopped. Nothing was exported. Kept 2 of 3 chapters " + Self.keptUntil
+            + ". To go on from chapter 3, export the same range at the same speed and pitch."
         XCTAssertTrue(outcome.wasCancelled)
         XCTAssertEqual(outcome.exported, [])
         XCTAssertEqual(model.summary, words)
@@ -468,8 +469,8 @@ final class SpeechExportDialogTests: XCTestCase {
 
         let stem = BookExportService.fileNameStem(for: dialog.book.title)
         let words = "Couldn't export \(stem) - Audio.m4b: The Mac's speech engine refused to speak part of “Later”, "
-            + "even with its brackets made silent. Kept 2 of 3 chapters: export the same range at the same speed and pitch "
-            + "to go on from chapter 3, " + Self.keptUntil + "."
+            + "even with its brackets made silent. Kept 2 of 3 chapters " + Self.keptUntil
+            + ". To go on from chapter 3, export the same range at the same speed and pitch."
         XCTAssertEqual(outcome.exported, [])
         XCTAssertEqual(model.summary, words)
         XCTAssertEqual(announcements.messages, [words])
@@ -491,8 +492,9 @@ final class SpeechExportDialogTests: XCTestCase {
         let outcome = try await end(of: ExportRun(of: model))
 
         let stem = BookExportService.fileNameStem(for: dialog.book.title)
-        let words = "Couldn't export \(stem) - Audio.m4b: “Test Personal” is a Personal Voice, which macOS can't record to a file. "
-            + "Choose another voice for this book with the Voice button in its reader, then export again."
+        let words = "Couldn't export \(stem) - Audio.m4b: “Test Personal” is a Personal Voice, which macOS "
+            + "can't record to a file. Choose another voice with the Voice button in the reader, then export "
+            + "again."
         XCTAssertEqual(outcome.exported, [])
         XCTAssertEqual(model.summary, words)
         XCTAssertEqual(announcements.messages, [words])
@@ -788,29 +790,29 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertNil(SpeechExportWording.progress(.ended(kept: 3, total: 12)))
         XCTAssertEqual(
             SpeechExportWording.stopHint,
-            "Stops the export. The chapters already spoken are kept, so exporting the same range at the same speed "
-                + "and pitch goes on from there, " + Self.keptUntil + "."
+            "Stops the export and keeps the chapters already spoken " + Self.keptUntil
+                + ". Exporting the same range at the same speed and pitch goes on from them."
         )
         XCTAssertNil(SpeechExportWording.kept(done: 0, total: 12))
         XCTAssertEqual(
             SpeechExportWording.kept(done: 1, total: 12),
-            "Kept 1 of 12 chapters: export the same range at the same speed and pitch to go on from chapter 2, "
-                + Self.keptUntil + "."
+            "Kept 1 of 12 chapters " + Self.keptUntil
+                + ". To go on from chapter 2, export the same range at the same speed and pitch."
         )
         XCTAssertEqual(
             SpeechExportWording.kept(done: 11, total: 12),
-            "Kept 11 of 12 chapters: export the same range at the same speed and pitch to go on from chapter 12, "
-                + Self.keptUntil + "."
+            "Kept 11 of 12 chapters " + Self.keptUntil
+                + ". To go on from chapter 12, export the same range at the same speed and pitch."
         )
         XCTAssertEqual(
             SpeechExportWording.kept(done: 1, total: 1),
-            "Kept the spoken chapter: export the same range at the same speed and pitch to make the audio file from it, "
-                + Self.keptUntil + "."
+            "Kept the spoken chapter " + Self.keptUntil
+                + ". To make the audio file from it, export the same range at the same speed and pitch."
         )
         XCTAssertEqual(
             SpeechExportWording.kept(done: 12, total: 12),
-            "Kept all 12 spoken chapters: export the same range at the same speed and pitch to make the audio file "
-                + "from them, " + Self.keptUntil + "."
+            "Kept all 12 spoken chapters " + Self.keptUntil
+                + ". To make the audio file from them, export the same range at the same speed and pitch."
         )
     }
 
@@ -820,7 +822,7 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertEqual(SpeechExportProgress.speaking(done: 1, total: 3, fraction: 0.25).fraction, 0.25)
         XCTAssertEqual(
             SpeechExportWording.destinationInKeptChapters,
-            "Export can't write into the folder where TextMouth keeps spoken chapters, since TextMouth empties it. "
+            "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. "
                 + "Choose another folder."
         )
         XCTAssertEqual(SpeechExportWording.readingHeadings, "Reading the book's headings…")
@@ -838,8 +840,8 @@ final class SpeechExportDialogTests: XCTestCase {
 
     /// The words that say until when spoken chapters are kept, written out
     /// here so that the tests pin them, word for word.
-    private static let keptUntil = "before TextMouth quits, a different export of spoken audio starts, "
-        + "or the book's voice, text, substitution rules, or pauses change"
+    private static let keptUntil = "until TextMouth quits, a different spoken audio export starts, "
+        + "or the book's voice, text, substitutions, or pauses change"
 
     /// The identifier of the tests' voice, which no Mac has: only the test's
     /// own lookup knows it.

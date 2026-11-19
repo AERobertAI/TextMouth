@@ -79,7 +79,7 @@ enum ChapterTrackWriter {
         }
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
         output.alwaysCopiesSampleData = false
-        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
+        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") } // l10n: no (a fragment inside AudioEditError's English sentences until that area converts)
         reader.add(output)
 
         let writer: AVAssetWriter
@@ -90,7 +90,7 @@ enum ChapterTrackWriter {
         }
         let audio = AVAssetWriterInput(mediaType: .audio, outputSettings: nil, sourceFormatHint: hint)
         audio.expectsMediaDataInRealTime = false
-        guard writer.canAdd(audio) else { throw AudioEditError.renderFailed("the writer refused the audio") }
+        guard writer.canAdd(audio) else { throw AudioEditError.renderFailed("the writer refused the audio") } // l10n: no (a fragment inside AudioEditError's English sentences until that area converts)
         writer.add(audio)
 
         // The chapter list, as the audio editor writes one: a disabled text
@@ -99,7 +99,7 @@ enum ChapterTrackWriter {
         let titles = AVAssetWriterInput(mediaType: .text, outputSettings: nil, sourceFormatHint: format)
         titles.marksOutputTrackAsEnabled = false
         titles.mediaDataLocation = .beforeMainMediaDataNotInterleaved
-        guard writer.canAdd(titles) else { throw AudioEditError.renderFailed("the writer refused the chapter list") }
+        guard writer.canAdd(titles) else { throw AudioEditError.renderFailed("the writer refused the chapter list") } // l10n: no (a fragment inside AudioEditError's English sentences until that area converts)
         writer.add(titles)
         audio.addTrackAssociation(withTrackOf: titles, type: AVAssetTrack.AssociationType.chapterList.rawValue)
         writer.metadata = tags

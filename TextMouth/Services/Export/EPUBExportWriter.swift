@@ -36,7 +36,10 @@ struct EPUBExportWriter: TextExportWriter {
     /// The extension of the files it makes.
     let fileExtension = "epub"
     /// What the picker's hint says while this writer is chosen.
-    let hint = "An e-book with the book's headings, contents, and page numbers where it has them, for Apple Books and other reading apps. It holds no pictures."
+    var hint: String {
+        String(localized: "An e-book with the book's headings, contents, and any page numbers, for Apple Books and other reading apps. It holds no pictures.",
+               comment: "The hint of the Convert to picker in the Export dialog while EPUB is chosen. Apple Books is an app's name.")
+    }
 
     /// The book's chapters and pages are kept as well as its words.
     var walkOptions: ExportWalkOptions { .bookStructure }
@@ -96,7 +99,7 @@ struct EPUBExportWriter: TextExportWriter {
             // Whatever began the file is not an EPUB: remove it, and say why.
             try? FileManager.default.removeItem(at: url)
             if error is Archive.ArchiveError || error is Data.DataError {
-                throw TextExportError("The EPUB file could not be written.")
+                throw TextExportError(Self.couldNotBeWritten)
             }
             throw error
         }
@@ -111,10 +114,18 @@ struct EPUBExportWriter: TextExportWriter {
     static func writeFailureSentence(errno code: Int32) -> String {
         switch code {
         case EIO, EROFS, EACCES, EPERM, ESTALE, ENXIO, ENODEV, ETIMEDOUT:
-            return "The EPUB file could not be written: \(String(cString: strerror(code)))."
+            return String(localized: "The EPUB file could not be written: \(String(cString: strerror(code))).",
+                          comment: "Why an EPUB export failed: the system gave a reason. %@ is the system's own words, such as \"Read-only file system\".")
         default:
-            return "The EPUB file could not be written, because the disk may be full."
+            return String(localized: "The EPUB file could not be written, because the disk may be full.",
+                          comment: "Why an EPUB export failed: the write failed and the disk may be full.")
         }
+    }
+
+    /// Why an EPUB export failed when its file did not read back whole.
+    static var couldNotBeWritten: String {
+        String(localized: "The EPUB file could not be written.",
+               comment: "Why an EPUB export failed: the file was not written whole.")
     }
 
     /// Writes the package of `document` into a new archive at `url` and
@@ -154,12 +165,12 @@ struct EPUBExportWriter: TextExportWriter {
         let archive = try Archive(url: url, accessMode: .read)
         let entries = Array(archive)
         guard entries.map(\.path) == paths else {
-            throw TextExportError("The EPUB file could not be written.")
+            throw TextExportError(Self.couldNotBeWritten)
         }
         for entry in entries {
             let checksum = try archive.extract(entry) { _ in }
             guard checksum == entry.checksum else {
-                throw TextExportError("The EPUB file could not be written.")
+                throw TextExportError(Self.couldNotBeWritten)
             }
         }
     }

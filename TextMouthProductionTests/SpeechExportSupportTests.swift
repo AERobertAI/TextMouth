@@ -247,18 +247,17 @@ final class SpeechExportSupportTests: XCTestCase {
     func testEveryErrorsWords() {
         XCTAssertEqual(
             SpeechExportError.personalVoice(name: "Ottilie").errorDescription,
-            "“Ottilie” is a Personal Voice, which macOS can't record to a file. "
-                + "Choose another voice for this book with the Voice button in its reader, then export again."
+            "“Ottilie” is a Personal Voice, which macOS can't record to a file. Choose another voice with the "
+                + "Voice button in the reader, then export again."
         )
         XCTAssertEqual(
             SpeechExportError.noVoice.errorDescription,
-            "No voice is installed to speak it. "
-                + "Add a voice in System Settings, Accessibility, Spoken Content, then export again."
+            "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export "
+                + "again."
         )
         XCTAssertEqual(
             SpeechExportError.busy.errorDescription,
-            "TextMouth is already exporting spoken audio, which it does one export at a time. "
-                + "Export this once that one has finished."
+            "TextMouth exports one spoken audio file at a time. Export this once the current one has finished."
         )
         XCTAssertEqual(
             SpeechExportError.nothingToSpeak.errorDescription,
@@ -266,8 +265,7 @@ final class SpeechExportSupportTests: XCTestCase {
         )
         XCTAssertEqual(
             SpeechExportError.headingsChanged.errorDescription,
-            "The book's headings changed after the Export dialog opened. "
-                + "Close it, open it again, and choose the range again."
+            "The book's headings changed after the dialog opened. Reopen it and choose the range again."
         )
     }
 
@@ -280,8 +278,8 @@ final class SpeechExportSupportTests: XCTestCase {
 
         XCTAssertEqual(
             SpeechExportError.notEnoughSpace(needed: 2_500_000_000).errorDescription,
-            "There isn't room on the disk for it: it needs about \(needed), "
-                + "and TextMouth keeps \(reserve) free. Free some space, then export again."
+            "The disk lacks room: this needs about \(needed), and TextMouth keeps \(reserve) free. Free some "
+                + "space, then export again."
         )
     }
 

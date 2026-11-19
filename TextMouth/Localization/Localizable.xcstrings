@@ -18,6 +18,17 @@
         }
       }
     },
+    "%@ %@, which TextMouth can't export with its structure." : {
+      "comment" : "The first sentence of the alert an export shows when a chapter nests too deeply. %1$@ names what nests, such as \"Chapter 2 of Deep Notes\", and %2$@ is the clause that says how deep, such as \"nests quotes, lists, or emphasis more than 128 levels deep\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@, which TextMouth can't export with its structure."
+          }
+        }
+      }
+    },
     "%@ %@." : {
       "comment" : "Says why a book's download cannot be deleted or replaced now. The first %@ is the book's title in quotation marks, or \"It\"; the second is a clause such as \"is open in a reader\" or \"is being transcribed, and deleting its download now would lose the transcript\".",
       "localizations" : {
@@ -58,6 +69,23 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ (current heading) - level %2$lld"
+          }
+        }
+      }
+    },
+    "%@ - Original Audio" : {
+      "comment" : "The name of an exported folder holding a book's audio as it was before its first edit. %@ is the book's title made safe for a file name."
+    },
+    "%@ - Original Files" : {
+      "comment" : "The name of an exported folder holding an audiobook's audio files as they were before TextMouth converted them. %@ is the book's title made safe for a file name."
+    },
+    "%@ - Original Recording.%@" : {
+      "comment" : "The name of an exported file holding a recording as it was made. %1$@ is the book's title made safe for a file name and %2$@ the file's extension, such as m4a.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ - Original Recording.%2$@"
           }
         }
       }
@@ -154,6 +182,17 @@
     },
     "%@ aren't downloaded." : {
       "comment" : "Why an operation left several books as it is: their files are only in the cloud. %@ is a count of books, such as \"5 books\".\nWhy an operation left two or three books as it is: their files are only in the cloud. %@ is the books' titles as a list."
+    },
+    "%@ as %@" : {
+      "comment" : "The name of a checkbox in the Export dialog while its list or transcript is written in a format. %1$@ is the checkbox's name, such as Headings or Transcript, and %2$@ the name of the format, such as CUE sheet or WebVTT.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ as %2$@"
+          }
+        }
+      }
     },
     "%@ at %@" : {
       "comment" : "A moment on another day. The first %@ is the date, such as \"October 1\" or \"October 1, 2025\"; the second is the time of day, such as 3:05 PM.\nAn amount of time followed by the speed it counts at. %1$@ is the amount with its words, such as \"3:44:01 left\" or \"Total time: 4 hours\"; %2$@ is the speed, such as \"2.0x\", \"2.0 times speed\" or \"500 words a minute\".",
@@ -344,6 +383,9 @@
           }
         }
       }
+    },
+    "%@ does the same for every such chapter of this export, without asking again." : {
+      "comment" : "The third sentence of the alert an export shows when a chapter nests too deeply and others may too. %@ is the name of the Export Every Such Chapter as Written button."
     },
     "%@ doesn't say whether the copy of this book on this Mac is the latest, so its download can't be removed, and waiting won't change that." : {
       "comment" : "First sentence of why Remove Download was refused: the cloud service never says whether the copy here is current. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."
@@ -615,6 +657,9 @@
         }
       }
     },
+    "%@ in the cloud" : {
+      "comment" : "Part of a checkbox's label in the Export dialog: how many books hold this item only in the cloud. %@ is a count of books, such as 2 books."
+    },
     "%@ is already in the reading list." : {
       "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.",
       "localizations" : {
@@ -819,6 +864,9 @@
     "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder." : {
       "comment" : "What VoiceOver says when Move to Library is chosen and no selected book is a feed's download. %@ is the name of the Move to Library command, with its ellipsis."
     },
+    "%@ nests too deeply" : {
+      "comment" : "The title of the alert an export shows when a chapter nests quotes, lists, or emphasis too deeply. %@ names what nests, such as \"Chapter 2 of Deep Notes\"."
+    },
     "%@ not recorded for %@: %@" : {
       "comment" : "Announced by VoiceOver when a key cannot become a keyboard shortcut. %1$@ is the key in words, %2$@ is the action's name, and %3$@ is the reason, which starts in lower case.",
       "localizations" : {
@@ -988,11 +1036,14 @@
         }
       }
     },
+    "%@ stops the whole export. Files already written stay." : {
+      "comment" : "The last sentence of the alert an export shows when a chapter nests too deeply. %@ is the name of the Cancel Export button."
+    },
     "%@ through the book" : {
       "comment" : "What VoiceOver says for the reader's percent button. %@ is the percent, such as 22.9%."
     },
     "%@ to %@" : {
-      "comment" : "A range of three or more consecutive pages of a PDF, in a list of pages. %1$@ is the first page and %2$@ the last, identifiers written without digit grouping.",
+      "comment" : "A range of three or more consecutive pages of a PDF, in a list of pages. %1$@ is the first page and %2$@ the last, identifiers written without digit grouping.\nPart of a spoken audio export's file name: a range of the book. %1$@ is where it begins and %2$@ where it ends, each a heading's words or the beginning or end of the book, as in \"Chapter 1 to Chapter 3\".",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1125,6 +1176,12 @@
         }
       }
     },
+    "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual." : {
+      "comment" : "The second sentence of the alert an export shows when a chapter nests too deeply. %@ is the name of the Export as Written button."
+    },
+    "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual." : {
+      "comment" : "The second sentence of the alert an export shows when a book's text, which has no chapter markers, nests too deeply. %@ is the name of the Export as Written button."
+    },
     "%@%@ dB" : {
       "comment" : "A level change in decibels with its sign, such as \"+3 dB\" or \"-6 dB\". %1$@ is the sign, \"+\" or \"-\" or nothing, and %2$@ the number, already formatted.",
       "localizations" : {
@@ -1137,7 +1194,7 @@
       }
     },
     "%@, %@" : {
-      "comment" : "A heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nA language's menu item in the transcription language pop-up, with its speech model's status. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is the status: installed, needs download, or not supported.\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
+      "comment" : "A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).\nA heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nA language's menu item in the transcription language pop-up, with its speech model's status. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is the status: installed, needs download, or not supported.\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1376,7 +1433,7 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a row's action or the context menu gives the view name a visibility (finding 12): \"Feeds, hidden\", \"Feeds, shown always\", \"Feeds, shown when applicable\". The pop-up says its own new value. This is the case .hidden. Placeholders in order: name."
     },
     "%@, in %@" : {
-      "comment" : "VoiceOver label of a search match whose place in the book is unknown. %1$@ is the match in its surrounding text, and %2$@ is the book's title.",
+      "comment" : "A braille table in words, then the language it is in. %1$@ is the table in words, such as Unified English Braille, uncontracted, and %2$@ the language's name, such as English.\nVoiceOver label of a search match whose place in the book is unknown. %1$@ is the match in its surrounding text, and %2$@ is the book's title.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2430,6 +2487,29 @@
         }
       }
     },
+    "%lld cells" : {
+      "comment" : "The value of the Cells per line stepper in the Export dialog's braille options. %lld is the number of braille cells in a line.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cell"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cells"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld chapters" : {
       "comment" : "A count of chapters inside a sentence about an edited transcript, such as \"3 chapters\". %lld is the number.",
       "localizations" : {
@@ -2891,7 +2971,7 @@
       }
     },
     "%lld files" : {
-      "comment" : "A count of the files of a book that is downloading. %lld is the number of files.",
+      "comment" : "A count of files, part of a checkbox's label in the Export dialog. %lld is the number of files.\nA count of the files of a book that is downloading. %lld is the number of files.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -3052,7 +3132,7 @@
       }
     },
     "%lld items" : {
-      "comment" : "A count of a feed's items inside a sentence about a conflicting copy of the feed's record. %lld is the number of items.\nA count of a feed's items when it holds both episodes and articles. %lld is the number of items.\nThe total of an archive extraction's count: how many items (files and folders) the archive holds. %lld is the number of items. Follows \"120 of\".",
+      "comment" : "A count of a feed's items inside a sentence about a conflicting copy of the feed's record. %lld is the number of items.\nA count of a feed's items when it holds both episodes and articles. %lld is the number of items.\nA count of items an export wrote or could not write, inside a sentence. %lld is the number of items.\nThe total of an archive extraction's count: how many items (files and folders) the archive holds. %lld is the number of items. Follows \"120 of\".",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -3067,6 +3147,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld lines" : {
+      "comment" : "The value of the Lines per page stepper in the Export dialog's braille options. %lld is the number of lines on a page.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld line"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld lines"
                 }
               }
             }
@@ -4077,7 +4180,7 @@
       }
     },
     "%lld words per minute" : {
-      "comment" : "VoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.\nWhat VoiceOver says for the playback bar's speed of a text book. %lld is the number of words read in a minute.",
+      "comment" : "The value of the Speed slider in the Export dialog's spoken audio options. %lld is the speed in words per minute.\nVoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.\nWhat VoiceOver says for the playback bar's speed of a text book. %lld is the number of words read in a minute.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -4364,6 +4467,9 @@
         }
       }
     },
+    "A web page of the book's text, with a contents list linking each heading." : {
+      "comment" : "The hint of the Convert to picker in the Export dialog while HTML is chosen."
+    },
     "AVI video" : {
       "comment" : "The name of the AVI video format, as people say it. Inside sentences about importing a file of that format."
     },
@@ -4591,6 +4697,9 @@
     "Address %@" : {
       "comment" : "Speak Info: the part of a feed's full summary that gives its web address. %@ is the address."
     },
+    "Adds an Export button to each reader's toolbar. File, Export works either way." : {
+      "comment" : "The hint of the Playback settings checkbox that shows the Export button in the reader's toolbar. \"File, Export\" is the menu command."
+    },
     "Adds or removes a bookmark at the current position" : {
       "comment" : "VoiceOver hint of the Show bookmark button checkbox in the Playback settings."
     },
@@ -4727,6 +4836,9 @@
     },
     "An audio section refers to a missing file or an invalid time range." : {
       "comment" : "Why an audio book could not be imported: one of its sections names a file that is not there, or a start and end time that do not make a range."
+    },
+    "An e-book with the book's headings, contents, and any page numbers, for Apple Books and other reading apps. It holds no pictures." : {
+      "comment" : "The hint of the Convert to picker in the Export dialog while EPUB is chosen. Apple Books is an app's name."
     },
     "An edit of its text is kept beside the new reading, as a copy in the book's package." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to text TextMouth did not write, said only for a book whose content.md holds such text: an edit made with Edit Text, or a save no edit took, either kept as Replace Existing keeps it (ImportDecisionWording.replacingKeepsTextSentence)."
@@ -4938,6 +5050,9 @@
     "Artist or narrator" : {
       "comment" : "What VoiceOver says for the book information sheet's field for an audiobook's artist, who may be its narrator."
     },
+    "As the table defines" : {
+      "comment" : "How a braille table contracts, for a table that says neither its contraction nor its grade: it writes as its own rules define."
+    },
     "Ascending" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A direction as the pop-up names it. This is the form for the first case of the condition."
     },
@@ -5072,8 +5187,31 @@
         }
       }
     },
+    "Audacity labels mark one audio file, and this book's audio is in %lld files." : {
+      "comment" : "Why Audacity labels could not be exported, after the file's name in a failure sentence. %lld is the number of audio files the book has, always more than one.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Audacity labels mark one audio file, and this book's audio is in %lld file."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Audacity labels mark one audio file, and this book's audio is in %lld files."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Audio" : {
-      "comment" : "Name of the book format of an audiobook, a book made of audio files, shown in a book's information, the format column, and the duplicate finder."
+      "comment" : "Name of the book format of an audiobook, a book made of audio files, shown in a book's information, the format column, and the duplicate finder.\nPart of a spoken audio export's file name, after the book's title: the whole book, as in \"Middlemarch - Audio\".\nThe name of the Audio checkbox in the Export dialog: the book's audio."
     },
     "Audio Editing" : {
       "comment" : "Heading of the Audio Editing group in Storage settings: what happens to originals of edited audio, ffmpeg, and the audio editor's behaviour."
@@ -5214,6 +5352,12 @@
     "Begin" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Begin\"."
     },
+    "Beginning" : {
+      "comment" : "Part of a spoken audio export's file name: the beginning of the book as one end of the range, as in \"Middlemarch - Beginning to Chapter 2\"."
+    },
+    "Beginning of the book" : {
+      "comment" : "The first item of the From pop-up in the Export dialog's spoken audio options: the start of the book, with any text before its first heading."
+    },
     "Big5 (Traditional Chinese)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
     },
@@ -5276,7 +5420,7 @@
       "comment" : "A unit a skip or navigation picker moves by: one bookmark."
     },
     "Bookmark %@" : {
-      "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.",
+      "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.\nThe name of a bookmark that has no name of its own, written into an exported list of labels. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -5410,7 +5554,7 @@
       }
     },
     "Bookmarks" : {
-      "comment" : "Heading of the group of bookmark keyboard shortcuts in Settings, and the title of the Bookmarks menu.\nThe name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.\nTitle of the Bookmarks menu in the menu bar, which holds the commands that add and move between a book's bookmarks. Only a reader window shows it.\nTitle of the reader toolbar's button that opens the bookmarks sheet.",
+      "comment" : "Heading of the group of bookmark keyboard shortcuts in Settings, and the title of the Bookmarks menu.\nThe name of the Bookmarks checkbox in the Export dialog: a list of the book's bookmarks.\nThe name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.\nTitle of the Bookmarks menu in the menu bar, which holds the commands that add and move between a book's bookmarks. Only a reader window shows it.\nTitle of the reader toolbar's button that opens the bookmarks sheet.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -5474,7 +5618,7 @@
       "comment" : "Hint of the Same Title criterion of Find Duplicate Books."
     },
     "Braille" : {
-      "comment" : "Name of the book format of a braille file (.brf or .brl), shown in a book's information, the format column, and the duplicate finder."
+      "comment" : "Name of the book format of a braille file (.brf or .brl), shown in a book's information, the format column, and the duplicate finder.\nThe heading of the Braille tab's only group in Settings.\nThe name of the Braille tab in the Settings window's toolbar."
     },
     "Braille Code" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row that names a braille book's code, and of its pop-up, which reads the book again with another."
@@ -5482,11 +5626,23 @@
     "Braille File Characters" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's pop-up that names the braille file characters a BRF or BRL book's file is read with, in title case, as the sheet's \"Braille Code\" and \"Text Encoding\" are; the Settings and Export pop-ups say \"Braille file characters\", in their own sentence case."
     },
+    "Braille Ready Format: pages of braille, for braille displays and embossers." : {
+      "comment" : "The hint of the Convert to picker in the Export dialog while BRF is chosen. Braille Ready Format is the name of the file format."
+    },
     "Braille characters: %@" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for braille file characters described as description (Book.brailleFileCodeDescription), said right after the braille code's: \"Braille characters: North American Braille ASCII\". Placeholders in order: description."
     },
+    "Braille code" : {
+      "comment" : "The label of the pop-up that chooses the braille code, in the Braille tab of Settings and in the Export dialog's braille options."
+    },
     "Braille code: %@" : {
       "comment" : "Speak Info: the part of a braille book's full summary that names its braille code. %@ is the code's description, such as \"Unified English Braille, contracted (Grade 2)\"."
+    },
+    "Braille file characters" : {
+      "comment" : "The label of the pop-up that chooses which characters a BRF or BRL braille file uses for the braille cells, in the Braille tab of Settings and in the Export dialog's braille options."
+    },
+    "Braille page numbers" : {
+      "comment" : "The label of the switch in the Export dialog's braille options that numbers the braille pages."
     },
     "Break" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Break\"."
@@ -5526,8 +5682,11 @@
     "CP866 (Russian DOS)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
     },
+    "CR LF suits most braille displays and embossers." : {
+      "comment" : "The hint of the Line ends pop-up in the Export dialog's braille options. CR LF is a technical name for a line end."
+    },
     "Cancel" : {
-      "comment" : "Button of a confirmation in Storage settings that changes nothing.\nButton of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton of the sheet that shows the library being moved: cancels the move.\nButton that closes a question and changes nothing.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without doing what it offered.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nTitle and VoiceOver label of the Cancel button of the duplicate-book question.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the Cancel button of the Add to Library sheet, which closes it.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the feed downloads section's button that stops the feed downloads.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
+      "comment" : "Button of a confirmation in Storage settings that changes nothing.\nButton of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton of the sheet that shows the library being moved: cancels the move.\nButton that closes a question and changes nothing.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without doing what it offered.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nThe button in the Export dialog that closes it without exporting.\nTitle and VoiceOver label of the Cancel button of the duplicate-book question.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the Cancel button of the Add to Library sheet, which closes it.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the feed downloads section's button that stops the feed downloads.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -5539,6 +5698,9 @@
     },
     "Cancel Download" : {
       "comment" : "Button of the Transcribe Audio sheet that stops a speech model's download.\nTitle of the command that stops a feed item's download. Title case."
+    },
+    "Cancel Export" : {
+      "comment" : "The button of the alert an export shows when a chapter nests too deeply: it stops the whole export."
     },
     "Cancel Feed Downloads" : {
       "comment" : "What VoiceOver calls the Cancel button of the feed downloads section; the import overlay has a Cancel too, so the name says what it cancels. Title case."
@@ -5578,6 +5740,20 @@
     "Cancelling..." : {
       "comment" : "Line of a progress display once Cancel is pressed: the work stops at its next step. Ends with an ellipsis written as three full stops."
     },
+    "Captions in %@ (.%@), which nearly every player reads: one file, timed from the start of the audio." : {
+      "comment" : "The hint of the Transcript's Convert to picker in the Export dialog while SubRip is chosen. %1$@ is the format's name, SubRip, and %2$@ its file extension, srt.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Captions in %1$@ (.%2$@), which nearly every player reads: one file, timed from the start of the audio."
+          }
+        }
+      }
+    },
+    "Captions in %@, which web browsers and most players read: one file, timed from the start of the audio." : {
+      "comment" : "The hint of the Transcript's Convert to picker in the Export dialog while WebVTT is chosen. %@ is the format's name, WebVTT."
+    },
     "Caret" : {
       "comment" : "Name of the punctuation key \"^\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Caret\"."
     },
@@ -5586,6 +5762,9 @@
     },
     "Case sensitive matching" : {
       "comment" : "VoiceOver label of the Case sensitive switch in the substitution rule editor."
+    },
+    "Cells per line" : {
+      "comment" : "The label of the stepper in the Export dialog's braille options that sets how many braille cells each line holds."
     },
     "Chain" : {
       "comment" : "Label of the field that holds a filter preset's chain of filters, and of the line that shows it in the audio editor's Apply Filter."
@@ -5713,6 +5892,17 @@
     "Chapter %@ isn't on this Mac." : {
       "comment" : "Spoken as a chapter's download starts. %@ is the chapter's number, an identifier written without digit grouping."
     },
+    "Chapter %@ of %@" : {
+      "comment" : "Names what the export's deep-nesting question is about: one chapter of a book. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ the book's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapter %1$@ of %2$@"
+          }
+        }
+      }
+    },
     "Chapter %@ of %@ isn't downloaded." : {
       "comment" : "Spoken when a chapter's download is cancelled. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the book's title.",
       "localizations" : {
@@ -5720,6 +5910,17 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Chapter %1$@ of %2$@ isn't downloaded."
+          }
+        }
+      }
+    },
+    "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again." : {
+      "comment" : "Why a book's text was not exported: a chapter of it nests quotes, lists, or emphasis too deeply. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ the clause that says how deep, such as \"nests quotes, lists, or emphasis more than 128 levels deep\". \"Edit Text\" is a command.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapter %1$@ of this book %2$@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again."
           }
         }
       }
@@ -5831,6 +6032,9 @@
     "Checks this feed again from now on, and at once" : {
       "comment" : "VoiceOver hint of the Resubscribe button in Feed Info."
     },
+    "Choose" : {
+      "comment" : "The confirm button of the folder chooser that the Export dialog opens."
+    },
     "Choose %@ first." : {
       "comment" : "Sentence of why Remove Download was refused: the listener must first choose a command. %@ is the command's name, Stop Keeping on This Mac, as the Library menu shows it."
     },
@@ -5859,6 +6063,9 @@
     },
     "Choose Edit Text again to edit the new text." : {
       "comment" : "Second sentence of that announcement: what to do to edit the new text. Edit Text is a menu command."
+    },
+    "Choose Folder…" : {
+      "comment" : "The button in the Export dialog that chooses the folder to export to."
     },
     "Choose Library" : {
       "comment" : "Button of the folder chooser that Choose Another Library opens: picks the folder."
@@ -5974,6 +6181,9 @@
     "Choose the folder that holds another copy of this library. Nothing in it is changed." : {
       "comment" : "Message of the folder panel in which the listener chooses the other copy of the library to compare."
     },
+    "Choose the folder to export to. New Folder makes one." : {
+      "comment" : "The message of the folder chooser that the Export dialog opens. \"New Folder\" is the chooser's own button."
+    },
     "Choose the language in Settings, Playback, Transcription." : {
       "comment" : "Line under the Transcribe Audio sheet's language line saying where the language is chosen. Settings, Playback, and Transcription are the names of the settings window, its Playback pane, and its Transcription group."
     },
@@ -5982,6 +6192,12 @@
     },
     "Chooses a folder with another copy of this library and lists what differs. Neither copy changes." : {
       "comment" : "VoiceOver hint of the Compare Libraries button in Storage settings."
+    },
+    "Chooses the file format. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for the first %@." : {
+      "comment" : "The hint of the Format pop-up in the Export dialog's spoken audio options. M4B, M4A, and MP3 are audio file formats. %@ is the number of chapters an MP3 can have, 255."
+    },
+    "Chooses the folder the checked items are exported to." : {
+      "comment" : "The hint of the Choose Folder button in the Export dialog."
     },
     "Chooses what a book opened from the list does when it ends." : {
       "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button.",
@@ -6108,7 +6324,7 @@
       "comment" : "Hint of the audio editor's Clear Selection button."
     },
     "Close" : {
-      "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the audio editor's list of markers.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nButton that closes a sheet.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nTitle of the button that closes the Search Library window.",
+      "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the audio editor's list of markers.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nButton that closes a sheet.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nThe button in the Export dialog that closes it after an export that did not do everything asked.\nTitle of the button that closes the Search Library window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -6261,6 +6477,9 @@
     "Contains" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
     },
+    "Contents" : {
+      "comment" : "The heading of the contents list written into an exported EPUB's navigation document, and the label of the contents list in an exported web page."
+    },
     "Continue" : {
       "comment" : "Button of the Edit Text explanation alert that goes on to open the text in the editor. Return presses it.\nButton of the warning that TextMouth is open on another Mac: keeps using the library on this Mac."
     },
@@ -6279,6 +6498,15 @@
     "Continues the paused recording." : {
       "comment" : "VoiceOver hint of the Resume button in the Record window."
     },
+    "Contracted" : {
+      "comment" : "How a braille table contracts, for a table with no grade that shortens words with contractions."
+    },
+    "Contracted (Grade %@)" : {
+      "comment" : "How a braille table contracts, for a table of one grade that shortens words with contractions. %@ is the grade, an identifier such as 2."
+    },
+    "Contraction" : {
+      "comment" : "The label of the pop-up that chooses how far a braille code contracts words, in the Braille tab of Settings and in the Export dialog's braille options."
+    },
     "Control" : {
       "comment" : "Name of the Control modifier key, spoken or brailled in a keyboard shortcut such as \"Control + Shift + R\"."
     },
@@ -6291,8 +6519,17 @@
     "Convert XPS documents to PDF files, then import those." : {
       "comment" : "Advice after the refusal of an XPS document."
     },
+    "Convert headings to" : {
+      "comment" : "The name of the picker beside the Headings checkbox in the Export dialog that chooses the format of the headings list."
+    },
     "Convert it to 16-bit or 24-bit integer samples, then import it again." : {
       "comment" : "Ends every refusal of an audio file whose samples TextMouth can't decode: what the listener can do about it."
+    },
+    "Convert to" : {
+      "comment" : "The name of the picker beside a checkbox in the Export dialog that chooses the format the text is written in."
+    },
+    "Convert transcript to" : {
+      "comment" : "The name of the picker beside the Transcript checkbox in the Export dialog that chooses the format of the transcript."
     },
     "Converting %@ failed (the converter ended with code %@)." : {
       "comment" : "Why an audio conversion failed: the converting program ended with an error. %1$@ is the source file's name and %2$@ the program's exit code, an identifier written without digit grouping.",
@@ -6483,6 +6720,31 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Couldn't delete the transcript of %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Couldn't export %@." : {
+      "comment" : "A sentence of what an export says once it ends: one file could not be written. %@ is the file's name and the reason, such as \"Headings: TextMouth has not read this book's headings yet\"."
+    },
+    "Couldn't export %@. The first was %@." : {
+      "comment" : "A sentence of what an export says once it ends: several files could not be written. %1$@ is a count of items, such as 5 items, and %2$@ the first file's name and reason.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't export %1$@. The first was %2$@."
+          }
+        }
+      }
+    },
+    "Couldn't export %@: %@." : {
+      "comment" : "A sentence of what an export says once it ends: two or three files could not be written. %1$@ is a count of items, such as 2 items, and %2$@ the files' names with their reasons, separated by semicolons.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't export %1$@: %2$@."
           }
         }
       }
@@ -7303,6 +7565,15 @@
     "Each <!-- page: … --> marks where a page begins." : {
       "comment" : "Third sentence of the Edit Text explanation. \"<!-- page: … -->\" is the literal text of a page marker in the file; it stays exactly as written."
     },
+    "Each bookmark's name and place, as Audacity labels, for a book with one audio file." : {
+      "comment" : "The hint of the Bookmarks checkbox in the Export dialog."
+    },
+    "Each heading's title and start, as Audacity labels, for a book with one audio file." : {
+      "comment" : "The hint of the Headings checkbox in the Export dialog while Audacity labels are chosen."
+    },
+    "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it." : {
+      "comment" : "The hint of the Headings checkbox in the Export dialog while CUE sheet is chosen. \"Audio\" is the name of the Audio checkbox."
+    },
     "Each line beginning with <!-- chapter: starts a chapter; keep those lines." : {
       "comment" : "Second sentence of the Edit Text explanation. \"<!-- chapter:\" is the literal text that begins a chapter line in the file; it stays exactly as written."
     },
@@ -7477,8 +7748,11 @@
     "Enable text substitutions" : {
       "comment" : "Title and VoiceOver label of the switch in the Substitutions settings that turns text substitution rules on."
     },
+    "Encoding the audio file…" : {
+      "comment" : "The progress of a spoken audio export once every chapter is spoken and the audio file is being made."
+    },
     "End" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + End\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + End\".\nPart of a spoken audio export's file name: the end of the book as one end of the range, as in \"Middlemarch - Chapter 2 to End\"."
     },
     "End of Book" : {
       "comment" : "Heading of the end of book group in the Playback settings.\nHeading of the group in a book's own settings sheet that holds what happens when the book ends."
@@ -7516,6 +7790,9 @@
     },
     "End of the audio." : {
       "comment" : "Said as the audio editor's playing reaches the end of the audio."
+    },
+    "End of the book" : {
+      "comment" : "The last item of the To pop-up in the Export dialog's spoken audio options: the end of the book."
     },
     "End of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": no book follows it below. Written without its full stop.",
@@ -7817,8 +8094,63 @@
     "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back." : {
       "comment" : "Line at the top of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet."
     },
+    "Export" : {
+      "comment" : "The button in the Export dialog that exports the checked items.\nThe title of the Export button in a reader's toolbar."
+    },
+    "Export %@" : {
+      "comment" : "The title of the Export dialog for one book. %@ is the book's title."
+    },
+    "Export %lld Books" : {
+      "comment" : "The title of the Export dialog for several books. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export %lld Book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export %lld Books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Export %lld Books…" : {
+      "comment" : "The title of the library's context-menu command that exports a selection of several books. %lld is the number of books selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export %lld Book…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export %lld Books…"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Export Audio" : {
       "comment" : "Title of the audio editor's Export Audio sheet."
+    },
+    "Export Every Such Chapter as Written" : {
+      "comment" : "A button of the alert an export shows when a chapter nests too deeply: it writes every such chapter of the export as plain paragraphs, without asking again."
     },
     "Export Keynote presentations from Keynote as PDF files, then import those." : {
       "comment" : "Advice after the refusal of a Keynote presentation, which TextMouth reads in no slide format."
@@ -7831,6 +8163,38 @@
     },
     "Export Pages documents from Pages as Word documents or EPUB books, then import those." : {
       "comment" : "Advice after the refusal of a Pages document: how to get the book out of Pages."
+    },
+    "Export To" : {
+      "comment" : "The title of the folder chooser that the Export dialog opens."
+    },
+    "Export as Written" : {
+      "comment" : "The default button of the alert an export shows when a chapter nests too deeply: it writes the chapter as plain paragraphs."
+    },
+    "Export can't write into TextMouth's library folder. Choose another folder." : {
+      "comment" : "Why the Export dialog refuses the folder chosen: it is TextMouth's own library folder or inside it."
+    },
+    "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder." : {
+      "comment" : "Why the Export dialog refuses the folder chosen: it is the folder where TextMouth keeps the chapters of a spoken audio export, or inside it."
+    },
+    "Export stopped. Nothing was exported." : {
+      "comment" : "What an export says once it ends when it was stopped before it wrote anything."
+    },
+    "Export this book" : {
+      "comment" : "The spoken label of the Export button in a reader's toolbar."
+    },
+    "Export to: %@" : {
+      "comment" : "The line in the Export dialog naming the folder the items go to. %@ is the folder's name as Finder shows it."
+    },
+    "Exported %@ to %@." : {
+      "comment" : "What an export says once it ends. %1$@ is a count of items, such as 3 items, and %2$@ the folder's name as Finder shows it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Exported %1$@ to %2$@."
+          }
+        }
+      }
     },
     "Exported %lld subscriptions to %@." : {
       "comment" : "What VoiceOver says once the subscriptions are exported. %lld is how many; %@ is the file's name.",
@@ -7889,6 +8253,26 @@
         }
       }
     },
+    "Exporting %lld of %@…" : {
+      "comment" : "The progress of an export under way. %1$lld is how many items are written and %2$@ is the total as a count of items, such as 40 items.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Exporting %1$lld of %2$@…"
+          }
+        }
+      }
+    },
+    "Exporting…" : {
+      "comment" : "The progress of an export under way before it has counted its items."
+    },
+    "Exports the checked items once the braille table just chosen is checked." : {
+      "comment" : "The hint of the Export button in the Export dialog while a braille table just chosen in the braille options is still being checked."
+    },
+    "Exports the checked items to the folder." : {
+      "comment" : "The hint of the Export button in the Export dialog."
+    },
     "Exports to a file outside the library, in a format you choose." : {
       "comment" : "Hint of the audio editor's Export button."
     },
@@ -7896,7 +8280,7 @@
       "comment" : "Hint of the audio editor's Export… button."
     },
     "Export…" : {
-      "comment" : "Button of the audio editor's Export Audio sheet that asks where to save the file.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file."
+      "comment" : "Button of the audio editor's Export Audio sheet that asks where to save the file.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file.\nThe title of the Export command in the File menu, the library's context menu, and the reader's toolbar."
     },
     "Extracting Text" : {
       "comment" : "Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it."
@@ -8125,6 +8509,9 @@
     "Find duplicate books" : {
       "comment" : "VoiceOver label of the Find Duplicate Books button in Storage settings."
     },
+    "Finding what can be exported…" : {
+      "comment" : "Shown in the Export dialog while it finds what the books hold."
+    },
     "Finds duplicate books in all folders by file content, title, or author." : {
       "comment" : "Caption under the Find Duplicate Books button in Storage settings."
     },
@@ -8272,7 +8659,7 @@
       "comment" : "VoiceOver hint of the Try a Double Press button: for five seconds key presses are not shortcuts, and TextMouth says whether two presses were a double press."
     },
     "Format" : {
-      "comment" : "Label of the pop-up in the audio editor's Export Audio sheet that chooses the file format.\nName of the book information sheet's row that shows an audiobook's file format.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .format."
+      "comment" : "Label of the pop-up in the audio editor's Export Audio sheet that chooses the file format.\nName of the book information sheet's row that shows an audiobook's file format.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .format.\nThe label of the pop-up in the Export dialog's spoken audio options that chooses the kind of audio file."
     },
     "Forward 10 Seconds" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward ten seconds."
@@ -8334,6 +8721,9 @@
     },
     "Free up space, then import it again." : {
       "comment" : "Last sentence of why an import's archive was refused for want of disk space: what to do. \"It\" is the archive."
+    },
+    "From" : {
+      "comment" : "The label of the pop-up in the Export dialog's spoken audio options that chooses where the spoken audio begins."
     },
     "From %@" : {
       "comment" : "Line under the download view's heading: where the book comes from. %@ is the cloud service's name, or \"the cloud service\" when it is unknown."
@@ -8506,6 +8896,9 @@
     "Greater Than" : {
       "comment" : "Name of the punctuation key \">\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Greater Than\"."
     },
+    "Guess the braille code of new books" : {
+      "comment" : "The label of the switch in the Braille tab of Settings that turns on guessing the braille code of a book at import."
+    },
     "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a book whose code the import guessed: where the code came from, how to correct it, and how to keep it. Plain and short, so VoiceOver and a braille display read it as it is."
     },
@@ -8539,7 +8932,7 @@
       "comment" : "Announcement on arriving at a heading while reading. %@ is the heading's text; where several headings begin at the same place, their texts joined with commas."
     },
     "Headings" : {
-      "comment" : "Heading of the headings sheet, which lists a book's headings.\nTitle of the reader toolbar's button that opens the headings sheet."
+      "comment" : "Heading of the headings sheet, which lists a book's headings.\nThe name of the Headings checkbox in the Export dialog: a list of the book's headings and where each begins.\nTitle of the reader toolbar's button that opens the headings sheet."
     },
     "Headings, %lld headings" : {
       "comment" : "What VoiceOver calls the list of headings, with how many it shows. %lld is the number of headings the level filter shows.",
@@ -8606,14 +8999,32 @@
     "Hours between refreshes while TextMouth runs, from 1 to 168" : {
       "comment" : "VoiceOver hint of the refresh interval's number field and stepper. The range is the limits of the number, in hours."
     },
+    "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII." : {
+      "comment" : "The hint of the braille file characters pop-up in the Braille tab of Settings. BRF and BRL are braille file formats, and North American Braille ASCII is the name of a braille character code."
+    },
+    "How fast the voice speaks in the file. It starts at the book's speed." : {
+      "comment" : "The hint of the Speed slider in the Export dialog's spoken audio options."
+    },
+    "How high the voice sounds in the file. It starts at the book's pitch." : {
+      "comment" : "The hint of the Pitch slider in the Export dialog's spoken audio options."
+    },
     "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones." : {
       "comment" : "Explanation under the Bluetooth disconnect delay slider in the Miscellaneous settings."
+    },
+    "How many braille cells each line holds, from 18 to 80." : {
+      "comment" : "The hint of the Cells per line stepper in the Export dialog's braille options."
+    },
+    "How many lines each braille page holds, from 4 to 50." : {
+      "comment" : "The hint of the Lines per page stepper in the Export dialog's braille options."
     },
     "How many of the newest" : {
       "comment" : "Label of the number field and stepper that say how many of a feed's newest items are listed or downloaded."
     },
     "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts." : {
       "comment" : "Hint of the double press time stepper in Settings: what the time is, and that a key that has one action for a single press and another for a double press waits for that time before acting on a single press."
+    },
+    "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF." : {
+      "comment" : "The hint of the braille file characters pop-up in the Export dialog's braille options. BRF and PEF are braille file formats, and North American Braille ASCII and Eurobraille are names of braille character codes."
     },
     "ISBN" : {
       "comment" : "Name of the book information sheet's row that shows a book's ISBN, its international book number."
@@ -8982,6 +9393,38 @@
     "It deletes %@: they stay in the TextMouth library folder." : {
       "comment" : "A sentence of the confirmation before Delete Feed, when the setting keeps files: what the feed deletes, several things, which stay in the library folder. %@ is a list of what is deleted."
     },
+    "It has a page list, and the start of each page is marked in the text." : {
+      "comment" : "A sentence of the accessibility summary written into an exported EPUB: the book has pages."
+    },
+    "It has no headings, so the contents list has %lld entries for its chapters and the places it marks." : {
+      "comment" : "A sentence of the accessibility summary written into an exported EPUB: the book has no headings and its contents list has several entries. %lld is the number of entries.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "It has no headings, so the contents list has %lld entry for its chapters and the places it marks."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "It has no headings, so the contents list has %lld entries for its chapters and the places it marks."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "It has no headings, so the contents list has one entry for the whole book." : {
+      "comment" : "A sentence of the accessibility summary written into an exported EPUB: the book has no headings and its contents list has one entry."
+    },
+    "It has no pictures, sound, or video, and the text of a picture's description is kept as text." : {
+      "comment" : "The last sentence of the accessibility summary written into an exported EPUB."
+    },
     "It has the same books, places, bookmarks, reading list, and folders." : {
       "comment" : "Sentence of Use This Library's account: the other copy matches the library in use exactly."
     },
@@ -9245,6 +9688,9 @@
     "Its folder “%@” stays, as something else is in it." : {
       "comment" : "A sentence of the announcement after Delete Feed: the feed's library folder stays because it holds other things. %@ is the folder's path."
     },
+    "Its headings are real headings, and the contents list links them." : {
+      "comment" : "A sentence of the accessibility summary written into an exported EPUB: the book has headings."
+    },
     "Its name, conditions, sort, and limit go back to TextMouth's own. Its place in the list and when it is offered stay as they are." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the question says Restore Default does, and what it keeps."
     },
@@ -9285,6 +9731,9 @@
     },
     "Its tracks run past the end of the audio it names, so it was made for another copy of that audio." : {
       "comment" : "Refusal of a cue sheet chosen on its own whose tracks begin or end past the end of the audio it names. \"Its\" and \"it\" are the cue sheet."
+    },
+    "JSON and Markdown" : {
+      "comment" : "The first choice of the Transcript's Convert to picker in the Export dialog: the transcript as TextMouth keeps it, a JSON file and a Markdown file."
     },
     "Jump" : {
       "comment" : "Button of a jump panel (Go to Percent, Time or Page) that jumps to what was typed."
@@ -9407,11 +9856,60 @@
     "Kept" : {
       "comment" : "The original audio's state in the audio editor's Audio Info sheet: it is kept."
     },
+    "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch." : {
+      "comment" : "What the Export dialog says after a spoken audio export ended without its file and kept some of its chapters. %1$@ is how many chapters are kept, %2$lld how many there are, and %3$@ the number of the chapter to go on from, both written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch." : {
+      "comment" : "What the Export dialog says after a spoken audio export ended without its file and kept every one of its chapters. %lld is the number of chapters, more than one.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Kept on this Mac" : {
       "comment" : "Note in the library list for a book the listener keeps downloaded on this Mac."
     },
     "Kept on this Mac for the reading list" : {
       "comment" : "Note in Book Information for a book that only the reading list keeps downloaded on this Mac."
+    },
+    "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch." : {
+      "comment" : "What the Export dialog says after a spoken audio export ended without its file and kept its only chapter."
     },
     "Kindle Book (KFX)" : {
       "comment" : "Name of the book format of a Kindle book in the KFX format (KFX is a format name), shown in a book's information, the format column, and the duplicate finder."
@@ -9426,7 +9924,7 @@
       "comment" : "Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas."
     },
     "Language" : {
-      "comment" : "Name of the book information sheet's row that shows the language a book is written in.\nTitle of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.\nTitle of the voice sheet's menu that limits the voices listed to one language."
+      "comment" : "Name of the book information sheet's row that shows the language a book is written in.\nThe label of the pop-up that chooses the language of a braille code, in the Braille tab of Settings and in the Export dialog's braille options.\nTitle of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.\nTitle of the voice sheet's menu that limits the voices listed to one language."
     },
     "Language: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's language row. %@ is the language code the book gives, such as en."
@@ -9585,6 +10083,12 @@
           }
         }
       }
+    },
+    "Line ends" : {
+      "comment" : "The label of the pop-up in the Export dialog's braille options that chooses how each line of a BRF file ends."
+    },
+    "Lines per page" : {
+      "comment" : "The label of the stepper in the Export dialog's braille options that sets how many lines each braille page holds."
     },
     "List and download" : {
       "comment" : "Label of the pop-up menu that chooses how many of a feed's items are listed and downloaded, in Settings and Feed Info. Sentences name it."
@@ -9954,7 +10458,7 @@
       "comment" : "Title of the command that marks a feed's article unread. Title case."
     },
     "Markdown" : {
-      "comment" : "Name of the book format of a Markdown file (.md), shown in a book's information, the format column, and the duplicate finder."
+      "comment" : "Name of the book format of a Markdown file (.md), shown in a book's information, the format column, and the duplicate finder.\nThe name of the Markdown format, the first choice of the Convert to picker in the Export dialog."
     },
     "Marked %lld articles of %@ read." : {
       "comment" : "What VoiceOver says once Mark All Read marked articles read. %lld is how many; %@ is the feed's title.",
@@ -10966,6 +11470,9 @@
     "No Library Window" : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The submenu's one item, dimmed, while no Library window is in front."
     },
+    "No Library window or book is open, so there is nothing to export." : {
+      "comment" : "What choosing File, Export says when no Library window or book is open."
+    },
     "No Thanks" : {
       "comment" : "Title and VoiceOver label of the button that leaves the books of a ZIP archive where they are. Title case."
     },
@@ -11271,6 +11778,9 @@
         }
       }
     },
+    "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again." : {
+      "comment" : "Why a spoken audio export was refused: no voice is installed. System Settings, Accessibility, and Spoken Content are the names of macOS settings."
+    },
     "None" : {
       "comment" : "A choice of the Rewind on Resume unit picker: playback resumes where it stopped, with no rewinding.\nShown in place of a keyboard shortcut when an action has none."
     },
@@ -11509,6 +12019,9 @@
     "Nothing was changed." : {
       "comment" : "Last sentence of a message that says saving failed: nothing the user edited was saved anywhere.\nLast sentence of a refusal to read a book again: the book and its text are as they were."
     },
+    "Nothing was exported." : {
+      "comment" : "What an export says once it ends when it wrote nothing."
+    },
     "Nothing was recorded, so there is nothing to save." : {
       "comment" : "Error in the Record window when the recording was stopped before any audio was captured."
     },
@@ -11604,6 +12117,9 @@
     },
     "One tag in this file has more than %@ attributes, which TextMouth can't read safely." : {
       "comment" : "First sentence of why a file was refused: one of its markup tags has more attributes than TextMouth reads. %@ is the most attributes, a number."
+    },
+    "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another." : {
+      "comment" : "The caption under the guess switch in the Braille tab of Settings. English Braille, American Edition is the name of a braille code, and Book Information is a window."
     },
     "Only an audiobook's audio can be edited." : {
       "comment" : "Said when Edit Audio… is chosen for something that is not an audiobook kept in a package of its own."
@@ -11797,6 +12313,9 @@
     "Opens jump to time controls" : {
       "comment" : "Hint of the reader's time button while no jump panel is open."
     },
+    "Opens the Export dialog: the book's audio, its text, or its own file." : {
+      "comment" : "The hint of the Export button in a reader's toolbar."
+    },
     "Opens the Microphone privacy settings in System Settings." : {
       "comment" : "VoiceOver hint of the Open Privacy Settings button of the Record window. Privacy & Security and Microphone are the names of places in macOS's System Settings, as macOS words them in the language."
     },
@@ -11842,14 +12361,23 @@
     "Original audio" : {
       "comment" : "Label of the picker in Storage settings (Audio Editing) that chooses what happens to the original audio of recordings and edited audiobooks.\nLabel of whether the original audio is kept, in the audio editor's Audio Info sheet."
     },
+    "Original audio (before edits)" : {
+      "comment" : "The name of a checkbox in the Export dialog: the book's audio as it was before its first edit."
+    },
     "Original audio for this book" : {
       "comment" : "Label of the pop-up in the audio editor's Audio Info sheet that sets what happens to this book's original audio."
+    },
+    "Original file" : {
+      "comment" : "The name of a checkbox in the Export dialog: the book's own file as it was imported."
     },
     "Original file handling" : {
       "comment" : "VoiceOver label of the After Importing a Book pop-up in Storage settings."
     },
     "Original files removed." : {
       "comment" : "Announcement after a retry removed the original files of imported books that had failed to be removed."
+    },
+    "Original recording" : {
+      "comment" : "The name of a checkbox in the Export dialog: a recording as it was made, before any edits."
     },
     "Originals are kept for %lld days after the book was saved or last edited, then deleted." : {
       "comment" : "Explains Storage settings' Original audio choice Keep for a number of days. %lld is the number of days.",
@@ -11907,7 +12435,7 @@
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Up\"."
     },
     "Pages" : {
-      "comment" : "Heading of the group in Playback settings that holds the settings about pages."
+      "comment" : "Heading of the group in Playback settings that holds the settings about pages.\nThe heading of the page list written into an exported EPUB's navigation document."
     },
     "Panels" : {
       "comment" : "Heading of the group of keyboard shortcuts that open a reader's panels, such as the headings list and the sleep timer, in Settings."
@@ -11952,6 +12480,9 @@
     },
     "Part of the Title" : {
       "comment" : "A choice of the Leading Articles pop-up: the leading article counts like any other word of the title."
+    },
+    "Partly contracted" : {
+      "comment" : "How a braille table contracts: it shortens some words, not all."
     },
     "Passes over finished books when a book from the list ends." : {
       "comment" : "VoiceOver hint of the Reading List's Skip finished books checkbox.",
@@ -12082,7 +12613,7 @@
       "comment" : "Name of the book format of a picture of a page (a PNG, JPEG, HEIC, or TIFF photograph or scan) that text recognition reads, shown in a book's information, the format column, and the duplicate finder."
     },
     "Pitch" : {
-      "comment" : "Heading of the voice sheet's pitch group, and the label of its pitch slider.\nTitle of the default pitch slider in the Voice settings."
+      "comment" : "Heading of the voice sheet's pitch group, and the label of its pitch slider.\nThe label of the slider in the Export dialog's spoken audio options that sets how high the voice sounds.\nTitle of the default pitch slider in the Voice settings."
     },
     "Pitch: %@" : {
       "comment" : "Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x."
@@ -12252,6 +12783,9 @@
           }
         }
       }
+    },
+    "Portable Embosser Format: pages of Unicode braille in XML, for embossers." : {
+      "comment" : "The hint of the Convert to picker in the Export dialog while PEF is chosen. Portable Embosser Format is the name of the file format."
     },
     "Position" : {
       "comment" : "Label of the audio editor's time display: where the cursor is."
@@ -12484,6 +13018,9 @@
     "Read “%@” again automatically?" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The title of the alert that asks before a book is read again as option says: \"Read “Ledger” again as Shift JIS (Japanese)?\", or \"Read “Ledger” again automatically?\". Placeholders in order: bookTitle."
     },
+    "Reader Toolbar" : {
+      "comment" : "The heading of the Playback settings section that holds the options of the reader's toolbar."
+    },
     "Reader windows" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the reader windows, where a book is read."
     },
@@ -12611,6 +13148,9 @@
     },
     "Reading the book again..." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information shows, beside a spinner, while the book is read again (SheetWorkIndicator)."
+    },
+    "Reading the book's headings…" : {
+      "comment" : "Shown under the Text as spoken audio checkbox in the Export dialog while the book's text is read for its headings."
     },
     "Reading the transcript and the rules…" : {
       "comment" : "Line of the Clean Up Transcript sheet while it reads the transcript and the correction rules."
@@ -13414,6 +13954,9 @@
     "Rich Text with Attachments" : {
       "comment" : "Name of the book format of a Rich Text Format package with attachments (.rtfd), shown in a book's information, the format column, and the duplicate finder."
     },
+    "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit." : {
+      "comment" : "The hint of the Convert to picker in the Export dialog while RTF is chosen. Word, Pages, and TextEdit are apps' names."
+    },
     "Right Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Arrow\"."
     },
@@ -14026,6 +14569,9 @@
     "Show Description…" : {
       "comment" : "Title of the command that shows a feed item's text in a sheet. The ellipsis says a sheet follows. Title case."
     },
+    "Show Export in the reader toolbar" : {
+      "comment" : "The title of the Playback settings checkbox that shows the Export button in the reader's toolbar."
+    },
     "Show Headings" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the list of the book's headings. Also the title of the menu command of the same name."
     },
@@ -14096,6 +14642,9 @@
     },
     "Show speed controls in playback controls" : {
       "comment" : "VoiceOver label of the Show speed controls checkbox in the Playback settings."
+    },
+    "Show the Export button in the reader toolbar" : {
+      "comment" : "The spoken label of the Playback settings checkbox that shows the Export button in the reader's toolbar."
     },
     "Show the first %lld of %@ matches in %@" : {
       "comment" : "Title of the row that lists the first matches of a book that holds more than the list can show. %1$lld is the number listed, %2$@ is the book's total, such as \"700\" or \"more than 1,000\", and %3$@ is the book's title.",
@@ -14520,8 +15069,22 @@
     "Speak Selection" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks what is selected, with its length."
     },
+    "Speaking chapter %@ of %@…" : {
+      "comment" : "The progress of a spoken audio export while it speaks the chapters. %1$@ is the number of the chapter being spoken and %2$@ the number of chapters, both written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Speaking chapter %1$@ of %2$@…"
+          }
+        }
+      }
+    },
+    "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence." : {
+      "comment" : "The line in the Export dialog's spoken audio options about the licence the Mac's voices come with."
+    },
     "Speed" : {
-      "comment" : "Heading of the voice sheet's speed group, and what VoiceOver calls its speed slider."
+      "comment" : "Heading of the voice sheet's speed group, and what VoiceOver calls its speed slider.\nThe label of the slider in the Export dialog's spoken audio options that sets how fast the voice speaks."
     },
     "Speed: %@" : {
       "comment" : "Caption above an audiobook's speed slider in its own settings sheet. %@ is the speed, such as 1.25x."
@@ -14668,7 +15231,7 @@
       "comment" : "Said when the audio editor's window can't close because a change, save, or export is under way."
     },
     "Stop" : {
-      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.\nA choice of the When a Book Ends picker: the book stops at its end, finished. Play then says it is finished.\nButton of the Compare Libraries sheet that stops the comparison.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Stop\".\nName of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Stops the recording.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Stops playback in the audio editor.\nTitle of the button in the Record window that stops recording and saves it.\nTitle of the button that stops a running search in the Search Library window.",
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.\nA choice of the When a Book Ends picker: the book stops at its end, finished. Play then says it is finished.\nButton of the Compare Libraries sheet that stops the comparison.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Stop\".\nName of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Stops the recording.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Stops playback in the audio editor.\nThe button in the Export dialog that stops an export under way.\nTitle of the button in the Record window that stops recording and saves it.\nTitle of the button that stops a running search in the Search Library window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -14831,11 +15394,20 @@
     "Stops the download. Nothing is installed." : {
       "comment" : "VoiceOver hint of the Cancel Download button."
     },
+    "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them." : {
+      "comment" : "The hint of the Stop button in the Export dialog while a spoken audio export runs."
+    },
+    "Stops the export. The file being made is not kept." : {
+      "comment" : "The hint of the Stop button in the Export dialog."
+    },
     "Stops the import under way and those waiting. Books already imported stay." : {
       "comment" : "VoiceOver hint of the import overlay's Cancel button."
     },
     "Stops the search, keeping the matches found so far" : {
       "comment" : "VoiceOver hint of the Stop button of the Search Library window."
+    },
+    "Stops the whole export. Files already written stay." : {
+      "comment" : "The hint of the Cancel Export button in the alert an export shows when a chapter nests too deeply."
     },
     "Stops transcribing. The book stays as it was." : {
       "comment" : "VoiceOver hint of the Cancel button of the Transcribe Audio sheet while transcribing."
@@ -14923,6 +15495,9 @@
     },
     "Subtle" : {
       "comment" : "The name of punctuation pause level 1: only periods pause."
+    },
+    "Switch to a Library or book window, then choose Export again." : {
+      "comment" : "What choosing File, Export says when another window, such as Settings, is in front of the Library and book windows."
     },
     "Switches to jump to page controls" : {
       "comment" : "Hint of the status row's page button while the jump to percent or time panel is open."
@@ -15030,6 +15605,18 @@
     },
     "Text Encoding" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row, and pop-up, that names the encoding."
+    },
+    "Text as %@" : {
+      "comment" : "The name of a text checkbox in the Export dialog while its text is converted. %@ is the name of the format, such as HTML or RTF."
+    },
+    "Text as Markdown" : {
+      "comment" : "The name of a checkbox in the Export dialog: the book's text written as Markdown."
+    },
+    "Text as plain text" : {
+      "comment" : "The name of a checkbox in the Export dialog: the words TextMouth reads aloud, as plain text."
+    },
+    "Text as spoken audio" : {
+      "comment" : "The name of a checkbox in the Export dialog: the book's text spoken by its voice into one audio file."
     },
     "Text content" : {
       "comment" : "Spoken label of the text area of the New Book from Text sheet."
@@ -15251,17 +15838,64 @@
     "TextMouth can't safely read this SSML file, because it is written in the %@ encoding." : {
       "comment" : "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it is in a text encoding TextMouth cannot see through. %@ is the encoding's name as the file declares it."
     },
+    "TextMouth can't use the braille table chosen in Settings, “%@”, so this export starts from %@." : {
+      "comment" : "Shown in the Export dialog's braille options when the table chosen in Settings can't be used. %1$@ is that table's name as macOS gives it and %2$@ the table the export starts from, in words such as \"Unified English Braille, uncontracted\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth can't use the braille table chosen in Settings, “%1$@”, so this export starts from %2$@."
+          }
+        }
+      }
+    },
+    "TextMouth can't use this Mac's table “%@”: %@." : {
+      "comment" : "Announced when one of this Mac's braille tables, just chosen, was refused by its check. %1$@ is the table's name as macOS gives it and %2$@ the reason, a clause.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth can't use this Mac's table “%1$@”: %2$@."
+          }
+        }
+      }
+    },
     "TextMouth cannot open copy-protected files." : {
       "comment" : "Advice after the refusal of audio that is locked to a store's own player, such as Audible's .aa and .aax files."
     },
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
     },
+    "TextMouth could not check this Mac's braille table “%@”: %@. Try again." : {
+      "comment" : "Why a braille translation was refused: one of this Mac's braille tables could not be checked. %1$@ is the table's name as macOS gives it and %2$@ the reason, which stays English.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth could not check this Mac's braille table “%1$@”: %2$@. Try again."
+          }
+        }
+      }
+    },
+    "TextMouth could not check this Mac's table “%@”: %@. Choose it again to retry." : {
+      "comment" : "Announced when one of this Mac's braille tables, just chosen, could not be checked. %1$@ is the table's name as macOS gives it and %2$@ the reason, a clause.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth could not check this Mac's table “%1$@”: %2$@. Choose it again to retry."
+          }
+        }
+      }
+    },
     "TextMouth could not check whether to move it to the Trash." : {
       "comment" : "Why a book's original was kept: TextMouth could not read the choice about the Trash. \"It\" is the original file."
     },
     "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again." : {
       "comment" : "What the duplicate question says when Keep Both could not take the waiting mark off the new copy. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button."
+    },
+    "TextMouth could not make a folder to check it in" : {
+      "comment" : "Why the check of a braille table of this Mac could not be made, ending a sentence."
     },
     "TextMouth could not move %@ to the current library format." : {
       "comment" : "First sentence of the alert about books that could not move into the current library format. %@ is a count of books, such as \"3 books\"."
@@ -15301,6 +15935,9 @@
     },
     "TextMouth could not save a copy of the unreadable file." : {
       "comment" : "First sentence of the library index recovery sheet when no copy of the unreadable file was saved."
+    },
+    "TextMouth could not translate this braille." : {
+      "comment" : "Why a braille translation failed, when no more is known."
     },
     "TextMouth couldn't get the library's files from %@." : {
       "comment" : "First sentence of why the library can't be used: fetching its files from the cloud failed. %@ is the cloud service's name, or \"the cloud\" when it is unknown."
@@ -15436,8 +16073,17 @@
     "TextMouth downloads each feed's newest again at its next check, or the next time it opens." : {
       "comment" : "After Cancel stops feed downloads that the newest-N rule downloads again by itself."
     },
+    "TextMouth exports one spoken audio file at a time. Export this once the current one has finished." : {
+      "comment" : "Why a spoken audio export was refused: another one is running."
+    },
     "TextMouth first saves a copy of the old file, and does not rebuild if it cannot." : {
       "comment" : "Last sentence of what Rebuild Library Index does when no copy has been saved yet: it saves one first."
+    },
+    "TextMouth found no braille tables in its bundle." : {
+      "comment" : "Shown in the Braille tab of Settings in place of the pop-ups when the app holds no braille tables."
+    },
+    "TextMouth has no braille table named “%@”." : {
+      "comment" : "Why a braille translation was refused: no braille table has this name. %@ is the table's name as liblouis or macOS gives it."
     },
     "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way." : {
       "comment" : "Line of the Clean Up Transcript sheet when the rules that come with the app are empty. Edit Rules… is the name of a button of the sheet."
@@ -15447,6 +16093,9 @@
     },
     "TextMouth hasn't read the latest save yet." : {
       "comment" : "Reason after a colon: a rebuild left the book's text alone because the latest save of the edited text is not read yet."
+    },
+    "TextMouth hasn't read this book's headings yet. Open the book once, then export again." : {
+      "comment" : "Why a book's headings could not be exported, after the file's name in a failure sentence such as \"Couldn't export Headings: ...\"."
     },
     "TextMouth is already moving its data directory." : {
       "comment" : "First sentence of why an operation was refused: the library is already being moved."
@@ -15637,6 +16286,12 @@
     "TextMouth opens the book's text in your text editor, as a Markdown file." : {
       "comment" : "First sentence of the Edit Text explanation. Markdown is the name of a text format."
     },
+    "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change." : {
+      "comment" : "The caption under the braille file characters pop-up in the Braille tab of Settings. BRF and BRL are braille file formats, and Book Information is a window."
+    },
+    "TextMouth reads braille files (BRF, BRL, and PEF) with this code and exports with it unless the Export dialog chooses another. A book keeps the code it was imported with." : {
+      "comment" : "The caption under the code pop-ups in the Braille tab of Settings. BRF, BRL, and PEF are braille file formats."
+    },
     "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Automatic does, as the alert says it before it is chosen."
     },
@@ -15674,6 +16329,9 @@
     },
     "TextMouth stopped reading this document because %@." : {
       "comment" : "Why a document was refused at import: the program that reads it ran too long or used too much memory and was stopped. %@ is the reason, a clause in English that follows \"because\"."
+    },
+    "TextMouth stopped the braille translation because %@." : {
+      "comment" : "Why a braille translation ended. %@ is the reason, a clause such as \"an earlier call was abandoned\", which stays English until the engine's sentences convert."
     },
     "TextMouth stops checking this feed for new articles." : {
       "comment" : "The first sentence of the confirmation before Unsubscribe, for a feed of articles."
@@ -16157,6 +16815,15 @@
     "The EPUB file could not be opened as a ZIP archive." : {
       "comment" : "Why an EPUB book could not be imported: it could not be opened as a ZIP archive."
     },
+    "The EPUB file could not be written, because the disk may be full." : {
+      "comment" : "Why an EPUB export failed: the write failed and the disk may be full."
+    },
+    "The EPUB file could not be written." : {
+      "comment" : "Why an EPUB export failed: the file was not written whole."
+    },
+    "The EPUB file could not be written: %@." : {
+      "comment" : "Why an EPUB export failed: the system gave a reason. %@ is the system's own words, such as \"Read-only file system\"."
+    },
     "The EPUB file was not found at: %@" : {
       "comment" : "Why an EPUB book could not be imported: there is no file at its path. %@ is the path."
     },
@@ -16200,6 +16867,32 @@
           }
         }
       }
+    },
+    "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each." : {
+      "comment" : "A sentence the Export dialog adds after it made an MP3 of more headings than an MP3 has chapters for. %1$@ is the number of chapters an MP3 can have, 255, and %2$lld the number of headings. M4B and MP3 are audio file formats.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The MP3 has chapters for the first %@ of its %lld heading; export as M4B for a chapter for each."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent." : {
+      "comment" : "Why a chapter of a spoken audio export could not be spoken. %@ is the chapter's title."
     },
     "The PDF file could not be opened." : {
       "comment" : "Why a PDF could not be imported: PDFKit could not open it."
@@ -16433,6 +17126,9 @@
     "The book has no package to hold its text." : {
       "comment" : "Why an import failed: the book has no package folder to hold its text. Follows \"Import failed: \"."
     },
+    "The book has no timed transcript to write as captions." : {
+      "comment" : "Why a book's captions could not be exported, after the file's name in a failure sentence."
+    },
     "The book is being transcribed again. Clean up its transcript once that finishes." : {
       "comment" : "Error shown when a cleanup is tried while the book is being transcribed."
     },
@@ -16477,6 +17173,9 @@
     "The book's EPUB file is only in the cloud, so it can't be written until the book is downloaded." : {
       "comment" : "First sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud, and writing to the file is on. EPUB is a format name."
     },
+    "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does." : {
+      "comment" : "The hint of the Original audio checkbox in the Export dialog. \"Original audio\" is the name of a setting."
+    },
     "The book's audio changed since it was transcribed (%@), so the transcript no longer fits. Transcribe again." : {
       "comment" : "Error shown when the book's audio files changed since the transcription. %@ is the reason, a short phrase in English."
     },
@@ -16486,8 +17185,17 @@
     "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book." : {
       "comment" : "Said when the audio editor's Discard can't reach the audio as it was saved: the edits stay."
     },
+    "The book's audio: its file, or its tracks in a folder named after the book, each named for its chapter." : {
+      "comment" : "The hint of the Audio checkbox in the Export dialog."
+    },
+    "The book's file as imported; for an audiobook, its audio files before TextMouth converted them." : {
+      "comment" : "The hint of the Original file checkbox in the Export dialog."
+    },
     "The book's files aren't on this Mac yet. %@ may still be syncing them." : {
       "comment" : "Why a book can't be used yet: its files have not arrived. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."
+    },
+    "The book's headings changed after the dialog opened. Reopen it and choose the range again." : {
+      "comment" : "Why a spoken audio export was refused: the book's headings changed after the Export dialog opened."
     },
     "The book's navigation does not match its audio; get a fresh copy and import it again." : {
       "comment" : "Last sentence of an import failure: a section of a segmented audiobook does not fit the audio file it names, so the book's navigation (its manifest or headings) does not match its audio."
@@ -16495,14 +17203,29 @@
     "The book's package and content paths do not match a managed library location." : {
       "comment" : "Why a book's files were not deleted: its paths do not lie inside the library. Follows \"Import failed: \"."
     },
+    "The book's text as %@, made from its Markdown." : {
+      "comment" : "The hint of a text checkbox in the Export dialog while its text is converted. %@ is the name of the format, such as HTML or RTF."
+    },
+    "The book's text as Markdown, with its headings, lists, and emphasis." : {
+      "comment" : "The hint of the Convert to picker in the Export dialog while Markdown is chosen, and of the Text as Markdown checkbox."
+    },
+    "The book's text could not be made into a Word 97-2003 document." : {
+      "comment" : "Why a Word 97-2003 export failed, after the file's name in a failure sentence: Apple's reader or writer refused the book's text."
+    },
     "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is." : {
       "comment" : "Error shown when a transcript could not replace a book's text because the text's unsaved changes could not be copied first."
     },
     "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again." : {
       "comment" : "Line of the Transcribe Audio sheet, and an error, when the book's text file has not been downloaded from iCloud to this Mac."
     },
+    "The book's text spoken by its voice into one audio file, with a chapter for each heading." : {
+      "comment" : "The hint of the Text as spoken audio checkbox in the Export dialog."
+    },
     "The book's transcript couldn't be read, so it wasn't exported." : {
       "comment" : "Error in an export's summary: the audiobook's transcript could not be read, so no captions file was written."
+    },
+    "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again." : {
+      "comment" : "Why a spoken audio export was refused: the book's voice can't be recorded. %@ is the name of the Voice button in the book's reader."
     },
     "The bookInfo.json file did not read back as it was written." : {
       "comment" : "Why an import failed: the book's record file, bookInfo.json, was written but did not read back as written."
@@ -16518,8 +17241,29 @@
         }
       }
     },
+    "The braille code for reading and writing braille." : {
+      "comment" : "The hint of the braille code pop-up in the Braille tab of Settings."
+    },
+    "The braille code the book is written in." : {
+      "comment" : "The hint of the braille code pop-up in the Export dialog's braille options."
+    },
     "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first: the braille is translated to print again with the code chosen, and nothing can tell whether it is the right one, since every braille text translates in every table, so a wrong one reads with no error."
+    },
+    "The braille table writes an eight-dot cell, %@, but TextMouth's BRF and PEF files are six-dot only." : {
+      "comment" : "Why braille could not be written to a BRF or PEF file: the braille table writes an eight-dot cell. %@ names the cell's dots, such as \"dots 4 and 7\". BRF and PEF are braille file formats."
+    },
+    "The braille table writes “%@” as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only." : {
+      "comment" : "Why braille could not be written to a BRF or PEF file: the braille table writes a character with an eight-dot cell. %@ is the print character. BRF and PEF are braille file formats."
+    },
+    "The chosen table is built into TextMouth (liblouis %@)." : {
+      "comment" : "Under the pop-ups in the Braille tab of Settings: the chosen braille table comes with TextMouth. %@ is the version of liblouis, the braille library, written as a version number."
+    },
+    "The chosen table is one of this Mac's VoiceOver braille tables (liblouis %@)." : {
+      "comment" : "Under the pop-ups in the Braille tab of Settings: the chosen braille table is one of this Mac's. %@ is the version of liblouis, the braille library, written as a version number."
+    },
+    "The chosen table is one of this Mac's VoiceOver braille tables." : {
+      "comment" : "Under the pop-ups in the Braille tab of Settings: the chosen braille table is one of this Mac's."
     },
     "The clipboard has no text to paste, so the text is unchanged." : {
       "comment" : "First sentence of the announcement when Paste from Clipboard finds no text on the clipboard."
@@ -16588,6 +17332,17 @@
     "The disk is too full to keep this audio for pasting." : {
       "comment" : "Said when the disk is too full to keep the audio cut or copied in the audio editor for Paste."
     },
+    "The disk lacks room: this needs about %@, and TextMouth keeps %@ free. Free some space, then export again." : {
+      "comment" : "Why a spoken audio export was refused: the disk is too full. %1$@ is the space the export needs and %2$@ the space TextMouth always keeps free, each a size such as 1 GB.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The disk lacks room: this needs about %1$@, and TextMouth keeps %2$@ free. Free some space, then export again."
+          }
+        }
+      }
+    },
     "The download of %@ wasn't removed" : {
       "comment" : "Announcement that Remove Download did not remove one book's files. %@ is the book's title."
     },
@@ -16640,6 +17395,9 @@
     },
     "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." : {
       "comment" : "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files go to the Trash."
+    },
+    "The export was stopped before the rest." : {
+      "comment" : "A sentence of what an export says once it ends: it was stopped after it wrote some items."
     },
     "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another." : {
       "comment" : "Sentence of the second confirmation that deletes a folder: one feed stays. %@ is the feed's title in quotation marks. \"Feed Info\" names a sheet."
@@ -16944,6 +17702,9 @@
         }
       }
     },
+    "The heading whose section ends the audio, with its subheadings, or the end of the book." : {
+      "comment" : "The hint of the To pop-up in the Export dialog's spoken audio options."
+    },
     "The headings from %@ run past the end of the audio, so the tracks were imported without them." : {
       "comment" : "Notice after an import of tracks that came without the headings of some cue sheets and label files, because a heading lay past the end of the audio. %@ is the files' names in curly quotes, listed as a sentence lists them."
     },
@@ -16966,6 +17727,12 @@
     },
     "The labels of the label file “%@” run past the end of its audio, so its headings were not used." : {
       "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because its labels lie past the end of its audio. %@ is the label file's name."
+    },
+    "The language of the braille code for reading and writing braille." : {
+      "comment" : "The hint of the language pop-up in the Braille tab of Settings."
+    },
+    "The language of the braille code the book is written in." : {
+      "comment" : "The hint of the language pop-up in the Export dialog's braille options."
     },
     "The library already had different content under its package name, %@, so it was stored in a new package, %@, and its original file was kept at %@." : {
       "comment" : "Warning about a book that moved into the current library format. %1$@ is the name of the package that already held other content; %2$@ is the name of the new package; %3$@ is the path where the original file was kept.",
@@ -17372,6 +18139,9 @@
     "The page at %@ is larger than TextMouth reads." : {
       "comment" : "Why a feed article's download failed: the web page is too large. %@ is the server's host name."
     },
+    "The part of the book chosen has no words to speak." : {
+      "comment" : "Why a spoken audio export was refused: the chosen part of the book has no words."
+    },
     "The pauses couldn't be found." : {
       "comment" : "Said when the audio editor couldn't find the audio's pauses. A sentence giving the reason follows."
     },
@@ -17531,6 +18301,9 @@
     "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it." : {
       "comment" : "Second sentence of the question asked before opening the library without its index file: what the new index will not hold. \"It\" is the new index."
     },
+    "The recording as it was made, before any edits." : {
+      "comment" : "The hint of the Original recording checkbox in the Export dialog."
+    },
     "The recording couldn't be converted to an audiobook file." : {
       "comment" : "Error in the Record window when saving: the recording could not be encoded as an audiobook file."
     },
@@ -17602,6 +18375,9 @@
     "The text content.md held before was kept as %@, in the book's package." : {
       "comment" : "Second sentence of that message. content.md is the file name of the book's text and stays as written; %@ is the backup's file name such as content.md.edited-20261004T123012Z, which stays as written."
     },
+    "The text of %@" : {
+      "comment" : "Names what the export's deep-nesting question is about: a book's whole text, which has no chapter markers. %@ is the book's title."
+    },
     "The text of %@ can't be read, so it can't be edited." : {
       "comment" : "Message when Edit Text finds the book's text file unreadable. %@ is the book's title."
     },
@@ -17611,6 +18387,9 @@
     "The text of %@ was read again from its own file." : {
       "comment" : "First sentence of the message after a book's text was read again from its own file. %@ is the book's title."
     },
+    "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again." : {
+      "comment" : "Why a book's text was not exported: it nests quotes, lists, or emphasis too deeply, and has no chapter markers. %@ is the clause that says how deep, such as \"nests quotes, lists, or emphasis more than 128 levels deep\". \"Edit Text\" is a command."
+    },
     "The text was reloaded, but the editor's file does not say what encoding it is in, so some characters may be wrong." : {
       "comment" : "First sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells."
     },
@@ -17619,6 +18398,12 @@
     },
     "The transcript and the text made from it are deleted." : {
       "comment" : "First sentence of the question asked before an audiobook's transcript is deleted."
+    },
+    "The transcript as %@ captions, one file timed from the start of the audio." : {
+      "comment" : "The hint of the Transcript checkbox in the Export dialog while its transcript is written as captions. %@ is the format's name, such as WebVTT or SubRip."
+    },
+    "The transcript as TextMouth keeps it, in JSON, with its text as Markdown." : {
+      "comment" : "The hint of the Transcript's Convert to picker in the Export dialog while JSON and Markdown is chosen."
     },
     "The transcript can't be read. If the book is only in the cloud, download it and try again." : {
       "comment" : "Error shown when Clean Up Transcript cannot read the transcript."
@@ -17664,11 +18449,17 @@
     "The transcript's files could not be examined once they were written." : {
       "comment" : "Error shown when TextMouth could not check the audio files after writing a transcript for them."
     },
+    "The transcript's text as %@, made from its Markdown." : {
+      "comment" : "The hint of the Transcript checkbox in the Export dialog while its text is written by a text writer. %@ is the writer's name, such as HTML or RTF."
+    },
     "The transcript's text didn't read back as one chapter per chapter of the book." : {
       "comment" : "Error shown when the text written from a transcript did not have one chapter for each chapter of the audiobook."
     },
     "The transcript's times don't fit together, so TextMouth can't use it." : {
       "comment" : "Error shown when an attached transcript file's times are out of order or inconsistent."
+    },
+    "The transcript, with its text as Markdown for an audiobook." : {
+      "comment" : "The hint of the Transcript checkbox in the Export dialog."
     },
     "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book." : {
       "comment" : "Note under a podcast episode's transcript editor and cleanup sheet. Move to Library is the name of a command in the feed's episode menu."
@@ -17684,6 +18475,18 @@
     },
     "The view this window showed was deleted. It now shows %@." : {
       "comment" : "Text of the Library window's View pop-up and Go to View. What a window announces when the view it showed was deleted, from Settings or by a change of config.json, and it shows name, the first view its pop-up offers, instead. Placeholders in order: name."
+    },
+    "The voice changed its kind of audio partway through “%@”." : {
+      "comment" : "Why a chapter of a spoken audio export could not be spoken: the voice changed its audio format. %@ is the chapter's title."
+    },
+    "The voice made no sound for “%@”. Check that it speaks the book's language." : {
+      "comment" : "Why a chapter of a spoken audio export could not be spoken: the voice made no sound. %@ is the chapter's title."
+    },
+    "The voice stopped partway through “%@”, and TextMouth stopped waiting." : {
+      "comment" : "Why a chapter of a spoken audio export could not be spoken: the voice stalled. %@ is the chapter's title."
+    },
+    "The words TextMouth reads aloud, as plain text, each chapter under its title." : {
+      "comment" : "The hint of the Text as plain text checkbox in the Export dialog."
     },
     "Their %@ are kept." : {
       "comment" : "Sentence that says what is kept of every one of several deleted downloads. %@ is a list of parts, such as \"places and bookmarks\"."
@@ -17745,6 +18548,9 @@
           }
         }
       }
+    },
+    "There is nothing to export." : {
+      "comment" : "Shown in the Export dialog when the books hold nothing to export."
     },
     "There isn't enough free space for %lld more books" : {
       "comment" : "Announcement when some reading list books start downloading and others are left out for want of space. %lld is the number of books left out.",
@@ -17905,6 +18711,31 @@
     "This Mac is offline, so “%@” can't be downloaded. Connect to the internet and try again." : {
       "comment" : "Why a feed item's download failed: this Mac has no internet. %@ is the item's title."
     },
+    "This Mac no longer has the chosen table, “%@”; choose another." : {
+      "comment" : "Under the pop-ups in the Braille tab of Settings: the chosen braille table of this Mac is gone. %@ is the table's stored name, \"mac:\" and its file name."
+    },
+    "This Mac's braille table “%@” changed from liblouis %@ to %@ since the book was read, so TextMouth keeps the book's text as it was." : {
+      "comment" : "Why a book is not read with its braille table again: the table changed. %1$@ is the table's name as macOS gives it, %2$@ the liblouis version the book was read with, and %3$@ the version now.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This Mac's braille table “%1$@” changed from liblouis %2$@ to %3$@ since the book was read, so TextMouth keeps the book's text as it was."
+          }
+        }
+      }
+    },
+    "This Mac's braille table “%@” may have changed since liblouis %@ read the book, so TextMouth keeps the book's text as it was." : {
+      "comment" : "Why a book is not read with its braille table again: the table may have changed. %1$@ is the table's name as macOS gives it and %2$@ the liblouis version the book was read with.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This Mac's braille table “%1$@” may have changed since liblouis %2$@ read the book, so TextMouth keeps the book's text as it was."
+          }
+        }
+      }
+    },
     "This PDF needs a password to open." : {
       "comment" : "Why a PDF could not be imported: it is locked with a password TextMouth does not have."
     },
@@ -17972,6 +18803,9 @@
     "This book has a transcript made by a later version of TextMouth." : {
       "comment" : "Sentence in the Transcribe Audio sheet and Book Information saying the book's transcript was written by a newer version of this app, which this version cannot read."
     },
+    "This book has no headings, so all of it is exported." : {
+      "comment" : "Shown in the Export dialog's spoken audio options in place of the From and To pop-ups when the book has no headings."
+    },
     "This book has no pages." : {
       "comment" : "Announcement when a page command is used in a book that has no pages."
     },
@@ -18010,6 +18844,9 @@
     "This book keeps no original audio: saved edits change its audio in place, and can't be undone after." : {
       "comment" : "Said as a book's original audio policy is set to keep no original."
     },
+    "This book was exported from TextMouth as text only." : {
+      "comment" : "The first sentence of the accessibility summary written into an exported EPUB."
+    },
     "This book was not opened from the reading list." : {
       "comment" : "VoiceOver announcement when Next in Reading List or Previous in Reading List is used in a reader whose book was not opened from the reading list.",
       "localizations" : {
@@ -18035,6 +18872,9 @@
     },
     "This book's only page is %@." : {
       "comment" : "First sentence of the Go to Page field's hint for a book of one page. %@ is that page's label, an identifier written without digit grouping."
+    },
+    "This book's text can't be read, so it can't be spoken into an audio file." : {
+      "comment" : "Shown under the Text as spoken audio checkbox in the Export dialog when the book's text can't be read."
     },
     "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a braille book that is read as UEB but whose braille shows English Braille, American Edition's signs (BrailleCodeDetector): which code it looks like and where to choose it. Plain, so that VoiceOver and a braille display read it as it is."
@@ -18191,6 +19031,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "This picture is %@, larger than the %lld megapixels TextMouth reads."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each." : {
+      "comment" : "The line under the Format pop-up in the Export dialog's spoken audio options while MP3 is chosen for a range with more headings than an MP3 has chapters. %1$lld is the number of headings in the range and %2$@ the number of chapters an MP3 can have, 255. M4B and MP3 are audio file formats.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This range has %lld heading, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each."
                 }
               }
             }
@@ -18357,6 +19220,9 @@
     },
     "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's." : {
       "comment" : "Describes the Leading Articles choice Part of the Title, under the pop-up. The Hobbit is the example title; the T's are the books sorted under the letter T."
+    },
+    "To" : {
+      "comment" : "The label of the pop-up in the Export dialog's spoken audio options that chooses where the spoken audio ends."
     },
     "To %@" : {
       "comment" : "Line of the move sheet that says where the library is going. %@ is the new location's path."
@@ -18596,7 +19462,7 @@
       "comment" : "Second sentence of the question offering to transcribe a new audiobook. %@ is the time it should take, such as \"about 6 minutes\" or \"less than a minute\"."
     },
     "Transcript" : {
-      "comment" : "Label of the detail in Book Information that says where the book's transcript came from."
+      "comment" : "Label of the detail in Book Information that says where the book's transcript came from.\nThe name of the Transcript checkbox in the Export dialog: the book's transcript."
     },
     "Transcription" : {
       "comment" : "Heading of the group of transcription settings in Playback settings."
@@ -18760,6 +19626,12 @@
     },
     "UTF-8" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf8."
+    },
+    "Uncontracted" : {
+      "comment" : "How a braille table contracts, for a table with no grade that writes every letter out."
+    },
+    "Uncontracted (Grade %@)" : {
+      "comment" : "How a braille table contracts, for a table of one grade that writes every letter out. %@ is the grade, an identifier such as 1."
     },
     "Underscore" : {
       "comment" : "Name of the punctuation key \"_\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Underscore\"."
@@ -18931,6 +19803,9 @@
     "Until then, changing the location and rebuilding the directory are unavailable." : {
       "comment" : "Last sentence of the Storage settings explanation while the library index can't be read."
     },
+    "Untitled" : {
+      "comment" : "The name given to an exported file or folder, or to an entry of an exported EPUB, when the book's title or the heading has no words."
+    },
     "Untitled rule" : {
       "comment" : "The name a substitution rule is given in lists and announcements when it has neither a name nor a pattern."
     },
@@ -19026,7 +19901,7 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's spoken label, naming the view it sets. Placeholders in order: name."
     },
     "Voice" : {
-      "comment" : "Name of the Settings tab for the voice, its language, and the default speed and pitch. Shown in the Settings window's toolbar.\nTitle of the pop-up in the Voice settings that chooses the voice.\nTitle of the reader toolbar's button that opens a text book's own voice settings.\nTitle of the voice sheet's menu of voices, and the heading of its group."
+      "comment" : "Name of the Settings tab for the voice, its language, and the default speed and pitch. Shown in the Settings window's toolbar.\nThe name of the Voice button in a book's reader, which opens the book's voice choices.\nTitle of the pop-up in the Voice settings that chooses the voice.\nTitle of the reader toolbar's button that opens a text book's own voice settings.\nTitle of the voice sheet's menu of voices, and the heading of its group."
     },
     "Voice & Speed" : {
       "comment" : "Name of the reader's sheet for a text book's own voice, speed and pitch."
@@ -19036,6 +19911,9 @@
     },
     "Voice language filter" : {
       "comment" : "What VoiceOver calls the voice sheet's menu that limits the voices listed to one language."
+    },
+    "Voice: %@" : {
+      "comment" : "The line in the Export dialog's spoken audio options naming the voice the book is spoken with. %@ is the voice's name."
     },
     "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded." : {
       "comment" : "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level."
@@ -19115,6 +19993,9 @@
     "What to do with the original file after importing a book" : {
       "comment" : "VoiceOver hint of the After Importing a Book pop-up in Storage settings."
     },
+    "What to export" : {
+      "comment" : "The name of the group of checkboxes in the Export dialog."
+    },
     "What was kept for %lld removed downloads was deleted." : {
       "comment" : "The last sentence of the announcement of Unsubscribe: what the feed kept for removed downloads whose packages held none of the named parts was deleted. %lld is how many removed downloads.",
       "localizations" : {
@@ -19191,6 +20072,9 @@
     "When off, the sheet stays open showing the remaining time and a reset button" : {
       "comment" : "VoiceOver hint of the Close sheet after setting timer checkbox in the Playback settings."
     },
+    "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead." : {
+      "comment" : "The hint of the guess switch in the Braille tab of Settings. Unified English Braille and English Braille, American Edition are the names of braille codes."
+    },
     "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied." : {
       "comment" : "First sentence of the hint of the setting that moves deleted files to the Trash: what happens with the setting on."
     },
@@ -19234,6 +20118,18 @@
     },
     "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share." : {
       "comment" : "Second sentence of what a re-read does to the listener's place and bookmarks, without an example."
+    },
+    "Where the audio begins: the book's beginning, or a heading." : {
+      "comment" : "The hint of the From pop-up in the Export dialog's spoken audio options."
+    },
+    "Whether each page's last line carries its braille page number." : {
+      "comment" : "The hint of the Braille page numbers switch in the Export dialog's braille options."
+    },
+    "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells." : {
+      "comment" : "The hint of the contraction pop-up in the Braille tab of Settings."
+    },
+    "Whether that code's braille is contracted." : {
+      "comment" : "The hint of the contraction pop-up in the Export dialog's braille options."
     },
     "Which track of %@ do you want to edit?" : {
       "comment" : "Question asked before editing a book of several audio tracks. %@ is the book's title."
@@ -19374,6 +20270,9 @@
     "Word 97-2003 Document" : {
       "comment" : "Name of the book format of an old Microsoft Word document (.doc), from Word 97 to 2003, shown in a book's information, the format column, and the duplicate finder."
     },
+    "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits them." : {
+      "comment" : "The hint of the Convert to picker in the Export dialog while Word 97-2003 is chosen. Word is an app's name."
+    },
     "Word Count" : {
       "comment" : "Name of the book information sheet's row that shows how many words the book has."
     },
@@ -19397,6 +20296,12 @@
     },
     "Writes the title, author, publisher, and date into the library's copy of this book." : {
       "comment" : "First sentence of the hint of the metadata editor's switch that also writes the EPUB file."
+    },
+    "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again." : {
+      "comment" : "The hint of the Export Every Such Chapter as Written button in the alert an export shows when a chapter nests too deeply."
+    },
+    "Writes this chapter as plain paragraphs of its lines, and exports everything else as usual." : {
+      "comment" : "The hint of the Export as Written button in the alert an export shows when a chapter nests too deeply."
     },
     "Year" : {
       "comment" : "Name of the book information sheet's field for an audiobook's year; VoiceOver reads it as the field's label."
@@ -19503,7 +20408,7 @@
       "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in both folders. Lower case, without a full stop."
     },
     "about %@" : {
-      "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence. %@ is a length of time in words, such as \"6 minutes\" or \"1 hour, 5 minutes\"."
+      "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence. %@ is a length of time in words, such as \"6 minutes\" or \"1 hour, 5 minutes\".\nPart of a checkbox's label in the Export dialog for text whose size is only close. %@ is a size such as 12 KB."
     },
     "about 140 MB" : {
       "comment" : "The approximate size of one language's speech model, said in the Download button's label. MB means megabytes."
@@ -19734,6 +20639,12 @@
     "deleting its download" : {
       "comment" : "What the listener tried, inside the sentence that says why a feed episode's download cannot be deleted yet: \"is being transcribed, and deleting its download now would lose the transcript\". Written as a phrase that can follow \"and\" and start a clause."
     },
+    "dot %@" : {
+      "comment" : "How VoiceOver says a braille cell with one raised dot. %@ is the dot's number, 1 to 8, an identifier."
+    },
+    "dots %@" : {
+      "comment" : "How VoiceOver says a braille cell with two or more raised dots. %@ is the list of the dots' numbers, 1 to 8, such as \"4 and 7\" or \"1, 2, and 7\"."
+    },
     "downloading" : {
       "comment" : "Status of a language's speech model that is downloading now, said after the language's name in the Transcribe Audio sheet."
     },
@@ -19897,6 +20808,9 @@
         }
       }
     },
+    "in the cloud" : {
+      "comment" : "Part of a checkbox's label in the Export dialog: the one book's item is only in the cloud."
+    },
     "in the folder “%@”" : {
       "comment" : "Where a copy of the library files a book, inside a sentence of Compare Libraries. %@ is the folder's path."
     },
@@ -19926,6 +20840,9 @@
     },
     "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows." : {
       "comment" : "Reason after a colon: the user changed a chapter's heading in an edited transcript; begins in lower case."
+    },
+    "it does not load in TextMouth's liblouis %@" : {
+      "comment" : "Why a braille table of this Mac was refused, ending a sentence. %@ is the version of liblouis, the braille library, written as a version number."
     },
     "it downloads once this Mac is on a network without data limits" : {
       "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row. Lower case, without a full stop."
@@ -19982,8 +20899,57 @@
     "it lasts no time" : {
       "comment" : "The reason inside \"The audio converted from <file> failed its check: <reason>.\": the converted file has no length at all. Starts with a lowercase letter and has no full stop, which the sentence adds."
     },
+    "it needs more than %lld MB of memory" : {
+      "comment" : "Why a braille table of this Mac was refused, ending a sentence. %lld is the most memory a table may need, in megabytes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "it needs more than %lld MB of memory"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "it needs more than %lld MB of memory"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "it needs room for %@ on this Mac" : {
       "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row: the disk lacks room. %@ is the size needed with its unit, such as 61 MB. Lower case, without a full stop."
+    },
+    "it translates too slowly, under %lld KB a second" : {
+      "comment" : "Why a braille table of this Mac was refused, ending a sentence. %lld is the least speed a table may have, in kilobytes of text a second.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "it translates too slowly, under %lld KB a second"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "it translates too slowly, under %lld KB a second"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "it writes eight-dot braille, and TextMouth uses six-dot braille only" : {
+      "comment" : "Why a braille table of this Mac was refused, ending a sentence."
     },
     "its %lld downloaded articles" : {
       "comment" : "A feed's downloaded articles, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.",
@@ -20254,6 +21220,9 @@
     "no copy of the edited text could be kept, so TextMouth leaves content.md as it is." : {
       "comment" : "Reason after a colon: a rebuild left the book's text alone because no backup could be made; begins in lower case. content.md is a file name and stays as written."
     },
+    "no dots" : {
+      "comment" : "How VoiceOver says the blank braille cell, which has no raised dots."
+    },
     "no pages" : {
       "comment" : "Names an empty set of a PDF's pages, in a sentence about which pages were read."
     },
@@ -20523,6 +21492,32 @@
     "so nothing in %@ was compared." : {
       "comment" : "Last clause of a sentence about an unread file in Compare Libraries: the consequence for the library index, after a comma. %@ is a copy of the library."
     },
+    "stopping %lld speech exports with the chapters they finished kept" : {
+      "comment" : "One item of the list in the message of a quit that waits for work to finish (\"TextMouth is finishing up before it quits: ...\"): several spoken audio exports are being stopped. %lld is the number of exports, more than one.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "stopping %lld speech export with the chapters it finished kept"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "stopping %lld speech exports with the chapters they finished kept"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "stopping a speech export with the chapters it finished kept" : {
+      "comment" : "One item of the list in the message of a quit that waits for work to finish (\"TextMouth is finishing up before it quits: ...\"): one spoken audio export is being stopped."
+    },
     "stops at the end of the book" : {
       "comment" : "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.",
       "localizations" : {
@@ -20597,6 +21592,12 @@
     },
     "the book's transcript changed too. Open the book again to read its text from that transcript." : {
       "comment" : "Reason after a colon: the book's transcript changed after the text was edited; begins in lower case."
+    },
+    "the braille helper failed" : {
+      "comment" : "Why the check of a braille table of this Mac could not be made, ending a sentence. The braille helper is a program TextMouth runs."
+    },
+    "the braille helper was stopped because %@" : {
+      "comment" : "Why the check of a braille table of this Mac could not be made, ending a sentence. %@ is a clause saying why the program was stopped, such as \"it ran longer than 10 seconds\". The braille helper is a program TextMouth runs."
     },
     "the cloud" : {
       "comment" : "How a sentence names the cloud service when it is unknown. It follows \"in\" or \"from\" in the sentence, so it has no capital letter."
@@ -20677,6 +21678,9 @@
     },
     "third" : {
       "comment" : "Ordinal word 3rd, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
+    "this Mac no longer has it" : {
+      "comment" : "Why a braille table of this Mac was refused, ending a sentence such as \"TextMouth can't use this Mac's table X: this Mac no longer has it.\"."
     },
     "this copy" : {
       "comment" : "What the Compare Libraries sheet calls the library in use inside a sentence, in lower case: \"Book only in this copy\"."
@@ -20846,6 +21850,17 @@
     },
     "“%@” holds no sound to import." : {
       "comment" : "Why a file was not imported: it holds no sound, such as a video without a sound track. %@ is the file's name."
+    },
+    "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again." : {
+      "comment" : "Why a spoken audio export was refused: the book's voice is a Personal Voice. %1$@ is the voice's name and %2$@ the name of the Voice button in the book's reader.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again."
+          }
+        }
+      }
     },
     "“%@” is a pronunciation lexicon, not a playlist." : {
       "comment" : "Refusal of a .pls file that is a pronunciation lexicon, not a playlist. %@ is the file's name."

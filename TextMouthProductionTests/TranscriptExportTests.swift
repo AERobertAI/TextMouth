@@ -466,14 +466,14 @@ final class TranscriptExportTests: XCTestCase {
                 BookExportConversionChoice(
                     id: "transcript-webvtt",
                     name: "WebVTT",
-                    hint: "Captions in WebVTT, which web browsers and most players read: "
-                        + "one file for the book, timed from the start of its audio."
+                    hint: "Captions in WebVTT, which web browsers and most players read: one file, timed from "
+                        + "the start of the audio."
                 ),
                 BookExportConversionChoice(
                     id: "transcript-srt",
                     name: "SubRip",
-                    hint: "Captions in SubRip (.srt), which nearly every player reads: "
-                        + "one file for the book, timed from the start of its audio."
+                    hint: "Captions in SubRip (.srt), which nearly every player reads: one file, timed from "
+                        + "the start of the audio."
                 ),
             ]
         )
@@ -565,14 +565,14 @@ final class TranscriptExportTests: XCTestCase {
         XCTAssertEqual(model.label(for: choice), "Transcript as WebVTT")
         XCTAssertEqual(
             model.hint(for: .transcript),
-            "The transcript as WebVTT captions, one file for the book, timed from the start of its audio."
+            "The transcript as WebVTT captions, one file timed from the start of the audio."
         )
 
         model.setConversionID("transcript-srt", for: .transcript)
         XCTAssertEqual(model.label(for: choice), "Transcript as SubRip")
         XCTAssertEqual(
             model.hint(for: .transcript),
-            "The transcript as SubRip captions, one file for the book, timed from the start of its audio."
+            "The transcript as SubRip captions, one file timed from the start of the audio."
         )
 
         model.setConversionID("transcript-json", for: .transcript)
@@ -601,7 +601,7 @@ final class TranscriptExportTests: XCTestCase {
         XCTAssertEqual(model.label(for: choice), "Transcript as SubRip, 2 books, 1 book in the cloud")
         XCTAssertEqual(
             model.hint(for: .transcript),
-            "The transcript as SubRip captions, one file for the book, timed from the start of its audio."
+            "The transcript as SubRip captions, one file timed from the start of the audio."
         )
 
         model.setConversionID("transcript-json", for: .transcript)
@@ -653,7 +653,7 @@ final class TranscriptExportTests: XCTestCase {
         XCTAssertEqual(model.label(for: choice), "Transcript as HTML")
         XCTAssertEqual(
             model.hint(for: .transcript),
-            "The transcript's text as HTML, made from the Markdown TextMouth reads it from."
+            "The transcript's text as HTML, made from its Markdown."
         )
         XCTAssertEqual(model.conversions[.transcript]?.fileExtension, "html")
         XCTAssertEqual(model.conversions[.transcript]?.name, "HTML")

@@ -85,8 +85,8 @@ enum ChapterListFormat: String, CaseIterable, Sendable {
     /// The format's name, as the picker lists it and VoiceOver speaks it.
     var name: String {
         switch self {
-        case .cueSheet: return "CUE sheet"
-        case .audacityLabels: return "Audacity labels"
+        case .cueSheet: return "CUE sheet" // l10n: no (a file format's name, like WebVTT)
+        case .audacityLabels: return "Audacity labels" // l10n: no (a file format's name, like WebVTT)
         }
     }
 
@@ -146,9 +146,9 @@ enum CueSheetWriter {
                 lines.append("FILE \(quoted(entry.file)) \(fileType(of: entry.file))")
                 currentFile = entry.file
             }
-            lines.append("  TRACK \(twoDigits(number + 1)) AUDIO")
+            lines.append("  TRACK \(twoDigits(number + 1)) AUDIO") // l10n: no (CUE sheet file syntax)
             lines.append("    TITLE \(quoted(entry.title))")
-            lines.append("    INDEX 01 \(time(entry.start))")
+            lines.append("    INDEX 01 \(time(entry.start))") // l10n: no (CUE sheet file syntax)
         }
         return lines.map { $0 + "\r\n" }.joined()
     }

@@ -223,11 +223,13 @@ final class BrailleTableGuessTests: XCTestCase {
         XCTAssertEqual(BrailleSettingsWording.guessLabel, "Guess the braille code of new books")
         XCTAssertEqual(
             BrailleSettingsWording.guessHint,
-            "When on, a braille file read as Unified English Braille, contracted, that is clearly English Braille, American Edition, is read with that code instead."
+            "When on, a braille file read as contracted Unified English Braille that is clearly English "
+                + "Braille, American Edition is read as that instead."
         )
         XCTAssertEqual(
             BrailleSettingsWording.guessCaption,
-            "Only a book that clearly shows English Braille, American Edition is changed, when it is added. Book Information says the code was guessed and can choose another."
+            "Only a book that clearly shows English Braille, American Edition changes, when added. Book "
+                + "Information says the code was guessed and can choose another."
         )
     }
 }

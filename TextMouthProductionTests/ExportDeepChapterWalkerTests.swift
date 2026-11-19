@@ -462,23 +462,22 @@ final class ExportDeepChapterWalkerTests: XCTestCase {
         XCTAssertEqual(BookExportDeepChapterWording.title(for: single), "Chapter 2 of Deep Notes nests too deeply")
         XCTAssertEqual(
             BookExportDeepChapterWording.message(for: single),
-            "Chapter 2 of Deep Notes nests quotes, lists, or emphasis more than 128 levels deep, "
-                + "which TextMouth can't export with its structure. "
-                + "Export as Written writes that chapter as plain paragraphs of its lines, with its quote and list marks "
-                + "kept as characters, and exports everything else as usual. "
-                + "Cancel Export stops the whole export: nothing more is written, and the files already written stay."
+            "Chapter 2 of Deep Notes nests quotes, lists, or emphasis more than 128 levels deep, which "
+                + "TextMouth can't export with its structure. Export as Written writes that chapter as plain "
+                + "paragraphs of its lines, with its quote and list marks kept as characters, and exports "
+                + "everything else as usual. Cancel Export stops the whole export. Files already written "
+                + "stay."
         )
 
         let several = ExportDeepChapterQuestion(bookTitle: "Deep Notes", chapter: 2, limit: 128, offersEveryOne: true)
         XCTAssertEqual(
             BookExportDeepChapterWording.message(for: several),
-            "Chapter 2 of Deep Notes nests quotes, lists, or emphasis more than 128 levels deep, "
-                + "which TextMouth can't export with its structure. "
-                + "Export as Written writes that chapter as plain paragraphs of its lines, with its quote and list marks "
-                + "kept as characters, and exports everything else as usual. "
-                + "Export Every Such Chapter as Written does the same for every chapter of this export that nests too "
-                + "deeply, without asking again. "
-                + "Cancel Export stops the whole export: nothing more is written, and the files already written stay."
+            "Chapter 2 of Deep Notes nests quotes, lists, or emphasis more than 128 levels deep, which "
+                + "TextMouth can't export with its structure. Export as Written writes that chapter as plain "
+                + "paragraphs of its lines, with its quote and list marks kept as characters, and exports "
+                + "everything else as usual. Export Every Such Chapter as Written does the same for every "
+                + "such chapter of this export, without asking again. Cancel Export stops the whole export. "
+                + "Files already written stay."
         )
 
         let whole = ExportDeepChapterQuestion(bookTitle: "Deep Notes", chapter: nil, limit: 128, offersEveryOne: false)
@@ -497,12 +496,12 @@ final class ExportDeepChapterWalkerTests: XCTestCase {
         )
         XCTAssertEqual(
             BookExportDeepChapterWording.exportEveryOneAsWrittenHint,
-            "Writes this chapter and every other chapter of this export that nests too deeply as plain paragraphs of "
-                + "their lines, without asking again."
+            "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of "
+                + "lines, without asking again."
         )
         XCTAssertEqual(
             BookExportDeepChapterWording.cancelHint,
-            "Stops the whole export. Files already written stay, and nothing more is written."
+            "Stops the whole export. Files already written stay."
         )
     }
 

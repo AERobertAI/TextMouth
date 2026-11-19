@@ -81,11 +81,13 @@ final class BrailleFileWriterTests: XCTestCase {
         }
         XCTAssertEqual(
             refusal.errorDescription,
-            "The braille table writes an eight-dot cell, dots 1 and 7, and TextMouth writes BRF and PEF files in six-dot braille only."
+            "The braille table writes an eight-dot cell, dots 1 and 7, but TextMouth's BRF and PEF files are "
+                + "six-dot only."
         )
         XCTAssertEqual(
             BrailleFileWriter.EightDotCell(cell: "\u{2848}", character: "\u{2019}").errorDescription,
-            "The braille table writes \u{201C}\u{2019}\u{201D} as an eight-dot cell, and TextMouth writes BRF and PEF files in six-dot braille only."
+            "The braille table writes \u{201C}\u{2019}\u{201D} as an eight-dot cell, but TextMouth's BRF and "
+                + "PEF files are six-dot only."
         )
     }
 

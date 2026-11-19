@@ -387,8 +387,7 @@ final class ConvertedOriginalTests: XCTestCase {
     func testTheOriginalFileHintMentionsConvertedAudio() {
         XCTAssertEqual(
             BookExportWording.hint(for: .originalFile),
-            "The book's own file, as it was imported; for an audiobook, its audio files as they were before "
-                + "TextMouth converted them."
+            "The book's file as imported; for an audiobook, its audio files before TextMouth converted them."
         )
     }
 

@@ -252,22 +252,22 @@ enum BrailleFileError: LocalizedError, Equatable {
         case let .notInFileCode(found, line, characters):
             return Self.sentence(found, line: line, isNot: characters)
         case let .eightBitBraille(byte, line):
-            return "Line \(line) holds \(Self.words(for: .byte(byte))). "
-                + "This file may be eight-bit computer braille, which TextMouth does not read."
+            return "Line \(line) holds \(Self.words(for: .byte(byte))). " // l10n: no (parser damage reason, English by question 3)
+                + "This file may be eight-bit computer braille, which TextMouth does not read." // l10n: no (parser damage reason, English by question 3)
         case .utf16Text:
-            return "This file is in UTF-16, which TextMouth does not read as braille. Save it in UTF-8 to read it."
+            return "This file is in UTF-16, which TextMouth does not read as braille. Save it in UTF-8 to read it." // l10n: no (parser damage reason, English by question 3)
         case let .unknownFileCode(id):
-            return "TextMouth has no braille file characters named “\(id)”."
+            return "TextMouth has no braille file characters named “\(id)”." // l10n: no (parser damage reason, English by question 3)
         case .damagedPEF:
-            return "This file could not be read as a PEF braille file. It may be damaged, or another kind of file."
+            return "This file could not be read as a PEF braille file. It may be damaged, or another kind of file." // l10n: no (parser damage reason, English by question 3)
         case .eightDotBraille:
-            return "This file is eight-dot braille, which TextMouth does not read."
+            return "This file is eight-dot braille, which TextMouth does not read." // l10n: no (parser damage reason, English by question 3)
         case .tooManyPages:
-            return "This file has more than 100,000 braille pages, the most TextMouth reads."
+            return "This file has more than 100,000 braille pages, the most TextMouth reads." // l10n: no (parser damage reason, English by question 3)
         case .tooManyRows:
-            return "This file has more than 4,000,000 lines of braille, the most TextMouth reads."
+            return "This file has more than 4,000,000 lines of braille, the most TextMouth reads." // l10n: no (parser damage reason, English by question 3)
         case .fileTooLarge:
-            return "This braille file holds more than 32 MB, the most TextMouth reads from one braille file."
+            return "This braille file holds more than 32 MB, the most TextMouth reads from one braille file." // l10n: no (parser damage reason, English by question 3)
         }
     }
 
@@ -277,16 +277,16 @@ enum BrailleFileError: LocalizedError, Equatable {
     /// American Braille ASCII's and the others' alike, so the words are
     /// written once.
     private static func sentence(_ found: Found, line: Int, isNot characters: String) -> String {
-        "Line \(line) holds \(words(for: found)), which is not \(characters)."
+        "Line \(line) holds \(words(for: found)), which is not \(characters)." // l10n: no (parser damage reason, English by question 3)
     }
 
     /// How the sentence names what was found, made in this one place.
     private static func words(for found: Found) -> String {
         switch found {
-        case let .character(character): return "“\(character)”"
-        case let .controlCharacter(code): return "the control character \(hex("U+", code, minimumDigits: 4))"
-        case let .unseenCharacter(code): return "the character \(hex("U+", code, minimumDigits: 4))"
-        case let .byte(byte): return "the byte \(hex("0x", UInt32(byte), minimumDigits: 2))"
+        case let .character(character): return "“\(character)”" // l10n: no (parser damage reason, English by question 3)
+        case let .controlCharacter(code): return "the control character \(hex("U+", code, minimumDigits: 4))" // l10n: no (parser damage reason, English by question 3)
+        case let .unseenCharacter(code): return "the character \(hex("U+", code, minimumDigits: 4))" // l10n: no (parser damage reason, English by question 3)
+        case let .byte(byte): return "the byte \(hex("0x", UInt32(byte), minimumDigits: 2))" // l10n: no (parser damage reason, English by question 3)
         }
     }
 

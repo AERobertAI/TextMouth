@@ -163,8 +163,37 @@ struct BookExportOffer: Equatable, Sendable {
 struct BookExportFailure: Equatable, Sendable {
     /// The file's name, as the export would have called it.
     let name: String
-    /// Why, in the words the system gives.
+    /// Why, in the words the system gives, or TextMouth's own in the
+    /// interface language.
     let reason: String
+    /// Why, for the debug log, which never holds the interface language
+    /// (FR34): `reason` itself unless the caller names an English one.
+    let logReason: String
+
+    /// A failure with `reason`, and `logReason` for the log (`reason` when
+    /// none is given).
+    init(name: String, reason: String, logReason: String? = nil) {
+        self.name = name
+        self.reason = reason
+        self.logReason = logReason ?? reason
+    }
+
+    /// Two failures are the same when they name the same file and give the
+    /// same reason; the log's wording of it does not tell them apart.
+    static func == (lhs: BookExportFailure, rhs: BookExportFailure) -> Bool {
+        lhs.name == rhs.name && lhs.reason == rhs.reason
+    }
+
+    /// `error` in words for the debug log. An error that words itself in
+    /// English for the log says so (`LogDescribing`); one of TextMouth's own
+    /// error types, whose description is in the interface language, is
+    /// named by its type; any other (the system's) is described as it
+    /// describes itself.
+    static func logReason(of error: Error) -> String {
+        if let described = error as? any LogDescribing { return described.logDescription }
+        let typeName = String(reflecting: type(of: error))
+        return typeName.hasPrefix("TextMouth.") ? typeName : error.localizedDescription
+    }
 }
 
 /// A book an export names: its ID, which tells books apart, and its title,
@@ -426,7 +455,7 @@ enum BookExportService {
         }
         let take = package.appendingPathComponent(BookOrigin.originalTakeFileName)
         if access.presence(of: take) == .present {
-            let name = "\(stem) - Original Recording.\(take.pathExtension)"
+            let name = BookExportWording.originalRecordingFileName(stem: stem, fileExtension: take.pathExtension)
             items.append(standaloneItem(.originalRecording, files: [copy(take, as: name)], access: access))
         }
         if let originals = originalAudioItem(of: book, stem: stem, access: access) {
@@ -856,7 +885,7 @@ enum BookExportService {
         let package = book.tmbDirectory
         let folder = AudioEditPackage.folder(in: package)
             .appendingPathComponent(AudioEditPackage.originalsFolderName, isDirectory: true)
-        let name = "\(stem) - Original Audio"
+        let name = BookExportWording.originalAudioFolderName(stem: stem)
         let inCloud = BookExportItem(kind: .originalAudio, folderName: name, files: [], fileInCloud: folder)
         switch access.presence(of: folder) {
         case .absent:
@@ -912,7 +941,7 @@ enum BookExportService {
         guard book.format.isAudio else { return nil }
         let folder = book.tmbDirectory
             .appendingPathComponent(ImportAudioConverter.keptOriginalsFolderName, isDirectory: true)
-        let name = "\(stem) - Original Files"
+        let name = BookExportWording.originalFilesFolderName(stem: stem)
         let inCloud = BookExportItem(kind: .originalFile, folderName: name, files: [], fileInCloud: folder)
         switch access.presence(of: folder) {
         case .absent:
@@ -1193,7 +1222,10 @@ enum BookExportService {
             guard !offer.isPackageInCloud, let item = offer.item(.transcript), !item.isInCloud,
                   item.transcriptInCloud == nil, !item.files.contains(where: isTranscriptFile) else { return nil }
             let name = "\(fileNameStem(for: offer.book.title)) - Transcript.\(conversion.fileExtension)"
-            return BookExportFailure(name: name, reason: BookExportWording.noTimedTranscriptReason)
+            return BookExportFailure(
+                name: name, reason: BookExportWording.noTimedTranscriptReason,
+                logReason: "the book has no timed transcript to write as captions" // l10n: no (debug log, stays English)
+            )
         }
     }
 
@@ -1365,7 +1397,10 @@ enum BookExportService {
         } catch where DatalessFiles.isDownloadRefusal(error) {
             outcome.noteInCloud(planned.book)
         } catch {
-            outcome.failures.append(BookExportFailure(name: planned.target.lastPathComponent, reason: error.localizedDescription))
+            outcome.failures.append(BookExportFailure(
+                name: planned.target.lastPathComponent, reason: error.localizedDescription,
+                logReason: BookExportFailure.logReason(of: error)
+            ))
         }
     }
 
@@ -1743,7 +1778,7 @@ enum BookExportService {
                 + "\(outcome.booksInCloud.count) book(s) in the cloud\(outcome.wasCancelled ? ", cancelled" : "")"
         )
         for failure in outcome.failures {
-            DiagnosticLog.event(.storage, "BOOK_EXPORT_FAILED: \(failure.name): \(failure.reason)")
+            DiagnosticLog.event(.storage, "BOOK_EXPORT_FAILED: \(failure.name): \(failure.logReason)")
         }
     }
 
@@ -1798,7 +1833,7 @@ enum BookExportService {
     /// (`safeFileName(_:fallback:)`), "Untitled" for a title with nothing
     /// left.
     static func fileNameStem(for title: String) -> String {
-        safeFileName(title, fallback: "Untitled")
+        safeFileName(title, fallback: BookExportWording.untitled)
     }
 
     /// `name` made safe as one file or folder name: a slash or colon

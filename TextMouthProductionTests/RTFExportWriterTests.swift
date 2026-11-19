@@ -463,7 +463,7 @@ final class RTFExportWriterTests: XCTestCase {
         XCTAssertEqual(writer.fileExtension, "doc")
         XCTAssertEqual(
             writer.hint,
-            "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them."
+            "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits them."
         )
         // Tonight's writers come first, in the picker's order; writers added
         // later (braille's) follow them.
