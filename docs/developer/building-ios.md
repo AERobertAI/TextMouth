@@ -38,6 +38,7 @@ Each reads the commit as it was when it started (`Scripts/ios/typecheck.py` take
   It takes about two minutes once it has the lock.
   `CENSUS=1` reads each `import AppKit` as `import UIKit` in the copy, so that a file does not stop at "no such module 'AppKit'" and every AppKit name left in it is reported; it counts what is left, and is not what the app must pass.
   The run without it is the strict one.
+  With `--emit-strings` (`Scripts/ios/typecheck.py`, which `make l10n-sync` runs for each app) the compiler also writes the strings it finds, with no debug information; see [Localizing TextMouth's code](localization.md#the-extraction-and-the-lock).
 - **`make typecheck-mac`** does the same for the Mac: the sources the Mac app compiles, built and linked in about two minutes, without xcodebuild or the hosted tests.
   It ends BUILD SUCCEEDED when the Mac app's code compiles and links.
 - **`make typecheck-tests`** is `make typecheck-mac` with the Mac's hosted test target in the package.

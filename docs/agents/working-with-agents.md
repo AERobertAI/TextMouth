@@ -76,6 +76,7 @@ When git cannot tell, the script goes ahead, and TEXTMOUTH_BBS_ALLOW_UNMERGED=1 
 An agent checks its code in three ways, none of which builds with Xcode.
 It type-checks for iOS with `make typecheck-ios` (`CENSUS=1` while it still has AppKit uses to count) and for the Mac with `make typecheck-mac`, and the Mac's tests with `make typecheck-tests`.
 All run under the machine-wide heavy-work lock, which the build train shares, so each waits first come, first served and says its place in line and whom it waits for ("third in line, behind holder, typecheck-a and run-suite").
+A change to interface text runs `make l10n-sync`, which takes the same lock for about four minutes, so it syncs once for a batch of edits (see [Localizing TextMouth's code](../developer/localization.md)).
 And, when its change must leave the Mac as it was, it runs `make mac-projection BASE=main`.
 It tests through the build train (see [The build train](../developer/testing-tools.md#the-build-train)), and waits for the train's result in the background with `python3 -I Scripts/agents/wait-for-result.py --agent SLUG`, which exits when the result is written.
 What the commands do is in [Building TextMouth](../developer/building.md), under The iOS app.
@@ -110,6 +111,7 @@ Ask for a train naming your classes and areas, not for a full suite: each full s
 The orchestrator's Mac suite at the merge is the full check.
 A fix to a shared writer needs the golden and heading-annotation classes in its request: one marker change passed 388 tests and failed three at the merge.
 Name the policy tests your change calls for.
+A change that localizes text names the classes `python3 -I -B Scripts/l10n/l10n.py reach` prints, and `phone` when the iPhone's files changed.
 A new `@unchecked Sendable` type or `nonisolated(unsafe)` variable needs `UncheckedConcurrencyPolicyTests`, and a new log tag `LogContentPolicyTests`.
 A new shortcut action needs `KeyboardReachabilityTests` and the legacy shortcut scenarios, and a new field on `Book` needs `ContentAnalysisMergeTests`, `BookBoxTests`, and `OnDiskContractTests`.
 

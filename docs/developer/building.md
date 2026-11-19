@@ -64,6 +64,7 @@ Run these from the repository root:
 
 - `make test` runs the hosted test suite (see [The hosted test suite](testing.md)).
   `make test-area AREAS="feeds bookmarks"` runs only the hosted tests of some areas or classes, in one build, and `make lint-tests`, `make lint-a11y`, and `make lint-ogg` check the lines a branch adds, without building; [Reusable test tools](testing-tools.md) describes them.
+- `make lint-l10n` checks that no Swift file has more unlocalized interface text than `Scripts/l10n/scan-baseline.json` records for it, and the `make l10n-*` targets run the String Catalog's tools (see [Localizing TextMouth's code](localization.md)).
 - `make lint-docs` checks that no doc page has more violations of the rules in docs/agents/writing-docs.md than `.claude/skills/doc-library/lint-baseline.json` records for it, without building; `.claude/skills/doc-library/SKILL.md` describes the tool.
 - `make check` runs the reproducibility gate, which also reports the Release app's size.
   `make check-selftest` tests the gate and the scripts around it in seconds, without building; The make check gate, below, lists what it covers.
@@ -94,6 +95,7 @@ Run these from the repository root:
   `make typecheck-mac` does the same for the Mac, `make typecheck-tests` adds the Mac's hosted tests, and `make typecheck-ios-tests` compiles the iPhone's unit and interface tests for iOS (`make typecheck-tests-census` counts which Mac tests compile there).
   `make mac-projection BASE=main` shows what a branch changes in the code the Mac compiles, and with `DIFF=1` prints every line it changes.
   Each is described under [The iOS app](building-ios.md).
+  `make l10n-sync` runs the Mac's and the iPhone's type-checks with the string extraction on, under the same lock.
 - `make check-ios-plist` fails when the iOS app's `TextMouth/Platform/iOS/Info.plist` is not what `Scripts/ios/sync-info-plist.py` writes from the Mac's `TextMouth/Resources/Info.plist`.
   Run `python3 -I Scripts/ios/sync-info-plist.py` after changing the Mac's plist, then commit both (see [The two apps and the platform folders](../architecture/platforms.md)).
 - `make ios-size` builds the iPhone app for a device under the heavy-work lock and measures it (see [The iPhone app's size](building-ios.md)).
@@ -264,7 +266,7 @@ The script, Scripts/set-version.sh:
 TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark.
 SwiftSoup is vendored and has no pin (see Make targets, above).
 Run `make check` before merging.
-- It regenerates the project;
+- It regenerates the project and checks the String Catalog (`make l10n-check`, which builds nothing);
 - resolves packages strictly from `Package.resolved` (failing if anything would change);
 - builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac;
 - and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
@@ -283,7 +285,7 @@ To upgrade a package, change its version in `project.yml`, run `make update-pack
 - the baseline-recording script;
 - the storage drill script's verdicts (see [Reusable test tools](testing-tools.md));
 - the version script (see Versions, above);
-- the Python tools in `Scripts/test` (see [Reusable test tools](testing-tools.md));
+- the Python tools in `Scripts/test` (see [Reusable test tools](testing-tools.md)) and the l10n tools (`Scripts/l10n/tests`: the catalog, the scanner, the merge driver, `sync-paths.txt`);
 - the vendored SwiftSoup's script, `Scripts/vendor/swiftsoup/test_make_vendor.py`, the FFmpeg build script's tests (`Scripts/vendor/ffmpeg/test_build.py`), and the iPhone size tool's (`app-size.py --selftest`);
 - the policy test that no tracked file holds a path of one Mac (see [Working with agents](../agents/working-with-agents.md)), and the issue tracker's tests (`.claude/skills/issue-library/tests`), which work only in temporary folders;
 - that `make build` builds without code coverage and with `-Osize` while `make debug` does not;
