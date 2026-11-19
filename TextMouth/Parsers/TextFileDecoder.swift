@@ -94,20 +94,66 @@ enum TextEncodingError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .unsupportedDeclaredEncoding(file, label):
-            return "The file “\(file)” declares the text encoding “\(label)”, which TextMouth cannot read. "
-                + "Save it as UTF-8 text, then import it again."
+            return SentenceWording.joined([
+                String(localized: "The file “\(file)” declares the text encoding “\(label)”, which TextMouth cannot read.",
+                       comment: "First sentence of why a file could not be imported: an HTML file declares a text encoding TextMouth does not know. %1$@ is the file's name and %2$@ the encoding's name as the file spells it."),
+                Self.saveAsUTF8Advice,
+            ])
         case let .invalidForDeclaredEncoding(file, label):
-            return "The file “\(file)” declares the text encoding “\(label)”, "
-                + "but it holds bytes that are not valid in that encoding. "
-                + "Save it as UTF-8 text, then import it again."
+            return SentenceWording.joined([
+                String(localized: "The file “\(file)” declares the text encoding “\(label)”, but it holds bytes that are not valid in that encoding.",
+                       comment: "First sentence of why a file could not be imported: an HTML file declares a text encoding its bytes are not valid in. %1$@ is the file's name and %2$@ the encoding's name as the file spells it."),
+                Self.saveAsUTF8Advice,
+            ])
         case let .invalidForMarkedEncoding(file, encoding):
-            return "The file “\(file)” is damaged or incomplete: it begins with a \(encoding) byte-order mark, "
-                + "but the rest of it is not valid \(encoding) text. "
-                + "Get a fresh copy of the file, then import it again."
+            return SentenceWording.joined([
+                String(localized: "The file “\(file)” is damaged or incomplete: it begins with a \(encoding) byte-order mark, but the rest is not valid \(encoding) text.",
+                       comment: "First sentence of why a file could not be imported: it begins with the byte-order mark of a Unicode encoding, but the bytes after it are not valid in that encoding. %1$@ is the file's name; %2$@ and %3$@ are both the encoding's standard name, such as UTF-16LE, which stays as it is."),
+                String(localized: "Get a fresh copy of the file, then import it again.",
+                       comment: "Last sentence of why a file could not be imported because it is damaged or incomplete: what to do."),
+            ])
         case let .invalidForChosenEncoding(file, encoding):
-            return TextEncodingWording.notValid(in: encoding, subject: "The file “\(file)”")
+            return TextEncodingWording.notValid(in: encoding, subject: Self.fileSubject(file))
         case let .unknownChosenEncoding(file, identifier):
-            return TextEncodingWording.unknownChoice(identifier, subject: "The file “\(file)”")
+            return TextEncodingWording.unknownChoice(identifier, subject: Self.fileSubject(file))
+        }
+    }
+
+    /// What to do about a file whose declared encoding cannot be read: the
+    /// sentence that ends two of the failures.
+    private static var saveAsUTF8Advice: String {
+        String(localized: "Save it as UTF-8 text, then import it again.",
+               comment: "Last sentence of why an HTML file could not be imported because of its declared text encoding: what to do. UTF-8 is an encoding's name and stays as it is.")
+    }
+
+    /// The file as a sentence names it when it begins one: "The file “Ledger.txt”".
+    private static func fileSubject(_ file: String) -> String {
+        String(localized: "The file “\(file)”",
+               comment: "Begins a sentence about a file that could not be read in the text encoding chosen for it, such as \"The file “Ledger.txt” can't be read as Shift JIS (Japanese): …\". %@ is the file's name.")
+    }
+}
+
+extension TextEncodingError: LogDescribing {
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34). The chosen encoding's name is
+    /// left out, since it is the interface's.
+    var logDescription: String {
+        switch self {
+        case let .unsupportedDeclaredEncoding(file, label):
+            return "The file “\(file)” declares the text encoding “\(label)”, which TextMouth cannot read. " // l10n: no (debug log)
+                + "Save it as UTF-8 text, then import it again." // l10n: no (debug log)
+        case let .invalidForDeclaredEncoding(file, label):
+            return "The file “\(file)” declares the text encoding “\(label)”, " // l10n: no (debug log)
+                + "but it holds bytes that are not valid in that encoding. " // l10n: no (debug log)
+                + "Save it as UTF-8 text, then import it again." // l10n: no (debug log)
+        case let .invalidForMarkedEncoding(file, encoding):
+            return "The file “\(file)” is damaged or incomplete: it begins with a \(encoding) byte-order mark, " // l10n: no (debug log)
+                + "but the rest is not valid \(encoding) text. " // l10n: no (debug log)
+                + "Get a fresh copy of the file, then import it again." // l10n: no (debug log)
+        case let .invalidForChosenEncoding(file, _):
+            return "The file “\(file)” can't be read in the encoding chosen for it: it holds bytes that are not valid in that encoding." // l10n: no (debug log)
+        case let .unknownChosenEncoding(file, identifier):
+            return "The file “\(file)” is set to be read as “\(identifier)”, a text encoding this version of TextMouth can't read." // l10n: no (debug log)
         }
     }
 }
@@ -947,9 +993,9 @@ enum TextFileDecoder {
     /// any of the five.
     private static let windows1252C1Range: [Unicode.Scalar] = [
         "\u{20AC}", "\u{0081}", "\u{201A}", "\u{0192}", "\u{201E}", "\u{2026}", "\u{2020}", "\u{2021}",
-        "\u{02C6}", "\u{2030}", "\u{0160}", "\u{2039}", "\u{0152}", "\u{008D}", "\u{017D}", "\u{008F}",
+        "\u{02C6}", "\u{2030}", "\u{0160}", "\u{2039}", "\u{0152}", "\u{008D}", "\u{017D}", "\u{008F}", // l10n: no (a character or encoding name, not interface text)
         "\u{0090}", "\u{2018}", "\u{2019}", "\u{201C}", "\u{201D}", "\u{2022}", "\u{2013}", "\u{2014}",
-        "\u{02DC}", "\u{2122}", "\u{0161}", "\u{203A}", "\u{0153}", "\u{009D}", "\u{017E}", "\u{0178}",
+        "\u{02DC}", "\u{2122}", "\u{0161}", "\u{203A}", "\u{0153}", "\u{009D}", "\u{017E}", "\u{0178}", // l10n: no (a character or encoding name, not interface text)
     ]
 
     /// `data` read as Windows-1252, one character for each byte. Bytes
@@ -1021,7 +1067,7 @@ enum TextFileDecoder {
         case .utf16BigEndian: return "UTF-16BE"
         case .utf32LittleEndian: return "UTF-32LE"
         case .utf32BigEndian: return "UTF-32BE"
-        case .windowsCP1252: return "Windows-1252"
+        case .windowsCP1252: return "Windows-1252" // l10n: no (a character or encoding name, not interface text)
         default:
             let ianaName = CFStringConvertEncodingToIANACharSetName(
                 CFStringConvertNSStringEncodingToEncoding(encoding.rawValue)

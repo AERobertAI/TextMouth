@@ -323,9 +323,9 @@ enum WordDocumentReader {
     /// The HTML document with `body`, naming `title` and `author` in its head
     /// when they are not empty.
     private static func page(body: String, title: String, author: String) -> String {
-        var head = "<meta charset=\"utf-8\">"
+        var head = "<meta charset=\"utf-8\">" // l10n: no (generated markup, not interface text)
         if !title.isEmpty { head += "<title>\(WordHTMLWriter.escaped(title))</title>" }
-        if !author.isEmpty { head += "<meta name=\"author\" content=\"\(WordHTMLWriter.escaped(author))\">" }
-        return "<!DOCTYPE html>\n<html><head>\(head)</head><body>\n\(body)</body></html>\n"
+        if !author.isEmpty { head += "<meta name=\"author\" content=\"\(WordHTMLWriter.escaped(author))\">" } // l10n: no (generated markup, not interface text)
+        return "<!DOCTYPE html>\n<html><head>\(head)</head><body>\n\(body)</body></html>\n" // l10n: no (generated markup, not interface text)
     }
 }

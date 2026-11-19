@@ -383,7 +383,7 @@ final class KF8BookTests: XCTestCase {
         MOBIFixture.put32(&bytes, record0 + 252, 0xFFFF_FFFF)
         XCTAssertThrowsError(try opened(bytes)) {
             guard case .damaged? = $0 as? MOBIError else { return XCTFail("\($0)") }
-            XCTAssertEqual($0.localizedDescription, "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again.")
+            XCTAssertEqual($0.localizedDescription, "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again.")
         }
     }
 

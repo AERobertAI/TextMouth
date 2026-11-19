@@ -76,7 +76,7 @@ enum FFmpegContainer: String, CaseIterable, Equatable, Sendable {
         if bytes.starts(with: Array(".RMF".utf8)) || bytes.starts(with: Array(".ra".utf8) + [0xFD]) { return .realMedia }
         // Stream version 7 keeps its version in the low four bits of the
         // fourth byte (0x07, or 0x17 for version 7.1).
-        if bytes.starts(with: Array("MP+".utf8)), bytes.count > 3, bytes[3] & 0x0F == 7 { return .musepack7 }
+        if bytes.starts(with: Array("MP+".utf8)), bytes.count > 3, bytes[3] & 0x0F == 7 { return .musepack7 } // l10n: no (a file-format signature, not interface text)
         if bytes.starts(with: Array("MPCK".utf8)) { return .musepack8 }
         if isOggSpeex(bytes) { return .oggSpeex }
         if bytes.starts(with: Array("OggS".utf8)) { return .ogg }
@@ -105,7 +105,7 @@ enum FFmpegContainer: String, CaseIterable, Equatable, Sendable {
                   bytes[page + 5] & 0x02 != 0 else { return false }
             let segments = Int(bytes[segmentCountOffset])
             let packets = segmentCountOffset + 1 + segments
-            if segments > 0, ascii(in: bytes, at: packets, is: "Speex   ") { return true }
+            if segments > 0, ascii(in: bytes, at: packets, is: "Speex   ") { return true } // l10n: no (a file-format signature, not interface text)
             guard packets <= bytes.count else { return false }
             page = packets + bytes[(segmentCountOffset + 1)..<packets].reduce(0) { $0 + Int($1) }
         }

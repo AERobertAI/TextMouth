@@ -778,7 +778,7 @@ struct WordHTMLWriter {
     }
 
     /// How the span that marks a page begins, and the whole span of page `page`.
-    private static let pageSpanOpening = "<span role=\"\(TextutilPageBreaks.pageBreakRole)\""
+    private static let pageSpanOpening = "<span role=\"\(TextutilPageBreaks.pageBreakRole)\"" // l10n: no (generated markup, not interface text)
     private static func pageSpan(_ page: Int) -> String { pageSpanOpening + " aria-label=\"\(page)\"></span>" }
 
     /// `html` without its emphasis tags (the text is escaped, so these

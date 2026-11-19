@@ -32,8 +32,8 @@ enum TextEncodingChoices {
     /// gives two entries is offered once, by its first entry.
     static let options: [TextEncodingOption] = {
         var options: [TextEncodingOption] = [.automatic, .encoding(TextFileDecoder.utf8Identifier)]
-        var namesOffered: Set<String> = []
-        for entry in TextEncodingCatalog.entries where namesOffered.insert(entry.name).inserted {
+        var namesOffered: Set<TextEncodingCatalog.Label> = []
+        for entry in TextEncodingCatalog.entries where namesOffered.insert(entry.label).inserted {
             options.append(.encoding(entry.identifier))
         }
         return options
@@ -65,14 +65,15 @@ enum TextEncodingChoices {
         if encoding == .utf8 {
             return .encoding(TextFileDecoder.utf8Identifier)
         }
-        return TextEncodingCatalog.entry(for: encoding).flatMap { option(named: $0.name) }
+        return TextEncodingCatalog.entry(for: encoding).flatMap { option(named: $0.label) }
     }
 
-    /// The option the catalog's name `name` is offered by.
-    private static func option(named name: String) -> TextEncodingOption? {
+    /// The option the catalog's name `label` is offered by. Names are compared
+    /// by their label, never by the localized text they show.
+    private static func option(named label: TextEncodingCatalog.Label) -> TextEncodingOption? {
         options.first { option in
             guard case .encoding(let identifier) = option else { return false }
-            return TextEncodingCatalog.entry(forIdentifier: identifier)?.name == name
+            return TextEncodingCatalog.entry(forIdentifier: identifier)?.label == label
         }
     }
 
@@ -84,7 +85,7 @@ enum TextEncodingChoices {
     static func identifiers(of option: TextEncodingOption) -> [String] {
         guard case .encoding(let identifier) = option else { return [] }
         guard let entry = TextEncodingCatalog.entry(forIdentifier: identifier) else { return [identifier] }
-        return TextEncodingCatalog.entries.filter { $0.name == entry.name }.map(\.identifier)
+        return TextEncodingCatalog.entries.filter { $0.label == entry.label }.map(\.identifier)
     }
 }
 

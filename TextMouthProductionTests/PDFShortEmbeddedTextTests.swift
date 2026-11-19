@@ -216,7 +216,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         XCTAssertEqual(extraction.report.container, "this PDF")
         XCTAssertEqual(
             extraction.report.message,
-            "OCR could not run on all 2 pages, so text that appears only in their images is missing: "
+            "OCR could not run on all 2 pages, so text found only in their images is missing: "
                 + "pages 1 and 2 (text recognition is not available)."
         )
     }

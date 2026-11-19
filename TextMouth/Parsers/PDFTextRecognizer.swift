@@ -51,7 +51,7 @@ protocol PDFPageTextRecognizer: Sendable {
 struct VisionPDFTextRecognizer: PDFPageTextRecognizer {
     func recognizeLines(in region: CGRect, of page: PDFPage) throws -> [PDFRecognizedLine] {
         guard let cgPage = page.pageRef, let rendering = PDFRegionRendering(page: cgPage, region: region) else {
-            throw PDFTextRecognitionError.failed("the page could not be drawn for text recognition")
+            throw PDFTextRecognitionError.failed("the page could not be drawn for text recognition") // l10n: no (a parser's damage reason)
         }
         // The lines come in reading order; each box is mapped from the
         // picture's fractions back to the page's default user space.

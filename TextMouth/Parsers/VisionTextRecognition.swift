@@ -72,7 +72,7 @@ enum VisionTextRecognition {
     /// Vision reports its errors as `NSError`s in `VNErrorDomain` whose
     /// codes are `VNErrorCode` values.
     static func recognitionError(for error: Error) -> PDFTextRecognitionError {
-        let description = "text recognition failed: \(error.localizedDescription)"
+        let description = "text recognition failed: \(error.localizedDescription)" // l10n: no (a parser's damage reason)
         let nsError = error as NSError
         if nsError.domain == VNErrorDomain, let code = VNErrorCode(rawValue: nsError.code),
            unavailableCodes.contains(code) {

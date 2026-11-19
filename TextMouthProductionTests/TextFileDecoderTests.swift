@@ -843,7 +843,7 @@ final class TextFileDecoderTests: XCTestCase {
         XCTAssertEqual(
             TextEncodingError.invalidForMarkedEncoding(file: "Tides.txt", encoding: "UTF-16LE").localizedDescription,
             "The file “Tides.txt” is damaged or incomplete: it begins with a UTF-16LE byte-order mark, "
-                + "but the rest of it is not valid UTF-16LE text. "
+                + "but the rest is not valid UTF-16LE text. "
                 + "Get a fresh copy of the file, then import it again."
         )
     }

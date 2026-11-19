@@ -716,32 +716,92 @@ enum AudioParseError: LocalizedError, Equatable {
 
     /// What a listener can do about a section that does not fit its file:
     /// the sentence that ends every such message.
-    static let mismatchAdvice = "The book's navigation does not match its audio; get a fresh copy and import it again."
+    static var mismatchAdvice: String {
+        String(localized: "The book's navigation does not match its audio; get a fresh copy and import it again.",
+               comment: "Last sentence of an import failure: a section of a segmented audiobook does not fit the audio file it names, so the book's navigation (its manifest or headings) does not match its audio.")
+    }
 
     var errorDescription: String? {
         switch self {
-        case .invalidDuration: return "Could not determine audio duration."
-        case .noAudioFiles: return "No supported audio files found."
-        case .unsupportedFormat: return "Unsupported audio format."
-        case .invalidSegment: return "An audio section refers to a missing file or an invalid time range."
+        case .invalidDuration:
+            return String(localized: "Could not determine audio duration.",
+                          comment: "Why an audio book could not be imported: the length of its audio could not be measured.")
+        case .noAudioFiles:
+            return String(localized: "No supported audio files found.",
+                          comment: "Why an audio book could not be imported: none of the files in it is an audio file TextMouth reads.")
+        case .unsupportedFormat:
+            return String(localized: "Unsupported audio format.",
+                          comment: "Why an audio file could not be imported: TextMouth does not read its audio format.")
+        case .invalidSegment:
+            return String(localized: "An audio section refers to a missing file or an invalid time range.",
+                          comment: "Why an audio book could not be imported: one of its sections names a file that is not there, or a start and end time that do not make a range.")
         case .unplayableFile(let file, let problem):
             // Damage is described as it is for every other kind of book; a valid file whose samples
             // cannot be decoded is told its form instead (B15).
-            return problem.sentence(file: file, container: "this audiobook", original: "the book")
+            return problem.sentence(file: file, container: .audiobook)
         // Times are written as they are spoken ("1 hour, 3 minutes"), which
         // reads the same on screen, aloud, and in braille; "1:03:00" can be
         // heard as a time of day.
         case .sectionStartsPastEnd(let section, let file, let start, let fileDuration):
-            return "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into its file “\(file)”, "
-                + "which is only \(TimeFormatting.spoken(fileDuration)) long. \(Self.mismatchAdvice)"
+            return SentenceWording.joined([
+                String(localized: "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long.",
+                       comment: "First sentence of why an audiobook could not be imported: a section starts after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it starts and %4$@ how long the file is, both spoken times; %3$@ is the file's name."),
+                Self.mismatchAdvice,
+            ])
         case .sectionEndsPastEnd(let section, let file, let end, let fileDuration):
-            return "The \(section.phrase) ends \(TimeFormatting.spoken(end)) into its file “\(file)”, "
-                + "which is only \(TimeFormatting.spoken(fileDuration)) long. \(Self.mismatchAdvice)"
+            return SentenceWording.joined([
+                String(localized: "The \(section.phrase) ends \(TimeFormatting.spoken(end)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long.",
+                       comment: "First sentence of why an audiobook could not be imported: a section ends after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it ends and %4$@ how long the file is, both spoken times; %3$@ is the file's name."),
+                Self.mismatchAdvice,
+            ])
         case .sectionStartsBeforeEarlierSection(let section, let file, let start, let earlierSection, let earlierStart):
-            return "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into its file “\(file)”, "
-                + "before the \(earlierSection.phrase), which comes earlier in the book and starts "
-                + "\(TimeFormatting.spoken(earlierStart)) in. \(Self.mismatchAdvice)"
+            return SentenceWording.joined([
+                String(localized: "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, before the earlier \(earlierSection.phrase), which starts \(TimeFormatting.spoken(earlierStart)) in.",
+                       comment: "First sentence of why an audiobook could not be imported: a section starts before another section that comes earlier in the book and is in the same audio file. %1$@ and %4$@ are sections, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (masculine noun phrases in English, without their article); %2$@ and %5$@ are how far into the file each starts, spoken times; %3$@ is the file's name."),
+                Self.mismatchAdvice,
+            ])
         }
+    }
+}
+
+extension AudioParseError: LogDescribing {
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34). Times are spoken in English
+    /// ("1 hour, 3 minutes") and sections named by their English phrase.
+    var logDescription: String {
+        let advice = "The book's navigation does not match its audio; get a fresh copy and import it again." // l10n: no (debug log)
+        switch self {
+        case .invalidDuration: return "Could not determine audio duration." // l10n: no (debug log)
+        case .noAudioFiles: return "No supported audio files found." // l10n: no (debug log)
+        case .unsupportedFormat: return "Unsupported audio format." // l10n: no (debug log)
+        case .invalidSegment: return "An audio section refers to a missing file or an invalid time range." // l10n: no (debug log)
+        case .unplayableFile(let file, let problem):
+            return problem.logSentence(file: file, container: .audiobook)
+        case .sectionStartsPastEnd(let section, let file, let start, let fileDuration):
+            return "The \(section.logPhrase) starts \(Self.logSpoken(start)) into “\(file)”, " // l10n: no (debug log)
+                + "which is only \(Self.logSpoken(fileDuration)) long. \(advice)" // l10n: no (debug log)
+        case .sectionEndsPastEnd(let section, let file, let end, let fileDuration):
+            return "The \(section.logPhrase) ends \(Self.logSpoken(end)) into “\(file)”, " // l10n: no (debug log)
+                + "which is only \(Self.logSpoken(fileDuration)) long. \(advice)" // l10n: no (debug log)
+        case .sectionStartsBeforeEarlierSection(let section, let file, let start, let earlierSection, let earlierStart):
+            return "The \(section.logPhrase) starts \(Self.logSpoken(start)) into “\(file)”, " // l10n: no (debug log)
+                + "before the earlier \(earlierSection.logPhrase), which starts " // l10n: no (debug log)
+                + "\(Self.logSpoken(earlierStart)) in. \(advice)" // l10n: no (debug log)
+        }
+    }
+
+    /// `seconds` spoken in English for the debug log, as `TimeFormatting.spoken`
+    /// says it in English ("1 hour, 3 minutes, 45 seconds"), whatever language
+    /// the interface speaks.
+    private static func logSpoken(_ seconds: TimeInterval) -> String {
+        guard seconds.isFinite, let total = Int(exactly: max(seconds, 0).rounded(.towardZero)) else {
+            return "an unknown time" // l10n: no (debug log)
+        }
+        // Each unit with its count; zero units are left out, except a lone "0 seconds".
+        let units = [(total / 3600, "hour"), ((total % 3600) / 60, "minute"), (total % 60, "second")] // l10n: no (debug log)
+        var parts = units.filter { $0.0 > 0 }.map { "\($0.0) \($0.1)\($0.0 == 1 ? "" : "s")" } // l10n: no (debug log)
+        if parts.isEmpty { parts = ["0 seconds"] } // l10n: no (debug log)
+        return parts.joined(separator: ", ") // l10n: no (debug log)
     }
 }
 
@@ -759,8 +819,22 @@ struct AudioSectionName: Equatable, Sendable {
     /// `untitled heading 3` for a blank title. A title's line breaks become
     /// spaces, so the message stays one line.
     var phrase: String {
-        let oneLine = title.components(separatedBy: .newlines).joined(separator: " ")
+        guard !oneLineTitle.isEmpty else {
+            return String(localized: "untitled heading \(String(number))",
+                          comment: "How an error names a section of an audiobook whose heading has no title, in a sentence such as \"The untitled heading 3 starts …\". %@ is the heading's place among the book's headings, from 1, an identifier written without digit grouping. A masculine noun phrase in English, without its article, starting with a lowercase letter.")
+        }
+        return String(localized: "heading “\(oneLineTitle)”",
+                      comment: "How an error names a section of an audiobook by its heading's title, in a sentence such as \"The heading “Tide Tables” starts …\". %@ is the title. A masculine noun phrase in English, without its article, starting with a lowercase letter.")
+    }
+
+    /// `phrase` in English for the debug log (FR34).
+    var logPhrase: String {
+        oneLineTitle.isEmpty ? "untitled heading \(number)" : "heading “\(oneLineTitle)”" // l10n: no (debug log)
+    }
+
+    /// The title with its line breaks made spaces and its ends trimmed.
+    private var oneLineTitle: String {
+        title.components(separatedBy: .newlines).joined(separator: " ")
             .trimmingCharacters(in: .whitespaces)
-        return oneLine.isEmpty ? "untitled heading \(number)" : "heading “\(oneLine)”"
     }
 }

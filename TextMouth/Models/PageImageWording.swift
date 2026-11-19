@@ -29,13 +29,13 @@ enum PageImageWording {
         case archive
 
         /// The words that name it in a sentence: "this picture", "this comic
-        /// book archive". English only: `PackageDamage`'s and
-        /// `ExtractionReport`'s English sentences glue it in until the
-        /// parsers' sentences convert; this type's own sentences are whole.
+        /// book archive". English only: `ExtractionReport`'s English
+        /// sentences (a parser's damage reasons) glue it in; this type's own
+        /// sentences are whole.
         var phrase: String {
             switch self {
-            case .picture: return "this picture" // l10n: no (inside PackageDamage's and ExtractionReport's English sentences)
-            case .archive: return "this comic book archive" // l10n: no (inside PackageDamage's and ExtractionReport's English sentences)
+            case .picture: return "this picture" // l10n: no (inside ExtractionReport's English sentences)
+            case .archive: return "this comic book archive" // l10n: no (inside ExtractionReport's English sentences)
             }
         }
 
@@ -231,11 +231,6 @@ enum PageImageWording {
         String(localized: "its file is damaged or incomplete: \(reason)",
                comment: "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is damaged. %@ is the reason, which the archive reader gives in English or `failsChecksum`. Starts with a lowercase letter, with no full stop.")
     }
-
-    /// What a damaged comic book archive's sentence tells the listener to get
-    /// again (`PackageDamage.message`): "Get a fresh copy of the archive, then
-    /// import it again." English only: `PackageDamage` glues it in.
-    static let archiveToGetAgain = "the archive" // l10n: no (inside PackageDamage's English sentences)
 
     // MARK: - Chapter Titles
 

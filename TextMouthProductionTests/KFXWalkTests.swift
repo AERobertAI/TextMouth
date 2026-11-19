@@ -283,7 +283,7 @@ final class KFXWalkTests: XCTestCase {
     // MARK: - Books it refuses
 
     func testABookWithNoFlowingTextIsRefusedBeforeItsTextIsWalked() throws {
-        let sentence = "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
+        let sentence = "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it."
         for (key, value): (String, IonOut) in [
             ("yj_fixed_layout", .int(1)), ("yj_fixed_layout", .int(2)), ("yj_fixed_layout", .int(3)),
             ("yj_textbook", .bool(true)), ("yj_publisher_panels", .int(1)), ("yj_facing_page", .int(1)),

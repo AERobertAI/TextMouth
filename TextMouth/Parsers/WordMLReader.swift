@@ -420,7 +420,7 @@ final class WordMLSectionScanner: OfficeXMLReader {
     /// - Throws: whatever reading the document throws.
     static func scan(_ data: Data) throws -> [Bool] {
         let scanner = WordMLSectionScanner(
-            data: data, file: "the document", format: .wordml, usualPrefixes: WordMLReader.usualPrefixes
+            data: data, file: "the document", format: .wordml, usualPrefixes: WordMLReader.usualPrefixes // l10n: no (a parser's damage reason)
         )
         try scanner.read()
         return scanner.startsPage

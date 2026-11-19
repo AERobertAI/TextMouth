@@ -161,7 +161,7 @@ struct PronunciationLexicon: Equatable {
     /// The lexicon's XML, as UTF-8 bytes, with `language` as its
     /// `xml:lang`, which PLS requires.
     func xmlData(language: String = "en") -> Data {
-        var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" // l10n: no (generated markup, not interface text)
         xml += "<lexicon version=\"1.0\" xmlns=\"http://www.w3.org/2005/01/pronunciation-lexicon\" "
         xml += "alphabet=\"ipa\" xml:lang=\"\(Self.escaped(language))\">\n"
         for lexeme in lexemes {

@@ -129,7 +129,7 @@ struct MOBIPalmDatabase {
 
     /// The type and creator of a MOBI book, and of a plain PalmDOC book.
     static let mobiSignature = (type: "BOOK", creator: "MOBI")
-    static let palmDocSignature = (type: "TEXt", creator: "REAd")
+    static let palmDocSignature = (type: "TEXt", creator: "REAd") // l10n: no (a file-format signature or a parser's damage reason)
 
     /// The size of the header before the record table.
     private static let headerSize = 78
@@ -186,7 +186,7 @@ struct MOBIPalmDatabase {
         }
         starts.append(file.count)
         records = try (0..<recordCount).map {
-            try file.window(starts[$0], starts[$0 + 1] - starts[$0], "Record \($0)")
+            try file.window(starts[$0], starts[$0 + 1] - starts[$0], "Record \($0)") // l10n: no (a file-format signature or a parser's damage reason)
         }
     }
 

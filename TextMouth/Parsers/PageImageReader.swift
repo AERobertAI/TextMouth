@@ -106,7 +106,7 @@ enum PageImageReader {
 
     /// What text recognition says when there is no recognizer to ask, as a
     /// PDF's reading says it.
-    static let recognitionNotAvailable = "text recognition is not available"
+    static let recognitionNotAvailable = "text recognition is not available" // l10n: no (a parser's damage reason: finishes a page's reason, inside the pages' translated warning)
 
     // MARK: - Reading the Pages
 
@@ -207,7 +207,7 @@ enum PageImageReader {
         } catch PDFTextRecognitionError.failed(let reason) {
             return .recognitionFailed(reason)
         } catch {
-            return .recognitionFailed("text recognition failed: \(error.localizedDescription)")
+            return .recognitionFailed("text recognition failed: \(error.localizedDescription)") // l10n: no (a parser's damage reason: finishes a page's reason, inside the pages' translated warning)
         }
     }
 

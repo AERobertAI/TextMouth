@@ -48,7 +48,7 @@ enum XMLInputGuard {
     /// What a part with a tag of more attributes is refused for, as the
     /// reason that completes "The file is damaged or incomplete: …"
     /// (`PackageDamage.message`).
-    static let tooManyAttributesProblem = "it has a tag with too many attributes for TextMouth to read safely"
+    static let tooManyAttributesProblem = "it has a tag with too many attributes for TextMouth to read safely" // l10n: no (a parser's damage reason)
 
     /// What a part is refused for.
     enum Problem: Equatable, Sendable {
@@ -68,19 +68,67 @@ enum XMLInputGuard {
     /// (`tooManyAttributesProblem`).
     /// - Parameters:
     ///   - file: The part's path inside the package.
-    ///   - container: What holds it, as the format's sentences say ("this
-    ///     document", "this EPUB book", "this DAISY book").
-    ///   - original: What the person opens again ("the document", "the book").
-    static func refusalSentence(for problem: Problem, file: String, in container: String, original: String) -> String? {
+    ///   - container: What holds it: a document, an EPUB book, or a DAISY
+    ///     book. Any other container is worded as a document.
+    static func refusalSentence(for problem: Problem, file: String, in container: PackageDamage.Container) -> String? {
         switch problem {
         case .tooManyAttributes:
             return nil
         case .ownDefinitions:
-            return "TextMouth can't safely read the file \u{201C}\(file)\u{201D} in \(container), because it defines entities "
-                + "of its own. Open \(original) in the program that made it, save it again, then import it again."
+            return SentenceWording.joined([
+                firstSentence(ofRefusalFor: problem, file: file, in: container),
+                isBook(container)
+                    ? String(localized: "Open the book in the program that made it, save it again, then import it again.",
+                             comment: "Last sentence of why a file inside an EPUB or DAISY book was refused because it defines entities of its own: what to do.")
+                    : String(localized: "Open the document in the program that made it, save it again, then import it again.",
+                             comment: "Last sentence of why a file inside a Word or OpenDocument document was refused because it defines entities of its own: what to do."),
+            ])
+        case .encoding:
+            return SentenceWording.joined([
+                firstSentence(ofRefusalFor: problem, file: file, in: container),
+                String(localized: "Save it as UTF-8, then import it again.",
+                       comment: "Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is."),
+            ])
+        }
+    }
+
+    /// The first sentence of the refusal of a part for `problem` (never
+    /// `tooManyAttributes`), one whole sentence for each kind of container.
+    private static func firstSentence(ofRefusalFor problem: Problem, file: String, in container: PackageDamage.Container) -> String {
+        switch (problem, isBook(container)) {
+        case (.encoding(let name), true):
+            return String(localized: "TextMouth can't safely read the file “\(file)” in this book, because it is written in the \(name) encoding.",
+                          comment: "First sentence of why a file inside an EPUB or DAISY book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.")
+        case (.encoding(let name), false):
+            return String(localized: "TextMouth can't safely read the file “\(file)” in this document, because it is written in the \(name) encoding.",
+                          comment: "First sentence of why a file inside a Word or OpenDocument document was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the document and %2$@ the encoding's name as the file declares it.")
+        case (_, true):
+            return String(localized: "TextMouth can't safely read the file “\(file)” in this book, because it defines entities of its own.",
+                          comment: "First sentence of why a file inside an EPUB or DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book.")
+        case (_, false):
+            return String(localized: "TextMouth can't safely read the file “\(file)” in this document, because it defines entities of its own.",
+                          comment: "First sentence of why a file inside a Word or OpenDocument document was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the document.")
+        }
+    }
+
+    /// Whether `container` is a book (EPUB or DAISY) rather than a document:
+    /// the refusals word the two apart, and any other container as a document.
+    private static func isBook(_ container: PackageDamage.Container) -> Bool {
+        container == .epubBook || container == .daisyBook || container == .audiobook
+    }
+
+    /// `refusalSentence` in English for the debug log, which stays English
+    /// whatever language the interface speaks (FR34).
+    static func logRefusalSentence(for problem: Problem, file: String, in container: PackageDamage.Container) -> String? {
+        switch problem {
+        case .tooManyAttributes:
+            return nil
+        case .ownDefinitions:
+            return "TextMouth can't safely read the file “\(file)” in \(container.logName), because it defines entities " // l10n: no (debug log)
+                + "of its own. Open \(container.logOriginal) in the program that made it, save it again, then import it again." // l10n: no (debug log)
         case .encoding(let name):
-            return "TextMouth can't safely read the file \u{201C}\(file)\u{201D} in \(container), because it is written in the "
-                + "\(name) encoding. Save it as UTF-8, then import it again."
+            return "TextMouth can't safely read the file “\(file)” in \(container.logName), because it is written in the " // l10n: no (debug log)
+                + "\(name) encoding. Save it as UTF-8, then import it again." // l10n: no (debug log)
         }
     }
 
@@ -495,9 +543,9 @@ enum XMLInputGuard {
         case .tooManyAttributes:
             return tooManyAttributesProblem
         case .ownDefinitions:
-            return "it defines entities of its own, which TextMouth cannot read safely"
+            return "it defines entities of its own, which TextMouth cannot read safely" // l10n: no (a parser's damage reason)
         case .encoding(let name):
-            return "it is written in the \(name) encoding, which TextMouth cannot read safely"
+            return "it is written in the \(name) encoding, which TextMouth cannot read safely" // l10n: no (a parser's damage reason)
         }
     }
 

@@ -46,7 +46,7 @@ enum TextutilSourceCheck {
     static func beginsAsHTML(_ url: URL) -> Bool {
         guard let head = leadingBytes(of: url, count: htmlSniffLength) else { return false }
         let content = head.dropFirst(firstContentIndex(in: head))
-        return ["<!doctype html", "<html"].contains { beginsWith($0, content) }
+        return ["<!doctype html", "<html"].contains { beginsWith($0, content) } // l10n: no (a file signature, not interface text)
     }
 
     /// Whether `bytes` begin with the ASCII `tag`, compared without regard
@@ -252,8 +252,18 @@ private final class EncryptionDataFinder: NSObject, XMLParserDelegate {
 /// A document protected by a password, which `textutil` would fail on as on
 /// a damaged one. Its sentence tells the listener what to do; it never
 /// names the file, which the import's failure does (`ImportFailure`).
-struct PasswordProtectedDocument: LocalizedError, Equatable {
+struct PasswordProtectedDocument: LocalizedError, LogDescribing, Equatable {
     var errorDescription: String? {
-        "This document is protected by a password. Save a copy without the password, then import that copy."
+        SentenceWording.joined([
+            String(localized: "This document is protected by a password.",
+                   comment: "First sentence of why a document could not be imported: it is locked with a password TextMouth does not have."),
+            String(localized: "Save a copy without the password, then import that copy.",
+                   comment: "Last sentence of why a password-protected document could not be imported: what to do."),
+        ])
+    }
+
+    /// The failure in English for the debug log (FR34).
+    var logDescription: String {
+        "This document is protected by a password. Save a copy without the password, then import that copy." // l10n: no (debug log)
     }
 }

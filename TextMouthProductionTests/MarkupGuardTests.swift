@@ -685,7 +685,7 @@ final class MarkupGuardTests: XCTestCase {
         )
         XCTAssertEqual(
             MarkupRefusal.tooMuchMarkup.errorDescription,
-            "One document in this file holds too much markup for TextMouth to read without running out of memory. "
+            "One document in this file has too much markup for TextMouth to read in memory. "
                 + "Divide the document into smaller files, then import them."
         )
         XCTAssertEqual(
@@ -695,7 +695,7 @@ final class MarkupGuardTests: XCTestCase {
         )
         XCTAssertEqual(
             MarkupRefusal.tooMuchWork.errorDescription,
-            "This file's markup is built in a way that would take TextMouth far too long to read. "
+            "This file's markup would take TextMouth far too long to read. "
                 + "Get another copy of the file, or save it in another format, then import it again."
         )
     }

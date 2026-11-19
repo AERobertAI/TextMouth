@@ -16,7 +16,7 @@ enum SSMLReader {
     // MARK: Failures
 
     /// Why an SSML file could not be read.
-    enum Failure: LocalizedError, Equatable {
+    enum Failure: LocalizedError, LogDescribing, Equatable {
         /// The file is XML but its root element is not `speak`; the name
         /// is the element's local name, without any prefix.
         case notSSML(rootElement: String)
@@ -31,15 +31,42 @@ enum SSMLReader {
         var errorDescription: String? {
             switch self {
             case .notSSML(let rootElement):
-                return "This file is not SSML: it begins with the element “\(rootElement)”, not “speak”."
+                return String(localized: "This file is not SSML: it begins with the element “\(rootElement)”, not “speak”.",
+                              comment: "Why a file could not be imported as SSML (Speech Synthesis Markup Language): its first element is not speak. %@ is the name of the first element it has. SSML is a format's name.")
             case .damaged(let reason):
-                return "This SSML file is damaged or incomplete: \(reason)."
+                return String(localized: "This SSML file is damaged or incomplete: \(reason).",
+                              comment: "Why an SSML (Speech Synthesis Markup Language) file could not be imported: it is damaged. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
             case .unsafe(.encoding(let name)):
-                return "TextMouth can't safely read this SSML file, because it is written in the \(name) encoding. "
-                    + "Save it as UTF-8, then import it again."
+                return SentenceWording.joined([
+                    String(localized: "TextMouth can't safely read this SSML file, because it is written in the \(name) encoding.",
+                           comment: "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it is in a text encoding TextMouth cannot see through. %@ is the encoding's name as the file declares it."),
+                    String(localized: "Save it as UTF-8, then import it again.",
+                           comment: "Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is."),
+                ])
             case .unsafe:
-                return "TextMouth can't safely read this SSML file, because it defines entities of its own. "
-                    + "Open it in a text editor, take the entity definitions out, save it, then import it again."
+                return SentenceWording.joined([
+                    String(localized: "TextMouth can't safely read this SSML file, because it defines entities of its own.",
+                           comment: "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it defines XML entities of its own, which could make it far larger when read."),
+                    String(localized: "Open it in a text editor, take the entity definitions out, save it, then import it again.",
+                           comment: "Last sentence of why an SSML file was refused because it defines entities of its own: what to do."),
+                ])
+            }
+        }
+
+        /// The failure in English for the debug log, which stays English
+        /// whatever language the interface speaks (FR34).
+        var logDescription: String {
+            switch self {
+            case .notSSML(let rootElement):
+                return "This file is not SSML: it begins with the element “\(rootElement)”, not “speak”." // l10n: no (debug log)
+            case .damaged(let reason):
+                return "This SSML file is damaged or incomplete: \(reason)." // l10n: no (debug log)
+            case .unsafe(.encoding(let name)):
+                return "TextMouth can't safely read this SSML file, because it is written in the \(name) encoding. " // l10n: no (debug log)
+                    + "Save it as UTF-8, then import it again." // l10n: no (debug log)
+            case .unsafe:
+                return "TextMouth can't safely read this SSML file, because it defines entities of its own. " // l10n: no (debug log)
+                    + "Open it in a text editor, take the entity definitions out, save it, then import it again." // l10n: no (debug log)
             }
         }
     }

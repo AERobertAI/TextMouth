@@ -565,14 +565,18 @@ enum MarkdownCacheService {
 
     /// A book whose extraction left chapters out, described for the log line
     /// that `PackageDamage.log` writes: the book's title, then the report.
-    private struct IncompleteContent: LocalizedError {
+    private struct IncompleteContent: LocalizedError, LogDescribing {
         var title: String
         var report: ExtractionReport
 
         /// A line break in the title (or in a file name) becomes a space,
         /// so the entry stays on the one line that readers of the log expect.
-        var errorDescription: String? {
-            "\(title): \(report.message)".components(separatedBy: .newlines).joined(separator: " ")
+        /// The report is in English, since only the debug log reads it (FR34).
+        var errorDescription: String? { logDescription }
+
+        /// The log's line: the book's title, then the report in English.
+        var logDescription: String {
+            "\(title): \(report.logMessage)".components(separatedBy: .newlines).joined(separator: " ") // l10n: no (debug log)
         }
     }
 

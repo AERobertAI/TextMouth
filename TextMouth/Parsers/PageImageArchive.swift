@@ -192,7 +192,7 @@ struct PageImageComicInfo: Equatable {
         var bookmark: String?
 
         /// The value a picture's Type has when the file gives none.
-        static let defaultType = "Story"
+        static let defaultType = "Story" // l10n: no (a ComicInfo.xml name, not interface text)
 
         /// The values of the picture's Type, in the order written; the
         /// schema's default, "Story", when it lists none.
@@ -288,7 +288,7 @@ private final class ComicInfoParser: PackageSAXParser {
     private var text = ""
 
     /// The elements under the root whose text is read.
-    private static let names: Set<String> = ["Title", "Series", "Number", "Writer"]
+    private static let names: Set<String> = ["Title", "Series", "Number", "Writer"] // l10n: no (a ComicInfo.xml name, not interface text)
 
     init(data: Data) {
         super.init(
@@ -305,12 +305,12 @@ private final class ComicInfoParser: PackageSAXParser {
         path.append(ParserUtilities.stripNamespacePrefix(elementName))
         text = ""
         // A picture's entry: <ComicInfo><Pages><Page Image="0" Type="…" Bookmark="…"/>.
-        guard path == ["ComicInfo", "Pages", "Page"],
-              let image = attributeDict["Image"].flatMap({ Int($0.trimmingCharacters(in: .whitespaces)) }),
+        guard path == ["ComicInfo", "Pages", "Page"], // l10n: no (a ComicInfo.xml name, not interface text)
+              let image = attributeDict["Image"].flatMap({ Int($0.trimmingCharacters(in: .whitespaces)) }), // l10n: no (a ComicInfo.xml name, not interface text)
               image >= 0, info.pages[image] == nil else { return }
         info.pages[image] = PageImageComicInfo.Page(
             type: attributeDict["Type"].flatMap(PageImageComicInfo.cleaned),
-            bookmark: attributeDict["Bookmark"]
+            bookmark: attributeDict["Bookmark"] // l10n: no (a ComicInfo.xml name, not interface text)
         )
     }
 
@@ -335,10 +335,10 @@ private final class ComicInfoParser: PackageSAXParser {
         if path.count == 2, path[0] == "ComicInfo" {
             let value = PageImageComicInfo.cleaned(text)
             switch path[1] {
-            case "Title": info.title = info.title ?? value
-            case "Series": info.series = info.series ?? value
-            case "Number": info.number = info.number ?? value
-            case "Writer": info.writer = info.writer ?? value
+            case "Title": info.title = info.title ?? value // l10n: no (a ComicInfo.xml name, not interface text)
+            case "Series": info.series = info.series ?? value // l10n: no (a ComicInfo.xml name, not interface text)
+            case "Number": info.number = info.number ?? value // l10n: no (a ComicInfo.xml name, not interface text)
+            case "Writer": info.writer = info.writer ?? value // l10n: no (a ComicInfo.xml name, not interface text)
             default: break
             }
         }

@@ -5,7 +5,7 @@ import SwiftSoup
 // MARK: - Error Types
 
 /// Errors that can occur when parsing a DAISY book
-enum DAISYParserError: LocalizedError {
+enum DAISYParserError: LocalizedError, LogDescribing {
     case fileNotFound(String)
     case invalidArchive
     case notDAISYBook
@@ -24,15 +24,41 @@ enum DAISYParserError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .fileNotFound(let path): return "DAISY file not found at: \(path)"
-        case .invalidArchive: return "The DAISY file could not be opened as a ZIP archive."
-        case .notDAISYBook: return "Not a valid DAISY book (no OPF or ncc.html found)."
-        case .missingContent(let msg): return "Missing DAISY content: \(msg)"
-        case .parseError(let msg): return "DAISY parse error: \(msg)"
+        case .fileNotFound(let path):
+            return String(localized: "DAISY file not found at: \(path)",
+                          comment: "Why a DAISY book could not be imported: there is no file at its path. %@ is the path.")
+        case .invalidArchive:
+            return String(localized: "The DAISY file could not be opened as a ZIP archive.",
+                          comment: "Why a DAISY book could not be imported: it could not be opened as a ZIP archive.")
+        case .notDAISYBook:
+            return String(localized: "Not a valid DAISY book (no OPF or ncc.html found).",
+                          comment: "Why a file could not be imported as a DAISY book: it holds neither a package file (.opf) nor a navigation file (ncc.html). OPF and ncc.html are file names and stay as they are.")
+        case .missingContent(let msg):
+            return String(localized: "Missing DAISY content: \(msg)",
+                          comment: "Why a DAISY book could not be imported: a part it needs is missing. %@ is what is missing, a phrase in English.")
+        case .parseError(let msg):
+            return String(localized: "DAISY parse error: \(msg)",
+                          comment: "Why a DAISY book could not be imported: a file inside it could not be read. %@ is the reason, a phrase in English.")
         case .malformedXML(let file, let reason):
-            return PackageDamage.message(file: file, reason: reason, container: "this DAISY book", original: "the book")
+            return PackageDamage.message(file: file, reason: reason, container: .daisyBook)
         case .unsafeXML(let file, let problem):
-            return XMLInputGuard.refusalSentence(for: problem, file: file, in: "this DAISY book", original: "the book")
+            return XMLInputGuard.refusalSentence(for: problem, file: file, in: .daisyBook)
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .fileNotFound(let path): return "DAISY file not found at: \(path)" // l10n: no (debug log)
+        case .invalidArchive: return "The DAISY file could not be opened as a ZIP archive." // l10n: no (debug log)
+        case .notDAISYBook: return "Not a valid DAISY book (no OPF or ncc.html found)." // l10n: no (debug log)
+        case .missingContent(let msg): return "Missing DAISY content: \(msg)" // l10n: no (debug log)
+        case .parseError(let msg): return "DAISY parse error: \(msg)" // l10n: no (debug log)
+        case .malformedXML(let file, let reason):
+            return PackageDamage.logMessage(file: file, reason: reason, container: .daisyBook)
+        case .unsafeXML(let file, let problem):
+            return XMLInputGuard.logRefusalSentence(for: problem, file: file, in: .daisyBook) ?? ""
         }
     }
 }

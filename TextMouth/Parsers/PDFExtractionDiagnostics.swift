@@ -103,49 +103,74 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
 
     /// One sentence for a reader to hear when text may be missing: how many
     /// pages OCR could not run on, then those pages and why, for example:
-    /// "OCR could not run on 2 of 12 pages, so text that appears only in
+    /// "OCR could not run on 2 of 12 pages, so text found only in
     /// their images is missing: pages 3 and 7 (text recognition is not
     /// available)." Nil when the PDF was read in full. A book of pictures,
     /// whose every word is pictured, says it without the clause about text
     /// in images: "Text recognition could not read 1 of 3 pages: page 2
     /// (its picture could not be decoded)." (`PageImageWording.pagesNotRead`).
+    /// Each case is a whole sentence of its own (FR34): "its" or "their"
+    /// agrees with how many pages it names, and a page's reason inside the
+    /// parentheses is a parser's English.
     var problem: String? {
         let failed = pagesWhereOCRCouldNotRun
         guard !failed.isEmpty else { return nil }
         if medium == .pictures {
             return PageImageWording.pagesNotRead(failed.count, of: pages.count, pages: failureGroups)
         }
-        let pronoun = failed.count == 1 ? "its" : "their"
-        return "\(failureCount(failed.count)), so text that appears only in \(pronoun) images is missing: "
-            + "\(failureGroups)."
+        let total = pages.count
+        let groups = failureGroups
+        if failed.count == total {
+            // Every page, which for one page is "the PDF's only page".
+            return total == 1
+                ? String(localized: "OCR could not run on the PDF's only page, so text found only in its images is missing: \(groups).",
+                         comment: "Warning after an import of a PDF whose only page needed text recognition (OCR) where it could not run. %@ is the page and why, such as \"page 1 (text recognition is not available)\", the reason in English.")
+                : String(localized: "OCR could not run on all \(total) pages, so text found only in their images is missing: \(groups).",
+                         comment: "Warning after an import of a PDF whose every page needed text recognition (OCR) where it could not run. %lld is how many pages the PDF has, two or more. %@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.")
+        }
+        return String(localized: "OCR could not run on \(failed.count.formatted()) of \(total) pages, so text found only in their images is missing: \(groups).",
+                      comment: "Warning after an import of a PDF where some pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, one or more, written with digit grouping; %2$lld is how many pages the PDF has, two or more; %3$@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.")
     }
 
-    /// Every diagnostic in sentences, for the Library to show: how many
-    /// pages had each source of text, where OCR found nothing, and where it
-    /// could not run and why. For example: "Of 12 pages, 9 have embedded
-    /// text only, 2 have OCR text only, and 1 has both embedded and OCR
-    /// text. OCR found no text on page 4."
+    /// `problem` in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logProblem: String? {
+        let failed = pagesWhereOCRCouldNotRun
+        guard !failed.isEmpty else { return nil }
+        let groups = logFailureGroups
+        if medium == .pictures {
+            return "Text recognition could not read \(failed.count) of \(pages.count) pages: \(groups)." // l10n: no (debug log)
+        }
+        let count = failed.count == pages.count
+            ? (pages.count == 1 ? "the PDF's only page" : "all \(pages.count) pages") // l10n: no (debug log)
+            : "\(failed.count) of \(pages.count) pages" // l10n: no (debug log)
+        return "OCR could not run on \(count), so text found only in \(failed.count == 1 ? "its" : "their") images is missing: \(groups)." // l10n: no (debug log)
+    }
+
+    /// Every diagnostic in sentences: how many pages had each source of text,
+    /// where OCR found nothing, and where it could not run and why. For
+    /// example: "Of 12 pages, 9 have embedded text only, 2 have OCR text
+    /// only, and 1 has both embedded and OCR text. OCR found no text on page
+    /// 4." No screen shows it yet, so it stays English.
     var summary: String {
         var sentences = [sourceSentence]
         let empty = pagesWhereOCRFoundNothing
         if !empty.isEmpty {
-            sentences.append("OCR found no text on \(Self.pagePhrase(empty)).")
+            sentences.append("OCR found no text on \(Self.pagePhrase(empty)).") // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
         }
         if !pagesWhereOCRCouldNotRun.isEmpty {
-            sentences.append("OCR could not run on \(failureGroups).")
+            sentences.append("OCR could not run on \(failureGroups).") // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
         }
         return sentences.joined(separator: " ")
     }
 
-    /// "page 3", "pages 3 and 7", or "pages 1 to 4, 7, and 9": the pages,
-    /// in order and without repeats, with each run of three or more
-    /// consecutive pages said as a range, or "no pages" when there are
-    /// none. Ranges use "to" rather than a dash, which speech may read as
-    /// "minus".
-    static func pagePhrase(_ pageNumbers: [Int]) -> String {
+    /// The pages, in order and without repeats, as runs: a page alone, or the
+    /// first and last of three or more consecutive pages, which are said as
+    /// a range ("1 to 4"). Ranges use "to" rather than a dash, which speech
+    /// may read as "minus".
+    private static func pageRuns(of pageNumbers: [Int]) -> [(first: Int, last: Int?)] {
         let numbers = Array(Set(pageNumbers)).sortedStably()
-        guard !numbers.isEmpty else { return "no pages" }
-        var items: [String] = []
+        var runs: [(first: Int, last: Int?)] = []
         var start = 0
         while start < numbers.count {
             // Extend the run while each page follows the one before it.
@@ -154,14 +179,54 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
                 end += 1
             }
             if end - start >= 2 {
-                items.append("\(numbers[start]) to \(numbers[end])")
+                runs.append((numbers[start], numbers[end]))
                 start = end + 1
             } else {
-                items.append("\(numbers[start])")
+                runs.append((numbers[start], nil))
                 start += 1
             }
         }
-        return "\(numbers.count == 1 ? "page" : "pages") \(CountWording.list(items))"
+        return runs
+    }
+
+    /// "page 3", "pages 3 and 7", or "pages 1 to 4, 7, and 9": the pages,
+    /// in order and without repeats, with each run of three or more
+    /// consecutive pages said as a range, or "no pages" when there are
+    /// none. Page numbers are identifiers, written without digit grouping.
+    static func pagePhrase(_ pageNumbers: [Int]) -> String {
+        let runs = pageRuns(of: pageNumbers)
+        guard !runs.isEmpty else {
+            return String(localized: "no pages",
+                          comment: "Names an empty set of a PDF's pages, in a sentence about which pages were read.")
+        }
+        var items: [String] = []
+        for run in runs {
+            if let last = run.last {
+                items.append(String(localized: "\(String(run.first)) to \(String(last))",
+                                    comment: "A range of three or more consecutive pages of a PDF, in a list of pages. %1$@ is the first page and %2$@ the last, identifiers written without digit grouping."))
+            } else {
+                items.append(String(run.first))
+            }
+        }
+        let list = CountWording.list(items)
+        // Every page of the runs counts, so "pages 1 to 4" is plural.
+        let single = runs.count == 1 && runs[0].last == nil
+        return single
+            ? String(localized: "page \(list)",
+                     comment: "Names one page of a PDF, in a sentence about which pages were read. %@ is the page's number, an identifier written without digit grouping.")
+            : String(localized: "pages \(list)",
+                     comment: "Names several pages of a PDF, in a sentence about which pages were read. %@ is a list of page numbers and ranges, such as \"3 and 7\" or \"1 to 4, 7, and 9\".")
+    }
+
+    /// `pagePhrase` in English for the debug log (FR34).
+    static func logPagePhrase(_ pageNumbers: [Int]) -> String {
+        let runs = pageRuns(of: pageNumbers)
+        guard !runs.isEmpty else { return "no pages" } // l10n: no (debug log)
+        let items = runs.map { run in
+            run.last.map { "\(run.first) to \($0)" } ?? "\(run.first)" // l10n: no (debug log)
+        }
+        let list = CountWording.list(items, locale: Locale(identifier: "en_US"))
+        return "\(runs.count == 1 && runs[0].last == nil ? "page" : "pages") \(list)" // l10n: no (debug log)
     }
 
     // MARK: Sentence Parts
@@ -172,36 +237,26 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
     /// only."), and a one-page PDF says "Its only page has ….".
     private var sourceSentence: String {
         let total = pages.count
-        guard total > 0 else { return "The PDF has no pages." }
+        guard total > 0 else { return "The PDF has no pages." } // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
         let counts: [(count: Int, description: String)] = [
-            (pagesWithEmbeddedTextOnly.count, "embedded text only"),
-            (pagesWithOCRTextOnly.count, "OCR text only"),
-            (pagesWithEmbeddedAndOCRText.count, "both embedded and OCR text"),
-            (pagesWithoutText.count, "no text")
+            (pagesWithEmbeddedTextOnly.count, "embedded text only"), // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
+            (pagesWithOCRTextOnly.count, "OCR text only"), // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
+            (pagesWithEmbeddedAndOCRText.count, "both embedded and OCR text"), // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
+            (pagesWithoutText.count, "no text") // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
         ].filter { $0.count > 0 }
 
         if counts.count == 1, let only = counts.first {
             return total == 1
-                ? "Its only page has \(only.description)."
-                : "All \(total) pages have \(only.description)."
+                ? "Its only page has \(only.description)." // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
+                : "All \(total) pages have \(only.description)." // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
         }
-        let parts = counts.map { "\($0.count) \($0.count == 1 ? "has" : "have") \($0.description)" }
-        return "Of \(total) pages, \(CountWording.list(parts))."
-    }
-
-    /// "OCR could not run on 2 of 12 pages", or, when it could not run on
-    /// any of them, "… on all 12 pages" or "… on the PDF's only page".
-    private func failureCount(_ failed: Int) -> String {
-        let total = pages.count
-        if failed == total {
-            return total == 1 ? "OCR could not run on the PDF's only page" : "OCR could not run on all \(total) pages"
-        }
-        return "OCR could not run on \(failed) of \(total) pages"
+        let parts = counts.map { "\($0.count) \($0.count == 1 ? "has" : "have") \($0.description)" } // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
+        return "Of \(total) pages, \(CountWording.list(parts, locale: Locale(identifier: "en_US")))." // l10n: no (not shown: no screen reads `summary` yet; English like a parser's report)
     }
 
     /// The pages OCR could not run on, grouped by reason in the order each
-    /// reason first appears: "pages 3 and 7 (reason); page 9 (other reason)".
-    private var failureGroups: String {
+    /// reason first appears.
+    private var pagesGroupedByReason: [(reason: String, pages: [Int])] {
         var reasons: [String] = []
         var pagesByReason: [String: [Int]] = [:]
         for page in pages {
@@ -209,9 +264,31 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
             if pagesByReason[reason] == nil { reasons.append(reason) }
             pagesByReason[reason, default: []].append(page.pageNumber)
         }
-        return reasons
-            .map { "\(Self.pagePhrase(pagesByReason[$0] ?? [])) (\($0))" }
-            .joined(separator: "; ")
+        return reasons.map { (reason: $0, pages: pagesByReason[$0] ?? []) }
+    }
+
+    /// The pages OCR could not run on, grouped by reason in the order each
+    /// reason first appears: "pages 3 and 7 (reason); page 9 (other reason)".
+    /// The reasons are a parser's English.
+    private var failureGroups: String {
+        var text = ""
+        for (index, group) in pagesGroupedByReason.enumerated() {
+            let item = String(localized: "\(Self.pagePhrase(group.pages)) (\(group.reason))",
+                              comment: "One group of a PDF's pages that text recognition (OCR) could not run on, with the reason. %1$@ is the pages, such as \"pages 3 and 7\", and %2$@ the reason, a phrase in English.")
+            // Groups are told one after another, separated by a semicolon.
+            if index == 0 {
+                text = item
+            } else {
+                text = String(localized: "\(text); \(item)",
+                              comment: "Joins two groups of a PDF's pages that text recognition (OCR) could not run on, each with its reason: the pages and reason, a semicolon, then the next.")
+            }
+        }
+        return text
+    }
+
+    /// `failureGroups` in English for the debug log (FR34).
+    private var logFailureGroups: String {
+        pagesGroupedByReason.map { "\(Self.logPagePhrase($0.pages)) (\($0.reason))" }.joined(separator: "; ") // l10n: no (debug log)
     }
 
     /// The page numbers of the pages that satisfy `condition`, in order.

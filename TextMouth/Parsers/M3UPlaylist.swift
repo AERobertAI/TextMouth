@@ -1,7 +1,7 @@
 import Foundation
 
 /// What can go wrong reading a playlist file, in words a listener hears.
-enum M3UPlaylistError: LocalizedError, Equatable {
+enum M3UPlaylistError: LocalizedError, LogDescribing, Equatable {
     /// The playlist file is larger than `M3UPlaylist.maximumByteCount`.
     case tooLarge(fileName: String)
     /// An XSPF playlist that is not XML, is cut off, or is some other XML
@@ -18,13 +18,26 @@ enum M3UPlaylistError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .tooLarge(fileName):
-            return "The playlist “\(fileName)” is too large to read."
+            return String(localized: "The playlist “\(fileName)” is too large to read.",
+                          comment: "Why a playlist file could not be imported: it is larger than the most TextMouth reads. %@ is the playlist's file name.")
         case let .notReadable(fileName):
             return PlaylistImportWording.notReadable(fileName: fileName)
         case let .declaresEntities(fileName):
             return PlaylistImportWording.declaresEntities(fileName: fileName)
         case let .pronunciationLexicon(fileName):
             return PlaylistImportWording.pronunciationLexicon(fileName: fileName)
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34). The playlist's wording sentences
+    /// are the interface's, so a log names the problem and the file only.
+    var logDescription: String {
+        switch self {
+        case let .tooLarge(fileName): return "The playlist “\(fileName)” is too large to read." // l10n: no (debug log)
+        case let .notReadable(fileName): return "The playlist “\(fileName)” is not readable as a playlist." // l10n: no (debug log)
+        case let .declaresEntities(fileName): return "The playlist “\(fileName)” declares XML entities of its own." // l10n: no (debug log)
+        case let .pronunciationLexicon(fileName): return "The file “\(fileName)” is a pronunciation lexicon, not a PLS playlist." // l10n: no (debug log)
         }
     }
 }
@@ -228,14 +241,14 @@ extension M3UPlaylist {
         /// outside that list's own.
         func words(listedIn kind: String) -> String {
             switch self {
-            case .webAddress: return "a web address"
-            case .outsideFolder: return "outside the \(kind)'s folder"
-            case .missing: return "not found"
-            case .folder: return "a folder"
-            case .notAudio: return "not an audio file"
-            case .hidden: return "hidden"
-            case .notOrdinaryFile: return "not an ordinary file"
-            case .listedBefore: return "listed before"
+            case .webAddress: return "a web address" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .outsideFolder: return "outside the \(kind)'s folder" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .missing: return "not found" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .folder: return "a folder" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .notAudio: return "not an audio file" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .hidden: return "hidden" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .notOrdinaryFile: return "not an ordinary file" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .listedBefore: return "listed before" // l10n: no (a parser's damage reason: a skipped entry's reason)
             }
         }
     }

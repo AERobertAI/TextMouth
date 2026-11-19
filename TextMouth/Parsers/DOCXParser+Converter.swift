@@ -683,13 +683,13 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         switch localName {
         case "AlternateContent":
             alternateContentChoiceTaken.append(false)
-        case "Choice" where parent == "AlternateContent":
+        case "Choice" where parent == "AlternateContent": // l10n: no (an XML element name, not interface text)
             // The first choice whose every required prefix the reader
             // understands is read; any other choice is passed over, so the next
             // one, or at last the fallback, can be read instead.
-            if alternateContentChoiceTaken.last == true || !understands(requires: attributes["Requires"]) { return .skip }
+            if alternateContentChoiceTaken.last == true || !understands(requires: attributes["Requires"]) { return .skip } // l10n: no (an XML element name, not interface text)
             if !alternateContentChoiceTaken.isEmpty { alternateContentChoiceTaken[alternateContentChoiceTaken.count - 1] = true }
-        case "Fallback" where parent == "AlternateContent":
+        case "Fallback" where parent == "AlternateContent": // l10n: no (an XML element name, not interface text)
             if alternateContentChoiceTaken.last == true { return .skip }
         case "footnote", "endnote":
             guard readsNotes else { break }

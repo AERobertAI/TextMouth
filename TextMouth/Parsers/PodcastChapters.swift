@@ -250,13 +250,13 @@ enum PodcastChaptersError: Error, Equatable, CustomStringConvertible {
     var description: String {
         switch self {
         case .notChapters:
-            return "not a chapters file"
+            return "not a chapters file" // l10n: no (a parser's damage reason)
         case .unsupportedVersion(let version):
-            return "version \(version) is not one TextMouth reads"
+            return "version \(version) is not one TextMouth reads" // l10n: no (a parser's damage reason)
         case .noChapters:
-            return "it lists no chapter TextMouth can use"
+            return "it lists no chapter TextMouth can use" // l10n: no (a parser's damage reason)
         case .tooManyChapters(let limit):
-            return "it lists more than \(limit) chapters"
+            return "it lists more than \(limit) chapters" // l10n: no (a parser's damage reason)
         }
     }
 }

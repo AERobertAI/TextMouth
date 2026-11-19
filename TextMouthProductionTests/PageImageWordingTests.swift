@@ -106,7 +106,7 @@ final class PageImageWordingTests: XCTestCase {
         )
         XCTAssertEqual(
             PDFExtractionDiagnostics(pages: pages).problem,
-            "OCR could not run on 1 of 2 pages, so text that appears only in its images is missing: "
+            "OCR could not run on 1 of 2 pages, so text found only in their images is missing: "
                 + "page 2 (its picture could not be decoded).",
             "a PDF's sentence is as it was"
         )
@@ -137,7 +137,7 @@ final class PageImageWordingTests: XCTestCase {
         let damaged = PageImageError.damagedPage(file: "pages/003.jpg", reason: "its data could not be read")
         XCTAssertEqual(
             damaged.errorDescription,
-            "The file “pages/003.jpg” in this comic book archive is damaged or incomplete: its data could not be read. "
+            "The file “pages/003.jpg” in this archive is damaged or incomplete: its data could not be read. "
                 + "Get a fresh copy of the archive, then import it again."
         )
         XCTAssertEqual(damaged.pageReason, "its file is damaged or incomplete: its data could not be read")

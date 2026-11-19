@@ -50,10 +50,7 @@ enum PageImageError: LocalizedError, Equatable, Sendable {
         case let .tooLarge(width, height): return PageImageWording.tooLarge(width: width, height: height)
         case .cannotDecode: return PageImageWording.cannotDecode
         case let .damagedPage(file, reason):
-            return PackageDamage.message(
-                file: file, reason: reason, container: PageImageWording.Subject.archive.phrase,
-                original: PageImageWording.archiveToGetAgain
-            )
+            return PackageDamage.message(file: file, reason: reason, container: .comicBookArchive)
         case .tooManyPages(let count): return PageImageWording.tooManyPages(count)
         case .tooManyPictures: return PageImageWording.tooManyPictures
         case .notAnArchive: return PageImageWording.notAnArchive

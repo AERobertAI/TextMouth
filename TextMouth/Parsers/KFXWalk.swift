@@ -403,7 +403,7 @@ struct KFXWalk {
     /// A picture the book makes a heading is written as one.
     private mutating func writeImage(_ node: IonStruct, id: Int?, isInline: Bool, into output: inout Output) {
         guard let alt = node[KFXSymbol.altText]?.stringValue, hasWords(alt) else { return }
-        let image = "<img alt=\"\(KFXInlineText.escaped(alt))\"/>"
+        let image = "<img alt=\"\(KFXInlineText.escaped(alt))\"/>" // l10n: no (generated markup, not interface text)
         if isInline {
             output.html += image
         } else {
@@ -521,7 +521,7 @@ struct KFXWalk {
         }
         if type == KFXSymbol.image {
             guard let alt = node[KFXSymbol.altText]?.stringValue, hasWords(alt) else { return ("", false) }
-            return ("<img alt=\"\(KFXInlineText.escaped(alt))\"/>", true)
+            return ("<img alt=\"\(KFXInlineText.escaped(alt))\"/>", true) // l10n: no (generated markup, not interface text)
         }
         var html = ""
         var words = false

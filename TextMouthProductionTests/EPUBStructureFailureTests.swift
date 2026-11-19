@@ -99,7 +99,7 @@ final class EPUBStructureFailureTests: XCTestCase {
                 epub,
                 throwing: .otherEPUBError(String(describing: EPUBParserError.damagedFile(
                     file: testCase.file, reason: XMLInputGuard.tooManyAttributesProblem))),
-                saying: "The file “\(testCase.file)” in this EPUB book is damaged or incomplete: "
+                saying: "The file “\(testCase.file)” in this book is damaged or incomplete: "
                     + "it has a tag with too many attributes for TextMouth to read safely. "
                     + "Get a fresh copy of the book, then import it again.")
             XCTAssertLessThan(clock.now - start, .seconds(5), "\(testCase.file) took too long")
@@ -119,7 +119,7 @@ final class EPUBStructureFailureTests: XCTestCase {
             epub,
             throwing: .otherEPUBError(String(describing: EPUBParserError.unsafeFile(
                 file: "META-INF/container.xml", problem: .ownDefinitions))),
-            saying: "TextMouth can't safely read the file \u{201C}META-INF/container.xml\u{201D} in this EPUB book, because it "
+            saying: "TextMouth can't safely read the file \u{201C}META-INF/container.xml\u{201D} in this book, because it "
                 + "defines entities of its own. Open the book in the program that made it, save it again, then import it again.")
         let stateful = Self.packageDocument().replacingOccurrences(
             of: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>", with: "<?xml version=\"1.0\" encoding\n=\n\"UNICODE-1-1-UTF-7\"?>")
@@ -129,7 +129,7 @@ final class EPUBStructureFailureTests: XCTestCase {
             statefulEPUB,
             throwing: .otherEPUBError(String(describing: EPUBParserError.unsafeFile(
                 file: "OEBPS/content.opf", problem: .encoding("UNICODE-1-1-UTF-7")))),
-            saying: "TextMouth can't safely read the file \u{201C}OEBPS/content.opf\u{201D} in this EPUB book, because it is "
+            saying: "TextMouth can't safely read the file \u{201C}OEBPS/content.opf\u{201D} in this book, because it is "
                 + "written in the UNICODE-1-1-UTF-7 encoding. Save it as UTF-8, then import it again.")
         let external = Self.packageDocument().replacingOccurrences(
             of: "<package", with: "<!DOCTYPE package PUBLIC \"-//X//EN\" \"http://example.org/x.dtd\"><package")

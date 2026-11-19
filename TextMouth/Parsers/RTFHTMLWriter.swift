@@ -15,12 +15,12 @@ enum RTFHTMLWriter {
     ///   `TextutilPageBreaks.maximumPages` allows, nor, as for textutil's,
     ///   for one that holds no letter or digit.
     static func html(of document: RTFDocument, includesPages: Bool) -> String {
-        var output = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n"
+        var output = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n" // l10n: no (generated markup, not interface text)
         if !document.title.isEmpty {
             output += "<title>\(XMLEscaping.text(document.title))</title>\n"
         }
         if !document.author.isEmpty {
-            output += "<meta name=\"author\" content=\"\(XMLEscaping.attribute(document.author))\">\n"
+            output += "<meta name=\"author\" content=\"\(XMLEscaping.attribute(document.author))\">\n" // l10n: no (generated markup, not interface text)
         }
         output += "</head>\n<body>\n"
 
@@ -45,7 +45,7 @@ enum RTFHTMLWriter {
 
     /// The empty element that begins page `number`.
     private static func pageBreakSpan(_ number: Int) -> String {
-        "<span role=\"\(TextutilPageBreaks.pageBreakRole)\" aria-label=\"\(number)\"></span>"
+        "<span role=\"\(TextutilPageBreaks.pageBreakRole)\" aria-label=\"\(number)\"></span>" // l10n: no (generated markup, not interface text)
     }
 
     /// Whether any paragraph of `blocks` holds a letter or a digit, as

@@ -2,7 +2,7 @@ import Foundation
 
 enum MarkdownDocParser {
 
-    static func parse(markdown: String, title: String = "Untitled") throws -> DocumentContent {
+    static func parse(markdown: String, title: String = "Untitled") throws -> DocumentContent { // l10n: no (stored id: the placeholder title a book is saved with, question 9)
         let chapter = try parseChapter(markdown: markdown, title: title)
         return DocumentContent(
             title: chapter.title,
@@ -33,7 +33,7 @@ enum MarkdownDocParser {
     /// - Throws: `MarkupRefusal.nestedTooDeeply` when the Markdown nests past the limit.
     static func parseChapter(
         markdown: String,
-        title: String = "Untitled",
+        title: String = "Untitled", // l10n: no (stored id: the placeholder title a book is saved with, question 9)
         includeNavigationHeadings: Bool = false
     ) throws -> Chapter {
         // The limits in force are task-local, which a thread of its own does not

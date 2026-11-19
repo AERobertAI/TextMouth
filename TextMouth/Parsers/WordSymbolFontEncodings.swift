@@ -32,24 +32,24 @@ enum WordSymbolFontEncodings {
     }
 
     /// The fonts that are the Symbol encoding under another name (lowercased).
-    private static let symbolClones: Set<String> = ["symbol", "mt symbol", "symbolps"]
+    private static let symbolClones: Set<String> = ["symbol", "mt symbol", "symbolps"] // l10n: no (a font's name, matched against the document's, not interface text)
 
     /// The codes of the WordPerfect fonts that the real documents settle, by font name (lowercased).
     private static let tables: [String: [Int: Unicode.Scalar]] = [
         // Typographic symbols: the curly quotation marks, the bullet, the section sign, the inverted question mark.
-        "wp typographicsymbols": [
+        "wp typographicsymbols": [ // l10n: no (a font's name, matched against the document's, not interface text)
             0x3D: "\u{2019}", 0x3E: "\u{2018}", 0x41: "\u{201C}", 0x40: "\u{201D}",
             0x24: "\u{2022}", 0x27: "\u{00A7}", 0x29: "\u{00BF}", 0x43: "\u{2014}",
         ],
         // Math symbols: the degree sign, the bullet, and the micro sign (a unit: "100 micrometres" must not read "100 m").
-        "wp matha": [0x45: "\u{00B0}", 0x43: "\u{2022}", 0x46: "\u{00B5}"],
+        "wp matha": [0x45: "\u{00B0}", 0x43: "\u{2022}", 0x46: "\u{00B5}"], // l10n: no (a font's name, matched against the document's, not interface text)
         // The Greek fonts: the micro sign, in a unit.
-        "wp greek courier": [0x3A: "\u{00B5}"],
-        "wp greek century": [0x3A: "\u{00B5}"],
+        "wp greek courier": [0x3A: "\u{00B5}"], // l10n: no (a font's name, matched against the document's, not interface text)
+        "wp greek century": [0x3A: "\u{00B5}"], // l10n: no (a font's name, matched against the document's, not interface text)
     ]
 
     /// The names (lowercased) that begin the fonts of pictures.
-    private static let pictureFontPrefixes = ["wingdings", "webdings", "zapfdingbats", "zapf dingbats", "monotype sorts", "dingbats", "wp "]
+    private static let pictureFontPrefixes = ["wingdings", "webdings", "zapfdingbats", "zapf dingbats", "monotype sorts", "dingbats", "wp "] // l10n: no (a font's name, matched against the document's, not interface text)
 
     /// The character set (`chs`) of a font of symbols: its codes are the font's own and no code page's.
     private static let symbolCharacterSet = 2

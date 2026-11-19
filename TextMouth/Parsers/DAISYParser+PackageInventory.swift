@@ -112,7 +112,7 @@ final class EntryFirstFileProvider: DAISYFileProvider {
 
 /// Why a DAISY book kept as loose files cannot be imported with its files
 /// (TODO I02).
-enum DAISYPackageError: LocalizedError, Equatable {
+enum DAISYPackageError: LocalizedError, LogDescribing, Equatable {
     /// A file of the book refers to `reference`, which lies outside the
     /// book's folder, or is a symbolic link leading out of it. `file` is the
     /// referring file's path inside the folder.
@@ -127,13 +127,37 @@ enum DAISYPackageError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .referenceOutsidePackage(reference, file):
-            return "The file “\(file)” in this DAISY book refers to “\(reference)”, which is outside the book's "
-                + "folder. Only files inside the folder can be imported."
+            return SentenceWording.joined([
+                String(localized: "The file “\(file)” in this DAISY book refers to “\(reference)”, outside the book's folder.",
+                       comment: "First sentence of why a DAISY book kept as loose files could not be imported: one of its files refers to a file outside the book's folder. %1$@ is the referring file's path inside the folder and %2$@ the reference, as the file writes it."),
+                String(localized: "Only files inside the folder can be imported.",
+                       comment: "Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder."),
+            ])
         case .notAPackage:
-            return "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level."
+            return String(localized: "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.",
+                          comment: "Why a folder could not be imported as a DAISY book: it holds no navigation file (ncc.html) and no package file (.opf) at its top level. ncc.html and .opf are file names and stay as they are.")
         case .severalPackages(let names):
-            return "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", "))). "
-                + "Import each book's .opf file on its own."
+            return SentenceWording.joined([
+                String(localized: "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", "))).",
+                       comment: "First sentence of why a folder could not be imported as one DAISY book: its top level holds several books' package files. %lld is how many books, always two or more, and %@ their file names, separated by commas."),
+                String(localized: "Import each book's .opf file on its own.",
+                       comment: "Last sentence of why a folder of several DAISY books could not be imported as one: what to do. .opf is a file extension and stays as it is."),
+            ])
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case let .referenceOutsidePackage(reference, file):
+            return "The file “\(file)” in this DAISY book refers to “\(reference)”, which is outside the book's " // l10n: no (debug log)
+                + "folder. Only files inside the folder can be imported." // l10n: no (debug log)
+        case .notAPackage:
+            return "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level." // l10n: no (debug log)
+        case .severalPackages(let names):
+            return "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", "))). " // l10n: no (debug log)
+                + "Import each book's .opf file on its own." // l10n: no (debug log)
         }
     }
 }
@@ -429,7 +453,7 @@ struct DAISYPackageInventory {
         // folder for one (`DAISYParser.extractMarkdown`), so the copy must
         // hold everything that search would see.
         guard package.manifest.values.contains(where: { $0.mediaType.contains("dtbook") }) else {
-            return "the manifest of “\(entryPath)” lists no DTBook content file"
+            return "the manifest of “\(entryPath)” lists no DTBook content file" // l10n: no (a parser's damage reason)
         }
         for href in package.manifest.values.map(\.href).sortedStably() {
             try collector.add(href, in: entryPath)

@@ -3,7 +3,7 @@ import SwiftSoup
 
 enum HTMLParser {
 
-    static func parse(html: String, title: String = "Untitled") throws -> DocumentContent {
+    static func parse(html: String, title: String = "Untitled") throws -> DocumentContent { // l10n: no (stored id: the placeholder title a book is saved with, question 9)
         let doc = try MarkupGuard.parse(html)
 
         // Try to get title from <title> tag

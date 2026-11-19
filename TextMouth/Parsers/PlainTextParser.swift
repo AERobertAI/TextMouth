@@ -62,7 +62,7 @@ enum PlainTextParser {
 
     /// Parse plain text into a single chapter. Its text and headings are
     /// exactly those `MarkdownDocParser` reads back from `markdown(text:)`.
-    static func parse(text: String, title: String = "Untitled") -> DocumentContent {
+    static func parse(text: String, title: String = "Untitled") -> DocumentContent { // l10n: no (stored id: the placeholder title a book is saved with, question 9)
         let reading = readingContent(of: blocks(in: text))
         let chapter = Chapter(title: title, text: reading.text, headings: reading.headings)
 
