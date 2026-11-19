@@ -34,7 +34,7 @@ enum ReaderTimeWording {
 
     /// What Go to Time's field takes, as its hint says: a time written as
     /// people write one, as the audio editor's Go to Time asks for it.
-    static let timeFieldHint = TimeEntry.howToType
+    static var timeFieldHint: String { TimeEntry.howToType }
 
     /// Go to Time's refusal of a time after the end. An audiobook's names
     /// the recording: "Time exceeds the recording's length. The recording
