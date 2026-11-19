@@ -179,7 +179,7 @@ enum FeedSettingsWording {
     /// Its hint: a feed the listener unsubscribed from is never checked
     /// (FR11, branch D).
     static var refreshAtLaunchHint: String {
-        String(localized: "Checks every feed you're subscribed to for new episodes and articles once the library has opened",
+        String(localized: "Checks every subscribed feed once the library has opened",
                comment: "VoiceOver hint of the switch that refreshes every feed at launch.")
     }
     /// Refresh All Feeds Now.
@@ -190,7 +190,7 @@ enum FeedSettingsWording {
     /// Its hint, which leaves out the feeds unsubscribed from, as Refresh
     /// All does (board #1816).
     static var refreshAllNowHint: String {
-        String(localized: "Checks every feed you're subscribed to now and says what came",
+        String(localized: "Checks every subscribed feed and says what came",
                comment: "VoiceOver hint of the Refresh All Feeds Now button.")
     }
     /// What shows, and VoiceOver hears, while every feed is refreshed.
@@ -211,7 +211,7 @@ enum FeedSettingsWording {
     }
     /// Its hint.
     static var refreshAlertHint: String {
-        String(localized: "After a refresh TextMouth makes by itself, at launch or on the interval, an alert names the feeds with new episodes and articles",
+        String(localized: "After an automatic refresh, an alert names the feeds with new episodes and articles",
                comment: "VoiceOver hint of the switch that shows an alert after a refresh TextMouth made by itself.")
     }
     /// Notifications.
@@ -221,7 +221,7 @@ enum FeedSettingsWording {
     }
     /// Its hint.
     static var notificationsHint: String {
-        String(localized: "After a refresh TextMouth makes by itself, a notification names each feed with new episodes and articles",
+        String(localized: "After an automatic refresh, a notification names each feed with new episodes and articles",
                comment: "VoiceOver hint of the switch that posts notifications for new items.")
     }
 }
@@ -277,7 +277,7 @@ extension FeedWording {
     /// the listener unsubscribed from, which no refresh checks (FR11,
     /// branch D; board #1816).
     static var everyFeedUnsubscribed: String {
-        String(localized: "Every feed in your library is unsubscribed, so none was checked. Choose \(resubscribeTitle) on a feed's row, or in its \(feedInfoName), to check it again.",
+        String(localized: "Every feed is unsubscribed, so none was checked. Choose \(resubscribeTitle) on a feed's row, or in its \(feedInfoName), to check it again.",
                comment: "What VoiceOver says when Refresh All Feeds finds only unsubscribed feeds. The first %@ is the name of the Resubscribe command; the second is the name of the Feed Info sheet.")
     }
 }

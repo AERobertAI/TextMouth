@@ -194,7 +194,7 @@ final class FeedDownloadProgressTests: XCTestCase {
         XCTAssertEqual(FeedDownloadProgressWording.cancelButtonTitle, "Cancel")
         XCTAssertEqual(FeedDownloadProgressWording.cancelButtonLabel, "Cancel Feed Downloads")
         XCTAssertNotEqual(FeedDownloadProgressWording.cancelButtonLabel, ProgressOverlay.cancelButtonLabel)
-        let stops = "Stops every feed download, those waiting for a network or for room too, and deletes what they had downloaded."
+        let stops = "Stops every feed download, including those waiting, and deletes what they had downloaded."
         XCTAssertEqual(
             FeedDownloadProgressWording.cancelButtonHint(FeedCancelReturn(byItself: 2)),
             stops + " TextMouth downloads each feed's newest again at its next check, or the next time it opens."

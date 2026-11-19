@@ -322,7 +322,7 @@ enum FeedDownloadProgressWording {
     /// it would stop now comes back, as `comingBack` counts it and Cancel
     /// would say it (`comingBack(_:)`, REV14 feeds 5).
     static func cancelButtonHint(_ comingBack: FeedCancelReturn) -> String {
-        let stops = String(localized: "Stops every feed download, those waiting for a network or for room too, and deletes what they had downloaded.",
+        let stops = String(localized: "Stops every feed download, including those waiting, and deletes what they had downloaded.",
                            comment: "What VoiceOver says the feed downloads section's Cancel button does: it stops every feed download and deletes what they had downloaded.")
         guard let back = Self.comingBack(comingBack) else { return stops }
         return SentenceWording.joined([stops, back])

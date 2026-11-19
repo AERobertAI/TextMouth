@@ -62,9 +62,9 @@ struct OPMLImportSummary: Equatable {
         }
         if !insecure.isEmpty {
             parts.append(insecure.count == 1
-                ? String(localized: "\(insecure.first ?? "") uses plain http, so what is sent can be read or changed on the way; TextMouth still loads it.",
+                ? String(localized: "\(insecure.first ?? "") uses plain http, so others can read or change what it sends; TextMouth still loads it.",
                          comment: "What the Import OPML sheet says of one new feed whose address uses plain http, which is not encrypted. %@ is the feed's title.")
-                : String(localized: "\(CountWording.list(insecure)) use plain http, so what is sent can be read or changed on the way; TextMouth still loads it.",
+                : String(localized: "\(CountWording.list(insecure)) use plain http, so others can read or change what they send; TextMouth still loads it.",
                          comment: "What the Import OPML sheet says of several new feeds whose addresses use plain http, which is not encrypted. %@ is a list of their titles."))
         }
         if stopped {
@@ -466,7 +466,7 @@ extension FeedWording {
     }
     /// The line naming the file and how many feeds it lists.
     static func importLists(fileName: String, count: Int) -> String {
-        String(localized: "\(fileName) lists \(count) feeds. Each gets a folder of its own, named after it.",
+        String(localized: "\(fileName) lists \(count) feeds. Each gets its own folder, named after it.",
                comment: "The line of the Import OPML sheet that names the file and how many feeds it lists. %@ is the file's name; %lld is how many feeds.")
     }
     /// The folder picker's caption.

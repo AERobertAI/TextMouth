@@ -660,9 +660,9 @@ extension FeedWording {
     /// downloads (FR14).
     static func unsubscribeHint(asksFirst: Bool) -> String {
         asksFirst
-            ? String(localized: "Asks first, then stops checking this feed; the feed and its downloads stay",
+            ? String(localized: "Asks first, then stops checking; the feed and its downloads stay",
                      comment: "VoiceOver hint of the Unsubscribe button in Feed Info when it asks a question first.")
-            : String(localized: "Stops checking this feed; the feed and its downloads stay",
+            : String(localized: "Stops checking; the feed and its downloads stay",
                      comment: "VoiceOver hint of the Unsubscribe button in Feed Info when it acts at once.")
     }
     /// Resubscribe's spoken hint in Feed Info (FR11, branch D).
@@ -712,7 +712,7 @@ extension FeedWording {
     }
     /// The plain-http note in Feed Info.
     static var insecureNote: String {
-        String(localized: "Plain http: what this feed sends can be read or changed on the way.",
+        String(localized: "Plain http: others can read or change what this feed sends.",
                comment: "The note in Feed Info about a feed whose address uses plain http, which is not encrypted. Plain http is a term; keep it.")
     }
     /// The folder picker's caption in Feed Info.

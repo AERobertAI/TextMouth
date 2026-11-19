@@ -219,9 +219,9 @@ extension FeedThresholdWording {
                               comment: "What the caption of the refresh interval says while the setting is off: \"Refresh feeds every: only at launch and when you ask\". Lower case."),
             offTitle: String(localized: "Only at launch and when I ask",
                              comment: "Title of the checkbox that turns the refresh interval off, so feeds refresh only at launch and on request."),
-            hint: String(localized: "Hours between refreshes of every feed while TextMouth runs, from 1 to 168",
+            hint: String(localized: "Hours between refreshes while TextMouth runs, from 1 to 168",
                          comment: "VoiceOver hint of the refresh interval's number field and stepper. The range is the limits of the number, in hours."),
-            offHint: String(localized: "When checked, feeds refresh only when TextMouth opens, if that is on, and when you choose \(FeedWording.checkFeedTitle) or \(FeedWording.refreshAllCommand)",
+            offHint: String(localized: "Feeds refresh only at launch, if that is on, and when you choose \(FeedWording.checkFeedTitle) or \(FeedWording.refreshAllCommand)",
                             comment: "VoiceOver hint of the checkbox that turns the refresh interval off. The first %@ is the name of the Check Feed command; the second is the name of the Refresh All Feeds command.")
         )
     }
@@ -242,9 +242,9 @@ extension FeedThresholdWording {
                               comment: "What the caption of the delete-after-playing setting says while the setting is off: \"Delete downloads after playing: never\". Lower case."),
             offTitle: String(localized: "Never delete played downloads",
                              comment: "Title of the checkbox that turns off deleting downloads after playing."),
-            hint: String(localized: "Days after an episode plays to the end that its download is deleted, from 0, at once, to 365; one open in a reader waits until it closes",
+            hint: String(localized: "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
                          comment: "VoiceOver hint of the delete-after-playing number field and stepper. The range is the limits of the number, in days."),
-            offHint: String(localized: "When checked, played downloads are kept until you delete them",
+            offHint: String(localized: "Played downloads are kept until you delete them",
                             comment: "VoiceOver hint of the checkbox that turns off deleting downloads after playing.")
         )
     }

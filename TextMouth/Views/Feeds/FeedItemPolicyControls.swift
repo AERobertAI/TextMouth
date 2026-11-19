@@ -149,11 +149,11 @@ extension FeedWording {
         switch choice {
         case .everyListedNewestDownloaded:
             return kind.choose(
-                episode: String(localized: "Lists every episode with what you did with it, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+                episode: String(localized: "Lists every episode, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
                                 comment: "VoiceOver hint of the List and download choice for a feed of episodes: every episode is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest."),
-                article: String(localized: "Lists every article with what you did with it, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+                article: String(localized: "Lists every article, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
                                 comment: "VoiceOver hint of the List and download choice for a feed of articles: every article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest."),
-                item: String(localized: "Lists every episode and article with what you did with it, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+                item: String(localized: "Lists every episode and article, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
                              comment: "VoiceOver hint of the List and download choice in Settings or for a feed of both kinds: every episode and article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest."))
         case .everyListedDownloadsByHand:
             return kind.choose(
@@ -170,9 +170,9 @@ extension FeedWording {
             // stays listed, as every download does
             // (`FeedRecord.listedItems(under:hasFile:)`).
             return noun == .article
-                ? String(localized: "Lists those of the newest \(count) you haven't read, and every download, and downloads only what you ask for; the others keep their records and come back when you list more.",
+                ? String(localized: "Lists the newest \(count) you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
                          comment: "VoiceOver hint of the List and download choice for a feed of articles when only the newest are listed. %lld is how many of the newest.")
-                : String(localized: "Lists those of the newest \(count) you haven't played, and every download, and downloads only what you ask for; the others keep their records and come back when you list more.",
+                : String(localized: "Lists the newest \(count) you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
                          comment: "VoiceOver hint of the List and download choice for a feed of episodes, in Settings, or for a feed of both kinds when only the newest are listed. %lld is how many of the newest.")
         }
     }
@@ -201,16 +201,16 @@ extension FeedWording {
     static func newestCountHint(noun: ItemNoun?) -> String {
         switch noun {
         case .episode?:
-            return String(localized: "How many of this feed's newest episodes are kept downloaded, or listed, from 1 to 2,000",
+            return String(localized: "Newest episodes kept downloaded or listed, from 1 to 2,000",
                           comment: "VoiceOver hint of the number of the newest items, for a feed of episodes. The range is the limits of the number.")
         case .article?:
-            return String(localized: "How many of this feed's newest articles are kept downloaded, or listed, from 1 to 2,000",
+            return String(localized: "Newest articles kept downloaded or listed, from 1 to 2,000",
                           comment: "VoiceOver hint of the number of the newest items, for a feed of articles. The range is the limits of the number.")
         case .item?:
-            return String(localized: "How many of this feed's newest items are kept downloaded, or listed, from 1 to 2,000",
+            return String(localized: "Newest items kept downloaded or listed, from 1 to 2,000",
                           comment: "VoiceOver hint of the number of the newest items, for a feed of both episodes and articles. The range is the limits of the number.")
         case nil:
-            return String(localized: "How many of each feed's newest episodes and articles are kept downloaded, or listed, from 1 to 2,000",
+            return String(localized: "Newest episodes and articles kept downloaded or listed, from 1 to 2,000",
                           comment: "VoiceOver hint of the number of the newest items, in Settings, for every feed. The range is the limits of the number.")
         }
     }

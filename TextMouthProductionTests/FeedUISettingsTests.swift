@@ -267,15 +267,15 @@ final class FeedUISettingsTests: XCTestCase {
 
         XCTAssertEqual(heard, [
             FeedSettingsWording.refreshing,
-            "Every feed in your library is unsubscribed, so none was checked. "
+            "Every feed is unsubscribed, so none was checked. "
                 + "Choose Resubscribe on a feed's row, or in its Feed Info, to check it again.",
         ])
         XCTAssertEqual(world.server.requests(to: "/atlas.xml").count, 1, "an unsubscribed feed was checked")
         XCTAssertEqual(FeedWording.noFeedsToRefresh, "There are no feeds to refresh.")
-        XCTAssertEqual(FeedSettingsWording.refreshAllNowHint, "Checks every feed you're subscribed to now and says what came")
+        XCTAssertEqual(FeedSettingsWording.refreshAllNowHint, "Checks every subscribed feed and says what came")
         XCTAssertEqual(
             FeedSettingsWording.refreshAtLaunchHint,
-            "Checks every feed you're subscribed to for new episodes and articles once the library has opened"
+            "Checks every subscribed feed once the library has opened"
         )
     }
 

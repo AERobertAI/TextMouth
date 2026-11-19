@@ -631,19 +631,19 @@ extension FeedWording {
     static func moveToLibraryHint(count: Int, noun: ItemNoun) -> String {
         guard count != 1 else {
             return noun.choose(
-                episode: String(localized: "Moves this episode into a folder of your library, where it becomes a book you can edit; it leaves the feed",
+                episode: String(localized: "Moves this episode into a library folder as a book you can edit; it leaves the feed",
                                 comment: "What the Move to Library sheet says about one episode: it moves into a library folder as a book and leaves its feed."),
-                article: String(localized: "Moves this article into a folder of your library, where it becomes a book you can edit; it leaves the feed",
+                article: String(localized: "Moves this article into a library folder as a book you can edit; it leaves the feed",
                                 comment: "What the Move to Library sheet says about one article: it moves into a library folder as a book and leaves its feed."),
-                item: String(localized: "Moves this item into a folder of your library, where it becomes a book you can edit; it leaves the feed",
+                item: String(localized: "Moves this item into a library folder as a book you can edit; it leaves the feed",
                              comment: "What the Move to Library sheet says about one item, an episode or an article: it moves into a library folder as a book and leaves its feed."))
         }
         return noun.choose(
-            episode: String(localized: "Moves these \(count) episodes into a folder of your library, where they become books you can edit; they leave their feeds",
+            episode: String(localized: "Moves these \(count) episodes into a library folder as books you can edit; they leave their feeds",
                             comment: "What the Move to Library sheet says about several episodes: they move into a library folder as books and leave their feeds. %lld is how many."),
-            article: String(localized: "Moves these \(count) articles into a folder of your library, where they become books you can edit; they leave their feeds",
+            article: String(localized: "Moves these \(count) articles into a library folder as books you can edit; they leave their feeds",
                             comment: "What the Move to Library sheet says about several articles: they move into a library folder as books and leave their feeds. %lld is how many."),
-            item: String(localized: "Moves these \(count) items into a folder of your library, where they become books you can edit; they leave their feeds",
+            item: String(localized: "Moves these \(count) items into a library folder as books you can edit; they leave their feeds",
                          comment: "What the Move to Library sheet says about several items, episodes and articles: they move into a library folder as books and leave their feeds. %lld is how many."))
     }
 
@@ -660,16 +660,16 @@ extension FeedWording {
         let inLibrary = FeedItemState.inLibrary(bookID: UUID()).visibleNote
         guard titles.count != 1, !titles.isEmpty else {
             let title = titles.first ?? ""
-            return String(localized: "Moved “\(title)” into \(place). It's a book of your library now, and its feed lists it \(inLibrary).",
+            return String(localized: "Moved “\(title)” into \(place). It's a library book now, and its feed lists it \(inLibrary).",
                           comment: "What VoiceOver says once Move to Library moved one feed item into the library. The first %@ is the item's title; the second is the library folder, or \"the top of your library\"; the third is the note its feed's row shows, \"In Library\".")
         }
         let count = titles.count
         return noun.choose(
-            episode: String(localized: "Moved \(count) episodes into \(place). They're books of your library now, and their feeds list them \(inLibrary).",
+            episode: String(localized: "Moved \(count) episodes into \(place). They're library books now, and their feeds list them \(inLibrary).",
                             comment: "What VoiceOver says once Move to Library moved several episodes into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\"."),
-            article: String(localized: "Moved \(count) articles into \(place). They're books of your library now, and their feeds list them \(inLibrary).",
+            article: String(localized: "Moved \(count) articles into \(place). They're library books now, and their feeds list them \(inLibrary).",
                             comment: "What VoiceOver says once Move to Library moved several articles into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\"."),
-            item: String(localized: "Moved \(count) items into \(place). They're books of your library now, and their feeds list them \(inLibrary).",
+            item: String(localized: "Moved \(count) items into \(place). They're library books now, and their feeds list them \(inLibrary).",
                          comment: "What VoiceOver says once Move to Library moved several items, episodes and articles, into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\"."))
     }
 

@@ -49,7 +49,7 @@ extension FeedFetchError {
     var searchMessage: String {
         switch self {
         case .offline:
-            return String(localized: "This Mac is offline, so the podcast directory can't be searched. Connect to the internet and try again.",
+            return String(localized: "This Mac is offline, so the directory can't be searched. Connect to the internet and try again.",
                           comment: "Why a podcast search failed: this Mac has no internet.")
         case .hostNotFound(let host):
             return String(localized: "The podcast directory at \(host) couldn't be found.",
@@ -58,7 +58,7 @@ extension FeedFetchError {
             return String(localized: "The podcast directory at \(host) didn't answer for \(Int(FeedNetwork.requestTimeout)) seconds.",
                           comment: "Why a podcast search failed: the directory took too long. The first %@ is the server's host name; %lld is the number of seconds waited.")
         case .needsPassword, .serverError(status: 429, host: _):
-            return String(localized: "The podcast directory refused the search. It allows about 20 searches a minute, so wait a minute and try again.",
+            return String(localized: "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again.",
                           comment: "Why a podcast search failed: the directory limits searches to about 20 a minute.")
         case .serverError(let status, let host):
             return String(localized: "The podcast directory at \(host) couldn't answer the search (error \(String(status))). Try again later.",

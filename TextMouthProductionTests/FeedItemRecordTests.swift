@@ -1204,7 +1204,7 @@ final class FeedItemRecordTests: XCTestCase {
     func testWhatARefusedRemovalSays() {
         XCTAssertEqual(
             FeedItemPackageError.notAFeedPackage.localizedDescription,
-            "This download isn't where its feed keeps its downloads, so TextMouth left its files as they are."
+            "This download isn't in its feed's folder, so TextMouth left its files as they are."
         )
         XCTAssertEqual(
             FeedItemPackageError.indexNotWritten.localizedDescription,

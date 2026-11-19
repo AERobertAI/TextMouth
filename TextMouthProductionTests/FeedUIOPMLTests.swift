@@ -380,7 +380,7 @@ final class FeedUIOPMLTests: XCTestCase {
         }
         XCTAssertEqual(
             FeedWording.importLists(fileName: "subscriptions.opml", count: 1),
-            "subscriptions.opml lists 1 feed. Each gets a folder of its own, named after it."
+            "subscriptions.opml lists 1 feed. Each gets its own folder, named after it."
         )
     }
 

@@ -23,7 +23,7 @@ enum FeedWording {
     }
     /// What Add Feed does, spoken as its hint in the Add to Library sheet.
     static var addFeedButtonHint: String {
-        String(localized: "Opens a sheet where you type a feed's address and choose where its folder goes",
+        String(localized: "Opens a sheet to type a feed's address and choose its folder",
                comment: "VoiceOver hint of the Add Feed button in the Add to Library sheet.")
     }
     /// The Add Feed sheet's heading.
@@ -38,12 +38,12 @@ enum FeedWording {
     }
     /// The address field's spoken hint.
     static var addressHint: String {
-        String(localized: "Type or paste a feed's address, or the address of a web page that names its feed, then press Return",
+        String(localized: "Type or paste a feed or web page address, then press Return",
                comment: "VoiceOver hint of the field where the listener types a feed's address. Return is the Return key.")
     }
     /// The line under the address field.
     static var addressHelp: String {
-        String(localized: "A podcast's or site's feed address, such as a link ending in .rss or .xml, or the address of a web page that names its feed.",
+        String(localized: "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
                comment: "The line under the address field of the Add Feed sheet. .rss and .xml are file extensions.")
     }
     /// The folder picker's visible caption.
@@ -122,7 +122,7 @@ enum FeedWording {
     }
     /// The Search field's spoken hint.
     static var searchHint: String {
-        String(localized: "Type words from a podcast's title or its publisher's name, then press Return to search Apple's podcast directory",
+        String(localized: "Type a podcast's title or publisher, then press Return to search Apple's directory",
                comment: "VoiceOver hint of the podcast search field. Return is the Return key.")
     }
     /// The Search button's title.
@@ -186,7 +186,7 @@ enum FeedWording {
 
     /// The spoken hint of a podcast's own Subscribe button.
     static var subscribeToResultHint: String {
-        String(localized: "Puts this podcast's feed address in the address field and subscribes to it",
+        String(localized: "Subscribes to this podcast and fills the address field",
                comment: "VoiceOver hint of the Subscribe button of one podcast in the search results.")
     }
 
@@ -287,7 +287,7 @@ enum FeedWording {
     /// that uses plain http (`Feed.usesInsecureTransport`), which also says
     /// the subscription was made.
     static func insecureMessage(title: String) -> String {
-        String(localized: "Subscribed to \(title). This feed uses plain http, so what it sends can be read or changed on the way; TextMouth still loads it.",
+        String(localized: "Subscribed to \(title). This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
                comment: "The warning shown once after subscribing to a feed whose address uses plain http. %@ is the feed's title.")
     }
 }
