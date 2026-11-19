@@ -2,61 +2,106 @@ import Foundation
 
 /// What Search Library shows and says (LIBRARY-SEARCH-RESEARCH-2026-11-13.md),
 /// in one place, so the words on screen and the words VoiceOver speaks agree
-/// and tests can pin them.
+/// and tests can pin them. Every count sits inside its own whole sentence,
+/// with English plural forms in the catalog, so each language counts by its
+/// own rules (FR34).
 enum LibrarySearchWording {
 
     // MARK: - The Window
 
     /// The window's title, which VoiceOver names it by, and the command's
     /// name in the Edit menu's Find submenu, without its ellipsis.
-    static let windowTitle = "Search Library"
+    static var windowTitle: String {
+        String(localized: "Search Library",
+               comment: "Title of the Search Library window, which VoiceOver names it by, and the name of its command in the Edit menu's Find submenu.")
+    }
 
     /// The search field's label.
-    static let fieldLabel = "Search the library"
+    static var fieldLabel: String {
+        String(localized: "Search the library",
+               comment: "VoiceOver label of the search field in the Search Library window.")
+    }
 
     /// The search field's placeholder, shown while it is empty.
-    static let fieldPrompt = "Text to find in every book"
+    static var fieldPrompt: String {
+        String(localized: "Text to find in every book",
+               comment: "Placeholder of the empty search field in the Search Library window.")
+    }
 
     /// The search field's hint.
-    static let fieldHint = "Type to search the text of every book in the library"
+    static var fieldHint: String {
+        String(localized: "Type to search the text of every book in the library",
+               comment: "VoiceOver hint of the search field in the Search Library window.")
+    }
 
     /// The Regular Expression checkbox's title and label.
-    static let regexLabel = "Regular Expression"
+    static var regexLabel: String {
+        String(localized: "Regular Expression",
+               comment: "Title and VoiceOver label of the checkbox in the Search Library window that makes the search text a regular expression.")
+    }
 
     /// The Regular Expression checkbox's hint.
-    static let regexHint = "When checked, the search text is an ICU regular expression"
+    static var regexHint: String {
+        String(localized: "When checked, the search text is an ICU regular expression",
+               comment: "VoiceOver hint of the Regular Expression checkbox in the Search Library window. ICU is the name of the regular expression syntax, and stays as written.")
+    }
 
     /// The label of the list of results.
-    static let resultsLabel = "Results"
+    static var resultsLabel: String {
+        String(localized: "Results",
+               comment: "VoiceOver label of the list of results in the Search Library window.")
+    }
 
     /// The name of the rotor that lists each book with matches.
-    static let booksRotor = "Books"
+    static var booksRotor: String {
+        String(localized: "Books",
+               comment: "Name of the VoiceOver rotor in the Search Library window that moves between the books that hold matches.")
+    }
 
     /// The name of the rotor that lists each match listed.
-    static let matchesRotor = "Matches"
+    static var matchesRotor: String {
+        String(localized: "Matches",
+               comment: "Name of the VoiceOver rotor in the Search Library window that moves between the matches listed.")
+    }
 
     /// The Close button's title.
-    static let closeButton = "Close"
+    static var closeButton: String {
+        String(localized: "Close",
+               comment: "Title of the button that closes the Search Library window.")
+    }
 
     /// The Close button's hint.
-    static let closeHint = "Close Search Library; its results stay for the next time it opens"
+    static var closeHint: String {
+        String(localized: "Close Search Library; its results stay for the next time it opens",
+               comment: "VoiceOver hint of the Close button of the Search Library window. Search Library is the window's name.")
+    }
 
     // MARK: - The Status
 
     /// Said before anything is typed.
-    static let idle = "Type text to find in every book of the library."
+    static var idle: String {
+        String(localized: "Type text to find in every book of the library.",
+               comment: "Status line of the Search Library window before anything is typed.")
+    }
 
     /// Said while a search runs, before any book is done: "Searching 750
     /// books…", or "Searching…" while typing pauses, before the books are
     /// counted.
     static func searching(books: Int) -> String {
-        books == 0 ? "Searching…" : "Searching \(countedBooks(books))…"
+        guard books != 0 else {
+            return String(localized: "Searching…",
+                          comment: "Status line of the Search Library window while a search runs and the books are not yet counted.")
+        }
+        return String(localized: "Searching \(books) books…",
+                      comment: "Status line of the Search Library window while a search runs, before any book is done. %lld is the number of books being searched.")
     }
 
     /// Said while a search runs, once some books are done: "Searched 120 of
-    /// 750 books…".
+    /// 750 books…". The number done is formatted; the total is a count of
+    /// books with its noun, which a translation agrees with.
     static func searched(_ done: Int, of total: Int) -> String {
-        "Searched \(done.formatted()) of \(countedBooks(total))…"
+        String(localized: "Searched \(done.formatted()) of \(CountWording.books(total))…",
+               comment: "Status line of the Search Library window while a search runs, once some books are done. %1$@ is the number of books searched so far, and %2$@ is the count of all the books with its noun, such as \"750 books\".")
     }
 
     /// Said while a search runs that has had to prepare a book on its way,
@@ -65,70 +110,99 @@ enum LibrarySearchWording {
     /// folder, before the background preparation reached the book), so the
     /// listener knows why it takes longer: "Preparing 120 of 737 books…".
     static func preparing(_ done: Int, of total: Int) -> String {
-        "Preparing \(done.formatted()) of \(countedBooks(total))…"
+        String(localized: "Preparing \(done.formatted()) of \(CountWording.books(total))…",
+               comment: "Status line of the Search Library window while a search must prepare books' text, which takes longer. %1$@ is the number of books prepared so far, and %2$@ is the count of all the books with its noun, such as \"737 books\".")
     }
 
     /// The opening of a stopped search's status, before what it had found:
     /// "Stopped after 120 of 750 books:".
     static func stopped(searched: Int, of total: Int) -> String {
-        "Stopped after \(searched.formatted()) of \(countedBooks(total)):"
+        String(localized: "Stopped after \(searched.formatted()) of \(CountWording.books(total)):",
+               comment: "Opening of the Search Library status after the user stopped a search, followed by what it had found. %1$@ is the number of books searched, and %2$@ is the count of all the books with its noun, such as \"750 books\". Ends with a colon.")
     }
 
     /// The Stop button's title, shown while a search runs.
-    static let stopButton = "Stop"
+    static var stopButton: String {
+        String(localized: "Stop",
+               comment: "Title of the button that stops a running search in the Search Library window.")
+    }
 
     /// The Stop button's hint.
-    static let stopHint = "Stops the search, keeping the matches found so far"
+    static var stopHint: String {
+        String(localized: "Stops the search, keeping the matches found so far",
+               comment: "VoiceOver hint of the Stop button of the Search Library window.")
+    }
 
     /// The label of the progress bar shown while a search runs.
-    static let progressLabel = "Search progress"
+    static var progressLabel: String {
+        String(localized: "Search progress",
+               comment: "VoiceOver label of the progress bar shown while a search runs in the Search Library window.")
+    }
 
     /// Said when the library holds no book with a text to search.
-    static let noBooks = "No book in the library has text to search."
+    static var noBooks: String {
+        String(localized: "No book in the library has text to search.",
+               comment: "Status line of the Search Library window when no book in the library has text that can be searched.")
+    }
 
     /// The opening of an invalid regular expression's status, as Search in
     /// Book words it: "Invalid regular expression: <reason>".
     static func invalidPattern(_ reason: String) -> String {
-        "Invalid regular expression: \(reason)"
+        String(localized: "Invalid regular expression: \(reason)",
+               comment: "Status line when the search text is not a valid regular expression. %@ is the reason the system gives, which may be in English.")
     }
 
     /// How many matches were found in how many books: "No matches", "1
     /// match in 1 book", "212 matches in 31 books", or, when a book's count
     /// stopped at its limit, "More than 41,000 matches in 750 books".
     static func found(matches: Int, books: Int, isLowerBound: Bool) -> String {
-        guard matches > 0 else { return "No matches" }
-        let counted = matches == 1 ? "1 match" : "\(matches.formatted()) matches"
-        let lead = isLowerBound ? "More than \(counted)" : counted
-        return "\(lead) in \(countedBooks(books))"
+        guard matches > 0 else {
+            return String(localized: "No matches",
+                          comment: "Status line of the Search Library window when a search found nothing.")
+        }
+        let counted = CountWording.books(books)
+        if isLowerBound {
+            return String(localized: "More than \(matches) matches in \(counted)",
+                          comment: "Status line of a finished search where a book's count of matches stopped at its limit. %1$lld is the number of matches found, and %2$@ is the count of books with its noun, such as \"750 books\".")
+        }
+        return String(localized: "\(matches) matches in \(counted)",
+                      comment: "Status line of a finished search. %1$lld is the number of matches found, and %2$@ is the count of books that hold them with its noun, such as \"31 books\".")
     }
 
     /// The note added when the list shows fewer matches than were found:
     /// "showing up to 20 in each book", with ", and 1,000 in all" when the
     /// list stopped there.
     static func showing(perBook: Int, inAll: Int?) -> String {
-        let each = "showing up to \(perBook.formatted()) in each book"
+        let each = String(localized: "showing up to \(perBook) in each book",
+                          comment: "Note on a finished search's status: the list shows at most this many matches of each book. %lld is the number of matches shown for each book. Starts in lower case because it follows a semicolon.")
         guard let inAll else { return each }
-        return "\(each), and \(inAll.formatted()) in all"
+        return String(localized: "\(each), and \(inAll) in all",
+                      comment: "Note on a finished search's status: the list also stops after this many matches in all. %1$@ is the note \"showing up to 20 in each book\", and %2$lld is the number of matches shown in all.")
     }
 
     /// The note added for books whose text is only in the cloud, which a
     /// search never downloads: "1 book in the cloud wasn't searched", "3
     /// books in the cloud weren't searched".
     static func inCloud(_ count: Int) -> String {
-        count == 1 ? "1 book in the cloud wasn't searched" : "\(count.formatted()) books in the cloud weren't searched"
+        String(localized: "\(count) books in the cloud weren't searched",
+               comment: "Note on a finished search's status: some books are only in the cloud, and a search never downloads them. %lld is the number of those books. Starts with a number and follows a semicolon.")
     }
 
     /// The note added for books whose text could not be read: "1 book
     /// couldn't be read", "2 books couldn't be read".
     static func unreadable(_ count: Int) -> String {
-        "\(countedBooks(count)) couldn't be read"
+        String(localized: "\(count) books couldn't be read",
+               comment: "Note on a finished search's status: the text of some books could not be read. %lld is the number of those books. Starts with a number and follows a semicolon.")
     }
 
     /// A finished search's status, which VoiceOver announces once: what it
     /// found, then, after semicolons, what the list leaves out and which
     /// books were not searched.
     static func finished(found: String, notes: [String]) -> String {
-        ([found] + notes).joined(separator: "; ")
+        notes.reduce(found) { status, note in
+            String(localized: "\(status); \(note)",
+                   comment: "Joins a finished search's status to a note after it, which says what the list leaves out or which books were not searched. %1$@ is the text so far and %2$@ the note. English uses a semicolon and a space.")
+        }
     }
 
     // MARK: - The Results
@@ -137,9 +211,15 @@ enum LibrarySearchWording {
     /// many matches it holds: "Title, by Author: 12 matches", "...: more
     /// than 1,000 matches".
     static func bookHeading(title: String, author: String, matches: Int, isLowerBound: Bool) -> String {
-        let byline = author.isEmpty || author == Book.unknownAuthor ? title : "\(title), by \(author)"
-        let counted = matches == 1 ? "1 match" : "\(matches.formatted()) matches"
-        return "\(byline): \(isLowerBound ? "more than \(counted)" : counted)"
+        let byline = author.isEmpty || author == Book.unknownAuthor ? title : String(
+            localized: "\(title), by \(author)",
+            comment: "A book's title and author in a search result's heading. %1$@ is the book's title and %2$@ its author.")
+        if isLowerBound {
+            return String(localized: "\(byline): more than \(matches) matches",
+                          comment: "A book's heading over its search matches when the count stopped at its limit. %1$@ is the book's title, with its author when known, and %2$lld is the number of matches.")
+        }
+        return String(localized: "\(byline): \(matches) matches",
+                      comment: "A book's heading over its search matches. %1$@ is the book's title, with its author when known, and %2$lld is the number of matches.")
     }
 
     /// A match's row, spoken: the match in its context, where it is, and
@@ -147,11 +227,19 @@ enum LibrarySearchWording {
     /// context comes first, so moving from row to row hears what differs
     /// first; the title ends it, so a row is never heard without its book.
     static func matchLabel(context: String, location: String?, bookTitle: String) -> String {
-        ([context, location].compactMap { $0 } + ["in \(bookTitle)"]).joined(separator: ", ")
+        guard let location else {
+            return String(localized: "\(context), in \(bookTitle)",
+                          comment: "VoiceOver label of a search match whose place in the book is unknown. %1$@ is the match in its surrounding text, and %2$@ is the book's title.")
+        }
+        return String(localized: "\(context), \(location), in \(bookTitle)",
+                      comment: "VoiceOver label of a search match: the match in its text, where it is in the book, then the book. %1$@ is the match in its surrounding text, %2$@ is its place, such as a chapter's title, and %3$@ is the book's title.")
     }
 
     /// A match row's hint.
-    static let matchHint = "Opens the book at this match"
+    static var matchHint: String {
+        String(localized: "Opens the book at this match",
+               comment: "VoiceOver hint of a search match's row in the Search Library window.")
+    }
 
     /// The row that lists the rest of a book's matches, kept to the first
     /// ones until asked for, where Show All lists up to `limit`: "Show all
@@ -161,19 +249,25 @@ enum LibrarySearchWording {
     /// matches in The Long Road".
     static func showAll(matches: Int, isLowerBound: Bool, listing limit: Int, bookTitle: String) -> String {
         guard isLowerBound || matches > limit else {
-            return "Show all \(matches.formatted()) matches in \(bookTitle)"
+            return String(localized: "Show all \(matches) matches in \(bookTitle)",
+                          comment: "Title of the row that lists all of a book's matches in the Search Library results. %1$lld is the number of matches and %2$@ is the book's title.")
         }
-        return "Show the first \(limit.formatted()) of \(total(matches, isLowerBound: isLowerBound)) matches in \(bookTitle)"
+        return String(localized: "Show the first \(limit) of \(total(matches, isLowerBound: isLowerBound)) matches in \(bookTitle)",
+                      comment: "Title of the row that lists the first matches of a book that holds more than the list can show. %1$lld is the number listed, %2$@ is the book's total, such as \"700\" or \"more than 1,000\", and %3$@ is the book's title.")
     }
 
     /// The Show All row's hint.
-    static let showAllHint = "Lists up to 500 of this book's matches here"
+    static var showAllHint: String {
+        String(localized: "Lists up to 500 of this book's matches here",
+               comment: "VoiceOver hint of the row that lists a book's matches in the Search Library results. 500 is the most it lists.")
+    }
 
     /// The row under a book whose matches are more than even Show All lists,
     /// once it lists its most: "Listing 500 of 700 matches: refine the
     /// search to see the rest", "Listing 500 of more than 1,000 matches: …".
     static func listedPart(_ shown: Int, of matches: Int, isLowerBound: Bool) -> String {
-        "Listing \(shown.formatted()) of \(total(matches, isLowerBound: isLowerBound)) matches: refine the search to see the rest"
+        String(localized: "Listing \(shown) of \(total(matches, isLowerBound: isLowerBound)) matches: refine the search to see the rest",
+               comment: "Row under a book whose matches are more than the list shows even after Show All. %1$lld is the number listed, and %2$@ is the book's total, such as \"700\" or \"more than 1,000\".")
     }
 
     /// Said once Show All has listed a book's matches: "Listing 212 matches
@@ -181,15 +275,19 @@ enum LibrarySearchWording {
     /// "Listing the first 500 of 700 matches in The Long Road".
     static func listedAll(_ count: Int, of matches: Int, isLowerBound: Bool, bookTitle: String) -> String {
         guard isLowerBound || matches > count else {
-            return "Listing \(count == 1 ? "1 match" : "\(count.formatted()) matches") in \(bookTitle)"
+            return String(localized: "Listing \(count) matches in \(bookTitle)",
+                          comment: "Announcement once Show All has listed every match of a book. %1$lld is the number of matches and %2$@ is the book's title.")
         }
-        return "Listing the first \(count.formatted()) of \(total(matches, isLowerBound: isLowerBound)) matches in \(bookTitle)"
+        return String(localized: "Listing the first \(count) of \(total(matches, isLowerBound: isLowerBound)) matches in \(bookTitle)",
+                      comment: "Announcement once Show All has listed the first matches of a book that holds more. %1$lld is the number listed, %2$@ is the book's total, such as \"700\" or \"more than 1,000\", and %3$@ is the book's title.")
     }
 
     /// A book's count of matches as a total: "700", or "more than 1,000"
     /// when the count stopped at its limit.
     private static func total(_ matches: Int, isLowerBound: Bool) -> String {
-        isLowerBound ? "more than \(matches.formatted())" : matches.formatted()
+        guard isLowerBound else { return matches.formatted() }
+        return String(localized: "more than \(matches)",
+                      comment: "A book's total number of matches when the count stopped at its limit, inside a longer sentence such as \"Show the first 500 of more than 1,000 matches\". %lld is the number the count stopped at.")
     }
 
     // MARK: - Opening a Match
@@ -198,26 +296,30 @@ enum LibrarySearchWording {
     /// when the match is under a heading or in a chapter with a title:
     /// "Moved to the match, Chapter 3." or "Moved to the match."
     static func movedToMatch(location: String?) -> String {
-        guard let location else { return "Moved to the match." }
-        return "Moved to the match, \(location)."
+        guard let location else {
+            return String(localized: "Moved to the match.",
+                          comment: "Announcement after the reader moved to a search match whose place is unknown.")
+        }
+        return String(localized: "Moved to the match, \(location).",
+                      comment: "Announcement after the reader moved to a search match. %@ is its place, such as a chapter's title.")
     }
 
     /// Said by the reader when the book's text changed since the search and
     /// the match was found again nearby.
-    static let movedToMatchFoundAgain = "The text changed since the search; moved to the nearest match."
+    static var movedToMatchFoundAgain: String {
+        String(localized: "The text changed since the search; moved to the nearest match.",
+               comment: "Announcement when the book's text changed since the search and the reader moved to the nearest match.")
+    }
 
     /// Said by the reader when the book no longer holds the match.
-    static let matchGone = "That match is no longer in the book's text. Search again to find it."
+    static var matchGone: String {
+        String(localized: "That match is no longer in the book's text. Search again to find it.",
+               comment: "Announcement when a search match is no longer in the book's text.")
+    }
 
     /// Said when a match's book has left the library since the search.
     static func bookGone(title: String) -> String {
-        "\(title) is no longer in the library."
-    }
-
-    // MARK: - Counting
-
-    /// `count` books, the count grouped by thousands: "1 book", "750 books".
-    private static func countedBooks(_ count: Int) -> String {
-        count == 1 ? "1 book" : "\(count.formatted()) books"
+        String(localized: "\(title) is no longer in the library.",
+               comment: "Announcement when the book of a search match has left the library since the search. %@ is the book's title.")
     }
 }
