@@ -5716,6 +5716,9 @@
     "Find duplicate books" : {
       "comment" : "VoiceOver label of the Find Duplicate Books button in Storage settings."
     },
+    "Finds duplicate books in all folders by file content, title, or author." : {
+      "comment" : "Caption under the Find Duplicate Books button in Storage settings."
+    },
     "Finished" : {
       "comment" : "How far a finished book has got, shown and spoken in place of its percent: in the library's row, Speak Info, Where Am I?, and Copy Reading Position.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .finished.",
       "localizations" : {
@@ -8420,14 +8423,14 @@
     "Re-extract All" : {
       "comment" : "Button of the Redo Text Extraction question that starts the extraction."
     },
-    "Re-extract the cached text for all books." : {
-      "comment" : "First sentence of the caption under the Redo Text Extraction button in Storage settings."
-    },
     "Re-extracting text" : {
       "comment" : "Title of the progress shown while Redo Text Extraction reads every book's text again."
     },
     "Re-extracts cached text from all books. Useful after parser fixes or format improvements." : {
       "comment" : "VoiceOver hint of the Redo Text Extraction button in Storage settings."
+    },
+    "Re-extracts every book's cached text." : {
+      "comment" : "First sentence of the caption under the Redo Text Extraction button in Storage settings."
     },
     "Re-import the book to replace it." : {
       "comment" : "Second sentence of the message when a chapter's audio file is unreadable: what to do."
@@ -8528,7 +8531,7 @@
     "Reading position copied to clipboard" : {
       "comment" : "Announcement after Copy Reading Position put the reading position on the clipboard."
     },
-    "Reading positions will be preserved, but character offsets may shift slightly if the extraction produces different text." : {
+    "Reading positions are kept, but character offsets may shift slightly if the text changes." : {
       "comment" : "Last sentence of the Redo Text Extraction question."
     },
     "Reading the audio took longer than %@ seconds; TextMouth stopped waiting." : {
@@ -9498,9 +9501,6 @@
     },
     "Search Results" : {
       "comment" : "Name of the VoiceOver rotor in Search in Book that moves between the search results."
-    },
-    "Search across all folders for potential duplicate books based on file content, title, or author." : {
-      "comment" : "Caption under the Find Duplicate Books button in Storage settings."
     },
     "Search in Book" : {
       "comment" : "Heading and navigation title of the Search in Book sheet, and the name of its command.\nName of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Searches the text of the open book. Also the title of the menu command of the same name."
@@ -12508,8 +12508,19 @@
     "This item could not be removed from the library and remains in it:" : {
       "comment" : "Heading over the one item of a folder that could not be removed from the library. A line about it follows."
     },
-    "This may take a while for large libraries." : {
-      "comment" : "Second sentence of the Redo Text Extraction question."
+    "This moves all data from %@ back to the default location, %@." : {
+      "comment" : "Message of the question asked before moving the library back to the default location. %1$@ is the current folder's path; %2$@ is the default folder's path.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This moves all data from %1$@ back to the default location, %2$@."
+          }
+        }
+      }
+    },
+    "This re-extracts the cached text of every book, which may take a while for a large library." : {
+      "comment" : "First sentence of the Redo Text Extraction question."
     },
     "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open." : {
       "comment" : "Explanation under the question asked when the Record window is closed with a recording that could not be saved. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that saves, the one that deletes the recording, and the one that keeps the window open.",
@@ -12522,25 +12533,11 @@
         }
       }
     },
+    "This recreates the directory structure and migrates books using old storage." : {
+      "comment" : "First sentence of the Rebuild Directory confirmation."
+    },
     "This view is as TextMouth made it." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint for a built-in view as TextMouth made it, or Folders or the Reading List, when it is dimmed."
-    },
-    "This will move all data from %@ back to the default location at %@." : {
-      "comment" : "Message of the question asked before moving the library back to the default location. %1$@ is the current folder's path; %2$@ is the default folder's path.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "This will move all data from %1$@ back to the default location at %2$@."
-          }
-        }
-      }
-    },
-    "This will re-extract the cached text for all books in your library." : {
-      "comment" : "First sentence of the Redo Text Extraction question."
-    },
-    "This will recreate the directory structure and migrate any books using old storage." : {
-      "comment" : "First sentence of the Rebuild Directory confirmation."
     },
     "Tilde" : {
       "comment" : "Name of the punctuation key \"~\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tilde\"."
@@ -13177,6 +13174,9 @@
     "Use ffmpeg for filters" : {
       "comment" : "Label of the switch in Storage settings (Audio Editing) that lets the audio editor's filters run through an installed ffmpeg program. ffmpeg is the program's name."
     },
+    "Use it after parser updates." : {
+      "comment" : "Last sentence of the caption under the Redo Text Extraction button in Storage settings. \"It\" is Redo Text Extraction."
+    },
     "Use regular expression" : {
       "comment" : "VoiceOver label of the Use Regex switch in Search in Book."
     },
@@ -13196,9 +13196,6 @@
           }
         }
       }
-    },
-    "Use this after parser updates to refresh the cached content." : {
-      "comment" : "Last sentence of the caption under the Redo Text Extraction button in Storage settings."
     },
     "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it." : {
       "comment" : "Last sentence of what Try Again does on the library index recovery sheet: when to use it."
@@ -13517,7 +13514,7 @@
     "You edited this transcript on %@. Transcribing again replaces your edits." : {
       "comment" : "Line of the Transcribe Audio sheet warning that transcribing again replaces the user's own edits. %@ is a date, such as \"October 5, 2026\"."
     },
-    "Your books and reading positions will be preserved." : {
+    "Your books and reading positions are kept." : {
       "comment" : "Last sentence of the Rebuild Directory confirmation."
     },
     "Your copy of the rules is empty. Edit Rules… opens it to add some." : {

@@ -311,7 +311,7 @@ enum StorageSettingsWording {
                comment: "VoiceOver hint of the Find Duplicate Books button in Storage settings.")
     }
     static var findDuplicatesCaption: String {
-        String(localized: "Search across all folders for potential duplicate books based on file content, title, or author.",
+        String(localized: "Finds duplicate books in all folders by file content, title, or author.",
                comment: "Caption under the Find Duplicate Books button in Storage settings.")
     }
     static var redoExtractionTitle: String {
@@ -336,10 +336,10 @@ enum StorageSettingsWording {
     }
     static var redoExtractionCaption: String {
         SentenceWording.joined([
-            String(localized: "Re-extract the cached text for all books.",
+            String(localized: "Re-extracts every book's cached text.",
                    comment: "First sentence of the caption under the Redo Text Extraction button in Storage settings."),
-            String(localized: "Use this after parser updates to refresh the cached content.",
-                   comment: "Last sentence of the caption under the Redo Text Extraction button in Storage settings."),
+            String(localized: "Use it after parser updates.",
+                   comment: "Last sentence of the caption under the Redo Text Extraction button in Storage settings. \"It\" is Redo Text Extraction."),
         ])
     }
     static var libraryMaintenanceHeader: String {
@@ -358,9 +358,9 @@ enum StorageSettingsWording {
     }
     static var rebuildMessage: String {
         SentenceWording.joined([
-            String(localized: "This will recreate the directory structure and migrate any books using old storage.",
+            String(localized: "This recreates the directory structure and migrates books using old storage.",
                    comment: "First sentence of the Rebuild Directory confirmation."),
-            String(localized: "Your books and reading positions will be preserved.",
+            String(localized: "Your books and reading positions are kept.",
                    comment: "Last sentence of the Rebuild Directory confirmation."),
         ])
     }
@@ -373,7 +373,7 @@ enum StorageSettingsWording {
                comment: "Button of the Reset to Default Location question that moves the library.")
     }
     static func resetMessage(from root: String, to defaultRoot: String) -> String {
-        String(localized: "This will move all data from \(root) back to the default location at \(defaultRoot).",
+        String(localized: "This moves all data from \(root) back to the default location, \(defaultRoot).",
                comment: "Message of the question asked before moving the library back to the default location. %1$@ is the current folder's path; %2$@ is the default folder's path.")
     }
     static var redoAlertTitle: String {
@@ -386,11 +386,9 @@ enum StorageSettingsWording {
     }
     static var redoMessage: String {
         SentenceWording.joined([
-            String(localized: "This will re-extract the cached text for all books in your library.",
+            String(localized: "This re-extracts the cached text of every book, which may take a while for a large library.",
                    comment: "First sentence of the Redo Text Extraction question."),
-            String(localized: "This may take a while for large libraries.",
-                   comment: "Second sentence of the Redo Text Extraction question."),
-            String(localized: "Reading positions will be preserved, but character offsets may shift slightly if the extraction produces different text.",
+            String(localized: "Reading positions are kept, but character offsets may shift slightly if the text changes.",
                    comment: "Last sentence of the Redo Text Extraction question."),
         ])
     }
