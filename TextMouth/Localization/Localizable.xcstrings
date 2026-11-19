@@ -74,7 +74,7 @@
         }
       }
     },
-    "%@ is still open in a reader. Close the reader, then choose Edit Audio again." : {
+    "%@ is open in a reader. Close it, then choose Edit Audio again." : {
       "comment" : "Said when a book's reader did not close, so the audio editor can't open. %@ is the book's title. \"Edit Audio\" is the name of the command."
     },
     "%@ isn't in the reading list." : {
@@ -636,7 +636,7 @@
     "A chapter marker needs a title." : {
       "comment" : "Problem shown when the title of a chapter marker to insert in the audio editor is blank."
     },
-    "A copy of it was kept in the book's package. Start over with no edits, or cancel and leave the book as it is." : {
+    "A copy was kept in the book's package. Start over with no edits, or cancel." : {
       "comment" : "Explains the question about an unreadable audio edit history: what Start Over and Cancel do."
     },
     "A filter preset needs a name." : {
@@ -653,14 +653,11 @@
         }
       }
     },
+    "A newer TextMouth edited this audio, so this version leaves its edits alone." : {
+      "comment" : "Said when the book's saved edit history was written by a later version of TextMouth than this one."
+    },
     "A quote isn't closed in “%@”." : {
       "comment" : "Problem found in a typed filter chain: a single quote is opened and never closed. %@ is the text of the part holding it."
-    },
-    "A recording is under way in the editor of “%@”. Stop it, or discard it with Clear Selection, then quit TextMouth." : {
-      "comment" : "Said in an audio editor when TextMouth can't quit because a punch-in records there. %@ is the book's title. \"Clear Selection\" is the name of a command."
-    },
-    "A recording is under way. Stop it, or discard it with Clear Selection, then close the editor." : {
-      "comment" : "Said when the audio editor's window can't close because a punch-in records. \"Clear Selection\" is the name of a command."
     },
     "A stretch of the edits runs past the end of “%@”." : {
       "comment" : "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name."
@@ -886,6 +883,12 @@
     "Apply Filter" : {
       "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\"; also the title of the audio editor's filter sheet."
     },
+    "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above." : {
+      "comment" : "Explains the filter presets sheet. Apply Filter is the audio editor's command. \"highpass=f=80,volume=3dB\" is filter syntax and stays as it is. ffmpeg is the name of a program. \"turned on above\" refers to the Use ffmpeg for filters switch in Storage settings."
+    },
+    "Apply Filter plays a preview first, and applies when you choose Apply again." : {
+      "comment" : "Hint of the Preview filters before applying switch in Storage settings. Apply Filter and Apply are the audio editor's command and button."
+    },
     "Apply to" : {
       "comment" : "Label of the choice in the audio editor's Apply Filter sheet of what to filter: the selection or the whole file."
     },
@@ -925,9 +928,6 @@
           }
         }
       }
-    },
-    "Asks where to save the file, then writes it. The book's own file stays as it is." : {
-      "comment" : "Hint of the audio editor's Export… button."
     },
     "Audio Editing" : {
       "comment" : "Heading of the Audio Editing group in Storage settings: what happens to originals of edited audio, ffmpeg, and the audio editor's behaviour."
@@ -1447,32 +1447,6 @@
     "Drops a marker at the cursor, even while the audio plays." : {
       "comment" : "Hint of the audio editor's Add Marker button."
     },
-    "Each recording and edited audiobook keeps its original audio for %lld days after it was saved or last edited; then the original is deleted." : {
-      "comment" : "Explains Storage settings' Original audio choice Keep for a number of days. %lld is the number of days.",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Each recording and edited audiobook keeps its original audio for %lld day after it was saved or last edited; then the original is deleted."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Each recording and edited audiobook keeps its original audio for %lld days after it was saved or last edited; then the original is deleted."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Each recording and edited audiobook keeps its original audio until the book is removed." : {
-      "comment" : "Explains Storage settings' Original audio choice Keep: originals are kept until their book is removed."
-    },
     "Edit" : {
       "comment" : "Button of the track question that opens the audio editor on the track chosen, and the heading of the audio editor's editing buttons.\nName of a filter preset's Edit button, also its VoiceOver action and context menu item."
     },
@@ -1531,6 +1505,9 @@
     },
     "Edits" : {
       "comment" : "Label of the number of edits made, in the audio editor's Audio Info sheet."
+    },
+    "Edits one track at a time, listed by chapter name." : {
+      "comment" : "Explains the question about which track of a book to edit."
     },
     "End of book" : {
       "comment" : "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.",
@@ -1681,8 +1658,11 @@
         }
       }
     },
-    "Exports the edited audio to a file outside the library, in a format you choose." : {
+    "Exports to a file outside the library, in a format you choose." : {
       "comment" : "Hint of the audio editor's Export button."
+    },
+    "Exports to a file you choose; the book's own file is unchanged." : {
+      "comment" : "Hint of the audio editor's Export… button."
     },
     "Export…" : {
       "comment" : "Button of the audio editor's Export Audio sheet that asks where to save the file."
@@ -1719,7 +1699,7 @@
     "Filters can't be applied here." : {
       "comment" : "Said when a filter or a volume change is asked for where nothing can render one."
     },
-    "Filters in ffmpeg's syntax, separated by commas, each with its options after an equals sign, separated by colons." : {
+    "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons." : {
       "comment" : "Hint of the chain field of a filter preset. ffmpeg is the name of a program."
     },
     "Finished" : {
@@ -1746,6 +1726,9 @@
     },
     "Format" : {
       "comment" : "Label of the pop-up in the audio editor's Export Audio sheet that chooses the file format."
+    },
+    "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has." : {
+      "comment" : "Hint of the Use ffmpeg for filters switch in Storage settings. %@ is the folder path where the ffmpeg program was found. ffmpeg is the program's name."
     },
     "Getting ready to record" : {
       "comment" : "A part of the audio editor's status line while a punch-in gets ready to record."
@@ -1788,9 +1771,6 @@
           }
         }
       }
-    },
-    "How long a silence to insert at the cursor: seconds, such as 2.5, or minutes and seconds, such as 1:30." : {
-      "comment" : "Explains the silence length field of the audio editor's Insert Silence sheet. The examples are typed times."
     },
     "In at %@." : {
       "comment" : "Said as the audio editor's Mark In marks the selection's start. %@ is the time in words. A sentence about the selection it makes may follow."
@@ -1876,7 +1856,7 @@
         }
       }
     },
-    "Keeps only the selection, removing the audio before and after it." : {
+    "Keeps only the selection." : {
       "comment" : "Hint of the audio editor's Trim to Selection button."
     },
     "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download." : {
@@ -1904,7 +1884,7 @@
     "Kept" : {
       "comment" : "The original audio's state in the audio editor's Audio Info sheet: it is kept."
     },
-    "Labels and semicolons in a filter graph need ffmpeg. TextMouth's own filters take one chain of filters separated by commas." : {
+    "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain." : {
       "comment" : "Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas."
     },
     "Last message" : {
@@ -1913,16 +1893,16 @@
     "Length" : {
       "comment" : "Label of the audio editor's field for the length of a silence, and of the audio's length in Audio Info."
     },
+    "Length of silence to insert: seconds (2.5) or minutes and seconds (1:30)." : {
+      "comment" : "Explains the silence length field of the audio editor's Insert Silence sheet. The examples are typed times."
+    },
     "Library" : {
       "comment" : "Title of the first screen, the list of the user's books and folders."
     },
     "Listen and Move" : {
       "comment" : "Heading of the audio editor's buttons for listening and moving the cursor."
     },
-    "Lists the audio editor's filter presets, to edit, add, reorder, delete, or reset them." : {
-      "comment" : "Hint of the Filter Presets button in Storage settings."
-    },
-    "Lists the markers, the chapter markers, and the pauses, to go to, name, select, or delete them." : {
+    "Lists markers, chapter markers, and pauses, to go to, name, select, or delete." : {
       "comment" : "Hint of the audio editor's Show Markers button."
     },
     "Loading" : {
@@ -1937,7 +1917,7 @@
     "M4B Audiobook (AAC)" : {
       "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4B audiobook files holding AAC audio."
     },
-    "MP3 can't be written: TextMouth's own encoder couldn't start, and ffmpeg isn't installed, or is turned off in Storage settings." : {
+    "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings." : {
       "comment" : "Said when MP3 is asked for and neither TextMouth's built-in encoder nor an installed ffmpeg program can write it. \"Storage settings\" is the name of a settings tab."
     },
     "Marker %@" : {
@@ -2063,6 +2043,12 @@
     "Moves the cursor to the end of the audio." : {
       "comment" : "Hint of the audio editor's Go to End button."
     },
+    "Moves the cursor to the end of the next pause." : {
+      "comment" : "Hint of the audio editor's Next Pause button."
+    },
+    "Moves the cursor to the end of the previous pause." : {
+      "comment" : "Hint of the audio editor's Previous Pause button."
+    },
     "Moves the cursor to the next chapter marker." : {
       "comment" : "Hint of the audio editor's Next Chapter button."
     },
@@ -2071,12 +2057,6 @@
     },
     "Moves the cursor to the start of the audio." : {
       "comment" : "Hint of the audio editor's Go to Start button."
-    },
-    "Moves the cursor to where the sound after the next pause begins." : {
-      "comment" : "Hint of the audio editor's Next Pause button."
-    },
-    "Moves the cursor to where the sound after the previous pause begins." : {
-      "comment" : "Hint of the audio editor's Previous Pause button."
     },
     "Name" : {
       "comment" : "Label of the name field of a filter preset or an audio marker."
@@ -2126,6 +2106,9 @@
     "No chapter marker before the cursor." : {
       "comment" : "Said when the audio editor's Previous Chapter finds no chapter marker before the cursor."
     },
+    "No chapter markers or markers, so no label file would be written." : {
+      "comment" : "Hint of the Also write the markers as Audacity labels checkbox while the audio has no markers of either kind."
+    },
     "No edits" : {
       "comment" : "The edits as the audio editor's Audio Info says them: there are none."
     },
@@ -2135,7 +2118,10 @@
     "No filter presets. Add one, or reset to the defaults." : {
       "comment" : "Shown in the filter presets sheet when the list is empty."
     },
-    "No markers yet. Add Marker drops one at the cursor, even while the audio plays." : {
+    "No filter presets. Add some in Storage settings, under Audio Editing." : {
+      "comment" : "Shown in the audio editor's Apply Filter sheet when there are no filter presets. \"Storage settings\" and \"Audio Editing\" are the names of a settings tab and its group."
+    },
+    "No markers yet. Add Marker drops one at the cursor." : {
       "comment" : "Shown in the audio editor's list when no marker has been dropped. \"Add Marker\" is the name of the command."
     },
     "No microphone" : {
@@ -2177,13 +2163,13 @@
         }
       }
     },
-    "No original audio is kept for this book, so it can't be reverted. Undo takes back the edits made since it was last saved." : {
-      "comment" : "Said by the audio editor's Revert to Original when the book keeps no original audio."
-    },
     "No original audio is kept for this book, so saved edits can't be undone." : {
       "comment" : "Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book keeps no original audio."
     },
-    "No original audio is kept: edits change a book's audio in place, and saved edits can't be undone." : {
+    "No original is kept, so it can't be reverted. Undo takes back edits since the last save." : {
+      "comment" : "Said by the audio editor's Revert to Original when the book keeps no original audio."
+    },
+    "No original is kept: edits change the audio in place, and saved edits can't be undone." : {
       "comment" : "Explains Storage settings' Original audio choice Don't keep: no original is kept, so saved edits can't be undone."
     },
     "No pause after the cursor." : {
@@ -2242,6 +2228,9 @@
         }
       }
     },
+    "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit." : {
+      "comment" : "Explains the question asked as the audio editor's window with unsaved edits closes: what Discard does."
+    },
     "Not kept" : {
       "comment" : "The original audio's state in the audio editor's Audio Info sheet: it is not kept."
     },
@@ -2286,6 +2275,12 @@
     },
     "Nothing is selected." : {
       "comment" : "Said when an audio editor command needs a selection and there is none."
+    },
+    "Nothing to revert: no edit can be undone." : {
+      "comment" : "Said by the audio editor's Revert to Original when no edit can be undone."
+    },
+    "Nothing to save: the book's audio holds every edit." : {
+      "comment" : "Said by the audio editor's Save when there is nothing to save."
     },
     "Now %@ long." : {
       "comment" : "Ends the announcement of an edit in the audio editor: the audio's new length. %@ is the length in words."
@@ -2362,11 +2357,40 @@
         }
       }
     },
+    "Opens the filter presets, to edit, add, reorder, delete, or reset." : {
+      "comment" : "Hint of the Filter Presets button in Storage settings."
+    },
     "Original audio" : {
       "comment" : "Label of the picker in Storage settings (Audio Editing) that chooses what happens to the original audio of recordings and edited audiobooks.\nLabel of whether the original audio is kept, in the audio editor's Audio Info sheet."
     },
     "Original audio for this book" : {
       "comment" : "Label of the pop-up in the audio editor's Audio Info sheet that sets what happens to this book's original audio."
+    },
+    "Originals are kept for %lld days after the book was saved or last edited, then deleted." : {
+      "comment" : "Explains Storage settings' Original audio choice Keep for a number of days. %lld is the number of days.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Originals are kept for %lld day after the book was saved or last edited, then deleted."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Originals are kept for %lld days after the book was saved or last edited, then deleted."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Originals are kept until the book is removed." : {
+      "comment" : "Explains Storage settings' Original audio choice Keep: originals are kept until their book is removed."
     },
     "Out at %@." : {
       "comment" : "Said as the audio editor's Mark Out marks the selection's end. %@ is the time in words. A sentence about the selection it makes may follow."
@@ -2399,7 +2423,7 @@
     "Pasted %@." : {
       "comment" : "Said as the audio editor's Paste pastes at the cursor. %@ is the length pasted, in words."
     },
-    "Pastes the audio cut or copied at the cursor, or over the selection. Right after a cut, it moves the audio cut." : {
+    "Pastes at the cursor, or over the selection. Right after a cut, it moves the audio." : {
       "comment" : "Hint of the audio editor's Paste button."
     },
     "Pause" : {
@@ -2459,8 +2483,14 @@
     "Playing from the start." : {
       "comment" : "Said as Play starts again from the start of the audio, the cursor having been at the end."
     },
-    "Plays from the cursor, or pauses where the audio is." : {
+    "Plays a preview; choose Apply again to apply." : {
+      "comment" : "Hint of the audio editor's Apply button while a press would play a preview first."
+    },
+    "Plays from the cursor, or pauses." : {
       "comment" : "Hint of the audio editor's Play or Pause button."
+    },
+    "Plays half a second at the cursor after each move." : {
+      "comment" : "Hint of the Play half a second after each move switch in Storage settings."
     },
     "Plays the book and pauses before it starts again." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends.",
@@ -2517,14 +2547,14 @@
         }
       }
     },
-    "Plays the filtered audio first; choose Apply again to apply the filter." : {
-      "comment" : "Hint of the audio editor's Apply button while a press would play a preview first."
-    },
     "Plays the selection, and stops at its end." : {
       "comment" : "Hint of the audio editor's Play Selection button."
     },
     "Position" : {
       "comment" : "Label of the audio editor's time display: where the cursor is."
+    },
+    "Presets from another Mac just arrived and replaced these. Make the change again." : {
+      "comment" : "Said when a filter preset change is not made because the presets file synced in from another Mac while the premade presets stood in for it."
     },
     "Preview" : {
       "comment" : "Button of the audio editor's Apply Filter sheet that plays the filtered sound."
@@ -2625,10 +2655,13 @@
         }
       }
     },
+    "Recording. Stop or discard it with Clear Selection, then close." : {
+      "comment" : "Said when the audio editor's window can't close because a punch-in records. \"Clear Selection\" is the name of a command."
+    },
     "Recording. Stop the recording first." : {
       "comment" : "Said when an audio editor command other than the punch-in's own is chosen while a punch-in records."
     },
-    "Records from the microphone over the selection, or at the cursor, after a beep. Again, or Stop, ends it." : {
+    "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it." : {
       "comment" : "Hint of the audio editor's Punch In button. \"Stop\" is the name of a button."
     },
     "Redid %@." : {
@@ -2905,7 +2938,7 @@
         }
       }
     },
-    "Runs a filter preset over the selection or the whole file, with a preview first." : {
+    "Runs a filter preset over the selection or the whole file." : {
       "comment" : "Hint of the audio editor's Apply Filter button."
     },
     "Save" : {
@@ -3012,10 +3045,10 @@
     "Selects all of the audio." : {
       "comment" : "Hint of the audio editor's Select All button."
     },
-    "Selects from the cursor to where the sound after the next pause begins." : {
+    "Selects from the cursor to the end of the next pause." : {
       "comment" : "Hint of the audio editor's Select to Next Pause button."
     },
-    "Selects from where the sound after the previous pause begins to the cursor." : {
+    "Selects from the end of the previous pause to the cursor." : {
       "comment" : "Hint of the audio editor's Select to Previous Pause button."
     },
     "Selects the chapter the cursor is in." : {
@@ -3094,13 +3127,13 @@
     "Shorten Long Pauses" : {
       "comment" : "Title of a premade audio filter preset: makes every pause longer than a second one second long."
     },
-    "Shows the audio's length, file, and edits, and sets what happens to this book's original audio." : {
+    "Shows length, file, and edits; sets what happens to the original audio." : {
       "comment" : "Hint of the audio editor's Audio Info button."
     },
     "Silence can last at most a day." : {
       "comment" : "Problem shown when the silence to insert in the audio editor is longer than a day."
     },
-    "Silence has to last longer than no time at all." : {
+    "Silence must be longer than zero." : {
       "comment" : "Problem shown when the silence to insert in the audio editor has no length."
     },
     "Skip finished books" : {
@@ -3352,6 +3385,9 @@
     "Still working on the last change." : {
       "comment" : "Said when an audio editor command would change the audio while another change, a save, or an export is under way."
     },
+    "Still working. Close once the change is done." : {
+      "comment" : "Said when the audio editor's window can't close because a change, save, or export is under way."
+    },
     "Stop" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.",
       "localizations" : {
@@ -3490,9 +3526,6 @@
         }
       }
     },
-    "TextMouth found ffmpeg at %@. When this is on, the audio editor's filters run through it, with every filter it has." : {
-      "comment" : "Hint of the Use ffmpeg for filters switch in Storage settings. %@ is the folder path where the ffmpeg program was found. ffmpeg is the program's name."
-    },
     "TextMouth is not downloading right now." : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
       "localizations" : {
@@ -3504,7 +3537,7 @@
         }
       }
     },
-    "TextMouth is quitting, and the book's audio doesn't hold these edits yet. Discard undoes them; the next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open." : {
+    "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open." : {
       "comment" : "Explains the question about the audio editor's unsaved edits asked as TextMouth quits: what Discard and Cancel do."
     },
     "TextMouth's own filters don't include “%@”. They are %@; with ffmpeg installed, every filter it has works." : {
@@ -3629,17 +3662,14 @@
     "The audio couldn't be read." : {
       "comment" : "Said when an audio file that the edits need can't be read as audio."
     },
-    "The audio cut was too long to keep for pasting. To move a long stretch, paste right after cutting it." : {
-      "comment" : "Said by the audio editor's Paste when the audio cut was too long to keep for pasting."
-    },
     "The audio editor for %@ is already open." : {
       "comment" : "Said when Edit Audio… is chosen for a book whose editor is already open; that window comes forward. %@ is the book's title."
     },
     "The audio file “%@” that the edits need is missing from the book." : {
       "comment" : "Said when an audio file that the edits need is missing. %@ is its path inside the book's package."
     },
-    "The audio has no chapter markers or markers yet, so no label file would be written." : {
-      "comment" : "Hint of the Also write the markers as Audacity labels checkbox while the audio has no markers of either kind."
+    "The audio is only in the cloud, not on this Mac yet." : {
+      "comment" : "Said when an audio file that the edits need is only in the cloud. A second sentence says to download the book and try again."
     },
     "The audio isn't ready to play yet." : {
       "comment" : "Said when Play is pressed in the audio editor before the edited audio is ready, or after it couldn't be made ready."
@@ -3661,29 +3691,11 @@
     "The book is no longer in the library." : {
       "comment" : "Said when an audio edit can't proceed: the book was removed from the library, or is not an audiobook kept in a package of its own."
     },
-    "The book is open in a reader. Close it there, then save the edited audio again." : {
+    "The book is open in a reader. Close it, then save again." : {
       "comment" : "Said when saving the edited audio is refused because a reader has the book open and plays the file the save would replace."
     },
-    "The book's audio doesn't hold them yet. Discard undoes them; the next time you edit this book, Redo brings them back until you make another edit." : {
-      "comment" : "Explains the question asked as the audio editor's window with unsaved edits closes: what Discard does."
-    },
-    "The book's audio holds edits its history no longer has, so the edits stay, to be saved or undone the next time you edit this book." : {
+    "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book." : {
       "comment" : "Said when the audio editor's Discard can't reach the audio as it was saved: the edits stay."
-    },
-    "The book's audio is only in the cloud and isn't on this Mac yet." : {
-      "comment" : "Said when an audio file that the edits need is only in the cloud. A second sentence says to download the book and try again."
-    },
-    "The book's audio was edited by a newer version of TextMouth, so this version leaves its edits alone." : {
-      "comment" : "Said when the book's saved edit history was written by a later version of TextMouth than this one."
-    },
-    "The book's edit history couldn't be read. A copy of it was kept in the book's package." : {
-      "comment" : "Said when the book's saved edit history can't be read. A copy of the unreadable file was kept in the book's package."
-    },
-    "The book's edit history is only in the cloud and isn't on this Mac yet." : {
-      "comment" : "Said when the audio editor can't open a book: its edit history is only in the cloud. A second sentence says to try again once the book has downloaded."
-    },
-    "The book's edit history names a file outside the book, so TextMouth won't use it." : {
-      "comment" : "Said when an audio edit can't proceed: the book's saved edit history points at a file outside the book's own package."
     },
     "The books are in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
@@ -3699,20 +3711,20 @@
     "The disk is too full to keep this audio for pasting." : {
       "comment" : "Said when the disk is too full to keep the audio cut or copied in the audio editor for Paste."
     },
+    "The edit history couldn't be read. A copy was kept in the book's package." : {
+      "comment" : "Said when the book's saved edit history can't be read. A copy of the unreadable file was kept in the book's package."
+    },
+    "The edit history is only in the cloud, not on this Mac yet." : {
+      "comment" : "Said when the audio editor can't open a book: its edit history is only in the cloud. A second sentence says to try again once the book has downloaded."
+    },
+    "The edit history names a file outside the book, so it isn't used." : {
+      "comment" : "Said when an audio edit can't proceed: the book's saved edit history points at a file outside the book's own package."
+    },
     "The edit history of %@ couldn't be read." : {
       "comment" : "Question asked when a book's saved audio edit history can't be read. %@ is the book's title."
     },
     "The edited audio couldn't be written." : {
       "comment" : "Said when the edited audio could not be written, whatever the technical reason, which goes to the debug log."
-    },
-    "The editor is still working. Close it once the change is done." : {
-      "comment" : "Said when the audio editor's window can't close because a change, save, or export is under way."
-    },
-    "The editor of “%@” is still working. Quit TextMouth once the change is done." : {
-      "comment" : "Said in an audio editor when TextMouth can't quit because its work is under way. %@ is the book's title."
-    },
-    "The editor works on one track at a time. Tracks are listed by their chapter names." : {
-      "comment" : "Explains the question about which track of a book to edit."
     },
     "The edits couldn't be saved." : {
       "comment" : "Said when the audio editor's save fails. A sentence giving the reason follows."
@@ -3723,13 +3735,10 @@
     "The filter presets are reset to the defaults." : {
       "comment" : "Said as every filter preset is put back to TextMouth's premade ones."
     },
-    "The filter presets saved on another Mac just arrived, so they replaced these. Make the change again." : {
-      "comment" : "Said when a filter preset change is not made because the presets file synced in from another Mac while the premade presets stood in for it."
-    },
     "The library isn't available, so the filter presets can't be saved." : {
       "comment" : "Said when the filter presets can't be saved because the library's data folder can't be used."
     },
-    "The microphone Punch In records from. TextMouth remembers it, as the Record window does, apart from the input macOS uses for everything else." : {
+    "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input." : {
       "comment" : "Hint of the audio editor's microphone pop-up. \"Record window\" is TextMouth's window that records audio."
     },
     "The next article could not be downloaded, so playback stopped. %@" : {
@@ -3757,11 +3766,11 @@
     "The original audio was deleted on %@, so edits saved before then can't be undone." : {
       "comment" : "Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book's original audio was deleted. %@ is the date it was deleted, in long form."
     },
+    "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book." : {
+      "comment" : "Hint of the Original audio picker in Storage settings (Audio Editing): what an original is, what keeping it costs (345 MB is for an hour of a recording), and that a change reaches originals already kept."
+    },
     "The pauses couldn't be found." : {
       "comment" : "Said when the audio editor couldn't find the audio's pauses. A sentence giving the reason follows."
-    },
-    "The presets the audio editor's Apply Filter lists, in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, and every filter ffmpeg has when ffmpeg is installed and turned on above." : {
-      "comment" : "Explains the filter presets sheet. Apply Filter is the audio editor's command. \"highpass=f=80,volume=3dB\" is filter syntax and stays as it is. ffmpeg is the name of a program. \"turned on above\" refers to the Use ffmpeg for filters switch in Storage settings."
     },
     "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu." : {
       "comment" : "Shown and read as the only row of the Reading List while it holds no book. Add to Reading List is the name of the command in the Library menu.",
@@ -3785,17 +3794,11 @@
         }
       }
     },
-    "The selection is all of the audio, so there's nothing to trim." : {
+    "The selection is all the audio; nothing to trim." : {
       "comment" : "Said by the audio editor's Trim to Selection when the selection is all of the audio."
     },
     "The stretch of the take to use isn't inside the take." : {
       "comment" : "Said when a punch-in's recording is asked to use a stretch that is not inside the recording."
-    },
-    "The title of a chapter marker at the cursor. A chapter marker already at the cursor is renamed." : {
-      "comment" : "Explains the title field of the audio editor's Insert Chapter Marker sheet."
-    },
-    "There are no filter presets. Add some in Storage settings, under Audio Editing." : {
-      "comment" : "Shown in the audio editor's Apply Filter sheet when there are no filter presets. \"Storage settings\" and \"Audio Editing\" are the names of a settings tab and its group."
     },
     "There's an empty filter between two commas." : {
       "comment" : "Problem found in a typed filter chain (the audio editor's Apply Filter and the filter presets): two commas in a row leave a filter with nothing in it."
@@ -3806,16 +3809,10 @@
     "There's nothing to redo." : {
       "comment" : "Said by the audio editor's Redo when nothing has been undone."
     },
-    "There's nothing to revert: no edit can be undone." : {
-      "comment" : "Said by the audio editor's Revert to Original when no edit can be undone."
-    },
-    "There's nothing to save: the book's audio already holds every edit." : {
-      "comment" : "Said by the audio editor's Save when there is nothing to save."
-    },
     "There's nothing to undo." : {
       "comment" : "Said when Undo is asked for and there is no edit to undo, and the hint of a dimmed Undo in the audio editor."
     },
-    "These edits can only be made from the original audio, which is no longer kept." : {
+    "These edits need the original audio, which is no longer kept." : {
       "comment" : "Said when the edits wait to be rendered from an original audio that is gone. A second sentence says what helps."
     },
     "This Window" : {
@@ -3961,6 +3958,12 @@
     "Title" : {
       "comment" : "Label of the audio editor's field for a chapter marker's title."
     },
+    "Title for a chapter marker at the cursor. One already there is renamed." : {
+      "comment" : "Explains the title field of the audio editor's Insert Chapter Marker sheet."
+    },
+    "Too long to keep for pasting. To move it, paste right after cutting." : {
+      "comment" : "Said by the audio editor's Paste when the audio cut was too long to keep for pasting."
+    },
     "Track" : {
       "comment" : "Label of the pop-up that chooses which audio track of a book to edit."
     },
@@ -3997,7 +4000,7 @@
     "Undo or redo back to the audio as last saved." : {
       "comment" : "Ends a message saying the edits need an original audio that is gone: only undoing or redoing back to the audio as last saved helps."
     },
-    "Undoes every edit, back to the original audio; Redo brings them back." : {
+    "Undoes every edit, back to the original; Redo brings them back." : {
       "comment" : "Hint of the audio editor's Revert to Original button. \"Redo\" is the name of a command."
     },
     "Undoes the newest edit." : {
@@ -4020,9 +4023,6 @@
         }
       }
     },
-    "What happens to the original audio of recordings and edited audiobooks: the lossless take a recording is saved from, and a copy of an audiobook's file from before its first edit. Keeping an original lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change applies to the originals already kept, too. In a library in the cloud, an original syncs with its book." : {
-      "comment" : "Hint of the Original audio picker in Storage settings (Audio Editing): what an original is, what keeping it costs (345 MB is for an hour of a recording), and that a change reaches originals already kept."
-    },
     "When a book ends" : {
       "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.",
       "localizations" : {
@@ -4033,12 +4033,6 @@
           }
         }
       }
-    },
-    "When this is on, the audio editor plays half a second at the cursor after each move, so you hear where it landed." : {
-      "comment" : "Hint of the Play half a second after each move switch in Storage settings."
-    },
-    "When this is on, the audio editor's Apply Filter plays the filtered audio first, and applies the filter when you choose Apply again." : {
-      "comment" : "Hint of the Preview filters before applying switch in Storage settings. Apply Filter and Apply are the audio editor's command and button."
     },
     "Which track of %@ do you want to edit?" : {
       "comment" : "Question asked before editing a book of several audio tracks. %@ is the book's title."
@@ -4063,7 +4057,7 @@
         }
       }
     },
-    "Writes the chapter markers and the markers beside the audio, in an Audacity label file of the same name, which Audacity imports as a label track." : {
+    "Writes chapter markers and markers beside the audio, in an Audacity label file of the same name." : {
       "comment" : "Hint of the Also write the markers as Audacity labels checkbox. Audacity is the name of an audio editing program."
     },
     "Your library is empty. Add to Library adds a book." : {
@@ -4080,13 +4074,13 @@
         }
       }
     },
-    "ffmpeg couldn't be started. Check that it is still installed, or turn off Use ffmpeg in Storage settings." : {
+    "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings." : {
       "comment" : "Problem said when the ffmpeg program can't be started. \"Use ffmpeg\" is the name of a switch in the Storage settings."
     },
     "ffmpeg couldn't run the filters: %@" : {
       "comment" : "Problem said when the ffmpeg program refused a filter chain or the audio. %@ is ffmpeg's own words, in English."
     },
-    "ffmpeg isn't installed, so the audio editor uses TextMouth's own filters." : {
+    "ffmpeg isn't installed; TextMouth's own filters are used." : {
       "comment" : "Shown in Storage settings (Audio Editing) when no ffmpeg program is installed. ffmpeg is the program's name."
     },
     "give a frequency below half the audio's sample rate, %@ Hz" : {
@@ -4189,6 +4183,12 @@
     },
     "unknown length" : {
       "comment" : "A length of audio that is no length (not a finite number of seconds), said in a sentence, such as \"Cut unknown length.\""
+    },
+    "“%@” is recording. Stop or discard it with Clear Selection, then quit." : {
+      "comment" : "Said in an audio editor when TextMouth can't quit because a punch-in records there. %@ is the book's title. \"Clear Selection\" is the name of a command."
+    },
+    "“%@” is still working. Quit once the change is done." : {
+      "comment" : "Said in an audio editor when TextMouth can't quit because its work is under way. %@ is the book's title."
     },
     "“%@” isn't a filter's name." : {
       "comment" : "Problem found in a typed filter chain: the text before an equals sign is not a filter's name. %@ is that text."
