@@ -4986,6 +4986,9 @@
     "After an automatic refresh, an alert names the feeds with new episodes and articles" : {
       "comment" : "VoiceOver hint of the switch that shows an alert after a refresh TextMouth made by itself."
     },
+    "Afterwards, Play tries the passage again" : {
+      "comment" : "VoiceOver hint of the Close button of the speech refusal report."
+    },
     "Album" : {
       "comment" : "Name of the book information sheet's field for an audiobook's album."
     },
@@ -6737,6 +6740,9 @@
     },
     "Copies the selection for Paste." : {
       "comment" : "Hint of the audio editor's Copy button. \"Paste\" is the name of a command."
+    },
+    "Copies the whole report as plain text" : {
+      "comment" : "VoiceOver hint of the Copy Details button of the speech refusal report."
     },
     "Copies the whole report as plain text, to paste where it helps find the cause" : {
       "comment" : "VoiceOver hint of the Copy Details button of the speech refusal report."
@@ -18050,6 +18056,9 @@
     },
     "The sound effects are reset to the defaults." : {
       "comment" : "Announcement after Reset to Defaults restored every sound effect setting."
+    },
+    "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place." : {
+      "comment" : "Summary under the heading of the report of a refusal, on the Mac and the iPhone: what happened, and that Play tries again."
     },
     "The speech model for %@ isn't on this Mac yet. Download it first." : {
       "comment" : "Error shown when transcription is tried before the language's speech model is downloaded. %@ is the language's name."

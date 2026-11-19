@@ -313,29 +313,23 @@ enum SpeechRefusalWording {
                comment: "Heading of the sheet that reports speech stopped because the speech engine refused a passage, and the first line of its report.")
     }
 
-    /// What happened, in one plain sentence, and what Play does now.
-    static var summary: String { summaryText(onPhone: runsOnPhone) }
+    /// What happened, in one plain sentence, and what Play does now. It names
+    /// no device, so one sentence serves the Mac and the iPhone: the report's
+    /// own device heading says which ("This Mac", "This iPhone").
+    static var summary: String {
+        String(localized: "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+               comment: "Summary under the heading of the report of a refusal, on the Mac and the iPhone: what happened, and that Play tries again.")
+    }
 
-    /// Whether this build is the iPhone app, which words the report for the
-    /// iPhone (the spec, "Words that say Mac"). A parameter of the functions
-    /// below, so that a test on the Mac reaches both.
+    /// Whether this build is the iPhone app, which words the report's device
+    /// lines for the iPhone (the spec, "Words that say Mac"). A parameter of
+    /// the functions below, so that a test on the Mac reaches both.
     static var runsOnPhone: Bool {
         #if os(iOS)
         true
         #else
         false
         #endif
-    }
-
-    /// `summary` for the Mac, or for the iPhone, which has "The iPhone's
-    /// speech engine".
-    static func summaryText(onPhone: Bool) -> String {
-        if onPhone {
-            return String(localized: "The iPhone's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
-                          comment: "Summary under the heading of the report of a refusal, on the iPhone: what happened, and that Play tries again.")
-        }
-        return String(localized: "The Mac's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
-                      comment: "Summary under the heading of the report of a refusal, on the Mac: what happened, and that Play tries again.")
     }
 
     /// The heading of the report's lines about the device it ran on.
@@ -376,7 +370,7 @@ enum SpeechRefusalWording {
                comment: "Title of the button of the speech refusal report that copies the whole report.")
     }
     static var copyHint: String {
-        String(localized: "Copies the whole report as plain text, to paste where it helps find the cause",
+        String(localized: "Copies the whole report as plain text",
                comment: "VoiceOver hint of the Copy Details button of the speech refusal report.")
     }
 
@@ -398,7 +392,7 @@ enum SpeechRefusalWording {
                comment: "Title of the button that closes a sheet, such as the speech refusal report.")
     }
     static var closeHint: String {
-        String(localized: "Closes the report; Play tries the passage again",
+        String(localized: "Afterwards, Play tries the passage again",
                comment: "VoiceOver hint of the Close button of the speech refusal report.")
     }
 
