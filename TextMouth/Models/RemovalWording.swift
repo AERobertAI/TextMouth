@@ -1,6 +1,84 @@
 import Combine
 import Foundation
 
+// MARK: - Punctuation and Objects Shared by the Removal Words
+
+/// The small pieces that every removal sentence builds from, each a
+/// localized string of its own so a language puts its punctuation and its
+/// capitals where it needs them (FR34): a title made into a question, a
+/// title that asks for a choice with an ellipsis, a clause made into a
+/// sentence, and the title-case objects that fill a button's title.
+enum RemovalText {
+    /// `title` as a question: "Move Book to Trash?".
+    static func question(_ title: String) -> String {
+        String(localized: "\(title)?",
+               comment: "Makes a title into a question, such as the title of a removal confirmation: \"Move Book to Trash?\". %@ is the title without its question mark.")
+    }
+
+    /// `title` followed by an ellipsis, which says a question follows.
+    static func withEllipsis(_ title: String) -> String {
+        String(localized: "\(title)…",
+               comment: "Adds an ellipsis to the title of a command, which says a question follows the command: \"Delete Download…\". %@ is the title without the ellipsis.")
+    }
+
+    /// `clause` as a sentence of its own: its first letter in capitals and a
+    /// full stop, "Their files go to the Trash, where you can recover them
+    /// until the Trash is emptied."
+    static func sentence(_ clause: String) -> String {
+        let capitalized = clause.capitalizingFirstLetter
+        return String(localized: "\(capitalized).",
+                      comment: "Makes a clause into a whole sentence by adding its full stop. %@ is the clause, already starting with a capital letter.")
+    }
+
+    /// The title-case object of a button that removes `count` books:
+    /// "3 Books".
+    static func booksObject(_ count: Int) -> String {
+        String(localized: "\(count) Books",
+               comment: "The object of a removal button's title, in title case, as in \"Move 3 Books to Trash\". %lld is how many books, a count.")
+    }
+
+    /// The title-case object of a button that removes the books selected in
+    /// a list: "3 Selected".
+    static func selectedObject(_ count: Int) -> String {
+        String(localized: "\(count) Selected",
+               comment: "The object of a removal button's title, in title case, as in \"Move 3 Selected to Trash\". %lld is how many books are selected, a count.")
+    }
+
+    /// The title-case object for one book in a confirmation's title: "Book".
+    static var bookObject: String {
+        String(localized: "Book",
+               comment: "The object of a removal confirmation's title for one book, in title case, as in \"Move Book to Trash?\".")
+    }
+
+    /// The title-case object of the button that deletes a folder with its
+    /// contents: "Everything".
+    static var everythingObject: String {
+        String(localized: "Everything",
+               comment: "The object of the button that deletes a folder with its contents, in title case, as in \"Move Everything to Trash\".")
+    }
+
+    /// The title-case object of the second confirmation that deletes a
+    /// folder: "Everything in “Fiction”".
+    static func everythingInObject(_ quotedName: String) -> String {
+        String(localized: "Everything in \(quotedName)",
+               comment: "The object of the title of the second confirmation that deletes a folder with its contents, in title case, as in \"Move Everything in “Fiction” to Trash?\". %@ is the folder's name in quotation marks.")
+    }
+
+    /// A name in quotation marks: “Notes”.
+    static func quoted(_ name: String) -> String {
+        String(localized: "“\(name)”",
+               comment: "Puts a book's, folder's, or feed's title in quotation marks inside a sentence. %@ is the title.")
+    }
+}
+
+/// What a failure heading calls the things that could not be removed.
+enum RemovalNoun {
+    /// Books, as a list of books removes them.
+    case book
+    /// Items of a folder: books and the folders themselves.
+    case item
+}
+
 /// What removing books does with their files (TODO A08). Every removal
 /// button, accessibility label, confirmation, and completion or failure
 /// message takes its words from here, so what the user sees and hears
@@ -26,58 +104,115 @@ enum RemovalMode: Equatable, CaseIterable {
     /// bare action when there is no object: "Move to Trash", "Move 3 Books
     /// to Trash", "Delete Everything Permanently", "Remove from Library Only".
     func buttonTitle(_ object: String = "") -> String {
-        let spaced = object.isEmpty ? "" : "\(object) "
+        if object.isEmpty {
+            switch self {
+            case .keepFiles:
+                return String(localized: "Remove from Library Only",
+                              comment: "Title of the button that removes books from the library and keeps their files, in title case.")
+            case .moveToTrash:
+                return String(localized: "Move to Trash",
+                              comment: "Title of the button that removes books and moves their files to the Trash, in title case.")
+            case .deletePermanently:
+                return String(localized: "Delete Permanently",
+                              comment: "Title of the button that removes books and deletes their files permanently, in title case.")
+            }
+        }
         switch self {
-        case .keepFiles: return "Remove \(spaced)from Library Only"
-        case .moveToTrash: return "Move \(spaced)to Trash"
-        case .deletePermanently: return "Delete \(spaced)Permanently"
+        case .keepFiles:
+            return String(localized: "Remove \(object) from Library Only",
+                          comment: "Title of a button that removes the named books from the library and keeps their files, in title case. %@ is the object, such as \"3 Books\" or \"3 Selected\".")
+        case .moveToTrash:
+            return String(localized: "Move \(object) to Trash",
+                          comment: "Title of a button that moves the named books' files to the Trash, in title case. %@ is the object, such as \"3 Books\", \"3 Selected\", or \"Everything\".")
+        case .deletePermanently:
+            return String(localized: "Delete \(object) Permanently",
+                          comment: "Title of a button that deletes the named books' files permanently, in title case. %@ is the object, such as \"3 Books\", \"3 Selected\", or \"Everything\".")
         }
     }
 
     /// The same action as VoiceOver speaks it, naming `object` in full:
     /// "Move 3 selected books to the Trash", "Delete “Notes” permanently".
+    func spokenLabel(_ object: String) -> String {
+        switch self {
+        case .keepFiles:
+            return String(localized: "Remove \(object) from the library and keep the files",
+                          comment: "VoiceOver label of a removal button that keeps the files. %@ is what is removed, such as \"“Notes”\" or \"3 selected books\".")
+        case .moveToTrash:
+            return String(localized: "Move \(object) to the Trash",
+                          comment: "VoiceOver label of a removal button that moves files to the Trash. %@ is what is moved, such as \"“Notes”\", \"3 selected books\", or \"the original file\".")
+        case .deletePermanently:
+            return String(localized: "Delete \(object) permanently",
+                          comment: "VoiceOver label of a removal button that deletes files permanently. %@ is what is deleted, such as \"“Notes”\", \"3 selected books\", or \"the original file\".")
+        }
+    }
+
+    /// The English of `spokenLabel(_:)`, for the sentences of
+    /// `OriginalFileDeletionWording`, which glue it into English sentences
+    /// of their own until that area converts (FR34).
     func spokenAction(_ object: String) -> String {
         switch self {
-        case .keepFiles: return "Remove \(object) from the library and keep the files"
-        case .moveToTrash: return "Move \(object) to the Trash"
-        case .deletePermanently: return "Delete \(object) permanently"
+        case .keepFiles: return "Remove \(object) from the library and keep the files" // l10n: no (inside OriginalFileDeletionWording's English sentences until that area converts)
+        case .moveToTrash: return "Move \(object) to the Trash" // l10n: no (inside OriginalFileDeletionWording's English sentences until that area converts)
+        case .deletePermanently: return "Delete \(object) permanently" // l10n: no (inside OriginalFileDeletionWording's English sentences until that area converts)
         }
     }
 
     /// What happens to the files of `owner`, a possessive such as "its" or
-    /// "a deleted book's", as a clause to build sentences from: "its files
-    /// go to the Trash, where you can recover them until the Trash is
-    /// emptied".
+    /// "The existing copy's", as a clause: "its files go to the Trash, where
+    /// you can recover them until the Trash is emptied". English only: it
+    /// is a piece of `ImportDecision`'s English sentences until that area
+    /// converts (FR34); this area's own sentences use `filesClause(plural:)`.
     func filesClause(of owner: String) -> String {
-        "\(owner) files \(outcomePhrase(plural: true))"
+        "\(owner) files \(outcomePhrase(plural: true))" // l10n: no (inside ImportDecision's English sentences until that area converts)
     }
 
     /// What happens to what this removal deletes, as the words after their
     /// subject, agreeing with one thing or several (`plural`): "go to the
     /// Trash, where you can recover them until the Trash is emptied", "is
     /// deleted permanently and cannot be recovered", "stay in the TextMouth
-    /// library folder". Delete Feed… says it of a feed's downloads (FR14).
+    /// library folder". English only: Delete Feed… says it of a feed's
+    /// downloads inside English sentences of `FeedCommands` until that area
+    /// converts (FR34).
     func outcomePhrase(plural: Bool) -> String {
         switch self {
         case .keepFiles:
-            return "\(plural ? "stay" : "stays") in the TextMouth library folder"
+            return "\(plural ? "stay" : "stays") in the TextMouth library folder" // l10n: no (inside FeedCommands' English sentences until that area converts)
         case .moveToTrash:
-            return "\(plural ? "go" : "goes") to the Trash, where you can recover \(plural ? "them" : "it") until the Trash is emptied"
+            return "\(plural ? "go" : "goes") to the Trash, where you can recover \(plural ? "them" : "it") until the Trash is emptied" // l10n: no (inside FeedCommands' English sentences until that area converts)
         case .deletePermanently:
-            return "\(plural ? "are" : "is") deleted permanently and cannot be recovered"
+            return "\(plural ? "are" : "is") deleted permanently and cannot be recovered" // l10n: no (inside FeedCommands' English sentences until that area converts)
         }
     }
 
     /// The files clause for one book ("its files") or several ("their
-    /// files").
+    /// files"), a whole clause for each mode.
     func filesClause(plural: Bool) -> String {
-        filesClause(of: plural ? "their" : "its")
+        switch (self, plural) {
+        case (.keepFiles, false):
+            return String(localized: "its files stay in the TextMouth library folder",
+                          comment: "A clause about one book's files when it is removed from the library only, inside a sentence of a removal confirmation.")
+        case (.keepFiles, true):
+            return String(localized: "their files stay in the TextMouth library folder",
+                          comment: "A clause about several books' files when they are removed from the library only, inside a sentence of a removal confirmation.")
+        case (.moveToTrash, false):
+            return String(localized: "its files go to the Trash, where you can recover them until the Trash is emptied",
+                          comment: "A clause about one book's files when it is moved to the Trash, inside a sentence of a removal confirmation.")
+        case (.moveToTrash, true):
+            return String(localized: "their files go to the Trash, where you can recover them until the Trash is emptied",
+                          comment: "A clause about several books' files when they are moved to the Trash, inside a sentence of a removal confirmation.")
+        case (.deletePermanently, false):
+            return String(localized: "its files are deleted permanently and cannot be recovered",
+                          comment: "A clause about one book's files when it is deleted permanently, inside a sentence of a removal confirmation.")
+        case (.deletePermanently, true):
+            return String(localized: "their files are deleted permanently and cannot be recovered",
+                          comment: "A clause about several books' files when they are deleted permanently, inside a sentence of a removal confirmation.")
+        }
     }
 
     /// The files clause as a sentence of its own: "Their files go to the
     /// Trash, where you can recover them until the Trash is emptied."
     func filesSentence(plural: Bool) -> String {
-        filesClause(plural: plural).capitalizingFirstLetter + "."
+        RemovalText.sentence(filesClause(plural: plural))
     }
 
     /// The report that `subject` was removed this way: "Moved 3 books to the
@@ -86,36 +221,76 @@ enum RemovalMode: Equatable, CaseIterable {
     func completionSentence(_ subject: String, plural: Bool) -> String {
         switch self {
         case .keepFiles:
-            return "Removed \(subject) from the library. " + filesSentence(plural: plural)
+            return SentenceWording.joined([
+                String(localized: "Removed \(subject) from the library.",
+                       comment: "Report that books were removed from the library only. %@ is what was removed, such as \"“Notes”\" or \"3 books\". A sentence about their files follows."),
+                filesSentence(plural: plural),
+            ])
         case .moveToTrash:
-            return "Moved \(subject) to the Trash."
+            return String(localized: "Moved \(subject) to the Trash.",
+                          comment: "Report that books' files were moved to the Trash. %@ is what was moved, such as \"“Notes”\" or \"3 books\".")
         case .deletePermanently:
-            return "Deleted \(subject) permanently."
+            return String(localized: "Deleted \(subject) permanently.",
+                          comment: "Report that books' files were deleted permanently. %@ is what was deleted, such as \"“Notes”\" or \"3 books\".")
         }
     }
 
     /// Introduces the items this removal could not remove, each of which
-    /// stays in the library. `noun` names one item, such as "book":
-    /// "These books could not be moved to the Trash and remain in the
-    /// library:".
-    func failureHeading(count: Int, noun: String) -> String {
+    /// stays in the library. `noun` names the items, books or items of a
+    /// folder: "These books could not be moved to the Trash and remain in
+    /// the library:".
+    func failureHeading(count: Int, noun: RemovalNoun) -> String {
         let plural = count != 1
-        let subject = plural ? "These \(noun)s" : "This \(noun)"
-        let remain = plural ? "remain" : "remains"
-        switch self {
-        case .keepFiles:
-            return "\(subject) could not be removed from the library and \(remain) in it:"
-        case .moveToTrash:
-            return "\(subject) could not be moved to the Trash and \(remain) in the library:"
-        case .deletePermanently:
-            return "\(subject) could not be deleted and \(remain) in the library:"
+        switch (self, noun, plural) {
+        case (.keepFiles, .book, true):
+            return String(localized: "These books could not be removed from the library and remain in it:",
+                          comment: "Heading over the books that could not be removed from the library, several of them. One line for each book follows.")
+        case (.keepFiles, .book, false):
+            return String(localized: "This book could not be removed from the library and remains in it:",
+                          comment: "Heading over the one book that could not be removed from the library. A line about it follows.")
+        case (.keepFiles, .item, true):
+            return String(localized: "These items could not be removed from the library and remain in it:",
+                          comment: "Heading over the items of a folder that could not be removed from the library, several of them. One line for each follows.")
+        case (.keepFiles, .item, false):
+            return String(localized: "This item could not be removed from the library and remains in it:",
+                          comment: "Heading over the one item of a folder that could not be removed from the library. A line about it follows.")
+        case (.moveToTrash, .book, true):
+            return String(localized: "These books could not be moved to the Trash and remain in the library:",
+                          comment: "Heading over the books that could not be moved to the Trash, several of them. One line for each book follows.")
+        case (.moveToTrash, .book, false):
+            return String(localized: "This book could not be moved to the Trash and remains in the library:",
+                          comment: "Heading over the one book that could not be moved to the Trash. A line about it follows.")
+        case (.moveToTrash, .item, true):
+            return String(localized: "These items could not be moved to the Trash and remain in the library:",
+                          comment: "Heading over the items of a folder that could not be moved to the Trash, several of them. One line for each follows.")
+        case (.moveToTrash, .item, false):
+            return String(localized: "This item could not be moved to the Trash and remains in the library:",
+                          comment: "Heading over the one item of a folder that could not be moved to the Trash. A line about it follows.")
+        case (.deletePermanently, .book, true):
+            return String(localized: "These books could not be deleted and remain in the library:",
+                          comment: "Heading over the books that could not be deleted permanently, several of them. One line for each book follows.")
+        case (.deletePermanently, .book, false):
+            return String(localized: "This book could not be deleted and remains in the library:",
+                          comment: "Heading over the one book that could not be deleted permanently. A line about it follows.")
+        case (.deletePermanently, .item, true):
+            return String(localized: "These items could not be deleted and remain in the library:",
+                          comment: "Heading over the items of a folder that could not be deleted permanently, several of them. One line for each follows.")
+        case (.deletePermanently, .item, false):
+            return String(localized: "This item could not be deleted and remains in the library:",
+                          comment: "Heading over the one item of a folder that could not be deleted permanently. A line about it follows.")
         }
     }
 
     /// The failure heading followed by one line per item, each reading
     /// "Title: reason".
-    func failureMessage(_ failures: [String], noun: String = "book") -> String {
+    func failureMessage(_ failures: [String], noun: RemovalNoun = .book) -> String {
         ([failureHeading(count: failures.count, noun: noun)] + failures).joined(separator: "\n")
+    }
+
+    /// The same for a caller that names the noun as text, as `FeedCommands`
+    /// still does: "item" means items of a folder, any other word books.
+    func failureMessage(_ failures: [String], noun: String) -> String {
+        failureMessage(failures, noun: noun == "item" ? .item : .book) // l10n: no (compares a noun id, not interface text)
     }
 }
 
@@ -149,44 +324,51 @@ struct RemovalWording: Equatable {
     /// The books as a sentence names them: the title in quotes for one book,
     /// otherwise "3 books".
     var subject: String {
-        if let title { return "“\(title)”" }
-        return isPlural ? "\(count) books" : "1 book"
+        if let title { return RemovalText.quoted(title) }
+        return String(localized: "\(count) books",
+                      comment: "What a removal sentence calls the books it removes when none is named: a count of books, as in \"Moved 3 books to the Trash.\" %lld is how many.")
     }
 
     /// A button that removes the books at once: "Move to Trash" for one
     /// book, "Move 3 Books to Trash" for several.
     var buttonTitle: String {
-        mode.buttonTitle(isPlural ? "\(count) Books" : "")
+        mode.buttonTitle(isPlural ? RemovalText.booksObject(count) : "")
     }
 
     /// What VoiceOver says for `buttonTitle`: "Move “Notes” to the Trash".
     var accessibilityLabel: String {
-        mode.spokenAction(subject)
+        mode.spokenLabel(subject)
     }
 
     /// A button that removes the books selected in a list, such as the
     /// Duplicate Finder's: "Move 3 Selected to Trash".
     var selectionButtonTitle: String {
-        mode.buttonTitle("\(count) Selected")
+        mode.buttonTitle(RemovalText.selectedObject(count))
     }
 
     /// What VoiceOver says for `selectionButtonTitle`: "Move 3 selected
     /// books to the Trash".
     var selectionAccessibilityLabel: String {
-        mode.spokenAction("\(count) selected \(isPlural ? "books" : "book")")
+        mode.spokenLabel(String(localized: "\(count) selected books",
+                                 comment: "What a removal button's VoiceOver label calls the books selected in a list, as in \"Move 3 selected books to the Trash\". %lld is how many are selected, a count."))
     }
 
     /// The question asked before removing: "Move Book to Trash?", "Delete 3
     /// Books Permanently?".
     var confirmationTitle: String {
-        mode.buttonTitle(isPlural ? "\(count) Books" : "Book") + "?"
+        RemovalText.question(mode.buttonTitle(isPlural ? RemovalText.booksObject(count) : RemovalText.bookObject))
     }
 
     /// What the confirmation explains: "“Notes” will be removed from the
     /// library. Its files go to the Trash, where you can recover them until
     /// the Trash is emptied."
     var confirmationMessage: String {
-        "\(subject) will be removed from the library. " + mode.filesSentence(plural: isPlural)
+        let named = subject
+        return SentenceWording.joined([
+            String(localized: "\(named) will be removed from the library.",
+                   comment: "First sentence of a removal confirmation. %@ is what is removed, such as \"“Notes”\" or \"3 books\". A sentence about the files follows."),
+            mode.filesSentence(plural: isPlural),
+        ])
     }
 
     /// The report once the books are removed: "Moved 3 books to the Trash."
@@ -234,7 +416,13 @@ struct RemovalChoiceWording: Equatable {
         if let feedDownloads {
             return feedDownloads.confirmationTitle
         }
-        return deletion.count == 1 ? "Remove Book?" : "Remove \(deletion.count) Books?"
+        if deletion.count == 1 {
+            return String(localized: "Remove Book?",
+                          comment: "Title of the confirmation that asks how to remove one book.")
+        }
+        let count = deletion.count
+        return String(localized: "Remove \(count) Books?",
+                      comment: "Title of the confirmation that asks how to remove several books. %lld is how many, a count.")
     }
 
     /// The deleting button, "Move to Trash" or "Delete Permanently", or, for
@@ -263,9 +451,20 @@ struct RemovalChoiceWording: Equatable {
             return feedDownloads.confirmationMessage
         }
         let plural = deletion.count != 1
-        return "Choose how to remove \(deletion.subject) from the library. "
-            + "With \(deleteButtonTitle), \(deletion.mode.filesClause(plural: plural)). "
-            + "With \(keepButtonTitle), \(keeping.mode.filesClause(plural: plural))."
+        let subject = deletion.subject
+        return SentenceWording.joined([
+            String(localized: "Choose how to remove \(subject) from the library.",
+                   comment: "First sentence of the confirmation that asks how to remove books. %@ is what is removed, such as \"“Notes”\" or \"3 books\"."),
+            RemovalChoiceWording.optionSentence(deleteButtonTitle, deletion.mode.filesClause(plural: plural)),
+            RemovalChoiceWording.optionSentence(keepButtonTitle, keeping.mode.filesClause(plural: plural)),
+        ])
+    }
+
+    /// "With <button>, <what happens>.": one choice of the question and its
+    /// effect, shared by the confirmation and Storage settings.
+    static func optionSentence(_ button: String, _ effect: String) -> String {
+        String(localized: "With \(button), \(effect).",
+               comment: "A sentence that explains one button of a removal question. %1$@ is the button's title, such as \"Move to Trash\", and %2$@ says what it does, such as \"its files go to the Trash, where you can recover them until the Trash is emptied\".")
     }
 }
 
@@ -306,19 +505,38 @@ struct FeedDownloadRemovalWording: Equatable {
     /// The downloads as a sentence names them: "the download of “Ep. 368”",
     /// "1 download" when its title is not known, or "3 downloads".
     private var subject: String {
-        if let title { return "the download of “\(title)”" }
-        return isPlural ? "\(count) downloads" : "1 download"
+        if let title {
+            return String(localized: "the download of “\(title)”",
+                          comment: "What a sentence calls one feed item's downloaded files, inside a sentence, in lower case. %@ is the episode's or article's title.")
+        }
+        return String(localized: "\(count) downloads",
+                      comment: "What a sentence calls several feed items' downloaded files, inside a sentence, as in \"Deleted 3 downloads permanently.\" %lld is how many, a count.")
     }
 
     /// "Delete Download?" or "Delete 3 Downloads?"
     var confirmationTitle: String {
-        (isPlural ? "Delete \(count) Downloads" : "Delete Download") + "?"
+        RemovalText.question(deleteDownloadsTitle)
+    }
+
+    /// "Delete Download" or "Delete 3 Downloads", the title of the command
+    /// that names how many.
+    private var deleteDownloadsTitle: String {
+        if isPlural {
+            return String(localized: "Delete \(count) Downloads",
+                          comment: "Title in title case of the command that deletes several feed items' downloads. %lld is how many, a count.")
+        }
+        return String(localized: "Delete Download",
+                      comment: "Title in title case of the command that deletes one feed item's download.")
     }
 
     /// The deleting button, "Delete Download" or "Delete Downloads"; the
     /// title says how many.
     var buttonTitle: String {
-        isPlural ? "Delete Downloads" : "Delete Download"
+        isPlural
+            ? String(localized: "Delete Downloads",
+                     comment: "Title in title case of the button that deletes several feed items' downloads. The confirmation's title says how many.")
+            : String(localized: "Delete Download",
+                     comment: "Title in title case of the command that deletes one feed item's download.")
     }
 
     /// What the confirmation explains: "The download of “Ep. 368” will be
@@ -326,15 +544,25 @@ struct FeedDownloadRemovalWording: Equatable {
     /// the Trash is emptied. Its place, bookmarks, and transcript, if it has
     /// any, are kept, and it can be downloaded again."
     var confirmationMessage: String {
-        "\(subject.capitalizingFirstLetter) will be deleted. " + mode.filesSentence(plural: isPlural) + " " + keptSentence
+        let willBeDeleted: String
+        if let title {
+            willBeDeleted = String(localized: "The download of “\(title)” will be deleted.",
+                                   comment: "First sentence of the confirmation that deletes one feed item's download. %@ is the episode's or article's title.")
+        } else {
+            willBeDeleted = String(localized: "\(count) downloads will be deleted.",
+                                   comment: "First sentence of the confirmation that deletes several feed items' downloads. %lld is how many, a count.")
+        }
+        return SentenceWording.joined([willBeDeleted, mode.filesSentence(plural: isPlural), keptSentence])
     }
 
     /// What deleting the downloads keeps: "Its place, bookmarks, and
     /// transcript, if it has any, are kept, and it can be downloaded again."
     private var keptSentence: String {
         isPlural
-            ? "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again."
-            : "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again."
+            ? String(localized: "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again.",
+                     comment: "Sentence about several deleted downloads: what the listener left in them is kept, and they can be downloaded again.")
+            : String(localized: "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+                     comment: "Sentence about one deleted download: what the listener left in it is kept, and it can be downloaded again.")
     }
 
     // MARK: As the Library's Remove Command (REV11 F2)
@@ -345,20 +573,22 @@ struct FeedDownloadRemovalWording: Equatable {
     /// "Delete Download" or "Delete 3 Downloads". A menu item is read by its
     /// title alone, so the title names how many.
     func commandTitle(asksFirst: Bool) -> String {
-        (isPlural ? "Delete \(count) Downloads" : "Delete Download") + (asksFirst ? "…" : "")
+        asksFirst ? RemovalText.withEllipsis(deleteDownloadsTitle) : deleteDownloadsTitle
     }
 
     /// The edit bar's short button, which names no count: "Delete
     /// Download…" or "Delete Downloads…" when it asks first, otherwise
     /// "Delete Download" or "Delete Downloads".
     func shortTitle(asksFirst: Bool) -> String {
-        buttonTitle + (asksFirst ? "…" : "")
+        asksFirst ? RemovalText.withEllipsis(buttonTitle) : buttonTitle
     }
 
     /// What VoiceOver says for the command: "Delete the download of
     /// “Ep. 368”", or "Delete 3 downloads".
     var accessibilityLabel: String {
-        "Delete \(subject)"
+        let named = subject
+        return String(localized: "Delete \(named)",
+                      comment: "VoiceOver label of the command that deletes feed items' downloads. %@ is what is deleted, such as \"the download of “Ep. 368”\" or \"3 downloads\".")
     }
 
     /// What VoiceOver adds after a pause: that it asks first, or where the
@@ -366,7 +596,11 @@ struct FeedDownloadRemovalWording: Equatable {
     /// not offer: "Asks before deleting. Its place, bookmarks, and
     /// transcript, if it has any, are kept, and it can be downloaded again."
     func accessibilityHint(asksFirst: Bool) -> String {
-        (asksFirst ? "Asks before deleting." : mode.filesSentence(plural: isPlural)) + " " + keptSentence
+        let first = asksFirst
+            ? String(localized: "Asks before deleting.",
+                     comment: "First sentence of the VoiceOver hint of a delete command that asks before it deletes.")
+            : mode.filesSentence(plural: isPlural)
+        return SentenceWording.joined([first, keptSentence])
     }
 
     /// The report once the downloads are deleted, `kept` holding, for each
@@ -383,14 +617,20 @@ struct FeedDownloadRemovalWording: Equatable {
         let holding = kept.filter { !$0.isEmpty }
         let parts = holding.reduce(into: FeedWording.KeptParts()) { $0.formUnion($1) }
         guard !holding.isEmpty else { return deleted }
+        // The parts are named by the feeds area's own words, still English
+        // fragments there until that area converts (FR34).
         if !isPlural, let itsParts = parts.sentenceSubject {
-            return "\(deleted) \(itsParts) kept."
+            return SentenceWording.joined([deleted, String(localized: "\(itsParts) kept.",
+                comment: "Sentence that says what is kept of one deleted download. %@ is the parts and the verb, such as \"Its place and bookmarks are\".")])
         }
         let nouns = CountWording.list(parts.nouns(several: true))
         if holding.count >= count {
-            return "\(deleted) Their \(nouns) are kept."
+            return SentenceWording.joined([deleted, String(localized: "Their \(nouns) are kept.",
+                comment: "Sentence that says what is kept of every one of several deleted downloads. %@ is a list of parts, such as \"places and bookmarks\".")])
         }
-        return "\(deleted) The \(nouns) of \(holding.count) of them are kept."
+        let some = holding.count
+        return SentenceWording.joined([deleted, String(localized: "The \(nouns) of \(some) of them are kept.",
+            comment: "Sentence that says what is kept of some of several deleted downloads. %1$@ is a list of parts, such as \"places and bookmarks\", and %2$lld is how many of the downloads keep them, a count.")])
     }
 }
 
@@ -448,7 +688,10 @@ struct LibraryRemoveCommandWording: Equatable {
 
     /// The command's title when it asks how to remove before removing
     /// anything; the ellipsis says that a choice follows.
-    private static let askFirstTitle = "Remove from Library..."
+    private static var askFirstTitle: String {
+        String(localized: "Remove from Library...",
+               comment: "Title of the Remove command when it asks how to remove before it removes anything. The three dots say a choice follows.")
+    }
 
     /// The context-menu item: "Remove from Library..." or "Remove 3 Books
     /// from Library..." when it asks first, otherwise "Move to Trash",
@@ -459,7 +702,10 @@ struct LibraryRemoveCommandWording: Equatable {
             return feedDownloads.commandTitle(asksFirst: preferences.confirmsFirst)
         }
         guard preferences.confirmsFirst else { return removal.buttonTitle }
-        return removal.count == 1 ? Self.askFirstTitle : "Remove \(removal.count) Books from Library..."
+        if removal.count == 1 { return Self.askFirstTitle }
+        let count = removal.count
+        return String(localized: "Remove \(count) Books from Library...",
+                      comment: "Title of the Remove command in a context menu when several books are chosen and it asks how to remove them first. %lld is how many books, a count. The three dots say a choice follows.")
     }
 
     /// The menu bar's Remove command, which acts on whatever is selected in
@@ -484,7 +730,10 @@ struct LibraryRemoveCommandWording: Equatable {
         if let feedDownloads {
             return feedDownloads.shortTitle(asksFirst: preferences.confirmsFirst)
         }
-        return preferences.confirmsFirst ? "Remove..." : removal.mode.buttonTitle()
+        return preferences.confirmsFirst
+            ? String(localized: "Remove...",
+                     comment: "Short title of the edit bar's Remove button when it asks how to remove before it removes anything. The three dots say a choice follows.")
+            : removal.mode.buttonTitle()
     }
 
     /// What VoiceOver says for the button: "Remove 3 books from the library"
@@ -494,7 +743,10 @@ struct LibraryRemoveCommandWording: Equatable {
         if let feedDownloads {
             return feedDownloads.accessibilityLabel
         }
-        return preferences.confirmsFirst ? "Remove \(removal.subject) from the library" : removal.accessibilityLabel
+        guard preferences.confirmsFirst else { return removal.accessibilityLabel }
+        let subject = removal.subject
+        return String(localized: "Remove \(subject) from the library",
+                      comment: "VoiceOver label of the Remove button when it asks how to remove before it removes anything. %@ is what is removed, such as \"“Notes”\" or \"3 books\".")
     }
 
     /// What VoiceOver adds after a pause: the choice that follows, or what
@@ -508,7 +760,9 @@ struct LibraryRemoveCommandWording: Equatable {
         guard preferences.confirmsFirst else {
             return removal.mode.filesSentence(plural: removal.count != 1)
         }
-        return "Asks whether to \(preferences.deletingTheFiles) or keep them in the TextMouth library folder."
+        let deleting = preferences.deletingTheFiles
+        return String(localized: "Asks whether to \(deleting) or keep them in the TextMouth library folder.",
+                      comment: "VoiceOver hint of the Remove button when it asks first. %@ is what deleting the files does, such as \"move the files to the Trash\" or \"delete the files permanently\".")
     }
 }
 
@@ -559,12 +813,12 @@ struct FolderRemovalWording: Equatable {
     var keptBookCount = 0
 
     /// The folder's name in quotes, as sentences name it.
-    private var quotedName: String { "“\(folderName)”" }
+    private var quotedName: String { RemovalText.quoted(folderName) }
 
     /// The button: "Move Everything to Trash" or "Delete Everything
     /// Permanently".
     var buttonTitle: String {
-        mode.buttonTitle("Everything")
+        mode.buttonTitle(RemovalText.everythingObject)
     }
 
     /// The first dialog, which offers to move the contents out first or to
@@ -589,70 +843,82 @@ struct FolderRemovalWording: Equatable {
     /// are kept: "“Fiction” also holds 2 books a newer TextMouth added,
     /// which are kept."
     var choiceMessage: String {
-        let books = CountWording.books(bookCount)
-        return "\(quotedName) contains \(books) and may have subfolders. "
-            + "With Move Contents Out, they stay in the library and only the folder is deleted. "
-            + "With \(buttonTitle), the folder and everything in it leave the library, "
-            + "and \(mode.filesClause(plural: true))." + ownFeedsChoiceSentence + feedsChoiceSentences
-            + keptBooksChoiceSentence
+        let name = quotedName
+        let button = buttonTitle
+        let clause = mode.filesClause(plural: true)
+        var sentences = [
+            String(localized: "\(name) contains \(bookCount) books and may have subfolders.",
+                   comment: "First sentence of the dialog that asks how to delete a folder. %1$@ is the folder's name in quotation marks and %2$lld is how many books the folder and its subfolders hold, a count."),
+            String(localized: "With Move Contents Out, they stay in the library and only the folder is deleted.",
+                   comment: "Sentence of the dialog that asks how to delete a folder. \"Move Contents Out\" is the name of one of its buttons."),
+            String(localized: "With \(button), the folder and everything in it leave the library, and \(clause).",
+                   comment: "Sentence of the dialog that asks how to delete a folder. %1$@ is the title of its button that deletes everything, such as \"Move Everything to Trash\", and %2$@ says what happens to the files, such as \"their files go to the Trash, where you can recover them until the Trash is emptied\"."),
+        ]
+        sentences += ownFeedsChoiceSentences + feedsChoiceSentences + keptBooksChoiceSentences
+        return SentenceWording.joined(sentences)
     }
 
-    /// The choice message's sentence about the books a newer TextMouth
-    /// added, with a space before it; empty when there are none. True of
-    /// both choices: "“Fiction” also holds 1 book a newer TextMouth added,
-    /// which is kept."
-    private var keptBooksChoiceSentence: String {
-        guard keptBookCount > 0 else { return "" }
-        return " \(quotedName) also holds \(keptBooksAdded), "
-            + (keptBookCount == 1 ? "which is kept." : "which are kept.")
+    /// The choice message's sentences about the books a newer TextMouth
+    /// added; none when there are none. True of both choices: "“Fiction”
+    /// also holds 1 book a newer TextMouth added, which is kept."
+    private var keptBooksChoiceSentences: [String] {
+        guard keptBookCount > 0 else { return [] }
+        let name = quotedName
+        let count = keptBookCount
+        return [String(localized: "\(name) also holds \(count) books a newer TextMouth added, which are kept.",
+                       comment: "Last sentence of the dialog that asks how to delete a folder, when the folder holds books that a newer TextMouth added. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.")]
     }
 
-    /// The confirmation message's sentence about the books a newer TextMouth
-    /// added, with a space before it; empty when there are none. It says
-    /// what Delete Everything keeps beside what it removes: "But “Fiction”
-    /// also holds 2 books a newer TextMouth added: they are kept where they
-    /// are, and so is every folder that holds one."
-    private var keptBooksConfirmationSentence: String {
-        guard keptBookCount > 0 else { return "" }
-        return " But \(quotedName) also holds \(keptBooksAdded): "
-            + (keptBookCount == 1
-                ? "it is kept where it is, and so is every folder that holds it."
-                : "they are kept where they are, and so is every folder that holds one.")
-    }
-
-    /// The books a newer TextMouth added, counted: "2 books a newer
-    /// TextMouth added".
-    private var keptBooksAdded: String {
-        "\(CountWording.books(keptBookCount)) a newer TextMouth added"
+    /// The confirmation message's sentences about the books a newer
+    /// TextMouth added; none when there are none. It says what Delete
+    /// Everything keeps beside what it removes: "But “Fiction” also holds 2
+    /// books a newer TextMouth added: they are kept where they are, and so
+    /// is every folder that holds one."
+    private var keptBooksConfirmationSentences: [String] {
+        guard keptBookCount > 0 else { return [] }
+        let name = quotedName
+        let count = keptBookCount
+        return [String(localized: "But \(name) also holds \(count) books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+                       comment: "Last sentence of the second confirmation that deletes a folder, when the folder holds books that a newer TextMouth added. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.")]
     }
 
     /// The choice message's sentence about the feeds whose own folder this
-    /// is (REV14 feeds 7), with a space before it; empty when there are
-    /// none. "It is the folder of the feed “Finish It!”: whichever you
-    /// choose, the feed stays, with its downloads, but no folder lists them
-    /// until Feed Info gives the feed another folder; Delete Feed… on the
-    /// feed's row deletes a feed."
-    private var ownFeedsChoiceSentence: String {
-        guard let feeds = Self.quoted(ownFeedTitles) else { return "" }
-        return ownFeedTitles.count == 1
-            ? " It is the folder of the feed \(feeds): whichever you choose, the feed stays, with its downloads, "
-                + "but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed."
-            : " It is the folder of the feeds \(feeds): whichever you choose, each feed stays, with its downloads, "
-                + "but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed."
+    /// is (REV14 feeds 7); none when there are none. "It is the folder of
+    /// the feed “Finish It!”: whichever you choose, the feed stays, with its
+    /// downloads, but no folder lists them until Feed Info gives the feed
+    /// another folder; Delete Feed… on the feed's row deletes a feed."
+    private var ownFeedsChoiceSentences: [String] {
+        guard let feeds = Self.quoted(ownFeedTitles) else { return [] }
+        return [ownFeedTitles.count == 1
+            ? String(localized: "It is the folder of the feed \(feeds): whichever you choose, the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed.",
+                     comment: "Sentence of the dialog that asks how to delete a folder, when it is the folder of one feed. %@ is the feed's title in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command.")
+            : String(localized: "It is the folder of the feeds \(feeds): whichever you choose, each feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed.",
+                     comment: "Sentence of the dialog that asks how to delete a folder, when it is the folder of several feeds. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command.")]
     }
 
-    /// The choice message's sentences about the feeds inside, with a space
-    /// before them; empty when there are none.
-    private var feedsChoiceSentences: String {
-        guard let feeds = quotedFeeds else { return "" }
-        let one = feedTitles.count == 1
-        return one
-            ? " It holds the folder of the feed \(feeds). With Move Contents Out, the feed's folder moves with the rest. "
-                + "With \(buttonTitle), the feed stays, with its downloads, but no folder lists them until Feed Info "
-                + "gives the feed another folder; Delete Feed… on the feed's row deletes a feed."
-            : " It holds the folders of the feeds \(feeds). With Move Contents Out, their folders move with the rest. "
-                + "With \(buttonTitle), each feed stays, with its downloads, but no folder lists them until Feed Info "
-                + "gives the feed another folder; Delete Feed… on a feed's row deletes a feed."
+    /// The choice message's sentences about the feeds inside; none when
+    /// there are none.
+    private var feedsChoiceSentences: [String] {
+        guard let feeds = quotedFeeds else { return [] }
+        let button = buttonTitle
+        if feedTitles.count == 1 {
+            return [
+                String(localized: "It holds the folder of the feed \(feeds).",
+                       comment: "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. %@ is the feed's title in quotation marks."),
+                String(localized: "With Move Contents Out, the feed's folder moves with the rest.",
+                       comment: "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. \"Move Contents Out\" is the name of one of its buttons."),
+                String(localized: "With \(button), the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed.",
+                       comment: "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. %@ is the title of the button that deletes everything, such as \"Move Everything to Trash\". \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."),
+            ]
+        }
+        return [
+            String(localized: "It holds the folders of the feeds \(feeds).",
+                   comment: "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is a list of the feeds' titles in quotation marks."),
+            String(localized: "With Move Contents Out, their folders move with the rest.",
+                   comment: "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. \"Move Contents Out\" is the name of one of its buttons."),
+            String(localized: "With \(button), each feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed.",
+                   comment: "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is the title of the button that deletes everything, such as \"Move Everything to Trash\". \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."),
+        ]
     }
 
     /// The feeds inside, each in quotes, as a list: "“A”", "“A” and “B”";
@@ -664,13 +930,13 @@ struct FolderRemovalWording: Equatable {
     /// `titles`, each in quotes, as a list: "“A”", "“A” and “B”"; nil for
     /// none.
     private static func quoted(_ titles: [String]) -> String? {
-        titles.isEmpty ? nil : CountWording.list(titles.map { "“\($0)”" })
+        titles.isEmpty ? nil : CountWording.list(titles.map { RemovalText.quoted($0) })
     }
 
     /// The second confirmation's title: "Move Everything in “Fiction” to
     /// Trash?" or "Delete Everything in “Fiction” Permanently?"
     var confirmationTitle: String {
-        mode.buttonTitle("Everything in \(quotedName)") + "?"
+        RemovalText.question(mode.buttonTitle(RemovalText.everythingInObject(quotedName)))
     }
 
     /// The second confirmation's message: "“Fiction”, any subfolders, and
@@ -682,26 +948,36 @@ struct FolderRemovalWording: Equatable {
     /// a newer TextMouth added are named last, as kept with every folder
     /// holding one (`keptBookCount`).
     var confirmationMessage: String {
-        let contents: String
+        let name = quotedName
+        let count = bookCount
+        let willBeRemoved: String
         switch bookCount {
-        case 0: contents = "\(quotedName) and any subfolders"
-        case 1: contents = "\(quotedName), any subfolders, and the book inside"
-        default: contents = "\(quotedName), any subfolders, and the \(bookCount) books inside"
+        case 0:
+            willBeRemoved = String(localized: "\(name) and any subfolders will be removed from the library.",
+                                   comment: "First sentence of the second confirmation that deletes an empty folder. %@ is the folder's name in quotation marks.")
+        case 1:
+            willBeRemoved = String(localized: "\(name), any subfolders, and the book inside will be removed from the library.",
+                                   comment: "First sentence of the second confirmation that deletes a folder holding one book. %@ is the folder's name in quotation marks.")
+        default:
+            willBeRemoved = String(localized: "\(name), any subfolders, and the \(count) books inside will be removed from the library.",
+                                   comment: "First sentence of the second confirmation that deletes a folder holding several books. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.")
         }
-        var message = "\(contents) will be removed from the library. " + mode.filesSentence(plural: true)
+        var sentences = [willBeRemoved, mode.filesSentence(plural: true)]
         let staying = ownFeedTitles + feedTitles
         if let feeds = Self.quoted(staying) {
-            message += staying.count == 1
-                ? " The feed \(feeds) stays, with its downloads, without a folder until Feed Info gives it another."
-                : " The feeds \(feeds) stay, with their downloads, without folders until Feed Info gives each another."
+            sentences.append(staying.count == 1
+                ? String(localized: "The feed \(feeds) stays, with its downloads, without a folder until Feed Info gives it another.",
+                         comment: "Sentence of the second confirmation that deletes a folder: one feed stays. %@ is the feed's title in quotation marks. \"Feed Info\" names a sheet.")
+                : String(localized: "The feeds \(feeds) stay, with their downloads, without folders until Feed Info gives each another.",
+                         comment: "Sentence of the second confirmation that deletes a folder: several feeds stay. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" names a sheet."))
         }
-        return message + keptBooksConfirmationSentence
+        return SentenceWording.joined(sentences + keptBooksConfirmationSentences)
     }
 
     /// What could not be deleted, each item staying in the library: "These
     /// items could not be moved to the Trash and remain in the library:".
     func failureMessage(_ failures: [String]) -> String {
-        mode.failureMessage(failures, noun: "item")
+        mode.failureMessage(failures, noun: .item)
     }
 }
 
@@ -736,7 +1012,11 @@ struct RemovalPreferences: Equatable {
     /// The deleting action as a phrase inside a sentence: "move the files
     /// to the Trash" or "delete the files permanently".
     var deletingTheFiles: String {
-        deletionMode.spokenAction("the files").lowercasingFirstLetter
+        movesToTrash
+            ? String(localized: "move the files to the Trash",
+                     comment: "What deleting a book's files does when they go to the Trash, as a verb phrase in lower case inside a sentence: \"asks whether to move the files to the Trash or keep them\".")
+            : String(localized: "delete the files permanently",
+                     comment: "What deleting a book's files does when they are deleted permanently, as a verb phrase in lower case inside a sentence: \"asks whether to delete the files permanently or keep them\".")
     }
 
     // MARK: Storage Settings
@@ -745,23 +1025,35 @@ struct RemovalPreferences: Equatable {
     /// settings explain it, beside what Remove from Library Only does.
     var deletionSummary: String {
         let keeping = RemovalMode.keepFiles
-        return "When a book is deleted, \(deletionMode.filesClause(plural: false)). "
-            + "With \(keeping.buttonTitle()), \(keeping.filesClause(plural: false))."
+        let deleted = deletionMode.filesClause(plural: false)
+        return SentenceWording.joined([
+            String(localized: "When a book is deleted, \(deleted).",
+                   comment: "First sentence of the explanation in Storage settings of what removing a book does. %@ says what happens to the book's files, such as \"its files go to the Trash, where you can recover them until the Trash is emptied\"."),
+            RemovalChoiceWording.optionSentence(keeping.buttonTitle(), keeping.filesClause(plural: false)),
+        ])
     }
 
     /// The hint for "Confirm before removing a book": what removing does
     /// with the preference on and off, in the deleting mode in force.
     var confirmationExplanation: String {
-        "When on, removing a book first asks whether to \(deletingTheFiles) "
-            + "or keep them in the TextMouth library folder. "
-            + "When off, removing a book will \(deletingTheFiles) at once."
+        let deleting = deletingTheFiles
+        return SentenceWording.joined([
+            String(localized: "When on, removing a book first asks whether to \(deleting) or keep them in the TextMouth library folder.",
+                   comment: "First sentence of the hint of the setting that confirms before removing a book. %@ is what deleting does, such as \"move the files to the Trash\"."),
+            String(localized: "When off, removing a book will \(deleting) at once.",
+                   comment: "Second sentence of the hint of the setting that confirms before removing a book. %@ is what deleting does, such as \"move the files to the Trash\"."),
+        ])
     }
 
     /// The hint for "Move to Trash instead of deleting": what happens to a
     /// deleted book's files with the preference on and off.
     static var trashPreferenceExplanation: String {
-        "When on, \(RemovalMode.moveToTrash.filesClause(of: "a deleted book's")). "
-            + "When off, \(RemovalMode.deletePermanently.filesClause(of: "its"))."
+        SentenceWording.joined([
+            String(localized: "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+                   comment: "First sentence of the hint of the setting that moves deleted files to the Trash: what happens with the setting on."),
+            String(localized: "When off, its files are deleted permanently and cannot be recovered.",
+                   comment: "Second sentence of the hint of the setting that moves deleted files to the Trash: what happens with the setting off."),
+        ])
     }
 }
 
