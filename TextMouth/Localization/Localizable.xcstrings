@@ -41,7 +41,7 @@
       }
     },
     "%@ (%@)" : {
-      "comment" : "A feed that could not be subscribed to, with the reason in parentheses. The first %@ is the feed's title; the second is the reason, in the engine's words.\nThe second choice of the Log location pop-up in the Storage settings. %1$@ is the choice's name, and %2$@ is the folder's name on this Mac, a path that stays as written, such as ~/Library/Logs/TextMouth.",
+      "comment" : "A feed that could not be subscribed to, with the reason in parentheses. The first %@ is the feed's title; the second is the reason, in the engine's words.\nOne group of a PDF's pages that text recognition (OCR) could not run on, with the reason. %1$@ is the pages, such as \"pages 3 and 7\", and %2$@ the reason, a phrase in English.\nThe second choice of the Log location pop-up in the Storage settings. %1$@ is the choice's name, and %2$@ is the folder's name on this Mac, a path that stays as written, such as ~/Library/Logs/TextMouth.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -866,6 +866,29 @@
         }
       }
     },
+    "%@ of %lld chapters could not be read" : {
+      "comment" : "Starts the warning after an import that left chapters out: some of the book's chapters could not be read. %1$@ is how many could not be read, with digit grouping, and %2$lld how many chapters the book has, always two or more. Has no full stop.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ of %lld chapter could not be read"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ of %lld chapters could not be read"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%@ on this book" : {
       "comment" : "Line of the import overlay: how long the book under way has taken. %@ is the time in words, such as \"1 minute, 5 seconds\"."
     },
@@ -967,6 +990,17 @@
     },
     "%@ through the book" : {
       "comment" : "What VoiceOver says for the reader's percent button. %@ is the percent, such as 22.9%."
+    },
+    "%@ to %@" : {
+      "comment" : "A range of three or more consecutive pages of a PDF, in a list of pages. %1$@ is the first page and %2$@ the last, identifiers written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ to %2$@"
+          }
+        }
+      }
     },
     "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch." : {
       "comment" : "Message of the alert about one book's Ogg audio that waits for disk space. %@ is what the book needs, such as \"“Harbor Dramas” needs 4.2 GB free\"."
@@ -1483,6 +1517,17 @@
         }
       }
     },
+    "%@: %@." : {
+      "comment" : "Warning after an import that left chapters out: how many chapters could not be read, a colon, then each chapter with its file and why, which are in English, separated by semicolons. %1$@ is the count sentence, such as \"2 of 14 chapters could not be read\", and %2$@ the chapters.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@."
+          }
+        }
+      }
+    },
     "%@: %lld matches" : {
       "comment" : "A book's heading over its search matches. %1$@ is the book's title, with its author when known, and %2$lld is the number of matches.",
       "localizations" : {
@@ -1640,7 +1685,7 @@
       "comment" : "The microphone level line of the Record window when no sound reaches TextMouth. %@ is the level's label."
     },
     "%@; %@" : {
-      "comment" : "Joins two parts of a status line with a semicolon. %1$@ is the text so far and %2$@ the next part. English puts a semicolon and a space between them.\nJoins two parts of the audio editor's status line. %1$@ is the parts so far and %2$@ the next part. A semicolon keeps parts apart from the commas inside a spoken time.\nLibrary view editor: adds one more clause to a filter's description. %1$@ is the description so far and %2$@ the clause added after a semicolon.",
+      "comment" : "Joins two groups of a PDF's pages that text recognition (OCR) could not run on, each with its reason: the pages and reason, a semicolon, then the next.\nJoins two parts of a status line with a semicolon. %1$@ is the text so far and %2$@ the next part. English puts a semicolon and a space between them.\nJoins two parts of the audio editor's status line. %1$@ is the parts so far and %2$@ the next part. A semicolon keeps parts apart from the commas inside a spoken time.\nLibrary view editor: adds one more clause to a filter's description. %1$@ is the description so far and %2$@ the clause added after a semicolon.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2401,6 +2446,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld chapters"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld chapters could not be read" : {
+      "comment" : "Starts the warning after an import that left chapters out, when the book's chapter count is not known. %lld is how many chapters could not be read. Has no full stop.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld chapter could not be read"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld chapters could not be read"
                 }
               }
             }
@@ -4657,6 +4725,9 @@
     "An article's details come from its feed; %@ makes it a book you can edit." : {
       "comment" : "The line under the heading of an article's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command."
     },
+    "An audio section refers to a missing file or an invalid time range." : {
+      "comment" : "Why an audio book could not be imported: one of its sections names a file that is not there, or a start and end time that do not make a range."
+    },
     "An edit of its text is kept beside the new reading, as a copy in the book's package." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to text TextMouth did not write, said only for a book whose content.md holds such text: an edit made with Edit Text, or a save no edit took, either kept as Replace Existing keeps it (ImportDecisionWording.replacingKeepsTextSentence)."
     },
@@ -5143,6 +5214,9 @@
     "Begin" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Begin\"."
     },
+    "Big5 (Traditional Chinese)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
     "Blocks the spurious play command macOS sends when Bluetooth headphones are removed." : {
       "comment" : "Explanation under the Enable Bluetooth monitoring switch in the Miscellaneous settings. macOS is the name of the operating system."
     },
@@ -5442,6 +5516,15 @@
     },
     "By %@" : {
       "comment" : "Speak Info: the part of a book's summary that names its author. %@ is the author's name."
+    },
+    "CP437 (US DOS)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "CP850 (Western European DOS)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "CP866 (Russian DOS)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
     },
     "Cancel" : {
       "comment" : "Button of a confirmation in Storage settings that changes nothing.\nButton of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton of the sheet that shows the library being moved: cancels the move.\nButton that closes a question and changes nothing.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without doing what it offered.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nTitle and VoiceOver label of the Cancel button of the duplicate-book question.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the Cancel button of the Add to Library sheet, which closes it.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the feed downloads section's button that stops the feed downloads.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
@@ -6291,6 +6374,9 @@
     "Could not delete \"%@\" and move its contents" : {
       "comment" : "Start of the error message when a folder could not be deleted and its contents moved to its parent. %@ is the folder's name. The reason follows it after a colon."
     },
+    "Could not determine audio duration." : {
+      "comment" : "Why an audio book could not be imported: the length of its audio could not be measured."
+    },
     "Could not discard duplicate import" : {
       "comment" : "Start of the error message when the new copy of a duplicate book could not be discarded. The reason follows it after a colon."
     },
@@ -6517,6 +6603,15 @@
     },
     "Cycle Forward Navigation Unit" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the next one. Also the title of the menu command of the same name."
+    },
+    "DAISY file not found at: %@" : {
+      "comment" : "Why a DAISY book could not be imported: there is no file at its path. %@ is the path."
+    },
+    "DAISY parse error: %@" : {
+      "comment" : "Why a DAISY book could not be imported: a file inside it could not be read. %@ is the reason, a phrase in English."
+    },
+    "DOCX file not found at: %@" : {
+      "comment" : "Why a Word document (.docx) could not be imported: there is no file at its path. %@ is the path."
     },
     "Data directory: %@" : {
       "comment" : "VoiceOver label of the data directory's row in Storage settings. %@ is the folder's path."
@@ -6835,6 +6930,9 @@
     },
     "Display" : {
       "comment" : "Name of the headings sheet's picker that chooses what each heading shows after its name.\nTitle of the picker in Search in Book that chooses how each result's position in the book is shown, as a percentage or as a time."
+    },
+    "Divide the document into smaller files, then import them." : {
+      "comment" : "Last sentence of why a file with too much markup was refused: what to do."
     },
     "Does Not Contain" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
@@ -7196,6 +7294,12 @@
     "EPUB version: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's EPUB version row. %@ is the version, such as 3.0."
     },
+    "EUC-JP (Japanese)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "EUC-KR (Korean)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
     "Each <!-- page: … --> marks where a page begins." : {
       "comment" : "Third sentence of the Edit Text explanation. \"<!-- page: … -->\" is the literal text of a page marker in the file; it stays exactly as written."
     },
@@ -7424,6 +7528,9 @@
         }
       }
     },
+    "Enhanced" : {
+      "comment" : "The quality of a speech voice, in the voice pickers and the names VoiceOver reads for them: the middle tier, which the listener downloads. The tiers are Standard, Enhanced, and Premium."
+    },
     "Enter" : {
       "comment" : "Name of the keypad's Enter key, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Enter\"."
     },
@@ -7585,6 +7692,9 @@
         }
       }
     },
+    "Every chapter was read." : {
+      "comment" : "Says that an import read every chapter of a book, with nothing left out."
+    },
     "Every episode listed, downloads by hand" : {
       "comment" : "A choice of the List and download pop-up menu, in Feed Info, for a feed of episodes: every episode is listed and the listener downloads by hand."
     },
@@ -7653,6 +7763,9 @@
     },
     "Every item of %@ is already played." : {
       "comment" : "What VoiceOver says when Mark All Played finds no unplayed item, in a feed of episodes and articles. %@ is the feed's title."
+    },
+    "Every page was read." : {
+      "comment" : "Says that an import read every page of a PDF or of a book of pictures, with nothing left out."
     },
     "Every shortcut and where it works go back to the defaults. Your own keys are lost." : {
       "comment" : "Message of the alert that asks the listener to confirm resetting every keyboard shortcut to its default: the shortcuts they changed are lost."
@@ -7845,6 +7958,9 @@
     },
     "Failed to switch libraries" : {
       "comment" : "Begins the message when Use This Library failed; the reason follows after a colon."
+    },
+    "Failed to write EPUB metadata: %@" : {
+      "comment" : "Why a book's details could not be saved into its EPUB file. %@ is the reason, a phrase in English."
     },
     "Feed" : {
       "comment" : "The note after a feed's title in the Library's feed rows and in the Folders list, saying the row is a feed. Title case."
@@ -8228,6 +8344,15 @@
     "Front Cover" : {
       "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the front cover, made at import. Title case."
     },
+    "GB 18030 (Simplified Chinese)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "GB 2312 (Simplified Chinese)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "GBK (Simplified Chinese)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
     "Genre" : {
       "comment" : "Name of the book information sheet's field for an audiobook's genre; VoiceOver reads it as the field's label."
     },
@@ -8239,6 +8364,15 @@
     },
     "Get a fresh copy of the archive, then import it again." : {
       "comment" : "Last sentence of why an import's archive stopped extracting: what to do."
+    },
+    "Get a fresh copy of the book, then import it again." : {
+      "comment" : "Last sentence of why an EPUB book could not be imported because of damage: what to do."
+    },
+    "Get a fresh copy of the file, then import it again." : {
+      "comment" : "Last sentence of why a file could not be imported because it is damaged or incomplete: what to do."
+    },
+    "Get another copy of the file, or save it in another format, then import it again." : {
+      "comment" : "Last sentence of why a file was refused for its markup: what to do."
     },
     "Getting Your Library" : {
       "comment" : "Heading of the screen shown while TextMouth gets the library's files from the cloud; the library opens by itself when they arrive."
@@ -8490,6 +8624,33 @@
     "ISBN: %@" : {
       "comment" : "The shared value of a group of duplicate books that match by ISBN, in the group's heading. %@ is the ISBN. ISBN stays as written.\nWhat VoiceOver says for the book information sheet's ISBN row. %@ is the book's ISBN."
     },
+    "ISO 2022-JP (Japanese)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "ISO 8859-13 (Baltic)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "ISO 8859-15 (Western European)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "ISO 8859-2 (Central European)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "ISO 8859-5 (Cyrillic)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "ISO 8859-6 (Arabic)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "ISO 8859-7 (Greek)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "ISO 8859-8 (Hebrew)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "ISO 8859-9 (Turkish)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
     "Identical File (MD5)" : {
       "comment" : "A match criterion of Find Duplicate Books: the files' contents are exactly the same. MD5 is the name of the checksum used to compare them."
     },
@@ -8559,6 +8720,9 @@
     },
     "Import cancelled while extracting the archive, before any book was imported." : {
       "comment" : "Sentence of the alert about a ZIP batch the reader cancelled while its archive was still being extracted."
+    },
+    "Import each book's .opf file on its own." : {
+      "comment" : "Last sentence of why a folder of several DAISY books could not be imported as one: what to do. .opf is a file extension and stays as it is."
     },
     "Import failed: %@" : {
       "comment" : "Why an import failed. %@ is the reason, a sentence."
@@ -9151,6 +9315,12 @@
     "Jumped to page %@." : {
       "comment" : "Announcement after Go to Page jumped. %@ is the page's label, an identifier written without digit grouping."
     },
+    "KOI8-R (Russian)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "KOI8-U (Ukrainian)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
     "Keep" : {
       "comment" : "Choice of the Original audio picker: keep the original audio of a recording or edited audiobook until its book is removed.\nTitle and VoiceOver label of the button that keeps the original file of a book just imported. Title case."
     },
@@ -9698,6 +9868,15 @@
     "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings." : {
       "comment" : "Said when MP3 is asked for and neither TextMouth's built-in encoder nor an installed ffmpeg program can write it. \"Storage settings\" is the name of a settings tab."
     },
+    "Mac Central European" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is."
+    },
+    "Mac Cyrillic" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is."
+    },
+    "Mac Roman (Western European)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
     "Made %@, %lld of %lld." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after Duplicate: the copy and its place. Placeholders in order: name, number, count.",
       "localizations" : {
@@ -10020,11 +10199,17 @@
     "Miscellaneous" : {
       "comment" : "Name of the Settings tab for the options that fit no other tab, such as Bluetooth monitoring."
     },
+    "Missing DAISY content: %@" : {
+      "comment" : "Why a DAISY book could not be imported: a part it needs is missing. %@ is what is missing, a phrase in English."
+    },
     "Mode Switch" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Mode Switch\"."
     },
     "Moderate" : {
       "comment" : "The name of punctuation pause level 2: periods and commas pause."
+    },
+    "Monkey's Audio" : {
+      "comment" : "The name of an audio format, in a failure to read a file and in Book Information: Monkey's Audio, in .ape files. A format's own name, usually kept as it is."
     },
     "More than %lld matches in %@" : {
       "comment" : "Status line of a finished search where a book's count of matches stopped at its limit. %1$lld is the number of matches found, and %2$@ is the count of books with its noun, such as \"750 books\".",
@@ -11022,6 +11207,15 @@
     "No substitution rules." : {
       "comment" : "Shown in the Substitutions settings while the list holds no rule."
     },
+    "No supported audio files found." : {
+      "comment" : "Why an audio book could not be imported: none of the files in it is an audio file TextMouth reads."
+    },
+    "No text content could be extracted from the PDF." : {
+      "comment" : "Why a PDF could not be imported: none of its pages holds text."
+    },
+    "No text could be read from the PDF: it has no embedded text, and OCR could not run (%@)." : {
+      "comment" : "Why a PDF could not be imported: its pages are pictures, and text recognition (OCR) could not run. %@ is the reason, a phrase in English with no full stop."
+    },
     "No text could be read from this comic book archive: OCR could not run (%@)." : {
       "comment" : "Why a comic book archive was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English."
     },
@@ -11109,6 +11303,29 @@
         }
       }
     },
+    "None of the %lld chapters could be read" : {
+      "comment" : "Starts the warning after an import where none of a book's chapters could be read. %lld is how many chapters the book has, always two or more. Has no full stop.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "None of the %lld chapter could be read"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "None of the %lld chapters could be read"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "None of the %lld selected books is in the reading list." : {
       "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: no book selected is on the list. %lld is the number of books selected (two or more).",
       "localizations" : {
@@ -11157,6 +11374,9 @@
     },
     "Not Within the Last" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
+    },
+    "Not a valid DAISY book (no OPF or ncc.html found)." : {
+      "comment" : "Why a file could not be imported as a DAISY book: it holds neither a package file (.opf) nor a navigation file (ncc.html). OPF and ncc.html are file names and stay as they are."
     },
     "Not available in this window." : {
       "comment" : "Second sentence of the hint of a dimmed choice of the Add to Library sheet: its menu command does not work in the window the sheet is in. The choice's own summary comes first."
@@ -11304,6 +11524,78 @@
     "Number Sign" : {
       "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\"."
     },
+    "OCR could not run on %@ of %lld pages, so text that appears only in their images is missing: %@." : {
+      "comment" : "Warning after an import of a PDF where several pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, two or more, written with digit grouping; %2$lld is how many pages the PDF has; %3$@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "OCR could not run on %@ of %lld page, so text that appears only in their images is missing: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "OCR could not run on %@ of %lld pages, so text that appears only in their images is missing: %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "OCR could not run on 1 of %lld pages, so text that appears only in its images is missing: %@." : {
+      "comment" : "Warning after an import of a PDF where one page needed text recognition (OCR) where it could not run. %lld is how many pages the PDF has, two or more. %@ is the page and why, such as \"page 3 (text recognition is not available)\", the reason in English.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "OCR could not run on 1 of %lld page, so text that appears only in its images is missing: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "OCR could not run on 1 of %lld pages, so text that appears only in its images is missing: %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "OCR could not run on all %lld pages, so text that appears only in their images is missing: %@." : {
+      "comment" : "Warning after an import of a PDF whose every page needed text recognition (OCR) where it could not run. %lld is how many pages the PDF has, two or more. %@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "OCR could not run on all %lld page, so text that appears only in its images is missing: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "OCR could not run on all %lld pages, so text that appears only in their images is missing: %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "OCR could not run on the PDF's only page, so text that appears only in its images is missing: %@." : {
+      "comment" : "Warning after an import of a PDF whose only page needed text recognition (OCR) where it could not run. %@ is the page and why, such as \"page 1 (text recognition is not available)\", the reason in English."
+    },
     "OK" : {
       "comment" : "Button that closes a notice.\nButton that closes an alert and changes nothing.\nButton that closes an alert that only informs. Title case.\nButton that dismisses an alert about a problem.\nButton that dismisses an alert after reading it.\nButton that dismisses the reader's error alert.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
     },
@@ -11333,6 +11625,12 @@
     "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings." : {
       "comment" : "Part of the question asked about a duplicate where one copy is an audiobook played from a recording and the other is read aloud from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy."
     },
+    "One document in this file holds too much markup for TextMouth to read without running out of memory." : {
+      "comment" : "First sentence of why a file was refused: one of its documents has so much markup that reading it would take too much memory."
+    },
+    "One tag in this file has more than %@ attributes, which TextMouth can't read safely." : {
+      "comment" : "First sentence of why a file was refused: one of its markup tags has more attributes than TextMouth reads. %@ is the most attributes, a number."
+    },
     "Only an audiobook's audio can be edited." : {
       "comment" : "Said when Edit Audio… is chosen for something that is not an audiobook kept in a package of its own."
     },
@@ -11344,6 +11642,9 @@
     },
     "Only audiobooks can be transcribed." : {
       "comment" : "Error shown when transcription is tried for a book that is not an audiobook."
+    },
+    "Only files inside the folder can be imported." : {
+      "comment" : "Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder."
     },
     "Only rewind if the pause was longer than the threshold" : {
       "comment" : "VoiceOver hint of the Smart mode checkbox in the Playback settings."
@@ -11404,8 +11705,17 @@
     "Open it in Finder to download it, then choose it again." : {
       "comment" : "Last sentence of why the chosen folder can't be used because it is only in the cloud: what to do. \"It\" is the folder."
     },
+    "Open it in a text editor, take the entity definitions out, save it, then import it again." : {
+      "comment" : "Last sentence of why an SSML file was refused because it defines entities of its own: what to do."
+    },
+    "Open the book in the program that made it, save it again, then import it again." : {
+      "comment" : "Last sentence of why a file inside an EPUB or DAISY book was refused because it defines entities of its own: what to do."
+    },
     "Open the book once, then try again." : {
       "comment" : "Second sentence of that message: opening the book makes its text ready."
+    },
+    "Open the document in the program that made it, save it again, then import it again." : {
+      "comment" : "Last sentence of why a file inside a Word or OpenDocument document was refused because it defines entities of its own: what to do."
     },
     "Open the library without its index?" : {
       "comment" : "Title of the question asked before opening the library without its index file."
@@ -11595,6 +11905,9 @@
     },
     "Out at %@." : {
       "comment" : "Said as the audio editor's Mark Out marks the selection's end. %@ is the time in words. A sentence about the selection it makes may follow."
+    },
+    "PDF file not found at: %@" : {
+      "comment" : "Why a PDF could not be imported: there is no file at its path. %@ is the path."
     },
     "Page" : {
       "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.\nLabel of the Go to Page field, where the user types a page of the book."
@@ -11988,6 +12301,9 @@
     },
     "Post a notification for each feed with new episodes" : {
       "comment" : "Label of the switch that posts a notification for each feed with new items after a refresh."
+    },
+    "Premium" : {
+      "comment" : "The quality of a speech voice, in the voice pickers and the names VoiceOver reads for them: the best tier, which the listener downloads. The tiers are Standard, Enhanced, and Premium."
     },
     "Preparing %@ of %@…" : {
       "comment" : "Status line of the Search Library window while a search must prepare books' text, which takes longer. %1$@ is the number of books prepared so far, and %2$@ is the count of all the books with its noun, such as \"737 books\".",
@@ -13223,6 +13539,9 @@
     "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those." : {
       "comment" : "Advice after the refusal of a WordPerfect document, which no part of macOS reads. LibreOffice is a program's name."
     },
+    "Save a copy without the password, then import that copy." : {
+      "comment" : "Last sentence of why a password-protected document could not be imported: what to do."
+    },
     "Save and Export" : {
       "comment" : "Heading of the audio editor's buttons for saving and exporting."
     },
@@ -13234,6 +13553,12 @@
     },
     "Save in" : {
       "comment" : "Label of the pop-up in the Record window that chooses the library folder the recording is saved in."
+    },
+    "Save it as UTF-8 text, then import it again." : {
+      "comment" : "Last sentence of why an HTML file could not be imported because of its declared text encoding: what to do. UTF-8 is an encoding's name and stays as it is."
+    },
+    "Save it as UTF-8, then import it again." : {
+      "comment" : "Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is."
     },
     "Save metadata changes" : {
       "comment" : "What VoiceOver says for the Save button of an audiobook's book information sheet."
@@ -13664,6 +13989,9 @@
     },
     "Shift" : {
       "comment" : "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\"."
+    },
+    "Shift JIS (Japanese)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
     },
     "Shift skip backward unit" : {
       "comment" : "VoiceOver label of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name."
@@ -14252,6 +14580,9 @@
     },
     "Speex" : {
       "comment" : "The name of the Speex speech format. Inside sentences about importing a file of that format."
+    },
+    "Standard" : {
+      "comment" : "The quality of a speech voice, in the voice pickers and the names VoiceOver reads for them: the basic tier that every Mac has. The tiers are Standard, Enhanced, and Premium."
     },
     "Start New Library" : {
       "comment" : "Button of the question that confirms starting a new, empty library."
@@ -14882,6 +15213,17 @@
     "TextMouth can't play this kind of file (%@)." : {
       "comment" : "Why a feed's episode could not be downloaded: the file is of a kind TextMouth does not play. %@ is the file's type or extension, such as audio/x-flac."
     },
+    "TextMouth can't read the audio file %@ because %@." : {
+      "comment" : "Why an audio file could not be converted at import: it is of a format TextMouth reads, in a form it refuses. %1$@ is the file's name and %2$@ the reason, a clause in English that follows \"because\" and has no full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth can't read the audio file %1$@ because %2$@."
+          }
+        }
+      }
+    },
     "TextMouth can't read the folder %@: %@." : {
       "comment" : "Why the chosen folder can't be used: it can't be read. %1$@ is the folder's path; %2$@ is the reason in a few words, such as \"permission denied\", with no full stop.\nWhy the library can't be used: its folder can't be read. %1$@ is the folder's path; %2$@ is the reason in a few words, such as \"permission denied\", with no full stop.",
       "localizations" : {
@@ -14906,6 +15248,54 @@
           }
         }
       }
+    },
+    "TextMouth can't safely read the file “%@” in this DAISY book, because it defines entities of its own." : {
+      "comment" : "First sentence of why a file inside a DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book."
+    },
+    "TextMouth can't safely read the file “%@” in this DAISY book, because it is written in the %@ encoding." : {
+      "comment" : "First sentence of why a file inside a DAISY book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth can't safely read the file “%1$@” in this DAISY book, because it is written in the %2$@ encoding."
+          }
+        }
+      }
+    },
+    "TextMouth can't safely read the file “%@” in this EPUB book, because it defines entities of its own." : {
+      "comment" : "First sentence of why a file inside an EPUB book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book."
+    },
+    "TextMouth can't safely read the file “%@” in this EPUB book, because it is written in the %@ encoding." : {
+      "comment" : "First sentence of why a file inside an EPUB book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth can't safely read the file “%1$@” in this EPUB book, because it is written in the %2$@ encoding."
+          }
+        }
+      }
+    },
+    "TextMouth can't safely read the file “%@” in this document, because it defines entities of its own." : {
+      "comment" : "First sentence of why a file inside a Word or OpenDocument document was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the document."
+    },
+    "TextMouth can't safely read the file “%@” in this document, because it is written in the %@ encoding." : {
+      "comment" : "First sentence of why a file inside a Word or OpenDocument document was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the document and %2$@ the encoding's name as the file declares it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth can't safely read the file “%1$@” in this document, because it is written in the %2$@ encoding."
+          }
+        }
+      }
+    },
+    "TextMouth can't safely read this SSML file, because it defines entities of its own." : {
+      "comment" : "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it defines XML entities of its own, which could make it far larger when read."
+    },
+    "TextMouth can't safely read this SSML file, because it is written in the %@ encoding." : {
+      "comment" : "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it is in a text encoding TextMouth cannot see through. %@ is the encoding's name as the file declares it."
     },
     "TextMouth cannot open copy-protected files." : {
       "comment" : "Advice after the refusal of audio that is locked to a store's own player, such as Audible's .aa and .aax files."
@@ -15518,6 +15908,17 @@
     "That's after the end of the audio, at %@." : {
       "comment" : "Said when a time typed into the audio editor's Go to Time lies past the end. %@ is the audio's length in words."
     },
+    "The %@ ends %@ into its file “%@”, which is only %@ long." : {
+      "comment" : "First sentence of why an audiobook could not be imported: a section ends after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it ends and %4$@ how long the file is, both spoken times; %3$@ is the file's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The %1$@ ends %2$@ into its file “%3$@”, which is only %4$@ long."
+          }
+        }
+      }
+    },
     "The %@ file holds no timed text TextMouth can use." : {
       "comment" : "Error shown when a chosen transcript file holds no usable timed passage. %@ is the format's name, such as WebVTT or SubRip."
     },
@@ -15665,6 +16066,28 @@
         }
       }
     },
+    "The %@ starts %@ into its file “%@”, before the %@, which comes earlier in the book and starts %@ in." : {
+      "comment" : "First sentence of why an audiobook could not be imported: a section starts before another section that comes earlier in the book and is in the same audio file. %1$@ and %4$@ are sections, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (masculine noun phrases in English, without their article); %2$@ and %5$@ are how far into the file each starts, spoken times; %3$@ is the file's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The %1$@ starts %2$@ into its file “%3$@”, before the %4$@, which comes earlier in the book and starts %5$@ in."
+          }
+        }
+      }
+    },
+    "The %@ starts %@ into its file “%@”, which is only %@ long." : {
+      "comment" : "First sentence of why an audiobook could not be imported: a section starts after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it starts and %4$@ how long the file is, both spoken times; %3$@ is the file's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The %1$@ starts %2$@ into its file “%3$@”, which is only %4$@ long."
+          }
+        }
+      }
+    },
     "The %lld markers are deleted, and Redo doesn't bring them back." : {
       "comment" : "Explains the audio editor's Revert to Original confirmation: how many markers it deletes. %lld is the number of markers.",
       "localizations" : {
@@ -15768,6 +16191,33 @@
         }
       }
     },
+    "The DAISY file could not be opened as a ZIP archive." : {
+      "comment" : "Why a DAISY book could not be imported: it could not be opened as a ZIP archive."
+    },
+    "The DOCX file could not be opened as a ZIP archive." : {
+      "comment" : "Why a Word document (.docx) could not be imported: it could not be opened as a ZIP archive."
+    },
+    "The DOCX file is missing required entry: %@" : {
+      "comment" : "Why a Word document (.docx) could not be imported: a part it needs is not in it. %@ is the part's path inside the document."
+    },
+    "The EPUB file could not be opened as a ZIP archive." : {
+      "comment" : "Why an EPUB book could not be imported: it could not be opened as a ZIP archive."
+    },
+    "The EPUB file was not found at: %@" : {
+      "comment" : "Why an EPUB book could not be imported: there is no file at its path. %@ is the path."
+    },
+    "The EPUB has no reading order (spine)." : {
+      "comment" : "Why an EPUB book could not be imported: its package document lists no reading order, which EPUB calls the spine."
+    },
+    "The EPUB is missing META-INF/container.xml." : {
+      "comment" : "Why an EPUB book could not be imported: it lacks the file that names its package document. META-INF/container.xml is a file's path and stays as it is."
+    },
+    "The EPUB is missing its package document (OPF file)." : {
+      "comment" : "Why an EPUB book could not be imported: the package document (an OPF file) that its container names is not in it."
+    },
+    "The EPUB package document could not be parsed." : {
+      "comment" : "Why an EPUB book could not be imported: its package document (an OPF file) could not be read."
+    },
     "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written." : {
       "comment" : "Describes the Leading Articles choice Ignored When Typing, under the pop-up. The Hobbit is the example title, typed under the letter H."
     },
@@ -15796,6 +16246,9 @@
           }
         }
       }
+    },
+    "The PDF file could not be opened." : {
+      "comment" : "Why a PDF could not be imported: PDFKit could not open it."
     },
     "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the list is, and where a new window opens."
@@ -15942,6 +16395,9 @@
     "The audio file %@ could not be read for converting." : {
       "comment" : "Why an audio file could not be converted at import: it could not be read as audio, or it is only in the cloud. %@ is the file's name."
     },
+    "The audio file %@ ends before its audio does, so it could not be converted." : {
+      "comment" : "Why an audio file could not be converted at import: the file stops before the audio its header promises. %@ is the file's name."
+    },
     "The audio file %@ has %lld channels but does not say which is which, so TextMouth cannot mix it to stereo." : {
       "comment" : "Why an audio file was not converted: it has more than two channels and does not say which is which, so a mix to stereo would keep two arbitrary channels. %1$@ is the file's name and %2$lld the number of channels, always more than two.",
       "localizations" : {
@@ -15964,6 +16420,12 @@
           }
         }
       }
+    },
+    "The audio file %@ is damaged, so it could not be converted." : {
+      "comment" : "Why an audio file could not be converted at import: a checksum failed or a field holds a value no encoder writes. %@ is the file's name."
+    },
+    "The audio file %@ is not the kind of file its name says." : {
+      "comment" : "Why an audio file could not be converted at import: its bytes are not of the format its extension names. %@ is the file's name."
     },
     "The audio file “%@” that the edits need is missing from the book." : {
       "comment" : "Said when an audio file that the edits need is missing. %@ is its path inside the book's package."
@@ -16073,6 +16535,9 @@
     "The book's files aren't on this Mac yet. %@ may still be syncing them." : {
       "comment" : "Why a book can't be used yet: its files have not arrived. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."
     },
+    "The book's navigation does not match its audio; get a fresh copy and import it again." : {
+      "comment" : "Last sentence of an import failure: a section of a segmented audiobook does not fit the audio file it names, so the book's navigation (its manifest or headings) does not match its audio."
+    },
     "The book's package and content paths do not match a managed library location." : {
       "comment" : "Why a book's files were not deleted: its paths do not lie inside the library. Follows \"Import failed: \"."
     },
@@ -16116,6 +16581,17 @@
     },
     "The copy was already complete when Cancel was pressed, so the move went ahead." : {
       "comment" : "Sentence added to the done message of a move of the library when Cancel was pressed after the copy was complete."
+    },
+    "The correction file %@ is damaged or belongs to another recording, so %@ could not be converted." : {
+      "comment" : "Why a hybrid WavPack file could not be converted at import: the correction file beside it (the same name ending in .wvc) is damaged or belongs to another recording. %1$@ is the correction file's name and %2$@ the WavPack file's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The correction file %1$@ is damaged or belongs to another recording, so %2$@ could not be converted."
+          }
+        }
+      }
     },
     "The cue sheet “%@” is too large to read." : {
       "comment" : "Refusal of a cue sheet that is larger than TextMouth reads. %@ is the cue sheet's file name."
@@ -16309,6 +16785,119 @@
     "The file itself has not been changed." : {
       "comment" : "Last sentence of the library index recovery sheet when no copy of the unreadable file was saved."
     },
+    "The file “%@”" : {
+      "comment" : "Begins a sentence about a file that could not be read in the text encoding chosen for it, such as \"The file “Ledger.txt” can't be read as Shift JIS (Japanese): …\". %@ is the file's name."
+    },
+    "The file “%@” declares the text encoding “%@”, but it holds bytes that are not valid in that encoding." : {
+      "comment" : "First sentence of why a file could not be imported: an HTML file declares a text encoding its bytes are not valid in. %1$@ is the file's name and %2$@ the encoding's name as the file spells it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” declares the text encoding “%2$@”, but it holds bytes that are not valid in that encoding."
+          }
+        }
+      }
+    },
+    "The file “%@” declares the text encoding “%@”, which TextMouth cannot read." : {
+      "comment" : "First sentence of why a file could not be imported: an HTML file declares a text encoding TextMouth does not know. %1$@ is the file's name and %2$@ the encoding's name as the file spells it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” declares the text encoding “%2$@”, which TextMouth cannot read."
+          }
+        }
+      }
+    },
+    "The file “%@” in this DAISY book is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
+      "comment" : "Why a DAISY book could not be imported: a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” in this DAISY book is damaged or incomplete: %2$@. Get a fresh copy of the book, then import it again."
+          }
+        }
+      }
+    },
+    "The file “%@” in this DAISY book refers to “%@”, which is outside the book's folder." : {
+      "comment" : "First sentence of why a DAISY book kept as loose files could not be imported: one of its files refers to a file outside the book's folder. %1$@ is the referring file's path inside the folder and %2$@ the reference, as the file writes it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” in this DAISY book refers to “%2$@”, which is outside the book's folder."
+          }
+        }
+      }
+    },
+    "The file “%@” in this EPUB book is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
+      "comment" : "Why an EPUB book could not be imported: a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” in this EPUB book is damaged or incomplete: %2$@. Get a fresh copy of the book, then import it again."
+          }
+        }
+      }
+    },
+    "The file “%@” in this archive is damaged or incomplete: %@. Get a fresh copy of the archive, then import it again." : {
+      "comment" : "Why a ZIP archive could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” in this archive is damaged or incomplete: %2$@. Get a fresh copy of the archive, then import it again."
+          }
+        }
+      }
+    },
+    "The file “%@” in this audiobook is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
+      "comment" : "Why an audiobook could not be imported: one of its audio files is damaged. %1$@ is the audio file's name and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” in this audiobook is damaged or incomplete: %2$@. Get a fresh copy of the book, then import it again."
+          }
+        }
+      }
+    },
+    "The file “%@” in this comic book archive is damaged or incomplete: %@. Get a fresh copy of the archive, then import it again." : {
+      "comment" : "Why a comic book archive (a ZIP of pictures named .cbz) could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” in this comic book archive is damaged or incomplete: %2$@. Get a fresh copy of the archive, then import it again."
+          }
+        }
+      }
+    },
+    "The file “%@” in this document is damaged or incomplete: %@. Get a fresh copy of the document, then import it again." : {
+      "comment" : "Why a Word or OpenDocument document could not be imported: a file inside it is damaged. %1$@ is the file's path inside the document and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” in this document is damaged or incomplete: %2$@. Get a fresh copy of the document, then import it again."
+          }
+        }
+      }
+    },
+    "The file “%@” is damaged or incomplete: it begins with a %@ byte-order mark, but the rest of it is not valid %@ text." : {
+      "comment" : "First sentence of why a file could not be imported: it begins with the byte-order mark of a Unicode encoding, but the bytes after it are not valid in that encoding. %1$@ is the file's name; %2$@ and %3$@ are both the encoding's standard name, such as UTF-16LE, which stays as it is.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file “%1$@” is damaged or incomplete: it begins with a %2$@ byte-order mark, but the rest of it is not valid %3$@ text."
+          }
+        }
+      }
+    },
     "The file's address isn't a web address TextMouth can open." : {
       "comment" : "Why a feed item's download failed: its address is not an http or https address."
     },
@@ -16382,8 +16971,34 @@
     "The folder for this feed is no longer in the library. Choose another folder for it." : {
       "comment" : "Why a feed's episode could not be downloaded: the feed's folder was removed from the library."
     },
+    "The folder holds %lld DAISY books (%@)." : {
+      "comment" : "First sentence of why a folder could not be imported as one DAISY book: its top level holds several books' package files. %lld is how many books, always two or more, and %@ their file names, separated by commas.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The folder holds %lld DAISY book (%@)."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The folder holds %lld DAISY books (%@)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "The folder is no longer in the library. It may have been moved, renamed, or deleted in another window." : {
       "comment" : "Error shown when a folder edit is refused because the folder is gone from the library."
+    },
+    "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level." : {
+      "comment" : "Why a folder could not be imported as a DAISY book: it holds no navigation file (ncc.html) and no package file (.opf) at its top level. ncc.html and .opf are file names and stay as they are."
     },
     "The folder is there, but TextMouth can't read its library identity file: %@" : {
       "comment" : "Why the library can't be used: the file that names the library can't be read. %@ is the reason, a phrase or sentence from the system or TextMouth."
@@ -16718,6 +17333,9 @@
     "The next episode could not be downloaded." : {
       "comment" : "First sentence of the VoiceOver announcement when Next in Folder could not download the next podcast episode. A sentence with the reason follows it."
     },
+    "The only chapter could not be read" : {
+      "comment" : "Starts the warning after an import of a book of one chapter that could not be read. Has no full stop."
+    },
     "The original at %@ is a folder or link, so a copy of it cannot be checked." : {
       "comment" : "Why a book could not move into the current library format. %@ is the path of the original."
     },
@@ -16804,6 +17422,32 @@
     "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book." : {
       "comment" : "Hint of the Original audio picker in Storage settings (Audio Editing): what an original is, what keeping it costs (345 MB is for an hour of a recording), and that a change reaches originals already kept."
     },
+    "The other %lld chapters have no text." : {
+      "comment" : "Sentence in the warning after an EPUB book was imported with chapters left out: several other chapters are blank. %lld is how many, two or more.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The other %lld chapter has no text."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The other %lld chapters have no text."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "The other chapter has no text." : {
+      "comment" : "Sentence in the warning after an EPUB book was imported with chapters left out: exactly one other chapter is blank."
+    },
     "The page at %@ is larger than TextMouth reads." : {
       "comment" : "Why a feed article's download failed: the web page is too large. %@ is the server's host name."
     },
@@ -16815,6 +17459,9 @@
     },
     "The playlist “%@” is not a complete, valid playlist file." : {
       "comment" : "Refusal of an XSPF playlist that is not a readable XML playlist. %@ is the playlist's file name."
+    },
+    "The playlist “%@” is too large to read." : {
+      "comment" : "Why a playlist file could not be imported: it is larger than the most TextMouth reads. %@ is the playlist's file name."
     },
     "The playlist “%@” uses XML entities of its own, which TextMouth does not read." : {
       "comment" : "Refusal of an XSPF playlist that declares XML entities of its own. %@ is the playlist's file name."
@@ -17292,11 +17939,29 @@
     "They stay in %@" : {
       "comment" : "Announcement after Remove Download removed several books' files from this Mac: the books are still in the cloud. %@ is the cloud service's name, or \"the cloud\" when it is unknown."
     },
+    "This EPUB book has no text to read." : {
+      "comment" : "Why an EPUB book could not be imported: every chapter in it is blank."
+    },
     "This Feed Uses Plain http" : {
       "comment" : "Title of the warning shown once after subscribing to a feed whose address uses plain http, which is not encrypted. Title case."
     },
     "This Feed's Settings" : {
       "comment" : "Heading of the group of settings a feed can have of its own, in Feed Info. Title case."
+    },
+    "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it." : {
+      "comment" : "Why a Kindle (KFX) book could not be imported: its pages are fixed layouts or pictures, as in a comic or a print replica, with no text that flows."
+    },
+    "This Kindle book is compressed in a way TextMouth can't read yet." : {
+      "comment" : "Why a Kindle (MOBI) book could not be imported: its text is compressed in a way TextMouth does not read."
+    },
+    "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." : {
+      "comment" : "Why a Kindle (MOBI) book could not be imported: it is encrypted or carries copy protection (DRM), which TextMouth never removes."
+    },
+    "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again." : {
+      "comment" : "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do."
+    },
+    "This Kindle book is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
+      "comment" : "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop."
     },
     "This Mac can't run the speech model that transcription uses." : {
       "comment" : "Error shown when transcription is tried on a Mac whose hardware cannot run the speech model."
@@ -17318,6 +17983,12 @@
     },
     "This Mac is offline, so “%@” can't be downloaded. Connect to the internet and try again." : {
       "comment" : "Why a feed item's download failed: this Mac has no internet. %@ is the item's title."
+    },
+    "This PDF needs a password to open." : {
+      "comment" : "Why a PDF could not be imported: it is locked with a password TextMouth does not have."
+    },
+    "This SSML file is damaged or incomplete: %@." : {
+      "comment" : "Why an SSML (Speech Synthesis Markup Language) file could not be imported: it is damaged. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop."
     },
     "This Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there.",
@@ -17453,6 +18124,12 @@
     "This comic book archive holds no pictures TextMouth can read." : {
       "comment" : "Why a comic book archive was refused at import: it holds no picture TextMouth reads."
     },
+    "This document holds more than %@, the most TextMouth reads from one document." : {
+      "comment" : "Why a document could not be imported: it is larger than the most TextMouth reads from one document. %@ is that limit with its unit, such as \"64 MB\"."
+    },
+    "This document is protected by a password." : {
+      "comment" : "First sentence of why a document could not be imported: it is locked with a password TextMouth does not have."
+    },
     "This download isn't in its feed's folder, so TextMouth left its files as they are." : {
       "comment" : "Why a feed episode's download could not be deleted: it is not in its feed's folder."
     },
@@ -17492,8 +18169,29 @@
     "This file has no text to read." : {
       "comment" : "Why a text, Markdown, or HTML file was refused at import: it is empty or holds only white space or markup."
     },
+    "This file holds only part of a Kindle book. Open the book's main .kfx file." : {
+      "comment" : "Why a Kindle (KFX) file could not be imported: it is a part of a book, such as the metadata file beside the main file, and what to do. .kfx is a file extension and stays as it is."
+    },
+    "This file is a Kindle Create package, which TextMouth can't read yet." : {
+      "comment" : "Why a file could not be imported: it is a package that Kindle Create writes for an author, which TextMouth does not read yet. Kindle Create is a program's name."
+    },
+    "This file is not SSML: it begins with the element “%@”, not “speak”." : {
+      "comment" : "Why a file could not be imported as SSML (Speech Synthesis Markup Language): its first element is not speak. %@ is the name of the first element it has. SSML is a format's name."
+    },
+    "This file is not a Kindle book that TextMouth can read." : {
+      "comment" : "Why a file could not be imported as a Kindle (MOBI) book: it is not a Kindle book of a kind TextMouth reads."
+    },
+    "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file." : {
+      "comment" : "Why a file could not be imported as a web archive (.webarchive, which Safari saves): it does not hold a main page."
+    },
     "This file needs a password, which TextMouth can't send yet." : {
       "comment" : "Why a feed item's download failed: the server asks for a password."
+    },
+    "This file's markup is built in a way that would take TextMouth far too long to read." : {
+      "comment" : "First sentence of why a file was refused: its markup is built so that reading it would take far too long."
+    },
+    "This file's markup nests more than %@ levels deep, which TextMouth can't read safely." : {
+      "comment" : "First sentence of why a file was refused: its markup has elements inside elements more levels deep than TextMouth reads. %@ is the most levels, a number."
     },
     "This folder has no stored name, so it cannot be changed safely." : {
       "comment" : "Error shown when a folder edit is refused because the folder has no name on record."
@@ -17598,6 +18296,9 @@
     },
     "This view is as TextMouth made it." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint for a built-in view as TextMouth made it, or Folders or the Reading List, when it is dimmed."
+    },
+    "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read." : {
+      "comment" : "Why a web archive (.webarchive, which Safari saves) could not be imported: its main file is not a page or text, but a picture or a PDF. %@ is the file's media type, such as image/png, which stays as it is."
     },
     "Tilde" : {
       "comment" : "Name of the punctuation key \"~\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tilde\"."
@@ -18030,6 +18731,9 @@
     "Trimmed to the selection: %@ kept." : {
       "comment" : "Said as the audio editor's Trim to Selection trims. %@ is the length kept, in words."
     },
+    "True Audio" : {
+      "comment" : "The name of an audio format, in a failure to read a file and in Book Information: True Audio, in .tta files. A format's own name, usually kept as it is."
+    },
     "Try Again" : {
       "comment" : "Button of the library index recovery sheet that reads the index file again. Also the name sentences use for it.\nButton of the reader's alert about a chapter that could not be downloaded; it tries the download again.\nButton of the reader's view for a book that could not be got from the cloud; it tries again.\nButton on the Library Not Available screen that checks the library's folder again."
     },
@@ -18167,7 +18871,7 @@
       "comment" : "Hint of the audio editor's Undo button."
     },
     "Unknown" : {
-      "comment" : "Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information."
+      "comment" : "Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information.\nThe quality of a speech voice that macOS reports as a tier TextMouth does not know, in the voice pickers."
     },
     "Unknown Length" : {
       "comment" : "A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's \"Cut Unknown Length\"."
@@ -18293,6 +18997,9 @@
     },
     "Unsubscribe…" : {
       "comment" : "Title of the command that stops checking a feed, when it asks first because it would delete places and bookmarks kept for removed downloads. The ellipsis says a question follows. Title case."
+    },
+    "Unsupported audio format." : {
+      "comment" : "Why an audio file could not be imported: TextMouth does not read its audio format."
     },
     "Unsupported file format: .%@" : {
       "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. No advice follows."
@@ -18655,6 +19362,33 @@
     },
     "Windows Media" : {
       "comment" : "The name of the Windows Media container format, as people say it. Inside sentences about importing a file of that format."
+    },
+    "Windows-1250 (Central European)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "Windows-1251 (Cyrillic)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "Windows-1252 (Western European)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "Windows-1253 (Greek)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "Windows-1254 (Turkish)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "Windows-1255 (Hebrew)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "Windows-1256 (Arabic)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "Windows-1257 (Baltic)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+    },
+    "Windows-874 (Thai)" : {
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
     },
     "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
       "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",
@@ -19219,6 +19953,9 @@
     "has none new" : {
       "comment" : "Library view editor: a condition inside a filter's description: a feed has no new episodes or articles."
     },
+    "heading “%@”" : {
+      "comment" : "How an error names a section of an audiobook by its heading's title, in a sentence such as \"The heading “Tide Tables” starts …\". %@ is the title. A masculine noun phrase in English, without its article, starting with a lowercase letter."
+    },
     "hidden" : {
       "comment" : "A Library view's visibility in lower case, inside a row's spoken label: the View pop-up does not offer the view."
     },
@@ -19596,6 +20333,9 @@
     "no copy of the edited text could be kept, so TextMouth leaves content.md as it is." : {
       "comment" : "Reason after a colon: a rebuild left the book's text alone because no backup could be made; begins in lower case. content.md is a file name and stays as written."
     },
+    "no pages" : {
+      "comment" : "Names an empty set of a PDF's pages, in a sentence about which pages were read."
+    },
     "no place saved, and %@" : {
       "comment" : "A record's place and bookmarks inside a sentence about a conflicting copy of a book's record: no reading place was saved. %@ is a count of bookmarks, such as \"2 bookmarks\"."
     },
@@ -19726,6 +20466,12 @@
     },
     "own settings" : {
       "comment" : "The settings of their own that a deleted download or several kept, a noun inside a list such as \"the place and own settings kept for 1 removed download\". Lower case."
+    },
+    "page %@" : {
+      "comment" : "Names one page of a PDF, in a sentence about which pages were read. %@ is the page's number, an identifier written without digit grouping."
+    },
+    "pages %@" : {
+      "comment" : "Names several pages of a PDF, in a sentence about which pages were read. %@ is a list of page numbers and ranges, such as \"3 and 7\" or \"1 to 4, 7, and 9\"."
     },
     "permission denied" : {
       "comment" : "A reason in a few words, with no full stop, that a folder can't be read: the Mac refused TextMouth access. It follows a colon in a sentence about the folder.\nA reason in a few words, with no full stop, that a folder can't be read: the Mac refused TextMouth access. It follows a colon in a sentence about the library's folder."
@@ -20043,6 +20789,9 @@
     },
     "unsubscribed" : {
       "comment" : "Library view editor: a condition inside a filter's description: the listener is not subscribed to the feed."
+    },
+    "untitled heading %@" : {
+      "comment" : "How an error names a section of an audiobook whose heading has no title, in a sentence such as \"The untitled heading 3 starts …\". %@ is the heading's place among the book's headings, from 1, an identifier written without digit grouping. A masculine noun phrase in English, without its article, starting with a lowercase letter."
     },
     "use Google Drive's Offline Access menu" : {
       "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in Google Drive. Offline Access is Google Drive's own menu name."
