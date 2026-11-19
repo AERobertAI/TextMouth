@@ -85,9 +85,9 @@ final class SpanishLocalizationTests: XCTestCase {
     func testAResourceInSpanishReadsItsSpanish() {
         let spanish = Locale(identifier: "es")
         let english = Locale(identifier: "en")
-        // Each key is one the app's own code uses (SleepTimerView.title, Bookmark.name, SleepTimerDuration.displayName).
+        // Each key is one the app's own code uses (SleepTimerView.title, Bookmark.name, whose number is a String so its key holds %@, and SleepTimerDuration.displayName).
         XCTAssertEqual(String(localized: LocalizedStringResource("Sleep Timer", locale: spanish)), "Temporizador de apagado")
-        XCTAssertEqual(String(localized: LocalizedStringResource("Bookmark \(3)", locale: spanish)), "Marcador 3")
+        XCTAssertEqual(String(localized: LocalizedStringResource("Bookmark \(String(3))", locale: spanish)), "Marcador 3")
         XCTAssertEqual(String(localized: LocalizedStringResource("\(1) minutes", locale: spanish)), "1 minuto")
         XCTAssertEqual(String(localized: LocalizedStringResource("\(30) minutes", locale: spanish)), "30 minutos")
         XCTAssertEqual(String(localized: LocalizedStringResource("\(1) minutes", locale: english)), "1 minute")
