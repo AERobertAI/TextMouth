@@ -156,8 +156,16 @@ struct PagePosition: Equatable, Sendable {
     /// first page, or an empty string for a book without pages (callers drop
     /// empty parts rather than speak them).
     var label: String {
-        if let page { return "Page \(page.label) of \(total)" }
-        if let firstLabel { return "Before page \(firstLabel)" }
+        // The total is written without digit grouping, as a page number is:
+        // "Page 12 of 1200", so both numbers read alike.
+        if let page {
+            return String(localized: "Page \(page.label) of \(String(total))",
+                          comment: "Where the reader is in a book that has pages. %1$@ is the page's label (a number or a roman numeral, an identifier written without digit grouping); %2$@ is the number of pages, written without digit grouping.")
+        }
+        if let firstLabel {
+            return String(localized: "Before page \(firstLabel)",
+                          comment: "Where the reader is before the first page of a book that has pages. %@ is the first page's label, an identifier.")
+        }
         return ""
     }
 }

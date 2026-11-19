@@ -812,7 +812,7 @@ final class BookTextEditSessions: Sendable {
         // An edit already taken is what Redo Text Extraction replaces here;
         // anything else is text saved while no session watched.
         let what = digest == recorded.cache.digest
-            ? "the text taken from Edit Text" : "text saved while no edit was open"
+            ? "the text taken from Edit Text" : "text saved while no edit was open" // l10n: no (debug-log reason)
         Self.logLine(
             "TEXT_EDIT_KEPT",
             about: book,
@@ -979,20 +979,20 @@ final class BookTextEditSessions: Sendable {
             return refuse(
                 .transcriptChanged,
                 tag: "TEXT_EDIT_SOURCE_CHANGED",
-                "the book's transcript changed too; its text will be written from that transcript again"
+                "the book's transcript changed too; its text will be written from that transcript again" // l10n: no (debug-log reason)
             )
         case .changed:
             return refuse(
                 .sourceChanged,
                 tag: "TEXT_EDIT_SOURCE_CHANGED",
-                "the book's own file changed too; its text will be read from that file again"
+                "the book's own file changed too; its text will be read from that file again" // l10n: no (debug-log reason)
             )
         case .unchanged(let fingerprint):
             source = fingerprint
         }
 
         guard let text = try? MarkdownCacheService.cacheText(from: bytes, at: cacheURL) else {
-            return refuse(.notText, tag: "TEXT_EDIT_REFUSED", "content.md is not UTF-8 text")
+            return refuse(.notText, tag: "TEXT_EDIT_REFUSED", "content.md is not UTF-8 text") // l10n: no (debug-log reason)
         }
         // The text is read as the reader reads it, but a chapter nested past
         // the reader's limit is refused, not kept raw as a read keeps it: an
@@ -1009,13 +1009,13 @@ final class BookTextEditSessions: Sendable {
             return refuse(
                 .nestedTooDeeply(chapter: refused.number, limit: limit),
                 tag: "TEXT_EDIT_REFUSED",
-                "a chapter of content.md nests more than \(limit) levels deep"
+                "a chapter of content.md nests more than \(limit) levels deep" // l10n: no (debug-log reason)
             )
         } catch {
             return refuse(.failed(error.localizedDescription), tag: "TEXT_EDIT_REFUSED", error.localizedDescription)
         }
         guard parsed.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) else {
-            return refuse(.noChapters, tag: "TEXT_EDIT_REFUSED", "content.md holds no chapter with anything in it")
+            return refuse(.noChapters, tag: "TEXT_EDIT_REFUSED", "content.md holds no chapter with anything in it") // l10n: no (debug-log reason)
         }
         if book.format.isAudio {
             return takeTranscriptEdit(of: book, parsed: parsed, markdown: text, cache: cache, readingTexts: readingTexts, access: access, refuse: refuse)
@@ -1046,7 +1046,7 @@ final class BookTextEditSessions: Sendable {
             return refuse(
                 .failed(BookTextEditWording.recordUnavailable),
                 tag: "TEXT_EDIT_FAILED",
-                "the book's record could not take the edit now"
+                "the book's record could not take the edit now" // l10n: no (debug-log reason)
             )
         }
         // The kept reading text was read from the content.md just replaced.
@@ -1148,37 +1148,37 @@ final class BookTextEditSessions: Sendable {
             return refuse(
                 .chaptersChanged(found: found, expected: expected),
                 "TEXT_EDIT_REFUSED",
-                "the edited transcript holds \(found) chapter(s), where the audiobook has \(expected)"
+                "the edited transcript holds \(found) chapter(s), where the audiobook has \(expected)" // l10n: no (debug-log reason)
             )
         } catch TranscriptEditError.headingChanged {
             return refuse(
                 .headingChanged,
                 "TEXT_EDIT_REFUSED",
-                "the edited transcript changes a chapter's heading"
+                "the edited transcript changes a chapter's heading" // l10n: no (debug-log reason)
             )
         } catch TranscriptEditError.wordsWithoutSentences {
             return refuse(
                 .wordsWithoutSentences,
                 "TEXT_EDIT_REFUSED",
-                "the edited transcript adds words to a chapter without sentences"
+                "the edited transcript adds words to a chapter without sentences" // l10n: no (debug-log reason)
             )
         } catch TranscriptEditError.audioChanged(let reason) {
             return refuse(
                 .failed(BookTextEditWording.transcriptStale),
                 "TEXT_EDIT_REFUSED",
-                "the transcript no longer describes the audio: \(reason)"
+                "the transcript no longer describes the audio: \(reason)" // l10n: no (debug-log reason)
             )
         } catch TranscriptEditError.transcriptUnavailable {
-            return refuse(.failed(BookTextEditWording.transcriptUnavailable), "TEXT_EDIT_FAILED", "transcript.json could not be read")
+            return refuse(.failed(BookTextEditWording.transcriptUnavailable), "TEXT_EDIT_FAILED", "transcript.json could not be read") // l10n: no (debug-log reason)
         } catch TranscriptEditError.unindexable(let failure) {
-            return refuse(.failed(BookTextEditWording.transcriptUnindexable), "TEXT_EDIT_FAILED", "the edit could not be indexed: \(failure)")
+            return refuse(.failed(BookTextEditWording.transcriptUnindexable), "TEXT_EDIT_FAILED", "the edit could not be indexed: \(failure)") // l10n: no (debug-log reason)
         } catch {
             return refuse(.failed(error.localizedDescription), "TEXT_EDIT_FAILED", error.localizedDescription)
         }
         guard let taken else {
             // The record could not take it now (it is only in the cloud, or
             // the book moved meanwhile); the next check tries again.
-            return refuse(.failed(BookTextEditWording.recordUnavailable), "TEXT_EDIT_FAILED", "the book's record could not take the edit now")
+            return refuse(.failed(BookTextEditWording.recordUnavailable), "TEXT_EDIT_FAILED", "the book's record could not take the edit now") // l10n: no (debug-log reason)
         }
         // The kept reading text was read from the content.md just replaced.
         readingTexts.remove(bookID: book.id)

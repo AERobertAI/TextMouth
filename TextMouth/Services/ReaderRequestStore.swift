@@ -222,6 +222,6 @@ enum ReaderOpenRefusal {
         autoplay.discard(for: bookID)
         readingList.discard(for: bookID)
         librarySearch.discard(for: bookID)
-        sleepTimers.releaseHeld(forBook: bookID, reason: "the Library refused the open")
+        sleepTimers.releaseHeld(forBook: bookID, reason: "the Library refused the open") // l10n: no (debug-log reason)
     }
 }
