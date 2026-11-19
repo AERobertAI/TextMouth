@@ -26,7 +26,7 @@ enum KFXError: LocalizedError, LogDescribing, Equatable {
             return String(localized: "This file is a Kindle Create package, which TextMouth can't read yet.",
                           comment: "Why a file could not be imported: it is a package that Kindle Create writes for an author, which TextMouth does not read yet. Kindle Create is a program's name.")
         case .noFlowingText:
-            return String(localized: "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it.",
+            return String(localized: "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
                           comment: "Why a Kindle (KFX) book could not be imported: its pages are fixed layouts or pictures, as in a comic or a print replica, with no text that flows.")
         case .partOfABook:
             return String(localized: "This file holds only part of a Kindle book. Open the book's main .kfx file.",
@@ -39,7 +39,7 @@ enum KFXError: LocalizedError, LogDescribing, Equatable {
     var logDescription: String {
         switch self {
         case .kindleCreatePackage: return "This file is a Kindle Create package, which TextMouth can't read yet." // l10n: no (debug log)
-        case .noFlowingText: return "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it." // l10n: no (debug log)
+        case .noFlowingText: return "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it." // l10n: no (debug log)
         case .partOfABook: return "This file holds only part of a Kindle book. Open the book's main .kfx file." // l10n: no (debug log)
         }
     }

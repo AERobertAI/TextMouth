@@ -103,7 +103,7 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
 
     /// One sentence for a reader to hear when text may be missing: how many
     /// pages OCR could not run on, then those pages and why, for example:
-    /// "OCR could not run on 2 of 12 pages, so text that appears only in
+    /// "OCR could not run on 2 of 12 pages, so text found only in
     /// their images is missing: pages 3 and 7 (text recognition is not
     /// available)." Nil when the PDF was read in full. A book of pictures,
     /// whose every word is pictured, says it without the clause about text
@@ -123,16 +123,13 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
         if failed.count == total {
             // Every page, which for one page is "the PDF's only page".
             return total == 1
-                ? String(localized: "OCR could not run on the PDF's only page, so text that appears only in its images is missing: \(groups).",
+                ? String(localized: "OCR could not run on the PDF's only page, so text found only in its images is missing: \(groups).",
                          comment: "Warning after an import of a PDF whose only page needed text recognition (OCR) where it could not run. %@ is the page and why, such as \"page 1 (text recognition is not available)\", the reason in English.")
-                : String(localized: "OCR could not run on all \(total) pages, so text that appears only in their images is missing: \(groups).",
+                : String(localized: "OCR could not run on all \(total) pages, so text found only in their images is missing: \(groups).",
                          comment: "Warning after an import of a PDF whose every page needed text recognition (OCR) where it could not run. %lld is how many pages the PDF has, two or more. %@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.")
         }
-        return failed.count == 1
-            ? String(localized: "OCR could not run on 1 of \(total) pages, so text that appears only in its images is missing: \(groups).",
-                     comment: "Warning after an import of a PDF where one page needed text recognition (OCR) where it could not run. %lld is how many pages the PDF has, two or more. %@ is the page and why, such as \"page 3 (text recognition is not available)\", the reason in English.")
-            : String(localized: "OCR could not run on \(failed.count.formatted()) of \(total) pages, so text that appears only in their images is missing: \(groups).",
-                     comment: "Warning after an import of a PDF where several pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, two or more, written with digit grouping; %2$lld is how many pages the PDF has; %3$@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.")
+        return String(localized: "OCR could not run on \(failed.count.formatted()) of \(total) pages, so text found only in their images is missing: \(groups).",
+                      comment: "Warning after an import of a PDF where some pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, one or more, written with digit grouping; %2$lld is how many pages the PDF has, two or more; %3$@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.")
     }
 
     /// `problem` in English for the debug log, which stays English whatever
@@ -147,7 +144,7 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
         let count = failed.count == pages.count
             ? (pages.count == 1 ? "the PDF's only page" : "all \(pages.count) pages") // l10n: no (debug log)
             : "\(failed.count) of \(pages.count) pages" // l10n: no (debug log)
-        return "OCR could not run on \(count), so text that appears only in \(failed.count == 1 ? "its" : "their") images is missing: \(groups)." // l10n: no (debug log)
+        return "OCR could not run on \(count), so text found only in \(failed.count == 1 ? "its" : "their") images is missing: \(groups)." // l10n: no (debug log)
     }
 
     /// Every diagnostic in sentences: how many pages had each source of text,

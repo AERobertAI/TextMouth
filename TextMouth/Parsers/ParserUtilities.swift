@@ -8,29 +8,10 @@ extension AVSpeechSynthesisVoice {
     /// Used in both global settings and per-book voice pickers.
     var qualityLabel: String {
         switch quality {
-        case .default:
-            return String(localized: "Standard",
-                          comment: "The quality of a speech voice, in the voice pickers and the names VoiceOver reads for them: the basic tier that every Mac has. The tiers are Standard, Enhanced, and Premium.")
-        case .enhanced:
-            return String(localized: "Enhanced",
-                          comment: "The quality of a speech voice, in the voice pickers and the names VoiceOver reads for them: the middle tier, which the listener downloads. The tiers are Standard, Enhanced, and Premium.")
-        case .premium:
-            return String(localized: "Premium",
-                          comment: "The quality of a speech voice, in the voice pickers and the names VoiceOver reads for them: the best tier, which the listener downloads. The tiers are Standard, Enhanced, and Premium.")
-        @unknown default:
-            return String(localized: "Unknown",
-                          comment: "The quality of a speech voice that macOS reports as a tier TextMouth does not know, in the voice pickers.")
-        }
-    }
-
-    /// The voice quality tier in English, for the debug log and reports that
-    /// stay English whatever language the interface speaks (FR34).
-    var logQualityLabel: String {
-        switch quality {
-        case .default: return "Standard" // l10n: no (debug log)
-        case .enhanced: return "Enhanced" // l10n: no (debug log)
-        case .premium: return "Premium" // l10n: no (debug log)
-        @unknown default: return "Unknown" // l10n: no (debug log)
+        case .default: return "Standard"
+        case .enhanced: return "Enhanced"
+        case .premium: return "Premium"
+        @unknown default: return "Unknown"
         }
     }
 }

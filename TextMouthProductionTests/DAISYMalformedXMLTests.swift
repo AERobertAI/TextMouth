@@ -153,7 +153,7 @@ final class DAISYMalformedXMLTests: XCTestCase {
 
         XCTAssertEqual(
             error.errorDescription,
-            "The file “book/package.opf” in this DAISY book is damaged or incomplete: the file is empty. "
+            "The file “book/package.opf” in this book is damaged or incomplete: the file is empty. "
                 + "Get a fresh copy of the book, then import it again."
         )
     }
@@ -314,7 +314,7 @@ final class DAISYMalformedXMLTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: zip) }
         try damageData(of: "text.html", in: zip)
         let provider = ArchiveFileProvider(archive: try Archive(url: zip, accessMode: .read))
-        let expected = "The file “text.html” in this DAISY book is damaged or incomplete: "
+        let expected = "The file “text.html” in this book is damaged or incomplete: "
             + "its compressed data could not be decoded. Get a fresh copy of the book, then import it again."
 
         XCTAssertThrowsError(try provider.readFile(at: "text.html")) { error in
@@ -366,7 +366,7 @@ final class DAISYMalformedXMLTests: XCTestCase {
         }
         XCTAssertEqual(
             thrown?.localizedDescription,
-            "The file “\(marker)” in this DAISY book is damaged or incomplete: its compressed data could not be decoded. "
+            "The file “\(marker)” in this book is damaged or incomplete: its compressed data could not be decoded. "
                 + "Get a fresh copy of the book, then import it again."
         )
         XCTAssertEqual(

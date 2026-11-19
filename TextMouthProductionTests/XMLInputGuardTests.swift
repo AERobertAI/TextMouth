@@ -416,7 +416,7 @@ final class XMLInputGuardTests: XCTestCase {
         XCTAssertThrowsError(try DTBookToMarkdownConverter(data: Data(dtbook.utf8), file: "book.xml").convert()) { error in
             XCTAssertEqual(
                 error.localizedDescription,
-                "The file \u{201C}book.xml\u{201D} in this DAISY book is damaged or incomplete: "
+                "The file \u{201C}book.xml\u{201D} in this book is damaged or incomplete: "
                     + "it has a tag with too many attributes for TextMouth to read safely. "
                     + "Get a fresh copy of the book, then import it again.")
         }
@@ -435,14 +435,14 @@ final class XMLInputGuardTests: XCTestCase {
         XCTAssertThrowsError(try DTBookToMarkdownConverter(data: Data(own.utf8), file: "book.xml").convert()) { error in
             XCTAssertEqual(
                 error.localizedDescription,
-                "TextMouth can't safely read the file \u{201C}book.xml\u{201D} in this DAISY book, because it defines "
+                "TextMouth can't safely read the file \u{201C}book.xml\u{201D} in this book, because it defines "
                     + "entities of its own. Open the book in the program that made it, save it again, then import it again.")
         }
         let stateful = "<?xml version=\"1.0\" encoding=\"CSISO2022JP\"?>" + body
         XCTAssertThrowsError(try DTBookToMarkdownConverter(data: Data(stateful.utf8), file: "book.xml").convert()) { error in
             XCTAssertEqual(
                 error.localizedDescription,
-                "TextMouth can't safely read the file \u{201C}book.xml\u{201D} in this DAISY book, because it is written "
+                "TextMouth can't safely read the file \u{201C}book.xml\u{201D} in this book, because it is written "
                     + "in the CSISO2022JP encoding. Save it as UTF-8, then import it again.")
         }
     }

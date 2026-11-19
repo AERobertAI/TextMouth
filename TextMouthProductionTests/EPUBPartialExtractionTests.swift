@@ -20,7 +20,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
         XCTAssertThrowsError(try EPUBParser.parse(url: epub)) { error in
             XCTAssertEqual(
                 error.localizedDescription,
-                "The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: "
+                "The file “OEBPS/content.opf” in this book is damaged or incomplete: "
                     + "its contents do not match the checksum stored with them. "
                     + "Get a fresh copy of the book, then import it again."
             )
@@ -36,7 +36,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
         XCTAssertThrowsError(try EPUBParser.parse(url: epub)) { error in
             XCTAssertEqual(
                 error.localizedDescription,
-                "The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: "
+                "The file “OEBPS/content.opf” in this book is damaged or incomplete: "
                     + "its compressed data could not be decoded. "
                     + "Get a fresh copy of the book, then import it again."
             )
@@ -512,7 +512,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
         XCTAssertThrowsError(try FileImportService.importFileWithReport(from: epub)) { error in
             XCTAssertTrue(error.localizedDescription.hasPrefix(
                 "Could not import “book.epub”. Reading its text failed: "
-                    + "The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: "
+                    + "The file “OEBPS/content.opf” in this book is damaged or incomplete: "
             ), error.localizedDescription)
         }
         XCTAssertEqual(try libraryEntries(), libraryBefore)

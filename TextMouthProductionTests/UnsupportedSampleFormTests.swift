@@ -157,7 +157,7 @@ final class UnsupportedSampleFormTests: XCTestCase {
             let error = AudioParseError.unplayableFile(file: "03.mp3", problem: problem)
             XCTAssertEqual(
                 error.errorDescription,
-                "The file “03.mp3” in this audiobook is damaged or incomplete: \(problem.reason). "
+                "The file “03.mp3” in this book is damaged or incomplete: \(problem.reason). "
                     + "Get a fresh copy of the book, then import it again."
             )
             XCTAssertFalse(error.refusesAValidFile)

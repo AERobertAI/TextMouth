@@ -472,7 +472,7 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(error, .unplayableFile(file: "Disc 2/02.mp3", problem: .cannotOpen))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The file “Disc 2/02.mp3” in this audiobook is damaged or incomplete: it cannot be opened as audio. "
+            "The file “Disc 2/02.mp3” in this book is damaged or incomplete: it cannot be opened as audio. "
                 + AudioMediaAdvice.damage
         )
     }
@@ -509,7 +509,7 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(error, .unplayableFile(file: "02.m4a", problem: .endsEarly))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The file “02.m4a” in this audiobook is damaged or incomplete: "
+            "The file “02.m4a” in this book is damaged or incomplete: "
                 + "its audio breaks off before the length the file declares. "
                 + AudioMediaAdvice.damage
         )
@@ -566,7 +566,7 @@ final class AudioMediaValidationTests: XCTestCase {
         for (problem, reason) in reasons {
             XCTAssertEqual(
                 AudioParseError.unplayableFile(file: "Disc 2/03.mp3", problem: problem).errorDescription,
-                "The file “Disc 2/03.mp3” in this audiobook is damaged or incomplete: \(reason). "
+                "The file “Disc 2/03.mp3” in this book is damaged or incomplete: \(reason). "
                     + AudioMediaAdvice.damage
             )
         }
@@ -590,7 +590,7 @@ final class AudioMediaValidationTests: XCTestCase {
         ))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The heading “Chapter 12” starts 5 seconds into its file “a.wav”, which is only 2 seconds long. "
+            "The heading “Chapter 12” starts 5 seconds into “a.wav”, which is only 2 seconds long. "
                 + AudioMediaAdvice.mismatch
         )
     }
@@ -636,7 +636,7 @@ final class AudioMediaValidationTests: XCTestCase {
         ))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The heading “Survey” ends 3 seconds into its file “a.wav”, which is only 2 seconds long. "
+            "The heading “Survey” ends 3 seconds into “a.wav”, which is only 2 seconds long. "
                 + AudioMediaAdvice.mismatch
         )
     }
@@ -753,7 +753,7 @@ final class AudioMediaValidationTests: XCTestCase {
         ))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The heading “Chapter 2” starts 0 seconds into its file “a.wav”, before the heading “Chapter 1”, "
+            "The heading “Chapter 2” starts 0 seconds into “a.wav”, before the earlier heading “Chapter 1”, "
                 + "which comes earlier in the book and starts 1 second in. "
                 + AudioMediaAdvice.mismatch
         )
@@ -971,7 +971,7 @@ final class AudioMediaValidationTests: XCTestCase {
 
         XCTAssertEqual(
             error?.localizedDescription,
-            "The heading “Chapter 12” starts 1 hour into its file “03.wav”, which is only 10 minutes long. "
+            "The heading “Chapter 12” starts 1 hour into “03.wav”, which is only 10 minutes long. "
                 + AudioMediaAdvice.mismatch
         )
     }
@@ -984,7 +984,7 @@ final class AudioMediaValidationTests: XCTestCase {
 
         XCTAssertEqual(
             error.errorDescription,
-            "The untitled heading 3 ends 1 hour, 2 minutes, 5 seconds into its file “Disc 1/03.mp3”, "
+            "The untitled heading 3 ends 1 hour, 2 minutes, 5 seconds into “Disc 1/03.mp3”, "
                 + "which is only 1 hour long. "
                 + AudioMediaAdvice.mismatch
         )

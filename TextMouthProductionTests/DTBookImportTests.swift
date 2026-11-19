@@ -316,7 +316,7 @@ final class DTBookImportTests: XCTestCase {
         XCTAssertThrowsError(try FileImportService.importFileWithReport(from: copy, toFolder: folderPath)) { error in
             XCTAssertTrue(error.localizedDescription.hasPrefix("Could not import “harbour-standalone.xml”. "), "\(error)")
             XCTAssertTrue(
-                error.localizedDescription.contains("The file “harbour-standalone.xml” in this DAISY book is damaged or incomplete: "),
+                error.localizedDescription.contains("The file “harbour-standalone.xml” in this book is damaged or incomplete: "),
                 "\(error)"
             )
             XCTAssertTrue(

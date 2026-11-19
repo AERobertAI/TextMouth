@@ -503,7 +503,7 @@ final class MOBIBookStructureTests: XCTestCase {
         kf8.version = 8
         XCTAssertThrowsError(try opened(kf8)) {
             guard case .damaged? = $0 as? MOBIError else { return XCTFail("\($0)") }
-            XCTAssertTrue($0.localizedDescription.hasSuffix("Get a fresh copy of the book, then import it again."))
+            XCTAssertTrue($0.localizedDescription.hasSuffix("Get a fresh copy, then import it again."))
         }
 
         // A hybrid file: version 6, and EXTH 121 naming where the KF8 part

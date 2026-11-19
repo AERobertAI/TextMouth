@@ -107,7 +107,7 @@ enum TextEncodingError: LocalizedError, Equatable {
             ])
         case let .invalidForMarkedEncoding(file, encoding):
             return SentenceWording.joined([
-                String(localized: "The file “\(file)” is damaged or incomplete: it begins with a \(encoding) byte-order mark, but the rest of it is not valid \(encoding) text.",
+                String(localized: "The file “\(file)” is damaged or incomplete: it begins with a \(encoding) byte-order mark, but the rest is not valid \(encoding) text.",
                        comment: "First sentence of why a file could not be imported: it begins with the byte-order mark of a Unicode encoding, but the bytes after it are not valid in that encoding. %1$@ is the file's name; %2$@ and %3$@ are both the encoding's standard name, such as UTF-16LE, which stays as it is."),
                 String(localized: "Get a fresh copy of the file, then import it again.",
                        comment: "Last sentence of why a file could not be imported because it is damaged or incomplete: what to do."),
@@ -148,7 +148,7 @@ extension TextEncodingError: LogDescribing {
                 + "Save it as UTF-8 text, then import it again." // l10n: no (debug log)
         case let .invalidForMarkedEncoding(file, encoding):
             return "The file “\(file)” is damaged or incomplete: it begins with a \(encoding) byte-order mark, " // l10n: no (debug log)
-                + "but the rest of it is not valid \(encoding) text. " // l10n: no (debug log)
+                + "but the rest is not valid \(encoding) text. " // l10n: no (debug log)
                 + "Get a fresh copy of the file, then import it again." // l10n: no (debug log)
         case let .invalidForChosenEncoding(file, _):
             return "The file “\(file)” can't be read in the encoding chosen for it: it holds bytes that are not valid in that encoding." // l10n: no (debug log)

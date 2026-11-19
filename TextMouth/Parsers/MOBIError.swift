@@ -32,10 +32,10 @@ enum MOBIError: LocalizedError, LogDescribing, Equatable {
             // A fault only a programmer can name (a table's place, a count)
             // is left out of what a listener hears: the sentence says what to do.
             guard !detail.isEmpty else {
-                return String(localized: "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again.",
+                return String(localized: "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again.",
                               comment: "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do.")
             }
-            return String(localized: "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy of the book, then import it again.",
+            return String(localized: "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy, then import it again.",
                           comment: "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
         case .copyProtected:
             return String(localized: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.",
@@ -53,8 +53,8 @@ enum MOBIError: LocalizedError, LogDescribing, Equatable {
         case .notAKindleBook: return "This file is not a Kindle book that TextMouth can read." // l10n: no (debug log)
         case .damaged(let detail):
             return detail.isEmpty
-                ? "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again." // l10n: no (debug log)
-                : "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy of the book, then import it again." // l10n: no (debug log)
+                ? "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again." // l10n: no (debug log)
+                : "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy, then import it again." // l10n: no (debug log)
         case .copyProtected: return "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." // l10n: no (debug log)
         case .unsupportedCompression: return "This Kindle book is compressed in a way TextMouth can't read yet." // l10n: no (debug log)
         }

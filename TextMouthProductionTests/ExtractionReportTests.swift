@@ -133,7 +133,7 @@ final class ExtractionReportTests: XCTestCase {
         XCTAssertFalse(report.isComplete)
         XCTAssertEqual(
             report.message,
-            "OCR could not run on 1 of 2 pages, so text that appears only in its images is missing: "
+            "OCR could not run on 1 of 2 pages, so text found only in their images is missing: "
                 + "page 2 (text recognition is not available)."
         )
     }
@@ -165,7 +165,7 @@ final class ExtractionReportTests: XCTestCase {
         XCTAssertEqual(
             report.message,
             "1 of 2 chapters could not be read: chapter 2 (“b.html”) is missing from this book. "
-                + "OCR could not run on the PDF's only page, so text that appears only in its images is missing: "
+                + "OCR could not run on the PDF's only page, so text found only in its images is missing: "
                 + "page 1 (no model)."
         )
     }

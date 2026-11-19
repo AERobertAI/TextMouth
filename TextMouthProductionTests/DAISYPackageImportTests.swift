@@ -162,7 +162,7 @@ final class DAISYPackageImportTests: XCTestCase {
             XCTAssertEqual(
                 failure?.localizedDescription,
                 "Could not import “book.opf”. Reading the file failed: The file “book.opf” in this DAISY book "
-                    + "refers to “../shared.xml”, which is outside the book's folder. Only files inside the folder can be imported."
+                    + "refers to “../shared.xml”, outside the book's folder. Only files inside the folder can be imported."
             )
         }
         XCTAssertEqual(try folderEntries(), [])
@@ -801,7 +801,7 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(result.failures, [ZipImportFailure(
             fileName: "Ferry Timetables",
             message: "Reading the file failed: The file “book.opf” in this DAISY book refers to “../../outside.xml”, "
-                + "which is outside the book's folder. Only files inside the folder can be imported."
+                + "outside the book's folder. Only files inside the folder can be imported."
         )])
         let summary = try XCTUnwrap(result.failureSummary)
         XCTAssertEqual(summary.components(separatedBy: "Ferry Timetables").count, 2, summary)

@@ -128,7 +128,7 @@ enum DAISYPackageError: LocalizedError, LogDescribing, Equatable {
         switch self {
         case let .referenceOutsidePackage(reference, file):
             return SentenceWording.joined([
-                String(localized: "The file “\(file)” in this DAISY book refers to “\(reference)”, which is outside the book's folder.",
+                String(localized: "The file “\(file)” in this DAISY book refers to “\(reference)”, outside the book's folder.",
                        comment: "First sentence of why a DAISY book kept as loose files could not be imported: one of its files refers to a file outside the book's folder. %1$@ is the referring file's path inside the folder and %2$@ the reference, as the file writes it."),
                 String(localized: "Only files inside the folder can be imported.",
                        comment: "Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder."),

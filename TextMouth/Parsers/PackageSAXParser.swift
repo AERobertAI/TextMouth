@@ -173,15 +173,14 @@ enum PackageDamage {
         case audiobook
 
         /// How the debug log names what holds the file, in English whatever
-        /// language the interface speaks: "this DAISY book".
+        /// language the interface speaks: "this book". It is the words of
+        /// `message`, which names a DAISY book, an EPUB book, and an audiobook
+        /// alike, since the import's failure names the file and its format.
         var logName: String {
             switch self {
-            case .daisyBook: return "this DAISY book" // l10n: no (debug log)
+            case .daisyBook, .epubBook, .audiobook: return "this book" // l10n: no (debug log)
             case .document: return "this document" // l10n: no (debug log)
-            case .epubBook: return "this EPUB book" // l10n: no (debug log)
-            case .archive: return "this archive" // l10n: no (debug log)
-            case .comicBookArchive: return "this comic book archive" // l10n: no (debug log)
-            case .audiobook: return "this audiobook" // l10n: no (debug log)
+            case .archive, .comicBookArchive: return "this archive" // l10n: no (debug log)
             }
         }
 
@@ -201,24 +200,15 @@ enum PackageDamage {
     /// names what holds the file ("this DAISY book") and what to get again.
     static func message(file: String, reason: String, container: Container) -> String {
         switch container {
-        case .daisyBook:
-            return String(localized: "The file “\(file)” in this DAISY book is damaged or incomplete: \(reason). Get a fresh copy of the book, then import it again.",
-                          comment: "Why a DAISY book could not be imported: a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
+        case .daisyBook, .epubBook, .audiobook:
+            return String(localized: "The file “\(file)” in this book is damaged or incomplete: \(reason). Get a fresh copy of the book, then import it again.",
+                          comment: "Why a book could not be imported (a DAISY book, an EPUB book, or an audiobook): a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
         case .document:
             return String(localized: "The file “\(file)” in this document is damaged or incomplete: \(reason). Get a fresh copy of the document, then import it again.",
                           comment: "Why a Word or OpenDocument document could not be imported: a file inside it is damaged. %1$@ is the file's path inside the document and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
-        case .epubBook:
-            return String(localized: "The file “\(file)” in this EPUB book is damaged or incomplete: \(reason). Get a fresh copy of the book, then import it again.",
-                          comment: "Why an EPUB book could not be imported: a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
-        case .archive:
+        case .archive, .comicBookArchive:
             return String(localized: "The file “\(file)” in this archive is damaged or incomplete: \(reason). Get a fresh copy of the archive, then import it again.",
-                          comment: "Why a ZIP archive could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
-        case .comicBookArchive:
-            return String(localized: "The file “\(file)” in this comic book archive is damaged or incomplete: \(reason). Get a fresh copy of the archive, then import it again.",
-                          comment: "Why a comic book archive (a ZIP of pictures named .cbz) could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
-        case .audiobook:
-            return String(localized: "The file “\(file)” in this audiobook is damaged or incomplete: \(reason). Get a fresh copy of the book, then import it again.",
-                          comment: "Why an audiobook could not be imported: one of its audio files is damaged. %1$@ is the audio file's name and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
+                          comment: "Why a ZIP archive or comic book archive (a ZIP of pictures named .cbz) could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
         }
     }
 

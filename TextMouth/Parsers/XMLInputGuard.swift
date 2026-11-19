@@ -77,11 +77,11 @@ enum XMLInputGuard {
         case .ownDefinitions:
             return SentenceWording.joined([
                 firstSentence(ofRefusalFor: problem, file: file, in: container),
-                container == .document || container == .archive || container == .comicBookArchive
-                    ? String(localized: "Open the document in the program that made it, save it again, then import it again.",
-                             comment: "Last sentence of why a file inside a Word or OpenDocument document was refused because it defines entities of its own: what to do.")
-                    : String(localized: "Open the book in the program that made it, save it again, then import it again.",
-                             comment: "Last sentence of why a file inside an EPUB or DAISY book was refused because it defines entities of its own: what to do."),
+                isBook(container)
+                    ? String(localized: "Open the book in the program that made it, save it again, then import it again.",
+                             comment: "Last sentence of why a file inside an EPUB or DAISY book was refused because it defines entities of its own: what to do.")
+                    : String(localized: "Open the document in the program that made it, save it again, then import it again.",
+                             comment: "Last sentence of why a file inside a Word or OpenDocument document was refused because it defines entities of its own: what to do."),
             ])
         case .encoding:
             return SentenceWording.joined([
@@ -95,26 +95,26 @@ enum XMLInputGuard {
     /// The first sentence of the refusal of a part for `problem` (never
     /// `tooManyAttributes`), one whole sentence for each kind of container.
     private static func firstSentence(ofRefusalFor problem: Problem, file: String, in container: PackageDamage.Container) -> String {
-        switch (problem, container) {
-        case (.encoding(let name), .epubBook):
-            return String(localized: "TextMouth can't safely read the file “\(file)” in this EPUB book, because it is written in the \(name) encoding.",
-                          comment: "First sentence of why a file inside an EPUB book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.")
-        case (.encoding(let name), .daisyBook):
-            return String(localized: "TextMouth can't safely read the file “\(file)” in this DAISY book, because it is written in the \(name) encoding.",
-                          comment: "First sentence of why a file inside a DAISY book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.")
-        case (.encoding(let name), _):
+        switch (problem, isBook(container)) {
+        case (.encoding(let name), true):
+            return String(localized: "TextMouth can't safely read the file “\(file)” in this book, because it is written in the \(name) encoding.",
+                          comment: "First sentence of why a file inside an EPUB or DAISY book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.")
+        case (.encoding(let name), false):
             return String(localized: "TextMouth can't safely read the file “\(file)” in this document, because it is written in the \(name) encoding.",
                           comment: "First sentence of why a file inside a Word or OpenDocument document was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the document and %2$@ the encoding's name as the file declares it.")
-        case (_, .epubBook):
-            return String(localized: "TextMouth can't safely read the file “\(file)” in this EPUB book, because it defines entities of its own.",
-                          comment: "First sentence of why a file inside an EPUB book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book.")
-        case (_, .daisyBook):
-            return String(localized: "TextMouth can't safely read the file “\(file)” in this DAISY book, because it defines entities of its own.",
-                          comment: "First sentence of why a file inside a DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book.")
-        default:
+        case (_, true):
+            return String(localized: "TextMouth can't safely read the file “\(file)” in this book, because it defines entities of its own.",
+                          comment: "First sentence of why a file inside an EPUB or DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book.")
+        case (_, false):
             return String(localized: "TextMouth can't safely read the file “\(file)” in this document, because it defines entities of its own.",
                           comment: "First sentence of why a file inside a Word or OpenDocument document was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the document.")
         }
+    }
+
+    /// Whether `container` is a book (EPUB or DAISY) rather than a document:
+    /// the refusals word the two apart, and any other container as a document.
+    private static func isBook(_ container: PackageDamage.Container) -> Bool {
+        container == .epubBook || container == .daisyBook || container == .audiobook
     }
 
     /// `refusalSentence` in English for the debug log, which stays English

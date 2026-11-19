@@ -744,19 +744,19 @@ enum AudioParseError: LocalizedError, Equatable {
         // heard as a time of day.
         case .sectionStartsPastEnd(let section, let file, let start, let fileDuration):
             return SentenceWording.joined([
-                String(localized: "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into its file “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long.",
+                String(localized: "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long.",
                        comment: "First sentence of why an audiobook could not be imported: a section starts after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it starts and %4$@ how long the file is, both spoken times; %3$@ is the file's name."),
                 Self.mismatchAdvice,
             ])
         case .sectionEndsPastEnd(let section, let file, let end, let fileDuration):
             return SentenceWording.joined([
-                String(localized: "The \(section.phrase) ends \(TimeFormatting.spoken(end)) into its file “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long.",
+                String(localized: "The \(section.phrase) ends \(TimeFormatting.spoken(end)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long.",
                        comment: "First sentence of why an audiobook could not be imported: a section ends after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it ends and %4$@ how long the file is, both spoken times; %3$@ is the file's name."),
                 Self.mismatchAdvice,
             ])
         case .sectionStartsBeforeEarlierSection(let section, let file, let start, let earlierSection, let earlierStart):
             return SentenceWording.joined([
-                String(localized: "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into its file “\(file)”, before the \(earlierSection.phrase), which comes earlier in the book and starts \(TimeFormatting.spoken(earlierStart)) in.",
+                String(localized: "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, before the earlier \(earlierSection.phrase), which starts \(TimeFormatting.spoken(earlierStart)) in.",
                        comment: "First sentence of why an audiobook could not be imported: a section starts before another section that comes earlier in the book and is in the same audio file. %1$@ and %4$@ are sections, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (masculine noun phrases in English, without their article); %2$@ and %5$@ are how far into the file each starts, spoken times; %3$@ is the file's name."),
                 Self.mismatchAdvice,
             ])
@@ -778,14 +778,14 @@ extension AudioParseError: LogDescribing {
         case .unplayableFile(let file, let problem):
             return problem.logSentence(file: file, container: .audiobook)
         case .sectionStartsPastEnd(let section, let file, let start, let fileDuration):
-            return "The \(section.logPhrase) starts \(TimeFormatting.format(start)) into its file “\(file)”, " // l10n: no (debug log)
+            return "The \(section.logPhrase) starts \(TimeFormatting.format(start)) into “\(file)”, " // l10n: no (debug log)
                 + "which is only \(TimeFormatting.format(fileDuration)) long. \(advice)" // l10n: no (debug log)
         case .sectionEndsPastEnd(let section, let file, let end, let fileDuration):
-            return "The \(section.logPhrase) ends \(TimeFormatting.format(end)) into its file “\(file)”, " // l10n: no (debug log)
+            return "The \(section.logPhrase) ends \(TimeFormatting.format(end)) into “\(file)”, " // l10n: no (debug log)
                 + "which is only \(TimeFormatting.format(fileDuration)) long. \(advice)" // l10n: no (debug log)
         case .sectionStartsBeforeEarlierSection(let section, let file, let start, let earlierSection, let earlierStart):
-            return "The \(section.logPhrase) starts \(TimeFormatting.format(start)) into its file “\(file)”, " // l10n: no (debug log)
-                + "before the \(earlierSection.logPhrase), which comes earlier in the book and starts " // l10n: no (debug log)
+            return "The \(section.logPhrase) starts \(TimeFormatting.format(start)) into “\(file)”, " // l10n: no (debug log)
+                + "before the earlier \(earlierSection.logPhrase), which starts " // l10n: no (debug log)
                 + "\(TimeFormatting.format(earlierStart)) in. \(advice)" // l10n: no (debug log)
         }
     }

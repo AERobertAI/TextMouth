@@ -35,7 +35,7 @@ final class KF8ReviewFixTests: XCTestCase {
         book.chapters.flatMap { $0.chapter.text.split(whereSeparator: \.isWhitespace).map(String.init) }
     }
 
-    private static let damagedSentence = "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again."
+    private static let damagedSentence = "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again."
 
     /// A hybrid file whose MOBI 6 half says "Words of the old half." and whose KF8 half is `kf8`.
     private func hybrid(_ kf8: KF8Fixture) -> [UInt8] {
