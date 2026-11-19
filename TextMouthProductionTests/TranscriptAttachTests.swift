@@ -99,7 +99,7 @@ final class TranscriptAttachTests: XCTestCase {
         // Passages cut short for their length (one cue has a limit).
         XCTAssertEqual(
             TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 30, skipped: 0, cut: 1),
-            "Attached “lock.srt” to Lock Keeper: 30 words. 1 timed passage was too long and was cut short."
+            "Attached “lock.srt” to Lock Keeper: 30 words. 1 timed passage was too long and cut short."
         )
         XCTAssertEqual(
             TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 30, skipped: 2, cut: 2),
