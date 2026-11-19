@@ -5468,6 +5468,17 @@
     "Book title" : {
       "comment" : "What VoiceOver says for the book information sheet's field for the book's title."
     },
+    "Book: %@ (%@)" : {
+      "comment" : "A line of the speech refusal report naming the book. %1$@ is its title and %2$@ its format, such as EPUB.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Book: %1$@ (%2$@)"
+          }
+        }
+      }
+    },
     "Bookmark" : {
       "comment" : "A unit a skip or navigation picker moves by: one bookmark."
     },
@@ -5906,6 +5917,17 @@
     "Chapter %@ isn't on this Mac." : {
       "comment" : "Spoken as a chapter's download starts. %@ is the chapter's number, an identifier written without digit grouping."
     },
+    "Chapter %@ of %@ (chapter=%@ in the logs)" : {
+      "comment" : "A line of the speech refusal report naming the chapter speech stopped in. %1$@ is the chapter's number counting from 1, %2$@ the number of chapters, and %3$@ the chapter's number counting from 0 as the debug log writes it, each written without digit grouping. Keep \"chapter=\" as it is: it is the log's own tag.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapter %1$@ of %2$@ (chapter=%3$@ in the logs)"
+          }
+        }
+      }
+    },
     "Chapter %@ of %@ isn't downloaded." : {
       "comment" : "Spoken when a chapter's download is cancelled. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the book's title.",
       "localizations" : {
@@ -6304,7 +6326,7 @@
       "comment" : "Hint of the audio editor's Clear Selection button."
     },
     "Close" : {
-      "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the audio editor's list of markers.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nButton that closes a sheet.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nTitle of the button that closes the Search Library window.",
+      "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the audio editor's list of markers.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nButton that closes a sheet.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nTitle of the button that closes a sheet, such as the speech refusal report.\nTitle of the button that closes the Search Library window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -6340,6 +6362,9 @@
     },
     "Closes the new folder's fields and keeps the folder chosen." : {
       "comment" : "Hint of the button, in a folder chooser, that closes the new folder's fields: the folder chosen in the pop-up stays chosen."
+    },
+    "Closes the report; Play tries the passage again" : {
+      "comment" : "VoiceOver hint of the Close button of the speech refusal report."
     },
     "Closes these options so you can keep reading." : {
       "comment" : "First sentence of what Continue Reading does on the library index recovery sheet."
@@ -6535,8 +6560,14 @@
     "Copies the selection for Paste." : {
       "comment" : "Hint of the audio editor's Copy button. \"Paste\" is the name of a command."
     },
+    "Copies the whole report as plain text, to paste where it helps find the cause" : {
+      "comment" : "VoiceOver hint of the Copy Details button of the speech refusal report."
+    },
     "Copy" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Copies the selected audio.\nName of the Edit menu's Copy command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Copy Details" : {
+      "comment" : "Title of the button of the speech refusal report that copies the whole report."
     },
     "Copy Reading Position" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Copies a link to the current reading position. Also the title of the menu command of the same name."
@@ -7071,8 +7102,14 @@
     "Destination parent folder" : {
       "comment" : "What VoiceOver says for the pop-up that chooses the folder a moved folder goes into."
     },
+    "Details" : {
+      "comment" : "VoiceOver label of the text area holding the whole report of a speech refusal."
+    },
     "Details are at the top of the Library window." : {
       "comment" : "Said after a failure notice: where to find its details."
+    },
+    "Details copied" : {
+      "comment" : "Announcement after Copy Details copied the report of a speech refusal."
     },
     "Differences" : {
       "comment" : "VoiceOver label of the list of differences the Compare Libraries sheet found between the two copies of the library."
@@ -9030,6 +9067,17 @@
     "In the Reading List" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
     },
+    "In the spoken text, whose offsets the speech log gives: speech stopped at character %@; the refused text runs from character %@ to %@." : {
+      "comment" : "A line of the speech refusal report. %1$@ is the character offset in the spoken text where speech stopped; %2$@ and %3$@ are where the refused text begins and ends, each written without digit grouping like the speech log's offsets.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "In the spoken text, whose offsets the speech log gives: speech stopped at character %1$@; the refused text runs from character %2$@ to %3$@."
+          }
+        }
+      }
+    },
     "In this Mac's Logs folder" : {
       "comment" : "A choice of the Log location pop-up in the Storage settings, and its name inside the pop-up's hint: the diagnostic logs are written in a folder on this Mac that never syncs. The folder's path follows in parentheses where the choice is listed."
     },
@@ -10261,6 +10309,20 @@
     },
     "Marks the selection's start at the cursor." : {
       "comment" : "Hint of the audio editor's Mark In button."
+    },
+    "Markup guard: strict, every angle bracket silent, from character %@ to %@ of the spoken text." : {
+      "comment" : "A line of the speech refusal report: the markup guard silenced every angle bracket between two characters. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Markup guard: strict, every angle bracket silent, from character %1$@ to %2$@ of the spoken text."
+          }
+        }
+      }
+    },
+    "Markup guard: the usual one, which silences only the brackets of tag-shaped text." : {
+      "comment" : "A line of the speech refusal report: the markup guard that was used silences only the angle brackets that make tags."
     },
     "Match" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The match pop-up's label."
@@ -12335,7 +12397,7 @@
       }
     },
     "Position" : {
-      "comment" : "Label of the audio editor's time display: where the cursor is."
+      "comment" : "Label before the reader's position in the book, in a line of the speech refusal report.\nLabel of the audio editor's time display: where the cursor is."
     },
     "Position display mode" : {
       "comment" : "VoiceOver label of the picker in Search in Book that chooses how each result's position is shown."
@@ -12870,6 +12932,29 @@
     },
     "Refreshing all feeds…" : {
       "comment" : "What the Feeds tab of Settings shows and VoiceOver says while every feed is being refreshed."
+    },
+    "Refused here: %lld times while this window has been open." : {
+      "comment" : "A line of the speech refusal report. %lld is how many times the speech engine refused text while the book's window has been open.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Refused here: %lld time while this window has been open."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Refused here: %lld times while this window has been open."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Regular Expression" : {
       "comment" : "Title and VoiceOver label of the checkbox in the Search Library window that makes the search text a regular expression."
@@ -14613,6 +14698,49 @@
     "Speak Selection" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks what is selected, with its length."
     },
+    "Speech Stopped" : {
+      "comment" : "Heading of the sheet that reports speech stopped because the speech engine refused a passage, and the first line of its report."
+    },
+    "Speech log, its last %lld lines, offsets and lengths only:" : {
+      "comment" : "A line of the speech refusal report, above the speech log's own lines (which stay English, as the log wrote them). %lld is how many lines follow.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Speech log, its last %lld line, offsets and lengths only:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Speech log, its last %lld lines, offsets and lengths only:"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Speech log: no lines." : {
+      "comment" : "A line of the speech refusal report: the speech log has no lines to show."
+    },
+    "Speech stopped at character %@ of %@ in the chapter." : {
+      "comment" : "A line of the speech refusal report. %1$@ is the character offset where speech stopped and %2$@ the chapter's length in characters, each written without digit grouping like the speech log's offsets.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Speech stopped at character %1$@ of %2$@ in the chapter."
+          }
+        }
+      }
+    },
+    "Speech stopped: the speech engine refused this passage. Details are in the book's window." : {
+      "comment" : "Announcement when speech stopped because the speech engine refused a passage and the book's window is not in front, so its report sheet cannot speak."
+    },
     "Speed" : {
       "comment" : "Heading of the voice sheet's speed group, and what VoiceOver calls its speed slider."
     },
@@ -14635,6 +14763,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Speed: %lld WPM"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Speed: %lld words per minute; rate %@, pitch %@, volume %@" : {
+      "comment" : "A line of the speech refusal report. %1$lld is the speaking speed in words per minute; %2$@, %3$@, and %4$@ are the engine's rate, pitch multiplier, and volume, each written with two decimals.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Speed: %lld word per minute; rate %@, pitch %@, volume %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Speed: %lld words per minute; rate %@, pitch %@, volume %@"
                 }
               }
             }
@@ -15829,6 +15980,9 @@
     "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it." : {
       "comment" : "Line of the Clean Up Transcript sheet when the rules that come with the app are newer than the user's copy. %@ is the new version number, written without digit grouping."
     },
+    "TextMouth: no build details recorded" : {
+      "comment" : "A line of the speech refusal report: the app recorded nothing about how it was built."
+    },
     "That OPML file is damaged at line %@: %@." : {
       "comment" : "Why an OPML file of subscriptions could not be imported: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.",
       "localizations" : {
@@ -16195,6 +16349,9 @@
         }
       }
     },
+    "The Mac's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place." : {
+      "comment" : "Summary under the heading of the report of a refusal, on the Mac: what happened, and that Play tries again."
+    },
     "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the list is, and where a new window opens."
     },
@@ -16550,6 +16707,9 @@
     "The destination folder %@ is no longer in the library." : {
       "comment" : "Error shown when a move is refused because the folder it goes into is gone from the library. %@ is that folder's location, in straight double quotes."
     },
+    "The details could not be copied" : {
+      "comment" : "Announcement when Copy Details could not copy the report of a speech refusal to the pasteboard."
+    },
     "The disk is almost full, so recording stopped. What was recorded is kept." : {
       "comment" : "Error in the Record window when the disk filled up while recording."
     },
@@ -16808,6 +16968,9 @@
     },
     "The headings from %@ run past the end of the audio, so the tracks were imported without them." : {
       "comment" : "Notice after an import of tracks that came without the headings of some cue sheets and label files, because a heading lay past the end of the audio. %@ is the files' names in curly quotes, listed as a sentence lists them."
+    },
+    "The iPhone's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place." : {
+      "comment" : "Summary under the heading of the report of a refusal, on the iPhone: what happened, and that Play tries again."
     },
     "The import was stopped before its end." : {
       "comment" : "What the Import OPML sheet says once the listener stopped the import before its end."
@@ -17205,6 +17368,17 @@
     "The page at %@ is larger than TextMouth reads." : {
       "comment" : "Why a feed article's download failed: the web page is too large. %@ is the server's host name."
     },
+    "The passage as the book has it, characters %@ to %@ of chapter %@:" : {
+      "comment" : "A line of the speech refusal report that introduces the passage as the book has it. %1$@ and %2$@ are the first and last character offsets of the passage, and %3$@ is the chapter's number, each written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The passage as the book has it, characters %1$@ to %2$@ of chapter %3$@:"
+          }
+        }
+      }
+    },
     "The pauses couldn't be found." : {
       "comment" : "Said when the audio editor couldn't find the audio's pauses. A sentence giving the reason follows."
     },
@@ -17393,6 +17567,18 @@
     "The refresh of %@ was stopped." : {
       "comment" : "Why a feed's refresh ended: it was stopped. %@ is the feed's title or server."
     },
+    "The refused text began before this passage, at character %@." : {
+      "comment" : "A line of the speech refusal report: the refused text began before the passage shown. %@ is the character offset where it began, written without digit grouping."
+    },
+    "The refused text begins here, at character %@." : {
+      "comment" : "A line of the speech refusal report, just before the refused text. %@ is the character offset where it begins, written without digit grouping."
+    },
+    "The refused text ends here, at character %@." : {
+      "comment" : "A line of the speech refusal report, just after the refused text. %@ is the character offset where it ends, written without digit grouping."
+    },
+    "The refused text goes on past this passage, to character %@." : {
+      "comment" : "A line of the speech refusal report: the refused text goes on past the passage shown. %@ is the character offset where it ends, written without digit grouping."
+    },
     "The saved copy at %@ keeps the old data." : {
       "comment" : "Last sentence of what Rebuild Library Index does: where the old data stays. %@ is the saved copy's path."
     },
@@ -17431,6 +17617,17 @@
     },
     "The text content.md held before was kept as %@, in the book's package." : {
       "comment" : "Second sentence of that message. content.md is the file name of the book's text and stays as written; %@ is the backup's file name such as content.md.edited-20261004T123012Z, which stays as written."
+    },
+    "The text handed to the speech engine, after the substitutions and the markup guard, characters %@ to %@ of the spoken text:" : {
+      "comment" : "A line of the speech refusal report that introduces the text the speech engine was handed, after the user's substitution rules and the markup guard. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The text handed to the speech engine, after the substitutions and the markup guard, characters %1$@ to %2$@ of the spoken text:"
+          }
+        }
+      }
     },
     "The text of %@ can't be read, so it can't be edited." : {
       "comment" : "Message when Edit Text finds the book's text file unreadable. %@ is the book's title."
@@ -17699,6 +17896,9 @@
     "This Feed's Settings" : {
       "comment" : "Heading of the group of settings a feed can have of its own, in Feed Info. Title case."
     },
+    "This Mac" : {
+      "comment" : "Heading of the report's lines about the device it ran on, on the Mac."
+    },
     "This Mac can't run the speech model that transcription uses." : {
       "comment" : "Error shown when transcription is tried on a Mac whose hardware cannot run the speech model."
     },
@@ -17908,6 +18108,9 @@
     "This folder is no longer in the library." : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. What the sheet says in place of the folder, when the folder was deleted in another window while the sheet was open."
     },
+    "This iPhone" : {
+      "comment" : "Heading of the report's lines about the device it ran on, on the iPhone."
+    },
     "This is a temporary library, and library changes are not being saved." : {
       "comment" : "Last sentence of the banner shown at the top of the library while the library index is unreadable."
     },
@@ -18007,7 +18210,7 @@
       "comment" : "Name of the punctuation key \"~\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tilde\"."
     },
     "Time" : {
-      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as an estimated time into the book.\nLabel of a field in the audio editor that takes a time."
+      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as an estimated time into the book.\nLabel before the time of the refusal, in a line of the speech refusal report; the time is written as the log files write it.\nLabel of a field in the audio editor that takes a time."
     },
     "Time In" : {
       "comment" : "Choice of the headings sheet's display picker: each heading shows the time into the book at which it begins."
@@ -18813,11 +19016,28 @@
     "Voice & Speed" : {
       "comment" : "Name of the reader's sheet for a text book's own voice, speed and pitch."
     },
+    "Voice and speed" : {
+      "comment" : "Heading of the lines of a speech refusal report about the voice and the speaking speed."
+    },
     "Voice language" : {
       "comment" : "VoiceOver label of the Language pop-up in the Voice settings."
     },
     "Voice language filter" : {
       "comment" : "What VoiceOver calls the voice sheet's menu that limits the voices listed to one language."
+    },
+    "Voice: %@ (%@), %@, %@ quality" : {
+      "comment" : "A line of the speech refusal report naming the voice. %1$@ is its name, %2$@ its system identifier, %3$@ its language code such as en-US, and %4$@ its quality such as Standard, Enhanced, or Premium.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Voice: %1$@ (%2$@), %3$@, %4$@ quality"
+          }
+        }
+      }
+    },
+    "Voice: the system's default voice" : {
+      "comment" : "A line of the speech refusal report: no voice was chosen, so the system's default voice spoke."
     },
     "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded." : {
       "comment" : "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level."
@@ -19115,6 +19335,9 @@
     },
     "When you save, the book updates and keeps your place as near as it can." : {
       "comment" : "Fourth sentence of the Edit Text explanation: what happens when the user saves the edited text."
+    },
+    "Where" : {
+      "comment" : "Heading of the lines of a speech refusal report that say where in the book speech stopped."
     },
     "Where Am I?" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the reading position. Also the title of the menu command of the same name.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks the position and the selection.\nTitle of the reader toolbar's button that says where the reader is in the book."
@@ -19518,6 +19741,12 @@
     "books" : {
       "comment" : "Library view editor: the kind of row books, in lower case inside a filter's description such as \"Lists books and feeds\"."
     },
+    "build %@" : {
+      "comment" : "A detail of the build line of the speech refusal report. %@ is the app's build number."
+    },
+    "built %@" : {
+      "comment" : "A detail of the build line of the speech refusal report. %@ is the date and time the app was built, as written in its Info.plist."
+    },
     "built in" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The row's word for a view TextMouth made."
     },
@@ -19583,6 +19812,9 @@
     },
     "chosen" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the encoding's name when the listener chose it."
+    },
+    "commit %@" : {
+      "comment" : "A detail of the build line of the speech refusal report. %@ is the abbreviated identifier of the source commit the app was built from."
     },
     "content.md is only in the cloud, so TextMouth leaves it as it is." : {
       "comment" : "Reason after a colon: a rebuild left the book's text file alone because it is only in the cloud. content.md is a file name and stays as written."
@@ -20584,6 +20816,9 @@
     },
     "use the drive's own command to keep the book only online" : {
       "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do when the cloud drive is not known."
+    },
+    "version %@" : {
+      "comment" : "A detail of the build line of the speech refusal report. %@ is the app's version, such as 0.5.3."
     },
     "what was kept for %lld removed downloads" : {
       "comment" : "What a feed kept for downloads the listener removed, when their packages held none of the parts named, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many removed downloads. Lower case.",

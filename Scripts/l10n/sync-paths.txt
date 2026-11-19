@@ -73,6 +73,7 @@ TextMouth/Models/SentenceWording.swift
 TextMouth/Models/SettingsPolicy.swift
 TextMouth/Models/ShortcutEdits.swift
 TextMouth/Models/SleepTimerHandOverWording.swift
+TextMouth/Models/SpeechRefusalReport.swift
 TextMouth/Models/TextEncodingChoice.swift
 TextMouth/Models/TimeEntry.swift
 TextMouth/Models/TimedText.swift
