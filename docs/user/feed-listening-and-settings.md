@@ -12,7 +12,7 @@ Part of [TextMouth's documentation](../../README.md).
 Feed Info's This Feed's Settings ends with four controls for how listening goes on from one of the feed's episodes to another.
 Each is worded with what the feed's items are called, "episode" here, "article" or "item" for a feed whose items are those, and each is saved as you make it.
 - The pop-up button "When an episode ends" offers "Use the global setting (…)", which names the Playback tab's When book ends choice, as in "Use the global setting (Stop)", then "Play the episode below", "Play the episode above", and "Stop".
-  Its hint is "What happens when one of this feed's episodes ends: play the episode below it or the one above it in the list, stop, or follow the global setting".
+  Its hint is "Chooses what happens when one of this feed's episodes ends".
 - The pop-up button "Open the next episode in" offers "Use the global setting (…)", which names the Playback tab's Open the next book in choice, as in "Use the global setting (This Window)", then "This Window" and "A New Window".
   It says "article" or "item" in place of episode for a feed whose items are those, as in "Open the next article in".
   Its hint is "Chooses where this feed's next episode opens.", with "article" or "item" in place of "episode" for a feed whose items are those.
@@ -20,8 +20,8 @@ Each is worded with what the feed's items are called, "episode" here, "article" 
   Its hint then is "Available only while this feed's episodes go on to another episode when one ends", and it keeps its choice for when they do.
   A dimmed choice is not in effect: Next in Folder and Previous in Folder then follow the global setting.
   What the choice does is under Where the next book opens, in [Reader windows](reader-book-end.md).
-- The checkbox "Skip finished episodes", checked unless you clear it, has the hint "When listening goes on to another episode, pass over the episodes already finished".
-- The checkbox "Download the next episode before this one ends", checked unless you clear it, has the hint "When 10 minutes or less of the episode playing are left, download the episode that plays next, if it is not on this Mac yet".
+- The checkbox "Skip finished episodes", checked unless you clear it, has the hint "Applies when listening goes on to another episode".
+- The checkbox "Download the next episode before this one ends", checked unless you clear it, has the hint "When 10 minutes or less are left, downloads the next episode if it is not on this Mac yet".
   It is dimmed while the feed's episodes do not go on to another episode when one ends, which is when the pop-up button says Stop, or says Use the global setting and the global choice is not Continue to Next Book.
   Its hint then is "Available only while this feed's episodes go on to another episode when one ends", and it keeps its setting for when they do.
 
@@ -68,7 +68,7 @@ Choose Resubscribe on a feed's row, or in its Feed Info, to check it again."
 Episodes and Articles: List and download, a pop-up menu, decides what every feed lists and what downloads by itself (see [Listing and downloading](feed-downloads.md)): Every item listed, newest 5 downloaded, the default; Every item listed, downloads by hand; or Only the newest 5 listed.
 The first and third titles say the number in force.
 And VoiceOver speaks the choice as the menu's value and the choice's own sentence as its hint.
-The screen shows the hint under the number, as in "Lists every episode and article with what you did with it, keeps the newest 5 downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+The screen shows the hint under the number, as in "Lists every episode and article, keeps the newest 5 downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
 How many of the newest, a number field and a stepper, sets that number, from 1 to 2,000, 5 by default, a number typed outside moving to the nearer bound.
 The stepper speaks it with its unit, as in "5 items", and both are dimmed under Every item listed, downloads by hand, which counts none and keeps the number for a choice that does.
 A line under them, which VoiceOver reads, says "The list follows a change of List and download at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then."
