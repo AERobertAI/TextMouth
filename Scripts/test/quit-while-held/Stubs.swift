@@ -12,3 +12,18 @@ struct TextMouthRuntime {
     /// Never: the probe really asks AppKit to quit.
     let isHostedTest = false
 }
+
+/// What QuitHoldWording reaches of the app's wording (`CountWording.list`):
+/// the quit panel's list of what is under way. The probe says it in English,
+/// as "a", "a and b", or "a, b, and c".
+enum CountWording {
+    /// `items` joined in a sentence, in English.
+    static func list(_ items: [String]) -> String {
+        switch items.count {
+        case 0: return ""
+        case 1: return items[0]
+        case 2: return "\(items[0]) and \(items[1])"
+        default: return items.dropLast().joined(separator: ", ") + ", and " + items[items.count - 1]
+        }
+    }
+}

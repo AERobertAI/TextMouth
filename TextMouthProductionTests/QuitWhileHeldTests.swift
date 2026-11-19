@@ -114,7 +114,7 @@ final class QuitWhileHeldTests: XCTestCase {
     func testTheWordsNameWhatIsFinishingAndThatTextMouthQuitsAfterwards() {
         XCTAssertEqual(
             QuitHoldWording.message(finishing: ["saving a"]),
-            "TextMouth is finishing up before it quits: saving a. It will quit as soon as that is done."
+            "TextMouth is finishing up before it quits: saving a. It quits when that is done."
         )
         XCTAssertEqual(QuitHoldWording.list([]), "")
         XCTAssertEqual(QuitHoldWording.list(["a"]), "a")

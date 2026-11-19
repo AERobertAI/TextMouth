@@ -34,9 +34,6 @@
         }
       }
     },
-    "%@ has it in the menus, and no shortcut may take it" : {
-      "comment" : "The reason, said after \"not recorded\", why a key cannot be a shortcut: a command of the Mac's own menus uses it. %@ is that command's name, such as Quit TextMouth or Copy. Lower case in English, since it follows a colon."
-    },
     "%@ has its default, %@" : {
       "comment" : "Said in the row of a keyboard shortcut action that has lost its default key to another action. %1$@ is the name of the action that now has the key, and %2$@ is the key in words, such as \"Shift + Command + T\".",
       "localizations" : {
@@ -128,8 +125,22 @@
     "%@ seconds" : {
       "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number."
     },
+    "%@ tries again, %@ quits without saving, %@ keeps TextMouth open." : {
+      "comment" : "Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open."
+          }
+        }
+      }
+    },
     "%@ twice" : {
       "comment" : "A keyboard shortcut that is its key pressed twice quickly, as spoken or shown. %@ is the shortcut, such as \"W\" or \"Command + I\"."
+    },
+    "%@ uses it in the menus" : {
+      "comment" : "The reason, said after \"not recorded\", why a key cannot be a shortcut: a command of the Mac's own menus uses it. %@ is that command's name, such as Quit TextMouth or Copy. Lower case in English, since it follows a colon."
     },
     "%@ works in %@." : {
       "comment" : "Announced by VoiceOver after the listener chose where a keyboard shortcut works. %1$@ is the action's name and %2$@ names the windows, such as \"every window\" or \"Library windows\".",
@@ -963,17 +974,6 @@
     "Caret" : {
       "comment" : "Name of the punctuation key \"^\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Caret\"."
     },
-    "Choose %@ to try saving them again, %@ to quit without them, or %@ to keep TextMouth open." : {
-      "comment" : "Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Choose %1$@ to try saving them again, %2$@ to quit without them, or %3$@ to keep TextMouth open."
-          }
-        }
-      }
-    },
     "Chooses what a book opened from the list does when it ends." : {
       "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button.",
       "localizations" : {
@@ -1039,6 +1039,9 @@
           }
         }
       }
+    },
+    "Choosing makes the shortcut yours; Reset to Default restores where it works by default." : {
+      "comment" : "VoiceOver hint of the Works in pop-up button of a keyboard shortcut action: choosing a choice makes the action the listener's own, and Reset to Default restores where it works by default."
     },
     "Clear" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Clear\"."
@@ -1175,9 +1178,6 @@
           }
         }
       }
-    },
-    "Deletes this keyboard shortcut binding" : {
-      "comment" : "VoiceOver hint of the button that removes one key from a keyboard shortcut action."
     },
     "Dollar Sign" : {
       "comment" : "Name of the punctuation key \"$\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Dollar Sign\"."
@@ -1389,6 +1389,9 @@
         }
       }
     },
+    "Every shortcut and where it works go back to the defaults. Your own keys are lost." : {
+      "comment" : "Message of the alert that asks the listener to confirm resetting every keyboard shortcut to its default: the shortcuts they changed are lost."
+    },
     "Every window" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in every window."
     },
@@ -1443,7 +1446,7 @@
     "Folder or Feed Settings" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the settings of the folder or feed the Library window shows. Also the title of the menu command of the same name."
     },
-    "For five seconds, the next two presses of any key are no shortcuts, and TextMouth says whether they make a double press." : {
+    "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press." : {
       "comment" : "VoiceOver hint of the Try a Double Press button: for five seconds key presses are not shortcuts, and TextMouth says whether two presses were a double press."
     },
     "Forward 10 Seconds" : {
@@ -1457,9 +1460,6 @@
     },
     "Forward a Tenth of a Second" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward a tenth of a second."
-    },
-    "Gives this action TextMouth's default shortcuts again, which follow later releases' changes" : {
-      "comment" : "VoiceOver hint of the Reset to Default button of one keyboard shortcut action: the action goes back to the default keys, and later versions of TextMouth may change them."
     },
     "Go Back" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Returns to the place the reader jumped from, like a browser's Back. Also the title of the menu command of the same name."
@@ -1560,13 +1560,13 @@
     "Home" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Home\"."
     },
-    "How soon a second press must follow the first to make a double press. A key with a different action for each waits this long before its single press acts." : {
+    "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts." : {
       "comment" : "Hint of the double press time stepper in Settings: what the time is, and that a key that has one action for a single press and another for a double press waits for that time before acting on a single press."
     },
     "Import Folder…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Imports a DAISY book, or a folder of audio tracks, as a book. Also the title of the menu command of the same name."
     },
-    "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, so a shortcut that is a letter alone, such as W, works only in other windows." : {
+    "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows." : {
       "comment" : "Note in the Shortcuts tab of Settings. In a Library window, a letter key pressed with no other key jumps to the first book or folder starting with that letter, so a shortcut made of a letter alone, such as W, cannot work in a Library window."
     },
     "In reading list" : {
@@ -2444,7 +2444,7 @@
         }
       }
     },
-    "Reset all keyboard shortcuts to defaults" : {
+    "Reset all shortcuts to defaults" : {
       "comment" : "VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again."
     },
     "Reset to Default" : {
@@ -2477,6 +2477,9 @@
           }
         }
       }
+    },
+    "Restores this action's default shortcuts, which follow later releases' changes" : {
+      "comment" : "VoiceOver hint of the Reset to Default button of one keyboard shortcut action: the action goes back to the default keys, and later versions of TextMouth may change them."
     },
     "Retry" : {
       "comment" : "Button of the unsaved-changes alert that tries to save the changes again."
@@ -2622,6 +2625,9 @@
     },
     "Shift" : {
       "comment" : "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\"."
+    },
+    "Shortcuts reset to defaults." : {
+      "comment" : "Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default."
     },
     "Show Bookmarks" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Opens the list of the book's bookmarks. Also the title of the menu command of the same name."
@@ -3011,7 +3017,7 @@
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
     },
-    "TextMouth is finishing up before it quits: %@. It will quit as soon as that is done." : {
+    "TextMouth is finishing up before it quits: %@. It quits when that is done." : {
       "comment" : "Panel text and announcement while TextMouth finishes work before quitting. %@ is the list of what is under way, such as \"saving the library and keeping downloads\", already joined in the language's own list style."
     },
     "TextMouth is not downloading right now." : {
@@ -3060,9 +3066,6 @@
           }
         }
       }
-    },
-    "The keyboard shortcuts are reset to the defaults." : {
-      "comment" : "Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default."
     },
     "The next article could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next article failed. %@ is the download's own sentence saying why.",
@@ -3132,9 +3135,6 @@
           }
         }
       }
-    },
-    "This will reset all keyboard shortcuts to their default values. Any custom bindings will be lost." : {
-      "comment" : "Message of the alert that asks the listener to confirm resetting every keyboard shortcut to its default: the shortcuts they changed are lost."
     },
     "Tilde" : {
       "comment" : "Name of the punctuation key \"~\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tilde\"."
@@ -3228,7 +3228,7 @@
     "Try a Double Press" : {
       "comment" : "Button in the Shortcuts tab of Settings that lets the listener press a key twice to find out whether the double press time counts the two presses as a double press."
     },
-    "Two different keys. A double press is one key pressed twice." : {
+    "Two different keys, not a double press." : {
       "comment" : "Announced by VoiceOver at the end of a trial of the double press time when the two presses were of different keys."
     },
     "Two presses, %@ apart. Set the time above %@ to count them as one." : {
@@ -3299,9 +3299,6 @@
     "Where Am I? Full Summary" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the reading position. Also the title of the menu command of the same name."
     },
-    "Where this shortcut works. Choosing makes it yours; Reset to Default gives back where it works by default." : {
-      "comment" : "VoiceOver hint of the Works in pop-up button of a keyboard shortcut action: choosing a choice makes the action the listener's own, and Reset to Default restores where it works by default."
-    },
     "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
       "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",
       "localizations" : {
@@ -3333,9 +3330,6 @@
     },
     "a menu command's shortcut is one press of a key with Command or Control" : {
       "comment" : "The reason, said after \"not recorded\", why a keyboard shortcut cannot be a menu command's or a button's: it must be one press of a key held with Command or Control. Lower case, since it follows a colon."
-    },
-    "a text field edits with it, and a menu command's shortcut would take it from the field" : {
-      "comment" : "The reason, said after \"not recorded\", why a key cannot be a menu command's shortcut: text fields use that key to edit text. Lower case, since it follows a colon."
     },
     "every window" : {
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in every window.\": all windows. Lower case in English, since it is in the middle of a sentence."
@@ -3386,6 +3380,9 @@
           }
         }
       }
+    },
+    "text fields use it for editing" : {
+      "comment" : "The reason, said after \"not recorded\", why a key cannot be a menu command's shortcut: text fields use that key to edit text. Lower case, since it follows a colon."
     },
     "the audio editor" : {
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in the audio editor.\": the audio editor's windows. Lower case in English, since it is in the middle of a sentence."

@@ -56,7 +56,7 @@ enum UnsavedChangesPrompt {
     /// buttons' own words (`retryTitle`, `quitAnywayTitle`, `cancelTitle`),
     /// so the sentence and the buttons agree in every language.
     static var choices: String {
-        String(localized: "Choose \(retryTitle) to try saving them again, \(quitAnywayTitle) to quit without them, or \(cancelTitle) to keep TextMouth open.",
+        String(localized: "\(retryTitle) tries again, \(quitAnywayTitle) quits without saving, \(cancelTitle) keeps TextMouth open.",
                comment: "Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.")
     }
 

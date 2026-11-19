@@ -883,13 +883,13 @@ enum ShortcutRefusal: Equatable, Sendable {
             return String(localized: "a menu command's shortcut is one press of a key with Command or Control",
                           comment: "The reason, said after \"not recorded\", why a keyboard shortcut cannot be a menu command's or a button's: it must be one press of a key held with Command or Control. Lower case, since it follows a colon.")
         case .editsText:
-            return String(localized: "a text field edits with it, and a menu command's shortcut would take it from the field",
+            return String(localized: "text fields use it for editing",
                           comment: "The reason, said after \"not recorded\", why a key cannot be a menu command's shortcut: text fields use that key to edit text. Lower case, since it follows a colon.")
         case .secondKeyEquivalent:
             return String(localized: "a menu command has one shortcut",
                           comment: "The reason, said after \"not recorded\", why a second key cannot be added to a menu command's shortcut. Lower case, since it follows a colon.")
         case .systemCommand(_, let command):
-            return String(localized: "\(KeyBinding.localizedSystemCommand(command)) has it in the menus, and no shortcut may take it",
+            return String(localized: "\(KeyBinding.localizedSystemCommand(command)) uses it in the menus",
                           comment: "The reason, said after \"not recorded\", why a key cannot be a shortcut: a command of the Mac's own menus uses it. %@ is that command's name, such as Quit TextMouth or Copy. Lower case in English, since it follows a colon.")
         }
     }

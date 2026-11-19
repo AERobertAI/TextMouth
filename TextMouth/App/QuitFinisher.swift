@@ -17,7 +17,7 @@ enum QuitHoldWording {
     /// (`QuitHold.Work.finishing`): what is under way, and that TextMouth
     /// quits afterwards.
     static func message(finishing phrases: [String]) -> String {
-        String(localized: "TextMouth is finishing up before it quits: \(list(phrases)). It will quit as soon as that is done.",
+        String(localized: "TextMouth is finishing up before it quits: \(list(phrases)). It quits when that is done.",
                comment: "Panel text and announcement while TextMouth finishes work before quitting. %@ is the list of what is under way, such as \"saving the library and keeping downloads\", already joined in the language's own list style.")
     }
 

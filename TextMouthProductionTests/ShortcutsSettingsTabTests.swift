@@ -263,7 +263,7 @@ final class ShortcutsSettingsTabTests: XCTestCase {
     func testTheLetterNavigationNoteIsPinned() {
         XCTAssertEqual(
             ShortcutsSettingsWording.letterNavigationNote,
-            "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, "
+            "In Library windows, a letter alone moves to the first book or folder starting with it, "
                 + "so a shortcut that is a letter alone, such as W, works only in other windows."
         )
     }
@@ -285,8 +285,8 @@ final class ShortcutsSettingsTabTests: XCTestCase {
         XCTAssertEqual(ShortcutsSettingsWording.doublePressTimeLabel, "Double press time")
         XCTAssertEqual(
             ShortcutsSettingsWording.doublePressTimeHint,
-            "How soon a second press must follow the first to make a double press. "
-                + "A key with a different action for each waits this long before its single press acts."
+            "How soon a second press must follow the first. "
+                + "A key with different single and double press actions waits this long before its single press acts."
         )
     }
 
@@ -477,7 +477,7 @@ final class ShortcutsSettingsTabTests: XCTestCase {
         XCTAssertEqual(ShortcutsSettingsWording.tryDoublePressTitle, "Try a Double Press")
         XCTAssertEqual(
             ShortcutsSettingsWording.tryDoublePressHint,
-            "For five seconds, the next two presses of any key are no shortcuts, and TextMouth says whether they make a double press."
+            "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press."
         )
         XCTAssertEqual(ShortcutsSettingsWording.tryDoublePressPrompt, "Press a key twice.")
         let said: [(DoublePressTrial.Outcome, String)] = [
@@ -488,7 +488,7 @@ final class ShortcutsSettingsTabTests: XCTestCase {
             (.tooFarApart(1.94), "Two presses, 1.9 seconds apart. Set the time above 1.9 seconds to count them as one."),
             (.tooFarApart(1.96), "Two presses, 2 seconds apart. The double press time goes up to 2 seconds."),
             (.tooFarApart(3.42), "Two presses, 3.4 seconds apart. The double press time goes up to 2 seconds."),
-            (.differentKeys, "Two different keys. A double press is one key pressed twice."),
+            (.differentKeys, "Two different keys, not a double press."),
             (.noSecondPress, "No key was pressed twice."),
         ]
         for (outcome, words) in said {
@@ -725,10 +725,13 @@ final class ShortcutLocalizationTests: XCTestCase {
             .notOnePressWithCommandOrControl(shiftR), .editsText(shiftR), .secondKeyEquivalent(shiftR),
             .systemCommand(commandQ, command: "Quit TextMouth"),
         ]
-        for refusal in refusals {
-            XCTAssertEqual(refusal.reason, refusal.logReason, "\(refusal)")
-        }
-        XCTAssertEqual(refusals[3].reason, "Quit TextMouth has it in the menus, and no shortcut may take it")
+        XCTAssertEqual(refusals[0].reason, refusals[0].logReason)
+        XCTAssertEqual(refusals[2].reason, refusals[2].logReason)
+        // The listener's words were cut shorter; the log keeps its English.
+        XCTAssertEqual(refusals[1].reason, "text fields use it for editing")
+        XCTAssertEqual(refusals[1].logReason, "a text field edits with it, and a menu command's shortcut would take it from the field")
+        XCTAssertEqual(refusals[3].reason, "Quit TextMouth uses it in the menus")
+        XCTAssertEqual(refusals[3].logReason, "Quit TextMouth has it in the menus, and no shortcut may take it")
         // Every system command's localized name is its English id in English.
         for command in Set(KeyBinding.systemCommands.values) {
             XCTAssertEqual(KeyBinding.localizedSystemCommand(command), command)

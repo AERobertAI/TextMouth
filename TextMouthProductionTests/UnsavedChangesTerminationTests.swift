@@ -267,7 +267,7 @@ final class UnsavedChangesTerminationTests: XCTestCase {
 
             Settings could not be saved: The volume is read-only.
 
-            Choose Retry to try saving them again, Quit Anyway to quit without them, or Cancel to keep TextMouth open.
+            Retry tries again, Quit Anyway quits without saving, Cancel keeps TextMouth open.
             """
         )
         XCTAssertEqual(UnsavedChangesPrompt.title, "Some Changes Could Not Be Saved")

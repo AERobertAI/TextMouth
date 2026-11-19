@@ -199,7 +199,6 @@ struct ShortcutBindingRow: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(ShortcutsSettingsWording.removeShortcutLabel(binding, from: action))
-                        .accessibilityHint(ShortcutsSettingsWording.removeShortcutHint)
                     }
                 }
 
@@ -423,7 +422,7 @@ enum ShortcutsSettingsWording {
     /// alone is the list's letter navigation, never a shortcut (October 17,
     /// `ShortcutWindowKind.navigatesByLetter`).
     static var letterNavigationNote: String {
-        String(localized: "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+        String(localized: "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
                comment: "Note in the Shortcuts tab of Settings. In a Library window, a letter key pressed with no other key jumps to the first book or folder starting with that letter, so a shortcut made of a letter alone, such as W, cannot work in a Library window.")
     }
 
@@ -434,7 +433,7 @@ enum ShortcutsSettingsWording {
 
     /// That button's VoiceOver label.
     static var resetAllLabel: String {
-        String(localized: "Reset all keyboard shortcuts to defaults", comment: "VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again.")
+        String(localized: "Reset all shortcuts to defaults", comment: "VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again.")
     }
 
     /// The title of the alert that asks to confirm the reset of every shortcut.
@@ -449,7 +448,7 @@ enum ShortcutsSettingsWording {
 
     /// The alert's message: what is lost.
     static var resetAllAlertMessage: String {
-        String(localized: "This will reset all keyboard shortcuts to their default values. Any custom bindings will be lost.",
+        String(localized: "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
                comment: "Message of the alert that asks the listener to confirm resetting every keyboard shortcut to its default: the shortcuts they changed are lost.")
     }
 
@@ -466,14 +465,14 @@ enum ShortcutsSettingsWording {
 
     /// That button's hint.
     static var resetToDefaultHint: String {
-        String(localized: "Gives this action TextMouth's default shortcuts again, which follow later releases' changes",
+        String(localized: "Restores this action's default shortcuts, which follow later releases' changes",
                comment: "VoiceOver hint of the Reset to Default button of one keyboard shortcut action: the action goes back to the default keys, and later versions of TextMouth may change them.")
     }
 
     /// What VoiceOver hears after the Shortcuts tab's Reset to Defaults has
     /// been confirmed. It follows the audio filter presets' reset wording.
     static var resetDone: String {
-        String(localized: "The keyboard shortcuts are reset to the defaults.", comment: "Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default.")
+        String(localized: "Shortcuts reset to defaults.", comment: "Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default.")
     }
 
     // MARK: Shared Pieces
@@ -557,11 +556,6 @@ enum ShortcutsSettingsWording {
                comment: "VoiceOver label of the button that removes one key from a keyboard shortcut action. %1$@ is the key in words, such as \"Command + I\", and %2$@ is the action's name.")
     }
 
-    /// That button's hint.
-    static var removeShortcutHint: String {
-        String(localized: "Deletes this keyboard shortcut binding", comment: "VoiceOver hint of the button that removes one key from a keyboard shortcut action.")
-    }
-
     /// The most keys `action`'s row records: one for a menu command's or a
     /// Record window button's, whose item has one key equivalent (FR12's
     /// branch D), and three for any other.
@@ -588,7 +582,7 @@ enum ShortcutsSettingsWording {
     /// The double-press time stepper's hint: what the time is, and what it
     /// costs.
     static var doublePressTimeHint: String {
-        String(localized: "How soon a second press must follow the first to make a double press. A key with a different action for each waits this long before its single press acts.",
+        String(localized: "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
                comment: "Hint of the double press time stepper in Settings: what the time is, and that a key that has one action for a single press and another for a double press waits for that time before acting on a single press.")
     }
 
@@ -601,7 +595,7 @@ enum ShortcutsSettingsWording {
 
     /// Its hint.
     static var tryDoublePressHint: String {
-        String(localized: "For five seconds, the next two presses of any key are no shortcuts, and TextMouth says whether they make a double press.",
+        String(localized: "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
                comment: "VoiceOver hint of the Try a Double Press button: for five seconds key presses are not shortcuts, and TextMouth says whether two presses were a double press.")
     }
 
@@ -628,7 +622,7 @@ enum ShortcutsSettingsWording {
             return String(localized: "Two presses, \(gap) apart. Set the time above \(gap) to count them as one.",
                           comment: "Announced by VoiceOver at the end of a trial of the double press time when the two presses were too far apart for the time set. Both %1$@ and %2$@ are the time between the presses, such as \"0.7 seconds\"; the listener should set the double press time above it.")
         case .differentKeys:
-            return String(localized: "Two different keys. A double press is one key pressed twice.", comment: "Announced by VoiceOver at the end of a trial of the double press time when the two presses were of different keys.")
+            return String(localized: "Two different keys, not a double press.", comment: "Announced by VoiceOver at the end of a trial of the double press time when the two presses were of different keys.")
         case .noSecondPress:
             return String(localized: "No key was pressed twice.", comment: "Announced by VoiceOver at the end of a trial of the double press time when no second press came in time.")
         }
@@ -702,7 +696,7 @@ enum ShortcutsSettingsWording {
 
     /// The Works in pop-up's hint.
     static var worksInHint: String {
-        String(localized: "Where this shortcut works. Choosing makes it yours; Reset to Default gives back where it works by default.",
+        String(localized: "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
                comment: "VoiceOver hint of the Works in pop-up button of a keyboard shortcut action: choosing a choice makes the action the listener's own, and Reset to Default restores where it works by default.")
     }
 
