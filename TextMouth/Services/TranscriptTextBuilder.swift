@@ -208,7 +208,7 @@ enum TranscriptTextBuilder {
     /// every chapter has a heading and none is dropped from content.md.
     static func headingTitle(of chapter: ChapterTranscript, number: Int) -> String {
         let title = chapter.title.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        return title.isEmpty ? "Heading \(number + 1)" : title
+        return title.isEmpty ? "Heading \(number + 1)" : title  // l10n: no (stored in the book's content.md, which keeps its words as saved (question 9))
     }
 
     /// The paragraphs of `sentences`, in order: a new paragraph starts after

@@ -362,7 +362,8 @@ extension TranscriptionWording {
     /// but wasn't attached as the book's transcript: The file isn't a WebVTT
     /// transcript TextMouth can read."
     static func transcriptNotAttached(fileName: String, reason: String) -> String {
-        "“\(fileName)” was beside the audio but wasn't attached as the book's transcript: \(reason)"
+        String(localized: "“\(fileName)” was beside the audio but wasn't attached as the book's transcript: \(reason)",
+               comment: "Notice after an import: a transcript file found beside the audio was not attached. %1$@ is the file's name; %2$@ is the reason, a sentence.")
     }
 
     /// What the listener is told when several transcript files found beside
@@ -374,8 +375,11 @@ extension TranscriptionWording {
     static func transcriptsNotAttached(fileNames: [String]) -> String {
         let named = fileNames.prefix(transcriptFilesNamedAtMost).map { "“\($0)”" }
         let rest = fileNames.count - named.count
-        let list = CountWording.list(rest > 0 ? named + ["\(rest) more"] : named)
-        return "These transcript files were beside the audio but weren't attached: \(list). The debug log says why."
+        let more = String(localized: "\(rest) more",
+                          comment: "The last item of a list of file names, standing for the files not named. %lld is how many more files there are.")
+        let list = CountWording.list(rest > 0 ? named + [more] : named)
+        return String(localized: "These transcript files were beside the audio but weren't attached: \(list). The debug log says why.",
+                      comment: "Notice after an import: several transcript files found beside the audio were not attached. %@ is their names as a list, such as \"“03.vtt”, “07.vtt”, and “09.srt”\".")
     }
 
     /// The most transcript files `transcriptsNotAttached(fileNames:)` names
@@ -392,11 +396,16 @@ extension TranscriptionWording {
     /// brought its own, the files together, which Attach Transcript…, taking
     /// one file for the book, cannot attach again.
     static func broughtTranscriptNotUsed(fileName: String?) -> String {
-        let reason = "Replacing kept the existing copy's transcript."
+        let reason = String(localized: "Replacing kept the existing copy's transcript.",
+                            comment: "The reason, in a notice after an import, that a transcript file beside the audio was not attached: Replace Existing kept the existing copy's own transcript.")
         guard let fileName else {
-            return "The transcript files beside the audio weren't attached as the book's transcript: \(reason)"
+            return String(localized: "The transcript files beside the audio weren't attached as the book's transcript: \(reason)",
+                          comment: "Notice after an import: the transcript files beside each track's audio were not attached. %@ is the reason, a sentence.")
         }
-        return transcriptNotAttached(fileName: fileName, reason: reason)
-            + " To use the file instead, open the book and choose \(attachCommandTitle) from the Book menu."
+        return SentenceWording.joined([
+            transcriptNotAttached(fileName: fileName, reason: reason),
+            String(localized: "To use the file instead, open the book and choose \(attachCommandTitle) from the Book menu.",
+                   comment: "Last sentence of a notice after an import, saying how to attach the transcript file by hand. %@ is the name of the Attach Transcript command in the Book menu.")
+        ])
     }
 }

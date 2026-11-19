@@ -330,14 +330,17 @@ enum OutsideTranscriptError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .runsPastTheEnd(let transcriptEnd, let audioEnd):
-            return "The transcript runs to \(Self.spoken(transcriptEnd)), past the end of the audio at "
-                + "\(Self.spoken(audioEnd)), so it was made for other audio."
+            return String(localized: "The transcript runs to \(Self.spoken(transcriptEnd)), past the end of the audio at \(Self.spoken(audioEnd)), so it was made for other audio.",
+                          comment: "Error shown when an attached transcript file's times run past the end of the book's audio. %1$@ is where the transcript ends and %2$@ where the audio ends, each a length of time in words such as \"1 hour, 2 minutes, 5 seconds\".")
         case .noText:
-            return "The transcript holds no text to attach."
+            return String(localized: "The transcript holds no text to attach.",
+                          comment: "Error shown when an attached transcript file holds no text.")
         case .alreadyTranscribed:
-            return "The book has a transcript already, so TextMouth kept it."
+            return String(localized: "The book has a transcript already, so TextMouth kept it.",
+                          comment: "Notice that a transcript file was not attached because the book already had its own transcript.")
         case .unusable:
-            return "The transcript's times don't fit together, so TextMouth can't use it."
+            return String(localized: "The transcript's times don't fit together, so TextMouth can't use it.",
+                          comment: "Error shown when an attached transcript file's times are out of order or inconsistent.")
         }
     }
 

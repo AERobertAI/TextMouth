@@ -17,6 +17,27 @@ import XCTest
 @MainActor
 final class TranscriptCleanupSheetTests: XCTestCase {
 
+    // MARK: - The Words
+
+    /// A rules version names the rules, so it is written as the digits it
+    /// is, "12345"; a count of corrections or sentences is grouped for the
+    /// region, "12,345", and says one or many (FR34).
+    func testTheWordingWritesVersionsUngroupedAndCountsGroupedWithTheirPlurals() {
+        XCTAssertEqual(
+            TranscriptCleanupWording.newerBuiltInRules(version: 12345),
+            "TextMouth's own rules are newer, version 12345. To use them, delete your copy, or copy their new rules into it."
+        )
+        XCTAssertEqual(
+            TranscriptCleanupWording.summary(corrections: 12345, sentences: 2000),
+            "\(12345.formatted()) corrections in \(2000.formatted()) sentences."
+        )
+        XCTAssertEqual(TranscriptCleanupWording.summary(corrections: 1, sentences: 1), "1 correction in 1 sentence.")
+        XCTAssertEqual(
+            TranscriptCleanupWording.applied(bookTitle: "Harbour Bells", corrections: 1),
+            "Cleaned up the transcript of Harbour Bells: 1 correction."
+        )
+    }
+
     // MARK: - The Command
 
     /// Clean Up Transcript (Experimental)… is offered for one transcribed

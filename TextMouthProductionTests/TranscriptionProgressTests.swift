@@ -197,6 +197,37 @@ final class TranscriptionProgressTests: XCTestCase {
         )
     }
 
+    /// A failure's log line is written in English from `failureLog`, never
+    /// from the sentence the interface shows (FR34: the debug log stays
+    /// English whatever language the interface speaks), and every error's
+    /// log words are English sentences that name no title or file.
+    func testTheFailureLogLineIsEnglishWhateverTheInterfaceSays() {
+        XCTAssertEqual(
+            TranscriptionLog.ended(
+                .failed("La transcripción se detuvo."),
+                bookTitle: "Harbor Notes",
+                elapsed: 0.3,
+                failureLog: TranscriptionLog.failureLog(for: TranscriptionError.recognitionFailed("the recognizer stopped"))
+            ),
+            "TRANSCRIPTION_FAILED: Harbor Notes: after 0.3 seconds: Transcription stopped: the recognizer stopped."
+        )
+        let errors: [TranscriptionError] = [
+            .needsNewerSystem, .unavailableOnThisMac, .unsupportedLanguage("Xhosa"), .modelNotInstalled("Xhosa"),
+            .busy("Harbor Notes"), .notAnAudiobook, .noAudio, .fileInCloud("01.mp3"),
+            .unreadableFile(file: "01.mp3", reason: TranscriptionError.unreadableAudioReason), .cancelled,
+            .recognitionFailed("the recognizer stopped"), .audioChanged("the book's audio files are not the ones transcribed"),
+            .bookRemoved
+        ]
+        for error in errors {
+            let line = TranscriptionLog.failureLog(for: error)
+            XCTAssertEqual(line, error.logDescription)
+            XCTAssertFalse(line.isEmpty, "\(error)")
+            XCTAssertFalse(line.contains("Harbor Notes"), "a log line quotes a book title: \(line)")
+            XCTAssertFalse(line.contains("01.mp3"), "a log line names an audio file: \(line)")
+            XCTAssertFalse(line.contains("Xhosa"), "a log line holds a localized language name: \(line)")
+        }
+    }
+
     /// Fails when any of `lines` quotes a word the scripted narration says.
     private func assertQuotesNothingHeard(_ lines: [String], file: StaticString = #filePath, line: UInt = #line) {
         for word in ["Gannet", "breakwater.", "coils", "ferry", "Buoy", "tilts"] {
