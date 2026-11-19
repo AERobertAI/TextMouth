@@ -138,7 +138,7 @@ The one under way keeps what it has downloaded, when its server allows, and at t
 Quitting waits at most three seconds for this.
 - You see and hear it (0.4.4).
   A small window titled "Quitting TextMouth" appears, and VoiceOver says: "TextMouth is finishing up before it quits: keeping the place of your feed downloads for next time.
-  It will quit as soon as that is done."
+  It quits when that is done."
   TextMouth then quits by itself.
 - Pressing Command-Q again, or choosing Quit in the Dock again, in those seconds says the same words again and does not cut the downloads off.
 - If you quit with changes that could not be saved and chose Quit Anyway, TextMouth finishes the downloads' place first and then quits, with no second alert.

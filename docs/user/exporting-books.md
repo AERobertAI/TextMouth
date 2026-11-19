@@ -33,9 +33,9 @@ VoiceOver starts on the first checkbox, and the first kind that can be exported 
 
 - The Headings checkbox is labelled with the format chosen, as in "Headings as CUE sheet", and says no size, since the file is written at export.
   Its hint, for each choice:
-  - "Each heading's title and where it begins, as a CUE sheet that names the audio as Audio exports it."
-  - "Each heading's title and where it begins, as Audacity labels, for a book whose audio is one file."
-- The Bookmarks hint is "Each bookmark's name and place, as Audacity labels, for a book whose audio is one file."
+  - "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it."
+  - "Each heading's title and start, as Audacity labels, for a book with one audio file."
+- The Bookmarks hint is "Each bookmark's name and place, as Audacity labels, for a book with one audio file."
   Bookmarks have one format, so there is no pop-up for them.
 - The files are named "Title.cue" (or "Title.txt" for labels) for the headings, and "Title - Bookmarks.txt" for the bookmarks.
 - A CUE sheet names the book's audio as Audio exports it, a FILE line for each file, and a track for each heading, with the book's title and author.
@@ -45,8 +45,8 @@ VoiceOver starts on the first checkbox, and the first kind that can be exported 
   For a book of several files the export of them fails with "Audacity labels mark one audio file, and this book's audio is in N files."
 - A bookmark with no name is called "Bookmark" and its number.
 - A book whose headings TextMouth has not read yet fails with this sentence:
-  "TextMouth has not read this book's headings yet.
-  Open the book once, then export them again."
+  "TextMouth hasn't read this book's headings yet.
+  Open the book once, then export again."
 
 ## Where the files go
 <!-- id: export-where-files-go; keys: Choose Folder…, New Folder, scratch folder, numbered names, never replaced, DAISY; src: TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift -->
@@ -90,8 +90,8 @@ The choices are Markdown, HTML, RTF, "Word 97-2003 (.doc)", EPUB, BRF, and PEF, 
 - HTML: "A web page of the book's text, with a contents list linking each heading."
 - RTF: "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit."
 - Word 97-2003 (.doc): "Word 97-2003 document.
-  Its headings are plain text, so Word's navigation pane does not list them."
-- EPUB: "An e-book with the book's headings, contents, and page numbers where it has them, for Apple Books and other reading apps.
+  Its headings are plain text, so Word's navigation pane omits them."
+- EPUB: "An e-book with the book's headings, contents, and any page numbers, for Apple Books and other reading apps.
   It holds no pictures."
 - BRF: "Braille Ready Format: pages of braille, for braille displays and embossers."
 - PEF: "Portable Embosser Format: pages of Unicode braille in XML, for embossers."
@@ -108,7 +108,7 @@ An audiobook's Transcript has Convert transcript to, which starts on JSON and Ma
 
 While HTML, RTF, Word, EPUB, BRF, or PEF is chosen, the checkbox is named for the choice, as in "Text as HTML" or "Text as Word 97-2003 (.doc)", and "Text as HTML, 2 books" for several books.
 It then gives no size, since a converted file's size is known only once it is written; with Markdown chosen it keeps its size.
-Its hint is "The book's text as HTML, made from the Markdown TextMouth reads it from.", with RTF, Word 97-2003 (.doc), EPUB, BRF, or PEF in place of HTML.
+Its hint is "The book's text as HTML, made from its Markdown.", with RTF, Word 97-2003 (.doc), EPUB, BRF, or PEF in place of HTML.
 
 ### File names of converted text
 <!-- id: file-names-converted-text; keys: Text.html, Text.rtf, Text.doc, Text.epub, Text.brf, Text.pef, file extension; src: TextMouth/Models/BookExportWording.swift, TextMouth/Services/BookExportService.swift -->
@@ -157,7 +157,7 @@ VoiceOver reads the alert's title, its message, and each button's hint as it ope
 - **Export as Written**, which Return presses, writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.
 - **Export Every Such Chapter as Written** does the same for every such chapter of this export without asking again.
   It is offered only while more chapters, or more text files, follow.
-- **Cancel Export**, which Escape presses, stops the whole export: nothing more is written, and the files already written stay.
+- **Cancel Export**, which Escape presses, stops the whole export: nothing more is written, and files already written stay.
   It ends as Stop does, so the book's text file is not written either.
   Stop, or closing the dialog, while the alert is open answers it so.
 
