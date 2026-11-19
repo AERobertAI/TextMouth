@@ -116,7 +116,10 @@ final class TranscriptPairingTests: XCTestCase {
             "“\(tone.transcriptName)” beside the audio wasn't attached: "
                 + "The transcript runs to 20 seconds, past the audio's end at 4 seconds, so it is for other audio."
         )
-        XCTAssertEqual(refusals(of: imported.book.title), ["\(tone.transcriptName): \(reason)"])
+        XCTAssertEqual(refusals(of: imported.book.title), [
+            "\(tone.transcriptName): "
+                + OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 20_000, audioEnd: 4_000).logDescription
+        ])
     }
 
     /// A .vtt file that is no WebVTT file is named with the reader's reason,
@@ -288,8 +291,8 @@ final class TranscriptPairingTests: XCTestCase {
         )
         XCTAssertEqual(TranscriptStore.read(from: imported.book.tmbDirectory), .missing)
         XCTAssertEqual(refusals(of: imported.book.title), [
-            "01.vtt: \(TimedTextError.notTimedText(.webVTT).localizedDescription)",
-            "02.srt: \(OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 30_000, audioEnd: 2_000).localizedDescription)",
+            "01.vtt: \(TimedTextError.notTimedText(.webVTT).logDescription)",
+            "02.srt: \(OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 30_000, audioEnd: 2_000).logDescription)",
         ])
         XCTAssertEqual(debugLogLines(containing: "Quayside Rowing Club"), [])
     }
@@ -319,7 +322,9 @@ final class TranscriptPairingTests: XCTestCase {
             TranscriptionWording.transcriptNotAttached(fileName: "01.vtt", reason: reason)
         )
         XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .missing)
-        XCTAssertEqual(refusals(of: book.title), ["01.vtt: \(reason)"])
+        XCTAssertEqual(refusals(of: book.title), [
+            "01.vtt: " + TranscriptionError.unreadableFile(file: "02.wav", reason: TranscriptionError.unreadableAudioReason).logDescription
+        ])
     }
 
     /// A transcript that cannot be written into its package sets aside the

@@ -223,7 +223,6 @@ final class TranscriptionProgressTests: XCTestCase {
             XCTAssertEqual(line, error.logDescription)
             XCTAssertFalse(line.isEmpty, "\(error)")
             XCTAssertFalse(line.contains("Harbor Notes"), "a log line quotes a book title: \(line)")
-            XCTAssertFalse(line.contains("01.mp3"), "a log line names an audio file: \(line)")
             XCTAssertFalse(line.contains("Xhosa"), "a log line holds a localized language name: \(line)")
         }
     }

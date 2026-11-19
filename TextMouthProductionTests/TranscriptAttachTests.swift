@@ -89,7 +89,7 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertEqual(
             TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 7_077, skipped: 1),
             "Attached “lock.srt” to Lock Keeper: \(7_077.formatted()) words. "
-                + "1 timed passage couldn't be read and was left out."
+                + "1 timed passage was unreadable and left out."
         )
         XCTAssertEqual(
             TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 7_077, skipped: 3),
