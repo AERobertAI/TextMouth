@@ -15,6 +15,12 @@
             "state" : "new",
             "value" : "%1$@ %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$@"
+          }
         }
       }
     },
@@ -356,10 +362,26 @@
       }
     },
     "%@ deleted" : {
-      "comment" : "Announcement after a substitution rule is deleted. %@ is the rule's name.\nSaid as a filter preset is deleted. %@ is the preset's name."
+      "comment" : "Announcement after a substitution rule is deleted. %@ is the rule's name.\nSaid as a filter preset is deleted. %@ is the preset's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se eliminó %@"
+          }
+        }
+      }
     },
     "%@ deleted." : {
-      "comment" : "Said as a marker is deleted in the audio editor. %@ is the marker's name such as \"Marker 3\" or \"Marker 3, Intro\"."
+      "comment" : "Said as a marker is deleted in the audio editor. %@ is the marker's name such as \"Marker 3\" or \"Marker 3, Intro\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se eliminó %@."
+          }
+        }
+      }
     },
     "%@ didn't answer for %lld seconds." : {
       "comment" : "Why a feed could not be fetched: the server took too long. The first %@ is the server's host name; %lld is the number of seconds waited.\nWhy a feed item's download failed: the server took too long. The first %@ is the server's host name; %lld is the number of seconds waited.",
@@ -423,6 +445,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Los archivos %@ no admiten marcas de capítulo, así que sus %lld de marcas de capítulo no se incluyen en este archivo."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Los archivos %@ no admiten marcas de capítulo, así que su marca de capítulo no se incluye en este archivo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Los archivos %@ no admiten marcas de capítulo, así que sus %lld marcas de capítulo no se incluyen en este archivo."
                 }
               }
             }
@@ -540,7 +586,15 @@
       "comment" : "Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title."
     },
     "%@ has no transcript to clean up. Transcribe its audio first." : {
-      "comment" : "Alert shown when Clean Up Transcript is chosen for an audiobook with no transcript. %@ is the audiobook's title."
+      "comment" : "Alert shown when Clean Up Transcript is chosen for an audiobook with no transcript. %@ is the audiobook's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ no tiene una transcripción que limpiar. Transcribe primero su audio."
+          }
+        }
+      }
     },
     "%@ has no transcript to search." : {
       "comment" : "Said instead of opening Search in Book for an audiobook that has no transcript, where TextMouth cannot make one. %@ is the book's title."
@@ -657,6 +711,12 @@
             "state" : "new",
             "value" : "%1$@ in %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ en %2$@."
+          }
         }
       }
     },
@@ -687,13 +747,37 @@
       "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used on an episode or article of a feed in a folder. %@ is its title."
     },
     "%@ is being transcribed. Cancel it, or attach the transcript once it finishes." : {
-      "comment" : "Alert shown when Attach Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title."
+      "comment" : "Alert shown when Attach Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ se está transcribiendo. Cancélalo o adjunta la transcripción cuando termine."
+          }
+        }
+      }
     },
     "%@ is being transcribed. Cancel it, or delete the transcript once it finishes." : {
-      "comment" : "Alert shown when Delete Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title."
+      "comment" : "Alert shown when Delete Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ se está transcribiendo. Cancélalo o elimina la transcripción cuando termine."
+          }
+        }
+      }
     },
     "%@ is being transcribed. Clean up its transcript once that finishes." : {
-      "comment" : "Alert shown when Clean Up Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title."
+      "comment" : "Alert shown when Clean Up Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ se está transcribiendo. Limpia su transcripción cuando termine."
+          }
+        }
+      }
     },
     "%@ is filed %@ in %@ and %@ in %@." : {
       "comment" : "A difference found by Compare Libraries. %1$@ is a book's title, %2$@ says where this copy files it (at the top of the library, or in a folder), %3$@ is this copy, %4$@ says where the other copy files it, %5$@ is the other copy.",
@@ -763,7 +847,15 @@
       "comment" : "First sentence of why a file was not saved: it is only in the cloud. %@ is the file's name, which stays as written."
     },
     "%@ is open in a reader. Close it, then choose Edit Audio again." : {
-      "comment" : "Said when a book's reader did not close, so the audio editor can't open. %@ is the book's title. \"Edit Audio\" is the name of the command."
+      "comment" : "Said when a book's reader did not close, so the audio editor can't open. %@ is the book's title. \"Edit Audio\" is the name of the command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ está abierto en un lector. Ciérralo y elige Editar audio de nuevo."
+          }
+        }
+      }
     },
     "%@ is set to be read as “%@”, a text encoding this version of TextMouth can't read." : {
       "comment" : "First sentence of why a book set to an unknown text encoding cannot be read. %1$@ names the book, as in “Ledger”, and %2$@ is the encoding's stored identifier.",
@@ -805,10 +897,26 @@
       "comment" : "Message when the user asks to edit the manifest of a book that is not an audiobook of tracks. %@ is the book's title."
     },
     "%@ isn't an audiobook; only audiobooks can be transcribed." : {
-      "comment" : "Alert shown when Transcribe Audio is chosen for a book that is text, not audio. %@ is the book's title."
+      "comment" : "Alert shown when Transcribe Audio is chosen for a book that is text, not audio. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ no es un audiolibro; solo se pueden transcribir audiolibros."
+          }
+        }
+      }
     },
     "%@ isn't available, so TextMouth can't record from it. Choose another microphone." : {
-      "comment" : "Error in the Record window when the chosen microphone is not available. %@ is the microphone's name."
+      "comment" : "Error in the Record window when the chosen microphone is not available. %@ is the microphone's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ no está disponible, así que TextMouth no puede grabar con él. Elige otro micrófono."
+          }
+        }
+      }
     },
     "%@ isn't downloaded." : {
       "comment" : "Shown and spoken when the book's download is cancelled. %@ is the book's title.\nWhy an operation left one book as it is: its files are only in the cloud. %@ is the book's title."
@@ -875,6 +983,12 @@
             "state" : "new",
             "value" : "%1$@ moved to position %2$lld of %3$lld"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ pasó a la posición %2$lld de %3$lld"
+          }
         }
       }
     },
@@ -907,7 +1021,15 @@
       }
     },
     "%@ not recording" : {
-      "comment" : "Announcement of the microphone level while nothing is recording. %@ is the level's label."
+      "comment" : "Announcement of the microphone level while nothing is recording. %@ is the level's label.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ sin grabar"
+          }
+        }
+      }
     },
     "%@ now waits before %@, in case it is pressed twice." : {
       "comment" : "Announced by VoiceOver after a key's double press was given to an action: the key's single press now waits a moment before it acts, in case a second press follows. %1$@ is the key in words, such as \"J\", and %2$@ is the name of the action of its single press.",
@@ -928,6 +1050,12 @@
             "state" : "new",
             "value" : "%1$@ of %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ de %2$@"
+          }
         }
       }
     },
@@ -938,6 +1066,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ of %2$@ transcribed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ de %2$@ transcritos"
           }
         }
       }
@@ -983,7 +1117,15 @@
       "comment" : "A book's reading progress as VoiceOver says it. %@ is a whole number, such as 42."
     },
     "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet." : {
-      "comment" : "Said when Edit Audio… is chosen for a book whose sections are stretches of its audio tracks. %@ is the book's title."
+      "comment" : "Said when Edit Audio… is chosen for a book whose sections are stretches of its audio tracks. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ reproduce secciones que son tramos de sus pistas, así que todavía no se pueden editar sus pistas."
+          }
+        }
+      }
     },
     "%@ read" : {
       "comment" : "A book's reading progress as VoiceOver says it when the row also says a download's percentage. %@ is the progress, such as 42 percent."
@@ -1020,10 +1162,26 @@
       }
     },
     "%@ reset to its default" : {
-      "comment" : "Said as a premade filter preset is put back as it came. %@ is the preset's name."
+      "comment" : "Said as a premade filter preset is put back as it came. %@ is the preset's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ volvió a su valor predeterminado"
+          }
+        }
+      }
     },
     "%@ seconds" : {
-      "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number.\nA number of seconds with decimals inside a spoken duration, such as \"4.2 seconds\" in \"12 minutes, 4.2 seconds\". %@ is the already formatted number."
+      "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number.\nA number of seconds with decimals inside a spoken duration, such as \"4.2 seconds\" in \"12 minutes, 4.2 seconds\". %@ is the already formatted number.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ segundos"
+          }
+        }
+      }
     },
     "%@ set aside a conflicting copy of %@: “%@”, in %@." : {
       "comment" : "First sentence of the report of a conflicting copy. %1$@ is the sync service's name; %2$@ is a phrase naming the original file; %3$@ is the copy's name; %4$@ is the folder's path.",
@@ -1037,7 +1195,15 @@
       }
     },
     "%@ silent" : {
-      "comment" : "Announcement of the microphone level when no sound reaches TextMouth. %@ is the level's label."
+      "comment" : "Announcement of the microphone level when no sound reaches TextMouth. %@ is the level's label.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ en silencio"
+          }
+        }
+      }
     },
     "%@ so far" : {
       "comment" : "How far a feed download's file has come, when its size is not known. %@ is the bytes received so far with their unit, such as 12 MB."
@@ -1123,7 +1289,15 @@
       "comment" : "Why a feed's automatic refresh did not run now: the network has data limits. %@ is the feed's title or server."
     },
     "%@ was connected, so recordings use it." : {
-      "comment" : "Said by the Record window when a microphone connects and recordings now use it. %@ is the microphone's name."
+      "comment" : "Said by the Record window when a microphone connects and recordings now use it. %@ is the microphone's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ se conectó, así que las grabaciones lo usan."
+          }
+        }
+      }
     },
     "%@ was connected; choose it in the %@ pop-up to record from it." : {
       "comment" : "Said by the Record window when one microphone connects and is added to the Microphone pop-up. %1$@ is the microphone's name and %2$@ is the pop-up's label.",
@@ -1133,11 +1307,25 @@
             "state" : "new",
             "value" : "%1$@ was connected; choose it in the %2$@ pop-up to record from it."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ se conectó; elígelo en el menú emergente %2$@ para grabar con él."
+          }
         }
       }
     },
     "%@ was disconnected, so recording stopped. What was recorded is kept." : {
-      "comment" : "Error in the Record window when the microphone was unplugged while recording. %@ is the microphone's name."
+      "comment" : "Error in the Record window when the microphone was unplugged while recording. %@ is the microphone's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ se desconectó, así que la grabación se detuvo. Lo grabado se conserva."
+          }
+        }
+      }
     },
     "%@ was disconnected, so recordings use %@." : {
       "comment" : "Said by the Record window when the chosen microphone is unplugged and another takes its place. %1$@ is the microphone that went away and %2$@ is the one recordings use now.",
@@ -1147,11 +1335,25 @@
             "state" : "new",
             "value" : "%1$@ was disconnected, so recordings use %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ se desconectó, así que las grabaciones usan %2$@."
+          }
         }
       }
     },
     "%@ was disconnected. Connect a microphone to record." : {
-      "comment" : "Said by the Record window when the chosen microphone is unplugged and no other is connected. %@ is the microphone's name."
+      "comment" : "Said by the Record window when the chosen microphone is unplugged and no other is connected. %@ is the microphone's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ se desconectó. Conecta un micrófono para grabar."
+          }
+        }
+      }
     },
     "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was." : {
       "comment" : "Message when adding a book back to the library stopped because no backup of the text it held could be made. %@ is the book's title."
@@ -1193,6 +1395,12 @@
             "state" : "new",
             "value" : "%1$@ were connected; choose one in the %2$@ pop-up to record from it."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ se conectaron; elige uno en el menú emergente %2$@ para grabar con él."
+          }
         }
       }
     },
@@ -1222,6 +1430,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : "%1$@%2$@ dB"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : "%1$@%2$@ dB"
           }
         }
@@ -1267,6 +1481,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@, %2$@, at %3$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, %2$@, en %3$@"
           }
         }
       }
@@ -1432,6 +1652,12 @@
             "state" : "new",
             "value" : "%1$@, at %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, en %2$@."
+          }
         }
       }
     },
@@ -1553,10 +1779,26 @@
       }
     },
     "%@-bit floating-point" : {
-      "comment" : "An audio file's sample form, an adjective of \"samples\" in a refusal such as \"uses 16-bit floating-point samples\". %@ is the number of bits, an identifier written without digit grouping."
+      "comment" : "An audio file's sample form, an adjective of \"samples\" in a refusal such as \"uses 16-bit floating-point samples\". %@ is the number of bits, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "de punto flotante de %@ bits"
+          }
+        }
+      }
     },
     "%@-bit integer" : {
-      "comment" : "An audio file's sample form, an adjective of \"samples\" in a refusal such as \"uses 64-bit integer samples\". %@ is the number of bits, an identifier written without digit grouping."
+      "comment" : "An audio file's sample form, an adjective of \"samples\" in a refusal such as \"uses 64-bit integer samples\". %@ is the number of bits, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "enteras de %@ bits"
+          }
+        }
+      }
     },
     "%@." : {
       "comment" : "A spoken clause of an announcement ended with a full stop. %@ is the clause. English adds a full stop; change only the mark.\nEnds a line about waiting downloads as a sentence of its own. %@ is the line, such as \"2 waiting for room on this Mac\".\nEnds a line of a progress display with its full stop, so VoiceOver reads the lines as sentences. %@ is the line.\nEnds a sentence with its full stop. %@ is the sentence without it. Chinese and Japanese use their own full stop here.\nEnds a title with a full stop so it reads as a sentence before the question that follows. %@ is the title.\nEnds the notifications setting's hint with a full stop, before the sentence that says notifications are refused. %@ is the hint, without its full stop.\nLibrary view editor: ends a filter's description with a full stop. %@ is the whole description.\nLibrary view editor: the note shown in place of the sort choice while the view lists feeds alone. %@ is a sentence without its full stop, saying feeds are always listed by title; this adds the full stop.\nMakes a clause into a whole sentence by adding its full stop. %@ is the clause, already starting with a capital letter.\nVoiceOver announcement of Next in Folder or Previous in Folder when no item lies that way. %@ is a sentence without its full stop, such as \"No more books in folder\"; this adds the full stop."
@@ -1605,6 +1847,12 @@
             "state" : "new",
             "value" : "%1$@: %2$@ dB peak, %3$@ dB average, %4$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@: %2$@ dB de pico, %3$@ dB de promedio, %4$@"
+          }
         }
       }
     },
@@ -1615,6 +1863,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@: %2$@, changed from its default"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@: %2$@, modificado respecto al valor predeterminado"
           }
         }
       }
@@ -1742,6 +1996,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld por ciento transcrito."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld por ciento transcrito."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld por ciento transcrito."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1784,7 +2062,15 @@
       "comment" : "What VoiceOver says once Check Feed found no new items, in a feed of episodes and articles. %@ is the feed's title."
     },
     "%@: not recording" : {
-      "comment" : "The microphone level line of the Record window while nothing is recording. %@ is the level's label."
+      "comment" : "The microphone level line of the Record window while nothing is recording. %@ is the level's label.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: sin grabar"
+          }
+        }
+      }
     },
     "%@: off while Never collapse is checked" : {
       "comment" : "A choice of the pop-up button that sets how a run of one symbol is read, while the Never collapse checkbox is checked. %@ is the name of the style, Say how many or Leave out. Never collapse is the name of the checkbox."
@@ -1836,7 +2122,15 @@
       }
     },
     "%@: silent" : {
-      "comment" : "The microphone level line of the Record window when no sound reaches TextMouth. %@ is the level's label."
+      "comment" : "The microphone level line of the Record window when no sound reaches TextMouth. %@ is the level's label.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: en silencio"
+          }
+        }
+      }
     },
     "%@; %@" : {
       "comment" : "Joins two groups of a PDF's pages that text recognition (OCR) could not run on, each with its reason: the pages and reason, a semicolon, then the next.\nJoins two parts of a status line with a semicolon. %1$@ is the text so far and %2$@ the next part. English puts a semicolon and a space between them.\nJoins two parts of the audio editor's status line. %1$@ is the parts so far and %2$@ the next part. A semicolon keeps parts apart from the commas inside a spoken time.\nLibrary view editor: adds one more clause to a filter's description. %1$@ is the description so far and %2$@ the clause added after a semicolon.",
@@ -1844,6 +2138,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : "%1$@; %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : "%1$@; %2$@"
           }
         }
@@ -2768,6 +3068,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de correcciones"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld corrección"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld correcciones"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2791,6 +3115,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de días"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld día"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld días"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2810,6 +3158,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld decibels"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de decibelios"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld decibelio"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld decibelios"
                 }
               }
             }
@@ -2998,6 +3370,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se deshacen %lld de ediciones. Rehacer las recupera hasta que hagas otra edición."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se deshace %lld edición. Rehacer la recupera hasta que hagas otra edición."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se deshacen %lld ediciones. Rehacer las recupera hasta que hagas otra edición."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3021,6 +3417,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de ediciones, todas guardadas"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld edición, guardada"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ediciones, todas guardadas"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3040,6 +3460,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld edits, not all saved"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de ediciones, no todas guardadas"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld edición, sin guardar"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ediciones, no todas guardadas"
                 }
               }
             }
@@ -3962,6 +4406,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld por ciento"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld por ciento"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld por ciento"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3984,6 +4452,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld percent, %@"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld por ciento, %@"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld por ciento, %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld por ciento, %@"
                 }
               }
             }
@@ -4195,6 +4687,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de oraciones"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld oración"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld oraciones"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4310,6 +4826,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de pasajes con tiempos eran demasiado largos y se recortaron."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld pasaje con tiempos era demasiado largo y se recortó."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld pasajes con tiempos eran demasiado largos y se recortaron."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4329,6 +4869,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld timed passages were unreadable and left out."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de pasajes con tiempos eran ilegibles y se omitieron."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld pasaje con tiempos era ilegible y se omitió."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld pasajes con tiempos eran ilegibles y se omitieron."
                 }
               }
             }
@@ -4517,6 +5081,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de palabras"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld palabra"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld palabras"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4682,7 +5270,15 @@
       "comment" : "Advice after the refusal of a transcript file chosen as a book. %@ is the file's extension without its dot. \"Attach Transcript…\" is a command of the Book menu: keep its name the same as that command's and the menu's."
     },
     "A Little Faster" : {
-      "comment" : "Title of a premade audio filter preset: plays the audio a quarter faster without raising its pitch."
+      "comment" : "Title of a premade audio filter preset: plays the audio a quarter faster without raising its pitch.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un poco más rápido"
+          }
+        }
+      }
     },
     "A New Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays.",
@@ -4705,10 +5301,26 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Delete…'s hint for a built-in view, when it is dimmed."
     },
     "A chapter marker needs a title." : {
-      "comment" : "Problem shown when the title of a chapter marker to insert in the audio editor is blank."
+      "comment" : "Problem shown when the title of a chapter marker to insert in the audio editor is blank.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Una marca de capítulo necesita un título."
+          }
+        }
+      }
     },
     "A copy was kept in the book's package. Start over with no edits, or cancel." : {
-      "comment" : "Explains the question about an unreadable audio edit history: what Start Over and Cancel do."
+      "comment" : "Explains the question about an unreadable audio edit history: what Start Over and Cancel do.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se conservó una copia en el paquete del libro. Empieza de nuevo sin ediciones, o cancela."
+          }
+        }
+      }
     },
     "A destination folder path is invalid." : {
       "comment" : "Error shown when books or folders cannot be moved because the destination folder's path is not a valid place in the library."
@@ -4728,7 +5340,15 @@
       }
     },
     "A filter preset needs a name." : {
-      "comment" : "Said when a filter preset is saved with a blank name."
+      "comment" : "Said when a filter preset is saved with a blank name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un preajuste de filtro necesita un nombre."
+          }
+        }
+      }
     },
     "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth." : {
       "comment" : "Error shown when a folder's new name is refused: the name is empty, is a single or double dot, ends in .tmb, or is one TextMouth keeps for itself. The quoted pieces are literal text."
@@ -4768,25 +5388,57 @@
       }
     },
     "A newer TextMouth edited this audio, so this version leaves its edits alone." : {
-      "comment" : "Said when the book's saved edit history was written by a later version of TextMouth than this one."
+      "comment" : "Said when the book's saved edit history was written by a later version of TextMouth than this one.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Una versión más reciente de TextMouth editó este audio, así que esta versión no modifica sus ediciones."
+          }
+        }
+      }
     },
     "A number from 2 to 99" : {
       "comment" : "VoiceOver hint of the field that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols."
     },
     "A quote isn't closed in “%@”." : {
-      "comment" : "Problem found in a typed filter chain: a single quote is opened and never closed. %@ is the text of the part holding it."
+      "comment" : "Problem found in a typed filter chain: a single quote is opened and never closed. %@ is the text of the part holding it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Falta cerrar unas comillas en “%@”."
+          }
+        }
+      }
     },
     "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol." : {
       "comment" : "Caption under the controls of Settings, Text, Repeated Symbols that explains what a run is and that only speech changes."
     },
     "A stretch of the edits runs past the end of “%@”." : {
-      "comment" : "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name."
+      "comment" : "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un tramo de las ediciones llega más allá del final de “%@”."
+          }
+        }
+      }
     },
     "A symbolic link cannot be deleted as a managed book package." : {
       "comment" : "Why a book's files were not deleted: its package is a symbolic link, and deleting it could delete another book. Follows \"Import failed: \"."
     },
     "A transcript is being attached to %@. Transcribe it once that finishes." : {
-      "comment" : "Alert shown when Transcribe Audio is chosen for an audiobook that a transcript is being attached to. %@ is the audiobook's title."
+      "comment" : "Alert shown when Transcribe Audio is chosen for an audiobook that a transcript is being attached to. %@ is the audiobook's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se está adjuntando una transcripción a %@. Transcríbelo cuando termine."
+          }
+        }
+      }
     },
     "A view holds at most %lld conditions." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint at the limit, when it is dimmed. Placeholders in order: LibraryViewFilter.conditionLimit.",
@@ -4990,7 +5642,15 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Adds a marker at the current position."
     },
     "Add Preset" : {
-      "comment" : "Button in the filter presets sheet that adds a new filter preset."
+      "comment" : "Button in the filter presets sheet that adds a new filter preset.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agregar preajuste"
+          }
+        }
+      }
     },
     "Add Rule" : {
       "comment" : "Title of the button in the Substitutions settings that opens the editor for a new substitution rule."
@@ -5035,7 +5695,15 @@
       "comment" : "Name of the book information sheet's row that shows the date the book was added to the library."
     },
     "Added %@" : {
-      "comment" : "Said as a filter preset is added. %@ is the preset's name.\nSpeak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\"."
+      "comment" : "Said as a filter preset is added. %@ is the preset's name.\nSpeak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agregado: %@"
+          }
+        }
+      }
     },
     "Added %@, %lld of %lld." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What VoiceOver says once a new view is added, with its place. Placeholders in order: name, number, count.",
@@ -5156,6 +5824,12 @@
             "state" : "new",
             "value" : "After a pause of %1$@, at %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tras una pausa de %1$@, en %2$@."
+          }
         }
       }
     },
@@ -5197,6 +5871,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los %lld de archivos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "El único archivo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los %lld archivos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -5222,16 +5920,40 @@
       "comment" : "VoiceOver announcement after the sort is applied to every subfolder. %@ is the sort, such as \"Title, ascending\"."
     },
     "Already at the end." : {
-      "comment" : "Said when a step forward in the audio editor can go no further."
+      "comment" : "Said when a step forward in the audio editor can go no further.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ya estás al final."
+          }
+        }
+      }
     },
     "Already at the start." : {
-      "comment" : "Said when a step back in the audio editor can go no further."
+      "comment" : "Said when a step back in the audio editor can go no further.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ya estás al principio."
+          }
+        }
+      }
     },
     "Already in Library" : {
       "comment" : "Title of the library's alert as a ZIP batch that found books but added none, because the library already held every one. Title case."
     },
     "Also write the markers as Audacity labels" : {
-      "comment" : "Label of the checkbox in the audio editor's Export Audio sheet that writes the markers as a label file too. Audacity is the name of an audio editing program."
+      "comment" : "Label of the checkbox in the audio editor's Export Audio sheet that writes the markers as a label file too. Audacity is the name of an audio editing program.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Escribir también las marcas como etiquetas de Audacity"
+          }
+        }
+      }
     },
     "Also write to the library's copy of the EPUB file" : {
       "comment" : "Label of the metadata editor's switch that also writes the edited title, author, publisher and date into the library's own copy of the book's EPUB file."
@@ -5258,13 +5980,29 @@
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to text TextMouth did not write, said only for a book whose content.md holds such text: an edit made with Edit Text, or a save no edit took, either kept as Replace Existing keeps it (ImportDecisionWording.replacingKeepsTextSentence)."
     },
     "An episode in its feed can't be edited." : {
-      "comment" : "Said when Edit Audio… reaches a podcast episode that lives in its feed's folder, which can't be edited."
+      "comment" : "Said when Edit Audio… reaches a podcast episode that lives in its feed's folder, which can't be edited.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un episodio dentro de su canal no se puede editar."
+          }
+        }
+      }
     },
     "An episode's details come from its feed; %@ makes it a book you can edit." : {
       "comment" : "The line under the heading of an episode's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command."
     },
     "An option of the %@ filter has a value but no name." : {
-      "comment" : "Problem found in a typed filter chain: an equals sign with nothing before it, in one filter's options. %@ is the filter's name, such as volume."
+      "comment" : "Problem found in a typed filter chain: an equals sign with nothing before it, in one filter's options. %@ is the filter's name, such as volume.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Una opción del filtro %@ tiene valor pero no nombre."
+          }
+        }
+      }
     },
     "An unknown error occurred." : {
       "comment" : "Message of an alert about a problem, when nothing more is known about it."
@@ -5335,6 +6073,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Anunciar el nivel cada %lld de segundos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Anunciar el nivel cada %lld segundo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Anunciar el nivel cada %lld segundos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -5360,7 +6122,15 @@
       "comment" : "VoiceOver hint of the Add gesture step button in the Miscellaneous settings."
     },
     "Apple Lossless (M4A)" : {
-      "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding Apple Lossless audio. Apple Lossless is Apple's name for the codec."
+      "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding Apple Lossless audio. Apple Lossless is Apple's name for the codec.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apple Lossless (M4A)"
+          }
+        }
+      }
     },
     "Applied %@ to %@." : {
       "comment" : "Said as a filter has been applied to a selection in the audio editor. %1$@ is the filter preset's name and %2$@ the selection's length in words.",
@@ -5370,17 +6140,39 @@
             "state" : "new",
             "value" : "Applied %1$@ to %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se aplicó %1$@ a %2$@."
+          }
         }
       }
     },
     "Applied %@ to all of the audio." : {
-      "comment" : "Said as a filter has been applied to the whole audio in the audio editor. %@ is the filter preset's name."
+      "comment" : "Said as a filter has been applied to the whole audio in the audio editor. %@ is the filter preset's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se aplicó %@ a todo el audio."
+          }
+        }
+      }
     },
     "Applies only to a view that lists episodes or articles." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint while the view lists no episodes or articles, when it is dimmed (review of October 31, 2026, finding 6)."
     },
     "Applies the filter." : {
-      "comment" : "Hint of the audio editor's Apply button while a press applies the filter."
+      "comment" : "Hint of the audio editor's Apply button while a press applies the filter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aplica el filtro."
+          }
+        }
+      }
     },
     "Applies the rules to text before it is spoken" : {
       "comment" : "VoiceOver hint of the Enable text substitutions switch in the Substitutions settings."
@@ -5398,16 +6190,48 @@
       "comment" : "VoiceOver hint of the Skip finished items switch in a feed's Feed Info."
     },
     "Apply" : {
-      "comment" : "Button of the Clean Up Transcript sheet that makes the corrections in the transcript.\nButton of the audio editor's Apply Filter sheet that applies the filter."
+      "comment" : "Button of the Clean Up Transcript sheet that makes the corrections in the transcript.\nButton of the audio editor's Apply Filter sheet that applies the filter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aplicar"
+          }
+        }
+      }
     },
     "Apply Filter" : {
-      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\"; also the title of the audio editor's filter sheet."
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\"; also the title of the audio editor's filter sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aplicar filtro"
+          }
+        }
+      }
     },
     "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above." : {
-      "comment" : "Explains the filter presets sheet. Apply Filter is the audio editor's command. \"highpass=f=80,volume=3dB\" is filter syntax and stays as it is. ffmpeg is the name of a program. \"turned on above\" refers to the Use ffmpeg for filters switch in Storage settings."
+      "comment" : "Explains the filter presets sheet. Apply Filter is the audio editor's command. \"highpass=f=80,volume=3dB\" is filter syntax and stays as it is. ffmpeg is the name of a program. \"turned on above\" refers to the Use ffmpeg for filters switch in Storage settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aplicar filtro muestra estos en este orden. Cada uno es una cadena de filtros con la sintaxis de ffmpeg, como highpass=f=80,volume=3dB. TextMouth ejecuta sus propios filtros, y también todos los de ffmpeg cuando ffmpeg está instalado y activado arriba."
+          }
+        }
+      }
     },
     "Apply Filter plays a preview first, and applies when you choose Apply again." : {
-      "comment" : "Hint of the Preview filters before applying switch in Storage settings. Apply Filter and Apply are the audio editor's command and button."
+      "comment" : "Hint of the Preview filters before applying switch in Storage settings. Apply Filter and Apply are the audio editor's command and button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aplicar filtro reproduce primero una vista previa y aplica el filtro cuando eliges Aplicar de nuevo."
+          }
+        }
+      }
     },
     "Apply Filter…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the choice of audio filters to apply to the selection."
@@ -5416,10 +6240,26 @@
       "comment" : "Item of the Sort menu that gives every subfolder of the folder shown the sort chosen here."
     },
     "Apply to" : {
-      "comment" : "Label of the choice in the audio editor's Apply Filter sheet of what to filter: the selection or the whole file."
+      "comment" : "Label of the choice in the audio editor's Apply Filter sheet of what to filter: the selection or the whole file.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aplicar a"
+          }
+        }
+      }
     },
     "Applying %@." : {
-      "comment" : "Said as a filter begins to be applied in the audio editor. %@ is the filter preset's name."
+      "comment" : "Said as a filter begins to be applied in the audio editor. %@ is the filter preset's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aplicando %@."
+          }
+        }
+      }
     },
     "Articles" : {
       "comment" : "Label of the count of a feed's articles in Feed Info. Title case.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .articles."
@@ -5486,7 +6326,15 @@
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: TextMouth asks what to do with the original file after each import."
     },
     "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio." : {
-      "comment" : "VoiceOver hint of the checkbox that offers transcribing after an import. Transcribe Audio is the command's name."
+      "comment" : "VoiceOver hint of the checkbox that offers transcribing after an import. Transcribe Audio is the command's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pregunta tras cada importación de un audiolibro si quieres transcribirlo. Si está desactivado, los audiolibros solo se transcriben con Transcribir audio."
+          }
+        }
+      }
     },
     "Asks before deleting." : {
       "comment" : "First sentence of the VoiceOver hint of a delete command that asks before it deletes."
@@ -5530,13 +6378,37 @@
       "comment" : "Name of the punctuation key \"@\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + At Sign\"."
     },
     "Attach" : {
-      "comment" : "Button of the file panel opened by Attach Transcript, which attaches the chosen file."
+      "comment" : "Button of the file panel opened by Attach Transcript, which attaches the chosen file.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntar"
+          }
+        }
+      }
     },
     "Attach Transcript" : {
-      "comment" : "Title of the alert saying why Attach Transcript did nothing or why the chosen file was not attached."
+      "comment" : "Title of the alert saying why Attach Transcript did nothing or why the chosen file was not attached.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntar transcripción"
+          }
+        }
+      }
     },
     "Attach Transcript…" : {
-      "comment" : "Menu item that gives an audiobook a transcript from a WebVTT or SubRip file instead of transcribing it. The ellipsis means a file panel follows."
+      "comment" : "Menu item that gives an audiobook a transcript from a WebVTT or SubRip file instead of transcribing it. The ellipsis means a file panel follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntar transcripción…"
+          }
+        }
+      }
     },
     "Attached from %@ files at import, on %@." : {
       "comment" : "Sentence saying a transcript came from files found beside the audio when the book was imported. %1$@ is the files' formats, such as \"WebVTT and SubRip\"; %2$@ is a date.",
@@ -5545,6 +6417,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Attached from %1$@ files at import, on %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntada desde archivos %1$@ al importar, el %2$@."
           }
         }
       }
@@ -5557,14 +6435,36 @@
             "state" : "new",
             "value" : "Attached from a %1$@ file on %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntada desde un archivo %1$@ el %2$@."
+          }
         }
       }
     },
     "Attached from a file on %@." : {
-      "comment" : "Sentence saying a transcript came from a file the user attached, whose name and format are not known. %@ is a date, such as \"October 30, 2026\"."
+      "comment" : "Sentence saying a transcript came from a file the user attached, whose name and format are not known. %@ is a date, such as \"October 30, 2026\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntada desde un archivo el %@."
+          }
+        }
+      }
     },
     "Attached from files at import, on %@." : {
-      "comment" : "Sentence saying a transcript came from files found beside the audio when the book was imported, whose names and formats are not known. %@ is a date."
+      "comment" : "Sentence saying a transcript came from files found beside the audio when the book was imported, whose names and formats are not known. %@ is a date.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntada desde archivos al importar, el %@."
+          }
+        }
+      }
     },
     "Attached from “%@” at import, on %@." : {
       "comment" : "Sentence saying a transcript came from a file found beside the audio when the book was imported. %1$@ is the file's name; %2$@ is a date.",
@@ -5573,6 +6473,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Attached from “%1$@” at import, on %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntada desde “%1$@” al importar, el %2$@."
           }
         }
       }
@@ -5585,11 +6491,25 @@
             "state" : "new",
             "value" : "Attached from “%1$@” on %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntada desde “%1$@” el %2$@."
+          }
         }
       }
     },
     "Attached on %@." : {
-      "comment" : "Sentence saying when a transcript was attached, when its origin is not known. %@ is a date."
+      "comment" : "Sentence saying when a transcript was attached, when its origin is not known. %@ is a date.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntada el %@."
+          }
+        }
+      }
     },
     "Attached “%@” to %@: %@." : {
       "comment" : "What VoiceOver hears once a transcript file is attached. %1$@ is the file's name; %2$@ is the audiobook's title; %3$@ is the number of words, such as \"7,077 words\".",
@@ -5598,6 +6518,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Attached “%1$@” to %2$@: %3$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se adjuntó “%1$@” a %2$@: %3$@."
           }
         }
       }
@@ -5609,6 +6535,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Attaching “%1$@” to %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adjuntando “%1$@” a %2$@."
           }
         }
       }
@@ -5640,13 +6572,29 @@
       "comment" : "Name of the book format of an audiobook, a book made of audio files, shown in a book's information, the format column, and the duplicate finder.\nPart of a spoken audio export's file name, after the book's title: the whole book, as in \"Middlemarch - Audio\".\nThe name of the Audio checkbox in the Export dialog: the book's audio."
     },
     "Audio Editing" : {
-      "comment" : "Heading of the Audio Editing group in Storage settings: what happens to originals of edited audio, ffmpeg, and the audio editor's behaviour."
+      "comment" : "Heading of the Audio Editing group in Storage settings: what happens to originals of edited audio, ffmpeg, and the audio editor's behaviour.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Edición de audio"
+          }
+        }
+      }
     },
     "Audio Editor" : {
       "comment" : "Heading of the group of the audio editor's keyboard shortcuts in Settings."
     },
     "Audio Info" : {
-      "comment" : "Title of the audio editor's Audio Info sheet."
+      "comment" : "Title of the audio editor's Audio Info sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Información del audio"
+          }
+        }
+      }
     },
     "Audio Info…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Shows information about the audio, such as its format and length."
@@ -5667,13 +6615,37 @@
       "comment" : "Caption under the Keep Originals switch while it is off."
     },
     "Audio: %@." : {
-      "comment" : "Line of the Transcribe Audio sheet giving the audiobook's length. %@ is the length in words, such as \"6 hours, 12 minutes, 4 seconds\"."
+      "comment" : "Line of the Transcribe Audio sheet giving the audiobook's length. %@ is the length in words, such as \"6 hours, 12 minutes, 4 seconds\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audio: %@."
+          }
+        }
+      }
     },
     "Audio: length not known yet." : {
-      "comment" : "Line of the Transcribe Audio sheet before the audiobook's length is known."
+      "comment" : "Line of the Transcribe Audio sheet before the audiobook's length is known.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audio: duración aún desconocida."
+          }
+        }
+      }
     },
     "Audiobook Loudness" : {
-      "comment" : "Title of a premade audio filter preset: sets the whole audio's loudness to a level for audiobooks."
+      "comment" : "Title of a premade audio filter preset: sets the whole audio's loudness to a level for audiobooks.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sonoridad para audiolibros"
+          }
+        }
+      }
     },
     "Author" : {
       "comment" : "Name of a way to sort the books: by the author. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.\nName of the book information sheet's field for a book's author; VoiceOver reads it as the field's label."
@@ -5774,6 +6746,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Before: %1$@ After: %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Antes: %1$@ Después: %2$@"
           }
         }
       }
@@ -6219,13 +7197,29 @@
       "comment" : "The label of the stepper in the Export dialog's braille options that sets how many braille cells each line holds."
     },
     "Chain" : {
-      "comment" : "Label of the field that holds a filter preset's chain of filters, and of the line that shows it in the audio editor's Apply Filter."
+      "comment" : "Label of the field that holds a filter preset's chain of filters, and of the line that shows it in the audio editor's Apply Filter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cadena"
+          }
+        }
+      }
     },
     "Change Location..." : {
       "comment" : "Button in Storage settings that opens a folder chooser to move the library. The three dots show that a chooser opens."
     },
     "Change Volume by %@" : {
-      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": changing the volume. %@ is the change with its sign, such as \"+3 dB\"."
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": changing the volume. %@ is the change with its sign, such as \"+3 dB\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cambiar volumen en %@"
+          }
+        }
+      }
     },
     "Change this book's forward and backward navigation unit" : {
       "comment" : "Help text of the playback bar's menu that sets the one unit by which this book moves forward and backward."
@@ -6237,7 +7231,15 @@
       "comment" : "What VoiceOver calls the reader toolbar's button that opens a text book's own voice settings."
     },
     "Changes by rule" : {
-      "comment" : "Heading and VoiceOver label of the list of changes in the Clean Up Transcript sheet, one group for each rule."
+      "comment" : "Heading and VoiceOver label of the list of changes in the Clean Up Transcript sheet, one group for each rule.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cambios por regla"
+          }
+        }
+      }
     },
     "Changes not saved" : {
       "comment" : "Storage settings status: some changes could not be saved."
@@ -6346,7 +7348,15 @@
       }
     },
     "Chapter %@" : {
-      "comment" : "A chapter as the audio editor's list, its row's buttons, and the default title of a new chapter marker name it. %@ is the chapter's number, an identifier written without digit grouping."
+      "comment" : "A chapter as the audio editor's list, its row's buttons, and the default title of a new chapter marker name it. %@ is the chapter's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Capítulo %@"
+          }
+        }
+      }
     },
     "Chapter %@ could not be played: %@ from the book's package." : {
       "comment" : "First sentence of the message when a chapter's audio file is missing from the book's package. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file chapter3.mp3 is missing\".",
@@ -6436,6 +7446,12 @@
             "state" : "new",
             "value" : "Chapter %1$@: %2$@, at %3$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Capítulo %1$@: %2$@, en %3$@"
+          }
         }
       }
     },
@@ -6447,20 +7463,50 @@
             "state" : "new",
             "value" : "Chapter %1$@: %2$@, at %3$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Capítulo %1$@: %2$@, en %3$@."
+          }
         }
       }
     },
     "Chapter Markers" : {
-      "comment" : "Heading of the chapter markers in the audio editor's list."
+      "comment" : "Heading of the chapter markers in the audio editor's list.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcas de capítulo"
+          }
+        }
+      }
     },
     "Chapter Not Downloaded" : {
       "comment" : "Title of the reader's alert shown when a chapter of an audiobook could not be downloaded from the cloud."
     },
     "Chapter marker renamed “%@”." : {
-      "comment" : "Said as a chapter marker is renamed in the audio editor. %@ is its new title."
+      "comment" : "Said as a chapter marker is renamed in the audio editor. %@ is its new title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca de capítulo renombrada como “%@”."
+          }
+        }
+      }
     },
     "Chapter marker “%@” removed." : {
-      "comment" : "Said as a chapter marker is removed in the audio editor. %@ is its title."
+      "comment" : "Said as a chapter marker is removed in the audio editor. %@ is its title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca de capítulo “%@” quitada."
+          }
+        }
+      }
     },
     "Chapter marker “%@” set at %@." : {
       "comment" : "Said as a chapter marker is set in the audio editor. %1$@ is its title and %2$@ its time in words.",
@@ -6469,6 +7515,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Chapter marker “%1$@” set at %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca de capítulo “%1$@” puesta en %2$@."
           }
         }
       }
@@ -6510,7 +7562,15 @@
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value while the book's file is read to learn what it says of its encoding."
     },
     "Checking the speech model…" : {
-      "comment" : "Line of the Transcribe Audio sheet while it checks whether the language's speech model is on this Mac."
+      "comment" : "Line of the Transcribe Audio sheet while it checks whether the language's speech model is on this Mac.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Comprobando el modelo de voz…"
+          }
+        }
+      }
     },
     "Checks every subscribed feed and says what came" : {
       "comment" : "VoiceOver hint of the Refresh All Feeds Now button."
@@ -6578,7 +7638,15 @@
       "comment" : "Title of the folder chooser that Change Location opens."
     },
     "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio." : {
-      "comment" : "Message of the file panel opened by Attach Transcript. %@ is the audiobook's title. WebVTT and SubRip are subtitle file formats, and .vtt and .srt their file extensions."
+      "comment" : "Message of the file panel opened by Attach Transcript. %@ is the audiobook's title. WebVTT and SubRip are subtitle file formats, and .vtt and .srt their file extensions.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige una transcripción WebVTT (.vtt) o SubRip (.srt) de %@, con tiempos desde el inicio de su audio."
+          }
+        }
+      }
     },
     "Choose a destination outside %@." : {
       "comment" : "First sentence of the error shown when a folder is moved into itself. %@ is the folder's location, in straight double quotes."
@@ -6680,7 +7748,15 @@
       "comment" : "The message of the folder chooser that the Export dialog opens. \"New Folder\" is the chooser's own button."
     },
     "Choose the language in Settings, Playback, Transcription." : {
-      "comment" : "Line under the Transcribe Audio sheet's language line saying where the language is chosen. Settings, Playback, and Transcription are the names of the settings window, its Playback pane, and its Transcription group."
+      "comment" : "Line under the Transcribe Audio sheet's language line saying where the language is chosen. Settings, Playback, and Transcription are the names of the settings window, its Playback pane, and its Transcription group.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige el idioma en Ajustes, Reproducción, Transcripción."
+          }
+        }
+      }
     },
     "Choose where to move the books and subfolders before deleting \"%@\"." : {
       "comment" : "Explanation in the sheet that chooses where a folder's contents go before the folder is deleted. %@ is the folder's name."
@@ -6794,10 +7870,26 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The pop-up of which rows a limit keeps."
     },
     "Clean Up Transcript (Experimental)…" : {
-      "comment" : "Menu item and VoiceOver action that opens the sheet for correcting an audiobook's transcript with rules. The ellipsis means a sheet follows."
+      "comment" : "Menu item and VoiceOver action that opens the sheet for correcting an audiobook's transcript with rules. The ellipsis means a sheet follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Limpiar transcripción (experimental)…"
+          }
+        }
+      }
     },
     "Clean Up the Transcript of %@" : {
-      "comment" : "Heading of the Clean Up Transcript sheet. %@ is the audiobook's title."
+      "comment" : "Heading of the Clean Up Transcript sheet. %@ is the audiobook's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Limpiar la transcripción de %@"
+          }
+        }
+      }
     },
     "Cleaned up on %@, with rules version %@: %@." : {
       "comment" : "Line of the Clean Up Transcript sheet for a transcript that was cleaned up already. %1$@ is a date, such as \"October 4, 2026\"; %2$@ is the rules' version number, written without digit grouping; %3$@ is the number of corrections, such as \"23 corrections\".",
@@ -6806,6 +7898,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Cleaned up on %1$@, with rules version %2$@: %3$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Limpiada el %1$@, con la versión %2$@ de las reglas: %3$@."
           }
         }
       }
@@ -6818,11 +7916,25 @@
             "state" : "new",
             "value" : "Cleaned up the transcript of %1$@: %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se limpió la transcripción de %1$@: %2$@."
+          }
         }
       }
     },
     "Cleaning up the transcript…" : {
-      "comment" : "Line of the Clean Up Transcript sheet while it saves the corrections."
+      "comment" : "Line of the Clean Up Transcript sheet while it saves the corrections.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Limpiando la transcripción…"
+          }
+        }
+      }
     },
     "Clear" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Clear\"."
@@ -6834,10 +7946,26 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selection."
     },
     "Clearer Voice" : {
-      "comment" : "Title of a premade audio filter preset: cuts the rumble and lifts the voice's presence."
+      "comment" : "Title of a premade audio filter preset: cuts the rumble and lifts the voice's presence.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voz más clara"
+          }
+        }
+      }
     },
     "Clears the selection." : {
-      "comment" : "Hint of the audio editor's Clear Selection button."
+      "comment" : "Hint of the audio editor's Clear Selection button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quita la selección."
+          }
+        }
+      }
     },
     "Close" : {
       "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the audio editor's list of markers.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nButton that closes a sheet.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nThe button in the Export dialog that closes it after an export that did not do everything asked.\nTitle of the button that closes a sheet, such as the speech refusal report.\nTitle of the button that closes the Search Library window.",
@@ -6887,10 +8015,26 @@
       "comment" : "Hint of the Cancel button of the New Book from Text sheet."
     },
     "Closes this without changing the transcript." : {
-      "comment" : "VoiceOver hint of the Cancel button of the Clean Up Transcript sheet."
+      "comment" : "VoiceOver hint of the Cancel button of the Clean Up Transcript sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cierra esto sin cambiar la transcripción."
+          }
+        }
+      }
     },
     "Closes this without transcribing." : {
-      "comment" : "VoiceOver hint of the Cancel button of the Transcribe Audio sheet before transcribing."
+      "comment" : "VoiceOver hint of the Cancel button of the Transcribe Audio sheet before transcribing.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cierra esto sin transcribir."
+          }
+        }
+      }
     },
     "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording." : {
       "comment" : "Explanation under the question asked when the Record window is closed while recording. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that stops and saves, the one that deletes the recording, and the one that keeps recording.",
@@ -6900,11 +8044,25 @@
             "state" : "new",
             "value" : "Closing ends the recording. %1$@ saves it as an audiobook, %2$@ deletes it, and %3$@ keeps recording."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cerrar termina la grabación. %1$@ la guarda como audiolibro, %2$@ la elimina y %3$@ sigue grabando."
+          }
         }
       }
     },
     "Closing the reader of %@, since editing changes its audio." : {
-      "comment" : "Said as a book's reader window is closed before the audio editor opens on the book. %@ is the book's title."
+      "comment" : "Said as a book's reader window is closed before the audio editor opens on the book. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cerrando el lector de %@, porque editar cambia su audio."
+          }
+        }
+      }
     },
     "Collapse runs of at least" : {
       "comment" : "Label of the field and stepper that set the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols. The number of symbols and the word symbols follow it."
@@ -6988,7 +8146,15 @@
       "comment" : "Title of the alert that reports conflicting copies of the library's files, set aside by a sync service."
     },
     "Connect a microphone to record." : {
-      "comment" : "Status line of the Record window while no microphone is connected."
+      "comment" : "Status line of the Record window while no microphone is connected.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conecta un micrófono para grabar."
+          }
+        }
+      }
     },
     "Connect to the internet and try again." : {
       "comment" : "Second sentence of why a book can't be downloaded: what to do about being offline."
@@ -7015,7 +8181,15 @@
       "comment" : "Text of the Continue button at the top of the Library list. %@ is the title of the book last read."
     },
     "Continues the paused recording." : {
-      "comment" : "VoiceOver hint of the Resume button in the Record window."
+      "comment" : "VoiceOver hint of the Resume button in the Record window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Continúa la grabación en pausa."
+          }
+        }
+      }
     },
     "Contracted" : {
       "comment" : "How a braille table contracts, for a table with no grade that shortens words with contractions."
@@ -7042,7 +8216,15 @@
       "comment" : "The name of the picker beside the Headings checkbox in the Export dialog that chooses the format of the headings list."
     },
     "Convert it to 16-bit or 24-bit integer samples, then import it again." : {
-      "comment" : "Ends every refusal of an audio file whose samples TextMouth can't decode: what the listener can do about it."
+      "comment" : "Ends every refusal of an audio file whose samples TextMouth can't decode: what the listener can do about it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conviértelo a muestras enteras de 16 o 24 bits y vuelve a importarlo."
+          }
+        }
+      }
     },
     "Convert to" : {
       "comment" : "The name of the picker beside a checkbox in the Export dialog that chooses the format the text is written in."
@@ -7090,13 +8272,29 @@
       "comment" : "Error text when the iPhone app is asked to convert an audio file in a way only the Mac's helper program can."
     },
     "Copied %@." : {
-      "comment" : "Said as the audio editor's Copy copies the selection. %@ is its length in words."
+      "comment" : "Said as the audio editor's Copy copies the selection. %@ is its length in words.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se copió %@."
+          }
+        }
+      }
     },
     "Copies the count and every difference as text, one to a line." : {
       "comment" : "VoiceOver hint of the Copy Results button of the Compare Libraries sheet."
     },
     "Copies the selection for Paste." : {
-      "comment" : "Hint of the audio editor's Copy button. \"Paste\" is the name of a command."
+      "comment" : "Hint of the audio editor's Copy button. \"Paste\" is the name of a command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Copia la selección para usar Pegar."
+          }
+        }
+      }
     },
     "Copies the whole report as plain text" : {
       "comment" : "VoiceOver hint of the Copy Details button of the speech refusal report."
@@ -7117,7 +8315,15 @@
       "comment" : "First sentence of the question asked before moving the library. %@ is the new folder's path."
     },
     "Copy at most 10 minutes at a time." : {
-      "comment" : "Said when the selection is too long for the audio editor's Copy."
+      "comment" : "Said when the selection is too long for the audio editor's Copy.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Copia como máximo 10 minutos a la vez."
+          }
+        }
+      }
     },
     "Copy some text, then paste again." : {
       "comment" : "Second sentence of the announcement when Paste from Clipboard finds no text on the clipboard: what to do."
@@ -7238,6 +8444,12 @@
             "state" : "new",
             "value" : "Couldn't clean up the transcript of %1$@: %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo limpiar la transcripción de %1$@: %2$@"
+          }
         }
       }
     },
@@ -7248,6 +8460,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Couldn't delete the transcript of %1$@: %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo eliminar la transcripción de %1$@: %2$@"
           }
         }
       }
@@ -7289,7 +8507,15 @@
       }
     },
     "Couldn't open the rules: %@" : {
-      "comment" : "Alert shown when the rules file could not be opened in the text editor. %@ is the reason, a sentence."
+      "comment" : "Alert shown when the rules file could not be opened in the text editor. %@ is the reason, a sentence.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudieron abrir las reglas: %@"
+          }
+        }
+      }
     },
     "Couldn't open the text of %@: %@" : {
       "comment" : "Message when the app that edits a book's text could not be opened. %1$@ is the book's title; %2$@ is the reason from the system.",
@@ -7315,6 +8541,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Couldn't undo the cleanup of the transcript of %1$@: %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo deshacer la limpieza de la transcripción de %1$@: %2$@"
           }
         }
       }
@@ -7386,13 +8618,37 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selected audio and keeps it for pasting.\nName of the Edit menu's Cut command, in a sentence saying why a keyboard shortcut cannot take its key."
     },
     "Cut %@" : {
-      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": cutting a stretch of audio. %@ is its length in title-cased words, such as \"2.5 Seconds\"."
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": cutting a stretch of audio. %@ is its length in title-cased words, such as \"2.5 Seconds\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cortar %@"
+          }
+        }
+      }
     },
     "Cut %@." : {
-      "comment" : "Said as the audio editor's Cut cuts. %@ is the length cut, in words."
+      "comment" : "Said as the audio editor's Cut cuts. %@ is the length cut, in words.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se cortó %@."
+          }
+        }
+      }
     },
     "Cuts the selection out, and keeps it for Paste." : {
-      "comment" : "Hint of the audio editor's Cut button. \"Paste\" is the name of a command."
+      "comment" : "Hint of the audio editor's Cut button. \"Paste\" is the name of a command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Corta la selección y la guarda para usar Pegar."
+          }
+        }
+      }
     },
     "Cycle Backward Navigation Unit" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the previous one. Also the title of the menu command of the same name."
@@ -7425,7 +8681,15 @@
       "comment" : "VoiceOver hint of the delete-after-playing number field and stepper. The range is the limits of the number, in days."
     },
     "Days to keep an original" : {
-      "comment" : "Label of the stepper that sets how many days an original audio is kept, in Storage settings (Audio Editing) and the audio editor's Audio Info."
+      "comment" : "Label of the stepper that sets how many days an original audio is kept, in Storage settings (Audio Editing) and the audio editor's Audio Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Días para conservar un original"
+          }
+        }
+      }
     },
     "Decrease Speed" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed slower. Also the title of the menu command of the same name."
@@ -7592,10 +8856,26 @@
       "comment" : "Title of the button that removes books and deletes their files permanently, in title case."
     },
     "Delete Transcript" : {
-      "comment" : "Button of the question asked before a transcript is deleted, which deletes it.\nTitle of the alert saying why Delete Transcript did nothing."
+      "comment" : "Button of the question asked before a transcript is deleted, which deletes it.\nTitle of the alert saying why Delete Transcript did nothing.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar transcripción"
+          }
+        }
+      }
     },
     "Delete Transcript…" : {
-      "comment" : "Menu item and VoiceOver action that deletes an audiobook's transcript after asking. The ellipsis means a question follows."
+      "comment" : "Menu item and VoiceOver action that deletes an audiobook's transcript after asking. The ellipsis means a question follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar transcripción…"
+          }
+        }
+      }
     },
     "Delete bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -7612,7 +8892,15 @@
       "comment" : "Label of the number field and stepper that say how many days after an episode plays its download is deleted."
     },
     "Delete the Transcript of %@?" : {
-      "comment" : "Title of the question asked before an audiobook's transcript is deleted. %@ is the audiobook's title."
+      "comment" : "Title of the question asked before an audiobook's transcript is deleted. %@ is the audiobook's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Eliminar la transcripción de %@?"
+          }
+        }
+      }
     },
     "Delete the feed “%@”?" : {
       "comment" : "Title of the confirmation before Delete Feed. %@ is the feed's title."
@@ -7647,13 +8935,29 @@
       }
     },
     "Deleted on %@" : {
-      "comment" : "The original audio's state in the audio editor's Audio Info sheet. %@ is the date it was deleted, in long form."
+      "comment" : "The original audio's state in the audio editor's Audio Info sheet. %@ is the date it was deleted, in long form.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminado el %@"
+          }
+        }
+      }
     },
     "Deleted the download of “%@”." : {
       "comment" : "What VoiceOver says once Delete Download deleted a download. %@ is the title. A sentence about what is kept follows."
     },
     "Deleted the transcript of %@." : {
-      "comment" : "What VoiceOver hears once an audiobook's transcript is deleted. %@ is the audiobook's title."
+      "comment" : "What VoiceOver hears once an audiobook's transcript is deleted. %@ is the audiobook's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se eliminó la transcripción de %@."
+          }
+        }
+      }
     },
     "Deleted “%@” from its feed; its book stays in your library." : {
       "comment" : "What VoiceOver says once an item that was moved into the library is deleted from its feed. %@ is its title."
@@ -7662,13 +8966,29 @@
       "comment" : "What VoiceOver says once a feed's episode or article is deleted. %@ is its title."
     },
     "Deletes the recording without saving it." : {
-      "comment" : "VoiceOver hint of the Discard Recording button of the Record window."
+      "comment" : "VoiceOver hint of the Discard Recording button of the Record window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elimina la grabación sin guardarla."
+          }
+        }
+      }
     },
     "Deletes the view. What it lists stays in the library." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Delete…'s hint."
     },
     "Deletes this recording without saving it." : {
-      "comment" : "VoiceOver hint of the button that deletes a recording left behind."
+      "comment" : "VoiceOver hint of the button that deletes a recording left behind.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elimina esta grabación sin guardarla."
+          }
+        }
+      }
     },
     "Delete…" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that deletes a custom view, asking first."
@@ -7719,13 +9039,37 @@
       "comment" : "Title of the context menu item that turns a substitution rule off."
     },
     "Discard" : {
-      "comment" : "Button of the audio editor's close question that undoes the unsaved edits.\nTitle of the button that deletes a recording, in the Record window's list of recordings left behind and in the question asked when it closes.\nTitle of the question's button that deletes the recording, when the Record window is closed."
+      "comment" : "Button of the audio editor's close question that undoes the unsaved edits.\nTitle of the button that deletes a recording, in the Record window's list of recordings left behind and in the question asked when it closes.\nTitle of the question's button that deletes the recording, when the Record window is closed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descartar"
+          }
+        }
+      }
     },
     "Discard Recording" : {
-      "comment" : "Title of the button in the Record window that deletes a recording that could not be saved."
+      "comment" : "Title of the button in the Record window that deletes a recording that could not be saved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descartar grabación"
+          }
+        }
+      }
     },
     "Discard: %@" : {
-      "comment" : "VoiceOver label of the button that deletes one recording left behind. %@ describes the recording, such as \"Recording of October 4, 2026 at 6:30 AM, 1 minute, 4 seconds\"."
+      "comment" : "VoiceOver label of the button that deletes one recording left behind. %@ describes the recording, such as \"Recording of October 4, 2026 at 6:30 AM, 1 minute, 4 seconds\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descartar: %@"
+          }
+        }
+      }
     },
     "Discarded the recording of %@, %@." : {
       "comment" : "Said by the Record window after a recording left behind was discarded. %1$@ is when it was recorded, a date and time, and %2$@ is how long it lasted, spoken, such as \"1 minute, 4 seconds\".",
@@ -7735,11 +9079,25 @@
             "state" : "new",
             "value" : "Discarded the recording of %1$@, %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se descartó la grabación del %1$@, %2$@."
+          }
         }
       }
     },
     "Discarded the recording of %@, which holds no sound." : {
-      "comment" : "Said by the Record window after a recording left behind that held no sound was discarded. %@ is when it was recorded, a date and time."
+      "comment" : "Said by the Record window after a recording left behind that held no sound was discarded. %@ is when it was recorded, a date and time.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se descartó la grabación del %@, que no tiene sonido."
+          }
+        }
+      }
     },
     "Discards the new copy. The library stays as it was." : {
       "comment" : "VoiceOver hint of the Cancel button of the duplicate-book question."
@@ -7769,7 +9127,15 @@
       "comment" : "Name of the punctuation key \"$\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Dollar Sign\"."
     },
     "Don't keep" : {
-      "comment" : "Choice of the Original audio picker: keep no original audio."
+      "comment" : "Choice of the Original audio picker: keep no original audio.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No conservar"
+          }
+        }
+      }
     },
     "Don't rewind if paused for less than this." : {
       "comment" : "Explanation under the minimum pause stepper in the Playback settings."
@@ -7918,11 +9284,25 @@
             "state" : "new",
             "value" : "Download the %1$@ model, %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargar el modelo de %1$@, %2$@"
+          }
         }
       }
     },
     "Download the book, then try again." : {
-      "comment" : "Ends a message saying the book's audio is only in the cloud: what to do about it."
+      "comment" : "Ends a message saying the book's audio is only in the cloud: what to do about it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descarga el libro y vuelve a intentarlo."
+          }
+        }
+      }
     },
     "Download the next article before this one ends" : {
       "comment" : "Label of the switch in a news feed's Feed Info that downloads the next article before the playing one ends."
@@ -8043,11 +9423,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Descargando el modelo de %@: %lld por ciento."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Descargando el modelo de %@: %lld por ciento."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Descargando el modelo de %@: %lld por ciento."
+                }
+              }
+            }
+          }
         }
       }
     },
     "Downloading the %@ model…" : {
-      "comment" : "Line of the Transcribe Audio sheet while a speech model downloads and its progress is not known yet. %@ is the language's name."
+      "comment" : "Line of the Transcribe Audio sheet while a speech model downloads and its progress is not known yet. %@ is the language's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargando el modelo de %@…"
+          }
+        }
+      }
     },
     "Downloading the next article: %@" : {
       "comment" : "A sentence of the announcement as a feed's article ends: the next article is being downloaded. %@ is that article's title.\nVoiceOver announcement of Next in Folder when the next item is a feed's article that must be downloaded first. %@ is the article's title.",
@@ -8108,10 +9520,26 @@
       "comment" : "Hint of the Download button of the reader's view for a book that is only in the cloud."
     },
     "Downloads the speech model from Apple, kept and shared by macOS. Nothing else is downloaded, and the book's audio never leaves this Mac." : {
-      "comment" : "VoiceOver hint of the button that downloads a language's speech model."
+      "comment" : "VoiceOver hint of the button that downloads a language's speech model.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descarga de Apple el modelo de voz, que macOS conserva y comparte. No se descarga nada más, y el audio del libro nunca sale de esta Mac."
+          }
+        }
+      }
     },
     "Drops a marker at the cursor, even while the audio plays." : {
-      "comment" : "Hint of the audio editor's Add Marker button."
+      "comment" : "Hint of the audio editor's Add Marker button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Coloca una marca en el cursor, incluso mientras se reproduce el audio."
+          }
+        }
+      }
     },
     "Duplicate" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that makes a custom copy of a view."
@@ -8162,13 +9590,29 @@
       "comment" : "Second sentence of the Edit Text explanation. \"<!-- chapter:\" is the literal text that begins a chapter line in the file; it stays exactly as written."
     },
     "Edit" : {
-      "comment" : "Button of the track question that opens the audio editor on the track chosen, and the heading of the audio editor's editing buttons.\nName of a filter preset's Edit button, also its VoiceOver action and context menu item.\nName of the command that opens a substitution rule's editor: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nTitle of the toolbar button that enters edit mode in the Library list, for selecting several books."
+      "comment" : "Button of the track question that opens the audio editor on the track chosen, and the heading of the audio editor's editing buttons.\nName of a filter preset's Edit button, also its VoiceOver action and context menu item.\nName of the command that opens a substitution rule's editor: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nTitle of the toolbar button that enters edit mode in the Library list, for selecting several books.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar"
+          }
+        }
+      }
     },
     "Edit %@" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sheet's title for a view being changed. Placeholders in order: name."
     },
     "Edit Audio: %@" : {
-      "comment" : "Title of the audio editor's window. %@ is the book's title."
+      "comment" : "Title of the audio editor's window. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar audio: %@"
+          }
+        }
+      }
     },
     "Edit Audio: %@, %@" : {
       "comment" : "Title of the audio editor's window for a book of several tracks. %1$@ is the book's title and %2$@ the track's name.",
@@ -8178,11 +9622,25 @@
             "state" : "new",
             "value" : "Edit Audio: %1$@, %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar audio: %1$@, %2$@"
+          }
         }
       }
     },
     "Edit Audio…" : {
-      "comment" : "Command that opens the audio editor on a book: the library row's context menu item and VoiceOver action, and the reader's Book menu item."
+      "comment" : "Command that opens the audio editor on a book: the library row's context menu item and VoiceOver action, and the reader's Book menu item.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar audio…"
+          }
+        }
+      }
     },
     "Edit Bookmark %@" : {
       "comment" : "Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -8196,7 +9654,15 @@
       }
     },
     "Edit Filter Preset" : {
-      "comment" : "Title of the editor opened by a filter preset's Edit button."
+      "comment" : "Title of the editor opened by a filter preset's Edit button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar preajuste de filtro"
+          }
+        }
+      }
     },
     "Edit Manifest With" : {
       "comment" : "Title of the panel in which the user chooses an app to edit a manifest.json file with."
@@ -8222,7 +9688,15 @@
       }
     },
     "Edit Rules…" : {
-      "comment" : "Button of the Clean Up Transcript sheet that opens the rules file in the user's text editor."
+      "comment" : "Button of the Clean Up Transcript sheet that opens the rules file in the user's text editor.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar reglas…"
+          }
+        }
+      }
     },
     "Edit Substitution Rule" : {
       "comment" : "Heading and navigation title of the editor of an existing substitution rule."
@@ -8300,22 +9774,54 @@
       "comment" : "Error text when the iPhone app is asked to open a file in another app to edit it and take it back."
     },
     "Edits" : {
-      "comment" : "Label of the number of edits made, in the audio editor's Audio Info sheet."
+      "comment" : "Label of the number of edits made, in the audio editor's Audio Info sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ediciones"
+          }
+        }
+      }
     },
     "Edits of its audio or of its manifest are not kept." : {
       "comment" : "Last sentence of what Replace Existing keeps of a duplicate audiobook: the library copy's edits of its audio or of its manifest are lost."
     },
     "Edits one track at a time, listed by chapter name." : {
-      "comment" : "Explains the question about which track of a book to edit."
+      "comment" : "Explains the question about which track of a book to edit.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Edita una pista a la vez, en una lista por nombre de capítulo."
+          }
+        }
+      }
     },
     "Edit…" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The Library tab's button that changes the view selected."
     },
     "Elapsed" : {
-      "comment" : "Label of the time recorded so far in the Record window."
+      "comment" : "Label of the time recorded so far in the Record window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transcurrido"
+          }
+        }
+      }
     },
     "Elapsed: %@" : {
-      "comment" : "Line of the Transcribe Audio sheet while transcribing, saying how long it has run. %@ is a length of time in words, such as \"12 seconds\"."
+      "comment" : "Line of the Transcribe Audio sheet while transcribing, saying how long it has run. %@ is a length of time in words, such as \"12 seconds\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transcurrido: %@"
+          }
+        }
+      }
     },
     "Empty" : {
       "comment" : "Spoken value of the text area of the New Book from Text sheet while it holds no text."
@@ -8376,10 +9882,26 @@
       }
     },
     "End of the audio, at %@." : {
-      "comment" : "Said as the audio editor's Go to End lands at the end. %@ is the audio's length in words."
+      "comment" : "Said as the audio editor's Go to End lands at the end. %@ is the audio's length in words.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fin del audio, en %@."
+          }
+        }
+      }
     },
     "End of the audio." : {
-      "comment" : "Said as the audio editor's playing reaches the end of the audio."
+      "comment" : "Said as the audio editor's playing reaches the end of the audio.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fin del audio."
+          }
+        }
+      }
     },
     "End of the book" : {
       "comment" : "The last item of the To pop-up in the Export dialog's spoken audio options: the end of the book."
@@ -8487,7 +10009,15 @@
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Escape\"."
     },
     "Even Out the Level" : {
-      "comment" : "Title of a premade audio filter preset: compresses the audio so loud and quiet parts are closer in volume."
+      "comment" : "Title of a premade audio filter preset: compresses the audio so loud and quiet parts are closer in volume.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nivelar el volumen"
+          }
+        }
+      }
     },
     "Every article listed, downloads by hand" : {
       "comment" : "A choice of the List and download pop-up menu, in Feed Info, for a feed of articles: every article is listed and the listener downloads by hand."
@@ -8688,7 +10218,15 @@
       "comment" : "Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written."
     },
     "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back." : {
-      "comment" : "Line at the top of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet."
+      "comment" : "Line at the top of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Experimental. Estas reglas corrigen palabras que el reconocedor escribe de forma distinta a como se leen los libros en voz alta. Revisa los cambios antes de aplicarlos; Deshacer limpieza restaura la transcripción."
+          }
+        }
+      }
     },
     "Export" : {
       "comment" : "The button in the Export dialog that exports the checked items.\nThe title of the Export button in a reader's toolbar."
@@ -8743,7 +10281,15 @@
       }
     },
     "Export Audio" : {
-      "comment" : "Title of the audio editor's Export Audio sheet."
+      "comment" : "Title of the audio editor's Export Audio sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exportar audio"
+          }
+        }
+      }
     },
     "Export Every Such Chapter as Written" : {
       "comment" : "A button of the alert an export shows when a chapter nests too deeply: it writes every such chapter of the export as plain paragraphs, without asking again."
@@ -8855,20 +10401,58 @@
             "state" : "new",
             "value" : "Exported “%1$@” and its labels, “%2$@”."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se exportó “%1$@” y sus etiquetas, “%2$@”."
+          }
         }
       }
     },
     "Exported “%@”, but its labels couldn't be written." : {
-      "comment" : "Said as the audio editor's export ends having written the audio but not the label file. %@ is the audio file's name. A sentence giving the reason follows."
+      "comment" : "Said as the audio editor's export ends having written the audio but not the label file. %@ is the audio file's name. A sentence giving the reason follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se exportó “%@”, pero no se pudieron escribir sus etiquetas."
+          }
+        }
+      }
     },
     "Exported “%@”." : {
-      "comment" : "Said as the audio editor's export ends. %@ is the exported file's name."
+      "comment" : "Said as the audio editor's export ends. %@ is the exported file's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se exportó “%@”."
+          }
+        }
+      }
     },
     "Exported “%@”. It has no markers, so no label file was written." : {
-      "comment" : "Said as the audio editor's export ends when labels were asked for but the audio has no marker. %@ is the exported file's name."
+      "comment" : "Said as the audio editor's export ends when labels were asked for but the audio has no marker. %@ is the exported file's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se exportó “%@”. No tiene marcas, así que no se escribió ningún archivo de etiquetas."
+          }
+        }
+      }
     },
     "Exporting" : {
-      "comment" : "Title of the sheet shown while the audio editor exports the audio."
+      "comment" : "Title of the sheet shown while the audio editor exports the audio.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exportando"
+          }
+        }
+      }
     },
     "Exporting %@ of audio as %@ to “%@”." : {
       "comment" : "Said as the audio editor begins to export, and shown in its sheet. %1$@ is the audio's length in words, %2$@ the file format's name, and %3$@ the exported file's name.",
@@ -8877,6 +10461,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Exporting %1$@ of audio as %2$@ to “%3$@”."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exportando %1$@ de audio como %2$@ a “%3$@”."
           }
         }
       }
@@ -8902,13 +10492,37 @@
       "comment" : "The hint of the Export button in the Export dialog."
     },
     "Exports to a file outside the library, in a format you choose." : {
-      "comment" : "Hint of the audio editor's Export button."
+      "comment" : "Hint of the audio editor's Export button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exporta a un archivo fuera de la biblioteca, en el formato que elijas."
+          }
+        }
+      }
     },
     "Exports to a file you choose; the book's own file is unchanged." : {
-      "comment" : "Hint of the audio editor's Export… button."
+      "comment" : "Hint of the audio editor's Export… button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exporta a un archivo que elijas; el archivo del propio libro no cambia."
+          }
+        }
+      }
     },
     "Export…" : {
-      "comment" : "Button of the audio editor's Export Audio sheet that asks where to save the file.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file.\nThe title of the Export command in the File menu, the library's context menu, and the reader's toolbar."
+      "comment" : "Button of the audio editor's Export Audio sheet that asks where to save the file.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file.\nThe title of the Export command in the File menu, the library's context menu, and the reader's toolbar.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exportar…"
+          }
+        }
+      }
     },
     "Extracting Text" : {
       "comment" : "Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it."
@@ -8928,10 +10542,26 @@
       }
     },
     "Fade In" : {
-      "comment" : "Title of a premade audio filter preset: fades the audio in over one second."
+      "comment" : "Title of a premade audio filter preset: fades the audio in over one second.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fundido de entrada"
+          }
+        }
+      }
     },
     "Fade Out (Select the Last Second)" : {
-      "comment" : "Title of a premade audio filter preset: fades out over one second, so it is used on a selection of the last second."
+      "comment" : "Title of a premade audio filter preset: fades out over one second, so it is used on a selection of the last second.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fundido de salida (selecciona el último segundo)"
+          }
+        }
+      }
     },
     "Fade out duration" : {
       "comment" : "VoiceOver label of the sleep timer's fade out stepper in the Playback settings."
@@ -9082,7 +10712,15 @@
       }
     },
     "File" : {
-      "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.\nLabel of the audio file's name in the audio editor's Audio Info sheet."
+      "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.\nLabel of the audio file's name in the audio editor's Audio Info sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Archivo"
+          }
+        }
+      }
     },
     "File %lld of %lld" : {
       "comment" : "Line of the Transcribe Audio sheet saying which audio file of the book is being transcribed. %1$lld is that file's place, from 1; %2$lld is the number of files.",
@@ -9091,6 +10729,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "File %1$lld of %2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Archivo %1$lld de %2$lld"
           }
         }
       }
@@ -9108,19 +10752,59 @@
       "comment" : "Label of the list of files the Compare Libraries comparison could not read."
     },
     "Filter" : {
-      "comment" : "Label of the pop-up in the audio editor's Apply Filter sheet that chooses a filter preset."
+      "comment" : "Label of the pop-up in the audio editor's Apply Filter sheet that chooses a filter preset.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filtro"
+          }
+        }
+      }
     },
     "Filter Presets" : {
-      "comment" : "Title of the sheet, opened from Storage settings, that lists the audio editor's filter presets."
+      "comment" : "Title of the sheet, opened from Storage settings, that lists the audio editor's filter presets.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Preajustes de filtros"
+          }
+        }
+      }
     },
     "Filter Presets…" : {
-      "comment" : "Button in Storage settings (Audio Editing) that opens the list of the audio editor's filter presets."
+      "comment" : "Button in Storage settings (Audio Editing) that opens the list of the audio editor's filter presets.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Preajustes de filtros…"
+          }
+        }
+      }
     },
     "Filters can't be applied here." : {
-      "comment" : "Said when a filter or a volume change is asked for where nothing can render one."
+      "comment" : "Said when a filter or a volume change is asked for where nothing can render one.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aquí no se pueden aplicar filtros."
+          }
+        }
+      }
     },
     "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons." : {
-      "comment" : "Hint of the chain field of a filter preset. ffmpeg is the name of a program."
+      "comment" : "Hint of the chain field of a filter preset. ffmpeg is the name of a program.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filtros con la sintaxis de ffmpeg, separados por comas; las opciones van después de un signo igual, separadas por dos puntos."
+          }
+        }
+      }
     },
     "Find" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Find\".\nTitle of the Find submenu of the Edit menu, which holds the command that searches the whole library."
@@ -9293,7 +10977,15 @@
       "comment" : "Last sentence of the hint of Follow in Braille in iPhone Settings."
     },
     "Format" : {
-      "comment" : "Label of the pop-up in the audio editor's Export Audio sheet that chooses the file format.\nName of the book information sheet's row that shows an audiobook's file format.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .format.\nThe label of the pop-up in the Export dialog's spoken audio options that chooses the kind of audio file."
+      "comment" : "Label of the pop-up in the audio editor's Export Audio sheet that chooses the file format.\nName of the book information sheet's row that shows an audiobook's file format.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .format.\nThe label of the pop-up in the Export dialog's spoken audio options that chooses the kind of audio file.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Formato"
+          }
+        }
+      }
     },
     "Forward 10 Seconds" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward ten seconds."
@@ -9344,14 +11036,54 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se encontraron %lld de grabaciones de antes del último cierre de TextMouth, en %@. Guarda o descarta cada una."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se encontró %lld grabación de antes del último cierre de TextMouth, en %@. Guarda o descarta cada una."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se encontraron %lld grabaciones de antes del último cierre de TextMouth, en %@. Guarda o descarta cada una."
+                }
+              }
+            }
+          }
         }
       }
     },
     "Found a recording from before TextMouth last quit, under %@. Save or discard it." : {
-      "comment" : "Announcement of the Record window when it finds one recording left behind. %@ is the heading of the list of recovered recordings."
+      "comment" : "Announcement of the Record window when it finds one recording left behind. %@ is the heading of the list of recovered recordings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se encontró una grabación de antes del último cierre de TextMouth, en %@. Guárdala o descártala."
+          }
+        }
+      }
     },
     "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has." : {
-      "comment" : "Hint of the Use ffmpeg for filters switch in Storage settings. %@ is the folder path where the ffmpeg program was found. ffmpeg is the program's name."
+      "comment" : "Hint of the Use ffmpeg for filters switch in Storage settings. %@ is the folder path where the ffmpeg program was found. ffmpeg is the program's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se encontró en %@. Si está activado, los filtros del editor se ejecutan con ffmpeg, con todos los filtros que tiene."
+          }
+        }
+      }
     },
     "Free up space, then import it again." : {
       "comment" : "Last sentence of why an import's archive was refused for want of disk space: what to do. \"It\" is the archive."
@@ -9408,7 +11140,15 @@
       "comment" : "Status line of the move sheet before the copy starts."
     },
     "Getting ready to record" : {
-      "comment" : "A part of the audio editor's status line while a punch-in gets ready to record."
+      "comment" : "A part of the audio editor's status line while a punch-in gets ready to record.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Preparando la grabación"
+          }
+        }
+      }
     },
     "Give It a New Identity…" : {
       "comment" : "Button that gives the library a new identity file, after asking. The ellipsis shows that a question follows."
@@ -9426,7 +11166,15 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint."
     },
     "Go" : {
-      "comment" : "Button of the audio editor's Go to Time sheet that moves the cursor to the time typed."
+      "comment" : "Button of the audio editor's Go to Time sheet that moves the cursor to the time typed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ir"
+          }
+        }
+      }
     },
     "Go Back" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Returns to the place the reader jumped from, like a browser's Back. Also the title of the menu command of the same name."
@@ -9461,7 +11209,15 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the start of the audio."
     },
     "Go to Time" : {
-      "comment" : "Title of the audio editor's Go to Time sheet."
+      "comment" : "Title of the audio editor's Go to Time sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ir al momento"
+          }
+        }
+      }
     },
     "Go to Time…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a time to move to."
@@ -9947,7 +11703,15 @@
       "comment" : "VoiceOver hint of the replacement field in the substitution rule editor. $1 and $2 are written as in regular expressions and stay as written."
     },
     "In at %@." : {
-      "comment" : "Said as the audio editor's Mark In marks the selection's start. %@ is the time in words. A sentence about the selection it makes may follow."
+      "comment" : "Said as the audio editor's Mark In marks the selection's start. %@ is the time in words. A sentence about the selection it makes may follow.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Entrada en %@."
+          }
+        }
+      }
     },
     "In reading list" : {
       "comment" : "Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list.",
@@ -10036,16 +11800,48 @@
       "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls an inner cover, made at import. Title case."
     },
     "Insert" : {
-      "comment" : "Button of the audio editor's Insert Silence and Insert Chapter Marker sheets that makes the insertion.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\"."
+      "comment" : "Button of the audio editor's Insert Silence and Insert Chapter Marker sheets that makes the insertion.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insertar"
+          }
+        }
+      }
     },
     "Insert %@ of Audio" : {
-      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": inserting a new recording. %@ is its length in title-cased words, such as \"2.5 Seconds\"."
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": inserting a new recording. %@ is its length in title-cased words, such as \"2.5 Seconds\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insertar %@ de audio"
+          }
+        }
+      }
     },
     "Insert %@ of Silence" : {
-      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": inserting silence. %@ is its length in title-cased words, such as \"1 Second\"."
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": inserting silence. %@ is its length in title-cased words, such as \"1 Second\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insertar %@ de silencio"
+          }
+        }
+      }
     },
     "Insert Chapter Marker" : {
-      "comment" : "Title of the audio editor's Insert Chapter Marker sheet."
+      "comment" : "Title of the audio editor's Insert Chapter Marker sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insertar marca de capítulo"
+          }
+        }
+      }
     },
     "Insert Chapter Marker…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to name and insert a chapter marker."
@@ -10057,19 +11853,51 @@
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert Line\"."
     },
     "Insert Silence" : {
-      "comment" : "Title of the audio editor's Insert Silence sheet."
+      "comment" : "Title of the audio editor's Insert Silence sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insertar silencio"
+          }
+        }
+      }
     },
     "Insert Silence…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a length of silence to insert."
     },
     "Inserted %@ of new recording, which is selected." : {
-      "comment" : "Said as a punch-in recording is inserted at the cursor in the audio editor. %@ is its length in words."
+      "comment" : "Said as a punch-in recording is inserted at the cursor in the audio editor. %@ is its length in words.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se insertó una grabación nueva de %@, que queda seleccionada."
+          }
+        }
+      }
     },
     "Inserted %@ of silence." : {
-      "comment" : "Said as silence is inserted in the audio editor. %@ is its length in words."
+      "comment" : "Said as silence is inserted in the audio editor. %@ is its length in words.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se insertó un silencio de %@."
+          }
+        }
+      }
     },
     "Inserts a silence of a length you type at the cursor." : {
-      "comment" : "Hint of the audio editor's Insert Silence button."
+      "comment" : "Hint of the audio editor's Insert Silence button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inserta en el cursor un silencio de la duración que escribas."
+          }
+        }
+      }
     },
     "Inside the data directory" : {
       "comment" : "A choice of the Log location pop-up in the Storage settings: the diagnostic logs are written in the Logs folder of the data directory, the folder that holds the library."
@@ -10287,7 +12115,15 @@
       "comment" : "Refusal of a playlist or cue sheet with no track left to import. \"It\" is the playlist. A sentence about the skipped entries may follow."
     },
     "It runs only through ffmpeg." : {
-      "comment" : "Ends a line under a filter preset's chain field that says why TextMouth's own filters can't run it: only the ffmpeg program can. ffmpeg is the program's name."
+      "comment" : "Ends a line under a filter preset's chain field that says why TextMouth's own filters can't run it: only the ffmpeg program can. ffmpeg is the program's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Solo se ejecuta con ffmpeg."
+          }
+        }
+      }
     },
     "It skipped %lld entries: %@." : {
       "comment" : "Sentence after the refusal of a playlist: how many entries it skipped, and which. %1$lld is the number of entries and %2$@ the list of them, each with its reason in parentheses.",
@@ -10399,6 +12235,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudieron escribir sus %lld de marcas de capítulo en el archivo, así que no tiene ninguna."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo escribir su marca de capítulo en el archivo, así que no tiene ninguna."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudieron escribir sus %lld marcas de capítulo en el archivo, así que no tiene ninguna."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -10406,7 +12266,15 @@
       "comment" : "First sentence of why a book could not move into the current library format. bookInfo.json is a file name and stays as written."
     },
     "Its cleanup is replaced too." : {
-      "comment" : "Sentence of the question asked before a transcript from a file replaces the book's, when the user had cleaned it up."
+      "comment" : "Sentence of the question asked before a transcript from a file replaces the book's, when the user had cleaned it up.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Su limpieza también se reemplaza."
+          }
+        }
+      }
     },
     "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the question says Delete does, and what it keeps."
@@ -10421,7 +12289,15 @@
       "comment" : "Sentence saying where a backup of a book's earlier text was kept. %@ is a file name such as content.md.edited-20261024T123012Z, which stays as written."
     },
     "Its file is now “%@”, since TextMouth can't write its old format." : {
-      "comment" : "Said as a save ends and the book's file got a new name because TextMouth can't write the old format. %@ is the file's new name."
+      "comment" : "Said as a save ends and the book's file got a new name because TextMouth can't write the old format. %@ is the file's new name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Su archivo ahora se llama “%@”, porque TextMouth no puede escribir su formato anterior."
+          }
+        }
+      }
     },
     "Its folder “%@” goes too when nothing else is in it." : {
       "comment" : "A sentence of the confirmation before Delete Feed: the feed's library folder is deleted too when it holds nothing else. %@ is the folder's path."
@@ -10524,7 +12400,15 @@
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
     },
     "Keep" : {
-      "comment" : "Choice of the Original audio picker: keep the original audio of a recording or edited audiobook until its book is removed.\nTitle and VoiceOver label of the button that keeps the original file of a book just imported. Title case."
+      "comment" : "Choice of the Original audio picker: keep the original audio of a recording or edited audiobook until its book is removed.\nTitle and VoiceOver label of the button that keeps the original file of a book just imported. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conservar"
+          }
+        }
+      }
     },
     "Keep %lld Books on This Mac" : {
       "comment" : "Library menu command that keeps the selected books' files downloaded on this Mac. %lld is the number of books selected.",
@@ -10559,7 +12443,15 @@
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of the button under that note that keeps the guessed code (a pop-up cannot be asked for the choice already selected), and what it does."
     },
     "Keep for a number of days" : {
-      "comment" : "Choice of the Original audio picker: keep the original audio for a number of days, set by a stepper beside it."
+      "comment" : "Choice of the Original audio picker: keep the original audio for a number of days, set by a stepper beside it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conservar durante unos días"
+          }
+        }
+      }
     },
     "Keep on This Mac" : {
       "comment" : "Library menu command that keeps a book's files downloaded on this Mac. Also the name other sentences use for the command."
@@ -10585,7 +12477,15 @@
       "comment" : "VoiceOver hint of the switch that keeps the originals of converted audio."
     },
     "Keeps only the selection." : {
-      "comment" : "Hint of the audio editor's Trim to Selection button."
+      "comment" : "Hint of the audio editor's Trim to Selection button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conserva solo la selección."
+          }
+        }
+      }
     },
     "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download." : {
       "comment" : "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.",
@@ -10610,7 +12510,15 @@
       }
     },
     "Kept" : {
-      "comment" : "The original audio's state in the audio editor's Audio Info sheet: it is kept."
+      "comment" : "The original audio's state in the audio editor's Audio Info sheet: it is kept.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conservado"
+          }
+        }
+      }
     },
     "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch." : {
       "comment" : "What the Export dialog says after a spoken audio export ended without its file and kept some of its chapters. %1$@ is how many chapters are kept, %2$lld how many there are, and %3$@ the number of the chapter to go on from, both written without digit grouping.",
@@ -10677,7 +12585,15 @@
       "comment" : "Heading made at import for an Audacity label that has no text. %@ is the label's place among the file's labels, from 1, an identifier written without digit grouping."
     },
     "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain." : {
-      "comment" : "Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas."
+      "comment" : "Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Las etiquetas y los puntos y coma necesitan ffmpeg. Los filtros propios de TextMouth admiten una sola cadena separada por comas."
+          }
+        }
+      }
     },
     "Language" : {
       "comment" : "Name of the book information sheet's row that shows the language a book is written in.\nThe label of the pop-up that chooses the language of a braille code, in the Braille tab of Settings and in the Export dialog's braille options.\nTitle of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.\nTitle of the voice sheet's menu that limits the voices listed to one language."
@@ -10692,6 +12608,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Language: %1$@, %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Idioma: %1$@, %2$@."
           }
         }
       }
@@ -10709,7 +12631,15 @@
       "comment" : "How a feed's last check reads when it failed. %@ is the reason, a sentence, such as \"This Mac is offline, so Planet Money can't be refreshed.\" Spoken after a comma with its first letter in lower case."
     },
     "Last message" : {
-      "comment" : "Label of the audio editor's line that repeats the last announcement, so a braille display can read it again."
+      "comment" : "Label of the audio editor's line that repeats the last announcement, so a braille display can read it again.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Último mensaje"
+          }
+        }
+      }
     },
     "Last opened" : {
       "comment" : "Label of when a book was last opened, in its read-only Book Information sheet."
@@ -10727,7 +12657,15 @@
       "comment" : "A style of reading a run of one symbol: the voice leaves the run out and pauses in its place."
     },
     "Leaves the audiobook untranscribed; Transcribe Audio does it later." : {
-      "comment" : "VoiceOver hint of the Not Now button of the question offered after an import. Transcribe Audio is the command's name."
+      "comment" : "VoiceOver hint of the Not Now button of the question offered after an import. Transcribe Audio is the command's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Deja el audiolibro sin transcribir; Transcribir audio lo hace más tarde."
+          }
+        }
+      }
     },
     "Leaves the imported books where they are." : {
       "comment" : "VoiceOver hint of the No Thanks button of the ZIP archive question."
@@ -10770,10 +12708,26 @@
       "comment" : "Name of the punctuation key \"(\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Parenthesis\"."
     },
     "Length" : {
-      "comment" : "Label of the audio editor's field for the length of a silence, and of the audio's length in Audio Info."
+      "comment" : "Label of the audio editor's field for the length of a silence, and of the audio's length in Audio Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Duración"
+          }
+        }
+      }
     },
     "Length of silence to insert: seconds (2.5) or minutes and seconds (1:30)." : {
-      "comment" : "Explains the silence length field of the audio editor's Insert Silence sheet. The examples are typed times."
+      "comment" : "Explains the silence length field of the audio editor's Insert Silence sheet. The examples are typed times.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Duración del silencio que se insertará: segundos (2.5) o minutos y segundos (1:30)."
+          }
+        }
+      }
     },
     "Less Than" : {
       "comment" : "Name of the punctuation key \"<\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Less Than\"."
@@ -10782,7 +12736,15 @@
       "comment" : "Line of the import overlay and the feed downloads: the time left is under a minute."
     },
     "Level" : {
-      "comment" : "Label of the microphone's loudness while recording, in the Record window."
+      "comment" : "Label of the microphone's loudness while recording, in the Record window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nivel"
+          }
+        }
+      }
     },
     "Level 1" : {
       "comment" : "Choice of the headings sheet's level filter that shows only the biggest headings, level 1."
@@ -10794,7 +12756,15 @@
       "comment" : "Heading of the group of Library window keyboard shortcuts in Settings, and the title of the Library menu.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The tab's name in the Settings window's toolbar.\nThe name spoken for the library's top level, the place that holds the folders and the books outside any folder, as in \"Library, 743 books\" after going to it.\nThe top of the library, as the Save in pop-up of the Record window names it.\nTitle of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.\nTitle of the first screen, the list of the user's books and folders."
     },
     "Library / %@" : {
-      "comment" : "A library folder in the Save in pop-up of the Record window: the library, then the folder's path, its folders separated by slashes. %@ is the path, such as \"Fiction / Sci-Fi\"."
+      "comment" : "A library folder in the Save in pop-up of the Record window: the library, then the folder's path, its folders separated by slashes. %@ is the path, such as \"Fiction / Sci-Fi\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Biblioteca / %@"
+          }
+        }
+      }
     },
     "Library Index Could Not Be Read" : {
       "comment" : "Heading of the sheet shown when the library index file can't be read."
@@ -10853,7 +12823,15 @@
       "comment" : "Label of the pop-up menu that chooses how many of a feed's items are listed and downloaded, in Settings and Feed Info. Sentences name it."
     },
     "Listen and Move" : {
-      "comment" : "Heading of the audio editor's buttons for listening and moving the cursor."
+      "comment" : "Heading of the audio editor's buttons for listening and moving the cursor.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Escuchar y mover"
+          }
+        }
+      }
     },
     "Listening" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The heading over the listening options."
@@ -11041,7 +13019,15 @@
       "comment" : "VoiceOver hint of the List and download choice for a feed of episodes when the listener downloads by hand."
     },
     "Lists markers, chapter markers, and pauses, to go to, name, select, or delete." : {
-      "comment" : "Hint of the audio editor's Show Markers button."
+      "comment" : "Hint of the audio editor's Show Markers button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Muestra una lista de marcas, marcas de capítulo y pausas, para ir a ellas, nombrarlas, seleccionarlas o eliminarlas."
+          }
+        }
+      }
     },
     "Lists nothing now." : {
       "comment" : "Library view editor: what the sheet says of a draft view that lists nothing at the moment."
@@ -11126,16 +13112,48 @@
       "comment" : "A choice of the When a Book Ends picker: the book plays again from its beginning and is never finished."
     },
     "Louder" : {
-      "comment" : "Title of a premade audio filter preset: raises the volume by 6 decibels."
+      "comment" : "Title of a premade audio filter preset: raises the volume by 6 decibels.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Más volumen"
+          }
+        }
+      }
     },
     "M4A (AAC)" : {
-      "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding AAC audio."
+      "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding AAC audio.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "M4A (AAC)"
+          }
+        }
+      }
     },
     "M4B Audiobook (AAC)" : {
-      "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4B audiobook files holding AAC audio."
+      "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4B audiobook files holding AAC audio.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audiolibro M4B (AAC)"
+          }
+        }
+      }
     },
     "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings." : {
-      "comment" : "Said when MP3 is asked for and neither TextMouth's built-in encoder nor an installed ffmpeg program can write it. \"Storage settings\" is the name of a settings tab."
+      "comment" : "Said when MP3 is asked for and neither TextMouth's built-in encoder nor an installed ffmpeg program can write it. \"Storage settings\" is the name of a settings tab.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se puede escribir MP3: el codificador de TextMouth no pudo iniciarse, y ffmpeg falta o está desactivado en los ajustes de Almacenamiento."
+          }
+        }
+      }
     },
     "Mac Central European" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is."
@@ -11176,7 +13194,15 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
     },
     "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back." : {
-      "comment" : "VoiceOver hint of the Apply button of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet."
+      "comment" : "VoiceOver hint of the Apply button of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hace estas correcciones. Se conserva la transcripción anterior, así que Deshacer limpieza puede restaurarla."
+          }
+        }
+      }
     },
     "Makes your own view with these conditions and sort." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint."
@@ -11310,7 +13336,15 @@
       "comment" : "What VoiceOver says once an article is marked unread. %@ is the article's title."
     },
     "Marker %@" : {
-      "comment" : "A marker as the audio editor's list, its row's buttons, and announcements name it. %@ is the marker's number, an identifier written without digit grouping."
+      "comment" : "A marker as the audio editor's list, its row's buttons, and announcements name it. %@ is the marker's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca %@"
+          }
+        }
+      }
     },
     "Marker %@ at %@." : {
       "comment" : "Said as a marker is dropped in the audio editor. %1$@ is the marker's number, an identifier written without digit grouping, and %2$@ its time in words.",
@@ -11320,11 +13354,25 @@
             "state" : "new",
             "value" : "Marker %1$@ at %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca %1$@ en %2$@."
+          }
         }
       }
     },
     "Marker %@ has no name now." : {
-      "comment" : "Said as a marker's name is taken away in the audio editor. %@ is the marker's number, an identifier written without digit grouping."
+      "comment" : "Said as a marker's name is taken away in the audio editor. %@ is the marker's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La marca %@ ya no tiene nombre."
+          }
+        }
+      }
     },
     "Marker %@ named %@." : {
       "comment" : "Said as a marker is named in the audio editor. %1$@ is the marker's number, an identifier written without digit grouping, and %2$@ the name the user gave it.",
@@ -11333,6 +13381,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Marker %1$@ named %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca %1$@ llamada %2$@."
           }
         }
       }
@@ -11345,23 +13399,61 @@
             "state" : "new",
             "value" : "Marker %1$@, %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca %1$@, %2$@"
+          }
         }
       }
     },
     "Markers" : {
-      "comment" : "Heading of the markers in the audio editor's list."
+      "comment" : "Heading of the markers in the audio editor's list.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcas"
+          }
+        }
+      }
     },
     "Markers and Pauses" : {
-      "comment" : "Title of the audio editor's list of markers, chapter markers, and pauses."
+      "comment" : "Title of the audio editor's list of markers, chapter markers, and pauses.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcas y pausas"
+          }
+        }
+      }
     },
     "Markers and Pauses…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the list of markers and silent pauses."
     },
     "Marks the selection's end at the cursor." : {
-      "comment" : "Hint of the audio editor's Mark Out button."
+      "comment" : "Hint of the audio editor's Mark Out button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca el final de la selección en el cursor."
+          }
+        }
+      }
     },
     "Marks the selection's start at the cursor." : {
-      "comment" : "Hint of the audio editor's Mark In button."
+      "comment" : "Hint of the audio editor's Mark In button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca el inicio de la selección en el cursor."
+          }
+        }
+      }
     },
     "Markup guard: strict, every angle bracket silent, from character %@ to %@ of the spoken text." : {
       "comment" : "A line of the speech refusal report: the markup guard silenced every angle bracket between two characters. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.",
@@ -11431,10 +13523,26 @@
       }
     },
     "Microphone" : {
-      "comment" : "Label of the pop-up in the Record window that chooses the microphone to record from."
+      "comment" : "Label of the pop-up in the Record window that chooses the microphone to record from.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Micrófono"
+          }
+        }
+      }
     },
     "Microphone for Punch In" : {
-      "comment" : "Label of the pop-up in the audio editor that chooses the microphone Punch In records from."
+      "comment" : "Label of the pop-up in the audio editor that chooses the microphone Punch In records from.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Micrófono para Punch In"
+          }
+        }
+      }
     },
     "Minimize" : {
       "comment" : "Name of the Window menu's Minimize command, in a sentence saying why a keyboard shortcut cannot take its key."
@@ -11483,7 +13591,15 @@
       }
     },
     "Minutes must be less than 60." : {
-      "comment" : "Problem said of a typed time whose minutes, after hours, reach 60."
+      "comment" : "Problem said of a typed time whose minutes, after hours, reach 60.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los minutos deben ser menos de 60."
+          }
+        }
+      }
     },
     "Miscellaneous" : {
       "comment" : "Name of the Settings tab for the options that fit no other tab, such as Bluetooth monitoring."
@@ -11533,7 +13649,15 @@
       "comment" : "Heading of the sheet that moves a folder under a new parent folder. %@ is the folder's name.\nHeading of the sheet that moves one book to a folder. %@ is the book's title."
     },
     "Move %@" : {
-      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": moving a stretch of audio. %@ is its length in title-cased words, such as \"2.5 Seconds\"."
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": moving a stretch of audio. %@ is its length in title-cased words, such as \"2.5 Seconds\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mover %@"
+          }
+        }
+      }
     },
     "Move %@ Down" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's spoken label. Placeholders in order: name."
@@ -11784,6 +13908,12 @@
             "state" : "new",
             "value" : "Moved %1$@ to %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se movió %1$@ a %2$@."
+          }
         }
       }
     },
@@ -11941,37 +14071,125 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's hint."
     },
     "Moves the cursor back a tenth of a second." : {
-      "comment" : "Hint of the audio editor's Skip Back Short button."
+      "comment" : "Hint of the audio editor's Skip Back Short button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor un décimo de segundo hacia atrás."
+          }
+        }
+      }
     },
     "Moves the cursor back one second." : {
-      "comment" : "Hint of the audio editor's Skip Back button."
+      "comment" : "Hint of the audio editor's Skip Back button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor un segundo hacia atrás."
+          }
+        }
+      }
     },
     "Moves the cursor back ten seconds." : {
-      "comment" : "Hint of the audio editor's Skip Back Long button."
+      "comment" : "Hint of the audio editor's Skip Back Long button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor diez segundos hacia atrás."
+          }
+        }
+      }
     },
     "Moves the cursor forward a tenth of a second." : {
-      "comment" : "Hint of the audio editor's Skip Forward Short button."
+      "comment" : "Hint of the audio editor's Skip Forward Short button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor un décimo de segundo hacia adelante."
+          }
+        }
+      }
     },
     "Moves the cursor forward one second." : {
-      "comment" : "Hint of the audio editor's Skip Forward button."
+      "comment" : "Hint of the audio editor's Skip Forward button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor un segundo hacia adelante."
+          }
+        }
+      }
     },
     "Moves the cursor forward ten seconds." : {
-      "comment" : "Hint of the audio editor's Skip Forward Long button."
+      "comment" : "Hint of the audio editor's Skip Forward Long button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor diez segundos hacia adelante."
+          }
+        }
+      }
     },
     "Moves the cursor to a time you type." : {
-      "comment" : "Hint of the audio editor's Go to Time button."
+      "comment" : "Hint of the audio editor's Go to Time button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor a un momento que escribas."
+          }
+        }
+      }
     },
     "Moves the cursor to the end of the audio." : {
-      "comment" : "Hint of the audio editor's Go to End button."
+      "comment" : "Hint of the audio editor's Go to End button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor al final del audio."
+          }
+        }
+      }
     },
     "Moves the cursor to the end of the next pause." : {
-      "comment" : "Hint of the audio editor's Next Pause button."
+      "comment" : "Hint of the audio editor's Next Pause button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor al final de la pausa siguiente."
+          }
+        }
+      }
     },
     "Moves the cursor to the end of the previous pause." : {
-      "comment" : "Hint of the audio editor's Previous Pause button."
+      "comment" : "Hint of the audio editor's Previous Pause button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor al final de la pausa anterior."
+          }
+        }
+      }
     },
     "Moves the cursor to the next chapter marker." : {
-      "comment" : "Hint of the audio editor's Next Chapter button."
+      "comment" : "Hint of the audio editor's Next Chapter button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mueve el cursor a la siguiente marca de capítulo."
+          }
+        }
+      }
     },
     "Moves the cursor to the previous chapter marker." : {
       "comment" : "Hint of the audio editor's Previous Chapter button."
