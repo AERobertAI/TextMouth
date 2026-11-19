@@ -34,6 +34,20 @@
         }
       }
     },
+    "%@ has it in the menus, and no shortcut may take it" : {
+      "comment" : "The reason, said after \"not recorded\", why a key cannot be a shortcut: a command of the Mac's own menus uses it. %@ is that command's name, such as Quit TextMouth or Copy. Lower case in English, since it follows a colon."
+    },
+    "%@ has its default, %@" : {
+      "comment" : "Said in the row of a keyboard shortcut action that has lost its default key to another action. %1$@ is the name of the action that now has the key, and %2$@ is the key in words, such as \"Shift + Command + T\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ has its default, %2$@"
+          }
+        }
+      }
+    },
     "%@ is already in the reading list." : {
       "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.",
       "localizations" : {
@@ -56,6 +70,39 @@
         }
       }
     },
+    "%@ not recorded for %@: %@" : {
+      "comment" : "Announced by VoiceOver when a key cannot become a keyboard shortcut. %1$@ is the key in words, %2$@ is the action's name, and %3$@ is the reason, which starts in lower case.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ not recorded for %2$@: %3$@"
+          }
+        }
+      }
+    },
+    "%@ now waits before %@, in case it is pressed twice." : {
+      "comment" : "Announced by VoiceOver after a key's double press was given to an action: the key's single press now waits a moment before it acts, in case a second press follows. %1$@ is the key in words, such as \"J\", and %2$@ is the name of the action of its single press.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ now waits before %2$@, in case it is pressed twice."
+          }
+        }
+      }
+    },
+    "%@ or %@" : {
+      "comment" : "Joins two keyboard shortcuts of one action with \"or\", as in \"Space or K\". %1$@ is the shortcuts so far and %2$@ the next one.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ or %2$@"
+          }
+        }
+      }
+    },
     "%@ remaining" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.",
       "localizations" : {
@@ -67,8 +114,58 @@
         }
       }
     },
+    "%@ reset to default: %@" : {
+      "comment" : "Announced by VoiceOver after a keyboard shortcut action was given its default keys again. %1$@ is the action's name and %2$@ is its keys in words, such as \"Option + Shift + Command + B\", or \"No shortcut\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ reset to default: %2$@"
+          }
+        }
+      }
+    },
     "%@ seconds" : {
       "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number."
+    },
+    "%@ twice" : {
+      "comment" : "A keyboard shortcut that is its key pressed twice quickly, as spoken or shown. %@ is the shortcut, such as \"W\" or \"Command + I\"."
+    },
+    "%@ works in %@." : {
+      "comment" : "Announced by VoiceOver after the listener chose where a keyboard shortcut works. %1$@ is the action's name and %2$@ names the windows, such as \"every window\" or \"Library windows\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ works in %2$@."
+          }
+        }
+      }
+    },
+    "%@, recorded for %@" : {
+      "comment" : "Announced by VoiceOver after a key became a keyboard shortcut. %1$@ is the key in words, such as \"Shift + R\" or \"W twice\", and %2$@ is the action's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, recorded for %2$@"
+          }
+        }
+      }
+    },
+    "%@." : {
+      "comment" : "Ends a sentence with its full stop. %@ is the sentence without it. Chinese and Japanese use their own full stop here."
+    },
+    "%@: %@" : {
+      "comment" : "A name, a colon, and its value, such as a keyboard shortcut action's name and its keys, or a control's label and its value. %1$@ is the name and %2$@ is the value.\nThe name of a keyboard shortcut action with the name of its group before it, such as an audio editor action. %1$@ is the group's name and %2$@ the action's own name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
     },
     "%lld articles" : {
       "comment" : "A count of news articles in a list, counted beside books. %lld is the number of articles.",
@@ -510,6 +607,18 @@
         }
       }
     },
+    "Add Feed…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Subscribes to a podcast or news feed. Also the title of the menu command of the same name."
+    },
+    "Add Marker" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Adds a marker at the current position."
+    },
+    "Add shortcut" : {
+      "comment" : "Label of the button, in a keyboard shortcut action's row in Settings, that adds one more key to the action."
+    },
+    "Add to Reading List" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Adds the selected books to the end of the reading list. Also the title of the menu command of the same name."
+    },
     "Added %lld books to the reading list." : {
       "comment" : "VoiceOver announcement after several books were added to the reading list. %lld is the number of books added.",
       "localizations" : {
@@ -554,8 +663,17 @@
         }
       }
     },
+    "Ampersand" : {
+      "comment" : "Name of the punctuation key \"&\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Ampersand\"."
+    },
     "An unknown error occurred." : {
       "comment" : "Message of an alert about a problem, when nothing more is known about it."
+    },
+    "Apostrophe" : {
+      "comment" : "Name of the punctuation key \"'\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Apostrophe\"."
+    },
+    "Apply Filter…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the choice of audio filters to apply to the selection."
     },
     "Articles (%lld)" : {
       "comment" : "The header of a list's news articles, with their count: \"Articles (3)\". %lld is the number of articles.",
@@ -590,6 +708,18 @@
           }
         }
       }
+    },
+    "Asterisk" : {
+      "comment" : "Name of the punctuation key \"*\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Asterisk\"."
+    },
+    "At Sign" : {
+      "comment" : "Name of the punctuation key \"@\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + At Sign\"."
+    },
+    "Audio Editor" : {
+      "comment" : "Heading of the group of the audio editor's keyboard shortcuts in Settings."
+    },
+    "Audio Info…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Shows information about the audio, such as its format and length."
     },
     "Available only while this feed's articles go on to another article when one ends" : {
       "comment" : "VoiceOver hint of the dimmed Open the next article in pop-up button in a news feed's Feed Info: when it can be used.",
@@ -634,6 +764,30 @@
           }
         }
       }
+    },
+    "Back 10 Seconds" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back ten seconds."
+    },
+    "Back One Second" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back one second."
+    },
+    "Back a Tenth of a Second" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back a tenth of a second."
+    },
+    "Backslash" : {
+      "comment" : "Name of the punctuation key \"\\\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Backslash\"."
+    },
+    "Begin" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Begin\"."
+    },
+    "Book" : {
+      "comment" : "Title of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it."
+    },
+    "Book Info" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book's information, such as title and author. Also the title of the menu command of the same name."
+    },
+    "Book Reader" : {
+      "comment" : "Title of a window in which a book is read, before the window shows its own book's title. Also the name of the window group."
     },
     "Bookmark %@" : {
       "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -748,7 +902,7 @@
       }
     },
     "Bookmarks" : {
-      "comment" : "The name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.",
+      "comment" : "Heading of the group of bookmark keyboard shortcuts in Settings, and the title of the Bookmarks menu.\nThe name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.\nTitle of the Bookmarks menu in the menu bar, which holds the commands that add and move between a book's bookmarks. Only a reader window shows it.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -781,6 +935,9 @@
         }
       }
     },
+    "Break" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Break\"."
+    },
     "Cancel" : {
       "comment" : "Button that closes a sheet or answers a question without doing or changing anything.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.",
       "localizations" : {
@@ -799,6 +956,20 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cancelar temporizador"
+          }
+        }
+      }
+    },
+    "Caret" : {
+      "comment" : "Name of the punctuation key \"^\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Caret\"."
+    },
+    "Choose %@ to try saving them again, %@ to quit without them, or %@ to keep TextMouth open." : {
+      "comment" : "Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Choose %1$@ to try saving them again, %2$@ to quit without them, or %3$@ to keep TextMouth open."
           }
         }
       }
@@ -869,8 +1040,17 @@
         }
       }
     },
+    "Clear" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Clear\"."
+    },
+    "Clear Display" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Clear Display\"."
+    },
+    "Clear Selection" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selection."
+    },
     "Close" : {
-      "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.",
+      "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -879,6 +1059,27 @@
           }
         }
       }
+    },
+    "Close All" : {
+      "comment" : "Name of the File menu's Close All command, which closes every window, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Colon" : {
+      "comment" : "Name of the punctuation key \":\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Colon\"."
+    },
+    "Comma" : {
+      "comment" : "Name of the punctuation key \",\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Comma\"."
+    },
+    "Command" : {
+      "comment" : "Name of the Command modifier key, spoken or brailled in a keyboard shortcut such as \"Command + I\"."
+    },
+    "Control" : {
+      "comment" : "Name of the Control modifier key, spoken or brailled in a keyboard shortcut such as \"Control + Shift + R\"."
+    },
+    "Copy" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Copies the selected audio.\nName of the Edit menu's Copy command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Copy Reading Position" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Copies a link to the current reading position. Also the title of the menu command of the same name."
     },
     "Could not add the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
@@ -935,8 +1136,20 @@
         }
       }
     },
+    "Cut" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selected audio and keeps it for pasting.\nName of the Edit menu's Cut command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Cycle Backward Navigation Unit" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the previous one. Also the title of the menu command of the same name."
+    },
+    "Cycle Forward Navigation Unit" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the next one. Also the title of the menu command of the same name."
+    },
+    "Decrease Speed" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed slower. Also the title of the menu command of the same name."
+    },
     "Delete" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.",
+      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete\".",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -945,6 +1158,12 @@
           }
         }
       }
+    },
+    "Delete Character" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Character\"."
+    },
+    "Delete Line" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Line\"."
     },
     "Delete bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -957,6 +1176,12 @@
         }
       }
     },
+    "Deletes this keyboard shortcut binding" : {
+      "comment" : "VoiceOver hint of the button that removes one key from a keyboard shortcut action."
+    },
+    "Dollar Sign" : {
+      "comment" : "Name of the punctuation key \"$\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Dollar Sign\"."
+    },
     "Done" : {
       "comment" : "Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.",
       "localizations" : {
@@ -967,6 +1192,15 @@
           }
         }
       }
+    },
+    "Double press time" : {
+      "comment" : "Label of the stepper in Settings that sets how soon a second press of a key must follow the first to count as a double press."
+    },
+    "Double press." : {
+      "comment" : "Announced by VoiceOver at the end of a trial of the double press time: the two presses counted as a double press."
+    },
+    "Down Arrow" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Down Arrow\"."
     },
     "Download cancelled, so playback stopped." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of a feed's next episode or article, which playback was waiting for.",
@@ -1012,6 +1246,9 @@
         }
       }
     },
+    "Edit Mode" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Turns the library list's edit mode on or off. Also the title of the menu command of the same name."
+    },
     "Edit Note" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: edits the bookmark's note.",
       "localizations" : {
@@ -1033,6 +1270,12 @@
           }
         }
       }
+    },
+    "Edited" : {
+      "comment" : "Said after the keys of a keyboard shortcut action the listener changed in Settings, to tell it from one that follows the defaults."
+    },
+    "End" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + End\"."
     },
     "End of book" : {
       "comment" : "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.",
@@ -1067,6 +1310,9 @@
         }
       }
     },
+    "Enter" : {
+      "comment" : "Name of the keypad's Enter key, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Enter\"."
+    },
     "Episodes (%lld)" : {
       "comment" : "The header of a list's podcast episodes, with their count: \"Episodes (5)\". %lld is the number of episodes.",
       "localizations" : {
@@ -1090,8 +1336,14 @@
         }
       }
     },
+    "Equals" : {
+      "comment" : "Name of the punctuation key \"=\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Equals\"."
+    },
     "Error" : {
       "comment" : "Title of an alert about a problem, when the problem has no more specific title."
+    },
+    "Escape" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Escape\"."
     },
     "Every book above it in the reading list is finished" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: the books above it are all finished, and the list passes over finished books. Written without its full stop.",
@@ -1137,6 +1389,18 @@
         }
       }
     },
+    "Every window" : {
+      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in every window."
+    },
+    "Exclamation Mark" : {
+      "comment" : "Name of the punctuation key \"!\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Exclamation Mark\"."
+    },
+    "Execute" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Execute\"."
+    },
+    "Export…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file."
+    },
     "Fading out" : {
       "comment" : "The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader.",
       "localizations" : {
@@ -1147,6 +1411,12 @@
           }
         }
       }
+    },
+    "File" : {
+      "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu."
+    },
+    "Find" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Find\".\nTitle of the Find submenu of the Edit menu, which holds the command that searches the whole library."
     },
     "Finished" : {
       "comment" : "How far a finished book has got, shown and spoken in place of its percent: in the library's row, Speak Info, Where Am I?, and Copy Reading Position.",
@@ -1170,6 +1440,33 @@
         }
       }
     },
+    "Folder or Feed Settings" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the settings of the folder or feed the Library window shows. Also the title of the menu command of the same name."
+    },
+    "For five seconds, the next two presses of any key are no shortcuts, and TextMouth says whether they make a double press." : {
+      "comment" : "VoiceOver hint of the Try a Double Press button: for five seconds key presses are not shortcuts, and TextMouth says whether two presses were a double press."
+    },
+    "Forward 10 Seconds" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward ten seconds."
+    },
+    "Forward Delete" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Forward Delete\"."
+    },
+    "Forward One Second" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward one second."
+    },
+    "Forward a Tenth of a Second" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward a tenth of a second."
+    },
+    "Gives this action TextMouth's default shortcuts again, which follow later releases' changes" : {
+      "comment" : "VoiceOver hint of the Reset to Default button of one keyboard shortcut action: the action goes back to the default keys, and later versions of TextMouth may change them."
+    },
+    "Go Back" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Returns to the place the reader jumped from, like a browser's Back. Also the title of the menu command of the same name."
+    },
+    "Go Forward" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes forward again after Go Back. Also the title of the menu command of the same name."
+    },
     "Go To" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.",
       "localizations" : {
@@ -1180,6 +1477,48 @@
           }
         }
       }
+    },
+    "Go to End" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the end of the audio."
+    },
+    "Go to Library" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Brings the Library window forward from a book. Also the title of the menu command of the same name."
+    },
+    "Go to Page…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens a field to type a page number as the book numbers its pages. Also the title of the menu command of the same name."
+    },
+    "Go to Start" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the start of the audio."
+    },
+    "Go to Time…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a time to move to."
+    },
+    "Go to View 1" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the first view of the Library window's View pop-up; the number is part of the name."
+    },
+    "Go to View 2" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the second view of the Library window's View pop-up; the number is part of the name."
+    },
+    "Go to View 3" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the third view of the Library window's View pop-up; the number is part of the name."
+    },
+    "Go to View 4" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the fourth view of the Library window's View pop-up; the number is part of the name."
+    },
+    "Go to View 5" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the fifth view of the Library window's View pop-up; the number is part of the name."
+    },
+    "Go to View 6" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the sixth view of the Library window's View pop-up; the number is part of the name."
+    },
+    "Go to View 7" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the seventh view of the Library window's View pop-up; the number is part of the name."
+    },
+    "Go to View 8" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the eighth view of the Library window's View pop-up; the number is part of the name."
+    },
+    "Go to View 9" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the ninth view of the Library window's View pop-up; the number is part of the name."
     },
     "Go to bookmark %@" : {
       "comment" : "VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -1203,6 +1542,33 @@
         }
       }
     },
+    "Grave Accent" : {
+      "comment" : "Name of the punctuation key \"`\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Grave Accent\"."
+    },
+    "Greater Than" : {
+      "comment" : "Name of the punctuation key \">\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Greater Than\"."
+    },
+    "Help" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Help\"."
+    },
+    "Hide Others" : {
+      "comment" : "Name of the application menu's Hide Others command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Hide TextMouth" : {
+      "comment" : "Name of the application menu's Hide command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Home" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Home\"."
+    },
+    "How soon a second press must follow the first to make a double press. A key with a different action for each waits this long before its single press acts." : {
+      "comment" : "Hint of the double press time stepper in Settings: what the time is, and that a key that has one action for a single press and another for a double press waits for that time before acting on a single press."
+    },
+    "Import Folder…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Imports a DAISY book, or a folder of audio tracks, as a book. Also the title of the menu command of the same name."
+    },
+    "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, so a shortcut that is a letter alone, such as W, works only in other windows." : {
+      "comment" : "Note in the Shortcuts tab of Settings. In a Library window, a letter key pressed with no other key jumps to the first book or folder starting with that letter, so a shortcut made of a letter alone, such as W, cannot work in a Library window."
+    },
     "In reading list" : {
       "comment" : "Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list.",
       "localizations" : {
@@ -1213,6 +1579,27 @@
           }
         }
       }
+    },
+    "Increase Speed" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed faster. Also the title of the menu command of the same name."
+    },
+    "Information" : {
+      "comment" : "Heading of the group of keyboard shortcuts that speak information, such as Where Am I, in Settings."
+    },
+    "Insert" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\"."
+    },
+    "Insert Chapter Marker…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to name and insert a chapter marker."
+    },
+    "Insert Character" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert Character\"."
+    },
+    "Insert Line" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert Line\"."
+    },
+    "Insert Silence…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a length of silence to insert."
     },
     "Keep these books on this Mac" : {
       "comment" : "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac.",
@@ -1247,11 +1634,50 @@
         }
       }
     },
+    "Last try: %@" : {
+      "comment" : "Text below the Try a Double Press button after a trial ended. %@ is what the trial found, a whole sentence such as \"Double press.\"."
+    },
+    "Left Arrow" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Arrow\"."
+    },
+    "Left Brace" : {
+      "comment" : "Name of the punctuation key \"{\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Brace\"."
+    },
+    "Left Bracket" : {
+      "comment" : "Name of the punctuation key \"[\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Bracket\"."
+    },
+    "Left Parenthesis" : {
+      "comment" : "Name of the punctuation key \"(\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Parenthesis\"."
+    },
+    "Less Than" : {
+      "comment" : "Name of the punctuation key \"<\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Less Than\"."
+    },
     "Library" : {
-      "comment" : "Title of the first screen, the list of the user's books and folders."
+      "comment" : "Heading of the group of Library window keyboard shortcuts in Settings, and the title of the Library menu.\nTitle of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.\nTitle of the first screen, the list of the user's books and folders."
+    },
+    "Library windows" : {
+      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.\nNames where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed."
     },
     "Loading" : {
       "comment" : "Value of the Play button while the book is loading, spoken by VoiceOver."
+    },
+    "Make Double Press" : {
+      "comment" : "VoiceOver action and context menu item of a keyboard shortcut's key button: changes a single press of the key into the key pressed twice quickly."
+    },
+    "Make Single Press" : {
+      "comment" : "VoiceOver action and context menu item of a keyboard shortcut's key button: changes a key pressed twice quickly into a single press of the key."
+    },
+    "Mark In" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts a selection at the current position."
+    },
+    "Mark Out" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Ends the selection at the current position."
+    },
+    "Markers and Pauses…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the list of markers and silent pauses."
+    },
+    "Menu" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Menu\"."
     },
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
@@ -1264,6 +1690,15 @@
         }
       }
     },
+    "Minimize" : {
+      "comment" : "Name of the Window menu's Minimize command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Minimize All" : {
+      "comment" : "Name of the Window menu's Minimize All command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Minus" : {
+      "comment" : "Name of the punctuation key \"-\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Minus\"."
+    },
     "Minutes" : {
       "comment" : "Placeholder of the sleep timer sheet's field of a custom number of minutes.",
       "localizations" : {
@@ -1274,6 +1709,39 @@
           }
         }
       }
+    },
+    "Mode Switch" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Mode Switch\"."
+    },
+    "Move Book Down" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place down in its folder. Also the title of the menu command of the same name."
+    },
+    "Move Book Up" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place up in its folder. Also the title of the menu command of the same name."
+    },
+    "Move to Folder" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected books into a folder."
+    },
+    "Move to Folder..." : {
+      "comment" : "Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows."
+    },
+    "Move to Library…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves feed episodes or articles into a library folder as books of their own. Also the title of the menu command of the same name."
+    },
+    "Navigate" : {
+      "comment" : "Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it."
+    },
+    "Navigation" : {
+      "comment" : "Heading of the group of navigation keyboard shortcuts in Settings."
+    },
+    "New Folder" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Makes a new folder in the library. Also the title of the menu command of the same name."
+    },
+    "New Recording" : {
+      "comment" : "Heading of the group of the Record window's keyboard shortcuts in Settings, and the title of the Record window."
+    },
+    "New Recording…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens the window that records a new book from the microphone. Also the title of the menu command of the same name."
     },
     "New Timer" : {
       "comment" : "Heading of the sleep timer sheet's section of timers to set: the minute presets and a custom number of minutes.",
@@ -1286,6 +1754,24 @@
         }
       }
     },
+    "New from Text…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Makes a new book from text the listener types or pastes. Also the title of the menu command of the same name."
+    },
+    "Next" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Next\"."
+    },
+    "Next Bookmark" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the next bookmark. Also the title of the menu command of the same name."
+    },
+    "Next Chapter Marker" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next chapter marker."
+    },
+    "Next Heading" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the next heading in the book. Also the title of the menu command of the same name."
+    },
+    "Next Pause" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next silent pause found in the audio."
+    },
     "Next book not started because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the next book was not started, because the sleep timer would not stop it. Written without its full stop.",
       "localizations" : {
@@ -1297,6 +1783,12 @@
         }
       }
     },
+    "Next in Folder" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the next book in the same folder or feed. Also the title of the menu command of the same name."
+    },
+    "Next in Reading List" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the next book in the reading list. Also the title of the menu command of the same name."
+    },
     "No bookmarks yet." : {
       "comment" : "Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.",
       "localizations" : {
@@ -1307,6 +1799,9 @@
           }
         }
       }
+    },
+    "No key was pressed twice." : {
+      "comment" : "Announced by VoiceOver at the end of a trial of the double press time when no second press came in time."
     },
     "No more books in folder" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": its library folder has no book after it. Written without its full stop.",
@@ -1374,6 +1869,12 @@
         }
       }
     },
+    "No shortcut" : {
+      "comment" : "Said of an action that has no keyboard shortcut, in place of its keys, such as \"Release Media Controls: No shortcut\"."
+    },
+    "None" : {
+      "comment" : "Shown in place of a keyboard shortcut when an action has none."
+    },
     "None of the %lld selected books is in the reading list." : {
       "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: no book selected is on the list. %lld is the number of books selected (two or more).",
       "localizations" : {
@@ -1418,6 +1919,9 @@
         }
       }
     },
+    "Number Sign" : {
+      "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\"."
+    },
     "OK" : {
       "comment" : "Button that dismisses an alert about a problem."
     },
@@ -1431,6 +1935,12 @@
           }
         }
       }
+    },
+    "Open Book…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens a book file to import it. Also the title of the menu command of the same name."
+    },
+    "Open Selected Book" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book in a reader."
     },
     "Open the next article in" : {
       "comment" : "Label of the pop-up button in a news feed's Feed Info, choosing where the feed's next article opens.",
@@ -1487,6 +1997,18 @@
         }
       }
     },
+    "Option" : {
+      "comment" : "Name of the Option modifier key, spoken or brailled in a keyboard shortcut such as \"Option + Command + G\"."
+    },
+    "Page Down" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Down\"."
+    },
+    "Page Up" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Up\"."
+    },
+    "Panels" : {
+      "comment" : "Heading of the group of keyboard shortcuts that open a reader's panels, such as the headings list and the sleep timer, in Settings."
+    },
     "Passes over finished books when a book from the list ends." : {
       "comment" : "VoiceOver hint of the Reading List's Skip finished books checkbox.",
       "localizations" : {
@@ -1498,8 +2020,17 @@
         }
       }
     },
+    "Paste" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Inserts the copied audio at the current position.\nName of the Edit menu's Paste command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Paste and Match Style" : {
+      "comment" : "Name of the Edit menu's Paste and Match Style command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
     "Pause" : {
-      "comment" : "Label of the button that pauses the book while it is playing."
+      "comment" : "Label of the button that pauses the book while it is playing.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\"."
+    },
+    "Pause or Resume" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Pauses the recording, or resumes a paused one."
     },
     "Pause playback after:" : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes.",
@@ -1512,8 +2043,20 @@
         }
       }
     },
+    "Percent Sign" : {
+      "comment" : "Name of the punctuation key \"%\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Percent Sign\"."
+    },
+    "Period" : {
+      "comment" : "Name of the punctuation key \".\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Period\"."
+    },
     "Play" : {
       "comment" : "Label of the button that starts playing the book."
+    },
+    "Play / Pause" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Starts or pauses reading aloud or playing the book. Also the title of the menu command of the same name.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts or pauses playback in the audio editor."
+    },
+    "Play Selection" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Plays only the selection."
     },
     "Play the book above" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.",
@@ -1536,6 +2079,9 @@
           }
         }
       }
+    },
+    "Playback" : {
+      "comment" : "Heading of the group of playback keyboard shortcuts in Settings, and the title of the Playback menu.\nTitle of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it."
     },
     "Plays the book and pauses before it starts again." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends.",
@@ -1592,6 +2138,69 @@
         }
       }
     },
+    "Plus" : {
+      "comment" : "Name of the punctuation key \"+\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Plus\"."
+    },
+    "Press a key twice." : {
+      "comment" : "Announced by VoiceOver when a trial of the double press time starts: asks the listener to press one key twice."
+    },
+    "Press a key..." : {
+      "comment" : "Shown on a keyboard shortcut's key button while it waits for the new key. The three periods say that a key press is awaited."
+    },
+    "Press the new key, or Escape to cancel." : {
+      "comment" : "VoiceOver hint of a keyboard shortcut's key button while it waits for the new key: Escape stops recording."
+    },
+    "Previous" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Previous\"."
+    },
+    "Previous Bookmark" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the previous bookmark. Also the title of the menu command of the same name."
+    },
+    "Previous Chapter Marker" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous chapter marker."
+    },
+    "Previous Heading" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the previous heading in the book. Also the title of the menu command of the same name."
+    },
+    "Previous Pause" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous silent pause found in the audio."
+    },
+    "Previous in Folder" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the previous book in the same folder or feed. Also the title of the menu command of the same name."
+    },
+    "Previous in Reading List" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the previous book in the reading list. Also the title of the menu command of the same name."
+    },
+    "Print" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print\"."
+    },
+    "Print Screen" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print Screen\"."
+    },
+    "Punch In" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Records new audio over the selection."
+    },
+    "Question Mark" : {
+      "comment" : "Name of the punctuation key \"?\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Question Mark\"."
+    },
+    "Quit Anyway" : {
+      "comment" : "Button of the unsaved-changes alert that quits TextMouth and leaves the changes unsaved."
+    },
+    "Quit TextMouth" : {
+      "comment" : "Name of the application menu's Quit command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Quitting TextMouth" : {
+      "comment" : "Title of the panel TextMouth shows, and the start of what it says aloud, while it finishes work before quitting."
+    },
+    "Quitting now leaves these changes unsaved:" : {
+      "comment" : "First line of the alert's message when quitting would leave changes unsaved; a list of what is unsaved follows it."
+    },
+    "Quotation Mark" : {
+      "comment" : "Name of the punctuation key \"\"\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Quotation Mark\"."
+    },
+    "Reader windows" : {
+      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the reader windows, where a book is read."
+    },
     "Reading List" : {
       "comment" : "The start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List.",
       "localizations" : {
@@ -1630,6 +2239,24 @@
           }
         }
       }
+    },
+    "Record" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Starts recording in the Record window."
+    },
+    "Recording shortcut. Press a key with Command or Control." : {
+      "comment" : "VoiceOver label of a menu command's key button while it waits for the new key: the shortcut of a menu command must be a key held with the Command or Control key."
+    },
+    "Recording shortcut. Press a key, or press it twice for a double press." : {
+      "comment" : "VoiceOver label of a keyboard shortcut's key button while it waits for the new key: pressing a key records it, and pressing the same key twice quickly records a double press."
+    },
+    "Records a new shortcut." : {
+      "comment" : "VoiceOver hint of a keyboard shortcut's key button, and of the add shortcut button, in Settings: the next key pressed becomes the shortcut."
+    },
+    "Redo" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Redo\".\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Does the last undone edit again.\nName of the Edit menu's Redo command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Release Media Controls" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Gives the Mac's media keys back to other apps. Also the title of the menu command of the same name."
     },
     "Remove" : {
       "comment" : "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.",
@@ -1758,6 +2385,23 @@
         }
       }
     },
+    "Remove from Library" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Removes the selected books from the library."
+    },
+    "Remove from Reading List" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Takes the selected books off the reading list. Also the title of the menu command of the same name."
+    },
+    "Remove shortcut %@ from %@" : {
+      "comment" : "VoiceOver label of the button that removes one key from a keyboard shortcut action. %1$@ is the key in words, such as \"Command + I\", and %2$@ is the action's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Remove shortcut %1$@ from %2$@"
+          }
+        }
+      }
+    },
     "Removed %lld books from the reading list." : {
       "comment" : "VoiceOver announcement after several books were taken off the reading list. %lld is the number of books taken off.",
       "localizations" : {
@@ -1780,6 +2424,15 @@
         }
       }
     },
+    "Reset" : {
+      "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\"."
+    },
+    "Reset %@ to Default" : {
+      "comment" : "VoiceOver label of the Reset to Default button in the row of a keyboard shortcut action. %@ is the action's name."
+    },
+    "Reset Keyboard Shortcuts?" : {
+      "comment" : "Title of the alert that asks the listener to confirm resetting every keyboard shortcut to its default."
+    },
     "Reset Timer" : {
       "comment" : "Button of the sleep timer sheet that starts the running timer again from its whole length.",
       "localizations" : {
@@ -1790,6 +2443,18 @@
           }
         }
       }
+    },
+    "Reset all keyboard shortcuts to defaults" : {
+      "comment" : "VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again."
+    },
+    "Reset to Default" : {
+      "comment" : "Button in the row of a keyboard shortcut action the listener changed, and the row's VoiceOver action: gives that one action its default keys again."
+    },
+    "Reset to Defaults" : {
+      "comment" : "Button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again. It asks to confirm first."
+    },
+    "Restart Sleep Timer" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Starts the sleep timer again with its last length."
     },
     "Restarting: %@" : {
       "comment" : "VoiceOver announcement as a book set to loop starts again from its beginning. %@ is the book's title.",
@@ -1813,6 +2478,12 @@
         }
       }
     },
+    "Retry" : {
+      "comment" : "Button of the unsaved-changes alert that tries to save the changes again."
+    },
+    "Return" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Return\"."
+    },
     "Returned to previous position" : {
       "comment" : "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result.",
       "localizations" : {
@@ -1835,8 +2506,23 @@
         }
       }
     },
+    "Revert to Original…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Throws away all edits and goes back to the original audio."
+    },
+    "Right Arrow" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Arrow\"."
+    },
+    "Right Brace" : {
+      "comment" : "Name of the punctuation key \"}\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Brace\"."
+    },
+    "Right Bracket" : {
+      "comment" : "Name of the punctuation key \"]\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Bracket\"."
+    },
+    "Right Parenthesis" : {
+      "comment" : "Name of the punctuation key \")\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Parenthesis\"."
+    },
     "Save" : {
-      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.",
+      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Saves the edited audio.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1845,6 +2531,33 @@
           }
         }
       }
+    },
+    "Scroll Lock" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Scroll Lock\"."
+    },
+    "Search Library…" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the window that searches the text of every book. Also the title of the menu command of the same name."
+    },
+    "Search in Book" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Searches the text of the open book. Also the title of the menu command of the same name."
+    },
+    "Select" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Select\"."
+    },
+    "Select All" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Selects every row of the library list.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects all of the audio.\nName of the Edit menu's Select All command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Select Chapter" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects the chapter at the current position."
+    },
+    "Select to Next Pause" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection forward to the next silent pause."
+    },
+    "Select to Previous Pause" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection back to the previous silent pause."
+    },
+    "Semicolon" : {
+      "comment" : "Name of the punctuation key \";\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Semicolon\"."
     },
     "Set" : {
       "comment" : "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes.",
@@ -1904,6 +2617,27 @@
         }
       }
     },
+    "Settings" : {
+      "comment" : "Name of the application menu's Settings command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Shift" : {
+      "comment" : "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\"."
+    },
+    "Show Bookmarks" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Opens the list of the book's bookmarks. Also the title of the menu command of the same name."
+    },
+    "Show Headings" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the list of the book's headings. Also the title of the menu command of the same name."
+    },
+    "Show Sleep Timer" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the sleep timer, which stops playback after a time. Also the title of the menu command of the same name."
+    },
+    "Skip Backward" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves back by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name."
+    },
+    "Skip Forward" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves forward by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name."
+    },
     "Skip finished books" : {
       "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.",
       "localizations" : {
@@ -1914,6 +2648,9 @@
           }
         }
       }
+    },
+    "Slash" : {
+      "comment" : "Name of the punctuation key \"/\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Slash\"."
     },
     "Sleep Timer" : {
       "comment" : "The name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.",
@@ -2072,6 +2809,9 @@
         }
       }
     },
+    "Some Changes Could Not Be Saved" : {
+      "comment" : "Title of the alert shown when TextMouth is asked to quit while some changes could not be written to disk."
+    },
     "Sort books by %@" : {
       "comment" : "VoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order.",
       "localizations" : {
@@ -2093,6 +2833,24 @@
           }
         }
       }
+    },
+    "Space" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Space\"."
+    },
+    "Speak Download Progress" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the feed downloads under way have got. Also the title of the menu command of the same name."
+    },
+    "Speak Full Info" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the selected book, folder or feed. Also the title of the menu command of the same name."
+    },
+    "Speak Import Progress" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the imports under way have got. Also the title of the menu command of the same name."
+    },
+    "Speak Info" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the selected book, folder or feed. Also the title of the menu command of the same name."
+    },
+    "Speak Selection" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks what is selected, with its length."
     },
     "Start of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: no book above it. Written without its full stop.",
@@ -2139,7 +2897,7 @@
       }
     },
     "Stop" : {
-      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.",
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Stop\".\nName of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Stops the recording.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Stops playback in the audio editor.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2181,6 +2939,18 @@
           }
         }
       }
+    },
+    "System" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System\"."
+    },
+    "System Request" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System Request\"."
+    },
+    "Tab" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tab\"."
+    },
+    "Taken from %@" : {
+      "comment" : "Announced by VoiceOver after a key was given to a keyboard shortcut action that another action had. %@ names the action or actions that lost the key, such as \"Play / Pause and Where Am I?\"."
     },
     "Takes %lld to %lld minutes." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
@@ -2241,6 +3011,9 @@
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
     },
+    "TextMouth is finishing up before it quits: %@. It will quit as soon as that is done." : {
+      "comment" : "Panel text and announcement while TextMouth finishes work before quitting. %@ is the list of what is under way, such as \"saving the library and keeping downloads\", already joined in the language's own list style."
+    },
     "TextMouth is not downloading right now." : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
       "localizations" : {
@@ -2263,6 +3036,9 @@
         }
       }
     },
+    "The audio editor" : {
+      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works only in the audio editor's windows."
+    },
     "The book is in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
       "localizations" : {
@@ -2284,6 +3060,9 @@
           }
         }
       }
+    },
+    "The keyboard shortcuts are reset to the defaults." : {
+      "comment" : "Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default."
     },
     "The next article could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next article failed. %@ is the download's own sentence saying why.",
@@ -2329,6 +3108,9 @@
         }
       }
     },
+    "The recording window" : {
+      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works only in the Record window."
+    },
     "This Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there.",
       "localizations" : {
@@ -2350,6 +3132,12 @@
           }
         }
       }
+    },
+    "This will reset all keyboard shortcuts to their default values. Any custom bindings will be lost." : {
+      "comment" : "Message of the alert that asks the listener to confirm resetting every keyboard shortcut to its default: the shortcuts they changed are lost."
+    },
+    "Tilde" : {
+      "comment" : "Name of the punctuation key \"~\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tilde\"."
     },
     "Timer reset." : {
       "comment" : "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again.",
@@ -2431,6 +3219,52 @@
         }
       }
     },
+    "Toggle Bookmark" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Adds a bookmark at the reading position, or removes the one there. Also the title of the menu command of the same name."
+    },
+    "Trim to Selection" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Deletes all audio outside the selection."
+    },
+    "Try a Double Press" : {
+      "comment" : "Button in the Shortcuts tab of Settings that lets the listener press a key twice to find out whether the double press time counts the two presses as a double press."
+    },
+    "Two different keys. A double press is one key pressed twice." : {
+      "comment" : "Announced by VoiceOver at the end of a trial of the double press time when the two presses were of different keys."
+    },
+    "Two presses, %@ apart. Set the time above %@ to count them as one." : {
+      "comment" : "Announced by VoiceOver at the end of a trial of the double press time when the two presses were too far apart for the time set. Both %1$@ and %2$@ are the time between the presses, such as \"0.7 seconds\"; the listener should set the double press time above it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Two presses, %1$@ apart. Set the time above %2$@ to count them as one."
+          }
+        }
+      }
+    },
+    "Two presses, %@ apart. The double press time goes up to %@." : {
+      "comment" : "Announced by VoiceOver at the end of a trial of the double press time when the two presses were farther apart than the longest time allowed. %1$@ is the time between the presses, such as \"2.5 seconds\", and %2$@ is the longest time allowed, such as \"2 seconds\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Two presses, %1$@ apart. The double press time goes up to %2$@."
+          }
+        }
+      }
+    },
+    "Underscore" : {
+      "comment" : "Name of the punctuation key \"_\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Underscore\"."
+    },
+    "Undo" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Undo\".\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Undoes the last edit.\nName of the Edit menu's Undo command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Up Arrow" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Up Arrow\"."
+    },
+    "Up One Level" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes up one level, to the folder that holds the current one."
+    },
     "Use the global setting (%@)" : {
       "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.",
       "localizations" : {
@@ -2442,6 +3276,12 @@
         }
       }
     },
+    "User" : {
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + User\"."
+    },
+    "Vertical Bar" : {
+      "comment" : "Name of the punctuation key \"|\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Vertical Bar\"."
+    },
     "When a book ends" : {
       "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.",
       "localizations" : {
@@ -2452,6 +3292,15 @@
           }
         }
       }
+    },
+    "Where Am I?" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the reading position. Also the title of the menu command of the same name.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks the position and the selection."
+    },
+    "Where Am I? Full Summary" : {
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the reading position. Also the title of the menu command of the same name."
+    },
+    "Where this shortcut works. Choosing makes it yours; Reset to Default gives back where it works by default." : {
+      "comment" : "VoiceOver hint of the Works in pop-up button of a keyboard shortcut action: choosing a choice makes the action the listener's own, and Reset to Default restores where it works by default."
     },
     "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
       "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",
@@ -2470,8 +3319,26 @@
         }
       }
     },
+    "Works in" : {
+      "comment" : "Label of the pop-up button in a keyboard shortcut action's row that chooses in which windows the shortcut works, such as every window or Library windows."
+    },
+    "Works in %@" : {
+      "comment" : "Says where a keyboard shortcut works, in a row of the Shortcuts tab or an announcement. %@ names the windows, such as \"every window\", \"Library windows\", or \"the audio editor\"."
+    },
     "Your library is empty. Add to Library adds a book." : {
       "comment" : "The only row of an empty library. \"Add to Library\" is the name of the button that adds a book, so keep it the same as that button's label."
+    },
+    "a menu command has one shortcut" : {
+      "comment" : "The reason, said after \"not recorded\", why a second key cannot be added to a menu command's shortcut. Lower case, since it follows a colon."
+    },
+    "a menu command's shortcut is one press of a key with Command or Control" : {
+      "comment" : "The reason, said after \"not recorded\", why a keyboard shortcut cannot be a menu command's or a button's: it must be one press of a key held with Command or Control. Lower case, since it follows a colon."
+    },
+    "a text field edits with it, and a menu command's shortcut would take it from the field" : {
+      "comment" : "The reason, said after \"not recorded\", why a key cannot be a menu command's shortcut: text fields use that key to edit text. Lower case, since it follows a colon."
+    },
+    "every window" : {
+      "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in every window.\": all windows. Lower case in English, since it is in the middle of a sentence."
     },
     "fading out" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.",
@@ -2495,6 +3362,9 @@
         }
       }
     },
+    "reader windows" : {
+      "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in reader windows.\": the windows where a book is read. Lower case in English, since it is in the middle of a sentence."
+    },
     "stops at the end of the book" : {
       "comment" : "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.",
       "localizations" : {
@@ -2516,6 +3386,12 @@
           }
         }
       }
+    },
+    "the audio editor" : {
+      "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in the audio editor.\": the audio editor's windows. Lower case in English, since it is in the middle of a sentence."
+    },
+    "the recording window" : {
+      "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in the recording window.\": the Record window. Lower case in English, since it is in the middle of a sentence."
     }
   },
   "version" : "1.0"
