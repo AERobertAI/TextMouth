@@ -163,6 +163,7 @@ TextMouth/Services/RecordingCaptureBackend.swift
 TextMouth/Services/RecordingEncoder.swift
 TextMouth/Services/RecordingService.swift
 TextMouth/Services/RecordingTake.swift
+TextMouth/Services/RepeatedSymbolNames.swift
 TextMouth/Services/SavedFile.swift
 TextMouth/Services/SleepTimerRegistry.swift
 TextMouth/Services/SleepTimerService.swift
@@ -170,6 +171,7 @@ TextMouth/Services/SpeechService.swift
 TextMouth/Services/StorageDestinationAssessment.swift
 TextMouth/Services/StorageGeneration.swift
 TextMouth/Services/TextMouthPaths.swift
+TextMouth/Services/TextSubstitutionService.swift
 TextMouth/Services/TextutilConverter.swift
 TextMouth/Services/TranscriptAccuracy.swift
 TextMouth/Services/TranscriptCleanupRuleFile.swift
@@ -264,6 +266,7 @@ TextMouth/Views/Settings/LibraryViewsSettingsView.swift
 TextMouth/Views/Settings/LogsSettingsSection.swift
 TextMouth/Views/Settings/MiscellaneousSettingsView.swift
 TextMouth/Views/Settings/ReadingStatsView.swift
+TextMouth/Views/Settings/RepeatedSymbolsSettingsView.swift
 TextMouth/Views/Settings/SettingsView.swift
 TextMouth/Views/Settings/StorageSettingsView.swift
 TextMouth/Views/Settings/SubstitutionsSettingsView.swift

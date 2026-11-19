@@ -1615,6 +1615,9 @@
     "%@: Some changes are not saved, and switching libraries would lose them." : {
       "comment" : "First sentence of why Use This Library was refused: changes could not be saved yet. %@ is the failure's lead-in, \"Failed to switch libraries\"."
     },
+    "%@: every symbol is read as written" : {
+      "comment" : "A choice of the pop-up button that sets how a run of one symbol is read. %@ is the name of the style, Repeat each symbol."
+    },
     "%@: more than %lld matches" : {
       "comment" : "A book's heading over its search matches when the count stopped at its limit. %1$@ is the book's title, with its author when known, and %2$lld is the number of matches.",
       "localizations" : {
@@ -1649,6 +1652,55 @@
     },
     "%@: not recording" : {
       "comment" : "The microphone level line of the Record window while nothing is recording. %@ is the level's label."
+    },
+    "%@: off while Never collapse is checked" : {
+      "comment" : "A choice of the pop-up button that sets how a run of one symbol is read, while the Never collapse checkbox is checked. %@ is the name of the style, Say how many or Leave out. Never collapse is the name of the checkbox."
+    },
+    "%@: runs of %lld or more are read as a count" : {
+      "comment" : "A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Say how many; %2$lld is the length from which a run is collapsed.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: runs of %lld or more are read as a count"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: runs of %lld or more are read as a count"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@: runs of %lld or more are skipped, with a pause" : {
+      "comment" : "A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Leave out; %2$lld is the length from which a run is collapsed.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: runs of %lld or more are skipped, with a pause"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: runs of %lld or more are skipped, with a pause"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%@: silent" : {
       "comment" : "The microphone level line of the Record window when no sound reaches TextMouth. %@ is the level's label."
@@ -3979,6 +4031,29 @@
         }
       }
     },
+    "%lld symbols" : {
+      "comment" : "VoiceOver value of the stepper that sets the length from which a run of one symbol is collapsed. %lld is the number of symbols.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld symbol"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld symbols"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld text books" : {
       "comment" : "A count of finished text books, one item of the Stats pane's breakdown of finished books by kind, such as \"4 text books\". %lld is the number of books.",
       "localizations" : {
@@ -4482,8 +4557,14 @@
     "A newer TextMouth edited this audio, so this version leaves its edits alone." : {
       "comment" : "Said when the book's saved edit history was written by a later version of TextMouth than this one."
     },
+    "A number from 2 to 99. A run with at least this many symbols is read as a count or left out, as the style says." : {
+      "comment" : "VoiceOver hint of the field that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols."
+    },
     "A quote isn't closed in “%@”." : {
       "comment" : "Problem found in a typed filter chain: a single quote is opened and never closed. %@ is the text of the part holding it."
+    },
+    "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Runs are rewritten before the rules above, in speech only: the screen and braille keep every symbol." : {
+      "comment" : "Caption under the controls of Settings, Text, Repeated Symbols that explains what a run is and that only speech changes."
     },
     "A stretch of the edits runs past the end of “%@”." : {
       "comment" : "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name."
@@ -6180,6 +6261,9 @@
     "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook." : {
       "comment" : "Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book."
     },
+    "Choose how the voice reads one symbol written several times in a row, such as a line of asterisks" : {
+      "comment" : "VoiceOver hint of the pop-up button that chooses how the voice reads a run of one symbol."
+    },
     "Choose how to remove %@ from the library." : {
       "comment" : "First sentence of the confirmation that asks how to remove books. %@ is what is removed, such as \"“Notes”\" or \"3 books\"."
     },
@@ -6406,6 +6490,9 @@
     },
     "Closing the reader of %@, since editing changes its audio." : {
       "comment" : "Said as a book's reader window is closed before the audio editor opens on the book. %@ is the book's title."
+    },
+    "Collapse runs of at least" : {
+      "comment" : "Label of the field and stepper that set the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols. The number of symbols and the word symbols follow it."
     },
     "Colon" : {
       "comment" : "Name of the punctuation key \":\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Colon\"."
@@ -7570,6 +7657,9 @@
     },
     "Each <!-- page: … --> marks where a page begins." : {
       "comment" : "Third sentence of the Edit Text explanation. \"<!-- page: … -->\" is the literal text of a page marker in the file; it stays exactly as written."
+    },
+    "Each character listed can form a run. Spaces are ignored, a symbol listed twice counts once, and letters and digits never form runs." : {
+      "comment" : "Tooltip and VoiceOver hint of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols."
     },
     "Each line beginning with <!-- chapter: starts a chapter; keep those lines." : {
       "comment" : "Second sentence of the Edit Text explanation. \"<!-- chapter:\" is the literal text that begins a chapter line in the file; it stays exactly as written."
@@ -9755,6 +9845,9 @@
     "Leading articles" : {
       "comment" : "Label of the pop-up in the Library settings that chooses whether a title's leading article (The, A, An) counts when sorting and typing."
     },
+    "Leave out" : {
+      "comment" : "A style of reading a run of one symbol: the voice leaves the run out and pauses in its place."
+    },
     "Leaves the audiobook untranscribed; Transcribe Audio does it later." : {
       "comment" : "VoiceOver hint of the Not Now button of the question offered after an import. Transcribe Audio is the command's name."
     },
@@ -11124,6 +11217,9 @@
     },
     "Neither is newer: each has changes the other lacks." : {
       "comment" : "Sentence of Use This Library's account: each copy has changes the other lacks."
+    },
+    "Never collapse: read every symbol" : {
+      "comment" : "Label of the checkbox in Settings, Text, Repeated Symbols that makes the voice read every symbol of a run, whatever the style."
     },
     "Never delete played downloads" : {
       "comment" : "Title of the checkbox that turns off deleting downloads after playing."
@@ -12674,6 +12770,9 @@
     "Quotation Mark" : {
       "comment" : "Name of the punctuation key \"\"\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Quotation Mark\"."
     },
+    "Raises or lowers the number of symbols by one, from 2 to 99" : {
+      "comment" : "VoiceOver hint of the stepper that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols."
+    },
     "Re-extract All" : {
       "comment" : "Button of the Redo Text Extraction question that starts the extraction."
     },
@@ -13369,6 +13468,15 @@
     "Repack the pages of RAR comics as CBZ comics, then import those." : {
       "comment" : "Advice after the refusal of a comic whose pages are in a RAR archive."
     },
+    "Repeat each symbol" : {
+      "comment" : "A style of reading a run of one symbol: the voice says every symbol of it."
+    },
+    "Repeated Symbols" : {
+      "comment" : "Heading of the group in Settings, Text that sets how the voice reads one symbol written several times in a row, such as a line of asterisks."
+    },
+    "Repeated symbol style" : {
+      "comment" : "VoiceOver label of the pop-up button that chooses how the voice reads a run of one symbol."
+    },
     "Replace %@" : {
       "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": replacing a stretch of audio with a new recording. %@ is the replaced length in title-cased words, such as \"2.5 Seconds\"."
     },
@@ -13460,11 +13568,14 @@
     "Reset all shortcuts to defaults" : {
       "comment" : "VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again."
     },
+    "Reset symbols to default" : {
+      "comment" : "VoiceOver label of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols."
+    },
     "Reset this book's voice, speed, and pitch to the global defaults" : {
       "comment" : "What VoiceOver calls the button that removes a text book's own voice, speed and pitch."
     },
     "Reset to Default" : {
-      "comment" : "Button in Storage settings that moves the library back to the default location.\nButton in the row of a keyboard shortcut action the listener changed, and the row's VoiceOver action: gives that one action its default keys again."
+      "comment" : "Button in Storage settings that moves the library back to the default location.\nButton in the row of a keyboard shortcut action the listener changed, and the row's VoiceOver action: gives that one action its default keys again.\nTitle of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols."
     },
     "Reset to Default Location?" : {
       "comment" : "Title of the question asked before moving the library back to the default location."
@@ -13541,6 +13652,9 @@
     },
     "Restored %@." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once the view is restored, by its restored name. Placeholders in order: name."
+    },
+    "Restores the standard list: asterisks, hyphens, equals signs, and the other ASCII symbols, with bullets, dashes, the ellipsis, and box-drawing lines" : {
+      "comment" : "VoiceOver hint of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols."
     },
     "Restores this action's default shortcuts, which follow later releases' changes" : {
       "comment" : "VoiceOver hint of the Reset to Default button of one keyboard shortcut action: the action goes back to the default keys, and later versions of TextMouth may change them."
@@ -13878,6 +13992,9 @@
     },
     "Saving the recording…" : {
       "comment" : "Status line and announcement of the Record window while a recording is being saved as an audiobook."
+    },
+    "Say how many" : {
+      "comment" : "A style of reading a run of one symbol: the voice says how many symbols the run holds, such as 7 asterisks."
     },
     "Say the page in Where Am I?" : {
       "comment" : "Label of the Playback setting's checkbox that adds the page to Where Am I?, a command that says where the reader is."
@@ -15211,6 +15328,9 @@
     "Storage problems" : {
       "comment" : "VoiceOver label of the banner at the top of the library that lists problems saving or removing files."
     },
+    "Style:" : {
+      "comment" : "Caption beside the pop-up button that chooses how the voice reads a run of one symbol, in Settings, Text, Repeated Symbols."
+    },
     "Subfolders" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's own subfolders, shown only when it has any."
     },
@@ -15297,6 +15417,15 @@
     },
     "Switching to the library in %@..." : {
       "comment" : "Storage settings status line while TextMouth switches to the library in a chosen folder. %@ is the folder's path."
+    },
+    "Symbols reset to the default list" : {
+      "comment" : "Announcement after the list of symbols that can form a run was restored to the standard one."
+    },
+    "Symbols that form runs" : {
+      "comment" : "VoiceOver label of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols."
+    },
+    "Symbols:" : {
+      "comment" : "Caption beside the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols."
     },
     "System" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System\"."
@@ -19465,6 +19594,9 @@
     "When book ends" : {
       "comment" : "Title of the pop-up in the Playback settings that chooses what happens when a book ends."
     },
+    "When checked, every run is read symbol by symbol, whatever the style" : {
+      "comment" : "VoiceOver hint of the Never collapse checkbox in Settings, Text, Repeated Symbols."
+    },
     "When checked, matches must use the same upper and lower case" : {
       "comment" : "VoiceOver hint of the Match Case checkbox."
     },
@@ -20833,6 +20965,9 @@
     },
     "subscribed" : {
       "comment" : "Library view editor: a condition inside a filter's description: the listener is subscribed to the feed."
+    },
+    "symbols" : {
+      "comment" : "The unit shown after the field and stepper that set the length from which a run of one symbol is collapsed, such as \"Collapse runs of at least 4 symbols\"."
     },
     "tenth" : {
       "comment" : "Ordinal word 10th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
