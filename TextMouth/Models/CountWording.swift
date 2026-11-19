@@ -27,6 +27,14 @@ enum CountWording {
         "\(count) \(count == 1 ? singular : plural)"
     }
 
+    /// `count` seconds in English whatever the interface language, "1 second"
+    /// and "62 seconds", for text that goes into the debug log, which stays
+    /// English (`WatchedProcess.KillReason.words`). Never shown to a listener
+    /// by itself; the localized `seconds(_:)` is the one to show.
+    static func englishSeconds(_ count: Int) -> String {
+        phrase(count, singular: "second", plural: "seconds") // l10n: no (debug log text, which stays English)
+    }
+
     // MARK: - Named Counts
 
     // Each named count is one localized string with its English plural
