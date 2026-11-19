@@ -917,7 +917,7 @@ extension LibraryViewModel {
         let activity = audioEditActivity
         let isOpenInReader: @Sendable (UUID) -> Bool = { activity.isOpenInReader($0) }
 
-        TextCacheUpdateQueue.run(books: Self.openBooksFirst(books, open: openBookIDs), update: { book in
+        TextCacheUpdateQueue.run(books: Self.openBooksFirst(books, open: openBookIDsNow), update: { book in
             let update = autoreleasepool {
                 Self.updateTextCache(
                     of: book, force: force, reading: files, access: access, skips: skips, held: held, pages: pages,
@@ -960,7 +960,7 @@ extension LibraryViewModel {
     /// for it has gone first, so none lands over it afterwards.
     func applyTextCacheUpdate(_ update: TextCacheUpdate, atOnce: Bool = false) {
         guard let summary = update.summary else { return }
-        let textForReader = openBookIDs.contains(summary.bookID) ? update.textForOpenReader : nil
+        let textForReader = isBookOpenNow(summary.bookID) ? update.textForOpenReader : nil
         if atOnce {
             analysisSummaries.flush()
         }
@@ -1942,8 +1942,9 @@ extension LibraryViewModel {
     /// book in the data directory, which must not change while it is copied
     /// (FR02). Storage settings ask before offering a move.
     var openBooksRefusal: DataDirectoryMoveRefusal? {
-        guard !openBookIDs.isEmpty else { return nil }
-        let titles = library.books.filter { openBookIDs.contains($0.id) }.map(\.title).sortedStably()
+        let open = openBookIDsNow
+        guard !open.isEmpty else { return nil }
+        let titles = library.books.filter { open.contains($0.id) }.map(\.title).sortedStably()
         return .booksOpen(titles)
     }
 
@@ -2243,7 +2244,7 @@ extension LibraryViewModel {
         let candidates = Self.finishedBooksShortOfTheirEnds(library.books, counted: counted)
         // A book a reader window has open keeps its place: the reader holds
         // the cursor, and its next save would put it back.
-        let open = openBookIDs
+        let open = openBookIDsNow
         let readable = candidates.filter { !open.contains($0.id) }
         let openCount = candidates.count - readable.count
         DispatchQueue.global(qos: .utility).async {
@@ -2270,7 +2271,7 @@ extension LibraryViewModel {
                     // A row that moved while the pass read, or a book a
                     // reader opened meanwhile, keeps its place for later.
                     guard self.bookByID(move.bookID)?.readingPosition == move.from,
-                          !self.openBookIDs.contains(move.bookID) else {
+                          !self.isBookOpenNow(move.bookID) else {
                         outcome.waiting += 1
                         continue
                     }

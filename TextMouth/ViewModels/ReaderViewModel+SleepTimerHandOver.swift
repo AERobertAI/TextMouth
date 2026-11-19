@@ -136,7 +136,7 @@ extension ReaderViewModel {
     /// a book, which a hold gives the service for its deadline: the one
     /// registry, so no second count is kept of the readers there are.
     var bookIsOpenCheck: (UUID) -> Bool {
-        { [weak library = libraryViewModel] bookID in library?.openBookIDs.contains(bookID) ?? false }
+        { [weak library = libraryViewModel] bookID in library?.isBookOpenNow(bookID) ?? false }
     }
 
     /// Undoes the hold the move announced last made, if it is still in place

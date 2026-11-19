@@ -134,7 +134,7 @@ extension LibraryViewModel {
         guard let book = bookByID(bookID), book.format.isAudio, !book.tmbDirectoryName.isEmpty else {
             throw AudioEditError.bookNotInLibrary
         }
-        guard !openBookIDs.contains(bookID) else { throw AudioEditError.bookIsOpen }
+        guard !isBookOpenNow(bookID) else { throw AudioEditError.bookIsOpen }
         let place = AudioBookPlace(book: book)
         let file = audioFile ?? place.bookFile
         let global = AudioOriginalPolicy.global(in: TextMouthRuntime.current.preferences)

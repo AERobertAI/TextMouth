@@ -810,6 +810,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         let opening = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
+        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
         XCTAssertTrue(folder.world.library.openBookIDs.contains(folder.second.id))
         XCTAssertTrue(timer.hold(
             forBook: folder.second.id, from: old.readerID, deadline: 0.2, isBookOpen: opening.bookIsOpenCheck
@@ -819,6 +820,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(timer.isHeld(forBook: folder.second.id), "The deadline acted while the book's reader was open")
 
         let silent = recordingAnnouncements { opening.close() }
+        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
         XCTAssertFalse(folder.world.library.openBookIDs.contains(folder.second.id), "A close left the book registered")
         XCTAssertFalse(timer.isActive, "The close left a timer nothing will play")
         XCTAssertTrue(silent.announcements.isEmpty, "The close said something")
@@ -848,10 +850,12 @@ final class NextBookWindowReaderTests: XCTestCase {
         timer.markAsked(forBook: folder.second.id)
 
         firstWindow.close()
+        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
         XCTAssertTrue(folder.world.library.openBookIDs.contains(folder.second.id), "The book left the registry with one reader open")
         XCTAssertTrue(timer.isHeld(forBook: folder.second.id), "One window's close stopped the timer the other takes")
 
         secondWindow.close()
+        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
         XCTAssertFalse(folder.world.library.openBookIDs.contains(folder.second.id))
         XCTAssertFalse(timer.isActive, "The last window's close left the timer")
     }
@@ -1270,7 +1274,9 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(timer.hold(forBook: deleted, from: old.readerID))
         let placeholder = Book(title: "Unknown", format: .txt, filePath: "", md5Hash: "")
 
-        var stoppedAtOnce = false
+        var publishedDuringMake = 0
+        let watcher = timer.objectWillChange.sink { publishedDuringMake += 1 }
+        defer { watcher.cancel() }
         var reader: ReaderViewModel?
         let recorder = recordingAnnouncements {
             // Stores and a center of the test's own, not the app's.
@@ -1286,8 +1292,13 @@ final class NextBookWindowReaderTests: XCTestCase {
                 notificationCenter: folder.world.notifications,
                 sleepTimer: SleepTimerService()
             )
-            // True at once, the sentence waits for the error view's reason.
-            stoppedAtOnce = !timer.isActive
+            // The release waits a turn of the main queue (B22): nothing is
+            // published on the timer while the reader is made, and the timer
+            // is still held. The sentence waits for the error view's reason.
+            XCTAssertEqual(publishedDuringMake, 0, "The timer published while the reader was made")
+            XCTAssertTrue(timer.isHeld(forBook: deleted), "The release was not deferred")
+            waitForMainQueueTurn()
+            XCTAssertFalse(timer.isActive, "The timer was left held for a book that is gone after one turn")
             XCTAssertTrue(
                 SleepTimerHandOverWording.afterTheReason > 1.2,
                 "The sentence would come before the error view's own focus reads the reason"
@@ -1298,7 +1309,6 @@ final class NextBookWindowReaderTests: XCTestCase {
             addTeardownBlock { reader.close() }
         }
 
-        XCTAssertTrue(stoppedAtOnce, "The timer was left held for a book that is gone")
         XCTAssertFalse(timer.isHeld(forBook: deleted))
         XCTAssertEqual(
             recorder.announcements.filter { $0.message == SleepTimerHandOverWording.noBook },
@@ -1335,6 +1345,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
         // Open in a window of its own, with a timer of its own.
         _ = folder.world.openReader(for: folder.second, sleepTimer: SleepTimerService())
+        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
         XCTAssertTrue(folder.world.library.openBookIDs.contains(folder.second.id))
 
         reader.handleEndOfBook()
@@ -1796,6 +1807,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         old.close()
 
         XCTAssertEqual(coordinator.activeOwnerID, new.readerID, "The old reader's close took the new reader's session")
+        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
         XCTAssertTrue(folder.world.library.openBookIDs.contains(folder.second.id))
         XCTAssertFalse(folder.world.library.openBookIDs.contains(folder.first.id))
     }

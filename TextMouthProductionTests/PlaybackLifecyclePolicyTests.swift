@@ -122,6 +122,7 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
         XCTAssertEqual(stored.chapterIndex, 1)
         XCTAssertEqual(stored.characterOffset, 6)
         XCTAssertEqual(stored.globalCharacterOffset, "First chapter".utf16.count + 6)
+        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
         XCTAssertFalse(libraryViewModel.openBookIDs.contains(book.id))
     }
 

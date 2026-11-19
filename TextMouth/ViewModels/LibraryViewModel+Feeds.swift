@@ -286,7 +286,7 @@ extension LibraryViewModel: FeedLibraryHost {
     /// `feedBookUse(of:)` reads, and `feedBooksInUse` adds to.
     private var feedBookUses: [(use: FeedBookUse, bookIDs: Set<UUID>)] {
         [
-            (.openInReader, openBookIDs),
+            (.openInReader, openBookIDsNow),
             (.transcribing, TranscribedBooks.shared.transcribingBookID.map { [$0] } ?? []),
             (.exporting, BookExportModel.booksBeingExported),
         ]

@@ -196,15 +196,15 @@ enum AudioEditorLauncher {
         }
 
         // The book's reader closes first: a save replaces the file it plays.
-        let closesReader = library.openBookIDs.contains(book.id)
+        let closesReader = library.isBookOpenNow(book.id)
         if closesReader {
             services.announce(AudioEditorWording.closingReader(book: book.title), window)
             services.closeReader(book.id)
             let deadline = Date().addingTimeInterval(services.readerCloseTimeout)
-            while library.openBookIDs.contains(book.id), Date() < deadline {
+            while library.isBookOpenNow(book.id), Date() < deadline {
                 try? await Task.sleep(for: .milliseconds(50))
             }
-            guard !library.openBookIDs.contains(book.id) else {
+            guard !library.isBookOpenNow(book.id) else {
                 return refuse(AudioEditorWording.readerStillOpen(book: book.title), from: window, services: services)
             }
         }

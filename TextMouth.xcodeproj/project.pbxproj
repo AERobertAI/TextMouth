@@ -2380,6 +2380,7 @@
 		C85E72CEFAD12FD6B2B54BC6 /* WordDocumentFonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D3B72EFF434283A072D4082 /* WordDocumentFonts.swift */; };
 		C864A2CE4408AE5E41A6F9B9 /* PhoneBackgroundHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B7CA705FD7500A19BE9A /* PhoneBackgroundHold.swift */; };
 		C867F957FF27DF7249033849 /* KFXParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED46E52C47549688E1514BC /* KFXParser.swift */; };
+		C873C0093EF5954C3F019D7D /* OpenBookRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E16A5273B0A64829DE20DEFE /* OpenBookRegistryTests.swift */; };
 		C8A514FF2D5203BD4DEC9C17 /* AudioEditorFileSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B92300A4E8ADD6D54B898ED /* AudioEditorFileSheets.swift */; };
 		C8B14F55FA173CE43CE97D05 /* CorpusReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB3D0BFFCE34541F3886654E /* CorpusReport.swift */; };
 		C8C7F4504967F01EB0C42DDE /* DAISYParser+TextExtraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42F5595561D1F50CC4346C40 /* DAISYParser+TextExtraction.swift */; };
@@ -5187,6 +5188,7 @@
 		E13739E1A89C071D9187CAC7 /* TextMouthUITestCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextMouthUITestCase.swift; sourceTree = "<group>"; };
 		E13F10E24C4398AD13253A9A /* ODTTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ODTTestSupport.swift; sourceTree = "<group>"; };
 		E14FAC89C575A86EF2C221FF /* WavPackDecorrelation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavPackDecorrelation.swift; sourceTree = "<group>"; };
+		E16A5273B0A64829DE20DEFE /* OpenBookRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenBookRegistryTests.swift; sourceTree = "<group>"; };
 		E16EF1EB841033447EB97133 /* libSwiftSoup.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSwiftSoup.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		E17E23D9B5F0EEC6E5131FD1 /* TranscriptEdit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptEdit.swift; sourceTree = "<group>"; };
 		E19A2E798A89C975E7F8D461 /* DAISYParser+Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+Audio.swift"; sourceTree = "<group>"; };
@@ -7327,6 +7329,7 @@
 				CFFB504D6A130FA65547ADDA /* OggLibraryConversionTests.swift */,
 				706EC381D68CAC3EDE8F6602 /* OggNamingTests.swift */,
 				E58620AAB02D3D9D6B84753E /* OnDiskContractTests.swift */,
+				E16A5273B0A64829DE20DEFE /* OpenBookRegistryTests.swift */,
 				FF75D114EAF3FF1D823C69C3 /* OriginalFileDeletionTests.swift */,
 				5EF89369D0568F09A675E925 /* OrphanedConversionSweepTests.swift */,
 				28988A40AB57D3DA4D308FEC /* OutsideTranscriptTests.swift */,
@@ -9418,6 +9421,7 @@
 				78D691C7670A329A4710D675 /* OggLibraryConversionTests.swift in Sources */,
 				DA8C66BDD616F89CCD9A8D8F /* OggNamingTests.swift in Sources */,
 				516D1EF2F6EC24D1F37776CB /* OnDiskContractTests.swift in Sources */,
+				C873C0093EF5954C3F019D7D /* OpenBookRegistryTests.swift in Sources */,
 				4E7384F27A158D66E253A16F /* OriginalFileDeletionTests.swift in Sources */,
 				64E871B55330D8F36C069FFC /* OrphanAdoptionTests.swift in Sources */,
 				06591A7782316B6B7211A171 /* OrphanedConversionSweepTests.swift in Sources */,

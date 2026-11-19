@@ -964,11 +964,17 @@ extension LibraryViewModel {
     ///   the app's own, unless a test gives one of its own.
     func registerOpenBook(_ id: UUID, config: ConfigService = .shared) {
         openReaderCounts[id, default: 0] += 1
-        openBookIDs.insert(id)
+        noteOpenBookChanged(id)
         // Track last opened book for quick-resume. config.json takes it once
         // changes pause (PERF17), not as the reader window opens. Opening a
         // book changes no setting the listener chose, so its save never makes
         // a config.json that has not arrived in a cloud location (risk 5).
+        // This runs while a reader is built in SwiftUI's update (B22), and it
+        // changes ConfigService's @Published `config`: safe only because no
+        // SwiftUI view observes ConfigService and its two Combine subscribers
+        // (SettingsViewModel, RemovalWording) filter to other fields, so
+        // nothing is published downstream. A view that observes it would need
+        // this moved to the next main-queue turn.
         config.config.lastOpenedBookID = id.uuidString
         config.scheduleSave(creatingAwaitedFile: false)
     }
@@ -983,9 +989,52 @@ extension LibraryViewModel {
             openReaderCounts[id] = remaining
         } else {
             openReaderCounts[id] = nil
-            openBookIDs.remove(id)
+            noteOpenBookChanged(id)
         }
         LibraryPersistenceService.writePendingIndexSoon()
+    }
+
+    /// Whether a reader has the book `id` open, true from the moment its
+    /// reader registers until the last one unregisters: the synchronous
+    /// truth, which the published `openBookIDs` follows a turn later. Every
+    /// check that decides something (a move, a delete, a switch) asks this,
+    /// and may from any thread.
+    func isBookOpenNow(_ id: UUID) -> Bool {
+        audioEditActivity.isOpenInReader(id)
+    }
+
+    /// The books open in readers now (`isBookOpenNow`), as a set.
+    var openBookIDsNow: Set<UUID> {
+        audioEditActivity.openInReaders
+    }
+
+    /// Notes at once that the book `id` opened or closed in a reader (what
+    /// FR04's audio original policy reads), and has `openBookIDs` follow on
+    /// the main queue's next turn. A reader is built inside SwiftUI's update,
+    /// where changing this object's `@Published` state starts a transaction
+    /// and aborts the app (B22). Changes within one turn coalesce into one
+    /// publish, which reads the counts as they stand then, so a register
+    /// then an unregister leaves no book behind.
+    private func noteOpenBookChanged(_ id: UUID) {
+        audioEditActivity.setOpenInReader(id, (openReaderCounts[id] ?? 0) > 0)
+        let wasWaiting = !openBookIDsToPublish.isEmpty
+        openBookIDsToPublish.insert(id)
+        guard !wasWaiting else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.publishOpenBookIDs()
+        }
+    }
+
+    /// Has `openBookIDs` follow the registrations since it last did, from the
+    /// counts as they stand. Sets it only when it changes.
+    private func publishOpenBookIDs() {
+        let touched = openBookIDsToPublish
+        openBookIDsToPublish = []
+        var published = openBookIDs
+        for id in touched {
+            if (openReaderCounts[id] ?? 0) > 0 { published.insert(id) } else { published.remove(id) }
+        }
+        if published != openBookIDs { openBookIDs = published }
     }
 
     /// The most recently opened book (for quick-resume on launch)

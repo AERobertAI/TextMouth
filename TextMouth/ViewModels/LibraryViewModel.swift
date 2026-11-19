@@ -185,6 +185,10 @@ final class LibraryViewModel: ObservableObject {
     /// `unregisterOpenBook`: a book stays in `openBookIDs` until its last reader
     /// closes, since two windows may show one book.
     var openReaderCounts: [UUID: Int] = [:]
+    /// The books whose registration changed since `openBookIDs` last
+    /// followed: it is published on the main queue's next turn, never while
+    /// a reader is built inside SwiftUI's update (B22). Empty when none waits.
+    var openBookIDsToPublish: Set<UUID> = []
     /// Which books' audio is in use in a way an original must stay for:
     /// open in a reader (mirrored from `openBookIDs`), or being edited or
     /// rendered (FR04, `AudioOriginalSweep`).
