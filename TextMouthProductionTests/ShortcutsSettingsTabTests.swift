@@ -721,17 +721,17 @@ final class ShortcutLocalizationTests: XCTestCase {
     /// config.json's repair log say it in English always (`logReason`).
     func testARefusalSaysTheSameInEnglishAndTheLogIsEnglish() {
         let commandQ = KeyBinding(key: "q", command: true)
-        let refusals: [ShortcutRefusal] = [
-            .notOnePressWithCommandOrControl(shiftR), .editsText(shiftR), .secondKeyEquivalent(shiftR),
-            .systemCommand(commandQ, command: "Quit TextMouth"),
-        ]
-        XCTAssertEqual(refusals[0].reason, refusals[0].logReason)
-        XCTAssertEqual(refusals[2].reason, refusals[2].logReason)
+        let notOnePress = ShortcutRefusal.notOnePressWithCommandOrControl(shiftR)
+        let secondKey = ShortcutRefusal.secondKeyEquivalent(shiftR)
+        let editsText = ShortcutRefusal.editsText(shiftR)
+        let systemCommand = ShortcutRefusal.systemCommand(commandQ, command: "Quit TextMouth")
+        XCTAssertEqual(notOnePress.reason, notOnePress.logReason)
+        XCTAssertEqual(secondKey.reason, secondKey.logReason)
         // The listener's words were cut shorter; the log keeps its English.
-        XCTAssertEqual(refusals[1].reason, "text fields use it for editing")
-        XCTAssertEqual(refusals[1].logReason, "a text field edits with it, and a menu command's shortcut would take it from the field")
-        XCTAssertEqual(refusals[3].reason, "Quit TextMouth uses it in the menus")
-        XCTAssertEqual(refusals[3].logReason, "Quit TextMouth has it in the menus, and no shortcut may take it")
+        XCTAssertEqual(editsText.reason, "text fields use it for editing")
+        XCTAssertEqual(editsText.logReason, "a text field edits with it, and a menu command's shortcut would take it from the field")
+        XCTAssertEqual(systemCommand.reason, "Quit TextMouth uses it in the menus")
+        XCTAssertEqual(systemCommand.logReason, "Quit TextMouth has it in the menus, and no shortcut may take it")
         // Every system command's localized name is its English id in English.
         for command in Set(KeyBinding.systemCommands.values) {
             XCTAssertEqual(KeyBinding.localizedSystemCommand(command), command)
