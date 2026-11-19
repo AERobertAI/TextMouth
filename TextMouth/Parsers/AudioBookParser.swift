@@ -766,8 +766,8 @@ enum AudioParseError: LocalizedError, Equatable {
 
 extension AudioParseError: LogDescribing {
     /// The error in English for the debug log, which stays English whatever
-    /// language the interface speaks (FR34). Times are written as digits
-    /// ("1:03:00") and sections by their English phrase.
+    /// language the interface speaks (FR34). Times are spoken in English
+    /// ("1 hour, 3 minutes") and sections named by their English phrase.
     var logDescription: String {
         let advice = "The book's navigation does not match its audio; get a fresh copy and import it again." // l10n: no (debug log)
         switch self {
@@ -778,16 +778,30 @@ extension AudioParseError: LogDescribing {
         case .unplayableFile(let file, let problem):
             return problem.logSentence(file: file, container: .audiobook)
         case .sectionStartsPastEnd(let section, let file, let start, let fileDuration):
-            return "The \(section.logPhrase) starts \(TimeFormatting.format(start)) into “\(file)”, " // l10n: no (debug log)
-                + "which is only \(TimeFormatting.format(fileDuration)) long. \(advice)" // l10n: no (debug log)
+            return "The \(section.logPhrase) starts \(Self.logSpoken(start)) into “\(file)”, " // l10n: no (debug log)
+                + "which is only \(Self.logSpoken(fileDuration)) long. \(advice)" // l10n: no (debug log)
         case .sectionEndsPastEnd(let section, let file, let end, let fileDuration):
-            return "The \(section.logPhrase) ends \(TimeFormatting.format(end)) into “\(file)”, " // l10n: no (debug log)
-                + "which is only \(TimeFormatting.format(fileDuration)) long. \(advice)" // l10n: no (debug log)
+            return "The \(section.logPhrase) ends \(Self.logSpoken(end)) into “\(file)”, " // l10n: no (debug log)
+                + "which is only \(Self.logSpoken(fileDuration)) long. \(advice)" // l10n: no (debug log)
         case .sectionStartsBeforeEarlierSection(let section, let file, let start, let earlierSection, let earlierStart):
-            return "The \(section.logPhrase) starts \(TimeFormatting.format(start)) into “\(file)”, " // l10n: no (debug log)
+            return "The \(section.logPhrase) starts \(Self.logSpoken(start)) into “\(file)”, " // l10n: no (debug log)
                 + "before the earlier \(earlierSection.logPhrase), which starts " // l10n: no (debug log)
-                + "\(TimeFormatting.format(earlierStart)) in. \(advice)" // l10n: no (debug log)
+                + "\(Self.logSpoken(earlierStart)) in. \(advice)" // l10n: no (debug log)
         }
+    }
+
+    /// `seconds` spoken in English for the debug log, as `TimeFormatting.spoken`
+    /// says it in English ("1 hour, 3 minutes, 45 seconds"), whatever language
+    /// the interface speaks.
+    private static func logSpoken(_ seconds: TimeInterval) -> String {
+        guard seconds.isFinite, let total = Int(exactly: max(seconds, 0).rounded(.towardZero)) else {
+            return "an unknown time" // l10n: no (debug log)
+        }
+        // Each unit with its count; zero units are left out, except a lone "0 seconds".
+        let units = [(total / 3600, "hour"), ((total % 3600) / 60, "minute"), (total % 60, "second")] // l10n: no (debug log)
+        var parts = units.filter { $0.0 > 0 }.map { "\($0.0) \($0.1)\($0.0 == 1 ? "" : "s")" } // l10n: no (debug log)
+        if parts.isEmpty { parts = ["0 seconds"] } // l10n: no (debug log)
+        return parts.joined(separator: ", ") // l10n: no (debug log)
     }
 }
 

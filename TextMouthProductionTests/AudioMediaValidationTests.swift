@@ -754,7 +754,7 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(
             error?.localizedDescription,
             "The heading “Chapter 2” starts 0 seconds into “a.wav”, before the earlier heading “Chapter 1”, "
-                + "which comes earlier in the book and starts 1 second in. "
+                + "which starts 1 second in. "
                 + AudioMediaAdvice.mismatch
         )
     }
