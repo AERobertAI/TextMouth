@@ -21,9 +21,9 @@ final class LogsSettingsSectionTests: XCTestCase {
             "In this Mac's Logs folder (~/Library/Logs/TextMouth)",
         ])
         for words in [
-            "Inside the data directory keeps them in its Logs folder", "sync with it when it is in the cloud",
+            "Inside the data directory keeps them with your books", "so they move and sync with the library",
             "In this Mac's Logs folder keeps them in ~/Library/Logs/TextMouth, which never syncs",
-            "A change applies from the next line written", "logs already written are not moved",
+            "A change applies from the next line", "existing logs stay",
         ] {
             XCTAssertTrue(LogsSettingsWording.pickerHint.contains(words), words)
         }

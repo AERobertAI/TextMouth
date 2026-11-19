@@ -27,6 +27,14 @@ final class PhoneSettingsVocabularyTests: XCTestCase {
     func testEveryWordStandsInTheMacsViewsWordForWord() throws {
         let sources = try Self.macSettingsSources()
         for word in PhoneSettingsVocabulary.allCases {
+            // The punctuation levels' caption names each level by its own
+            // title, so the Mac's source builds it from them; it is the same
+            // words, checked here by value.
+            if word == .punctuationPauseCaption {
+                XCTAssertEqual(word.rawValue, SettingsWording.punctuationLevelsExplanation)
+                XCTAssertTrue(sources.contains("Text(SettingsWording.punctuationLevelsExplanation)"))
+                continue
+            }
             XCTAssertTrue(
                 sources.contains("\"\(word.rawValue)\""),
                 "The Mac's settings views no longer say \"\(word.rawValue)\" (\(word))."
