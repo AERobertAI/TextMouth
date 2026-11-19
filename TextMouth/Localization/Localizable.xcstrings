@@ -5497,7 +5497,7 @@
     "By %@" : {
       "comment" : "Speak Info: the part of a book's summary that names its author. %@ is the author's name."
     },
-    "Can't play now: a call or another app is using the audio." : {
+    "Can't play: a call or another app is using the audio." : {
       "comment" : "Announcement when Play fails on the iPhone because a phone call or another app holds the audio."
     },
     "Cancel" : {
@@ -6336,7 +6336,7 @@
         }
       }
     },
-    "Converting this kind of file is not available on iPhone yet." : {
+    "Converting this kind of file isn't available on iPhone yet." : {
       "comment" : "Error text when the iPhone app is asked to convert an audio file in a way only the Mac's helper program can."
     },
     "Copied %@." : {
@@ -7432,7 +7432,7 @@
     "Edited" : {
       "comment" : "Said after the keys of a keyboard shortcut action the listener changed in Settings, to tell it from one that follows the defaults."
     },
-    "Editing a file in another app is not available on iPhone yet." : {
+    "Editing in another app isn't available on iPhone yet." : {
       "comment" : "Error text when the iPhone app is asked to open a file in another app to edit it and take it back."
     },
     "Edits" : {
@@ -10763,11 +10763,11 @@
     "Moves this item into a library folder as a book you can edit; it leaves the feed" : {
       "comment" : "What the Move to Library sheet says about one item, an episode or an article: it moves into a library folder as a book and leaves its feed."
     },
-    "Moves to the heading before, leaving the navigation unit as it is." : {
-      "comment" : "Hint of the iPhone reader's Previous Heading button."
-    },
-    "Moves to the next heading, leaving the navigation unit as it is." : {
+    "Moves to the next heading, keeping the navigation unit." : {
       "comment" : "Hint of the iPhone reader's Next Heading button."
+    },
+    "Moves to the previous heading, keeping the navigation unit." : {
+      "comment" : "Hint of the iPhone reader's Previous Heading button."
     },
     "Moving %lld books..." : {
       "comment" : "Status shown and spoken in the Move sheet while the books' packages move. %lld is how many books. The three dots mean it is in progress.",
@@ -11779,9 +11779,6 @@
     "Opens a sheet to type a feed's address and choose its folder" : {
       "comment" : "VoiceOver hint of the Add Feed button in the Add to Library sheet."
     },
-    "Opens a sheet with the ways to add to the library: open a book, or import a folder." : {
-      "comment" : "Hint of the iPhone Library's Add to Library button."
-    },
     "Opens it" : {
       "comment" : "VoiceOver hint of a downloaded feed item's row: its default action opens it."
     },
@@ -11796,6 +11793,9 @@
     },
     "Opens jump to time controls" : {
       "comment" : "Hint of the reader's time button while no jump panel is open."
+    },
+    "Opens options to open a book or import a folder." : {
+      "comment" : "Hint of the iPhone Library's Add to Library button."
     },
     "Opens the Microphone privacy settings in System Settings." : {
       "comment" : "VoiceOver hint of the Open Privacy Settings button of the Record window. Privacy & Security and Microphone are the names of places in macOS's System Settings, as macOS words them in the language."
@@ -12083,6 +12083,9 @@
     },
     "Period" : {
       "comment" : "Name of the punctuation key \".\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Period\"."
+    },
+    "Permanently deletes the book and its files from this iPhone." : {
+      "comment" : "First sentence of the message of the iPhone's question before a book is removed: nothing is kept on this iPhone."
     },
     "Picture" : {
       "comment" : "Name of the book format of a picture of a page (a PNG, JPEG, HEIC, or TIFF photograph or scan) that text recognition reads, shown in a book's information, the format column, and the duplicate finder."
@@ -13970,7 +13973,7 @@
     "Share Logs…" : {
       "comment" : "Button in iPhone Settings that shares TextMouth's recent logs as a text file. The ellipsis means the share sheet opens."
     },
-    "Shares TextMouth's recent logs as a text file. They hold no book text." : {
+    "Shares recent logs as a text file. They hold no book text." : {
       "comment" : "Hint of the Share Logs button in iPhone Settings."
     },
     "Shift" : {
@@ -14180,7 +14183,7 @@
         }
       }
     },
-    "Showing the logs in Finder is not available on iPhone yet." : {
+    "Showing the logs in Finder isn't available on iPhone yet." : {
       "comment" : "What the iPhone's Settings says when asked to show the logs in Finder, which the iPhone does not have."
     },
     "Shows length, file, and edits; sets what happens to the original audio." : {
@@ -17779,9 +17782,6 @@
     "This comic book archive holds no pictures TextMouth can read." : {
       "comment" : "Why a comic book archive was refused at import: it holds no picture TextMouth reads."
     },
-    "This deletes the book and its files from this iPhone, and they can't be recovered." : {
-      "comment" : "First sentence of the message of the iPhone's question before a book is removed: nothing is kept on this iPhone."
-    },
     "This download isn't in its feed's folder, so TextMouth left its files as they are." : {
       "comment" : "Why a feed episode's download could not be deleted: it is not in its feed's folder."
     },
@@ -18988,7 +18988,7 @@
     "While TextMouth was copying its data, something else was put at %@." : {
       "comment" : "First sentence of why a move of the data directory did not finish: something else was put at the new location while the data was copied. %@ is the new location's path."
     },
-    "While the book plays, moves Book content on with the speech, even while you're reading it." : {
+    "While playing, moves Book content on with the speech, even as you read it." : {
       "comment" : "First sentence of the hint of Follow in Braille in iPhone Settings. \"Book content\" is the name of the element that holds the book's text, as VoiceOver reads it."
     },
     "Whole File" : {
