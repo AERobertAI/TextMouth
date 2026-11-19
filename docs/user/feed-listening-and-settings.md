@@ -15,7 +15,7 @@ Each is worded with what the feed's items are called, "episode" here, "article" 
   Its hint is "What happens when one of this feed's episodes ends: play the episode below it or the one above it in the list, stop, or follow the global setting".
 - The pop-up button "Open the next episode in" offers "Use the global setting (…)", which names the Playback tab's Open the next book in choice, as in "Use the global setting (This Window)", then "This Window" and "A New Window".
   It says "article" or "item" in place of episode for a feed whose items are those, as in "Open the next article in".
-  Its hint is "Where the next episode opens when listening goes on from one of this feed's episodes: in this window, in a new window, or as the global setting says".
+  Its hint is "Chooses where this feed's next episode opens.", with "article" or "item" in place of "episode" for a feed whose items are those.
   It is dimmed while the feed's episodes do not go on to another episode when one ends, which is when the pop-up button above says Stop, or says Use the global setting and the global choice is not Continue to Next Book.
   Its hint then is "Available only while this feed's episodes go on to another episode when one ends", and it keeps its choice for when they do.
   A dimmed choice is not in effect: Next in Folder and Previous in Folder then follow the global setting.

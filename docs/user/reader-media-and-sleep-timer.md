@@ -118,7 +118,8 @@ A restart in a window with no timer running starts a timer there, with the durat
 ### The custom timer's minutes
 <!-- id: reader-custom-timer-minutes; keys: custom timer, Adjust minutes, stepper, singular minute, accessibility label; src: TextMouth/Views/Reader/SleepTimerView.swift -->
 
-In the sheet, the custom timer's field and its Adjust minutes stepper both say their minutes with the unit, as in "30 minutes", and the stepper moves by 5; a custom timer of one minute is said in the singular, as in "Set timer for 1 minute and start playing".
+In the sheet, the custom timer's field and its Adjust minutes stepper both say their minutes with the unit, as in "30 minutes", and the stepper moves by 5; a custom timer of one minute is said in the singular, as in "Set timer for 1 minute".
+Its hint, "Plays the book.", says that it also starts the book.
 
 ## Stop and Release Media Controls
 <!-- id: reader-stop-release-media-controls; keys: stop command, chapter download, countdown, speech engine word past end; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Services/NowPlayingService.swift -->

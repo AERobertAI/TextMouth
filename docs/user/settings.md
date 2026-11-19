@@ -23,8 +23,8 @@ Four tabs have pages of their own, and this page holds the rest:
 <!-- id: open-next-book; keys: nextBookWindow, End of Book, When book ends, This Window, A New Window, next book; src: TextMouth/Models/NextBookWindow.swift, TextMouth/Views/NextBookWindowPicker.swift, TextMouth/Views/Settings/SettingsView.swift -->
 
 The Playback tab's End of Book group has, just below the When book ends pop-up and the captions under it, a pop-up button, "Open the next book in", with the choices "This Window", the default, and "A New Window".
-Its hint, which a caption under the pop-up shows and VoiceOver reads once, as the pop-up's hint, is "Where the next book opens when listening goes on from one book to another: in this window in place of the book here, or in a new window.
-A book already open in another window is brought forward, and with This Window this window closes."
+Its hint, which a caption under the pop-up shows and VoiceOver reads once, as the pop-up's hint, is "Chooses where the next book opens: in this window or a new one.
+A book open in another window comes forward, and with This Window chosen, this window closes."
 It decides where the next book opens at the end of a book, with Next in Reading List and Previous in Reading List, and with Next in Folder and Previous in Folder.
 A feed or a folder with a choice of its own overrides it (see [Reader windows](reader-windows.md), [Podcasts and article feeds](feed-listening-and-settings.md), and [The Library window](library-window.md)).
 The file config.json holds it as nextBookWindow, the choice's name (see [Editing settings in config.json](config-json.md)).

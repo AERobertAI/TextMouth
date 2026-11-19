@@ -160,8 +160,8 @@ Skip finished books, checked unless you clear it, passes over the books Books Fi
 ### Remove books when finished
 <!-- id: remove-books-when-finished; keys: removeFinishedLabel, finished books, auto remove, Books Finished; src: TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/ViewModels/ReaderViewModel+ReadingList.swift -->
 
-Remove books when finished, unchecked unless you check it (VoiceOver reads its hint, "Takes a finished book off the reading list once its reader window moves on or closes.
-Books finished before you turn this on stay on it."), takes a book off the list as soon as it is finished, whether you opened it from the list or not, the same way Remove from Reading List does, so the book stays in the library and is saved off the list at once.
+Remove books when finished, unchecked unless you check it (VoiceOver reads its hint, "Takes each finished book off the list when its window moves on or closes.
+Books finished before you turn it on stay."), takes a book off the list as soon as it is finished, whether you opened it from the list or not, the same way Remove from Reading List does, so the book stays in the library and is saved off the list at once.
 Nothing is said of it, so the end of a book says what it always said, and the Reading List, if open, shows the book gone.
 A book read from the list that ends still goes on to the book that followed it, or preceded it with Play the book above, and Skip finished books still passes over finished books after it.
 While its window rests on the finished book, the book stays on the list, so Rewind, Play, and Next in Reading List in that window still follow the list as before, and it leaves the list when the window goes on to another book or closes.
@@ -311,7 +311,7 @@ The Folder Settings sheet shows a plain folder's facts and how listening goes on
   The pop-up button "When a book ends" offers "Use the global setting (…)", which names the Playback tab's When book ends choice, as in "Use the global setting (Continue to Next Book)", then "Play the book below", "Play the book above", and "Stop".
   Its hint is "What happens when one of this folder's books ends: play the book below it or the one above it in the folder, stop, or follow the global setting".
   The pop-up button "Open the next book in" offers "Use the global setting (…)", which names the Playback tab's Open the next book in choice, as in "Use the global setting (This Window)", then "This Window" and "A New Window".
-  Its hint is "Where the next book opens when listening goes on from one of this folder's books: in this window, in a new window, or as the global setting says".
+  Its hint is "Chooses where this folder's next book opens."
   It is dimmed while the folder's books do not go on to another book when one ends, which is when "When a book ends" says Stop, or says Use the global setting and the global choice is not Continue to Next Book.
   Its hint then is "Available only while this folder's books go on to another book when one ends", and it keeps its choice for when they do.
   A dimmed choice is not in effect: Next in Folder and Previous in Folder then follow the global setting.
