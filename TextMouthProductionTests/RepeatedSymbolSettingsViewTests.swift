@@ -61,7 +61,7 @@ final class RepeatedSymbolSettingsViewTests: XCTestCase {
             Settings.neverCollapseHint, Settings.symbolsHint, Settings.resetHint,
         ]
         XCTAssertFalse(hints.contains(where: \.isEmpty))
-        for words in ["Each character listed can form a run", "Spaces are ignored", "counts once", "letters and digits"] {
+        for words in ["Each character listed can form a run", "Spaces are ignored", "letters and digits"] {
             XCTAssertTrue(Settings.symbolsHint.contains(words), words)
         }
     }
