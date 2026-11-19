@@ -117,17 +117,23 @@ final class MenuVisibilityManager {
     static let libraryMenuKeys = ["Library"] // l10n: no (the CommandMenu key; the title set adds its localized text)
 
     /// The titles a menu bar item may show for `keys`: each key as written
-    /// (English, which is what the menu shows when no translation exists) and
-    /// its text in `locale`. A computed value rather than a stored one, so a
-    /// language change is never cached away.
+    /// (English, which is what the menu shows when no translation exists),
+    /// its text as the app's own bundle resolves it (exactly what SwiftUI
+    /// puts in the menu bar, whatever `Locale.current` says), and its text in
+    /// `locale`. A computed value rather than a stored one, so a language
+    /// change is never cached away.
     ///
     /// - Parameters:
     ///   - keys: CommandMenu keys, as written in MenuCommands.swift.
-    ///   - locale: The interface language to read each key in; tests pass
-    ///     Spanish to prove the Spanish title is in the set.
+    ///   - locale: The interface language to read each key in besides the
+    ///     bundle's; tests pass Spanish to prove the Spanish title is in the
+    ///     set.
     static func titles(for keys: [String], locale: Locale = .current) -> Set<String> {
-        Set(keys.flatMap { key in
-            [key, String(localized: LocalizedStringResource(String.LocalizationValue(key), locale: locale))]
+        Set(keys.flatMap { key -> [String] in
+            let value = String.LocalizationValue(key)
+            return [key,
+                    String(localized: value),
+                    String(localized: LocalizedStringResource(value, locale: locale))]
         })
     }
 
