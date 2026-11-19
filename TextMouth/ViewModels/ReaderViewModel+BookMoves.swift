@@ -86,7 +86,7 @@ extension ReaderViewModel {
             pause(playingPauseSound: false)
         }
         if let fading, fading.isFadingOut {
-            fading.stop(reason: "a move ended the fade of a timer it carries")
+            fading.stop(reason: "a move ended the fade of a timer it carries") // l10n: no (debug-log reason)
         }
         return BookMoveStart(wasPlaying: wasPlaying, timerFadeEnded: fading.map { !$0.isFadingOut } ?? false)
     }

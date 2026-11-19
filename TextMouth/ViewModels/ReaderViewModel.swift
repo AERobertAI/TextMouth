@@ -2264,7 +2264,39 @@ final class ReaderViewModel: ObservableObject {
         /// The retry button's title: "Retry" for audio that could not be
         /// played, and "Try Again" for a chapter that could not be got from
         /// the cloud (FR02), as the download view words it.
-        var retryTitle = "Retry"
+        var retryTitle = ErrorAlert.retryWording
+
+        // MARK: What the alert says
+
+        /// The retry button's title for audio that could not be played.
+        static var retryWording: String {
+            String(localized: "Retry",
+                   comment: "Button of the reader's error alert that tries to play the audio again.")
+        }
+
+        /// The retry button's title for a chapter that could not be fetched from the cloud.
+        static var tryAgainWording: String {
+            String(localized: "Try Again",
+                   comment: "Button of the reader's alert about a chapter that could not be downloaded; it tries the download again.")
+        }
+
+        /// The title of the alert about a chapter that could not be fetched from the cloud.
+        static var chapterNotDownloadedTitle: String {
+            String(localized: "Chapter Not Downloaded",
+                   comment: "Title of the reader's alert shown when a chapter of an audiobook could not be downloaded from the cloud.")
+        }
+
+        /// The title of the alert about an error that is not an audio failure.
+        static var errorTitle: String {
+            String(localized: "Error",
+                   comment: "Title of the reader's alert about a problem that is not an audio failure.")
+        }
+
+        /// The title of the alert about audio that could not be played.
+        static var playbackProblemTitle: String {
+            String(localized: "Playback Problem",
+                   comment: "Title of the reader's alert shown when the audio could not be played.")
+        }
     }
 
     /// `errorMessage` while no content has loaded: the book itself could
@@ -2281,14 +2313,14 @@ final class ReaderViewModel: ObservableObject {
         // reader at that chapter, which may play once they are here (FR02).
         if cloudSession.chapterFailure != nil {
             return ErrorAlert(
-                title: "Chapter Not Downloaded",
+                title: ErrorAlert.chapterNotDownloadedTitle,
                 message: errorMessage,
                 offersRetry: true,
-                retryTitle: "Try Again"
+                retryTitle: ErrorAlert.tryAgainWording
             )
         }
         return ErrorAlert(
-            title: audioPlaybackFailure == nil ? "Error" : "Playback Problem",
+            title: audioPlaybackFailure == nil ? ErrorAlert.errorTitle : ErrorAlert.playbackProblemTitle,
             message: errorMessage,
             offersRetry: audioPlaybackFailure != nil
         )
