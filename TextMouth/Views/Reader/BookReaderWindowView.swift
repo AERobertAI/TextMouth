@@ -144,10 +144,14 @@ struct BookReaderWindowView: View {
         reader.nextBookWindowSwitcher = showBook
         // A book deleted since the window was asked for is a placeholder with
         // an ID of its own: a sleep timer held for the book asked for would
-        // never be taken, so it is released here, and said once the error view
-        // has read that the book is gone.
+        // never be taken, so it is released, and said once the error view
+        // has read that the book is gone. The release changes the timer's
+        // @Published state, which must not happen while SwiftUI builds this
+        // reader in its update (B22), so it runs on the main queue's next turn.
         if libraryViewModel.bookByID(requestedBookID) == nil {
-            reader.releaseSleepTimerHeld(forBook: requestedBookID, afterTheReason: true)
+            DispatchQueue.main.async {
+                reader.releaseSleepTimerHeld(forBook: requestedBookID, afterTheReason: true)
+            }
         }
         return reader
     }

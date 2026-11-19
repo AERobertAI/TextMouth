@@ -1274,7 +1274,9 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(timer.hold(forBook: deleted, from: old.readerID))
         let placeholder = Book(title: "Unknown", format: .txt, filePath: "", md5Hash: "")
 
-        var stoppedAtOnce = false
+        var publishedDuringMake = 0
+        let watcher = timer.objectWillChange.sink { publishedDuringMake += 1 }
+        defer { watcher.cancel() }
         var reader: ReaderViewModel?
         let recorder = recordingAnnouncements {
             // Stores and a center of the test's own, not the app's.
@@ -1290,8 +1292,13 @@ final class NextBookWindowReaderTests: XCTestCase {
                 notificationCenter: folder.world.notifications,
                 sleepTimer: SleepTimerService()
             )
-            // True at once, the sentence waits for the error view's reason.
-            stoppedAtOnce = !timer.isActive
+            // The release waits a turn of the main queue (B22): nothing is
+            // published on the timer while the reader is made, and the timer
+            // is still held. The sentence waits for the error view's reason.
+            XCTAssertEqual(publishedDuringMake, 0, "The timer published while the reader was made")
+            XCTAssertTrue(timer.isHeld(forBook: deleted), "The release was not deferred")
+            waitForMainQueueTurn()
+            XCTAssertFalse(timer.isActive, "The timer was left held for a book that is gone after one turn")
             XCTAssertTrue(
                 SleepTimerHandOverWording.afterTheReason > 1.2,
                 "The sentence would come before the error view's own focus reads the reason"
@@ -1302,7 +1309,6 @@ final class NextBookWindowReaderTests: XCTestCase {
             addTeardownBlock { reader.close() }
         }
 
-        XCTAssertTrue(stoppedAtOnce, "The timer was left held for a book that is gone")
         XCTAssertFalse(timer.isHeld(forBook: deleted))
         XCTAssertEqual(
             recorder.announcements.filter { $0.message == SleepTimerHandOverWording.noBook },

@@ -969,6 +969,12 @@ extension LibraryViewModel {
         // changes pause (PERF17), not as the reader window opens. Opening a
         // book changes no setting the listener chose, so its save never makes
         // a config.json that has not arrived in a cloud location (risk 5).
+        // This runs while a reader is built in SwiftUI's update (B22), and it
+        // changes ConfigService's @Published `config`: safe only because no
+        // SwiftUI view observes ConfigService and its two Combine subscribers
+        // (SettingsViewModel, RemovalWording) filter to other fields, so
+        // nothing is published downstream. A view that observes it would need
+        // this moved to the next main-queue turn.
         config.config.lastOpenedBookID = id.uuidString
         config.scheduleSave(creatingAwaitedFile: false)
     }
