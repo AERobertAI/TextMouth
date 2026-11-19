@@ -104,7 +104,7 @@ TextMouth downloads each feed's newest again at its next check, or the next time
 VoiceOver says how what Cancel stopped comes back: that line when the feeds will download all of it by themselves; "To download it again, choose Download on its row."
 (or "them", "their rows") when none would come back by itself, as an older episode you asked for, or a feed that downloads by hand or that you unsubscribed from; and for a mix, as in "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.
 To download the other one again, choose Download on its row."
-The button's hint begins "Stops every feed download, those waiting for a network or for room too, and deletes what they had downloaded." and then says the same of how they come back before you press it.
+The button's hint begins "Stops every feed download, including those waiting, and deletes what they had downloaded." and then says the same of how they come back before you press it.
 
 ### Speak Download Progress
 <!-- id: feeds-speak-download-progress; keys: Library menu, shortcut, Information shortcuts, status request; src: TextMouth/App/MenuCommands.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadProgress.swift, TextMouth/Models/FeedDownloadProgressWording.swift -->
@@ -138,7 +138,7 @@ The one under way keeps what it has downloaded, when its server allows, and at t
 Quitting waits at most three seconds for this.
 - You see and hear it (0.4.4).
   A small window titled "Quitting TextMouth" appears, and VoiceOver says: "TextMouth is finishing up before it quits: keeping the place of your feed downloads for next time.
-  It will quit as soon as that is done."
+  It quits when that is done."
   TextMouth then quits by itself.
 - Pressing Command-Q again, or choosing Quit in the Dock again, in those seconds says the same words again and does not cut the downloads off.
 - If you quit with changes that could not be saved and chose Quit Anyway, TextMouth finishes the downloads' place first and then quits, with no second alert.

@@ -14,12 +14,12 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
 <!-- id: list-views; keys: built in, custom, Show Always, Show When Applicable, Hide, Move Up, Move Down, VO-Command-Space; src: TextMouth/Models/LibraryViewsSettingsWording.swift, TextMouth/Views/Settings/LibraryViewsSettingsView.swift, TextMouth/ViewModels/LibraryViewsSettingsActions.swift -->
 
 - The heading "Views" is followed by two captions.
-  The first reads "The Library window's View pop-up offers these views, in this order.
-  A new Library window opens at the first one it offers."
+  The first reads "The View pop-up of a Library window offers these views in this order.
+  A new window opens at the first one offered."
   The second reads "Always offers a view all the time.
-  When Applicable offers it only while it lists something: the Reading List while it holds a book, an episode, or an article, and Feeds while there is a feed.
+  When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed.
   Hidden leaves it out.
-  A window showing a view keeps it until you choose another."
+  A window keeps its view until you choose another."
 - The list, which VoiceOver calls "Views", has one row for each view, in order, and each row is one element that VoiceOver reads as its name, "built in" or "custom", its visibility, and its place, as in "Reading List, built in, always, 5 of 6".
   A row's hint says what the view lists: for Folders, "Shows one folder at a time".
   For the Reading List, "Shows the books in the order you arrange".
@@ -48,7 +48,7 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
     For Folders and the Reading List, whose contents and names do not change, it is dimmed, with the hint "Folders and the Reading List list what they always have.
     You can move them, and hide the Reading List."
   - "Duplicate" makes a view of your own from a filter view, named for the view with " Copy" after it, then " Copy 2", right after it in the list, offered Always, with the same conditions and the sort shown.
-    Its hint is "Makes a view of your own with this view's conditions and sort."
+    Its hint is "Makes your own view with these conditions and sort."
     VoiceOver then says, as in "Made Unopened Copy, 4 of 7."
     It is dimmed for Folders and the Reading List, with the hint "Folders and the Reading List have no conditions to copy.", and at 200 views, with "The Library holds at most 200 views."
   - "Delete…" deletes a view of your own, after asking.
@@ -79,7 +79,7 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
 <!-- id: titles-leading-articles; keys: leadingArticles, partOfTitle, ignoredWhenTyping, ignoredWhenTypingAndSorting, The Hobbit, sort title; src: TextMouth/Models/LeadingArticleWording.swift, TextMouth/Models/LeadingArticles.swift, TextMouth/Views/Settings/LeadingArticlesSettingsSection.swift -->
 
 - The Titles section, at the bottom of the tab under the controls for the selected view, decides what a title's leading article does in the Library window's lists.
-  Its heading, "Titles", is a heading to VoiceOver, and it holds one pop-up button, "Leading articles", with the hint "Chooses whether The, A, and An at the start of a title count when the Library sorts titles and when you type a title's first letters to go to it."
+  Its heading, "Titles", is a heading to VoiceOver, and it holds one pop-up button, "Leading articles", with the hint "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters."
   (the pointer shows the same words as its tooltip).
   A sentence under the pop-up says what the choice in force does, as text, so you hear it with hints turned off, and a braille display shows it.
   The pop-up has three choices, and none of them changes a title: Book Information, a reader window, Now Playing, Speak Info, and Export keep each title as written, and so do the files.

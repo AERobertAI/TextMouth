@@ -22,15 +22,15 @@ It also sets whether the editor previews a filter before applying it and plays h
 <!-- id: import-behavior; keys: importDeleteBehavior, keepsOriginalOfConvertedAudio, .convertedOriginals, Keep Original, Delete After Import, Ask Each Time, Ogg; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Models/ConvertedOriginalWording.swift, TextMouth/Models/OriginalFileDeletionWording.swift, TextMouth/Models/ImportDecision.swift -->
 
 The Storage tab's Import Behavior group sets what happens to the original file after an import (After Importing a Book: Keep Original, the default, Delete After Import, or Ask Each Time; see [Adding books](adding-books.md)).
-It also has Keep originals of converted audio, off by default, a switch whose hint VoiceOver reads as "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package."
+It also has Keep originals of converted audio, off by default, a switch whose hint VoiceOver reads as "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package."
 Its caption under the switch changes with it.
 Off, it says "Audio that TextMouth converts at import keeps only the converted file."
-On, it says "When TextMouth converts audio at import, it keeps the original file too.
-An original takes about as much disk space as its converted file, or about twice as much when it is uncompressed.
+On, it says "TextMouth keeps the original file of audio it converts at import.
+An original takes about as much disk space as its converted file, or twice as much when uncompressed.
 Export offers it as the Original file.
 A feed episode's original is not kept: it can be downloaded again."
 The kept original is in the book's package, in a hidden folder named .convertedOriginals, and only an import made while the switch is on keeps one; turning it on later brings back none.
-Export's Original file offers it, with the hint "The book's own file, as it was imported; for an audiobook, its audio files as they were before TextMouth converted them."
+Export's Original file offers it, with the hint "The book's file as imported; for an audiobook, its audio files before TextMouth converted them."
 (see [Exporting books](exporting-books.md)). config.json holds the switch as keepsOriginalOfConvertedAudio (see [Editing settings in config.json](config-json.md)).
 
 ## Find Duplicate Books

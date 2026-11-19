@@ -108,8 +108,8 @@ Choose Manual Order in the Sort menu, then try again."
 In any other view, a view of your own and Feeds included, they say "Books can't be moved in this view.
 Go to a folder in Folders, or to the Reading List, then try again."
 With no book selected they say "No book is selected.
-Select the book to move, then try again.", and with several "Several books are selected, and a move shifts one book at a time.
-Select just one book, then try again."
+Select the book to move, then try again.", and with several "A move shifts one book at a time, and several are selected.
+Select one book, then try again."
 A feed's episode or article in a folder can't be moved, and they say "TITLE is an item of a feed, and a feed's items can't be moved."; at the Reading List it moves like any book.
 
 ## Move Up and Move Down on a row
@@ -258,7 +258,7 @@ A feed's episode, whose audio can't be edited, offers no Edit Audio….
 <!-- id: exporting-from-library-window; keys: File menu, export selected books, noBooksSelected, nothing to export; src: TextMouth/Models/BookExportWording.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/App/MenuCommands.swift -->
 
 File menu, Export… exports the books selected in the Library window, and a book's context menu (VO-Shift-M) has Export… too, or Export 3 Books… for a selection of three (see [Exporting books](exporting-books.md)); with no book selected, VoiceOver says "No books are selected."
-With neither a Library window nor a book's window in front, as when only Settings is open, File menu, Export… says so instead: "No Library window or book is open, so there is nothing to export." or "To export, switch to a Library window or a book's window, then choose Export again."
+With neither a Library window nor a book's window in front, as when only Settings is open, File menu, Export… says so instead: "No Library window or book is open, so there is nothing to export." or "Switch to a Library or book window, then choose Export again."
 A text book's context menu, and a transcribed audiobook's, also has Edit Text in Default Editor and Edit Text With…, unless several books are selected or the book is a feed's article (see [Editing a book's text](editing-book-text.md)).
 These commands aren't among the row's actions in VoiceOver's Actions menu.
 
@@ -288,9 +288,9 @@ The toolbar's buttons for adding and for settings:
 - Feed Settings or Folder Settings, between New Folder and the Sort menu, shows only in a folder of the Folders view: never at the top of the library, and in no other view.
   A feed's folder, the folder that lists the feed's episodes or articles, gets Feed Settings, even when it also holds books of your own; any other folder gets Folder Settings.
   - Feed Settings opens the feed's Feed Info, the sheet that Command-I opens on the feed's row (see [Podcasts and article feeds](feed-commands.md)).
-    VoiceOver calls the button "Feed settings for" and the feed's title, as in "Feed settings for Planet Money", and its hint is "Opens the settings of this feed: where its downloads go, what it lists and downloads, and what happens when an episode ends".
+    VoiceOver calls the button "Feed settings for" and the feed's title, as in "Feed settings for Planet Money", and its hint is "Opens the feed's settings: where its downloads go, what it lists and downloads, and what happens when an episode ends".
   - Folder Settings opens the Folder Settings sheet (below).
-    VoiceOver calls the button "Folder settings for" and the folder's name, as in "Folder settings for Classics", and its hint is "Opens the settings of this folder: what it holds, and what happens when one of its books ends".
+    VoiceOver calls the button "Folder settings for" and the folder's name, as in "Folder settings for Classics", and its hint is "Opens the folder's settings: what it holds, and what happens when one of its books ends".
 - Folder or Feed Settings, in the Library menu after Remove from Reading List and among the Library actions of the Shortcuts tab of Settings, does what the button does for the folder the window shows.
   It has no key until you give it one.
   Where the window shows no folder, because it is at the top of the library or in another category, VoiceOver says "Open a folder first to see its settings".
@@ -309,13 +309,13 @@ The Folder Settings sheet shows a plain folder's facts and how listening goes on
   - "Time remaining", only when it is known, as in "14 hours, 3 minutes remaining in total"
 - Under a heading, "Listening", are three controls, each saved as you choose it.
   The pop-up button "When a book ends" offers "Use the global setting (…)", which names the Playback tab's When book ends choice, as in "Use the global setting (Continue to Next Book)", then "Play the book below", "Play the book above", and "Stop".
-  Its hint is "What happens when one of this folder's books ends: play the book below it or the one above it in the folder, stop, or follow the global setting".
+  Its hint is "Chooses what happens when one of this folder's books ends".
   The pop-up button "Open the next book in" offers "Use the global setting (…)", which names the Playback tab's Open the next book in choice, as in "Use the global setting (This Window)", then "This Window" and "A New Window".
   Its hint is "Chooses where this folder's next book opens."
   It is dimmed while the folder's books do not go on to another book when one ends, which is when "When a book ends" says Stop, or says Use the global setting and the global choice is not Continue to Next Book.
   Its hint then is "Available only while this folder's books go on to another book when one ends", and it keeps its choice for when they do.
   A dimmed choice is not in effect: Next in Folder and Previous in Folder then follow the global setting.
-  The checkbox "Skip finished books", checked unless you clear it, has the hint "When listening goes on to another book, pass over the books already finished".
+  The checkbox "Skip finished books", checked unless you clear it, has the hint "Applies when listening goes on to another book".
   What they do is under When a book ends, including Where the next book opens, in [Reader windows](reader-book-end.md).
   A folder's choices apply to the books directly in it, never to those in the folders inside it.
 - Done closes the sheet, and so do Return and Escape, since nothing in the sheet takes typing.

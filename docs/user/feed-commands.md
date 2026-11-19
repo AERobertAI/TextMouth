@@ -103,7 +103,7 @@ New episodes a check found are not lost when TextMouth quits, or the library can
 Move to Library…, on a downloaded episode's or article's book row, among its VoiceOver actions, and in its reader's Book menu, makes it a book of the library's own.
 It has no key until you give it one in the Shortcuts tab of Settings, under Library, and then acts on the episodes and articles selected in a Library window, or on a reader's book.
 It opens the folder picker Move to Folder… uses, under a heading such as "Move “Ep.
-368” to Library" and the line "Moves this episode into a folder of your library, where it becomes a book you can edit; it leaves the feed", which VoiceOver reads once, as text; the Move button gives no hint that says it again.
+368” to Library" and the line "Moves this episode into a library folder as a book you can edit; it leaves the feed", which VoiceOver reads once, as text; the Move button gives no hint that says it again.
 It takes only an episode or article still downloaded in its feed.
 The book keeps its place, playback times, bookmarks, settings, transcript, place on the reading list, and history in Stats, where Books Finished still counts it as an episode, and VoiceOver says what happened a moment after the sheet has closed, as in "Moved “Ep.
 368” into Podcasts/Keepers.

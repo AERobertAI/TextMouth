@@ -38,9 +38,9 @@ Each is read as its label, its value, and its hint:
   - "North American Braille ASCII",
   - "Eurobraille, six-dot (German-speaking countries)",
   - or "Unicode braille patterns", starting from the Braille tab's choice (Unicode braille patterns is never that choice).
-  Its hint is "How the BRF file writes each braille cell.
-  Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille.
-  To share braille with a reader elsewhere, export a PEF."
+  Its hint is "How the BRF writes each braille cell.
+  Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille.
+  To share with a reader elsewhere, export a PEF."
   VoiceOver says its value first, as in "North American Braille ASCII, Braille file characters, pop-up button".
   A PEF always holds Unicode braille, so it has no such choice.
 
@@ -62,14 +62,14 @@ The sentence names the table by its display name, or by its file name when this 
 <!-- id: export-while-table-being-checked; keys: Export hint, table check wait, Stop; src: TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/ViewModels/BookExportModel.swift -->
 
 An export started while a table just chosen here is being checked waits for the check, and Stop is offered meanwhile: Stop, or closing the dialog, ends the export before it writes anything.
-While the check runs, the Export button's hint is "Exports the checked items to the folder once the braille table just chosen has been checked."
+While the check runs, the Export button's hint is "Exports the checked items once the braille table just chosen is checked."
 The export then writes with the table the pop-ups show once the check has passed, or the one they went back to.
 
 ## Eight-dot braille characters
 <!-- id: export-eight-dot-braille; keys: eight-dot cell, six-dot, @ sign, email address; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
 
 Eight-dot braille characters already in a book's text are written as their six-dot part.
-A table that writes an ordinary character as an eight-dot cell fails that book's export, naming the character, as in "Couldn't export Moby-Dick - Text.brf: The braille table writes “«” as an eight-dot cell, and TextMouth writes BRF and PEF files in six-dot braille only."
+A table that writes an ordinary character as an eight-dot cell fails that book's export, naming the character, as in "Couldn't export Moby-Dick - Text.brf: The braille table writes “«” as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only."
 When no one character is to blame, the sentence names the cell's dots.
 Some tables write @ in eight-dot computer braille, so a book holding an e-mail address fails to export with them; the other books export.
 

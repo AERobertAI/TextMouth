@@ -128,7 +128,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 <!-- id: kfx-books-no-flowing-text; keys: fixed layout, print replica, comic, magazine, textbook, notebook; src: TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/KFXMetadata.swift, TextMouth/Parsers/KFXBook.swift -->
 
 - A book with no flowing text to read is refused: a fixed-layout book, a print replica, a comic, a magazine, a children's book, a textbook, a notebook, or a book whose pages are only pictures.
-- The sentence is "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
+- The sentence is "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it."
 
 ### Kindle Create packages
 <!-- id: kindle-create-packages; keys: .kpf, Kindle Create, KPF, author package; src: TextMouth/Parsers/KFXError.swift -->

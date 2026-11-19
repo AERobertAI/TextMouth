@@ -70,7 +70,7 @@ Nothing replaces your edit meanwhile: the book keeps the text it had, and openin
 A chapter that nests quotes, lists, or emphasis more than 128 levels deep is a save TextMouth can't take, since an export can't write it.
 No real book comes near it: the deepest nests 12 levels.
 VoiceOver names the chapter by its number: "Text not updated: chapter 2 of the edited text of Deep Notes nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely.
-Flatten it in your editor and save again, or undo the change; until then, the book keeps the text it had."
+Flatten it and save again, or undo the change; the book keeps its old text until then."
 A text with no chapter markers says "the edited text of Deep Notes" instead, and the book's own sentence, in place of the book, says "its chapter 2 nests".
 The count includes the lines of a code block, and counts every two columns of indentation as a level, so a code line of 129 ">" marks, or of 258 spaces before "- ", is refused too.
 A book whose text was that deep before, as an earlier TextMouth let it in, opens and reads as it always did, but each save that leaves the chapter as it was is refused until it is flattened, and an export of its text is refused too ([Exporting books](exporting-books.md)).
@@ -107,8 +107,8 @@ A save is taken into the transcript itself, transcript.json, so the edit stays t
 An edit that changes the number of chapters, which must stay one for each of the audio's, or an edit of a book whose audio changed since it was transcribed, isn't taken, and is kept beside content.md as above; meanwhile the book plays without its text.
 A chapter's heading comes from the audio, and words typed into a chapter the transcript heard no speech in have no sentence to be kept in, so an edit that renames, removes, or adds a heading, or that adds words to such a chapter, isn't taken either, and is kept the same way.
 VoiceOver says which, as in "Text not updated: the edited transcript of Moby-Dick changes a chapter's heading, which comes from its audio.
-Put the heading back as it was and save again; until then, the book keeps the text it had." and "Text not updated: the edited transcript of Moby-Dick adds words to a chapter the transcript heard no speech in, where they can't be kept.
-Remove them and save again; until then, the book keeps the text it had.", each followed by where the copy was kept.
+Put it back and save again; the book keeps its old text until then." and "Text not updated: the edited transcript of Moby-Dick adds words to a chapter with no speech, where they can't be kept.
+Remove them and save again; the book keeps its old text until then.", each followed by where the copy was kept.
 When the transcript changed too, as when the book was transcribed again on another Mac, the edit isn't taken either, and is kept the same way; the book's text is written from that transcript again the next time the book opens.
 An edit saved while TextMouth is closed, or outside Edit Text, is replaced the next time the book opens by the text written from the transcript, after TextMouth keeps it beside content.md.
 An audiobook without a transcript has no text to edit: transcribe it first.

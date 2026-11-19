@@ -52,8 +52,8 @@ The rest of the sheet is as for Transcribe Audio…, above.
 <!-- id: book-transcript-only-icloud; keys: cloud placeholder, content.md, not downloaded, Transcription stopped; src: TextMouth/Models/TranscriptionWording.swift, TextMouth/ViewModels/TranscriptionSheetModel.swift -->
 
 Before a book is transcribed, the sheet looks for a file that is only in iCloud, without reading or downloading anything, so that the audio is not transcribed for nothing.
-While the book's transcript is only in iCloud, the sheet says "The book's transcript is only in iCloud, so TextMouth leaves it as it is.
-Download the book, then try again.", and while its text, content.md, is only in iCloud, "The book's text is only in iCloud, so TextMouth leaves it as it is.
+While the book's transcript is only in iCloud, the sheet says "The transcript is only in iCloud, so TextMouth leaves it.
+Download the book, then try again.", and while its text, content.md, is only in iCloud, "The book's text is only in iCloud, so TextMouth leaves it.
 Download the book, then try again.", the transcript's line first when both are.
 Transcribe, or Retranscribe, is then unavailable, and VoiceOver moves to Cancel.
 A text that goes to iCloud while the audio is being transcribed is caught when the transcript is to be saved: nothing is saved, the book keeps what it had, and the transcription ends with "Transcription stopped: " and the sentence about the text.
@@ -94,9 +94,9 @@ Apply is refused, saying why, when the book is being transcribed,
 - when the book's text is only in iCloud,
 - or when the text holds changes that TextMouth can't keep a copy of before it replaces them.
 
-The last two say, after "Couldn't clean up the transcript of Moby-Dick: ", "The book's text is only in iCloud, so TextMouth leaves it as it is.
+The last two say, after "Couldn't clean up the transcript of Moby-Dick: ", "The book's text is only in iCloud, so TextMouth leaves it.
 
-Download the book, then try again." and "The book's text holds changes TextMouth couldn't keep a copy of, so it leaves the text as it is."
+Download the book, then try again." and "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is."
 ## Undo Cleanup
 <!-- id: undo-cleanup; keys: restore transcript, Edit Text session, last cleanup; src: TextMouth/Models/TranscriptCleanupWording.swift, TextMouth/ViewModels/TranscriptCleanupSheetModel.swift, TextMouth/Services/TranscriptCleanupStore.swift -->
 
@@ -179,8 +179,7 @@ An audiobook can take one from a WebVTT (.vtt) or SubRip (.srt) file, on any mac
 - Attach Transcript… is in an open audiobook's Book menu.
   It is offered for the audiobooks that Transcribe Audio… is offered for: an audiobook in a package of its own.
 - It opens an Open panel.
-  The panel says "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of Moby-Dick.
-  Its times count from the start of the book's audio." and its button is Attach.
+  The panel says "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of Moby-Dick, timed from the start of its audio." and its button is Attach.
 - A book of several tracks takes one file for the whole book, whose times run on across the tracks.
 - While the file is saved, VoiceOver hears "Attaching “lecture.vtt” to Moby-Dick."
   When it is done, VoiceOver hears "Attached “lecture.vtt” to Moby-Dick: 7,077 words."
@@ -235,8 +234,8 @@ An audiobook can take one from a WebVTT (.vtt) or SubRip (.srt) file, on any mac
 - The file becomes the book's transcript.
   No transcription is offered for that book afterwards, and its row says Transcribed as soon as it is listed.
 - A file that can't be used never fails the import.
-  Once the import is done, VoiceOver hears "“lecture.vtt” was beside the audio but wasn't attached as the book's transcript:" and the reason.
-- For several files: "These transcript files were beside the audio but weren't attached: “03.vtt”, “07.vtt”, and “09.srt”.
+  Once the import is done, VoiceOver hears "“lecture.vtt” beside the audio wasn't attached:" and the reason.
+- For several files: "These transcript files beside the audio weren't attached: “03.vtt”, “07.vtt”, and “09.srt”.
   The debug log says why."
   At most five are named, then how many more.
 - A file read from this Mac may be up to 20 MB.

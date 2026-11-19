@@ -11,16 +11,16 @@ The duplicate question, Replace Existing, and the questions that wait their turn
 
 - Add to Library, the plus button in the Library window's toolbar, opens a sheet with every way to add to the library.
 - It takes the place of the toolbar's Import, New from Text, and Add Feed buttons, whose commands are all in the sheet.
-- VoiceOver calls the button "Add to Library", and its hint is "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed".
+- VoiceOver calls the button "Add to Library", and its hint is "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed".
 - When the window lists no books and has no Continue button, VoiceOver's focus starts on it, where it started on the Import button before.
 - The sheet has a heading, "Add to Library", a button for each way to add, and Cancel, which Escape presses.
   VoiceOver starts on the first button.
 - The buttons come in the order below, with what each does written under it, which VoiceOver speaks as the button's hint:
   - Open Book…: "Opens a file picker to import books in any format TextMouth reads."
-  - Import Folder…: "Chooses a folder that holds a DAISY book or audio tracks and imports it as one book."
-  - New from Text…: "Makes a new book from text you paste or type."
+  - Import Folder…: "Imports a folder holding a DAISY book or audio tracks as one book."
+  - New from Text…: "Makes a book from text you paste or type."
   - New Recording…: "Records from a microphone into a new audiobook."
-  - Add Feed…: "Opens a sheet where you type a feed's address and choose where its folder goes"
+  - Add Feed…: "Opens a sheet to type a feed's address and choose its folder"
 - Each button is named by its menu command, and VoiceOver adds the command's key in words when it has one, as in "Open Book…, Command + O".
 - Choosing a button closes the sheet and then does what its menu command does, each described below.
 - Cancel, or Escape, closes the sheet and does nothing.

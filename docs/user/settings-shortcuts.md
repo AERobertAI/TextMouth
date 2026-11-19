@@ -49,14 +49,13 @@ One you haven't isn't marked Edited for the loss, says on its row, on screen and
 ### Reset to Defaults for all shortcuts
 <!-- id: reset-defaults-all-shortcuts; keys: Reset Keyboard Shortcuts?, alert, restore all shortcuts; src: TextMouth/Views/Settings/KeyboardShortcutsSettingsView.swift, TextMouth/Models/ShortcutEdits.swift -->
 
-Reset to Defaults, at the foot of the tab, asks first, in an alert, "Reset Keyboard Shortcuts?", and then gives every action its default keys again; once the alert has closed, VoiceOver says "The keyboard shortcuts are reset to the defaults."
+Reset to Defaults, at the foot of the tab, asks first, in an alert, "Reset Keyboard Shortcuts?", and then gives every action its default keys again; once the alert has closed, VoiceOver says "Shortcuts reset to defaults."
 
 ### Works in: where a shortcut works
 <!-- id: works-where-shortcut-works; keys: worksIn, Every window, Library windows, Reader windows, sheet, audio editor window; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Views/Settings/KeyboardShortcutsSettingsView.swift, TextMouth/Models/ShortcutEdits.swift -->
 
 Works in, a pop-up button on the row of each action that can work in more than one kind of window, sets where its shortcuts work: Every window, Library windows, or Reader windows.
-Its label is "Works in", its value the choice, as in "Library windows" on New from Text…'s row, and its hint "Where this shortcut works.
-Choosing makes it yours; Reset to Default gives back where it works by default."
+Its label is "Works in", its value the choice, as in "Library windows" on New from Text…'s row, and its hint "Choosing makes the shortcut yours; Reset to Default restores where it works by default."
 By default New from Text… works in Library windows and Show Sleep Timer in reader windows, so Shift-Command-T is each one's in its own kind of window.
 Import Folder… and Add Feed… always work in Library windows, and Copy Reading Position and Search in Book in reader windows, where their menus are; the audio editor's actions work in its windows, and the New Recording window's buttons in that window.
 Every other action works by default in every window but an audio editor's, though a File menu command that works in every window, as Open Book… and New Recording… do by default, works in an audio editor's window too, as menus do, and any menu command works when no window is open.
@@ -111,11 +110,10 @@ A key held down never counts as pressed twice, more quick presses after a double
 <!-- id: try-double-press; keys: Try a Double Press, Last try, two presses apart, five seconds; src: TextMouth/Views/Settings/KeyboardShortcutsSettingsView.swift -->
 
 Try a Double Press, under the time, says "Press a key twice.", takes your next two key presses as no shortcuts, for five seconds, and says what they made: "Double press."; how far apart they came, as in "Two presses, 0.7 seconds apart.
-Set the time above 0.7 seconds to count them as one.", or, 2 seconds apart or more, that the time goes up to 2 seconds; "Two different keys.
-A double press is one key pressed twice."; or, when five seconds pass first, "No key was pressed twice."
+Set the time above 0.7 seconds to count them as one.", or, 2 seconds apart or more, that the time goes up to 2 seconds; "Two different keys, not a double press."; or, when five seconds pass first, "No key was pressed twice."
 The text under the button keeps the last result, as in "Last try: Double press.", for a braille display to read again, until TextMouth quits; while a try waits for its presses, it reads "Press a key twice."
 A line of text under the button and its result, which VoiceOver and a braille display read, says why a letter shortcut does nothing in a Library window.
-It reads "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, so a shortcut that is a letter alone, such as W, works only in other windows."
+It reads "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows."
 
 ### Shift with a shortcut's key
 <!-- id: shift-shortcut-key; keys: Shift-J, Shift-L, Shift skip units, Increase Speed, Command-Plus; src: TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Models/KeyboardShortcut.swift -->

@@ -25,7 +25,7 @@ Part of [TextMouth's documentation](../../README.md).
   - The status line, which VoiceOver reads in place and hears once, as a search ends.
   - The checkboxes Match Case and Regular Expression.
   - Close, which Escape presses.
-    Its hint is "Close Search Library; its results stay for the next time it opens".
+    Its hint is "Closes Search Library; results stay for next time".
   - While a search runs, a progress bar, "Search progress", and a Stop button (Command-Period, hint "Stops the search, keeping the matches found so far").
   - The results, a list labelled "Results".
 - Searching begins when you stop typing for a moment (about a third of a second), and begins again when you change an option.
@@ -43,7 +43,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Regular Expression, unchecked unless you check it, makes the search text an ICU regular expression, the kind Search in Book takes.
   Matches may cross line ends.
   A pattern that is not valid says so in the status line, as "Invalid regular expression:" and the reason.
-- Search in Book has the same Match Case checkbox, unchecked unless you check it, with the hint "When checked, a match must have the same capital and small letters as the search text".
+- Search in Book has the same Match Case checkbox, unchecked unless you check it, with the hint "When checked, matches must use the same upper and lower case".
 
 ## What is searched
 <!-- id: library-search-what-searched; keys: Markdown marks, feed items, audiobook transcript, cloud books, unreadable books; src: TextMouth/Services/TextSearch/LibrarySearchText.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift, TextMouth/ViewModels/LibrarySearchModel.swift; status: incomplete; issues: DR03, DR06 -->

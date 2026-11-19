@@ -170,9 +170,9 @@ Search in Book on an audiobook with no text to search says why, in place of open
 - With a transcript whose text is not shown: "Moby-Dick has no transcript text to search now", then, by the reason:
   - a full stop alone, when the reason isn't known;
   - the transcript is only in iCloud: ".
-    The book's transcript is only in iCloud, so TextMouth leaves it as it is.
+    The transcript is only in iCloud, so TextMouth leaves it.
     Download the book, then try again.", or, when its text is: ".
-    The book's text is only in iCloud, so TextMouth leaves it as it is.
+    The book's text is only in iCloud, so TextMouth leaves it.
     Download the book, then try again.";
   - the audio changed since the book was transcribed: ", because the audiobook's audio changed since it was transcribed, so its transcript no longer fits it.
     Transcribe it again, then search the new transcript.";

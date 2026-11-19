@@ -31,12 +31,12 @@ EPUB is among them.
 ## WebVTT
 <!-- id: export-webvtt; keys: .vtt, UTF-8, WebVTTWriter; src: TextMouth/Services/Export/TimedTextWriters.swift, TextMouth/Models/BookExportWording.swift -->
 
-WebVTT: "Captions in WebVTT, which web browsers and most players read: one file for the book, timed from the start of its audio."
+WebVTT: "Captions in WebVTT, which web browsers and most players read: one file, timed from the start of the audio."
 
 ## SubRip
 <!-- id: export-subrip; keys: .srt, byte-order mark, CR LF, SubRipWriter; src: TextMouth/Services/Export/TimedTextWriters.swift, TextMouth/Models/BookExportWording.swift -->
 
-SubRip: "Captions in SubRip (.srt), which nearly every player reads: one file for the book, timed from the start of its audio."
+SubRip: "Captions in SubRip (.srt), which nearly every player reads: one file, timed from the start of the audio."
 
 ## The checkbox for captions
 <!-- id: export-captions-checkbox; keys: Transcript as WebVTT, no size, file count; src: TextMouth/Models/BookExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift -->

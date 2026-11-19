@@ -195,12 +195,12 @@ Should that encoder ever fail to start, an installed ffmpeg the switch allows wr
 Export writes the edits as they stand, saved or not, to a new file in any of those formats, with its chapter markers where the format holds them, leaving the book's file alone.
 
 - The Export sheet has a checkbox, "Also write the markers as Audacity labels", off when the editor opens, and kept as set until its window closes.
-  Its hint is "Writes the chapter markers and the markers beside the audio, in an Audacity label file of the same name, which Audacity imports as a label track."
+  Its hint is "Writes chapter markers and markers beside the audio, in an Audacity label file of the same name."
   - The label file is the audio's name with .txt, beside it, or "name 2.txt" and on when that name is taken, so no file is replaced.
   - A marker with no name is called "Marker" and its number.
   - The export says "Exported “name.wav” and its labels, “name.txt”."
   - When the labels failed, it says "Exported “name.wav”, but its labels couldn't be written." and why.
-  - With no marker of either kind, the hint says "The audio has no chapter markers or markers yet, so no label file would be written."
+  - With no marker of either kind, the hint says "No chapter markers or markers, so no label file would be written."
   - The export then says "Exported “name.wav”."
     It adds "It has no markers, so no label file was written."
 

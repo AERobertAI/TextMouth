@@ -118,9 +118,9 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A file whose bytes are not of the format its name says is refused with this sentence:
   "TextMouth can't read “NAME” as WMA.
   It may be damaged, or named for another format."
-- A file whose sound the converter does not decode is refused with "TextMouth can't convert the sound of “NAME”: it is in a kind of audio TextMouth does not read."
+- A file whose sound the converter does not decode is refused with "TextMouth can't convert the sound of “NAME”: it is in a kind of audio it does not read."
 - Sound that changes its rate or its channels partway through, as joined recordings do, is converted to the form the file begins with.
-  Only a change by more than TextMouth can follow is refused, with "TextMouth can't convert “NAME”: its sound changes its rate or its channels partway through, by more than TextMouth can follow."
+  Only a change by more than TextMouth can follow is refused, with "TextMouth can't convert “NAME”: its sound changes rate or channels partway through, by more than it can follow."
 - A file that makes the converter stop is refused with "TextMouth's converter stopped unexpectedly while reading “NAME”.
   The file may be damaged."
   The converter confines itself before it reads a file (see [Where TextMouth keeps your library](helper-programs.md)), so a hostile file cannot harm the Mac.
@@ -143,7 +143,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 
 - A file whose sound is partly refused by the decoder imports, with the damaged stretch kept as silence, and the import says so: "Part of “Lecture.wma” could not be decoded and is kept as silence.".
   For several files it says "Part of 2 files, “a.wma” and “b.wma”, could not be decoded and is kept as silence."
-- A file with a piece of sound too large for TextMouth to decode, as no good file has, is refused with "TextMouth can't convert “NAME”: part of its sound is stored in one piece too large for TextMouth to decode."
+- A file with a piece of sound too large for TextMouth to decode, as no good file has, is refused with "TextMouth can't convert “NAME”: part of its sound is in one piece too large to decode."
 - A file that claims no length is limited by its size: its output may be at most 50 times the file's size, and no less than 64 MB.
   The import refuses it before running when the disk lacks room for that.
   [Where TextMouth keeps your library](helper-programs.md) lists what else stops the converter.

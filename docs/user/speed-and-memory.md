@@ -111,7 +111,7 @@ Quitting while work is under way (0.4.4):
   - a speech export stops with the chapters it finished kept, for up to 5 seconds;
   - changes to your feed subscriptions still waiting to be written finish, for up to 10 seconds, saying "saving the changes to your feed subscriptions", and one it gives up on is named in the unsaved-changes question.
 - When you press Command-Q, choose Quit from the TextMouth menu, or choose Quit in the Dock while any of that runs, a small window titled "Quitting TextMouth" appears.
-  And VoiceOver says the same words: "TextMouth is finishing up before it quits: " and what it is doing, then "It will quit as soon as that is done."
+  And VoiceOver says the same words: "TextMouth is finishing up before it quits: " and what it is doing, then "It quits when that is done."
   TextMouth quits by itself when the work has ended.
 - What it says for each kind of work:
   - Downloads: "keeping the place of your feed downloads for next time".
