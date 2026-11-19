@@ -86,7 +86,7 @@ final class PhoneImportWordingTests: XCTestCase {
         )
         XCTAssertEqual(
             PhoneImportRefusal.macBrailleTable("fr-bfu-g2.ctb").sentence(naming: "Manuel"),
-            "“Manuel” needs “fr-bfu-g2.ctb”, a braille table only a Mac has. "
+            "“Manuel” needs “fr-bfu-g2.ctb”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have. "
                 + "Add it on your Mac, then send the book here."
         )
     }

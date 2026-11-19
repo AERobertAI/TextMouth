@@ -2,8 +2,8 @@ import XCTest
 
 /// The pilot's areas in Spanish on the iPhone (FR35): the app started in Spanish (`-AppleLanguages (es)`, with
 /// Spain's formats from `-AppleLocale es_ES`) shows and speaks the reader's Sleep Timer and Bookmarks sheets in the
-/// String Catalog's Spanish. The reader's own controls and the sheets' titles belong to areas not converted yet, so
-/// they stay English and the sheets are opened by their English names.
+/// String Catalog's Spanish. The reader's own controls and the sheets' titles are the iPhone's converted words
+/// (FR34), so the sheets are opened by their Spanish names.
 ///
 /// Each expected word is written here with the catalog key it comes from, so a failure names what VoiceOver was
 /// given instead, in order: if the app came up in English, the order printed says so.
@@ -20,17 +20,17 @@ final class SpanishUITests: TextMouthUITestCase {
     /// custom Set button's label, and the Stop At heading and buttons.
     func testTheSleepTimerSheetIsInSpanish() throws {
         let app = try launchIntoTheReader(arguments: Self.spanish)
-        // The reader's Sleep Timer button keeps its English name (the reader's words), and its value is the
+        // The reader's Sleep Timer button is named "Sleep Timer" in Spanish, and its value is the
         // sleep timer's own: "Off" ("Desactivado") while no timer runs.
         let reader = try elementsInOrder(of: app)
-        let timerValue = reader.first { $0.label == "Sleep Timer" }?.value
+        let timerValue = reader.first { $0.label == "Temporizador de apagado" }?.value
         XCTAssertEqual(timerValue, "Desactivado", "The reader's Sleep Timer read: \(Self.describe(reader))")
-        // The reader's button and the sheet's title are the reader's words, still English; Close is the Mac's
+        // The reader's button and the sheet's title are both "Sleep Timer" in Spanish, and Close is the Mac's
         // own localized word since the pilot's review (finding 4), so the sheet is not half English.
-        let elements = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Cerrar", in: app)
+        let elements = try openReaderSheet("Temporizador de apagado", titled: "Temporizador de apagado", waitingFor: "Cerrar", in: app)
         keepScreenshot(of: app, named: "Sleep Timer sheet in Spanish")
         assertOrder([
-            "Sleep Timer", "Cerrar",  // "Close"
+            "Temporizador de apagado", "Cerrar",  // "Sleep Timer", "Close"
             "Nuevo temporizador",  // "New Timer"
             "Temporizador de 10 minutos",  // "Set timer for %lld minutes", other
             "Temporizador de 60 minutos",
@@ -55,11 +55,11 @@ final class SpanishUITests: TextMouthUITestCase {
     /// list's two sentences, the second naming Add Bookmark by its own Spanish title.
     func testTheBookmarksSheetIsInSpanish() throws {
         let app = try launchIntoTheReader(arguments: Self.spanish)
-        // The reader's button and the sheet's title are the reader's words, still English; Done is the sheet's own.
-        let elements = try openReaderSheet("Bookmarks", titled: "Bookmarks", waitingFor: "OK", in: app)
+        // The reader's button and the sheet's title are both "Bookmarks" in Spanish; Done is the sheet's own.
+        let elements = try openReaderSheet("Marcadores", titled: "Marcadores", waitingFor: "OK", in: app)
         keepScreenshot(of: app, named: "Bookmarks sheet in Spanish")
         assertOrder([
-            "Bookmarks",
+            "Marcadores",  // "Bookmarks"
             "OK",  // "Done" (the review: Apple's Spanish shows OK; a native speaker decides)
             "Agregar marcador",  // "Add Bookmark"
             "Aún no hay marcadores.…",  // "No bookmarks yet.", then the help, read as one element
