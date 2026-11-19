@@ -44,25 +44,28 @@ final class PhoneSettingsVocabularyTests: XCTestCase {
         }
     }
 
-    /// A speed's words are the Mac's: its slider's value interpolates the
-    /// speed as a whole number before the same words.
+    /// A speed's words are the Mac's: its slider's value is `SettingsWording`'s
+    /// whole-number words, which the phone says too.
     func testASpeedIsSaidAsTheMacsSliderSaysIt() throws {
         let sources = try Self.macSettingsSources()
-        XCTAssertTrue(sources.contains(#".accessibilityValue("\(Int(settingsViewModel.wordsPerMinute)) words per minute")"#))
-        XCTAssertEqual(PhoneVoiceVocabulary.speedValue(wordsPerMinute: 200), "200 words per minute")
+        XCTAssertTrue(sources.contains(".accessibilityValue(SettingsWording.wordsPerMinuteValue(Int(settingsViewModel.wordsPerMinute)))"))
+        XCTAssertEqual(SettingsWording.wordsPerMinuteValue(200), "200 words per minute")
+        XCTAssertEqual(PhoneVoiceVocabulary.speedValue(wordsPerMinute: 200), SettingsWording.wordsPerMinuteValue(200))
         XCTAssertEqual(PhoneVoiceVocabulary.speedValue(wordsPerMinute: 650), "650 words per minute")
     }
 
     /// A voice's words are the Mac's: its list of voices names each one by
-    /// its name and its quality, in this form.
+    /// its name and its quality, in `SettingsWording`'s form, which the phone
+    /// says too.
     func testAVoiceIsSaidAsTheMacsListSaysIt() throws {
         let sources = try Self.macSettingsSources()
         XCTAssertTrue(
-            sources.contains(#".accessibilityLabel("\(voice.name), \(settingsViewModel.voiceQualityLabel(voice)) quality")"#)
+            sources.contains(".accessibilityLabel(SettingsWording.voiceLabel(name: voice.name, quality: settingsViewModel.voiceQualityLabel(voice)))")
         )
+        XCTAssertEqual(SettingsWording.voiceLabel(name: "Samantha", quality: "Enhanced"), "Samantha, Enhanced quality")
         XCTAssertEqual(
             PhoneVoiceVocabulary.voiceChoice(name: "Samantha", quality: "Enhanced"),
-            "Samantha, Enhanced quality"
+            SettingsWording.voiceLabel(name: "Samantha", quality: "Enhanced")
         )
     }
 }

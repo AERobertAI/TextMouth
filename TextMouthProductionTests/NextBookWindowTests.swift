@@ -270,7 +270,7 @@ final class NextBookWindowTests: XCTestCase {
             .deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("TextMouth/Views/Settings/SettingsView.swift")
         let text = try String(contentsOf: source, encoding: .utf8)
-        let picker = try XCTUnwrap(text.range(of: "Picker(\"When book ends\"")?.lowerBound)
+        let picker = try XCTUnwrap(text.range(of: "Picker(SettingsWording.whenBookEndsTitle")?.lowerBound)
         let caption = try XCTUnwrap(text.range(of: "Text(EndOfBookWording.playOnAFinishedBookCaption)")?.lowerBound)
         let window = try XCTUnwrap(text.range(of: "Picker(NextBookWindowWording.globalLabel")?.lowerBound)
         XCTAssertLessThan(picker, caption)

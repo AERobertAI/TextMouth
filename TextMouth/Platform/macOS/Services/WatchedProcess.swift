@@ -224,7 +224,7 @@ enum WatchedProcess {
 
     /// The reaper's script: `$1` is the pid whose death kills the tool, `$2`
     /// the tool's pid. It ends by itself when the tool has ended.
-    private static let reaperScript = """ // l10n: no (a shell script, never shown)
+    private static let reaperScript = """
     while kill -0 "$2" 2>/dev/null; do
         if ! kill -0 "$1" 2>/dev/null; then
             kill -9 "$2" 2>/dev/null
@@ -232,7 +232,7 @@ enum WatchedProcess {
         fi
         sleep 1
     done
-    """
+    """ // l10n: no (a shell script, never shown)
 
     /// Starts a shell that kills `child` as soon as `parent` is gone, so a
     /// runaway tool dies with TextMouth however TextMouth ends. It ends by

@@ -98,7 +98,7 @@ enum AsyncBridge {
             // The line names no file or title: only that a read passed its limit.
             DiagnosticLog.event(
                 .playback,
-                "ASYNC_TIME_LIMIT: an audio read passed its limit of \(TimeLimitExceeded.spelling(of: timeLimit)) and was abandoned"
+                "ASYNC_TIME_LIMIT: an audio read passed its limit of \(TimeLimitExceeded.logSpelling(of: timeLimit)) and was abandoned"
             )
             throw TimeLimitExceeded(limit: timeLimit)
         }
@@ -133,6 +133,19 @@ enum AsyncBridge {
 
         var errorDescription: String? {
             Self.sentence(for: limit)
+        }
+
+        /// `limit` in English words for the debug log, which stays English:
+        /// "5 minutes", "1 minute", "30 seconds".
+        static func logSpelling(of limit: Duration) -> String {
+            let seconds = limit.seconds
+            if seconds >= 60, seconds.truncatingRemainder(dividingBy: 60) == 0 {
+                return CountWording.phrase(Int(seconds / 60), singular: "minute", plural: "minutes") // l10n: no (debug log text)
+            }
+            if seconds.truncatingRemainder(dividingBy: 1) == 0 {
+                return CountWording.phrase(Int(seconds), singular: "second", plural: "seconds") // l10n: no (debug log text)
+            }
+            return "\(seconds) seconds" // l10n: no (debug log text)
         }
 
         /// The sentence for `limit`, named in words: whole minutes when it is
