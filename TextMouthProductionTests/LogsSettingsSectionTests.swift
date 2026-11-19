@@ -21,9 +21,9 @@ final class LogsSettingsSectionTests: XCTestCase {
             "In this Mac's Logs folder (~/Library/Logs/TextMouth)",
         ])
         for words in [
-            "Inside the data directory keeps them in its Logs folder", "sync with it when it is in the cloud",
+            "Inside the data directory keeps them with your books", "so they move and sync with the library",
             "In this Mac's Logs folder keeps them in ~/Library/Logs/TextMouth, which never syncs",
-            "A change applies from the next line written", "logs already written are not moved",
+            "A change applies from the next line", "existing logs stay",
         ] {
             XCTAssertTrue(LogsSettingsWording.pickerHint.contains(words), words)
         }
@@ -58,20 +58,20 @@ final class LogsSettingsSectionTests: XCTestCase {
         XCTAssertEqual(status(thisMac, .thisMac), "Logs are written to /Users/reader/Library/Logs/TextMouth.")
         XCTAssertEqual(
             status(thisMac, .fallback(.libraryUnavailable)),
-            "The library isn't available, so logs are written to /Users/reader/Library/Logs/TextMouth until it is."
+            "The library isn't available, so logs go to /Users/reader/Library/Logs/TextMouth until it is."
         )
         XCTAssertEqual(
             status(thisMac, .fallback(.dataDirectoryMissing)),
-            "The data directory is missing, so logs are written to /Users/reader/Library/Logs/TextMouth until it is back."
+            "The data directory is missing, so logs go to /Users/reader/Library/Logs/TextMouth until it is back."
         )
         XCTAssertEqual(
             status(thisMac, .fallback(.logsFolderMissing)),
-            "The data directory has no Logs folder, so logs are written to /Users/reader/Library/Logs/TextMouth "
-                + "until it has one again."
+            "The data directory has no Logs folder, so logs go to /Users/reader/Library/Logs/TextMouth "
+                + "until it has one."
         )
         XCTAssertEqual(
             status(thisMac, .fallback(.logsFolderUnusable("it is only in the cloud"))),
-            "The data directory's Logs folder can't be written (it is only in the cloud), so logs are written to "
+            "The data directory's Logs folder can't be written (it is only in the cloud), so logs go to "
                 + "/Users/reader/Library/Logs/TextMouth until it can."
         )
     }

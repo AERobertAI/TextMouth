@@ -94,7 +94,7 @@ final class RecordingPermissionTests: XCTestCase {
     func testTheErrorsSayWhatIsWrongAndWhatToDo() {
         XCTAssertEqual(
             AudioInputPermissionError.denied.errorDescription,
-            "TextMouth isn't allowed to use the microphone. To record, turn on TextMouth in System Settings, "
+            "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, "
                 + "Privacy & Security, Microphone."
         )
         XCTAssertEqual(

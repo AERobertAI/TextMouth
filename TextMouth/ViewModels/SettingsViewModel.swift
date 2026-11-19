@@ -4,10 +4,30 @@ import Combine
 
 /// Units for rewind-on-resume
 enum RewindUnit: String, CaseIterable, Codable {
-    case none = "None"
-    case sentence = "Sentence"
-    case paragraph = "Paragraph"
-    case heading = "Heading"
+    // The raw values are what config.json stores; `title` is what the
+    // pickers show and say, in the interface language.
+    case none = "None" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case sentence = "Sentence" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case paragraph = "Paragraph" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case heading = "Heading" // l10n: no (stored id: config.json keeps it; `title` is shown)
+
+    /// The unit's name in the Rewind pickers.
+    var title: String {
+        switch self {
+        case .none:
+            return String(localized: "None",
+                          comment: "A choice of the Rewind on Resume unit picker: playback resumes where it stopped, with no rewinding.")
+        case .sentence:
+            return String(localized: "Sentence",
+                          comment: "A unit of text a picker moves or rewinds by: one sentence. Used by the rewind, skip, and navigation unit pickers.")
+        case .paragraph:
+            return String(localized: "Paragraph",
+                          comment: "A unit of text a picker moves or rewinds by: one paragraph. Used by the rewind, skip, and navigation unit pickers.")
+        case .heading:
+            return String(localized: "Heading",
+                          comment: "A unit of text a picker moves or rewinds by: one heading. Used by the rewind, skip, and navigation unit pickers.")
+        }
+    }
 }
 
 /// What happens when a book ends, and what Play then does on the finished
@@ -18,16 +38,35 @@ enum RewindUnit: String, CaseIterable, Codable {
 enum EndOfBookBehavior: String, CaseIterable, Codable {
     /// The book stops at its end, finished; Play then says "Finished:
     /// <title>" and does nothing else.
-    case stop = "Stop"
+    case stop = "Stop" // l10n: no (stored id: config.json keeps it; `title` is shown)
     /// The book stops at its end, finished, as with Stop; Play then starts
     /// it over from its beginning, "Starting again: <title>". The user
     /// asked on October 10, 2026 for this choice beside the others, Play's
     /// starting over "not by default".
-    case stopAndPlayStartsOver = "Stop, and Play Starts Over"
+    case stopAndPlayStartsOver = "Stop, and Play Starts Over" // l10n: no (stored id: config.json keeps it; `title` is shown)
     /// The book plays again from its beginning, and is never finished.
-    case loop = "Loop to Start"
+    case loop = "Loop to Start" // l10n: no (stored id: config.json keeps it; `title` is shown)
     /// The next book in the folder plays.
-    case continueNext = "Continue to Next Book"
+    case continueNext = "Continue to Next Book" // l10n: no (stored id: config.json keeps it; `title` is shown)
+
+    /// The choice's name in the End of Book pickers, in the interface
+    /// language (`rawValue` is what config.json and a book's record keep).
+    var title: String {
+        switch self {
+        case .stop:
+            return String(localized: "Stop",
+                          comment: "A choice of the When a Book Ends picker: the book stops at its end, finished. Play then says it is finished.")
+        case .stopAndPlayStartsOver:
+            return String(localized: "Stop, and Play Starts Over",
+                          comment: "A choice of the When a Book Ends picker: the book stops at its end, finished, and Play then starts it again from the beginning.")
+        case .loop:
+            return String(localized: "Loop to Start",
+                          comment: "A choice of the When a Book Ends picker: the book plays again from its beginning and is never finished.")
+        case .continueNext:
+            return String(localized: "Continue to Next Book",
+                          comment: "A choice of the When a Book Ends picker: the next book in the folder plays.")
+        }
+    }
 
     static func effective(localRawValue: String?, global: Self) -> Self {
         localRawValue.flatMap(Self.init(rawValue:)) ?? global
@@ -36,19 +75,45 @@ enum EndOfBookBehavior: String, CaseIterable, Codable {
 
 /// Units for skip forward / skip backward
 enum SkipUnit: String, CaseIterable, Codable {
-    case seconds10 = "10 seconds"
-    case seconds15 = "15 seconds"
-    case seconds30 = "30 seconds"
-    case seconds60 = "60 seconds"
-    case sentence = "Sentence"
-    case paragraph = "Paragraph"
+    // The raw values are what config.json and a book's record store;
+    // `title` is what the pickers show and say, in the interface language.
+    case seconds10 = "10 seconds" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case seconds15 = "15 seconds" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case seconds30 = "30 seconds" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case seconds60 = "60 seconds" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case sentence = "Sentence" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case paragraph = "Paragraph" // l10n: no (stored id: config.json keeps it; `title` is shown)
     /// A page of the book (PG02), as the book numbers its pages. A book
     /// without pages has none to move by, and the unit cycle passes over it
     /// there (`ReaderViewModel.unit(after:bookHasPages:)`).
-    case page = "Page"
-    case heading = "Heading"
-    case subheading = "Subheading"
-    case bookmark = "Bookmark"
+    case page = "Page" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case heading = "Heading" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case subheading = "Subheading" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case bookmark = "Bookmark" // l10n: no (stored id: config.json keeps it; `title` is shown)
+
+    /// The unit's name in the skip and navigation unit pickers, in the
+    /// interface language: a length of time counts its seconds as every
+    /// count does ("10 seconds"), and the others are one name each.
+    var title: String {
+        switch self {
+        case .seconds10: return CountWording.seconds(10)
+        case .seconds15: return CountWording.seconds(15)
+        case .seconds30: return CountWording.seconds(30)
+        case .seconds60: return CountWording.seconds(60)
+        case .sentence: return RewindUnit.sentence.title
+        case .paragraph: return RewindUnit.paragraph.title
+        case .page:
+            return String(localized: "Page",
+                          comment: "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.")
+        case .heading: return RewindUnit.heading.title
+        case .subheading:
+            return String(localized: "Subheading",
+                          comment: "A unit a skip or navigation picker moves by: one subheading, a heading below the main headings.")
+        case .bookmark:
+            return String(localized: "Bookmark",
+                          comment: "A unit a skip or navigation picker moves by: one bookmark.")
+        }
+    }
 
     /// For time-based units, the number of words to skip at the given WPM rate.
     /// Returns nil for structural units (sentence, paragraph, heading, etc.).
@@ -86,11 +151,14 @@ enum SkipUnit: String, CaseIterable, Codable {
     func playbackMenuAccessibilityLabel(direction: PlaybackSkipDirection? = nil) -> String {
         switch direction {
         case .forward:
-            return "Forward navigation unit: \(rawValue)"
+            return String(localized: "Forward navigation unit: \(title)",
+                          comment: "VoiceOver label of the playback bar's menu that picks the unit the forward button moves by. %@ is the unit now chosen, such as \"Sentence\".")
         case .backward:
-            return "Backward navigation unit: \(rawValue)"
+            return String(localized: "Backward navigation unit: \(title)",
+                          comment: "VoiceOver label of the playback bar's menu that picks the unit the backward button moves by. %@ is the unit now chosen, such as \"Sentence\".")
         case nil:
-            return "Navigation unit: \(rawValue)"
+            return String(localized: "Navigation unit: \(title)",
+                          comment: "VoiceOver label of the playback bar's shared menu that picks the unit both skip buttons move by. %@ is the unit now chosen, such as \"Sentence\".")
         }
     }
 
@@ -139,17 +207,23 @@ enum PlaybackSkipDirection: Equatable {
 /// Controls whether per-book skip-unit menus appear in the playback bar.
 /// The global forward/backward choices remain the fallback in every mode.
 enum PlaybackNavigationUnitControlMode: String, CaseIterable, Codable {
-    case none = "None (Use Global)"
-    case shared = "One Shared Menu"
-    case separate = "Menu for Each Button"
+    case none = "None (Use Global)" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case shared = "One Shared Menu" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case separate = "Menu for Each Button" // l10n: no (stored id: config.json keeps it; `title` is shown)
 
     /// Current user-facing wording. Raw values remain unchanged so existing
     /// AppStorage selections continue to decode after the control redesign.
     var displayName: String {
         switch self {
-        case .none: return "None (Use Global)"
-        case .shared: return "One Unit for Both Directions"
-        case .separate: return "Separate Forward and Backward Units"
+        case .none:
+            return String(localized: "None (Use Global)",
+                          comment: "A choice of the playback bar's navigation unit menus setting: no per-book menu, so the global units are used.")
+        case .shared:
+            return String(localized: "One Unit for Both Directions",
+                          comment: "A choice of the playback bar's navigation unit menus setting: one shared menu sets the unit of both skip buttons.")
+        case .separate:
+            return String(localized: "Separate Forward and Backward Units",
+                          comment: "A choice of the playback bar's navigation unit menus setting: a menu for each skip button.")
         }
     }
 }

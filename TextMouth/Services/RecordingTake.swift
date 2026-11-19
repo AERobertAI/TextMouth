@@ -68,7 +68,7 @@ enum RecordingTakeFiles {
     static let fileExtension = "caf"
 
     /// What every take's name starts with, before when it started.
-    private static let namePrefix = "Take "
+    private static let namePrefix = "Take " // l10n: no (a take's file name, which is matched when takes are found again)
 
     /// How a take's name gives when it started: to the second, in this Mac's
     /// time zone, with dots between the hours, minutes, and seconds, as a

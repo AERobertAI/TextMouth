@@ -34,7 +34,7 @@ enum PhoneReaderControls {
         case .navigationUnit:
             return PhoneControlDescription(
                 label: PhoneReaderVocabulary.navigationUnit,
-                value: state.unit.rawValue,
+                value: state.unit.title,
                 hint: PhoneReaderWording.navigationUnitHint,
                 traits: [.button, .adjustable]
             )

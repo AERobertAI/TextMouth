@@ -6,23 +6,37 @@ import Foundation
 /// VoiceOver, and on a braille display.
 enum LeadingArticleWording {
     /// The heading of the tab's section holding the setting.
-    static let sectionHeader = "Titles"
+    static var sectionHeader: String {
+        String(localized: "Titles",
+               comment: "Heading of the Library settings section that holds the Leading Articles pop-up, which decides how book titles are sorted and typed.")
+    }
 
     /// The pop-up's label, which VoiceOver reads before the choice.
-    static let pickerLabel = "Leading articles"
+    static var pickerLabel: String {
+        String(localized: "Leading articles",
+               comment: "Label of the pop-up in the Library settings that chooses whether a title's leading article (The, A, An) counts when sorting and typing.")
+    }
 
     /// The pop-up's hint, which VoiceOver speaks and the pointer shows as a
     /// tooltip: what the setting decides, in words that need no example.
-    static let pickerHint = "Chooses whether The, A, and An at the start of a title count when the Library sorts "
-        + "titles and when you type a title's first letters to go to it."
+    static var pickerHint: String {
+        String(localized: "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters.",
+               comment: "Hint and tooltip of the Leading Articles pop-up in the Library settings. The, A, and An are the English articles the setting skips.")
+    }
 
     /// A choice's name in the pop-up: "Part of the Title", "Ignored When
     /// Typing", or "Ignored When Typing and Sorting".
     static func name(_ choice: LeadingArticles) -> String {
         switch choice {
-        case .partOfTitle: return "Part of the Title"
-        case .ignoredWhenTyping: return "Ignored When Typing"
-        case .ignoredWhenTypingAndSorting: return "Ignored When Typing and Sorting"
+        case .partOfTitle:
+            return String(localized: "Part of the Title",
+                          comment: "A choice of the Leading Articles pop-up: the leading article counts like any other word of the title.")
+        case .ignoredWhenTyping:
+            return String(localized: "Ignored When Typing",
+                          comment: "A choice of the Leading Articles pop-up: a title's leading article does not count when typing a title's first letters, but the list keeps its order.")
+        case .ignoredWhenTypingAndSorting:
+            return String(localized: "Ignored When Typing and Sorting",
+                          comment: "A choice of the Leading Articles pop-up: a title's leading article does not count when typing or when sorting.")
         }
     }
 
@@ -31,11 +45,14 @@ enum LeadingArticleWording {
     static func description(_ choice: LeadingArticles) -> String {
         switch choice {
         case .partOfTitle:
-            return "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's."
+            return String(localized: "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+                          comment: "Describes the Leading Articles choice Part of the Title, under the pop-up. The Hobbit is the example title; the T's are the books sorted under the letter T.")
         case .ignoredWhenTyping:
-            return "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written."
+            return String(localized: "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+                          comment: "Describes the Leading Articles choice Ignored When Typing, under the pop-up. The Hobbit is the example title, typed under the letter H.")
         case .ignoredWhenTypingAndSorting:
-            return "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's."
+            return String(localized: "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+                          comment: "Describes the Leading Articles choice Ignored When Typing and Sorting, under the pop-up. The Hobbit is the example title; the article moves to the end and the book sorts and types under H.")
         }
     }
 
@@ -43,14 +60,20 @@ enum LeadingArticleWording {
     /// names are left as typed: said only where articles are ignored (the
     /// second and third choices), since under the first nothing passes over
     /// an article, in any language.
-    static let languagesNote = "When articles are ignored, a book whose metadata names French, German, Spanish, "
-        + "Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, "
-        + "such as Le and Die, and The. Any other book passes over The, A, and An. "
-        + "Folder names stay as you typed them."
+    static var languagesNote: String {
+        SentenceWording.joined([
+            String(localized: "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+                   comment: "First sentence of the note under the Leading Articles pop-up, shown where articles are ignored. Names the languages whose articles TextMouth skips; Le, Die, and The are example articles and stay as written."),
+            String(localized: "Any other book passes over The, A, and An.",
+                   comment: "Second sentence of the note under the Leading Articles pop-up: the articles skipped for a book in any other language. The, A, and An are the English articles and stay as written."),
+            String(localized: "Folder names stay as you typed them.",
+                   comment: "Last sentence of the note under the Leading Articles pop-up: folder names are never changed by the setting."),
+        ])
+    }
 
     /// The words under the pop-up for `choice`: what it does, and, for the
     /// choices that ignore articles, which languages' articles count.
     static func caption(for choice: LeadingArticles) -> String {
-        choice.typesWithoutArticles ? "\(description(choice)) \(languagesNote)" : description(choice)
+        choice.typesWithoutArticles ? SentenceWording.joined([description(choice), languagesNote]) : description(choice)
     }
 }

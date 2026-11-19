@@ -38,7 +38,7 @@ enum ObjCException {
         /// The name and the reason, as `<name>: <reason>`, or "no reason
         /// given" when the exception gave none.
         var summary: String {
-            "\(name): \(reason ?? "no reason given")"
+            "\(name): \(reason ?? "no reason given")" // l10n: no (debug log text)
         }
     }
 

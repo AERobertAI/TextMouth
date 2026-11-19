@@ -327,7 +327,7 @@ struct StorageSettingsView: View {
             Section {
                 Picker("After Importing a Book", selection: $settingsViewModel.importDeleteBehavior) {
                     ForEach(ImportDeleteBehavior.allCases, id: \.self) { behavior in
-                        Text(behavior.rawValue).tag(behavior)
+                        Text(behavior.title).tag(behavior)
                     }
                 }
                 .accessibilityLabel("Original file handling")

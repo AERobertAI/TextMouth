@@ -98,7 +98,7 @@ enum AsyncBridge {
             // The line names no file or title: only that a read passed its limit.
             DiagnosticLog.event(
                 .playback,
-                "ASYNC_TIME_LIMIT: an audio read passed its limit of \(TimeLimitExceeded.spelling(of: timeLimit)) and was abandoned"
+                "ASYNC_TIME_LIMIT: an audio read passed its limit of \(TimeLimitExceeded.logSpelling(of: timeLimit)) and was abandoned"
             )
             throw TimeLimitExceeded(limit: timeLimit)
         }
@@ -132,20 +132,44 @@ enum AsyncBridge {
         let limit: Duration
 
         var errorDescription: String? {
-            "Reading the audio took longer than \(Self.spelling(of: limit)), so TextMouth stopped waiting for it."
+            Self.sentence(for: limit)
         }
 
-        /// `limit` in words: whole minutes when it is a whole number of
-        /// minutes ("5 minutes", "1 minute"), otherwise seconds ("30 seconds").
-        static func spelling(of limit: Duration) -> String {
+        /// `limit` in English words for the debug log, which stays English:
+        /// "5 minutes", "1 minute", "30 seconds".
+        static func logSpelling(of limit: Duration) -> String {
             let seconds = limit.seconds
             if seconds >= 60, seconds.truncatingRemainder(dividingBy: 60) == 0 {
-                return CountWording.phrase(Int(seconds / 60), singular: "minute", plural: "minutes")
+                return CountWording.phrase(Int(seconds / 60), singular: "minute", plural: "minutes") // l10n: no (debug log text)
             }
             if seconds.truncatingRemainder(dividingBy: 1) == 0 {
-                return CountWording.phrase(Int(seconds), singular: "second", plural: "seconds")
+                return CountWording.phrase(Int(seconds), singular: "second", plural: "seconds") // l10n: no (debug log text)
             }
-            return "\(seconds) seconds"
+            return "\(seconds) seconds" // l10n: no (debug log text)
+        }
+
+        /// The sentence for `limit`, named in words: whole minutes when it is
+        /// a whole number of minutes ("5 minutes", "1 minute"), otherwise
+        /// whole seconds ("30 seconds"), otherwise seconds with a fraction.
+        /// Each case is one whole sentence with its own plural forms, so
+        /// every language counts by its own rules.
+        static func sentence(for limit: Duration) -> String {
+            let seconds = limit.seconds
+            if seconds >= 60, seconds.truncatingRemainder(dividingBy: 60) == 0 {
+                let minutes = Int(seconds / 60)
+                return String(localized: "Reading the audio took longer than \(minutes) minutes; TextMouth stopped waiting.",
+                              comment: "Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole minutes.")
+            }
+            if seconds.truncatingRemainder(dividingBy: 1) == 0 {
+                let wholeSeconds = Int(seconds)
+                return String(localized: "Reading the audio took longer than \(wholeSeconds) seconds; TextMouth stopped waiting.",
+                              comment: "Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole seconds.")
+            }
+            // A limit with a fraction has no plural form that varies with it,
+            // so it is a string of its own around the formatted number.
+            let decimal = seconds.formatted(.number)
+            return String(localized: "Reading the audio took longer than \(decimal) seconds; TextMouth stopped waiting.",
+                          comment: "Error shown when reading an audio file took too long and TextMouth gave up waiting. %@ is the limit in seconds with a fraction, already formatted, such as 0.2.")
         }
     }
 
@@ -286,7 +310,7 @@ enum AsyncBridgeWording {
     /// `InProcessEngineWording` gives, so it is written once, and it is true
     /// on both platforms: an iPhone app only switched back to keeps its
     /// process, and with it the abandoned read (B17).
-    static let abandonedEarlier = InProcessEngineWording.refused("reading this audio")
+    static let abandonedEarlier = InProcessEngineWording.refused("reading this audio") // l10n: no (inside InProcessEngineWording's English sentences until that area converts)
 }
 
 private extension Duration {

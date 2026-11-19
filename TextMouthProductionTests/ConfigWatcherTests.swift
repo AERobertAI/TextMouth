@@ -860,7 +860,7 @@ final class ConfigWatcherTests: XCTestCase {
             }
             XCTAssertEqual(before.confirm.state, .off)
             XCTAssertEqual(before.moveToTrash.state, .off)
-            XCTAssertEqual(before.afterImport.titleOfSelectedItem, ImportDeleteBehavior.keepOriginal.rawValue)
+            XCTAssertEqual(before.afterImport.titleOfSelectedItem, ImportDeleteBehavior.keepOriginal.title)
 
             service.config.confirmBeforeDelete = true
             service.config.moveToTrashInsteadOfDeleting = true
@@ -873,7 +873,7 @@ final class ConfigWatcherTests: XCTestCase {
                 guard let after = StorageControls(hosting) else { return false }
                 return after.confirm.state == .on
                     && after.moveToTrash.state == .on
-                    && after.afterImport.titleOfSelectedItem == ImportDeleteBehavior.askEachTime.rawValue
+                    && after.afterImport.titleOfSelectedItem == ImportDeleteBehavior.askEachTime.title
             })
         }
     }
@@ -1023,7 +1023,7 @@ final class ConfigWatcherTests: XCTestCase {
         let afterImport: NSPopUpButton
 
         init?(_ root: NSView) {
-            let importChoices = ImportDeleteBehavior.allCases.map(\.rawValue)
+            let importChoices = ImportDeleteBehavior.allCases.map(\.title)
             // SwiftUI draws each checkbox's label itself, beside an untitled
             // AppKit checkbox, so the two are told apart by their order in
             // the pane: "Confirm before removing a book", then "Move to Trash

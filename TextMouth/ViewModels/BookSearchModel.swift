@@ -36,19 +36,15 @@ final class BookSearchModel: ObservableObject {
         var text: String {
             switch self {
             case .idle:
-                return "Enter a search term above."
+                return BookSearchWording.statusIdle
             case .searching:
-                return "Searching…"
+                return BookSearchWording.statusSearching
             case .found(let count):
-                switch count {
-                case 0: return "No matches"
-                case 1: return "1 match"
-                default: return "\(count.formatted()) matches"
-                }
+                return BookSearchWording.statusFound(count: count)
             case .truncated(let shown):
-                return "Showing the first \(shown.formatted()) matches; refine your search"
+                return BookSearchWording.statusTruncated(shown: shown)
             case .invalidPattern(let message):
-                return "Invalid regular expression: \(message)"
+                return LibrarySearchWording.invalidPattern(message)
             }
         }
 

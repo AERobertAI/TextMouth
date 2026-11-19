@@ -459,7 +459,7 @@ extension DiagnosticLog {
                 }
                 guard admission.writesLine else { return }
                 let line = DiagnosticLog.policed(message(), dataDirectory: dataDirectory())
-                write("TRACE \(category.rawValue): \(line)", file)
+                write("TRACE \(category.rawValue): \(line)", file) // l10n: no (debug log line)
             }
         }
 

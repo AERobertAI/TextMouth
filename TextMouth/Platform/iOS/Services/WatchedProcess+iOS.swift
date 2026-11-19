@@ -64,13 +64,13 @@ enum WatchedProcess {
         var words: String {
             switch self {
             case let .tookTooLong(seconds):
-                return "it ran longer than \(CountWording.seconds(Int(seconds.rounded(.up))))"
+                return "it ran longer than \(CountWording.englishSeconds(Int(seconds.rounded(.up))))"
             case let .usedTooMuchMemory(bytes):
                 return "it held more than \(bytes / 1_048_576) MB of memory"
             case let .madeNoProgress(seconds):
-                return "its output did not grow for \(CountWording.seconds(Int(seconds.rounded(.up))))"
+                return "its output did not grow for \(CountWording.englishSeconds(Int(seconds.rounded(.up))))"
             case let .usedTooMuchProcessorTime(seconds):
-                return "it used more than \(CountWording.seconds(Int(seconds.rounded(.up)))) of processor time"
+                return "it used more than \(CountWording.englishSeconds(Int(seconds.rounded(.up)))) of processor time"
             case let .wroteTooMuch(bytes):
                 return "its output passed \(bytes / 1_048_576) MB"
             case let .memoryGrew(bytes):

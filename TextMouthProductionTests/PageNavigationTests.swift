@@ -109,8 +109,8 @@ final class PageNavigationTests: XCTestCase {
     /// pages and not for one without, and shows a Page already in force.
     /// Skipped where no pop-up is drawn offscreen.
     func testTheSharedPickerOffersPageOnlyForABookWithPages() throws {
-        let everyUnit = SkipUnit.allCases.map(\.rawValue)
-        let withoutPage = SkipUnit.allCases.filter { $0 != .page }.map(\.rawValue)
+        let everyUnit = SkipUnit.allCases.map(\.title)
+        let withoutPage = SkipUnit.allCases.filter { $0 != .page }.map(\.title)
         // (pages, the unit in force, the titles the pop-up lists, the title it shows)
         let cases: [(pages: [PageBreak], unit: SkipUnit, titles: [String], shown: String)] = [
             (Self.fivePages, .seconds30, everyUnit, "30 seconds"),

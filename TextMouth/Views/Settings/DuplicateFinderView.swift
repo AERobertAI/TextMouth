@@ -6,20 +6,49 @@ import SwiftUI
 /// October 6, 2026. The one difference: books without an author, which Same
 /// Author leaves out, are grouped by Same Title alone.
 enum DuplicateFilter: String, CaseIterable, Identifiable {
-    case md5Hash = "Identical File (MD5)"
-    case isbn = "Same ISBN"
-    case title = "Same Title"
-    case author = "Same Author"
+    // The raw values name a group's identity, so they never change with
+    // the interface language; `title` is what the checkboxes show and say.
+    case md5Hash = "Identical File (MD5)" // l10n: no (stored id: the raw value is the group's identity; `title` is shown)
+    case isbn = "Same ISBN" // l10n: no (stored id: the raw value is the group's identity; `title` is shown)
+    case title = "Same Title" // l10n: no (stored id: the raw value is the group's identity; `title` is shown)
+    case author = "Same Author" // l10n: no (stored id: the raw value is the group's identity; `title` is shown)
 
     var id: String { rawValue }
+
+    /// The criterion's name: its checkbox's title and label, in the
+    /// interface language.
+    var title: String {
+        switch self {
+        case .md5Hash:
+            return String(localized: "Identical File (MD5)",
+                          comment: "A match criterion of Find Duplicate Books: the files' contents are exactly the same. MD5 is the name of the checksum used to compare them.")
+        case .isbn:
+            return String(localized: "Same ISBN",
+                          comment: "A match criterion of Find Duplicate Books: the books have the same ISBN, the book's international number. ISBN stays as written.")
+        case .title:
+            return String(localized: "Same Title",
+                          comment: "A match criterion of Find Duplicate Books: the books have the same title.")
+        case .author:
+            return String(localized: "Same Author",
+                          comment: "A match criterion of Find Duplicate Books: the books have the same author.")
+        }
+    }
 
     /// Description shown in the UI
     var hint: String {
         switch self {
-        case .md5Hash: return "Exact file content match — the strongest indicator"
-        case .isbn: return "EPUB books with the same ISBN identifier"
-        case .title: return "Books with the same title, regardless of author"
-        case .author: return "All books by the same author"
+        case .md5Hash:
+            return String(localized: "Exact file content match — the strongest indicator",
+                          comment: "Hint of the Identical File criterion of Find Duplicate Books.")
+        case .isbn:
+            return String(localized: "EPUB books with the same ISBN identifier",
+                          comment: "Hint of the Same ISBN criterion of Find Duplicate Books. EPUB is a book format and ISBN is the book's international number; both stay as written.")
+        case .title:
+            return String(localized: "Books with the same title, regardless of author",
+                          comment: "Hint of the Same Title criterion of Find Duplicate Books.")
+        case .author:
+            return String(localized: "All books by the same author",
+                          comment: "Hint of the Same Author criterion of Find Duplicate Books.")
         }
     }
 }
@@ -35,7 +64,7 @@ struct DuplicateGroup: Identifiable {
     /// What matched, naming each criterion checked: "Same Title", or "Same
     /// Title and Same Author" for criteria checked together.
     var matchDescription: String {
-        ListFormatter.localizedString(byJoining: matchTypes.map(\.rawValue))
+        CountWording.list(matchTypes.map(\.title))
     }
 
     init(matchKey: String, matchTypes: [DuplicateFilter], books: [Book]) {
@@ -127,20 +156,20 @@ enum DuplicateFinderEngine {
             case .md5Hash:
                 values.append(books.first?.title ?? component)
             case .isbn:
-                values.append("ISBN: \(component.uppercased())")
+                values.append(DuplicateFinderWording.isbnValue(component.uppercased()))
             case .title:
                 values.append(component.capitalized)
             case .author:
                 // The criteria keep their declared order, so a title, when
                 // checked, is the value appended just before the author.
                 if filters.contains(.title), let title = values.popLast() {
-                    values.append("\(title) by \(component.capitalized)")
+                    values.append(DuplicateFinderWording.titleByAuthor(title, author: component.capitalized))
                 } else {
                     values.append(component.capitalized)
                 }
             }
         }
-        return values.joined(separator: "; ")
+        return SentenceWording.semicolonJoined(values)
     }
 }
 
@@ -265,40 +294,64 @@ struct DuplicateGroupPages: Equatable {
 /// sheet shows as one row or line.
 enum DuplicateFinderWording {
     /// The folder named for a book at the library's top level.
-    static let libraryRoot = "Library Root"
+    static var libraryRoot: String {
+        String(localized: "Library Root",
+               comment: "The folder name Find Duplicate Books gives a book at the top level of the library, in a duplicate's spoken label.")
+    }
+
+    /// A group's value for the ISBN criterion: "ISBN: 9780000000000".
+    static func isbnValue(_ isbn: String) -> String {
+        String(localized: "ISBN: \(isbn)",
+               comment: "The shared value of a group of duplicate books that match by ISBN, in the group's heading. %@ is the ISBN. ISBN stays as written.")
+    }
+
+    /// A group's value when title and author are matched together: "Atlas by
+    /// Dorothy Vance".
+    static func titleByAuthor(_ title: String, author: String) -> String {
+        String(localized: "\(title) by \(author)",
+               comment: "The shared title and author of a group of duplicate books that match by both, in the group's heading. %1$@ is the title and %2$@ is the author.")
+    }
+
 
     /// A duplicate's row, everything it shows in one label: "Atlas, by
     /// Dorothy Vance, EPUB, in Travel, added October 6, 2026". The date the
     /// book was added tells two copies apart, so it is spoken, not only
     /// shown.
     static func bookLabel(_ book: Book) -> String {
-        [
-            book.title,
-            "by \(book.author)",
-            book.format.displayName,
-            "in \(book.folderPath.isEmpty ? libraryRoot : book.folderPath)",
-            "added \(book.dateAdded.formatted(date: .long, time: .omitted))",
-        ].joined(separator: ", ")
+        String(localized: "\(book.title), by \(book.author), \(book.format.displayName), in \(book.folderPath.isEmpty ? libraryRoot : book.folderPath), added \(book.dateAdded.formatted(date: .long, time: .omitted))",
+               comment: "A duplicate book's row, spoken and shown as one label in Find Duplicate Books. %1$@ is the title, %2$@ the author, %3$@ the format, %4$@ the library folder it is in, and %5$@ the date it was added.")
     }
 
     /// What the sheet shows when a scan finds nothing.
-    static let noDuplicates = "No duplicates found."
+    static var noDuplicates: String {
+        String(localized: "No duplicates found.",
+               comment: "What Find Duplicate Books shows when a scan finds nothing.")
+    }
 
     /// The scan button's title.
-    static let scanTitle = "Scan for Duplicates"
+    static var scanTitle: String {
+        String(localized: "Scan for Duplicates",
+               comment: "Title of the button in Find Duplicate Books that scans the library for duplicates.")
+    }
 
     /// What the sheet shows before its first scan, naming the scan button
     /// by its title, which reads as what to do; it said "press Scan", a
     /// button with another name (TODO A10).
-    static let notScannedYet = "Check the criteria above, then \(scanTitle)."
+    static var notScannedYet: String {
+        String(localized: "Check the criteria above, then \(scanTitle).",
+               comment: "What Find Duplicate Books shows before its first scan. %@ is the title of the scan button.")
+    }
 
     /// What a scan found, read from its results and spoken when the scan
     /// ends: "No duplicates found with the selected criteria", "1 duplicate
     /// group found", "3 duplicate groups found".
     static func scanResult(groupCount: Int) -> String {
-        groupCount == 0
-            ? "No duplicates found with the selected criteria"
-            : CountWording.phrase(groupCount, singular: "duplicate group found", plural: "duplicate groups found")
+        guard groupCount > 0 else {
+            return String(localized: "No duplicates found with the selected criteria",
+                          comment: "Spoken and read when a scan of Find Duplicate Books ends having found nothing.")
+        }
+        return String(localized: "\(groupCount) duplicate groups found",
+                      comment: "Spoken and read when a scan of Find Duplicate Books ends. %lld is the number of groups of duplicate books found.")
     }
 
     /// Says what a scan the user asked for found, as the removal's outcome
@@ -317,19 +370,78 @@ enum DuplicateFinderWording {
     /// "Showing groups 1 to 7 of 116", or, for a page holding one group,
     /// "Showing group 12 of 116". `range` is a page's group indices.
     static func pageLine(groups range: Range<Int>, of total: Int) -> String {
-        range.count == 1
-            ? "Showing group \(range.upperBound) of \(total)"
-            : "Showing groups \(range.lowerBound + 1) to \(range.upperBound) of \(total)"
+        if range.count == 1 {
+            return String(localized: "Showing group \(range.upperBound.formatted()) of \(total.formatted())",
+                          comment: "The line over a page of one group of duplicate books. %1$@ is the group's place and %2$@ is how many groups were found.")
+        }
+        return String(localized: "Showing groups \((range.lowerBound + 1).formatted()) to \(range.upperBound.formatted()) of \(total.formatted())",
+                      comment: "The line over a page of groups of duplicate books. %1$@ is the place of the first group shown, %2$@ is the place of the last, and %3$@ is how many groups were found.")
     }
 
     /// The title of the button turning to the page of groups before.
-    static let previousPageTitle = "Previous Groups"
+    static var previousPageTitle: String {
+        String(localized: "Previous Groups",
+               comment: "Title of the button in Find Duplicate Books that shows the page of groups before the current one.")
+    }
     /// What that button does.
-    static let previousPageHint = "Shows the groups before these."
+    static var previousPageHint: String {
+        String(localized: "Shows the groups before these.",
+               comment: "VoiceOver hint of the Previous Groups button of Find Duplicate Books.")
+    }
     /// The title of the button turning to the page of groups after.
-    static let nextPageTitle = "Next Groups"
+    static var nextPageTitle: String {
+        String(localized: "Next Groups",
+               comment: "Title of the button in Find Duplicate Books that shows the page of groups after the current one.")
+    }
     /// What that button does.
-    static let nextPageHint = "Shows the groups after these."
+    static var nextPageHint: String {
+        String(localized: "Shows the groups after these.",
+               comment: "VoiceOver hint of the Next Groups button of Find Duplicate Books.")
+    }
+
+    // MARK: The Sheet
+
+    /// The sheet's heading.
+    static var sheetTitle: String {
+        String(localized: "Find Duplicate Books",
+               comment: "Heading of the Find Duplicate Books sheet.")
+    }
+
+    /// The sheet's navigation title.
+    static var navigationTitle: String {
+        String(localized: "Find Duplicates",
+               comment: "Navigation title of the Find Duplicate Books sheet.")
+    }
+
+    /// The button that closes the sheet.
+    static var doneTitle: String {
+        String(localized: "Done",
+               comment: "Title of the button that closes the Find Duplicate Books sheet.")
+    }
+
+    /// The line over the match criteria's checkboxes.
+    static var criteriaHeading: String {
+        String(localized: "Match criteria (checked filters are combined):",
+               comment: "The line over the checkboxes of Find Duplicate Books that choose how books are matched. Checked criteria must all match together.")
+    }
+
+    /// The scan button's title while the ISBNs load.
+    static var loadingISBNsTitle: String {
+        String(localized: "Loading ISBNs...",
+               comment: "Title of the scan button in Find Duplicate Books while the books' ISBNs are being read first. ISBN stays as written.")
+    }
+
+    /// The scan button's hint.
+    static var scanHint: String {
+        String(localized: "Searches the entire library for books matching the selected criteria",
+               comment: "VoiceOver hint of the Scan for Duplicates button of Find Duplicate Books.")
+    }
+
+    /// The button of the removal's confirmation that keeps the books.
+    static var cancelTitle: String {
+        String(localized: "Cancel",
+               comment: "Title of the button that cancels the removal of the duplicate books selected, in its confirmation.")
+    }
 }
 
 /// The line saying which of a scan's groups the sheet shows, with the
@@ -401,11 +513,11 @@ struct DuplicateFinderView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Find Duplicate Books")
+                Text(DuplicateFinderWording.sheetTitle)
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
-                Button("Done") { dismiss() }
+                Button(DuplicateFinderWording.doneTitle) { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
             }
             .padding()
@@ -414,30 +526,30 @@ struct DuplicateFinderView: View {
 
             // Filter checkboxes
             VStack(alignment: .leading, spacing: 8) {
-                Text("Match criteria (checked filters are combined):")
+                Text(DuplicateFinderWording.criteriaHeading)
                     .font(.callout)
                     .foregroundColor(.secondary)
 
                 ForEach(DuplicateFilter.allCases) { filter in
                     Toggle(isOn: binding(for: filter)) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(filter.rawValue)
+                            Text(filter.title)
                             Text(filter.hint)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
                     .checkboxToggleStyle()
-                    .accessibilityLabel(filter.rawValue)
+                    .accessibilityLabel(filter.title)
                     .accessibilityHint(filter.hint)
                 }
 
                 HStack {
-                    Button(isLoadingISBNs ? "Loading ISBNs..." : DuplicateFinderWording.scanTitle) {
+                    Button(isLoadingISBNs ? DuplicateFinderWording.loadingISBNsTitle : DuplicateFinderWording.scanTitle) {
                         performScan()
                     }
                     .disabled(activeFilters.isEmpty || isLoadingISBNs)
-                    .accessibilityHint("Searches the entire library for books matching the selected criteria")
+                    .accessibilityHint(DuplicateFinderWording.scanHint)
 
                     if hasScanned && !selectedBooks.isEmpty {
                         Spacer()
@@ -496,7 +608,7 @@ struct DuplicateFinderView: View {
             }
         }
         .frame(width: 600, height: 550)
-        .navigationTitle("Find Duplicates")
+        .navigationTitle(DuplicateFinderWording.navigationTitle)
         .trackingRemovalPreferences($removalPreferences)
         // The confirmation is presented from the sheet itself, so the
         // confirmation preference is honored here too.
@@ -508,7 +620,7 @@ struct DuplicateFinderView: View {
             Button(removal.wording.buttonTitle, role: .destructive) {
                 finishRemoval(of: removal.bookIDs)
             }
-            Button("Cancel", role: .cancel) {}
+            Button(DuplicateFinderWording.cancelTitle, role: .cancel) {}
         } message: { removal in
             Text(removal.wording.confirmationMessage)
         }

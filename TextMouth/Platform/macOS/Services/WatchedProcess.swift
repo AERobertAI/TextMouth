@@ -65,7 +65,8 @@ enum WatchedProcess {
         }
     }
 
-    /// Why the watchdog killed a child, in words for the debug log.
+    /// Why the watchdog killed a child, in words for the debug log, which stays
+    /// English (so these phrases are marked, not localized).
     enum KillReason: Equatable, Sendable {
         /// It ran longer than `seconds`.
         case tookTooLong(seconds: TimeInterval)
@@ -83,15 +84,15 @@ enum WatchedProcess {
         var words: String {
             switch self {
             case let .tookTooLong(seconds):
-                return "it ran longer than \(CountWording.seconds(Int(seconds.rounded(.up))))"
+                return "it ran longer than \(CountWording.englishSeconds(Int(seconds.rounded(.up))))" // l10n: no (debug log text, which stays English)
             case let .usedTooMuchMemory(bytes):
-                return "it held more than \(bytes / 1_048_576) MB of memory"
+                return "it held more than \(bytes / 1_048_576) MB of memory" // l10n: no (debug log text, which stays English)
             case let .madeNoProgress(seconds):
-                return "its output did not grow for \(CountWording.seconds(Int(seconds.rounded(.up))))"
+                return "its output did not grow for \(CountWording.englishSeconds(Int(seconds.rounded(.up))))" // l10n: no (debug log text, which stays English)
             case let .usedTooMuchProcessorTime(seconds):
-                return "it used more than \(CountWording.seconds(Int(seconds.rounded(.up)))) of processor time"
+                return "it used more than \(CountWording.englishSeconds(Int(seconds.rounded(.up)))) of processor time" // l10n: no (debug log text, which stays English)
             case let .wroteTooMuch(bytes):
-                return "its output passed \(bytes / 1_048_576) MB"
+                return "its output passed \(bytes / 1_048_576) MB" // l10n: no (debug log text, which stays English)
             }
         }
     }
@@ -231,7 +232,7 @@ enum WatchedProcess {
         fi
         sleep 1
     done
-    """
+    """ // l10n: no (a shell script, never shown)
 
     /// Starts a shell that kills `child` as soon as `parent` is gone, so a
     /// runaway tool dies with TextMouth however TextMouth ends. It ends by

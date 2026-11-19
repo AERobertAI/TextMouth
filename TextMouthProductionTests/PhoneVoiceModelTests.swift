@@ -120,7 +120,7 @@ final class PhoneVoiceModelTests: XCTestCase {
     func testTheEndOfBookChoicesEndWithTheGlobalDefault() {
         let choices = PhoneVoiceModel.endOfBookChoices
 
-        XCTAssertEqual(choices.map(\.label), EndOfBookBehavior.allCases.map(\.rawValue) + ["Use Global Default"])
+        XCTAssertEqual(choices.map(\.label), EndOfBookBehavior.allCases.map(\.title) + ["Use Global Default"])
         XCTAssertEqual(choices.last?.id, .some(nil))
         XCTAssertEqual(PhoneVoiceModel.endOfBookValue(effective: .continueNext), "Continue to Next Book")
     }

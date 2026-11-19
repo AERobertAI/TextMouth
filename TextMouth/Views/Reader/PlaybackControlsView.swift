@@ -175,7 +175,7 @@ struct PlaybackControlsView: View {
             // Page is left out for a book without pages, unless it is the
             // unit in force (`ReaderViewModel.navigationUnitChoices`).
             ForEach(viewModel.navigationUnitChoices(keeping: viewModel.playbackSkipForwardUnit), id: \.self) { unit in
-                Text(unit.rawValue).tag(unit)
+                Text(unit.title).tag(unit)
             }
         }
         .pickerStyle(.menu)
@@ -183,7 +183,7 @@ struct PlaybackControlsView: View {
         // producing “Navigation unit, 15 seconds” without an abbreviated or
         // duplicated native value.
         .accessibilityLabel("Navigation unit")
-        .accessibilityValue(viewModel.playbackSkipForwardUnit.rawValue)
+        .accessibilityValue(viewModel.playbackSkipForwardUnit.title)
         .help("Change this book's forward and backward navigation unit")
     }
 
@@ -197,7 +197,7 @@ struct PlaybackControlsView: View {
                 set: { viewModel.setPlaybackSkipUnit($0, direction: .forward) }
             )) {
                 ForEach(viewModel.navigationUnitChoices(keeping: viewModel.playbackSkipForwardUnit), id: \.self) { unit in
-                    Text(unit.rawValue).tag(unit)
+                    Text(unit.title).tag(unit)
                 }
             }
 
@@ -206,7 +206,7 @@ struct PlaybackControlsView: View {
                 set: { viewModel.setPlaybackSkipUnit($0, direction: .backward) }
             )) {
                 ForEach(viewModel.navigationUnitChoices(keeping: viewModel.playbackSkipBackwardUnit), id: \.self) { unit in
-                    Text(unit.rawValue).tag(unit)
+                    Text(unit.title).tag(unit)
                 }
             }
         } label: {

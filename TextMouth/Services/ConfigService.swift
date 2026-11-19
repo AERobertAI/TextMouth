@@ -1511,9 +1511,28 @@ final class ConfigService: ObservableObject {
 
 /// How to handle original files after import
 enum ImportDeleteBehavior: String, Codable, CaseIterable {
-    case keepOriginal = "Keep Original"
-    case deleteAfterImport = "Delete After Import"
-    case askEachTime = "Ask Each Time"
+    // The raw values are what config.json stores, so they never change with
+    // the interface language; `title` is what the pop-up shows and says.
+    case keepOriginal = "Keep Original" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case deleteAfterImport = "Delete After Import" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case askEachTime = "Ask Each Time" // l10n: no (stored id: config.json keeps it; `title` is shown)
 
+    /// The stored value, in English, for the debug log.
     var description: String { rawValue }
+
+    /// The choice's name in the After Importing a Book pop-up, in the
+    /// interface language.
+    var title: String {
+        switch self {
+        case .keepOriginal:
+            return String(localized: "Keep Original",
+                          comment: "A choice of the After Importing a Book pop-up in the Storage settings: the original file stays where it was.")
+        case .deleteAfterImport:
+            return String(localized: "Delete After Import",
+                          comment: "A choice of the After Importing a Book pop-up in the Storage settings: the original file is deleted once the book is imported.")
+        case .askEachTime:
+            return String(localized: "Ask Each Time",
+                          comment: "A choice of the After Importing a Book pop-up in the Storage settings: TextMouth asks what to do with the original file after each import.")
+        }
+    }
 }

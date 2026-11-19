@@ -9,7 +9,8 @@ enum BookSearchWording {
     /// Said instead of opening Search in Book for an audiobook whose
     /// transcript does not exist yet.
     static func noTranscript(bookTitle: String) -> String {
-        "\(bookTitle) has no transcript to search. Transcribe it first, with Transcribe Audio."
+        String(localized: "\(bookTitle) has no transcript to search. Transcribe it first, with Transcribe Audio.",
+               comment: "Said instead of opening Search in Book for an audiobook that has no transcript yet. %@ is the book's title. Transcribe Audio is the name of a command in the Book menu.")
     }
 
     /// Said instead of opening Search in Book for a loaded audiobook with no
@@ -46,62 +47,214 @@ enum BookSearchWording {
         guard hasTranscript else {
             return canTranscribe && offersTranscription
                 ? noTranscript(bookTitle: bookTitle)
-                : "\(bookTitle) has no transcript to search."
+                : String(localized: "\(bookTitle) has no transcript to search.",
+                         comment: "Said instead of opening Search in Book for an audiobook that has no transcript, where TextMouth cannot make one. %@ is the book's title.")
         }
-        let lead = "\(bookTitle) has no transcript text to search now"
         switch withheld {
         case nil:
-            return lead + "."
+            return String(localized: "\(bookTitle) has no transcript text to search now.",
+                          comment: "Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title.")
         case .transcriptInCloud?:
-            return "\(lead). \(TranscriptionWording.transcriptInCloud)"
+            return SentenceWording.joined([
+                String(localized: "\(bookTitle) has no transcript text to search now.",
+                       comment: "Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title."),
+                TranscriptionWording.transcriptInCloud,
+            ])
         case .textInCloud?:
-            return "\(lead). \(TranscriptionWording.textInCloud)"
+            return SentenceWording.joined([
+                String(localized: "\(bookTitle) has no transcript text to search now.",
+                       comment: "Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title."),
+                TranscriptionWording.textInCloud,
+            ])
         case .audioChanged?:
-            let because = "\(lead), because \(BookTextEditWording.transcriptStaleReason)"
-            return offersTranscription ? "\(because) Transcribe it again, then search the new transcript." : because
+            let because = String(localized: "\(bookTitle) has no transcript text to search now, because \(BookTextEditWording.transcriptStaleReason)",
+                                 comment: "Said instead of opening Search in Book when the book's audio changed after its transcript was made. %1$@ is the book's title and %2$@ is the reason, a whole sentence that ends with its own full stop.")
+            return offersTranscription ? SentenceWording.joined([because, transcribeAgainAdvice]) : because
         case .editHeld(let refusal, let keptCopy)?:
             let why = BookTextEditWording.heldReason(refusal, forAudiobook: true)
-            return "\(lead), because its edited text can't be used: \(why) \(BookTextEditWording.kept(keptCopy))"
+            return SentenceWording.joined([
+                String(localized: "\(bookTitle) has no transcript text to search now, because its edited text can't be used: \(why)",
+                       comment: "Said instead of opening Search in Book when the book's edited transcript text was held back. %1$@ is the book's title and %2$@ is the reason, a whole sentence that ends with its own full stop."),
+                BookTextEditWording.kept(keptCopy),
+            ])
         }
+    }
+
+    /// The advice that follows a stale transcript's reason, where the app
+    /// can transcribe.
+    private static var transcribeAgainAdvice: String {
+        String(localized: "Transcribe it again, then search the new transcript.",
+               comment: "Advice after the reason a book's transcript cannot be searched because its audio changed: make the transcript again.")
     }
 
     /// Said once the search sheet has closed after a result was chosen: the
     /// time the reader moved to and, when it names one, where that is.
     static func movedTo(time: TimeInterval, location: String?) -> String {
-        guard let location else { return "Moved to \(TimeFormatting.spoken(time))." }
-        return "Moved to \(TimeFormatting.spoken(time)), \(location)."
+        guard let location else {
+            return String(localized: "Moved to \(TimeFormatting.spoken(time)).",
+                          comment: "Announcement after the reader moved to a search result in a transcribed audiobook. %@ is the time moved to, spoken, such as \"1 minute, 5 seconds\".")
+        }
+        return String(localized: "Moved to \(TimeFormatting.spoken(time)), \(location).",
+                      comment: "Announcement after the reader moved to a search result in a transcribed audiobook. %1$@ is the time moved to, spoken, and %2$@ is where that is, such as a chapter's title.")
     }
 
     /// Said by Go Back in a reader that has no saved position to return to.
-    static let nothingToGoBackTo = "No previous position to return to."
+    static var nothingToGoBackTo: String {
+        String(localized: "No previous position to return to.",
+               comment: "Announcement of Go Back when the reader has no saved position to return to.")
+    }
 
     /// The search field's hint when the book searched is a transcript.
-    static let transcriptFieldHint = "Type to search the book's transcript"
+    static var transcriptFieldHint: String {
+        String(localized: "Type to search the book's transcript",
+               comment: "VoiceOver hint of the search field in Search in Book when the book searched is a transcribed audiobook.")
+    }
 
     /// The search field's label.
-    static let fieldLabel = "Search text"
+    static var fieldLabel: String {
+        String(localized: "Search text",
+               comment: "Title and VoiceOver label of the search field in Search in Book.")
+    }
 
     /// The search field's hint when the book searched is a text book.
-    static let fieldHint = "Type to search within the book"
+    static var fieldHint: String {
+        String(localized: "Type to search within the book",
+               comment: "VoiceOver hint of the search field in Search in Book when the book searched is a text book.")
+    }
 
     /// The Use Regex switch's label.
-    static let regexLabel = "Use regular expression"
+    static var regexLabel: String {
+        String(localized: "Use regular expression",
+               comment: "VoiceOver label of the Use Regex switch in Search in Book.")
+    }
 
     /// The Use Regex switch's hint.
-    static let regexHint = "When enabled, search text is treated as a regular expression"
+    static var regexHint: String {
+        String(localized: "When enabled, search text is treated as a regular expression",
+               comment: "VoiceOver hint of the Use Regex switch in Search in Book.")
+    }
 
     /// The Match Case checkbox's title and VoiceOver label, which Search
     /// Library's checkbox shares.
-    static let matchCaseLabel = "Match Case"
+    static var matchCaseLabel: String {
+        String(localized: "Match Case",
+               comment: "Title and VoiceOver label of the checkbox in Search in Book and Search Library that makes a match need the search text's capital and small letters.")
+    }
 
     /// The Match Case checkbox's hint.
-    static let matchCaseHint = "When checked, a match must have the same capital and small letters as the search text"
+    static var matchCaseHint: String {
+        String(localized: "When checked, matches must use the same upper and lower case",
+               comment: "VoiceOver hint of the Match Case checkbox.")
+    }
 
     /// The label of the list of results.
-    static let resultsLabel = "Search results"
+    static var resultsLabel: String {
+        String(localized: "Search results",
+               comment: "VoiceOver label of the list of results in Search in Book.")
+    }
 
     /// The hint of the button that closes the sheet.
-    static let backToBookHint = "Close search and return to the book"
+    static var backToBookHint: String {
+        String(localized: "Close search and return to the book",
+               comment: "VoiceOver hint of the Back to Book button of Search in Book.")
+    }
+
+    /// The sheet's heading and navigation title.
+    static var sheetTitle: String {
+        String(localized: "Search in Book",
+               comment: "Heading and navigation title of the Search in Book sheet, and the name of its command.")
+    }
+
+    /// The button that closes the sheet.
+    static var backToBookTitle: String {
+        String(localized: "Back to Book",
+               comment: "Title of the button that closes the Search in Book sheet and returns to the book.")
+    }
+
+    /// The Use Regex switch's title.
+    static var useRegexTitle: String {
+        String(localized: "Use Regex",
+               comment: "Title of the switch in Search in Book that makes the search text a regular expression. Regex is short for regular expression.")
+    }
+
+    /// The display picker's title.
+    static var displayTitle: String {
+        String(localized: "Display",
+               comment: "Title of the picker in Search in Book that chooses how each result's position in the book is shown, as a percentage or as a time.")
+    }
+
+    /// The display picker's VoiceOver label.
+    static var displayModeLabel: String {
+        String(localized: "Position display mode",
+               comment: "VoiceOver label of the picker in Search in Book that chooses how each result's position is shown.")
+    }
+
+    /// The name of the rotor that moves between results.
+    static var resultsRotor: String {
+        String(localized: "Search Results",
+               comment: "Name of the VoiceOver rotor in Search in Book that moves between the search results.")
+    }
+
+    /// A result row's hint.
+    static var resultHint: String {
+        String(localized: "Activate to navigate to this result",
+               comment: "VoiceOver hint of a result's row in Search in Book.")
+    }
+
+    /// The status line before anything is typed.
+    static var statusIdle: String {
+        String(localized: "Enter a search term above.",
+               comment: "Status line of Search in Book before anything is typed.")
+    }
+
+    /// The status line while a search waits for typing to pause or runs.
+    static var statusSearching: String {
+        String(localized: "Searching…",
+               comment: "Status line of Search in Book while a search waits for typing to pause or runs.")
+    }
+
+    /// The status line of a finished search: "No matches", "1 match", "212 matches".
+    static func statusFound(count: Int) -> String {
+        guard count > 0 else {
+            return String(localized: "No matches",
+                          comment: "Status line of Search in Book when a search found nothing.")
+        }
+        return String(localized: "\(count) matches",
+                      comment: "Status line of Search in Book when a search finished and lists every match. %lld is the number of matches.")
+    }
+
+    /// The status line of a search that stopped at the result limit.
+    static func statusTruncated(shown: Int) -> String {
+        String(localized: "Showing the first \(shown) matches; refine your search",
+               comment: "Status line of Search in Book when a search stopped at the result limit. %lld is the number of matches listed.")
+    }
+
+    /// A row's label when the match is placed by its position in the book as
+    /// a percentage: "<context>, at 50.0 percent of book".
+    static func percentLabel(_ context: String, percent: Double) -> String {
+        let number = percent.formatted(.number.precision(.fractionLength(1)))
+        return String(localized: "\(context), at \(number) percent of book",
+                      comment: "VoiceOver label of a search result placed by percentage. %1$@ is the match with its context and place, and %2$@ is the percentage through the book with one decimal digit, such as 12.5.")
+    }
+
+    /// A row's label when the match is placed by an estimated time: "<context>,
+    /// at 1 hour, 2 minutes into book".
+    static func estimatedTimeLabel(_ context: String, spokenTime: String) -> String {
+        String(localized: "\(context), at \(spokenTime) into book",
+               comment: "VoiceOver label of a search result placed by an estimated time. %1$@ is the match with its context and place, and %2$@ is the time into the book, spoken.")
+    }
+
+    /// A timed result's label: its context and place, then the time it is heard.
+    static func timedLabel(_ context: String, spokenTime: String) -> String {
+        String(localized: "\(context), at \(spokenTime)",
+               comment: "VoiceOver label and rotor entry of a search result in a transcribed audiobook. %1$@ is the match with its context and place, and %2$@ is the time it is heard, spoken.")
+    }
+
+    /// A result's context, then the heading that holds it.
+    static func contextAndLocation(_ context: String, location: String?) -> String {
+        guard let location else { return context }
+        return SentenceWording.commaJoined([context, location])
+    }
 }
 
 /// One match found by book search: where it is, and what its result row
@@ -129,13 +282,13 @@ struct BookSearchResult: Identifiable, Equatable, Sendable {
     /// The matching context, then where it is: the rotor entry, and the
     /// start of the row's spoken label.
     var contextAndLocation: String {
-        [contextSnippet, locationTitle].compactMap { $0 }.joined(separator: ", ")
+        BookSearchWording.contextAndLocation(contextSnippet, location: locationTitle)
     }
 
     /// For a timed result, `contextAndLocation` and the time it is heard,
     /// spoken: the row's label and the rotor entry. Nil for an untimed one.
     var timedLabel: String? {
-        time.map { "\(contextAndLocation), at \(TimeFormatting.spoken($0))" }
+        time.map { BookSearchWording.timedLabel(contextAndLocation, spokenTime: TimeFormatting.spoken($0)) }
     }
 }
 
@@ -413,8 +566,20 @@ struct BookSearchView: View {
     /// Where each result's row says its match is, as the display picker's
     /// segments name it.
     enum DisplayMode: String, CaseIterable {
-        case percentage = "Percentage"
-        case time = "Time"
+        case percentage = "Percentage" // l10n: no (stored id: the raw value is kept; `title` is shown)
+        case time = "Time" // l10n: no (stored id: the raw value is kept; `title` is shown)
+
+        /// The segment's name in the display picker, in the interface language.
+        var title: String {
+            switch self {
+            case .percentage:
+                return String(localized: "Percentage",
+                              comment: "A segment of the display picker in Search in Book: each result's position is shown as a percentage of the book.")
+            case .time:
+                return String(localized: "Time",
+                              comment: "A segment of the display picker in Search in Book: each result's position is shown as an estimated time into the book.")
+            }
+        }
     }
 
     /// Name each match's location by the heading containing it, using the
@@ -448,11 +613,11 @@ struct BookSearchView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Search in Book")
+                Text(BookSearchWording.sheetTitle)
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
-                Button("Back to Book") { dismiss() }
+                Button(BookSearchWording.backToBookTitle) { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
                     .accessibilityHint(BookSearchWording.backToBookHint)
             }
@@ -460,7 +625,7 @@ struct BookSearchView: View {
 
             // Search field, the status of its search, and options
             VStack(spacing: 8) {
-                TextField("Search text", text: $model.query)
+                TextField(BookSearchWording.fieldLabel, text: $model.query)
                     .textFieldStyle(.roundedBorder)
                     .focused($isSearchFieldFocused)
                     .accessibilityLabel(BookSearchWording.fieldLabel)
@@ -484,7 +649,7 @@ struct BookSearchView: View {
                         .accessibilityLabel(BookSearchWording.matchCaseLabel)
                         .accessibilityHint(BookSearchWording.matchCaseHint)
 
-                    Toggle("Use Regex", isOn: $model.useRegex)
+                    Toggle(BookSearchWording.useRegexTitle, isOn: $model.useRegex)
                         .checkboxToggleStyle()
                         .accessibilityLabel(BookSearchWording.regexLabel)
                         .accessibilityHint(BookSearchWording.regexHint)
@@ -494,14 +659,14 @@ struct BookSearchView: View {
                     // A transcript's results have their exact time, so there
                     // is no estimate to choose how to show.
                     if !isTimed {
-                        Picker("Display", selection: $displayMode) {
+                        Picker(BookSearchWording.displayTitle, selection: $displayMode) {
                             ForEach(DisplayMode.allCases, id: \.self) { mode in
-                                Text(mode.rawValue).tag(mode)
+                                Text(mode.title).tag(mode)
                             }
                         }
                         .pickerStyle(.segmented)
                         .frame(width: 200)
-                        .accessibilityLabel("Position display mode")
+                        .accessibilityLabel(BookSearchWording.displayModeLabel)
                     }
                 }
             }
@@ -557,7 +722,7 @@ struct BookSearchView: View {
                 // found" here would repeat, and misstate once the result
                 // limit is reached.
                 .accessibilityLabel(BookSearchWording.resultsLabel)
-                .accessibilityRotor("Search Results") {
+                .accessibilityRotor(BookSearchWording.resultsRotor) {
                     ForEach(model.results) { result in
                         AccessibilityRotorEntry(result.timedLabel ?? result.contextAndLocation, id: result.id)
                     }
@@ -565,7 +730,7 @@ struct BookSearchView: View {
             }
         }
         .frame(width: 500, height: 450)
-        .navigationTitle("Search in Book")
+        .navigationTitle(BookSearchWording.sheetTitle)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 isSearchFieldFocused = true
@@ -612,7 +777,7 @@ struct SearchResultRow: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
-        .accessibilityHint("Activate to navigate to this result")
+        .accessibilityHint(BookSearchWording.resultHint)
     }
 
     private var percentage: Double {
@@ -633,7 +798,8 @@ struct SearchResultRow: View {
         if let time = result.time { return TimeFormatting.format(time) }
         switch displayMode {
         case .percentage:
-            return String(format: "%.1f%%", percentage)
+            // The region's percent format, with one decimal digit: "50.0%".
+            return (percentage / 100).formatted(.percent.precision(.fractionLength(1)))
         case .time:
             return TimeFormatting.format(timeInSeconds)
         }
@@ -646,9 +812,9 @@ struct SearchResultRow: View {
         if let timedLabel = result.timedLabel { return timedLabel }
         switch displayMode {
         case .percentage:
-            return "\(result.contextAndLocation), at \(String(format: "%.1f percent", percentage)) of book"
+            return BookSearchWording.percentLabel(result.contextAndLocation, percent: percentage)
         case .time:
-            return "\(result.contextAndLocation), at \(TimeFormatting.spoken(timeInSeconds)) into book"
+            return BookSearchWording.estimatedTimeLabel(result.contextAndLocation, spokenTime: TimeFormatting.spoken(timeInSeconds))
         }
     }
 }
