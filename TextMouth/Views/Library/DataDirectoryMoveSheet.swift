@@ -37,7 +37,7 @@ struct DataDirectoryMoveProgressView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Button("Cancel", action: move.cancel)
+            Button(DataDirectoryMoveWording.cancelTitle, action: move.cancel)
                 .keyboardShortcut(.cancelAction)
                 .disabled(!move.canCancel || move.isCancelRequested)
                 .accessibilityLabel(DataDirectoryMoveWording.cancelLabel)

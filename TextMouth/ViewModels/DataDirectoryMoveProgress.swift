@@ -346,6 +346,12 @@ enum DataDirectoryMoveWording {
                comment: "Sentence added to the done message of a move of the library when Cancel was pressed after the copy was complete.")
     }
 
+    /// The move sheet's Cancel button: it cancels the move, as `cancelLabel` says to VoiceOver.
+    static var cancelTitle: String {
+        String(localized: "Cancel",
+               comment: "Button of the sheet that shows the library being moved: cancels the move.")
+    }
+
     /// The last sentence of several reasons a move of the data directory was
     /// refused: what to do about the new location.
     static var chooseAnotherLocation: String {
