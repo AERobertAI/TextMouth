@@ -113,12 +113,28 @@ final class PhoneNavigationUnitsTests: XCTestCase {
         }
     }
 
-    /// The name in lower case, for hints and the words of a move that went
-    /// nowhere.
-    func testTheLowerCaseName() {
-        XCTAssertEqual(PhoneNavigationUnits.lowercasedName(of: .sentence), "sentence")
-        XCTAssertEqual(PhoneNavigationUnits.lowercasedName(of: .seconds10), "10 seconds")
-        XCTAssertEqual(PhoneNavigationUnits.lowercasedName(of: .subheading), "subheading")
+    /// Every unit has whole sentences of its own for Play's hint and for a
+    /// move that went nowhere, never a unit's name glued into one sentence:
+    /// each reads as the English always did, and no two units share one.
+    func testEveryUnitHasItsOwnSentences() {
+        XCTAssertEqual(PhoneReaderWording.playHint(movingBy: .sentence), "Moves back or forward by sentence.")
+        XCTAssertEqual(PhoneReaderWording.playHint(movingBy: .seconds10), "Moves back or forward by 10 seconds.")
+        XCTAssertEqual(PhoneReaderWording.playHint(movingBy: .subheading), "Moves back or forward by subheading.")
+        XCTAssertEqual(PhoneReaderWording.nothingThatWay(unit: .subheading, forward: true), "No next subheading.")
+        XCTAssertEqual(PhoneReaderWording.nothingThatWay(unit: .page, forward: false), "No previous page.")
+        XCTAssertEqual(
+            Set(SkipUnit.allCases.map { PhoneReaderWording.playHint(movingBy: $0) }).count,
+            SkipUnit.allCases.count,
+            "each unit's hint is its own sentence"
+        )
+        let structural = SkipUnit.allCases.filter { !$0.isTimeBased }
+        for forward in [true, false] {
+            XCTAssertEqual(
+                Set(structural.map { PhoneReaderWording.nothingThatWay(unit: $0, forward: forward) }).count,
+                structural.count,
+                "each structural unit's refusal is its own sentence"
+            )
+        }
     }
 
     // MARK: - Helpers

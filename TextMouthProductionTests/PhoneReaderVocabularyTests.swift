@@ -64,6 +64,15 @@ final class PhoneReaderVocabularyTests: XCTestCase {
         ))
     }
 
+    /// The percent rounds half to even as the Mac's "%.0f" does, and is a count
+    /// for the region (FR34).
+    func testThePercentRoundsAsTheMacsFormatDoes() {
+        XCTAssertEqual(PhoneReaderVocabulary.percent(0.5), String(format: "%.0f percent", 0.5))
+        XCTAssertEqual(PhoneReaderVocabulary.percent(2.5), String(format: "%.0f percent", 2.5))
+        XCTAssertEqual(PhoneReaderVocabulary.percent(100), "100 percent")
+        XCTAssertEqual(PhoneReaderVocabulary.percent(0), "0 percent")
+    }
+
     /// The text of the source file at `path` in the app's source folder.
     private static func source(_ path: String) throws -> String {
         try String(contentsOf: AppSourceFile.folder.appendingPathComponent(path), encoding: .utf8)

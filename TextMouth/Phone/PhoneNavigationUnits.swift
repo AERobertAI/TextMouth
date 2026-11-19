@@ -51,10 +51,4 @@ enum PhoneNavigationUnits {
             : Array(order[..<position].reversed()) + Array(order[position...].reversed())
         return candidates.first(where: offered.contains) ?? offered[0]
     }
-
-    /// The unit's name in lower case, for hints and the "nothing that way"
-    /// words: "sentence", "10 seconds", "subheading".
-    static func lowercasedName(of unit: SkipUnit) -> String {
-        unit.rawValue.lowercased()
-    }
 }
