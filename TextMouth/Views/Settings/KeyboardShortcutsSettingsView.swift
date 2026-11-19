@@ -55,7 +55,7 @@ struct KeyboardShortcutsSettingsView: View {
             Button(ShortcutsSettingsWording.resetAllConfirm, role: .destructive) {
                 Self.resetEveryShortcut(shortcutManager)
             }
-            Button(PhoneAppWording.cancel, role: .cancel) {}
+            Button(ShortcutsSettingsWording.resetAllCancel, role: .cancel) {}
         } message: {
             Text(ShortcutsSettingsWording.resetAllAlertMessage)
         }
@@ -444,6 +444,11 @@ enum ShortcutsSettingsWording {
     /// The alert's button that does the reset.
     static var resetAllConfirm: String {
         String(localized: "Reset", comment: "Button of an alert that confirms resetting every keyboard shortcut to its default.")
+    }
+
+    /// The alert's button that leaves the shortcuts as they are.
+    static var resetAllCancel: String {
+        String(localized: "Cancel", comment: "Button that closes a sheet or answers a question without doing or changing anything.")
     }
 
     /// The alert's message: what is lost.

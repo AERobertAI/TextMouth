@@ -72,7 +72,7 @@ enum UnsavedChangesPrompt {
 
     /// The third button: keeps TextMouth open.
     static var cancelTitle: String {
-        PhoneAppWording.cancel
+        String(localized: "Cancel", comment: "Button that closes a sheet or answers a question without doing or changing anything.")
     }
 
 #if os(macOS)
