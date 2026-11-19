@@ -37,12 +37,12 @@ enum PhoneVoiceVocabulary {
     /// A voice's choice as VoiceOver reads it, as in "Samantha, Enhanced
     /// quality".
     static func voiceChoice(name: String, quality: String) -> String {
-        "\(name), \(quality) quality"
+        SettingsWording.voiceLabel(name: name, quality: quality)
     }
 
     /// The speed slider's value, as in "200 words per minute".
     static func speedValue(wordsPerMinute: Double) -> String {
-        "\(Int(wordsPerMinute)) words per minute"
+        SettingsWording.wordsPerMinuteValue(Int(wordsPerMinute))
     }
 }
 

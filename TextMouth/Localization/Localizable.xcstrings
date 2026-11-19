@@ -1,13 +1,27 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "\"%@\" plays the next book in the same folder by sort order." : {
+      "comment" : "Explanation under the When book ends pop-up in the Playback settings. %@ is the title of the pop-up's choice that plays the next book, as the pop-up shows it."
+    },
     "%@ %@" : {
-      "comment" : "Joins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.",
+      "comment" : "Announcement of the microphone level every few seconds while recording. %1$@ is the level's label and %2$@ is the level in words, such as \"minus 12 decibels, good\".\nJoins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ (%@)" : {
+      "comment" : "The second choice of the Log location pop-up in the Storage settings. %1$@ is the choice's name, and %2$@ is the folder's name on this Mac, a path that stays as written, such as ~/Library/Logs/TextMouth.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (%2$@)"
           }
         }
       }
@@ -34,6 +48,51 @@
         }
       }
     },
+    "%@ by %@" : {
+      "comment" : "The shared title and author of a group of duplicate books that match by both, in the group's heading. %1$@ is the title and %2$@ is the author.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ by %2$@"
+          }
+        }
+      }
+    },
+    "%@ deleted" : {
+      "comment" : "Announcement after a substitution rule is deleted. %@ is the rule's name."
+    },
+    "%@ has no transcript text to search now, because %@" : {
+      "comment" : "Said instead of opening Search in Book when the book's audio changed after its transcript was made. %1$@ is the book's title and %2$@ is the reason, a whole sentence that ends with its own full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ has no transcript text to search now, because %2$@"
+          }
+        }
+      }
+    },
+    "%@ has no transcript text to search now, because its edited text can't be used: %@" : {
+      "comment" : "Said instead of opening Search in Book when the book's edited transcript text was held back. %1$@ is the book's title and %2$@ is the reason, a whole sentence that ends with its own full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ has no transcript text to search now, because its edited text can't be used: %2$@"
+          }
+        }
+      }
+    },
+    "%@ has no transcript text to search now." : {
+      "comment" : "Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title."
+    },
+    "%@ has no transcript to search." : {
+      "comment" : "Said instead of opening Search in Book for an audiobook that has no transcript, where TextMouth cannot make one. %@ is the book's title."
+    },
+    "%@ has no transcript to search. Transcribe it first, with Transcribe Audio." : {
+      "comment" : "Said instead of opening Search in Book for an audiobook that has no transcript yet. %@ is the book's title. Transcribe Audio is the name of a command in the Book menu."
+    },
     "%@ is already in the reading list." : {
       "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.",
       "localizations" : {
@@ -45,6 +104,12 @@
         }
       }
     },
+    "%@ is no longer in the library." : {
+      "comment" : "Announcement when the book of a search match has left the library since the search. %@ is the book's title."
+    },
+    "%@ isn't available, so TextMouth can't record from it. Choose another microphone." : {
+      "comment" : "Error in the Record window when the chosen microphone is not available. %@ is the microphone's name."
+    },
     "%@ isn't in the reading list." : {
       "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: the one book selected is not on the list. %@ is the book's title.",
       "localizations" : {
@@ -55,6 +120,20 @@
           }
         }
       }
+    },
+    "%@ moved to position %@ of %@" : {
+      "comment" : "Announcement after a substitution rule moves in the list. %1$@ is the rule's name, %2$@ is its new place counting from one, and %3$@ is how many rules the list holds.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ moved to position %2$@ of %3$@"
+          }
+        }
+      }
+    },
+    "%@ not recording" : {
+      "comment" : "Announcement of the microphone level while nothing is recording. %@ is the level's label."
     },
     "%@ remaining" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.",
@@ -69,6 +148,269 @@
     },
     "%@ seconds" : {
       "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number."
+    },
+    "%@ silent" : {
+      "comment" : "Announcement of the microphone level when no sound reaches TextMouth. %@ is the level's label."
+    },
+    "%@ was connected, so recordings use it." : {
+      "comment" : "Said by the Record window when a microphone connects and recordings now use it. %@ is the microphone's name."
+    },
+    "%@ was connected; choose it in the %@ pop-up to record from it." : {
+      "comment" : "Said by the Record window when one microphone connects and is added to the Microphone pop-up. %1$@ is the microphone's name and %2$@ is the pop-up's label.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ was connected; choose it in the %2$@ pop-up to record from it."
+          }
+        }
+      }
+    },
+    "%@ was disconnected, so recording stopped. What was recorded until then is kept." : {
+      "comment" : "Error in the Record window when the microphone was unplugged while recording. %@ is the microphone's name."
+    },
+    "%@ was disconnected, so recordings use %@." : {
+      "comment" : "Said by the Record window when the chosen microphone is unplugged and another takes its place. %1$@ is the microphone that went away and %2$@ is the one recordings use now.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ was disconnected, so recordings use %2$@."
+          }
+        }
+      }
+    },
+    "%@ was disconnected. Connect a microphone to record." : {
+      "comment" : "Said by the Record window when the chosen microphone is unplugged and no other is connected. %@ is the microphone's name."
+    },
+    "%@ were connected; choose one in the %@ pop-up to record from it." : {
+      "comment" : "Said by the Record window when several microphones connect and are added to the Microphone pop-up. %1$@ is their names as a list and %2$@ is the pop-up's label.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ were connected; choose one in the %2$@ pop-up to record from it."
+          }
+        }
+      }
+    },
+    "%@, %@" : {
+      "comment" : "Joins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@ quality" : {
+      "comment" : "VoiceOver label of a voice in the voice pop-up. %1$@ is the voice's name and %2$@ is its quality, such as Enhanced.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@ quality"
+          }
+        }
+      }
+    },
+    "%@, %@, in %@" : {
+      "comment" : "VoiceOver label of a search match: the match in its text, where it is in the book, then the book. %1$@ is the match in its surrounding text, %2$@ is its place, such as a chapter's title, and %3$@ is the book's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, in %3$@"
+          }
+        }
+      }
+    },
+    "%@, and %lld in all" : {
+      "comment" : "Note on a finished search's status: the list also stops after this many matches in all. %1$@ is the note \"showing up to 20 in each book\", and %2$lld is the number of matches shown in all.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@, and %lld in all"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@, and %lld in all"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@, at %@" : {
+      "comment" : "VoiceOver label and rotor entry of a search result in a transcribed audiobook. %1$@ is the match with its context and place, and %2$@ is the time it is heard, spoken.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, at %2$@"
+          }
+        }
+      }
+    },
+    "%@, at %@ into book" : {
+      "comment" : "VoiceOver label of a search result placed by an estimated time. %1$@ is the match with its context and place, and %2$@ is the time into the book, spoken.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, at %2$@ into book"
+          }
+        }
+      }
+    },
+    "%@, at %@ percent of book" : {
+      "comment" : "VoiceOver label of a search result placed by percentage. %1$@ is the match with its context and place, and %2$@ is the percentage through the book with one decimal digit, such as 12.5.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, at %2$@ percent of book"
+          }
+        }
+      }
+    },
+    "%@, by %@" : {
+      "comment" : "A book's title and author in a search result's heading. %1$@ is the book's title and %2$@ its author.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, by %2$@"
+          }
+        }
+      }
+    },
+    "%@, by %@, %@, in %@, added %@" : {
+      "comment" : "A duplicate book's row, spoken and shown as one label in Find Duplicate Books. %1$@ is the title, %2$@ the author, %3$@ the format, %4$@ the library folder it is in, and %5$@ the date it was added.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, by %2$@, %3$@, in %4$@, added %5$@"
+          }
+        }
+      }
+    },
+    "%@, in %@" : {
+      "comment" : "VoiceOver label of a search match whose place in the book is unknown. %1$@ is the match in its surrounding text, and %2$@ is the book's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, in %2$@"
+          }
+        }
+      }
+    },
+    "%@, then %@" : {
+      "comment" : "Joins two steps of the restart gesture's summary in the Miscellaneous settings. %1$@ is the steps so far and %2$@ is the next step, such as \"Previous track, then Play\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, then %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "comment" : "A label and its value on one line, such as \"Elapsed: 1:04\". %1$@ is the label and %2$@ its value. English puts a colon and a space between them.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@ dB peak, %@ dB average, %@" : {
+      "comment" : "The microphone level line of the Record window while recording. %1$@ is the level's label, %2$@ is the loudest sample's level in decibels with a minus sign, %3$@ is the average level in decibels, and %4$@ is a word for how loud that is, such as \"good\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@ dB peak, %3$@ dB average, %4$@"
+          }
+        }
+      }
+    },
+    "%@: %lld matches" : {
+      "comment" : "A book's heading over its search matches. %1$@ is the book's title, with its author when known, and %2$lld is the number of matches.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: %lld match"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: %lld matches"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@: more than %lld matches" : {
+      "comment" : "A book's heading over its search matches when the count stopped at its limit. %1$@ is the book's title, with its author when known, and %2$lld is the number of matches.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: more than %lld match"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: more than %lld matches"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@: not recording" : {
+      "comment" : "The microphone level line of the Record window while nothing is recording. %@ is the level's label."
+    },
+    "%@: silent" : {
+      "comment" : "The microphone level line of the Record window when no sound reaches TextMouth. %@ is the level's label."
+    },
+    "%@; %@" : {
+      "comment" : "Joins two parts of a status line with a semicolon. %1$@ is the text so far and %2$@ the next part. English puts a semicolon and a space between them.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@; %2$@"
+          }
+        }
+      }
     },
     "%lld articles" : {
       "comment" : "A count of news articles in a list, counted beside books. %lld is the number of articles.",
@@ -132,6 +474,52 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books couldn't be read" : {
+      "comment" : "Note on a finished search's status: the text of some books could not be read. %lld is the number of those books. Starts with a number and follows a semicolon.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book couldn't be read"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books couldn't be read"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books in the cloud weren't searched" : {
+      "comment" : "Note on a finished search's status: some books are only in the cloud, and a search never downloads them. %lld is the number of those books. Starts with a number and follows a semicolon.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book in the cloud wasn't searched"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books in the cloud weren't searched"
                 }
               }
             }
@@ -233,6 +621,75 @@
         }
       }
     },
+    "%lld decibels" : {
+      "comment" : "A sound level in decibels, spoken, in the Record window. %lld is the number of decibels.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld decibel"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld decibels"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld default rules" : {
+      "comment" : "A count of TextMouth's default substitution rules inside a longer sentence. %lld is the number of default rules.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld default rule"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld default rules"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld duplicate groups found" : {
+      "comment" : "Spoken and read when a scan of Find Duplicate Books ends. %lld is the number of groups of duplicate books found.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld duplicate group found"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld duplicate groups found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld episodes" : {
       "comment" : "A count of podcast episodes in a list, counted beside books. %lld is the number of episodes.",
       "localizations" : {
@@ -302,6 +759,52 @@
         }
       }
     },
+    "%lld matches" : {
+      "comment" : "Status line of Search in Book when a search finished and lists every match. %lld is the number of matches.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld match"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld matches"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld matches in %@" : {
+      "comment" : "Status line of a finished search. %1$lld is the number of matches found, and %2$@ is the count of books that hold them with its noun, such as \"31 books\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld match in %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld matches in %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld minutes" : {
       "comment" : "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.",
       "localizations" : {
@@ -349,6 +852,52 @@
         }
       }
     },
+    "%lld rules" : {
+      "comment" : "A count of substitution rules inside a longer sentence. %lld is the number of rules.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rule"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rules"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld rules (%@ enabled)" : {
+      "comment" : "The footer of the Substitutions settings: how many rules the list holds and how many of them are turned on. %1$lld is the number of rules, which the noun agrees with, and %2$@ is the number enabled.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rule (%@ enabled)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rules (%@ enabled)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld seconds" : {
       "comment" : "A count of whole seconds inside a duration or a setting's length. %lld is the number of seconds.",
       "localizations" : {
@@ -368,6 +917,49 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "%lld words per minute" : {
+      "comment" : "VoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld word per minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld words per minute"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "(%@)" : {
+      "comment" : "A voice's quality, in parentheses, beside its name in the voice pop-up. %@ is the quality, such as Enhanced."
+    },
+    "(none)" : {
+      "comment" : "The restart gesture's summary when it has no steps, which the editor does not normally allow."
+    },
+    "(skip)" : {
+      "comment" : "Shown in a substitution rule's row where its replacement would be, when the rule skips the matched text."
+    },
+    "0 = %@, 1 = %@ (periods), 2 = %@ (+ commas), 3 = %@ (+ paragraph breaks)" : {
+      "comment" : "Explanation under the punctuation pause level slider in the Playback settings. %1$@ to %4$@ are the names of levels 0 to 3, as the slider speaks them: Off, Subtle, Moderate, and Heavy. The words in parentheses say what pauses at that level.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "0 = %1$@, 1 = %2$@ (periods), 2 = %3$@ (+ commas), 3 = %4$@ (+ paragraph breaks)"
           }
         }
       }
@@ -394,8 +986,17 @@
         }
       }
     },
+    "Aa" : {
+      "comment" : "A small tag in a substitution rule's row: the rule is case sensitive. A capital and a small letter of the language's alphabet."
+    },
+    "Action: skip" : {
+      "comment" : "A part of a substitution rule's spoken summary: the rule removes the text it matches."
+    },
+    "Activate to navigate to this result" : {
+      "comment" : "VoiceOver hint of a result's row in Search in Book."
+    },
     "Add" : {
-      "comment" : "Button of the panel for adding a bookmark: adds it, with the note written.",
+      "comment" : "Button of the panel for adding a bookmark: adds it, with the note written.\nTitle of the button that adds a new substitution rule, in the rule editor.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -510,6 +1111,24 @@
         }
       }
     },
+    "Add Rule" : {
+      "comment" : "Title of the button in the Substitutions settings that opens the editor for a new substitution rule."
+    },
+    "Add Substitution Rule" : {
+      "comment" : "Heading and navigation title of the editor of a new substitution rule."
+    },
+    "Add a new substitution rule" : {
+      "comment" : "VoiceOver label of the Add Rule button in the Substitutions settings."
+    },
+    "Add gesture step" : {
+      "comment" : "VoiceOver label of the button that adds a step to the restart gesture in the Miscellaneous settings."
+    },
+    "Add rules to change how text is spoken. Rules are applied in order from top to bottom." : {
+      "comment" : "Shown under \"No substitution rules.\" in the Substitutions settings."
+    },
+    "Add step" : {
+      "comment" : "Title of the button that adds a step to the restart gesture in the Miscellaneous settings."
+    },
     "Added %lld books to the reading list." : {
       "comment" : "VoiceOver announcement after several books were added to the reading list. %lld is the number of books added.",
       "localizations" : {
@@ -531,6 +1150,9 @@
           }
         }
       }
+    },
+    "Adds a button to add or remove a bookmark at the current position" : {
+      "comment" : "VoiceOver hint of the Show bookmark button checkbox in the Playback settings."
     },
     "Adds the selected books to the end of the reading list." : {
       "comment" : "VoiceOver hint of the Library's edit-mode bar button Add to Reading List.",
@@ -554,8 +1176,43 @@
         }
       }
     },
+    "All" : {
+      "comment" : "A choice of the Language pop-up in the Voice settings: voices of every language are offered."
+    },
+    "All books by the same author" : {
+      "comment" : "Hint of the Same Author criterion of Find Duplicate Books."
+    },
     "An unknown error occurred." : {
       "comment" : "Message of an alert about a problem, when nothing more is known about it."
+    },
+    "Announce level every %lld seconds" : {
+      "comment" : "Title of the switch in the Record window that makes VoiceOver speak the microphone level while recording. %lld is how many seconds pass between announcements.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Announce level every %lld second"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Announce level every %lld seconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Any other book passes over The, A, and An." : {
+      "comment" : "Second sentence of the note under the Leading Articles pop-up: the articles skipped for a book in any other language. The, A, and An are the English articles and stay as written."
+    },
+    "Appends a new step to the gesture sequence" : {
+      "comment" : "VoiceOver hint of the Add gesture step button in the Miscellaneous settings."
     },
     "Articles (%lld)" : {
       "comment" : "The header of a list's news articles, with their count: \"Articles (3)\". %lld is the number of articles.",
@@ -580,6 +1237,12 @@
         }
       }
     },
+    "Ask Each Time" : {
+      "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: TextMouth asks what to do with the original file after each import."
+    },
+    "Asks first, then replaces every rule with TextMouth's default rules." : {
+      "comment" : "VoiceOver hint of the Reset to Defaults button in the Substitutions settings."
+    },
     "Asks for an optional note, then marks the reading position." : {
       "comment" : "VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.",
       "localizations" : {
@@ -590,6 +1253,12 @@
           }
         }
       }
+    },
+    "Auto-play after navigation" : {
+      "comment" : "Title and VoiceOver label of the checkbox in the Playback settings that starts playing after a jump to a heading, bookmark, or search result."
+    },
+    "Automatically start playing when you navigate to a heading, bookmark, or search result." : {
+      "comment" : "Explanation under the Auto-play after navigation checkbox in the Playback settings."
     },
     "Available only while this feed's articles go on to another article when one ends" : {
       "comment" : "VoiceOver hint of the dimmed Open the next article in pop-up button in a news feed's Feed Info: when it can be used.",
@@ -634,6 +1303,21 @@
           }
         }
       }
+    },
+    "Back to Book" : {
+      "comment" : "Title of the button that closes the Search in Book sheet and returns to the book."
+    },
+    "Backward navigation unit: %@" : {
+      "comment" : "VoiceOver label of the playback bar's menu that picks the unit the backward button moves by. %@ is the unit now chosen, such as \"Sentence\"."
+    },
+    "Bluetooth" : {
+      "comment" : "Heading of the Bluetooth group in the Miscellaneous settings. Bluetooth is a trademark and stays as written in most languages."
+    },
+    "Bluetooth disconnect delay" : {
+      "comment" : "VoiceOver label of the Bluetooth disconnect delay slider in the Miscellaneous settings."
+    },
+    "Bookmark" : {
+      "comment" : "A unit a skip or navigation picker moves by: one bookmark."
     },
     "Bookmark %@" : {
       "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -758,6 +1442,9 @@
         }
       }
     },
+    "Books" : {
+      "comment" : "Name of the VoiceOver rotor in the Search Library window that moves between the books that hold matches."
+    },
     "Books (%lld)" : {
       "comment" : "The header of a list's books, with their count: \"Books (743)\". %lld is the number of books.",
       "localizations" : {
@@ -781,8 +1468,11 @@
         }
       }
     },
+    "Books with the same title, regardless of author" : {
+      "comment" : "Hint of the Same Title criterion of Find Duplicate Books."
+    },
     "Cancel" : {
-      "comment" : "Button that closes a sheet or answers a question without doing or changing anything.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.",
+      "comment" : "Button that closes a sheet or answers a question without doing or changing anything.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -803,6 +1493,21 @@
         }
       }
     },
+    "Case sensitive" : {
+      "comment" : "A part of a substitution rule's spoken summary: capital and small letters are told apart.\nTitle of the switch in the substitution rule editor that makes the pattern tell capital and small letters apart."
+    },
+    "Case sensitive matching" : {
+      "comment" : "VoiceOver label of the Case sensitive switch in the substitution rule editor."
+    },
+    "Check the criteria above, then %@." : {
+      "comment" : "What Find Duplicate Books shows before its first scan. %@ is the title of the scan button."
+    },
+    "Choose a voice for reading. Change takes effect immediately." : {
+      "comment" : "VoiceOver hint of the voice pop-up in the Voice settings."
+    },
+    "Choose no per-book control, one picker for both directions, or one menu with separate forward and backward pickers" : {
+      "comment" : "VoiceOver hint of the Navigation unit controls pop-up in the Playback settings."
+    },
     "Chooses what a book opened from the list does when it ends." : {
       "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button.",
       "localizations" : {
@@ -810,6 +1515,17 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elige qué hace un libro abierto desde la lista al terminar."
+          }
+        }
+      }
+    },
+    "Chooses where TextMouth writes its diagnostic logs. %@ keeps them in its Logs folder, beside your books, where they move with the library and sync with it when it is in the cloud. %@ keeps them in %@, which never syncs. A change applies from the next line written; logs already written are not moved." : {
+      "comment" : "VoiceOver hint and tooltip of the Log location pop-up in the Storage settings. %1$@ and %2$@ are the names of its two choices, as the pop-up lists them, and %3$@ is the folder's path on this Mac, which stays as written.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chooses where TextMouth writes its diagnostic logs. %1$@ keeps them in its Logs folder, beside your books, where they move with the library and sync with it when it is in the cloud. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line written; logs already written are not moved."
           }
         }
       }
@@ -869,8 +1585,11 @@
         }
       }
     },
+    "Chooses whether The, A, and An at the start of a title count when the Library sorts titles and when you type a title's first letters to go to it." : {
+      "comment" : "Hint and tooltip of the Leading Articles pop-up in the Library settings. The, A, and An are the English articles the setting skips."
+    },
     "Close" : {
-      "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.",
+      "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nTitle of the button that closes the Search Library window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -879,6 +1598,41 @@
           }
         }
       }
+    },
+    "Close Search Library; its results stay for the next time it opens" : {
+      "comment" : "VoiceOver hint of the Close button of the Search Library window. Search Library is the window's name."
+    },
+    "Close search and return to the book" : {
+      "comment" : "VoiceOver hint of the Back to Book button of Search in Book."
+    },
+    "Close sheet after setting timer" : {
+      "comment" : "Title of the checkbox in the Playback settings that closes the sleep timer sheet once a timer is set."
+    },
+    "Close sleep timer sheet after setting a timer" : {
+      "comment" : "VoiceOver label of the Close sheet after setting timer checkbox in the Playback settings."
+    },
+    "Closing this window ends the recording. %@ keeps what was recorded as an audiobook in your library, %@ deletes it, and %@ keeps recording." : {
+      "comment" : "Explanation under the question asked when the Record window is closed while recording. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that stops and saves, the one that deletes the recording, and the one that keeps recording.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Closing this window ends the recording. %1$@ keeps what was recorded as an audiobook in your library, %2$@ deletes it, and %3$@ keeps recording."
+          }
+        }
+      }
+    },
+    "Comparing" : {
+      "comment" : "VoiceOver label of the progress bar of the Compare Libraries sheet while the two copies of the library are being compared."
+    },
+    "Connect a microphone to record." : {
+      "comment" : "Status line of the Record window while no microphone is connected."
+    },
+    "Continue to Next Book" : {
+      "comment" : "A choice of the When a Book Ends picker: the next book in the folder plays."
+    },
+    "Continues the paused recording." : {
+      "comment" : "VoiceOver hint of the Resume button in the Record window."
     },
     "Could not add the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
@@ -913,6 +1667,9 @@
         }
       }
     },
+    "Current pattern: %@" : {
+      "comment" : "A summary of the restart gesture's steps under its editor in the Miscellaneous settings, shown and read by VoiceOver. %@ is the steps in order, such as \"Previous track, then Play\"."
+    },
     "Custom minutes" : {
       "comment" : "VoiceOver label of the sleep timer sheet's field of a custom number of minutes.",
       "localizations" : {
@@ -935,8 +1692,52 @@
         }
       }
     },
+    "Default Pitch" : {
+      "comment" : "Heading of the default pitch group in the Voice settings."
+    },
+    "Default Pitch: %@" : {
+      "comment" : "The default pitch shown above its slider in the Voice settings. %@ is the pitch, such as Normal (1.0x)."
+    },
+    "Default Speed" : {
+      "comment" : "Heading of the default speed group in the Voice settings."
+    },
+    "Default Speed: %lld WPM" : {
+      "comment" : "The default reading speed shown above its slider in the Voice settings. %lld is the speed in words per minute; WPM is the abbreviation of words per minute.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Default Speed: %lld WPM"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Default Speed: %lld WPM"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Default pitch" : {
+      "comment" : "VoiceOver label of the default pitch slider in the Voice settings."
+    },
+    "Default pitch for new books. 1.0 is normal. Each book can override this." : {
+      "comment" : "Explanation under the default pitch slider in the Voice settings."
+    },
+    "Default speed" : {
+      "comment" : "VoiceOver label of the default speed slider in the Voice settings."
+    },
+    "Default speed for new books. Each book can override this with its own speed." : {
+      "comment" : "Explanation under the default speed slider in the Voice settings."
+    },
     "Delete" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.",
+      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.\nName of the command that deletes a substitution rule: a row button's label and tooltip, a VoiceOver action, and a context menu item.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -945,6 +1746,9 @@
           }
         }
       }
+    },
+    "Delete After Import" : {
+      "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: the original file is deleted once the book is imported."
     },
     "Delete bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -957,8 +1761,55 @@
         }
       }
     },
+    "Deletes the recording without saving it." : {
+      "comment" : "VoiceOver hint of the Discard Recording button of the Record window."
+    },
+    "Deletes this recording without saving it." : {
+      "comment" : "VoiceOver hint of the button that deletes a recording left behind."
+    },
+    "Differences" : {
+      "comment" : "VoiceOver label of the list of differences the Compare Libraries sheet found between the two copies of the library."
+    },
+    "Disable" : {
+      "comment" : "Title of the context menu item that turns a substitution rule off."
+    },
+    "Discard" : {
+      "comment" : "Title of the button that deletes a recording, in the Record window's list of recordings left behind and in the question asked when it closes.\nTitle of the question's button that deletes the recording, when the Record window is closed."
+    },
+    "Discard Recording" : {
+      "comment" : "Title of the button in the Record window that deletes a recording that could not be saved."
+    },
+    "Discard: %@" : {
+      "comment" : "VoiceOver label of the button that deletes one recording left behind. %@ describes the recording, such as \"Recording of October 4, 2026 at 6:30 AM, 1 minute, 4 seconds\"."
+    },
+    "Discarded the recording of %@, %@." : {
+      "comment" : "Said by the Record window after a recording left behind was discarded. %1$@ is when it was recorded, a date and time, and %2$@ is how long it lasted, spoken, such as \"1 minute, 4 seconds\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Discarded the recording of %1$@, %2$@."
+          }
+        }
+      }
+    },
+    "Discarded the recording of %@, which holds no sound." : {
+      "comment" : "Said by the Record window after a recording left behind that held no sound was discarded. %@ is when it was recorded, a date and time."
+    },
+    "Disconnect delay" : {
+      "comment" : "Title of the slider in the Miscellaneous settings that sets how long media commands are suppressed after a Bluetooth device disconnects."
+    },
+    "Disconnect delay: %@" : {
+      "comment" : "The Bluetooth disconnect delay shown above its slider in the Miscellaneous settings. %@ is the delay in seconds, such as \"3 seconds\"."
+    },
+    "Display" : {
+      "comment" : "Title of the picker in Search in Book that chooses how each result's position in the book is shown, as a percentage or as a time."
+    },
+    "Don't rewind if paused for less than this." : {
+      "comment" : "Explanation under the minimum pause stepper in the Playback settings."
+    },
     "Done" : {
-      "comment" : "Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.",
+      "comment" : "Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.\nTitle of the button that closes the Find Duplicate Books sheet.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1001,6 +1852,12 @@
         }
       }
     },
+    "EPUB books with the same ISBN identifier" : {
+      "comment" : "Hint of the Same ISBN criterion of Find Duplicate Books. EPUB is a book format and ISBN is the book's international number; both stay as written."
+    },
+    "Edit" : {
+      "comment" : "Name of the command that opens a substitution rule's editor: a row button's label and tooltip, a VoiceOver action, and a context menu item."
+    },
     "Edit Bookmark %@" : {
       "comment" : "Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
@@ -1023,6 +1880,9 @@
         }
       }
     },
+    "Edit Substitution Rule" : {
+      "comment" : "Heading and navigation title of the editor of an existing substitution rule."
+    },
     "Edit note for bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
@@ -1034,6 +1894,27 @@
         }
       }
     },
+    "Elapsed" : {
+      "comment" : "Label of the time recorded so far in the Record window."
+    },
+    "Enable" : {
+      "comment" : "Title of the context menu item that turns a substitution rule on."
+    },
+    "Enable %@" : {
+      "comment" : "VoiceOver label of the checkbox that turns a substitution rule on or off. %@ is the rule's name."
+    },
+    "Enable Bluetooth monitoring" : {
+      "comment" : "Title and VoiceOver label of the switch in the Miscellaneous settings that turns on Bluetooth monitoring."
+    },
+    "Enable restart-timer gesture" : {
+      "comment" : "Title of the switch in the Miscellaneous settings that turns on the experimental gesture that restarts the sleep timer."
+    },
+    "Enable text substitutions" : {
+      "comment" : "Title and VoiceOver label of the switch in the Substitutions settings that turns text substitution rules on."
+    },
+    "End of Book" : {
+      "comment" : "Heading of the end of book group in the Playback settings."
+    },
     "End of book" : {
       "comment" : "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.",
       "localizations" : {
@@ -1044,6 +1925,9 @@
           }
         }
       }
+    },
+    "End of book behavior" : {
+      "comment" : "VoiceOver label of the When book ends pop-up in the Playback settings."
     },
     "End of heading" : {
       "comment" : "Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader.",
@@ -1066,6 +1950,9 @@
           }
         }
       }
+    },
+    "Enter a search term above." : {
+      "comment" : "Status line of Search in Book before anything is typed."
     },
     "Episodes (%lld)" : {
       "comment" : "The header of a list's podcast episodes, with their count: \"Episodes (5)\". %lld is the number of episodes.",
@@ -1137,6 +2024,18 @@
         }
       }
     },
+    "Exact file content match — the strongest indicator" : {
+      "comment" : "Hint of the Identical File criterion of Find Duplicate Books."
+    },
+    "Experimental. Press a configurable sequence of media keys or AirPods controls within a short time window to re-arm the most recently used sleep timer — handy for restarting a timer that just expired without going back to the keyboard." : {
+      "comment" : "Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written."
+    },
+    "Fade out duration" : {
+      "comment" : "VoiceOver label of the sleep timer's fade out stepper in the Playback settings."
+    },
+    "Fade out: %@" : {
+      "comment" : "The sleep timer's fade out shown above its stepper in the Playback settings. %@ is the fade as a length of time, such as 3 seconds, or Off."
+    },
     "Fading out" : {
       "comment" : "The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader.",
       "localizations" : {
@@ -1147,6 +2046,12 @@
           }
         }
       }
+    },
+    "Find Duplicate Books" : {
+      "comment" : "Heading of the Find Duplicate Books sheet."
+    },
+    "Find Duplicates" : {
+      "comment" : "Navigation title of the Find Duplicate Books sheet."
     },
     "Finished" : {
       "comment" : "How far a finished book has got, shown and spoken in place of its percent: in the library's row, Speak Info, Where Am I?, and Copy Reading Position.",
@@ -1169,6 +2074,18 @@
           }
         }
       }
+    },
+    "Folder names stay as you typed them." : {
+      "comment" : "Last sentence of the note under the Leading Articles pop-up: folder names are never changed by the setting."
+    },
+    "Forward navigation unit: %@" : {
+      "comment" : "VoiceOver label of the playback bar's menu that picks the unit the forward button moves by. %@ is the unit now chosen, such as \"Sentence\"."
+    },
+    "Gesture pattern" : {
+      "comment" : "Heading of the list of steps that make up the restart gesture, in the Miscellaneous settings."
+    },
+    "Gesture time window" : {
+      "comment" : "VoiceOver label of the restart gesture's time window slider in the Miscellaneous settings."
     },
     "Go To" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.",
@@ -1203,6 +2120,36 @@
         }
       }
     },
+    "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly." : {
+      "comment" : "Explanation under the sleep timer's fade out stepper in the Playback settings."
+    },
+    "Heading" : {
+      "comment" : "A unit of text a picker moves or rewinds by: one heading. Used by the rewind, skip, and navigation unit pickers."
+    },
+    "Heavy" : {
+      "comment" : "The name of punctuation pause level 3: periods, commas, and paragraph breaks pause."
+    },
+    "Hold Shift while skipping to use a secondary skip amount." : {
+      "comment" : "Explanation under the Shift+Skip pop-ups in the Playback settings. Shift is the key's name."
+    },
+    "How long to suppress spurious media commands after a Bluetooth device disconnects. Increase if playback sometimes auto-resumes after removing headphones." : {
+      "comment" : "Explanation under the Bluetooth disconnect delay slider in the Miscellaneous settings."
+    },
+    "ISBN: %@" : {
+      "comment" : "The shared value of a group of duplicate books that match by ISBN, in the group's heading. %@ is the ISBN. ISBN stays as written."
+    },
+    "Identical File (MD5)" : {
+      "comment" : "A match criterion of Find Duplicate Books: the files' contents are exactly the same. MD5 is the name of the checksum used to compare them."
+    },
+    "Ignored When Typing" : {
+      "comment" : "A choice of the Leading Articles pop-up: a title's leading article does not count when typing a title's first letters, but the list keeps its order."
+    },
+    "Ignored When Typing and Sorting" : {
+      "comment" : "A choice of the Leading Articles pop-up: a title's leading article does not count when typing or when sorting."
+    },
+    "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched." : {
+      "comment" : "VoiceOver hint of the replacement field in the substitution rule editor. $1 and $2 are written as in regular expressions and stay as written."
+    },
     "In reading list" : {
       "comment" : "Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list.",
       "localizations" : {
@@ -1213,6 +2160,21 @@
           }
         }
       }
+    },
+    "In this Mac's Logs folder" : {
+      "comment" : "A choice of the Log location pop-up in the Storage settings, and its name inside the pop-up's hint: the diagnostic logs are written in a folder on this Mac that never syncs. The folder's path follows in parentheses where the choice is listed."
+    },
+    "Inside the data directory" : {
+      "comment" : "A choice of the Log location pop-up in the Storage settings: the diagnostic logs are written in the Logs folder of the data directory, the folder that holds the library."
+    },
+    "Invalid regex: %@" : {
+      "comment" : "Shown in the substitution rule editor when the pattern is not a valid regular expression. %@ is the reason the system gives, which may be in English. Regex is short for regular expression."
+    },
+    "Invalid regular expression: %@" : {
+      "comment" : "Status line when the search text is not a valid regular expression. %@ is the reason the system gives, which may be in English."
+    },
+    "Keep Original" : {
+      "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: the original file stays where it was."
     },
     "Keep these books on this Mac" : {
       "comment" : "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac.",
@@ -1247,11 +2209,134 @@
         }
       }
     },
+    "Language" : {
+      "comment" : "Title of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it."
+    },
+    "Leading articles" : {
+      "comment" : "Label of the pop-up in the Library settings that chooses whether a title's leading article (The, A, An) counts when sorting and typing."
+    },
+    "Lets you restart the most recent sleep timer with a sequence of media-control button presses" : {
+      "comment" : "VoiceOver hint of the Enable restart-timer gesture switch in the Miscellaneous settings."
+    },
+    "Level" : {
+      "comment" : "Label of the microphone's loudness while recording, in the Record window."
+    },
     "Library" : {
-      "comment" : "Title of the first screen, the list of the user's books and folders."
+      "comment" : "The top of the library, as the Save in pop-up of the Record window names it.\nTitle of the first screen, the list of the user's books and folders."
+    },
+    "Library / %@" : {
+      "comment" : "A library folder in the Save in pop-up of the Record window: the library, then the folder's path, its folders separated by slashes. %@ is the path, such as \"Fiction / Sci-Fi\"."
+    },
+    "Library Root" : {
+      "comment" : "The folder name Find Duplicate Books gives a book at the top level of the library, in a duplicate's spoken label."
+    },
+    "Listing %lld matches in %@" : {
+      "comment" : "Announcement once Show All has listed every match of a book. %1$lld is the number of matches and %2$@ is the book's title.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Listing %lld match in %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Listing %lld matches in %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Listing %lld of %@ matches: refine the search to see the rest" : {
+      "comment" : "Row under a book whose matches are more than the list shows even after Show All. %1$lld is the number listed, and %2$@ is the book's total, such as \"700\" or \"more than 1,000\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Listing %lld of %@ matches: refine the search to see the rest"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Listing %lld of %@ matches: refine the search to see the rest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Listing the first %lld of %@ matches in %@" : {
+      "comment" : "Announcement once Show All has listed the first matches of a book that holds more. %1$lld is the number listed, %2$@ is the book's total, such as \"700\" or \"more than 1,000\", and %3$@ is the book's title.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Listing the first %lld of %@ matches in %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Listing the first %lld of %@ matches in %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Lists up to 500 of this book's matches here" : {
+      "comment" : "VoiceOver hint of the row that lists a book's matches in the Search Library results. 500 is the most it lists."
     },
     "Loading" : {
       "comment" : "Value of the Play button while the book is loading, spoken by VoiceOver."
+    },
+    "Loading ISBNs..." : {
+      "comment" : "Title of the scan button in Find Duplicate Books while the books' ISBNs are being read first. ISBN stays as written."
+    },
+    "Log location" : {
+      "comment" : "Label of the pop-up in the Storage settings that chooses where TextMouth writes its diagnostic logs."
+    },
+    "Logs" : {
+      "comment" : "Heading of the Logs group in the Storage settings, which holds the choice of where TextMouth writes its diagnostic logs."
+    },
+    "Logs are written to %@." : {
+      "comment" : "The line under the Log location pop-up in the Storage settings. %@ is the folder's full path, which stays as written."
+    },
+    "Loop to Start" : {
+      "comment" : "A choice of the When a Book Ends picker: the book plays again from its beginning and is never finished."
+    },
+    "Match Case" : {
+      "comment" : "Title and VoiceOver label of the checkbox in Search in Book and Search Library that makes a match need the search text's capital and small letters."
+    },
+    "Match criteria (checked filters are combined):" : {
+      "comment" : "The line over the checkboxes of Find Duplicate Books that choose how books are matched. Checked criteria must all match together."
+    },
+    "Match only when the pattern is not adjacent to letters, digits, or underscores" : {
+      "comment" : "VoiceOver hint of the Match whole word only switch in the substitution rule editor."
+    },
+    "Match whole word only" : {
+      "comment" : "Title and VoiceOver label of the switch in the substitution rule editor that makes the pattern match whole words only."
+    },
+    "Matches" : {
+      "comment" : "Name of the VoiceOver rotor in the Search Library window that moves between the matches listed."
+    },
+    "Maximum total elapsed time for the sequence to count as a match. Shorter windows reduce accidental matches but require quicker presses." : {
+      "comment" : "Explanation under the restart gesture's time window slider in the Miscellaneous settings."
     },
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
@@ -1260,6 +2345,35 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Metadatos actualizados"
+          }
+        }
+      }
+    },
+    "Microphone" : {
+      "comment" : "Label of the pop-up in the Record window that chooses the microphone to record from."
+    },
+    "Minimum pause threshold" : {
+      "comment" : "VoiceOver label of the minimum pause stepper in the Playback settings."
+    },
+    "Minimum pause: %lld seconds" : {
+      "comment" : "The smart rewind's minimum pause shown above its stepper in the Playback settings. %lld is the pause in seconds.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Minimum pause: %lld second"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Minimum pause: %lld seconds"
+                }
+              }
+            }
           }
         }
       }
@@ -1275,6 +2389,85 @@
         }
       }
     },
+    "Miscellaneous" : {
+      "comment" : "Name of the Settings tab for the options that fit no other tab, such as Bluetooth monitoring."
+    },
+    "Moderate" : {
+      "comment" : "The name of punctuation pause level 2: periods and commas pause."
+    },
+    "Monitors Bluetooth audio disconnections and blocks the spurious play command macOS sends when headphones are removed." : {
+      "comment" : "Explanation under the Enable Bluetooth monitoring switch in the Miscellaneous settings. macOS is the name of the operating system."
+    },
+    "More than %lld matches in %@" : {
+      "comment" : "Status line of a finished search where a book's count of matches stopped at its limit. %1$lld is the number of matches found, and %2$@ is the count of books with its noun, such as \"750 books\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "More than %lld match in %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "More than %lld matches in %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Move Down" : {
+      "comment" : "Name of the command that moves a substitution rule down the list: a row button's label and tooltip, a VoiceOver action, and a context menu item."
+    },
+    "Move Up" : {
+      "comment" : "Name of the command that moves a substitution rule up the list: a row button's label and tooltip, a VoiceOver action, and a context menu item."
+    },
+    "Moved to %@, %@." : {
+      "comment" : "Announcement after the reader moved to a search result in a transcribed audiobook. %1$@ is the time moved to, spoken, and %2$@ is where that is, such as a chapter's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Moved to %1$@, %2$@."
+          }
+        }
+      }
+    },
+    "Moved to %@." : {
+      "comment" : "Announcement after the reader moved to a search result in a transcribed audiobook. %@ is the time moved to, spoken, such as \"1 minute, 5 seconds\"."
+    },
+    "Moved to the match, %@." : {
+      "comment" : "Announcement after the reader moved to a search match. %@ is its place, such as a chapter's title."
+    },
+    "Moved to the match." : {
+      "comment" : "Announcement after the reader moved to a search match whose place is unknown."
+    },
+    "Name (optional)" : {
+      "comment" : "Placeholder of the field that names a substitution rule in the rule editor."
+    },
+    "Navigation" : {
+      "comment" : "Heading of the navigation group in the Playback settings."
+    },
+    "Navigation menu changes are saved as defaults for the current book. Hiding the menus always uses the global skip choices while retaining book defaults for later." : {
+      "comment" : "Explanation under the playback controls group's choices in the Playback settings."
+    },
+    "Navigation unit controls" : {
+      "comment" : "Title of the pop-up in the Playback settings that chooses which navigation unit menus the playback bar shows."
+    },
+    "Navigation unit controls in playback bar" : {
+      "comment" : "VoiceOver label of the Navigation unit controls pop-up in the Playback settings."
+    },
+    "Navigation unit: %@" : {
+      "comment" : "VoiceOver label of the playback bar's shared menu that picks the unit both skip buttons move by. %@ is the unit now chosen, such as \"Sentence\"."
+    },
+    "New Recording" : {
+      "comment" : "Title of the Record window, which VoiceOver reads as the window's name, and the name of its group of buttons in the Shortcuts settings."
+    },
     "New Timer" : {
       "comment" : "Heading of the sleep timer sheet's section of timers to set: the minute presets and a custom number of minutes.",
       "localizations" : {
@@ -1285,6 +2478,9 @@
           }
         }
       }
+    },
+    "Next Groups" : {
+      "comment" : "Title of the button in Find Duplicate Books that shows the page of groups after the current one."
     },
     "Next book not started because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the next book was not started, because the sleep timer would not stop it. Written without its full stop.",
@@ -1297,6 +2493,9 @@
         }
       }
     },
+    "No book in the library has text to search." : {
+      "comment" : "Status line of the Search Library window when no book in the library has text that can be searched."
+    },
     "No bookmarks yet." : {
       "comment" : "Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.",
       "localizations" : {
@@ -1307,6 +2506,18 @@
           }
         }
       }
+    },
+    "No duplicates found with the selected criteria" : {
+      "comment" : "Spoken and read when a scan of Find Duplicate Books ends having found nothing."
+    },
+    "No duplicates found." : {
+      "comment" : "What Find Duplicate Books shows when a scan finds nothing."
+    },
+    "No matches" : {
+      "comment" : "Status line of Search in Book when a search found nothing.\nStatus line of the Search Library window when a search found nothing."
+    },
+    "No microphone connected" : {
+      "comment" : "What the Microphone pop-up in the Record window shows when no microphone is connected."
     },
     "No more books in folder" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": its library folder has no book after it. Written without its full stop.",
@@ -1363,6 +2574,9 @@
         }
       }
     },
+    "No previous position to return to." : {
+      "comment" : "Announcement of Go Back when the reader has no saved position to return to."
+    },
     "No previous sleep timer to restart." : {
       "comment" : "VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set.",
       "localizations" : {
@@ -1374,6 +2588,18 @@
         }
       }
     },
+    "No sound is reaching TextMouth from %@. Check that the microphone is on and not muted." : {
+      "comment" : "Said by the Record window when a recording has held nothing but silence for a few seconds. %@ is the name of the microphone."
+    },
+    "No substitution rules." : {
+      "comment" : "Shown in the Substitutions settings while the list holds no rule."
+    },
+    "None" : {
+      "comment" : "A choice of the Rewind on Resume unit picker: playback resumes where it stopped, with no rewinding."
+    },
+    "None (Use Global)" : {
+      "comment" : "A choice of the playback bar's navigation unit menus setting: no per-book menu, so the global units are used."
+    },
     "None of the %lld selected books is in the reading list." : {
       "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: no book selected is on the list. %lld is the number of books selected (two or more).",
       "localizations" : {
@@ -1384,6 +2610,9 @@
           }
         }
       }
+    },
+    "Not recording" : {
+      "comment" : "The value of the microphone level in the Record window, spoken, while nothing is recording."
     },
     "Not restarted because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book set to loop ends: it did not start again, because the sleep timer stopped it. Written without its full stop.",
@@ -1418,11 +2647,14 @@
         }
       }
     },
+    "Nothing was recorded, so there is nothing to save." : {
+      "comment" : "Error in the Record window when the recording was stopped before any audio was captured."
+    },
     "OK" : {
-      "comment" : "Button that dismisses an alert about a problem."
+      "comment" : "Button that dismisses an alert about a problem.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
     },
     "Off" : {
-      "comment" : "VoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.",
+      "comment" : "The word for a setting that is turned off, as a slider's or stepper's value says it, such as the sleep timer's fade out.\nVoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1431,6 +2663,18 @@
           }
         }
       }
+    },
+    "One Unit for Both Directions" : {
+      "comment" : "A choice of the playback bar's navigation unit menus setting: one shared menu sets the unit of both skip buttons."
+    },
+    "Only rewind if the pause was longer than the threshold" : {
+      "comment" : "VoiceOver hint of the Smart mode checkbox in the Playback settings."
+    },
+    "Open Privacy Settings" : {
+      "comment" : "Title of the button in the Record window that opens the macOS Microphone privacy settings after macOS refused TextMouth the microphone."
+    },
+    "Open in Reader" : {
+      "comment" : "Title of the button in the Record window that opens the saved recording in a reader window."
     },
     "Open the next article in" : {
       "comment" : "Label of the pop-up button in a news feed's Feed Info, choosing where the feed's next article opens.",
@@ -1487,6 +2731,27 @@
         }
       }
     },
+    "Opens %@ in a reader window." : {
+      "comment" : "VoiceOver hint of the Open in Reader button of the Record window. %@ is the saved recording's title."
+    },
+    "Opens %@, the folder the logs are written to now, in Finder." : {
+      "comment" : "VoiceOver hint and tooltip of the Show Logs in Finder button. %@ is the folder's full path, which stays as written."
+    },
+    "Opens System Settings at Privacy & Security, Microphone, where TextMouth can be allowed to use the microphone." : {
+      "comment" : "VoiceOver hint of the Open Privacy Settings button of the Record window. Privacy & Security and Microphone are the names of places in macOS's System Settings, as macOS words them in the language."
+    },
+    "Opens the book at this match" : {
+      "comment" : "VoiceOver hint of a search match's row in the Search Library window."
+    },
+    "Page" : {
+      "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages."
+    },
+    "Paragraph" : {
+      "comment" : "A unit of text a picker moves or rewinds by: one paragraph. Used by the rewind, skip, and navigation unit pickers."
+    },
+    "Part of the Title" : {
+      "comment" : "A choice of the Leading Articles pop-up: the leading article counts like any other word of the title."
+    },
     "Passes over finished books when a book from the list ends." : {
       "comment" : "VoiceOver hint of the Reading List's Skip finished books checkbox.",
       "localizations" : {
@@ -1498,8 +2763,20 @@
         }
       }
     },
+    "Pattern" : {
+      "comment" : "Placeholder of the field that holds a substitution rule's search pattern in the rule editor."
+    },
+    "Pattern error: %@" : {
+      "comment" : "VoiceOver label of the message that says a substitution rule's pattern is not a valid regular expression. %@ is the message."
+    },
+    "Pattern: %@" : {
+      "comment" : "A part of a substitution rule's spoken summary. %@ is the rule's pattern."
+    },
     "Pause" : {
-      "comment" : "Label of the button that pauses the book while it is playing."
+      "comment" : "Label of the button that pauses the book while it is playing.\nTitle of the button in the Record window that pauses the recording."
+    },
+    "Pause level" : {
+      "comment" : "Title of the punctuation pause level slider in the Playback settings."
     },
     "Pause playback after:" : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes.",
@@ -1511,6 +2788,41 @@
           }
         }
       }
+    },
+    "Paused %lld books that were playing." : {
+      "comment" : "Said by the Record window when starting or resuming a recording paused books that were playing, so the microphone would not pick them up. %lld is the number of books paused. The one form has no number: \"Paused the book that was playing.\"",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Paused the book that was playing."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Paused %lld books that were playing."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Paused." : {
+      "comment" : "Status line and announcement of the Record window once the recording is paused."
+    },
+    "Pauses the recording; %@ continues the same recording." : {
+      "comment" : "VoiceOver hint of the Pause button in the Record window. %@ is the title of the button that continues a paused recording."
+    },
+    "Percentage" : {
+      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as a percentage of the book."
+    },
+    "Pitch" : {
+      "comment" : "Title of the default pitch slider in the Voice settings."
     },
     "Play" : {
       "comment" : "Label of the button that starts playing the book."
@@ -1536,6 +2848,12 @@
           }
         }
       }
+    },
+    "Playback" : {
+      "comment" : "Name of the Settings tab for skipping, rewinding, the end of a book, the sleep timer, and the playback controls."
+    },
+    "Playback Controls" : {
+      "comment" : "Heading of the playback controls group in the Playback settings."
     },
     "Plays the book and pauses before it starts again." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends.",
@@ -1592,6 +2910,41 @@
         }
       }
     },
+    "Position display mode" : {
+      "comment" : "VoiceOver label of the picker in Search in Book that chooses how each result's position is shown."
+    },
+    "Preparing %@ of %@…" : {
+      "comment" : "Status line of the Search Library window while a search must prepare books' text, which takes longer. %1$@ is the number of books prepared so far, and %2$@ is the count of all the books with its noun, such as \"737 books\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Preparing %1$@ of %2$@…"
+          }
+        }
+      }
+    },
+    "Preview Voice" : {
+      "comment" : "Title of the button in the Voice settings that speaks a sample sentence in the selected voice."
+    },
+    "Preview selected voice" : {
+      "comment" : "VoiceOver label of the Preview Voice button in the Voice settings."
+    },
+    "Previous Groups" : {
+      "comment" : "Title of the button in Find Duplicate Books that shows the page of groups before the current one."
+    },
+    "Punctuation Pauses" : {
+      "comment" : "Heading of the punctuation pause group in the Playback settings."
+    },
+    "Punctuation pause level" : {
+      "comment" : "VoiceOver label of the punctuation pause level slider in the Playback settings."
+    },
+    "Punctuation pauses: %@" : {
+      "comment" : "The punctuation pause level shown above its slider in the Playback settings. %@ is the level's name, such as Subtle."
+    },
+    "Quality" : {
+      "comment" : "Label of the selected voice's quality in the Voice settings, such as Enhanced."
+    },
     "Reading List" : {
       "comment" : "The start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List.",
       "localizations" : {
@@ -1630,6 +2983,93 @@
           }
         }
       }
+    },
+    "Reading the audio took longer than %@ seconds, so TextMouth stopped waiting for it." : {
+      "comment" : "Error shown when reading an audio file took too long and TextMouth gave up waiting. %@ is the limit in seconds with a fraction, already formatted, such as 0.2."
+    },
+    "Reading the audio took longer than %lld minutes, so TextMouth stopped waiting for it." : {
+      "comment" : "Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole minutes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Reading the audio took longer than %lld minute, so TextMouth stopped waiting for it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Reading the audio took longer than %lld minutes, so TextMouth stopped waiting for it."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Reading the audio took longer than %lld seconds, so TextMouth stopped waiting for it." : {
+      "comment" : "Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole seconds.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Reading the audio took longer than %lld second, so TextMouth stopped waiting for it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Reading the audio took longer than %lld seconds, so TextMouth stopped waiting for it."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Ready to record from %@." : {
+      "comment" : "Status line of the Record window while nothing is recording. %@ is the name of the microphone."
+    },
+    "Record" : {
+      "comment" : "Title of the button in the Record window that starts recording."
+    },
+    "Recording" : {
+      "comment" : "The name a new recording's title starts with, followed by the date and time, such as \"Recording 2026-10-04 06:30\". It becomes the title of the audiobook the recording is saved as."
+    },
+    "Recording from %@." : {
+      "comment" : "Status line and announcement of the Record window when recording starts. %@ is the name of the microphone."
+    },
+    "Recording of %@, %@" : {
+      "comment" : "Describes a recording left behind. %1$@ is when it was recorded, a date and time, and %2$@ is how long it lasts, spoken, such as \"1 minute, 4 seconds\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recording of %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Recording of %@, which holds no sound" : {
+      "comment" : "Describes a recording left behind that holds no sound. %@ is when it was recorded, a date and time."
+    },
+    "Recording stopped because the microphone reported a problem. What was recorded until then is kept." : {
+      "comment" : "Error in the Record window when recording stopped by itself because capture failed."
+    },
+    "Recovered recordings" : {
+      "comment" : "Heading of the list in the Record window of recordings TextMouth kept from before it last quit."
+    },
+    "Regular Expression" : {
+      "comment" : "Title and VoiceOver label of the checkbox in the Search Library window that makes the search text a regular expression."
+    },
+    "Regular expression" : {
+      "comment" : "A part of a substitution rule's spoken summary: the pattern is a regular expression.\nTitle of the switch in the substitution rule editor that makes the pattern a regular expression."
     },
     "Remove" : {
       "comment" : "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.",
@@ -1758,6 +3198,9 @@
         }
       }
     },
+    "Remove step %@" : {
+      "comment" : "VoiceOver label of the button that removes one step of the restart gesture in the Miscellaneous settings. %@ is the step's number, an identifier written without digit grouping."
+    },
     "Removed %lld books from the reading list." : {
       "comment" : "VoiceOver announcement after several books were taken off the reading list. %lld is the number of books taken off.",
       "localizations" : {
@@ -1780,6 +3223,21 @@
         }
       }
     },
+    "Replace with: %@" : {
+      "comment" : "A part of a substitution rule's spoken summary. %@ is the replacement text."
+    },
+    "Replacement (empty to skip)" : {
+      "comment" : "Placeholder of the field that holds a substitution rule's replacement text in the rule editor. Leaving it empty removes the matched text."
+    },
+    "Replacement text. Leave empty to skip matched text." : {
+      "comment" : "VoiceOver label of the replacement field in the substitution rule editor."
+    },
+    "Reset" : {
+      "comment" : "Title of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults."
+    },
+    "Reset Text Rules to Defaults?" : {
+      "comment" : "Title of the question asked before the Substitutions settings replace every rule with the defaults."
+    },
     "Reset Timer" : {
       "comment" : "Button of the sleep timer sheet that starts the running timer again from its whole length.",
       "localizations" : {
@@ -1790,6 +3248,15 @@
           }
         }
       }
+    },
+    "Reset all rules to factory defaults" : {
+      "comment" : "VoiceOver label of the Reset to Defaults button in the Substitutions settings."
+    },
+    "Reset to Defaults" : {
+      "comment" : "Title of the button in the Substitutions settings that replaces every rule with TextMouth's default rules, after asking."
+    },
+    "Restart Sleep Timer Gesture" : {
+      "comment" : "Heading of the experimental restart gesture group in the Miscellaneous settings."
     },
     "Restarting: %@" : {
       "comment" : "VoiceOver announcement as a book set to loop starts again from its beginning. %@ is the book's title.",
@@ -1813,6 +3280,18 @@
         }
       }
     },
+    "Result: %@" : {
+      "comment" : "The text a substitution rule made of the test input, shown in the rule editor. %@ is the result."
+    },
+    "Results" : {
+      "comment" : "VoiceOver label of the list of results in the Search Library window."
+    },
+    "Resume" : {
+      "comment" : "Title of the button in the Record window that continues a paused recording."
+    },
+    "Resuming." : {
+      "comment" : "Announcement of the Record window before a paused recording continues."
+    },
     "Returned to previous position" : {
       "comment" : "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result.",
       "localizations" : {
@@ -1835,8 +3314,32 @@
         }
       }
     },
+    "Rewind on Resume" : {
+      "comment" : "Heading of the rewind group in the Playback settings."
+    },
+    "Rewind on resume unit" : {
+      "comment" : "VoiceOver label of the Rewind to pop-up in the Playback settings."
+    },
+    "Rewind to" : {
+      "comment" : "Title of the pop-up in the Playback settings that chooses how far playback rewinds when it resumes: to the start of a sentence, paragraph, or heading."
+    },
+    "Rule name" : {
+      "comment" : "VoiceOver label of the field that names a substitution rule in the rule editor."
+    },
+    "Rules you added or changed will be lost." : {
+      "comment" : "Last sentence of the message of the question asked before the Substitutions settings replace every rule with the defaults."
+    },
+    "Same Author" : {
+      "comment" : "A match criterion of Find Duplicate Books: the books have the same author."
+    },
+    "Same ISBN" : {
+      "comment" : "A match criterion of Find Duplicate Books: the books have the same ISBN, the book's international number. ISBN stays as written."
+    },
+    "Same Title" : {
+      "comment" : "A match criterion of Find Duplicate Books: the books have the same title."
+    },
     "Save" : {
-      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.",
+      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.\nTitle of the button that saves an edited substitution rule, in the rule editor.\nTitle of the question's default button when the Record window is closed with a recording that could not be saved: it tries to save it again.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1845,6 +3348,115 @@
           }
         }
       }
+    },
+    "Save Again" : {
+      "comment" : "Title of the button in the Record window that tries again to save a recording whose save failed."
+    },
+    "Save as Audiobook" : {
+      "comment" : "Title of the button in the Record window that saves a recording left behind as an audiobook."
+    },
+    "Save as Audiobook: %@" : {
+      "comment" : "VoiceOver label of the button that saves one recording left behind. %@ describes the recording, such as \"Recording of October 4, 2026 at 6:30 AM, 1 minute, 4 seconds\"."
+    },
+    "Save in" : {
+      "comment" : "Label of the pop-up in the Record window that chooses the library folder the recording is saved in."
+    },
+    "Save the recording?" : {
+      "comment" : "The question asked when the Record window is closed while it holds a recording that could not be saved yet."
+    },
+    "Saved Recording as %@" : {
+      "comment" : "Announcement of the Record window once a recording is saved as an audiobook. %@ is the audiobook's title."
+    },
+    "Saved Recording as %@." : {
+      "comment" : "Status line of the Record window once a recording is saved as an audiobook, ending with a full stop. %@ is the audiobook's title."
+    },
+    "Saves this recording as an audiobook in the folder chosen in %@, titled for when it was recorded." : {
+      "comment" : "VoiceOver hint of the button that saves a recording left behind. %@ is the label of the pop-up that chooses the folder."
+    },
+    "Saving the recording…" : {
+      "comment" : "Status line and announcement of the Record window while a recording is being saved as an audiobook."
+    },
+    "Scan for Duplicates" : {
+      "comment" : "Title of the button in Find Duplicate Books that scans the library for duplicates."
+    },
+    "Search Library" : {
+      "comment" : "Title of the Search Library window, which VoiceOver names it by, and the name of its command in the Edit menu's Find submenu."
+    },
+    "Search Results" : {
+      "comment" : "Name of the VoiceOver rotor in Search in Book that moves between the search results."
+    },
+    "Search in Book" : {
+      "comment" : "Heading and navigation title of the Search in Book sheet, and the name of its command."
+    },
+    "Search pattern" : {
+      "comment" : "VoiceOver label of the field that holds a substitution rule's search pattern in the rule editor."
+    },
+    "Search progress" : {
+      "comment" : "VoiceOver label of the progress bar shown while a search runs in the Search Library window."
+    },
+    "Search results" : {
+      "comment" : "VoiceOver label of the list of results in Search in Book."
+    },
+    "Search text" : {
+      "comment" : "Title and VoiceOver label of the search field in Search in Book."
+    },
+    "Search the library" : {
+      "comment" : "VoiceOver label of the search field in the Search Library window."
+    },
+    "Searched %@ of %@…" : {
+      "comment" : "Status line of the Search Library window while a search runs, once some books are done. %1$@ is the number of books searched so far, and %2$@ is the count of all the books with its noun, such as \"750 books\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Searched %1$@ of %2$@…"
+          }
+        }
+      }
+    },
+    "Searches the entire library for books matching the selected criteria" : {
+      "comment" : "VoiceOver hint of the Scan for Duplicates button of Find Duplicate Books."
+    },
+    "Searching %lld books…" : {
+      "comment" : "Status line of the Search Library window while a search runs, before any book is done. %lld is the number of books being searched.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Searching %lld book…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Searching %lld books…"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Searching…" : {
+      "comment" : "Status line of Search in Book while a search waits for typing to pause or runs.\nStatus line of the Search Library window while a search runs and the books are not yet counted."
+    },
+    "Seconds between level announcements" : {
+      "comment" : "Label of the stepper in the Record window that sets how many seconds pass between the spoken microphone levels."
+    },
+    "Select voice" : {
+      "comment" : "VoiceOver label of the voice pop-up in the Voice settings."
+    },
+    "Sentence" : {
+      "comment" : "A unit of text a picker moves or rewinds by: one sentence. Used by the rewind, skip, and navigation unit pickers."
+    },
+    "Separate Forward and Backward Units" : {
+      "comment" : "A choice of the playback bar's navigation unit menus setting: a menu for each skip button."
+    },
+    "Sequence of media-control events that trigger the restart. The final event in the sequence is consumed (not passed to playback) so it can't accidentally start audio." : {
+      "comment" : "Explanation under the restart gesture's pattern heading in the Miscellaneous settings."
     },
     "Set" : {
       "comment" : "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes.",
@@ -1904,6 +3516,157 @@
         }
       }
     },
+    "Shift skip backward unit" : {
+      "comment" : "VoiceOver label of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name."
+    },
+    "Shift skip forward unit" : {
+      "comment" : "VoiceOver label of the Shift+Skip Forward pop-up in the Playback settings. Shift is the key's name."
+    },
+    "Shift+Skip (Secondary)" : {
+      "comment" : "Heading of the group of Shift+Skip pop-ups in the Playback settings. Shift is the key's name."
+    },
+    "Shift+Skip Backward" : {
+      "comment" : "Title of the pop-up in the Playback settings that chooses what skipping backward moves by while Shift is held. Shift is the key's name."
+    },
+    "Shift+Skip Forward" : {
+      "comment" : "Title of the pop-up in the Playback settings that chooses what skipping forward moves by while Shift is held. Shift is the key's name."
+    },
+    "Shortcut: %@." : {
+      "comment" : "The last sentence of a Record window button's hint: the key that presses it. %@ is the key spoken in words, such as \"Command + R\"."
+    },
+    "Shortcuts" : {
+      "comment" : "Name of the Settings tab for keyboard shortcuts."
+    },
+    "Show Logs in Finder" : {
+      "comment" : "Title of the button in the Storage settings that shows the folder the diagnostic logs are written to, in Finder."
+    },
+    "Show all %lld matches in %@" : {
+      "comment" : "Title of the row that lists all of a book's matches in the Search Library results. %1$lld is the number of matches and %2$@ is the book's title.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Show all %lld match in %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Show all %lld matches in %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Show bookmark button" : {
+      "comment" : "Title of the checkbox in the Playback settings that adds a bookmark button to the playback controls."
+    },
+    "Show bookmark button in playback controls" : {
+      "comment" : "VoiceOver label of the Show bookmark button checkbox in the Playback settings."
+    },
+    "Show speed controls" : {
+      "comment" : "Title of the checkbox in the Playback settings that adds speed buttons to the playback controls."
+    },
+    "Show speed controls in playback controls" : {
+      "comment" : "VoiceOver label of the Show speed controls checkbox in the Playback settings."
+    },
+    "Show the first %lld of %@ matches in %@" : {
+      "comment" : "Title of the row that lists the first matches of a book that holds more than the list can show. %1$lld is the number listed, %2$@ is the book's total, such as \"700\" or \"more than 1,000\", and %3$@ is the book's title.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Show the first %lld of %@ matches in %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Show the first %lld of %@ matches in %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Showing group %@ of %@" : {
+      "comment" : "The line over a page of one group of duplicate books. %1$@ is the group's place and %2$@ is how many groups were found.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Showing group %1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "Showing groups %@ to %@ of %@" : {
+      "comment" : "The line over a page of groups of duplicate books. %1$@ is the place of the first group shown, %2$@ is the place of the last, and %3$@ is how many groups were found.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Showing groups %1$@ to %2$@ of %3$@"
+          }
+        }
+      }
+    },
+    "Showing the first %lld matches; refine your search" : {
+      "comment" : "Status line of Search in Book when a search stopped at the result limit. %lld is the number of matches listed.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Showing the first %lld matches; refine your search"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Showing the first %lld matches; refine your search"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Shows the groups after these." : {
+      "comment" : "VoiceOver hint of the Next Groups button of Find Duplicate Books."
+    },
+    "Shows the groups before these." : {
+      "comment" : "VoiceOver hint of the Previous Groups button of Find Duplicate Books."
+    },
+    "Shows the speed adjustment buttons and current speed display" : {
+      "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings."
+    },
+    "Silent" : {
+      "comment" : "The value of the microphone level in the Record window, spoken, when no sound reaches TextMouth."
+    },
+    "Skip Backward" : {
+      "comment" : "Title of the pop-up in the Playback settings that chooses what the skip backward button moves by."
+    },
+    "Skip Controls" : {
+      "comment" : "Heading of the group of skip pop-ups in the Playback settings."
+    },
+    "Skip Forward" : {
+      "comment" : "Title of the pop-up in the Playback settings that chooses what the skip forward button moves by."
+    },
+    "Skip backward unit" : {
+      "comment" : "VoiceOver label of the Skip Backward pop-up in the Playback settings."
+    },
     "Skip finished books" : {
       "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.",
       "localizations" : {
@@ -1915,8 +3678,11 @@
         }
       }
     },
+    "Skip forward unit" : {
+      "comment" : "VoiceOver label of the Skip Forward pop-up in the Playback settings."
+    },
     "Sleep Timer" : {
-      "comment" : "The name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.",
+      "comment" : "Heading of the sleep timer group in the Playback settings.\nThe name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2072,6 +3838,12 @@
         }
       }
     },
+    "Smart mode" : {
+      "comment" : "Title of the checkbox in the Playback settings that makes playback rewind only after a long enough pause."
+    },
+    "Smart rewind mode" : {
+      "comment" : "VoiceOver label of the Smart mode checkbox in the Playback settings."
+    },
     "Sort books by %@" : {
       "comment" : "VoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order.",
       "localizations" : {
@@ -2093,6 +3865,9 @@
           }
         }
       }
+    },
+    "Sounds" : {
+      "comment" : "Name of the Settings tab for the sounds played for playback events."
     },
     "Start of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: no book above it. Written without its full stop.",
@@ -2127,6 +3902,21 @@
         }
       }
     },
+    "Starts recording from %@." : {
+      "comment" : "VoiceOver hint of the Record button in the Record window. %@ is the name of the microphone it records from."
+    },
+    "Starts recording once a microphone is connected." : {
+      "comment" : "VoiceOver hint of the Record button in the Record window while no microphone is connected."
+    },
+    "Stats" : {
+      "comment" : "Name of the Settings tab for reading statistics."
+    },
+    "Step %@" : {
+      "comment" : "VoiceOver label of one step's pop-up of the restart gesture in the Miscellaneous settings. %@ is the step's number, an identifier written without digit grouping."
+    },
+    "Step %@:" : {
+      "comment" : "The number of a step of the restart gesture in the Miscellaneous settings, shown beside its pop-up, ending with a colon. %@ is the step's number, an identifier written without digit grouping."
+    },
     "Still starting: %@" : {
       "comment" : "VoiceOver announcement when Play is pressed while the next book is still opening. %@ is the next book's title.",
       "localizations" : {
@@ -2139,7 +3929,7 @@
       }
     },
     "Stop" : {
-      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.",
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.\nA choice of the When a Book Ends picker: the book stops at its end, finished. Play then says it is finished.\nTitle of the button in the Record window that stops recording and saves it.\nTitle of the button that stops a running search in the Search Library window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2159,6 +3949,12 @@
           }
         }
       }
+    },
+    "Stop and Save" : {
+      "comment" : "Title of the question's default button when the Record window is closed while recording: it stops the recording and saves it."
+    },
+    "Stop and save the recording?" : {
+      "comment" : "The question asked when the Record window is closed while recording."
     },
     "Stop at the end of the book" : {
       "comment" : "VoiceOver label of the sleep timer sheet's End of book button, which sets a timer that stops where the book ends.",
@@ -2181,6 +3977,35 @@
           }
         }
       }
+    },
+    "Stop, and Play Starts Over" : {
+      "comment" : "A choice of the When a Book Ends picker: the book stops at its end, finished, and Play then starts it again from the beginning."
+    },
+    "Stopped after %@ of %@:" : {
+      "comment" : "Opening of the Search Library status after the user stopped a search, followed by what it had found. %1$@ is the number of books searched, and %2$@ is the count of all the books with its noun, such as \"750 books\". Ends with a colon.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Stopped after %1$@ of %2$@:"
+          }
+        }
+      }
+    },
+    "Stops recording and saves it in your library as an audiobook." : {
+      "comment" : "VoiceOver hint of the Stop button in the Record window."
+    },
+    "Stops the search, keeping the matches found so far" : {
+      "comment" : "VoiceOver hint of the Stop button of the Search Library window."
+    },
+    "Storage" : {
+      "comment" : "Name of the Settings tab for where the library is stored, importing books, and the logs."
+    },
+    "Subheading" : {
+      "comment" : "A unit a skip or navigation picker moves by: one subheading, a heading below the main headings."
+    },
+    "Subtle" : {
+      "comment" : "The name of punctuation pause level 1: only periods pause."
     },
     "Takes %lld to %lld minutes." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
@@ -2238,8 +4063,35 @@
         }
       }
     },
+    "Test" : {
+      "comment" : "Title of the button that tests a substitution rule on the input, and the heading of the group that holds it, in the rule editor."
+    },
+    "Test input" : {
+      "comment" : "Placeholder of the field in the substitution rule editor where text is typed to test the rule on."
+    },
+    "Test input text" : {
+      "comment" : "VoiceOver label of the test input field in the substitution rule editor."
+    },
+    "Test result: %@" : {
+      "comment" : "VoiceOver label of the text a substitution rule made of the test input. %@ is the result."
+    },
+    "Test this rule against the input" : {
+      "comment" : "VoiceOver label of the Test button in the substitution rule editor."
+    },
+    "Text" : {
+      "comment" : "Name of the Settings tab for text substitution rules and repeated symbols."
+    },
+    "Text to find in every book" : {
+      "comment" : "Placeholder of the empty search field in the Search Library window."
+    },
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
+    },
+    "TextMouth couldn't open %@ in Finder." : {
+      "comment" : "Shown under the Show Logs in Finder button when Finder could not open the folder. %@ is the folder's full path, which stays as written."
+    },
+    "TextMouth couldn't start recording from %@." : {
+      "comment" : "Error in the Record window when recording from the chosen microphone failed to start. %@ is the microphone's name."
     },
     "TextMouth is not downloading right now." : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
@@ -2248,6 +4100,49 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth no está descargando en este momento."
+          }
+        }
+      }
+    },
+    "TextMouth isn't allowed to use the microphone. To record, turn on TextMouth in System Settings, Privacy & Security, Microphone." : {
+      "comment" : "Error in the Record window when macOS has denied TextMouth the microphone. Names the places in System Settings, as macOS words them, where the user can allow it."
+    },
+    "TextMouth kept %lld recordings from before it last quit, listed under %@. Save each as an audiobook, or discard it." : {
+      "comment" : "Announcement of the Record window when it finds several recordings left behind. %1$lld is how many and %2$@ is the heading of the list of recovered recordings.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth kept %lld recordings from before it last quit, listed under %@. Save each as an audiobook, or discard it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth kept %lld recordings from before it last quit, listed under %@. Save each as an audiobook, or discard it."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "TextMouth kept a recording from before it last quit, listed under %@. Save it as an audiobook, or discard it." : {
+      "comment" : "Announcement of the Record window when it finds one recording left behind. %@ is the heading of the list of recovered recordings."
+    },
+    "That match is no longer in the book's text. Search again to find it." : {
+      "comment" : "Announcement when a search match is no longer in the book's text."
+    },
+    "The %@ in the list will be replaced by TextMouth's %@." : {
+      "comment" : "First sentence of the message of the question asked before the Substitutions settings replace every rule with the defaults. %1$@ is the number of rules in the list with their noun, such as \"15 rules\", and %2$@ is the number of default rules with their noun, such as \"16 default rules\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The %1$@ in the list will be replaced by TextMouth's %2$@."
           }
         }
       }
@@ -2262,6 +4157,12 @@
           }
         }
       }
+    },
+    "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written." : {
+      "comment" : "Describes the Leading Articles choice Ignored When Typing, under the pop-up. The Hobbit is the example title, typed under the letter H."
+    },
+    "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's." : {
+      "comment" : "Describes the Leading Articles choice Ignored When Typing and Sorting, under the pop-up. The Hobbit is the example title; the article moves to the end and the book sorts and types under H."
     },
     "The book is in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
@@ -2284,6 +4185,52 @@
           }
         }
       }
+    },
+    "The data directory has no Logs folder, so logs are written to %@ until it has one again." : {
+      "comment" : "The line under the Log location pop-up in the Storage settings while the data directory has no Logs folder. %@ is the folder's full path, which stays as written."
+    },
+    "The data directory is missing, so logs are written to %@ until it is back." : {
+      "comment" : "The line under the Log location pop-up in the Storage settings while the data directory is missing. %@ is the folder's full path, which stays as written."
+    },
+    "The data directory's Logs folder can't be written (%@), so logs are written to %@ until it can." : {
+      "comment" : "The line under the Log location pop-up in the Storage settings while the data directory's Logs folder cannot be written. %1$@ is the reason the system gives, which may be in English, and %2$@ is the folder's full path, which stays as written.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The data directory's Logs folder can't be written (%1$@), so logs are written to %2$@ until it can."
+          }
+        }
+      }
+    },
+    "The disk is almost full, so recording stopped. What was recorded until then is kept." : {
+      "comment" : "Error in the Record window when the disk filled up while recording."
+    },
+    "The keyboard shortcut for the same action is %@ in the %@ tab; its default is %@." : {
+      "comment" : "Note under the restart gesture in the Miscellaneous settings. %1$@ is the name of the shortcut's action, %2$@ is the name of the Settings tab where shortcuts are set, and %3$@ is the default key in words, such as \"Shift + Command + R\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The keyboard shortcut for the same action is %1$@ in the %2$@ tab; its default is %3$@."
+          }
+        }
+      }
+    },
+    "The library folder the recording is saved in." : {
+      "comment" : "VoiceOver hint of the Save in pop-up of the Record window."
+    },
+    "The library isn't available, so logs are written to %@ until it is." : {
+      "comment" : "The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written."
+    },
+    "The microphone TextMouth used last isn't connected, so recordings use %@." : {
+      "comment" : "Said by the Record window when the microphone used last is not connected as the window opens. %@ is the name of the microphone recordings use instead."
+    },
+    "The microphone to record from. TextMouth remembers this choice for its own recordings; the input macOS uses for everything else stays as it is." : {
+      "comment" : "VoiceOver hint and tooltip of the Microphone pop-up in the Record window. TextMouth is the app's name."
+    },
+    "The name the recording is saved under, as an audiobook in your library." : {
+      "comment" : "VoiceOver hint and tooltip of the Title field in the Record window."
     },
     "The next article could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next article failed. %@ is the download's own sentence saying why.",
@@ -2329,6 +4276,35 @@
         }
       }
     },
+    "The recording couldn't be converted to an audiobook file." : {
+      "comment" : "Error in the Record window when saving: the recording could not be encoded as an audiobook file."
+    },
+    "The recording couldn't be finished properly. What was recorded is kept." : {
+      "comment" : "Error in the Record window when stopping could not finish the recording's file properly."
+    },
+    "The recording couldn't be saved: %@ It is kept; choose %@ or %@." : {
+      "comment" : "Status line and announcement of the Record window when saving a recording failed. %1$@ is the reason, a whole sentence that ends with its own full stop, %2$@ is the title of the button that tries again, and %3$@ is the title of the button that deletes the recording.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@."
+          }
+        }
+      }
+    },
+    "The recording was discarded." : {
+      "comment" : "Status line of the Record window after a recording was discarded."
+    },
+    "The recording's audio couldn't be read." : {
+      "comment" : "Error in the Record window when saving: the recorded take holds no audio that can be read."
+    },
+    "The text changed since the search; moved to the nearest match." : {
+      "comment" : "Announcement when the book's text changed since the search and the reader moved to the nearest match."
+    },
+    "This Mac doesn't allow TextMouth to use the microphone: a device management profile or Screen Time restricts it." : {
+      "comment" : "Error in the Record window when something other than the user, a device management profile or Screen Time, keeps TextMouth from using the microphone."
+    },
     "This Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there.",
       "localizations" : {
@@ -2350,6 +4326,26 @@
           }
         }
       }
+    },
+    "This recording hasn't been saved. %@ tries again to save it as an audiobook in your library, %@ deletes it, and %@ keeps the window open." : {
+      "comment" : "Explanation under the question asked when the Record window is closed with a recording that could not be saved. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that saves, the one that deletes the recording, and the one that keeps the window open.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This recording hasn't been saved. %1$@ tries again to save it as an audiobook in your library, %2$@ deletes it, and %3$@ keeps the window open."
+          }
+        }
+      }
+    },
+    "Time" : {
+      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as an estimated time into the book."
+    },
+    "Time window" : {
+      "comment" : "Title of the slider in the Miscellaneous settings that sets how long the restart gesture's sequence may take."
+    },
+    "Time window: %@" : {
+      "comment" : "The restart gesture's time window shown above its slider in the Miscellaneous settings. %@ is the window in seconds, such as \"2 seconds\"."
     },
     "Timer reset." : {
       "comment" : "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again.",
@@ -2431,6 +4427,56 @@
         }
       }
     },
+    "Title" : {
+      "comment" : "Label of the field in the Record window that names the recording, which becomes the audiobook's title."
+    },
+    "Titles" : {
+      "comment" : "Heading of the Library settings section that holds the Leading Articles pop-up, which decides how book titles are sorted and typed."
+    },
+    "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's." : {
+      "comment" : "Describes the Leading Articles choice Part of the Title, under the pop-up. The Hobbit is the example title; the T's are the books sorted under the letter T."
+    },
+    "Transcribe it again, then search the new transcript." : {
+      "comment" : "Advice after the reason a book's transcript cannot be searched because its audio changed: make the transcript again."
+    },
+    "Tries again to save the recording as an audiobook." : {
+      "comment" : "VoiceOver hint of the Save Again button of the Record window."
+    },
+    "Type text to find in every book of the library." : {
+      "comment" : "Status line of the Search Library window before anything is typed."
+    },
+    "Type to search the book's transcript" : {
+      "comment" : "VoiceOver hint of the search field in Search in Book when the book searched is a transcribed audiobook."
+    },
+    "Type to search the text of every book in the library" : {
+      "comment" : "VoiceOver hint of the search field in the Search Library window."
+    },
+    "Type to search within the book" : {
+      "comment" : "VoiceOver hint of the search field in Search in Book when the book searched is a text book."
+    },
+    "Untitled rule" : {
+      "comment" : "The name a substitution rule is given in lists and announcements when it has neither a name nor a pattern."
+    },
+    "Use %@ and %@, or drag, to reorder. Rules apply top to bottom." : {
+      "comment" : "Help in the footer of the Substitutions settings on reordering rules. %1$@ and %2$@ are the titles of the Move Up and Move Down commands, which stay as those commands show them.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Use %1$@ and %2$@, or drag, to reorder. Rules apply top to bottom."
+          }
+        }
+      }
+    },
+    "Use Regex" : {
+      "comment" : "Title of the switch in Search in Book that makes the search text a regular expression. Regex is short for regular expression."
+    },
+    "Use regular expression" : {
+      "comment" : "VoiceOver label of the Use Regex switch in Search in Book."
+    },
+    "Use regular expression matching" : {
+      "comment" : "VoiceOver label of the Regular expression switch in the substitution rule editor."
+    },
     "Use the global setting (%@)" : {
       "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.",
       "localizations" : {
@@ -2442,6 +4488,27 @@
         }
       }
     },
+    "Voice" : {
+      "comment" : "Name of the Settings tab for the voice, its language, and the default speed and pitch. Shown in the Settings window's toolbar.\nTitle of the pop-up in the Voice settings that chooses the voice."
+    },
+    "Voice language" : {
+      "comment" : "VoiceOver label of the Language pop-up in the Voice settings."
+    },
+    "What happens when a book finishes playing" : {
+      "comment" : "VoiceOver hint of the When book ends pop-up in the Playback settings."
+    },
+    "What happens when you hold Shift and skip backward" : {
+      "comment" : "VoiceOver hint of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name."
+    },
+    "What happens when you hold Shift and skip forward" : {
+      "comment" : "VoiceOver hint of the Shift+Skip Forward pop-up in the Playback settings. Shift is the key's name."
+    },
+    "What happens when you skip backward" : {
+      "comment" : "VoiceOver hint of the Skip Backward pop-up in the Playback settings."
+    },
+    "What happens when you skip forward" : {
+      "comment" : "VoiceOver hint of the Skip Forward pop-up in the Playback settings."
+    },
     "When a book ends" : {
       "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.",
       "localizations" : {
@@ -2452,6 +4519,45 @@
           }
         }
       }
+    },
+    "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The." : {
+      "comment" : "First sentence of the note under the Leading Articles pop-up, shown where articles are ignored. Names the languages whose articles TextMouth skips; Le, Die, and The are example articles and stay as written."
+    },
+    "When book ends" : {
+      "comment" : "Title of the pop-up in the Playback settings that chooses what happens when a book ends."
+    },
+    "When checked, a match must have the same capital and small letters as the search text" : {
+      "comment" : "VoiceOver hint of the Match Case checkbox."
+    },
+    "When checked, the search text is an ICU regular expression" : {
+      "comment" : "VoiceOver hint of the Regular Expression checkbox in the Search Library window. ICU is the name of the regular expression syntax, and stays as written."
+    },
+    "When enabled, playback starts automatically after jumping to a heading, bookmark, or search result" : {
+      "comment" : "VoiceOver hint of the Auto-play after navigation checkbox in the Playback settings."
+    },
+    "When enabled, prevents spurious auto-resume when Bluetooth audio devices disconnect" : {
+      "comment" : "VoiceOver hint of the Enable Bluetooth monitoring switch in the Miscellaneous settings."
+    },
+    "When enabled, search text is treated as a regular expression" : {
+      "comment" : "VoiceOver hint of the Use Regex switch in Search in Book."
+    },
+    "When enabled, text is processed through substitution rules before being spoken" : {
+      "comment" : "VoiceOver hint of the Enable text substitutions switch in the Substitutions settings."
+    },
+    "When enabled, use \\b in the pattern for word boundaries" : {
+      "comment" : "VoiceOver hint of the Regular expression switch in the substitution rule editor. \\b is regular expression syntax and stays as written."
+    },
+    "When off, the sheet stays open showing the remaining time and a reset button" : {
+      "comment" : "VoiceOver hint of the Close sheet after setting timer checkbox in the Playback settings."
+    },
+    "When resuming playback, rewind to the start of this unit" : {
+      "comment" : "VoiceOver hint of the Rewind to pop-up in the Playback settings."
+    },
+    "While recording, VoiceOver speaks the level this often. Through speakers, VoiceOver's speech can be recorded." : {
+      "comment" : "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level."
+    },
+    "Whole word only" : {
+      "comment" : "A part of a substitution rule's spoken summary: the rule matches whole words only."
     },
     "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
       "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",
@@ -2470,6 +4576,9 @@
         }
       }
     },
+    "Words per minute" : {
+      "comment" : "Title of the default speed slider in the Voice settings."
+    },
     "Your library is empty. Add to Library adds a book." : {
       "comment" : "The only row of an empty library. \"Add to Library\" is the name of the button that adds a book, so keep it the same as that button's label."
     },
@@ -2484,6 +4593,12 @@
         }
       }
     },
+    "good" : {
+      "comment" : "A word describing the microphone's loudness in the Record window: a voice at a good level. Lower case, since it follows figures."
+    },
+    "loud" : {
+      "comment" : "A word describing the microphone's loudness in the Record window: close to the most a recording can hold. Lower case, since it follows figures."
+    },
     "min" : {
       "comment" : "Short for minutes, shown after the sleep timer sheet's custom minutes field. Hidden from VoiceOver.",
       "localizations" : {
@@ -2494,6 +4609,84 @@
           }
         }
       }
+    },
+    "minus %lld decibels" : {
+      "comment" : "A negative sound level in decibels, spoken, in the Record window. %lld is the number of decibels below the maximum.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "minus %lld decibel"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "minus %lld decibels"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "more than %lld" : {
+      "comment" : "A book's total number of matches when the count stopped at its limit, inside a longer sentence such as \"Show the first 500 of more than 1,000 matches\". %lld is the number the count stopped at.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "more than %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "more than %lld"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "quiet" : {
+      "comment" : "A word describing the microphone's loudness in the Record window: too quiet to be heard well. Lower case, since it follows figures."
+    },
+    "regex" : {
+      "comment" : "A small tag in a substitution rule's row: the rule's pattern is a regular expression. Short for regular expression, in lower case."
+    },
+    "showing up to %lld in each book" : {
+      "comment" : "Note on a finished search's status: the list shows at most this many matches of each book. %lld is the number of matches shown for each book. Starts in lower case because it follows a semicolon.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "showing up to %lld in each book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "showing up to %lld in each book"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "silent" : {
+      "comment" : "A word describing the microphone's loudness in the Record window: no sound reaches TextMouth. Lower case, since it follows figures."
     },
     "stops at the end of the book" : {
       "comment" : "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.",
@@ -2516,6 +4709,12 @@
           }
         }
       }
+    },
+    "too loud" : {
+      "comment" : "A word describing the microphone's loudness in the Record window: peaks reach the top and are cut off. Lower case, since it follows figures."
+    },
+    "word" : {
+      "comment" : "A small tag in a substitution rule's row: the rule matches whole words only. In lower case."
     }
   },
   "version" : "1.0"
