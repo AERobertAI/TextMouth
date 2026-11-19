@@ -136,6 +136,27 @@ One neutral Spanish (`es`) serves every region, until the user says otherwise.
 - `many` is the exact-millions form: "%lld de libros".
   The usual counts use `one` and `other`.
 
+## Translating at scale
+<!-- id: translation-at-scale; keys: partition, key file, disjoint keys, batches, consistency pass, scratch folder, parallel translators, keys-from; src: Scripts/l10n/l10n.py, Scripts/l10n/glossary.json -->
+
+The first Spanish was made this way, with about 4,000 strings and six translator agents working at once; the Spanish is on its way to main, not merged.
+Developers who convert code read [Localizing TextMouth's code](localization.md) instead.
+
+1. Partition the keys.
+   List the keys that still lack the language, and split them by area of the app into disjoint key files of 500 to 750 keys (library; storage and settings; feeds and import; audio and transcripts; reader, formats, and menus; export, speech, and iPhone), one JSON list each.
+   Two translators never hold the same key, so their branches merge without a conflict.
+2. Give each translator one file.
+   It runs `todo --keys-from FILE --out DIR/batch.json`, 250 strings at a time, and `apply` as in the steps above.
+   Its branch holds only the catalog and any glossary entries, and its report lists the terms it doubts and the control names it chose.
+3. Give each translator its own subfolder of a shared scratch folder.
+   Two translators that wrote `batch-1.json` in one folder overwrote each other's batch, so one applied 250 strings that were another's, and they had to be reset.
+4. Check each branch before merging: it changed only its own keys, and none of them is left without the language.
+5. After all the branches merge, one agent makes a consistency pass over the whole language:
+   - a control's name inside a sentence matches that control's own label ("Punch In" was kept in one batch and translated in another);
+   - each term has one translation, and the translators' proposals enter `glossary.json`, marked `"check": true` until a native speaker confirms them;
+   - names that must not be translated stay as they are.
+   The pass changes the catalog only, and is a branch of its own.
+
 ## The prompt for a translator agent
 <!-- id: translation-agent-prompt; keys: prompt, translator agent, batch file, brief; src: Scripts/l10n/l10n.py -->
 
