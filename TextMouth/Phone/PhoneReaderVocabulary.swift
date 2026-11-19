@@ -70,7 +70,7 @@ enum PhoneReaderVocabulary {
     /// The summaries' time left in the book, with the speed it counts at when
     /// the setting names it: "3 hours remaining".
     static func remaining(_ timeRemaining: TimeInterval, speed: ReaderTimeWording.ListeningSpeed?) -> String {
-        "\(TimeFormatting.spoken(timeRemaining)) remaining\(ReaderTimeWording.spokenSpeed(speed))"
+        ReaderTimeWording.remainingSpoken(TimeFormatting.spoken(timeRemaining), speed: speed)
     }
 
     /// The full summary's time left in the heading being read: "12 minutes

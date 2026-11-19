@@ -78,25 +78,46 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
     func testRichBookInfosWordsAreTheMetadataEditors() throws {
         let editor = try Self.source("Views/Reader/MetadataEditorView.swift")
 
-        XCTAssertTrue(editor.contains("TextField(\"\(PhoneLibraryVocabulary.publisherField)\", text: $editedEPUBMetadata.publisher)"))
-        XCTAssertTrue(editor.contains("fieldLabel(\"\(PhoneLibraryVocabulary.publisherField)\", for: .publisher)"))
-        XCTAssertTrue(editor.contains("TextField(\"\(PhoneLibraryVocabulary.publicationDateField)\", text: $editedEPUBMetadata.publicationDate)"))
-        XCTAssertTrue(editor.contains("fieldLabel(\"\(PhoneLibraryVocabulary.publicationDateFieldLabel)\", for: .publicationDate)"))
-        XCTAssertTrue(editor.contains("TextField(\"\(PhoneLibraryVocabulary.authorField)\", text: $editedEPUBMetadata.author)"))
-        XCTAssertTrue(editor.contains("fieldLabel(\"\(PhoneLibraryVocabulary.authorField)\", for: .author)"))
-        XCTAssertTrue(editor.contains("LabeledContent(\"\(PhoneLibraryVocabulary.isbnRow)\")"))
-        XCTAssertTrue(editor.contains("LabeledContent(\"\(PhoneLibraryVocabulary.languageRow)\")"))
-        XCTAssertTrue(editor.contains("LabeledContent(\"\(PhoneLibraryVocabulary.identifierRow)\")"))
-        XCTAssertTrue(editor.contains("LabeledContent(\"\(PhoneLibraryVocabulary.epubVersionRow)\")"))
-        XCTAssertTrue(editor.contains("TextField(\"\(PhoneLibraryVocabulary.artistField)\", text: $editedAudioMetadata.artist)"))
-        XCTAssertTrue(editor.contains("fieldLabel(\"\(PhoneLibraryVocabulary.artistFieldLabel)\", for: .author)"))
-        XCTAssertTrue(editor.contains("TextField(\"\(PhoneLibraryVocabulary.albumField)\", text: $editedAudioMetadata.album)"))
-        XCTAssertTrue(editor.contains("fieldLabel(\"\(PhoneLibraryVocabulary.albumFieldLabel)\", for: .audioAlbum)"))
-        XCTAssertTrue(editor.contains("TextField(\"\(PhoneLibraryVocabulary.genreField)\", text: $editedAudioMetadata.genre)"))
-        XCTAssertTrue(editor.contains("TextField(\"\(PhoneLibraryVocabulary.yearField)\", text: $editedAudioMetadata.year)"))
-        XCTAssertTrue(editor.contains("LabeledContent(\"\(PhoneLibraryVocabulary.durationRow)\")"))
-        XCTAssertTrue(editor.contains("TextField(\"\(PhoneLibraryVocabulary.titleField)\", text: $editedAudioMetadata.title)"))
-        XCTAssertTrue(editor.contains("fieldLabel(\"\(PhoneLibraryVocabulary.titleFieldLabel)\", for: .title)"))
+        // The editor says each word through `MetadataEditorWording`, which the phone's word equals.
+        let pairs: [(phone: String, mac: String, shown: String)] = [
+            (PhoneLibraryVocabulary.publisherField, MetadataEditorWording.publisherField,
+             "TextField(MetadataEditorWording.publisherField, text: $editedEPUBMetadata.publisher)"),
+            (PhoneLibraryVocabulary.publisherField, MetadataEditorWording.publisherField,
+             "fieldLabel(MetadataEditorWording.publisherField, for: .publisher)"),
+            (PhoneLibraryVocabulary.publicationDateField, MetadataEditorWording.publicationDateField,
+             "TextField(MetadataEditorWording.publicationDateField, text: $editedEPUBMetadata.publicationDate)"),
+            (PhoneLibraryVocabulary.publicationDateFieldLabel, MetadataEditorWording.publicationDateLabel,
+             "fieldLabel(MetadataEditorWording.publicationDateLabel, for: .publicationDate)"),
+            (PhoneLibraryVocabulary.authorField, MetadataEditorWording.authorField,
+             "TextField(MetadataEditorWording.authorField, text: $editedEPUBMetadata.author)"),
+            (PhoneLibraryVocabulary.authorField, MetadataEditorWording.authorField,
+             "fieldLabel(MetadataEditorWording.authorField, for: .author)"),
+            (PhoneLibraryVocabulary.isbnRow, MetadataEditorWording.isbnRow, "LabeledContent(MetadataEditorWording.isbnRow)"),
+            (PhoneLibraryVocabulary.languageRow, MetadataEditorWording.languageRow, "LabeledContent(MetadataEditorWording.languageRow)"),
+            (PhoneLibraryVocabulary.identifierRow, MetadataEditorWording.identifierRow, "LabeledContent(MetadataEditorWording.identifierRow)"),
+            (PhoneLibraryVocabulary.epubVersionRow, MetadataEditorWording.epubVersionRow, "LabeledContent(MetadataEditorWording.epubVersionRow)"),
+            (PhoneLibraryVocabulary.artistField, MetadataEditorWording.artistField,
+             "TextField(MetadataEditorWording.artistField, text: $editedAudioMetadata.artist)"),
+            (PhoneLibraryVocabulary.artistFieldLabel, MetadataEditorWording.artistLabel,
+             "fieldLabel(MetadataEditorWording.artistLabel, for: .author)"),
+            (PhoneLibraryVocabulary.albumField, MetadataEditorWording.albumField,
+             "TextField(MetadataEditorWording.albumField, text: $editedAudioMetadata.album)"),
+            (PhoneLibraryVocabulary.albumFieldLabel, MetadataEditorWording.albumLabel,
+             "fieldLabel(MetadataEditorWording.albumLabel, for: .audioAlbum)"),
+            (PhoneLibraryVocabulary.genreField, MetadataEditorWording.genreField,
+             "TextField(MetadataEditorWording.genreField, text: $editedAudioMetadata.genre)"),
+            (PhoneLibraryVocabulary.yearField, MetadataEditorWording.yearField,
+             "TextField(MetadataEditorWording.yearField, text: $editedAudioMetadata.year)"),
+            (PhoneLibraryVocabulary.durationRow, MetadataEditorWording.durationRow, "LabeledContent(MetadataEditorWording.durationRow)"),
+            (PhoneLibraryVocabulary.titleField, MetadataEditorWording.titleField,
+             "TextField(MetadataEditorWording.titleField, text: $editedAudioMetadata.title)"),
+            (PhoneLibraryVocabulary.titleFieldLabel, MetadataEditorWording.bookTitleLabel,
+             "fieldLabel(MetadataEditorWording.bookTitleLabel, for: .title)"),
+        ]
+        for pair in pairs {
+            XCTAssertEqual(pair.phone, pair.mac, pair.shown)
+            XCTAssertTrue(editor.contains(pair.shown), "The editor no longer says \(pair.shown)")
+        }
     }
 
     /// The text of the source file at `path` in the app's source folder.

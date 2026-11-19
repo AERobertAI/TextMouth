@@ -31,8 +31,10 @@ final class PhoneAppWordingTests: XCTestCase {
 
         XCTAssertEqual(PhoneAppWording.playButton(isPlaying: true), "Pause")
         XCTAssertEqual(PhoneAppWording.playButton(isPlaying: false), "Play")
-        XCTAssertTrue(macView.contains("return \"\(PhoneAppWording.playButton(isPlaying: true))\""))
-        XCTAssertTrue(macView.contains("return \"\(PhoneAppWording.playButton(isPlaying: false))\""))
+        XCTAssertEqual(PhoneAppWording.playButton(isPlaying: true), PlaybackControlsWording.pause)
+        XCTAssertEqual(PhoneAppWording.playButton(isPlaying: false), PlaybackControlsWording.play)
+        XCTAssertTrue(macView.contains("return PlaybackControlsWording.pause"))
+        XCTAssertTrue(macView.contains("return PlaybackControlsWording.play"))
     }
 
     /// The sentence for a book that closed the app while opening is the

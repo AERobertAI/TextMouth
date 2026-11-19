@@ -135,25 +135,32 @@ final class PhoneVoiceVocabularyTests: XCTestCase {
             contentsOf: AppSourceFile.folder.appendingPathComponent("Views/Reader/ReaderView.swift"),
             encoding: .utf8
         )
-        let words = [
-            ".accessibilityLabel(\"\(PhoneVoiceVocabulary.languageFilterLabel)\")",
-            "Text(\"\(PhoneVoiceVocabulary.allLanguages)\").tag(\"\")",
-            ".accessibilityLabel(\"\(PhoneVoiceVocabulary.voiceLabel)\")",
-            "Button(\"\(PhoneVoiceVocabulary.previewTitle)\")",
-            ".accessibilityLabel(\"\(PhoneVoiceVocabulary.previewLabel)\")",
-            "AVSpeechUtterance(string: \"\(PhoneVoiceVocabulary.previewSentence)\")",
-            ".accessibilityLabel(\"\(PhoneVoiceVocabulary.speedLabel)\")",
-            ".accessibilityLabel(\"\(PhoneVoiceVocabulary.pitchLabel)\")",
-            "Picker(\"\(PhoneVoiceVocabulary.endOfBookTitle)\"",
-            ".accessibilityLabel(\"\(PhoneVoiceVocabulary.endOfBookLabel)\")",
-            "Button(\"\(PhoneVoiceVocabulary.useGlobalDefault)\")",
-            "Button(\"\(PhoneAppWording.close)\")",
-            ".accessibilityLabel(\"\\(voice.name), \\(voiceQualityLabel(voice)) quality\")",
-            ".accessibilityValue(\"\\(Int(viewModel.speechService.wordsPerMinute)) words per minute\")",
+        // The sheet says each word through `ReaderViewWording`, which the phone's word equals.
+        let words: [(phone: String, mac: String, shown: String)] = [
+            (PhoneVoiceVocabulary.languageFilterLabel, ReaderViewWording.languageFilterLabel,
+             ".accessibilityLabel(ReaderViewWording.languageFilterLabel)"),
+            (PhoneVoiceVocabulary.allLanguages, ReaderViewWording.allLanguages, "Text(ReaderViewWording.allLanguages).tag(\"\")"),
+            (PhoneVoiceVocabulary.voiceLabel, ReaderViewWording.selectVoiceLabel, ".accessibilityLabel(ReaderViewWording.selectVoiceLabel)"),
+            (PhoneVoiceVocabulary.previewTitle, ReaderViewWording.previewTitle, "Button(ReaderViewWording.previewTitle)"),
+            (PhoneVoiceVocabulary.previewLabel, ReaderViewWording.previewLabel, ".accessibilityLabel(ReaderViewWording.previewLabel)"),
+            (PhoneVoiceVocabulary.previewSentence, PhoneVoiceVocabulary.previewSentence,
+             "AVSpeechUtterance(string: \"\(PhoneVoiceVocabulary.previewSentence)\")"),
+            (PhoneVoiceVocabulary.speedLabel, ReaderViewWording.speedTitle, ".accessibilityLabel(ReaderViewWording.speedTitle)"),
+            (PhoneVoiceVocabulary.pitchLabel, ReaderViewWording.pitchTitle, ".accessibilityLabel(ReaderViewWording.pitchTitle)"),
+            (PhoneVoiceVocabulary.endOfBookTitle, ReaderViewWording.endOfBookTitle, "Picker(ReaderViewWording.endOfBookTitle"),
+            (PhoneVoiceVocabulary.endOfBookLabel, ReaderViewWording.endOfBookLabel, ".accessibilityLabel(ReaderViewWording.endOfBookLabel)"),
+            (PhoneVoiceVocabulary.useGlobalDefault, ReaderViewWording.useGlobalDefaultTitle, "Button(ReaderViewWording.useGlobalDefaultTitle)"),
+            (PhoneAppWording.close, ReaderViewWording.closeTitle, "Button(ReaderViewWording.closeTitle)"),
+            (PhoneVoiceVocabulary.voiceChoice(name: "Samantha", quality: "Enhanced"),
+             ReaderViewWording.voiceSpoken(name: "Samantha", quality: "Enhanced"),
+             ".accessibilityLabel(ReaderViewWording.voiceSpoken(name: voice.name, quality: voiceQualityLabel(voice)))"),
+            (PhoneVoiceVocabulary.speedValue(wordsPerMinute: 175), PlaybackControlsWording.wordsPerMinute(175),
+             ".accessibilityValue(PlaybackControlsWording.wordsPerMinute(Int(viewModel.speechService.wordsPerMinute)))"),
         ]
 
         for word in words {
-            XCTAssertTrue(macView.contains(word), "The Mac's voice sheet no longer says \(word)")
+            XCTAssertEqual(word.phone, word.mac, word.shown)
+            XCTAssertTrue(macView.contains(word.shown), "The Mac's voice sheet no longer says \(word.shown)")
         }
         XCTAssertEqual(PhoneVoiceVocabulary.voiceChoice(name: "Samantha", quality: "Enhanced"), "Samantha, Enhanced quality")
     }

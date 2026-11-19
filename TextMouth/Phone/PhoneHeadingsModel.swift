@@ -131,7 +131,7 @@ struct PhoneHeadingsModel {
     /// The display's choices, the Mac's: "Duration", "Time In",
     /// "Percentage".
     static let displayChoices: [PhoneChoice<HeadingNavigatorView.HeadingDisplayMode>] =
-        HeadingNavigatorView.HeadingDisplayMode.allCases.map { PhoneChoice(id: $0, label: $0.rawValue) }
+        HeadingNavigatorView.HeadingDisplayMode.allCases.map { PhoneChoice(id: $0, label: $0.title) }
 
     /// The display's value: the mode in force, as "Duration".
     var displayValue: String {

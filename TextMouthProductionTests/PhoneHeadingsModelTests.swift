@@ -182,12 +182,19 @@ final class PhoneHeadingsVocabularyTests: XCTestCase {
             encoding: .utf8
         )
 
-        XCTAssertTrue(macView.contains("Text(\"\(PhoneHeadingsVocabulary.title)\")"))
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneHeadingsVocabulary.backToBook)\")"))
-        XCTAssertTrue(macView.contains(".accessibilityHint(\"\(PhoneHeadingsVocabulary.backToBookHint)\")"))
-        XCTAssertTrue(macView.contains("Picker(\"\(PhoneHeadingsVocabulary.displayTitle)\", selection: $displayMode)"))
-        XCTAssertTrue(macView.contains(".accessibilityLabel(\"\(PhoneHeadingsVocabulary.displayLabel)\")"))
-        XCTAssertTrue(macView.contains("Text(\"\(PhoneHeadingsVocabulary.empty)\")"))
+        // The Mac says each through a static of its own, which the phone's word equals.
+        XCTAssertEqual(PhoneHeadingsVocabulary.title, HeadingNavigatorView.sheetTitle)
+        XCTAssertTrue(macView.contains("Text(Self.sheetTitle)"))
+        XCTAssertEqual(PhoneHeadingsVocabulary.backToBook, HeadingNavigatorView.backToBookTitle)
+        XCTAssertTrue(macView.contains("Button(Self.backToBookTitle)"))
+        XCTAssertEqual(PhoneHeadingsVocabulary.backToBookHint, HeadingNavigatorView.backToBookHint)
+        XCTAssertTrue(macView.contains(".accessibilityHint(Self.backToBookHint)"))
+        XCTAssertEqual(PhoneHeadingsVocabulary.displayTitle, HeadingNavigatorView.displayPickerTitle)
+        XCTAssertTrue(macView.contains("Picker(Self.displayPickerTitle, selection: $displayMode)"))
+        XCTAssertEqual(PhoneHeadingsVocabulary.displayLabel, HeadingNavigatorView.displayPickerLabel)
+        XCTAssertTrue(macView.contains(".accessibilityLabel(Self.displayPickerLabel)"))
+        XCTAssertEqual(PhoneHeadingsVocabulary.empty, HeadingNavigatorView.noHeadingsMessage)
+        XCTAssertTrue(macView.contains("Text(Self.noHeadingsMessage)"))
         XCTAssertTrue(macView.contains("\"\(PhoneHeadingsVocabulary.rowHint)\""))
     }
 }
