@@ -59,6 +59,7 @@ CountWording.list(_:) is the one "a, b, and c" joiner, which the cloud, removal,
 The named counts are localized plural strings: books, feeds, bookmarks, hours, minutes, seconds, episodes, and articles.
 Each has its English `one` and `other` forms in the String Catalog, so each language counts by its own rules.
 The number is written for the region, so 1,000 books has its separator.
+A list of two reads "A and B", and a count of one reads "1 item", since every counted string has a `one` form.
 list(_:), listItems, and booksAndFeeds join through the region's list style (`.list(type: .and)`), so the English follows the region too.
 In en_US that is "A, B, and C", and in en_GB "A, B and C".
 booksHeader and the decimal of secondsToTheTenth are localized strings of their own.

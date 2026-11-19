@@ -161,6 +161,7 @@ The judgment: TextPlausibility(reading:judging:) counts three kinds of surprise 
 <!-- id: encoding-catalog; keys: Entry, IANA, charset, code page, cp1251, CP437, CP850, pop-up list; src: TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouthProductionTests/TextEncodingCatalogTests.swift -->
 
 The catalog: TextEncodingCatalog.entries lists every encoding the guess can name, in the order that settles a tie, each with its identifier, its String.Encoding, the name a listener hears (listed in [What TextMouth reads](../../user/reads-text-files.md)), isAlwaysTried, and isSevenBit.
+Its name is `label.name`, in the interface language: TextEncodingCatalog.Label has one case for each name (Windows' variant and the standard it extends share one), so code compares labels, not text.
 The identifier is the lowercase IANA name as Core Foundation spells it, such as windows-1251, koi8-r, macintosh, or cp932, which a book records and looks up again on every reading, so it never changes.
 TextEncodingCatalog.row(_:_:tried:sevenBit:) makes an entry through TextFileDecoder.encoding(forLabel:) and leaves out one that this Mac's Core Foundation does not know.
 Windows-1252 is in it, to be named, but is never tried or guessed: it is the default.

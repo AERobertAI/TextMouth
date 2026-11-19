@@ -101,6 +101,8 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
     - The language: "und" and dir="auto" on every block when the book names none or says "und".
     - The modified date.
     - The accessibility metadata, which the summary follows by the entries written.
+    - The words the writer writes itself (the contents and page-list headings, the accessibility summary) are in the interface language at the time of the export, marked with `lang` and `xml:lang` of EPUBPackageBuilder.ownLanguage, which is the app's first preferred localization, or "en".
+      The book's own `dc:language` is the book's, never the interface's.
     - page-progression-direction="rtl" with dir="rtl" for a right-to-left language or script (EPUBPackageBuilder.isWrittenRightToLeft: the script subtag when there is one, else the language, ku, sd, ks, and ug being assumed neither way).
 
 ### EPUB links and targets
@@ -201,6 +203,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
   BookExportService.writeConverted reads content.md as the reader does (MarkdownCacheService.cacheText), walks it, and has the writer write it to a scratch file, which is moved into place as above.
   A writer that cannot write a book throws a TextExportError, whose sentence the export names after the file, as in "Couldn't export FILE NAME: SENTENCE" (BookExportWording.failureSentence), and the other books still export.
   WordDocExportWriter.failureSentence is the Word writer's, for a book Apple's reader or writer refuses.
+  The sentence is in the interface language; BookExportFailure.logReason is its English, which BOOK_EXPORT_FAILED writes, so the debug log stays English.
 - How others observe it: the checkbox's words follow the picker (BookExportWording.name(of:convertedTo:), hint(for:convertedTo:), and choiceLabel(kind:bookCount:availableItemCount:fileCount:byteCount:inCloudCount:convertedTo:)).
   BookExportWording.choiceLabel gives no size while a writer is chosen, since a converted file's size is known only once it is written.
   The picker lists BookExportConversionChoice values: Markdown (BookExportWording.markdownChoiceName and markdownChoiceHint, which is also the Text as Markdown checkbox's hint while Markdown is chosen: hint(for:)), then each writer's name and hint.
