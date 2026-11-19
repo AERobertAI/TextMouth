@@ -28,7 +28,7 @@ struct CompareLibrariesSheet: View {
             if model.phase == .comparing {
                 ProgressView()
                     .progressViewStyle(.linear)
-                    .accessibilityLabel("Comparing")
+                    .accessibilityLabel(CompareLibrariesSheetWording.comparingLabel)
             } else if !model.rows.isEmpty {
                 // One row for each difference, read as a sentence.
                 List(model.rows) { row in
@@ -38,7 +38,7 @@ struct CompareLibrariesSheet: View {
                         .accessibilityLabel(row.sentence)
                 }
                 .frame(minHeight: 220)
-                .accessibilityLabel("Differences")
+                .accessibilityLabel(CompareLibrariesSheetWording.differencesLabel)
             }
             // The files not read, a list of their own, so a list of the
             // differences holds only differences.
@@ -77,5 +77,21 @@ struct CompareLibrariesSheet: View {
         #endif
         .accessibilityElement(children: .contain)
         .accessibilityLabel(LibraryComparisonWording.sheetLabel)
+    }
+}
+
+/// The words of the Compare Libraries sheet's two VoiceOver labels that no
+/// other wording holds (FR34).
+enum CompareLibrariesSheetWording {
+    /// The label of the progress bar shown while the comparison runs.
+    static var comparingLabel: String {
+        String(localized: "Comparing",
+               comment: "VoiceOver label of the progress bar of the Compare Libraries sheet while the two copies of the library are being compared.")
+    }
+
+    /// The label of the list of differences found.
+    static var differencesLabel: String {
+        String(localized: "Differences",
+               comment: "VoiceOver label of the list of differences the Compare Libraries sheet found between the two copies of the library.")
     }
 }

@@ -142,6 +142,13 @@ struct LibraryViewsSettingsView: View {
         .frame(maxHeight: .infinity)
     }
 
+    /// The kind and visibility a row shows beside a view's name: "built in,
+    /// always". Each part is the library wording's own word for it.
+    private static func kindAndVisibility(_ view: LibraryViewDefinition) -> String {
+        String(localized: "\(view.isBuiltIn ? Wording.builtIn : Wording.custom), \(Wording.visibilityWord(view.visibility))",
+               comment: "The right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".")
+    }
+
     /// One view's row: its name, then its kind and visibility, read as one
     /// element, "Reading List, built in, always, 5 of 6", with the view's
     /// commands as its VoiceOver actions.
@@ -149,7 +156,7 @@ struct LibraryViewsSettingsView: View {
         HStack {
             Text(view.name)
             Spacer()
-            Text("\(view.isBuiltIn ? Wording.builtIn : Wording.custom), \(Wording.visibilityWord(view.visibility))")
+            Text(Self.kindAndVisibility(view))
                 .foregroundColor(.secondary)
         }
         .accessibilityElement(children: .ignore)
