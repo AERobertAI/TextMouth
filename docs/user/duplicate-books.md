@@ -10,10 +10,10 @@ How books are added is in [Adding books](adding-books.md).
 
 - When a book's content is already in the library, TextMouth asks whether to keep both, replace the existing book, or cancel.
 - A feed's episode or article holding the same file doesn't count.
-- The question says which file matches which book, as in "“Moby-Dick.epub” matches “Moby-Dick”, which is already in your library.
+- The question says which file matches which book, as in "“Moby-Dick.epub” matches “Moby-Dick”, already in your library.
   Replace the existing copy, or keep both as separate books?", and then, after a blank line, what Replace Existing keeps of the existing copy and where its files go:
-  - For a text book: "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text wherever those are found, and its settings, folder, and place on the reading list.
-    An edit of its text is kept beside the new text as a copy, not applied to it."
+  - For a text book: "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text where found, and its settings, folder, and place on the reading list.
+    An edit of its text is kept as a copy beside the new text, not applied."
   - For an audiobook: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same.
     Edits of its audio or of its manifest are not kept."
   - For an audiobook whose new copy came with a transcript file beside its audio (see [Transcribing an audiobook](transcribing.md)), the sentence says which transcript will stay:
@@ -23,7 +23,7 @@ How books are added is in [Adding books](adding-books.md).
       The transcript file found beside the new copy's audio replaces the existing copy's transcript.
       Edits of its audio or of its manifest are not kept."
   - When one copy is played from a recording and the other is read aloud from its text, as a DAISY book is.
-    "One copy is played from its recording and the other is read aloud from its text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, its bookmarks and their notes, or its settings."
+    "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings."
   - Then one more sentence, by Move to Trash instead of deleting, under Removal Behavior in the Storage tab of Settings.
     "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." while it is on, and "The existing copy's files are deleted permanently and cannot be recovered." while it is off.
   - A copy that is missing chapters adds "The copy just imported is incomplete." and what it lacks.
@@ -41,10 +41,10 @@ Which transcript an audiobook keeps (0.4.2), when both copies have one and the n
   It stays only when the audio is the same, as below.
 - The existing copy's transcript gives way to the file when it came from outside, from an attached file or a podcast, and you never edited or cleaned it up.
 - The question tells you which of the two will happen before you answer.
-- After the answer, when a file was not used, VoiceOver hears "“lecture.vtt” was beside the audio but wasn't attached as the book's transcript: Replacing kept the existing copy's transcript.
-  To use the file instead, open the book and choose Attach Transcript… from the Book menu."
+- After the answer, when a file was not used, VoiceOver hears "“lecture.vtt” beside the audio wasn't attached: Replacing kept the existing copy's transcript.
+  To use it, open the book and choose Attach Transcript… from the Book menu."
 - When each of several tracks brought a file, one sentence names them together and gives no Attach Transcript… advice, since that command takes one file for the whole book.
-  "The transcript files beside the audio weren't attached as the book's transcript: Replacing kept the existing copy's transcript."
+  "The transcript files beside the audio weren't attached: Replacing kept the existing copy's transcript."
 
 ### What else the new copy keeps
 <!-- id: replace-keeps-details; keys: date added, manual order, last opened, Book Info edits, voice, speed, pitch; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/Book+OwnSettings.swift -->
@@ -153,7 +153,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
   - Being exported: "“X” is being exported, and replacing it now would stop the export.
     Wait until the export ends, then choose Replace Existing again."
   - Its audio being edited in the audio editor, or saved from it: "The audio of “X” is being edited.
-    Close the audio editor, or wait until it has saved, then choose Replace Existing again."
+    Close the audio editor or wait for it to save, then choose Replace Existing again."
   - Its text being read again in another encoding, from the Text Encoding pop-up in Book Information: "TextMouth is reading “X” again in another encoding.
     Try again when that finishes."
   - Its text being read again with other braille file characters, from the Braille File Characters pop-up in Book Information: "TextMouth is reading “X” again with other braille file characters.
@@ -163,7 +163,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
   - Being replaced already: "TextMouth is replacing “X” with the new copy.
     Try again when that finishes."
     Edit Text, Redo Text Extraction, a re-read from Book Information, and a reader opening the book say it too, until the replacement ends.
-  - Files only in the cloud: "Some of the files of “X” are only in the cloud, and replacing it now would leave them behind.
+  - Files only in the cloud: "Some files of “X” are only in the cloud, and replacing it now would leave them behind.
     Download the book, then choose Replace Existing again."
   - Books moving between folders: "TextMouth is moving books between folders.
     Wait until that finishes, then choose Replace Existing again."
@@ -183,7 +183,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
 <!-- id: when-replaced-copy-files-cant; keys: could not be moved to the Trash, Move to Trash instead of deleting, hidden name; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/RemovalWording.swift -->
 
 - When the new copy has taken the place of the existing one but the existing copy's files cannot be removed, the replacement stands.
-  And the library's alert says "The new copy took the place of “X”, but the old copy's files could not be moved to the Trash, so they stay in its folder: " and the system's reason.
+  And the library's alert says "The new copy replaced “X”, but the old copy's files could not be moved to the Trash and stay in its folder: " and the system's reason.
   With "deleted" in place of "moved to the Trash" while Move to Trash instead of deleting is off.
 - With the Trash off, TextMouth first renames the old package to a hidden name, then deletes it, and what cannot be deleted stays hidden until the next import into that folder removes it.
 
@@ -226,8 +226,8 @@ Replace Existing makes the new copy the same book as the existing one, under the
 <!-- id: when-keep-both-replace-existing; keys: library can't be reached, files gone, waiting mark, Choose Cancel; src: TextMouth/Models/ImportDecision.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift -->
 
 - Keep Both and Replace Existing keep the question, and say why, when they cannot keep the new copy, each sentence naming the book:
-  - While the library can't be reached, as when its drive dropped off: "The library can't be reached right now, so TextMouth can't keep the new copy of “Moby-Dick”.
-    Answer again once the library is back."
+  - While the library can't be reached, as when its drive dropped off: "The library can't be reached, so TextMouth can't keep the new copy of “Moby-Dick”.
+    Answer again once it is back."
     The copy is intact, so there is nothing to cancel.
   - When the copy's files are gone, taken by another Mac's launch or in Finder: "The files of the new copy of “Moby-Dick” are no longer in the library, so it can't be kept.
     Choose Cancel, then import the file again."
