@@ -68,7 +68,7 @@ final class PhoneRowWordingTests: XCTestCase {
         XCTAssertEqual(PhoneRowWording.removalDone(title: "Dune"), "Deleted “Dune” permanently.")
         XCTAssertEqual(
             PhoneRowWording.removalMessage,
-            "This deletes the book and its files from this iPhone, and they can't be recovered. Your Mac's library isn't touched."
+            "Permanently deletes the book and its files from this iPhone. Your Mac's library isn't touched."
         )
         XCTAssertFalse(PhoneRowWording.removalMessage.contains("Trash"))
     }
@@ -93,7 +93,7 @@ final class PhoneRowWordingTests: XCTestCase {
         XCTAssertEqual(PhoneRowWording.sortHint, "Chooses the order of the books.")
         XCTAssertEqual(
             PhoneRowWording.addToLibraryHint,
-            "Opens a sheet with the ways to add to the library: open a book, or import a folder."
+            "Opens options to open a book or import a folder."
         )
     }
 

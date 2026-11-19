@@ -46,7 +46,7 @@ enum PhoneSettingsWording {
     /// What Follow in Braille does.
     static var followInBrailleHint: String {
         SentenceWording.joined([
-            String(localized: "While the book plays, moves Book content on with the speech, even while you're reading it.",
+            String(localized: "While playing, moves Book content on with the speech, even as you read it.",
                    comment: "First sentence of the hint of Follow in Braille in iPhone Settings. \"Book content\" is the name of the element that holds the book's text, as VoiceOver reads it."),
             String(localized: "For trying out with a braille display.",
                    comment: "Last sentence of the hint of Follow in Braille in iPhone Settings."),
@@ -83,7 +83,7 @@ enum PhoneSettingsWording {
     }
     /// What sharing the logs does.
     static var shareLogsHint: String {
-        String(localized: "Shares TextMouth's recent logs as a text file. They hold no book text.",
+        String(localized: "Shares recent logs as a text file. They hold no book text.",
                comment: "Hint of the Share Logs button in iPhone Settings.")
     }
 }

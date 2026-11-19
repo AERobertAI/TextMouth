@@ -205,7 +205,7 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(describe(.nextHeading, in: state()).label, "Next Heading")
         XCTAssertEqual(
             describe(.nextHeading, in: state()).hint,
-            "Moves to the next heading, leaving the navigation unit as it is."
+            "Moves to the next heading, keeping the navigation unit."
         )
         XCTAssertEqual(describe(.previousHeading, in: state()).traits, .button)
     }

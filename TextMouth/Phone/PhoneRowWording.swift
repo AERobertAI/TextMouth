@@ -158,7 +158,7 @@ enum PhoneRowWording {
     /// can open (the spec's).
     static var removalMessage: String {
         SentenceWording.joined([
-            String(localized: "This deletes the book and its files from this iPhone, and they can't be recovered.",
+            String(localized: "Permanently deletes the book and its files from this iPhone.",
                    comment: "First sentence of the message of the iPhone's question before a book is removed: nothing is kept on this iPhone."),
             String(localized: "Your Mac's library isn't touched.",
                    comment: "Last sentence of the message of the iPhone's question before a book is removed: a copy of the book in a Mac's library stays."),

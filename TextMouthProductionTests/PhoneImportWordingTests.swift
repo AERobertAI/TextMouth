@@ -86,7 +86,7 @@ final class PhoneImportWordingTests: XCTestCase {
         )
         XCTAssertEqual(
             PhoneImportRefusal.macBrailleTable("fr-bfu-g2.ctb").sentence(naming: "Manuel"),
-            "“Manuel” needs “fr-bfu-g2.ctb”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have. "
+            "“Manuel” needs “fr-bfu-g2.ctb”, a braille table only a Mac has. "
                 + "Add it on your Mac, then send the book here."
         )
     }
@@ -186,7 +186,7 @@ final class PhoneImportWordingTests: XCTestCase {
     func testAddToLibraryButtonHint() {
         XCTAssertEqual(
             PhoneImportWording.addToLibraryButtonHint,
-            "Opens a sheet with the ways to add to the library: open a book, or import a folder."
+            "Opens options to open a book or import a folder."
         )
     }
 }

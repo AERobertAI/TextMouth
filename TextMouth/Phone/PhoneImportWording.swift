@@ -168,7 +168,7 @@ enum PhoneImportWording {
     /// top", item 11). Its label and title are the Mac's
     /// (`AddToLibraryWording.buttonLabel`).
     static var addToLibraryButtonHint: String {
-        String(localized: "Opens a sheet with the ways to add to the library: open a book, or import a folder.",
+        String(localized: "Opens options to open a book or import a folder.",
                comment: "Hint of the iPhone Library's Add to Library button.")
     }
 }

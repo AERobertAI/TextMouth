@@ -63,13 +63,13 @@ enum PhoneReaderWording {
 
     /// Previous Heading's hint.
     static var previousHeadingHint: String {
-        String(localized: "Moves to the heading before, leaving the navigation unit as it is.",
+        String(localized: "Moves to the previous heading, keeping the navigation unit.",
                comment: "Hint of the iPhone reader's Previous Heading button.")
     }
 
     /// Next Heading's hint.
     static var nextHeadingHint: String {
-        String(localized: "Moves to the next heading, leaving the navigation unit as it is.",
+        String(localized: "Moves to the next heading, keeping the navigation unit.",
                comment: "Hint of the iPhone reader's Next Heading button.")
     }
 
