@@ -553,7 +553,7 @@
     "%@ left" : {
       "comment" : "Time left in the book as the reader's status row shows it. %@ is a clock time such as 3:44:01."
     },
-    "%@ lists %lld feeds. Each gets a folder of its own, named after it." : {
+    "%@ lists %lld feeds. Each gets its own folder, named after it." : {
       "comment" : "The line of the Import OPML sheet that names the file and how many feeds it lists. %@ is the file's name; %lld is how many feeds.",
       "localizations" : {
         "en" : {
@@ -562,13 +562,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%@ lists %lld feed. Each gets a folder of its own, named after it."
+                  "value" : "%@ lists %lld feed. Each gets its own folder, named after it."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%@ lists %lld feeds. Each gets a folder of its own, named after it."
+                  "value" : "%@ lists %lld feeds. Each gets its own folder, named after it."
                 }
               }
             }
@@ -744,13 +744,13 @@
     "%@ twice" : {
       "comment" : "A keyboard shortcut that is its key pressed twice quickly, as spoken or shown. %@ is the shortcut, such as \"W\" or \"Command + I\"."
     },
-    "%@ use plain http, so what is sent can be read or changed on the way; TextMouth still loads it." : {
+    "%@ use plain http, so others can read or change what they send; TextMouth still loads it." : {
       "comment" : "What the Import OPML sheet says of several new feeds whose addresses use plain http, which is not encrypted. %@ is a list of their titles."
     },
     "%@ uses it in the menus" : {
       "comment" : "The reason, said after \"not recorded\", why a key cannot be a shortcut: a command of the Mac's own menus uses it. %@ is that command's name, such as Quit TextMouth or Copy. Lower case in English, since it follows a colon."
     },
-    "%@ uses plain http, so what is sent can be read or changed on the way; TextMouth still loads it." : {
+    "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it." : {
       "comment" : "What the Import OPML sheet says of one new feed whose address uses plain http, which is not encrypted. %@ is the feed's title."
     },
     "%@ waits for a network without data limits to refresh by itself." : {
@@ -3083,6 +3083,9 @@
     "A copy was kept in the book's package. Start over with no edits, or cancel." : {
       "comment" : "Explains the question about an unreadable audio edit history: what Start Over and Cancel do."
     },
+    "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed." : {
+      "comment" : "The line under the address field of the Add Feed sheet. .rss and .xml are file extensions."
+    },
     "A feed can have its own %@ choice and its own days before deleting played downloads, in its %@." : {
       "comment" : "The note under the Feeds tab's settings. The first %@ is the name of the List and download choice; the second is the name of the Feed Info sheet.",
       "localizations" : {
@@ -3116,9 +3119,6 @@
     },
     "A newer TextMouth edited this audio, so this version leaves its edits alone." : {
       "comment" : "Said when the book's saved edit history was written by a later version of TextMouth than this one."
-    },
-    "A podcast's or site's feed address, such as a link ending in .rss or .xml, or the address of a web page that names its feed." : {
-      "comment" : "The line under the address field of the Add Feed sheet. .rss and .xml are file extensions."
     },
     "A quote isn't closed in “%@”." : {
       "comment" : "Problem found in a typed filter chain: a single quote is opened and never closed. %@ is the text of the part holding it."
@@ -3435,10 +3435,10 @@
         }
       }
     },
-    "After a refresh TextMouth makes by itself, a notification names each feed with new episodes and articles" : {
+    "After an automatic refresh, a notification names each feed with new episodes and articles" : {
       "comment" : "VoiceOver hint of the switch that posts notifications for new items."
     },
-    "After a refresh TextMouth makes by itself, at launch or on the interval, an alert names the feeds with new episodes and articles" : {
+    "After an automatic refresh, an alert names the feeds with new episodes and articles" : {
       "comment" : "VoiceOver hint of the switch that shows an alert after a refresh TextMouth made by itself."
     },
     "Album" : {
@@ -3708,7 +3708,7 @@
     "Asks first, then replaces every rule with the defaults." : {
       "comment" : "VoiceOver hint of the Reset to Defaults button in the Substitutions settings."
     },
-    "Asks first, then stops checking this feed; the feed and its downloads stay" : {
+    "Asks first, then stops checking; the feed and its downloads stay" : {
       "comment" : "VoiceOver hint of the Unsubscribe button in Feed Info when it asks a question first."
     },
     "Asks for an optional note, then marks the reading position." : {
@@ -4356,11 +4356,11 @@
     "Checking the speech model…" : {
       "comment" : "Line of the Transcribe Audio sheet while it checks whether the language's speech model is on this Mac."
     },
-    "Checks every feed you're subscribed to for new episodes and articles once the library has opened" : {
-      "comment" : "VoiceOver hint of the switch that refreshes every feed at launch."
-    },
-    "Checks every feed you're subscribed to now and says what came" : {
+    "Checks every subscribed feed and says what came" : {
       "comment" : "VoiceOver hint of the Refresh All Feeds Now button."
+    },
+    "Checks every subscribed feed once the library has opened" : {
+      "comment" : "VoiceOver hint of the switch that refreshes every feed at launch."
     },
     "Checks this feed again from now on, and at once" : {
       "comment" : "VoiceOver hint of the Resubscribe button in Feed Info."
@@ -4902,7 +4902,7 @@
     "Date Opened" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .openedWithin."
     },
-    "Days after an episode plays to the end that its download is deleted, from 0, at once, to 365; one open in a reader waits until it closes" : {
+    "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes" : {
       "comment" : "VoiceOver hint of the delete-after-playing number field and stepper. The range is the limits of the number, in days."
     },
     "Days to keep an original" : {
@@ -5735,13 +5735,13 @@
     "Every episode of %@ is already played." : {
       "comment" : "What VoiceOver says when Mark All Played finds no unplayed episode. %@ is the feed's title."
     },
-    "Every feed in your library is unsubscribed, so none was checked. Choose %@ on a feed's row, or in its %@, to check it again." : {
+    "Every feed is unsubscribed, so none was checked. Choose %@ on a feed's row, or in its %@, to check it again." : {
       "comment" : "What VoiceOver says when Refresh All Feeds finds only unsubscribed feeds. The first %@ is the name of the Resubscribe command; the second is the name of the Feed Info sheet.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Every feed in your library is unsubscribed, so none was checked. Choose %1$@ on a feed's row, or in its %2$@, to check it again."
+            "value" : "Every feed is unsubscribed, so none was checked. Choose %1$@ on a feed's row, or in its %2$@, to check it again."
           }
         }
       }
@@ -5989,6 +5989,17 @@
     },
     "Feeds on this page" : {
       "comment" : "Caption of the choice of feeds a web page names, in the Add Feed sheet."
+    },
+    "Feeds refresh only at launch, if that is on, and when you choose %@ or %@" : {
+      "comment" : "VoiceOver hint of the checkbox that turns the refresh interval off. The first %@ is the name of the Check Feed command; the second is the name of the Refresh All Feeds command.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@"
+          }
+        }
+      }
     },
     "File" : {
       "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.\nLabel of the audio file's name in the audio editor's Audio Info sheet."
@@ -6390,26 +6401,14 @@
     "Home" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Home\"."
     },
-    "Hours between refreshes of every feed while TextMouth runs, from 1 to 168" : {
+    "Hours between refreshes while TextMouth runs, from 1 to 168" : {
       "comment" : "VoiceOver hint of the refresh interval's number field and stepper. The range is the limits of the number, in hours."
     },
     "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones." : {
       "comment" : "Explanation under the Bluetooth disconnect delay slider in the Miscellaneous settings."
     },
-    "How many of each feed's newest episodes and articles are kept downloaded, or listed, from 1 to 2,000" : {
-      "comment" : "VoiceOver hint of the number of the newest items, in Settings, for every feed. The range is the limits of the number."
-    },
     "How many of the newest" : {
       "comment" : "Label of the number field and stepper that say how many of a feed's newest items are listed or downloaded."
-    },
-    "How many of this feed's newest articles are kept downloaded, or listed, from 1 to 2,000" : {
-      "comment" : "VoiceOver hint of the number of the newest items, for a feed of articles. The range is the limits of the number."
-    },
-    "How many of this feed's newest episodes are kept downloaded, or listed, from 1 to 2,000" : {
-      "comment" : "VoiceOver hint of the number of the newest items, for a feed of episodes. The range is the limits of the number."
-    },
-    "How many of this feed's newest items are kept downloaded, or listed, from 1 to 2,000" : {
-      "comment" : "VoiceOver hint of the number of the newest items, for a feed of both episodes and articles. The range is the limits of the number."
     },
     "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts." : {
       "comment" : "Hint of the double press time stepper in Settings: what the time is, and that a key that has one action for a single press and another for a double press waits for that time before acting on a single press."
@@ -7011,20 +7010,80 @@
         }
       }
     },
-    "Lists every article with what you did with it, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings." : {
-      "comment" : "VoiceOver hint of the List and download choice for a feed of articles: every article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest."
+    "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings." : {
+      "comment" : "VoiceOver hint of the List and download choice for a feed of articles: every article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass." : {
       "comment" : "VoiceOver hint of the List and download choice for a feed of articles when the listener downloads by hand."
     },
-    "Lists every episode and article with what you did with it, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings." : {
-      "comment" : "VoiceOver hint of the List and download choice in Settings or for a feed of both kinds: every episode and article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest."
+    "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings." : {
+      "comment" : "VoiceOver hint of the List and download choice in Settings or for a feed of both kinds: every episode and article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass." : {
       "comment" : "VoiceOver hint of the List and download choice in Settings or for a feed of both kinds when the listener downloads by hand."
     },
-    "Lists every episode with what you did with it, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings." : {
-      "comment" : "VoiceOver hint of the List and download choice for a feed of episodes: every episode is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest."
+    "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings." : {
+      "comment" : "VoiceOver hint of the List and download choice for a feed of episodes: every episode is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass." : {
       "comment" : "VoiceOver hint of the List and download choice for a feed of episodes when the listener downloads by hand."
@@ -7035,11 +7094,51 @@
     "Lists nothing now." : {
       "comment" : "Library view editor: what the sheet says of a draft view that lists nothing at the moment."
     },
-    "Lists those of the newest %lld you haven't played, and every download, and downloads only what you ask for; the others keep their records and come back when you list more." : {
-      "comment" : "VoiceOver hint of the List and download choice for a feed of episodes, in Settings, or for a feed of both kinds when only the newest are listed. %lld is how many of the newest."
+    "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more." : {
+      "comment" : "VoiceOver hint of the List and download choice for a feed of episodes, in Settings, or for a feed of both kinds when only the newest are listed. %lld is how many of the newest.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+                }
+              }
+            }
+          }
+        }
+      }
     },
-    "Lists those of the newest %lld you haven't read, and every download, and downloads only what you ask for; the others keep their records and come back when you list more." : {
-      "comment" : "VoiceOver hint of the List and download choice for a feed of articles when only the newest are listed. %lld is how many of the newest."
+    "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more." : {
+      "comment" : "VoiceOver hint of the List and download choice for a feed of articles when only the newest are listed. %lld is how many of the newest.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Lists up to 500 of this book's matches here" : {
       "comment" : "VoiceOver hint of the row that lists a book's matches in the Search Library results. 500 is the most it lists."
@@ -7544,7 +7643,7 @@
     "Moved %@ to the Trash." : {
       "comment" : "Report that books' files were moved to the Trash. %@ is what was moved, such as \"“Notes”\" or \"3 books\"."
     },
-    "Moved %lld articles into %@. They're books of your library now, and their feeds list them %@." : {
+    "Moved %lld articles into %@. They're library books now, and their feeds list them %@." : {
       "comment" : "What VoiceOver says once Move to Library moved several articles into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\".",
       "localizations" : {
         "en" : {
@@ -7553,13 +7652,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moved %lld article into %@. It's a book of your library now, and its feed lists it %@."
+                  "value" : "Moved %lld article into %@. It's a library book now, and its feed lists it %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moved %lld articles into %@. They're books of your library now, and their feeds list them %@."
+                  "value" : "Moved %lld articles into %@. They're library books now, and their feeds list them %@."
                 }
               }
             }
@@ -7567,7 +7666,7 @@
         }
       }
     },
-    "Moved %lld episodes into %@. They're books of your library now, and their feeds list them %@." : {
+    "Moved %lld episodes into %@. They're library books now, and their feeds list them %@." : {
       "comment" : "What VoiceOver says once Move to Library moved several episodes into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\".",
       "localizations" : {
         "en" : {
@@ -7576,13 +7675,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moved %lld episode into %@. It's a book of your library now, and its feed lists it %@."
+                  "value" : "Moved %lld episode into %@. It's a library book now, and its feed lists it %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moved %lld episodes into %@. They're books of your library now, and their feeds list them %@."
+                  "value" : "Moved %lld episodes into %@. They're library books now, and their feeds list them %@."
                 }
               }
             }
@@ -7590,7 +7689,7 @@
         }
       }
     },
-    "Moved %lld items into %@. They're books of your library now, and their feeds list them %@." : {
+    "Moved %lld items into %@. They're library books now, and their feeds list them %@." : {
       "comment" : "What VoiceOver says once Move to Library moved several items, episodes and articles, into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\".",
       "localizations" : {
         "en" : {
@@ -7599,13 +7698,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moved %lld item into %@. It's a book of your library now, and its feed lists it %@."
+                  "value" : "Moved %lld item into %@. It's a library book now, and its feed lists it %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moved %lld items into %@. They're books of your library now, and their feeds list them %@."
+                  "value" : "Moved %lld items into %@. They're library books now, and their feeds list them %@."
                 }
               }
             }
@@ -7633,13 +7732,13 @@
     "Moved to the match." : {
       "comment" : "Announcement after the reader moved to a search match whose place is unknown."
     },
-    "Moved “%@” into %@. It's a book of your library now, and its feed lists it %@." : {
+    "Moved “%@” into %@. It's a library book now, and its feed lists it %@." : {
       "comment" : "What VoiceOver says once Move to Library moved one feed item into the library. The first %@ is the item's title; the second is the library folder, or \"the top of your library\"; the third is the note its feed's row shows, \"In Library\".",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Moved “%1$@” into %2$@. It's a book of your library now, and its feed lists it %3$@."
+            "value" : "Moved “%1$@” into %2$@. It's a library book now, and its feed lists it %3$@."
           }
         }
       }
@@ -7689,7 +7788,7 @@
     "Moves the view one place up the list" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's hint."
     },
-    "Moves these %lld articles into a folder of your library, where they become books you can edit; they leave their feeds" : {
+    "Moves these %lld articles into a library folder as books you can edit; they leave their feeds" : {
       "comment" : "What the Move to Library sheet says about several articles: they move into a library folder as books and leave their feeds. %lld is how many.",
       "localizations" : {
         "en" : {
@@ -7698,13 +7797,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moves this %lld article into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+                  "value" : "Moves this %lld article into a library folder as a book you can edit; it leaves the feed"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moves these %lld articles into a folder of your library, where they become books you can edit; they leave their feeds"
+                  "value" : "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
                 }
               }
             }
@@ -7712,7 +7811,7 @@
         }
       }
     },
-    "Moves these %lld episodes into a folder of your library, where they become books you can edit; they leave their feeds" : {
+    "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds" : {
       "comment" : "What the Move to Library sheet says about several episodes: they move into a library folder as books and leave their feeds. %lld is how many.",
       "localizations" : {
         "en" : {
@@ -7721,13 +7820,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moves this %lld episode into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+                  "value" : "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moves these %lld episodes into a folder of your library, where they become books you can edit; they leave their feeds"
+                  "value" : "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
                 }
               }
             }
@@ -7735,7 +7834,7 @@
         }
       }
     },
-    "Moves these %lld items into a folder of your library, where they become books you can edit; they leave their feeds" : {
+    "Moves these %lld items into a library folder as books you can edit; they leave their feeds" : {
       "comment" : "What the Move to Library sheet says about several items, episodes and articles: they move into a library folder as books and leave their feeds. %lld is how many.",
       "localizations" : {
         "en" : {
@@ -7744,13 +7843,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moves this %lld item into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+                  "value" : "Moves this %lld item into a library folder as a book you can edit; it leaves the feed"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Moves these %lld items into a folder of your library, where they become books you can edit; they leave their feeds"
+                  "value" : "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
                 }
               }
             }
@@ -7758,13 +7857,13 @@
         }
       }
     },
-    "Moves this article into a folder of your library, where it becomes a book you can edit; it leaves the feed" : {
+    "Moves this article into a library folder as a book you can edit; it leaves the feed" : {
       "comment" : "What the Move to Library sheet says about one article: it moves into a library folder as a book and leaves its feed."
     },
-    "Moves this episode into a folder of your library, where it becomes a book you can edit; it leaves the feed" : {
+    "Moves this episode into a library folder as a book you can edit; it leaves the feed" : {
       "comment" : "What the Move to Library sheet says about one episode: it moves into a library folder as a book and leaves its feed."
     },
-    "Moves this item into a folder of your library, where it becomes a book you can edit; it leaves the feed" : {
+    "Moves this item into a library folder as a book you can edit; it leaves the feed" : {
       "comment" : "What the Move to Library sheet says about one item, an episode or an article: it moves into a library folder as a book and leaves its feed."
     },
     "Name" : {
@@ -7855,6 +7954,18 @@
     },
     "New item: “%@”" : {
       "comment" : "The body of the notification of one new item, an episode or an article. %@ is its title."
+    },
+    "Newest articles kept downloaded or listed, from 1 to 2,000" : {
+      "comment" : "VoiceOver hint of the number of the newest items, for a feed of articles. The range is the limits of the number."
+    },
+    "Newest episodes and articles kept downloaded or listed, from 1 to 2,000" : {
+      "comment" : "VoiceOver hint of the number of the newest items, in Settings, for every feed. The range is the limits of the number."
+    },
+    "Newest episodes kept downloaded or listed, from 1 to 2,000" : {
+      "comment" : "VoiceOver hint of the number of the newest items, for a feed of episodes. The range is the limits of the number."
+    },
+    "Newest items kept downloaded or listed, from 1 to 2,000" : {
+      "comment" : "VoiceOver hint of the number of the newest items, for a feed of both episodes and articles. The range is the limits of the number."
     },
     "Next" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Next\"."
@@ -8371,7 +8482,7 @@
     "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe." : {
       "comment" : "VoiceOver hint of the Transcribe button of the question offered after an import. Transcribe Audio is the command's name; Transcribe is the sheet's button."
     },
-    "Opens a sheet where you type a feed's address and choose where its folder goes" : {
+    "Opens a sheet to type a feed's address and choose its folder" : {
       "comment" : "VoiceOver hint of the Add Feed button in the Add to Library sheet."
     },
     "Opens it" : {
@@ -8605,7 +8716,7 @@
     "Pitch: %@" : {
       "comment" : "Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x."
     },
-    "Plain http: what this feed sends can be read or changed on the way." : {
+    "Plain http: others can read or change what this feed sends." : {
       "comment" : "The note in Feed Info about a feed whose address uses plain http, which is not encrypted. Plain http is a term; keep it."
     },
     "Play" : {
@@ -8665,6 +8776,9 @@
     },
     "Played" : {
       "comment" : "The note on a feed's episode that played to its end or was marked played. Title case."
+    },
+    "Played downloads are kept until you delete them" : {
+      "comment" : "VoiceOver hint of the checkbox that turns off deleting downloads after playing."
     },
     "Playing" : {
       "comment" : "A part of the audio editor's status line while the audio plays."
@@ -8886,9 +9000,6 @@
     },
     "Puts back the transcript as it was before the last cleanup." : {
       "comment" : "VoiceOver hint of the Undo Cleanup button of the Clean Up Transcript sheet."
-    },
-    "Puts this podcast's feed address in the address field and subscribes to it" : {
-      "comment" : "VoiceOver hint of the Subscribe button of one podcast in the search results."
     },
     "Putting back the transcript from before…" : {
       "comment" : "Line of the Clean Up Transcript sheet while it puts back the transcript from before the cleanup."
@@ -10915,13 +11026,13 @@
     "Stopped. Back at %@." : {
       "comment" : "Said as the audio editor's Stop goes back to where playing began. %@ is that time in words."
     },
-    "Stops checking this feed; the feed and its downloads stay" : {
+    "Stops checking; the feed and its downloads stay" : {
       "comment" : "VoiceOver hint of the Unsubscribe button in Feed Info when it acts at once."
     },
     "Stops comparing. Nothing in either copy has been changed." : {
       "comment" : "VoiceOver hint of the Stop button of the Compare Libraries sheet."
     },
-    "Stops every feed download, those waiting for a network or for room too, and deletes what they had downloaded." : {
+    "Stops every feed download, including those waiting, and deletes what they had downloaded." : {
       "comment" : "What VoiceOver says the feed downloads section's Cancel button does: it stops every feed download and deletes what they had downloaded."
     },
     "Stops playback resuming when headphones disconnect" : {
@@ -10966,7 +11077,7 @@
     "Subscribed" : {
       "comment" : "Label of when the listener subscribed to the feed, in Feed Info.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
     },
-    "Subscribed to %@. This feed uses plain http, so what it sends can be read or changed on the way; TextMouth still loads it." : {
+    "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it." : {
       "comment" : "The warning shown once after subscribing to a feed whose address uses plain http. %@ is the feed's title."
     },
     "Subscribed to %@: %@." : {
@@ -11002,6 +11113,9 @@
           }
         }
       }
+    },
+    "Subscribes to this podcast and fills the address field" : {
+      "comment" : "VoiceOver hint of the Subscribe button of one podcast in the search results."
     },
     "Subscribing to %@, %lld of %lld…" : {
       "comment" : "What the Import OPML sheet shows while it subscribes to the feeds. The first %@ is the title of the feed being subscribed to; the first %lld is its number in the file; the second %lld is how many feeds the file lists.",
@@ -11199,7 +11313,7 @@
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
     },
-    "TextMouth couldn't keep the article's earlier text beside the new download, so it kept the article as it was." : {
+    "TextMouth couldn't keep the earlier text beside the new download, so the article stays as it was." : {
       "comment" : "Why a feed article's new download failed: its earlier text could not be kept beside it."
     },
     "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was." : {
@@ -12131,7 +12245,7 @@
     "The podcast directory couldn't answer the search. Try again later." : {
       "comment" : "Why a podcast search failed: the directory's address answers that nothing is there."
     },
-    "The podcast directory refused the search. It allows about 20 searches a minute, so wait a minute and try again." : {
+    "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again." : {
       "comment" : "Why a podcast search failed: the directory limits searches to about 20 a minute."
     },
     "The podcast directory sent an answer TextMouth can't read. Try again later." : {
@@ -12423,7 +12537,7 @@
     "This Mac is offline, so %@ can't be refreshed. Connect to the internet and try again." : {
       "comment" : "Why a feed could not be refreshed: this Mac has no internet. %@ is the feed's title or server."
     },
-    "This Mac is offline, so the podcast directory can't be searched. Connect to the internet and try again." : {
+    "This Mac is offline, so the directory can't be searched. Connect to the internet and try again." : {
       "comment" : "Why a podcast search failed: this Mac has no internet."
     },
     "This Mac is offline, so “%@” can't be downloaded. Connect to the internet and try again." : {
@@ -12539,7 +12653,7 @@
     "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a braille book that is read as UEB but whose braille shows English Braille, American Edition's signs (BrailleCodeDetector): which code it looks like and where to choose it. Plain, so that VoiceOver and a braille display read it as it is."
     },
-    "This download isn't where its feed keeps its downloads, so TextMouth left its files as they are." : {
+    "This download isn't in its feed's folder, so TextMouth left its files as they are." : {
       "comment" : "Why a feed episode's download could not be deleted: it is not in its feed's folder."
     },
     "This episode has no description." : {
@@ -12995,13 +13109,16 @@
     "Type a percent from 0 to 100, such as 47.5." : {
       "comment" : "Hint of the Go to Percent field: what the user may type. 47.5 is an example number; write it as the language writes numbers."
     },
+    "Type a podcast's title or publisher, then press Return to search Apple's directory" : {
+      "comment" : "VoiceOver hint of the podcast search field. Return is the Return key."
+    },
     "Type a time, such as 12:04.3, 1:02:03, or 75.5." : {
       "comment" : "Shown or spoken when a time field holds nothing, or something that is not a time (Go to Time, Insert Silence, the reader's Go to Time). The examples are clock times and seconds."
     },
     "Type a title, then save again." : {
       "comment" : "Second sentence of that message: what to do."
     },
-    "Type or paste a feed's address, or the address of a web page that names its feed, then press Return" : {
+    "Type or paste a feed or web page address, then press Return" : {
       "comment" : "VoiceOver hint of the field where the listener types a feed's address. Return is the Return key."
     },
     "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions." : {
@@ -13018,9 +13135,6 @@
     },
     "Type to search within the book" : {
       "comment" : "VoiceOver hint of the search field in Search in Book when the book searched is a text book."
-    },
-    "Type words from a podcast's title or its publisher's name, then press Return to search Apple's podcast directory" : {
-      "comment" : "VoiceOver hint of the podcast search field. Return is the Return key."
     },
     "UTF-16 (big-endian)" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf16BigEndian."
@@ -13350,22 +13464,8 @@
     "When book ends" : {
       "comment" : "Title of the pop-up in the Playback settings that chooses what happens when a book ends."
     },
-    "When checked, feeds refresh only when TextMouth opens, if that is on, and when you choose %@ or %@" : {
-      "comment" : "VoiceOver hint of the checkbox that turns the refresh interval off. The first %@ is the name of the Check Feed command; the second is the name of the Refresh All Feeds command.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "When checked, feeds refresh only when TextMouth opens, if that is on, and when you choose %1$@ or %2$@"
-          }
-        }
-      }
-    },
     "When checked, matches must use the same upper and lower case" : {
       "comment" : "VoiceOver hint of the Match Case checkbox."
-    },
-    "When checked, played downloads are kept until you delete them" : {
-      "comment" : "VoiceOver hint of the checkbox that turns off deleting downloads after playing."
     },
     "When checked, the search text is an ICU regular expression" : {
       "comment" : "VoiceOver hint of the Regular Expression checkbox in the Search Library window. ICU is the name of the regular expression syntax, and stays as written."
@@ -14095,9 +14195,6 @@
     "less than a minute" : {
       "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence, for a transcription that takes under 45 seconds."
     },
-    "listed" : {
-      "comment" : "The word that ends a feed's size when the library lists fewer of its entries than the feed has: \"10 of 381 episodes listed\". It is the word of the \"List and download\" choice. Lower case."
-    },
     "loud" : {
       "comment" : "A word describing the microphone's loudness in the Record window: close to the most a recording can hold. Lower case, since it follows figures."
     },
@@ -14140,9 +14237,6 @@
           }
         }
       }
-    },
-    "more than" : {
-      "comment" : "The words before the size of a feed longer than TextMouth reads, as in \"10 of more than 2000 episodes listed\". Lower case."
     },
     "more than %@" : {
       "comment" : "A feed's size when it is longer than TextMouth reads. %@ is the size, such as \"2000 episodes\" or just \"2000\"."
