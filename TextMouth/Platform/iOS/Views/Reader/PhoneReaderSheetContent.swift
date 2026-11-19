@@ -58,7 +58,7 @@ struct PhoneReaderSheetContent: View {
         case .navigationUnit:
             // The Navigation unit's list is the reader's slice's, through
             // `PhoneChoiceSheet`; this shows its name, the Mac's, until then.
-            PhoneUnbuiltSheet(title: "Navigation unit")
+            PhoneUnbuiltSheet(title: PhoneReaderVocabulary.navigationUnit)
         }
     }
 }

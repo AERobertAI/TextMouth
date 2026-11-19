@@ -45,7 +45,7 @@ final class PhoneSettingsModelTests: XCTestCase {
             (.readingStatistics, "Reading Statistics", "Reading Statistics", nil),
             (
                 .shareLogs, "Share Logs…", "Share Logs…",
-                "Shares TextMouth's recent logs as a text file. They hold no book text."
+                "Shares recent logs as a text file. They hold no book text."
             ),
         ]
         for entry in expected {
@@ -236,7 +236,7 @@ final class PhoneSettingsModelTests: XCTestCase {
             ),
             (
                 .followInBraille, "Follow in Braille", "Follow in Braille",
-                "While the book plays, moves Book content on with the speech, even while you're reading it. "
+                "While playing, moves Book content on with the speech, even as you read it. "
                     + "For trying out with a braille display.",
                 true
             ),

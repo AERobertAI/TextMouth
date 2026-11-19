@@ -6,43 +6,84 @@ import Foundation
 /// words are in `PhoneSettingsVocabulary`.
 enum PhoneSettingsWording {
     /// The screen's title.
-    static let screenTitle = "Settings"
+    static var screenTitle: String {
+        String(localized: "Settings",
+               comment: "Title of the iPhone's Settings screen.")
+    }
 
     // MARK: Navigation
 
     /// The row choosing what a text book moves by until it has a unit of its
     /// own.
-    static let textNavigationUnit = "Navigation unit for text books"
+    static var textNavigationUnit: String {
+        String(localized: "Navigation unit for text books",
+               comment: "Label and title of the iPhone Settings row that chooses what a text book moves by until it has a unit of its own.")
+    }
     /// The row choosing what an audiobook moves by until it has a unit of its
     /// own.
-    static let audioNavigationUnit = "Navigation unit for audiobooks"
+    static var audioNavigationUnit: String {
+        String(localized: "Navigation unit for audiobooks",
+               comment: "Label and title of the iPhone Settings row that chooses what an audiobook moves by until it has a unit of its own.")
+    }
     /// What both rows do.
-    static let navigationUnitHint = "What a book of this kind moves by until it has a unit of its own."
+    static var navigationUnitHint: String {
+        String(localized: "What a book of this kind moves by until it has a unit of its own.",
+               comment: "Hint of the two iPhone Settings rows that choose a navigation unit, one for text books and one for audiobooks.")
+    }
 
     // MARK: Reading
 
     /// The section holding Follow in Braille.
-    static let readingSection = "Reading"
+    static var readingSection: String {
+        String(localized: "Reading",
+               comment: "Heading of the iPhone Settings section that holds Follow in Braille.")
+    }
     /// The switch that lets Book content follow the speech.
-    static let followInBraille = "Follow in Braille"
+    static var followInBraille: String {
+        String(localized: "Follow in Braille",
+               comment: "Switch in iPhone Settings: while a book plays, the book's text moves on with the speech, for a braille display.")
+    }
     /// What Follow in Braille does.
-    static let followInBrailleHint =
-        "While the book plays, moves Book content on with the speech, even while you're reading it. "
-        + "For trying out with a braille display."
+    static var followInBrailleHint: String {
+        SentenceWording.joined([
+            String(localized: "While playing, moves Book content on with the speech, even as you read it.",
+                   comment: "First sentence of the hint of Follow in Braille in iPhone Settings. \"Book content\" is the name of the element that holds the book's text, as VoiceOver reads it."),
+            String(localized: "For trying out with a braille display.",
+                   comment: "Last sentence of the hint of Follow in Braille in iPhone Settings."),
+        ])
+    }
 
     // MARK: Statistics and About
 
     /// The section holding Reading Statistics.
-    static let statisticsSection = "Statistics"
+    static var statisticsSection: String {
+        String(localized: "Statistics",
+               comment: "Heading of the iPhone Settings section that holds the row for Reading Statistics.")
+    }
     /// The row that pushes the reading statistics, and the title of what it
     /// pushes.
-    static let readingStatistics = "Reading Statistics"
+    static var readingStatistics: String {
+        String(localized: "Reading Statistics",
+               comment: "Row in iPhone Settings that opens the reading statistics, and the title of the screen it opens.")
+    }
     /// The section holding the version and the logs.
-    static let aboutSection = "About"
+    static var aboutSection: String {
+        String(localized: "About",
+               comment: "Heading of the iPhone Settings section that holds the app's version and its logs.")
+    }
     /// The row naming the app's version.
-    static let version = "Version"
+    static var version: String {
+        String(localized: "Version",
+               comment: "Label of the iPhone Settings row that names the app's version.")
+    }
     /// The button that shares the logs.
-    static let shareLogs = "Share Logs…"
+    static var shareLogs: String {
+        String(localized: "Share Logs…",
+               comment: "Button in iPhone Settings that shares TextMouth's recent logs as a text file. The ellipsis means the share sheet opens.")
+    }
     /// What sharing the logs does.
-    static let shareLogsHint = "Shares TextMouth's recent logs as a text file. They hold no book text."
+    static var shareLogsHint: String {
+        String(localized: "Shares recent logs as a text file. They hold no book text.",
+               comment: "Hint of the Share Logs button in iPhone Settings.")
+    }
 }

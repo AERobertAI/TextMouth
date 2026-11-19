@@ -13,6 +13,6 @@ enum LogsInFinder {
         for location: LogLocation,
         opening open: (URL) -> Bool = { _ in false }
     ) -> String? {
-        IOSUnavailable.feature("Showing the logs in Finder").errorDescription
+        IOSUnavailable.showingLogsInFinder.errorDescription
     }
 }

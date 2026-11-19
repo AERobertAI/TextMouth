@@ -130,8 +130,8 @@ struct PhoneSettingsView: View {
             choiceRow(.language, value: PhoneSettingsModel.languageName(settings.selectedLanguage))
             let offer = voiceOffer
             choiceRow(.voice, value: offer.rowValue, isEnabled: offer.canOpen)
-            PhoneActionButton(title: Words.previewVoice.rawValue, action: previewVoice)
-                .accessibilityLabel(Words.previewSelectedVoice.rawValue)
+            PhoneActionButton(title: Words.previewVoice.title, action: previewVoice)
+                .accessibilityLabel(Words.previewSelectedVoice.title)
             sliderRow(.defaultSpeed, value: noted($settings.wordsPerMinute))
             sliderRow(.defaultPitch, value: noted($settings.pitchMultiplier))
         case .navigation:

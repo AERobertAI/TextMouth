@@ -64,15 +64,15 @@ enum WatchedProcess {
         var words: String {
             switch self {
             case let .tookTooLong(seconds):
-                return "it ran longer than \(CountWording.englishSeconds(Int(seconds.rounded(.up))))"
+                return "it ran longer than \(CountWording.englishSeconds(Int(seconds.rounded(.up))))" // l10n: no (debug log text, which stays English)
             case let .usedTooMuchMemory(bytes):
-                return "it held more than \(bytes / 1_048_576) MB of memory"
+                return "it held more than \(bytes / 1_048_576) MB of memory" // l10n: no (debug log text, which stays English)
             case let .madeNoProgress(seconds):
-                return "its output did not grow for \(CountWording.englishSeconds(Int(seconds.rounded(.up))))"
+                return "its output did not grow for \(CountWording.englishSeconds(Int(seconds.rounded(.up))))" // l10n: no (debug log text, which stays English)
             case let .usedTooMuchProcessorTime(seconds):
-                return "it used more than \(CountWording.englishSeconds(Int(seconds.rounded(.up)))) of processor time"
+                return "it used more than \(CountWording.englishSeconds(Int(seconds.rounded(.up)))) of processor time" // l10n: no (debug log text, which stays English)
             case let .wroteTooMuch(bytes):
-                return "its output passed \(bytes / 1_048_576) MB"
+                return "its output passed \(bytes / 1_048_576) MB" // l10n: no (debug log text, which stays English)
             case let .memoryGrew(bytes):
                 return FFmpegImportWording.memoryGrew(megabytes: bytes / 1_048_576)
             case let .beganShortOfMemory(freeBytes):
@@ -143,7 +143,7 @@ enum WatchedProcess {
         residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) async throws -> Outcome {
-        throw IOSUnavailable.feature("Converting this kind of file")
+        throw IOSUnavailable.convertingThisKindOfFile
     }
 
     /// How long the Mac lets a streaming child run on after its reader has
@@ -168,7 +168,7 @@ enum WatchedProcess {
         endGraceSeconds: TimeInterval = WatchedProcess.defaultEndGraceSeconds,
         reading read: (PipeReader) async throws -> Value
     ) async throws -> (ending: Ending, read: Result<Value, any Error>) {
-        throw IOSUnavailable.feature("Converting this kind of file")
+        throw IOSUnavailable.convertingThisKindOfFile
     }
 
     /// Would run `executable` and return what it prints; on iOS it starts

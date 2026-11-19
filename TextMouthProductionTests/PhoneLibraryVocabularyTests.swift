@@ -50,7 +50,7 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
 
         XCTAssertEqual(
             LibraryListWording.continueVisible("Emma"),
-            PhoneLibraryVocabulary.continueVisiblePrefix + "Emma"
+            PhoneLibraryVocabulary.continueVisible("Emma")
         )
         XCTAssertTrue(macView.contains("Text(LibraryListWording.continueVisible(lastBook.title))"))
         XCTAssertEqual(PhoneLibraryVocabulary.continueHint, LibraryListWording.continueHint)

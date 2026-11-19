@@ -11,11 +11,17 @@ enum PhoneBookSearchVocabulary {
     static var title: String { ShortcutAction.searchInBook.title }
 
     /// The button's hint.
-    static let buttonHint = "Opens a search of the book's text."
+    static var buttonHint: String {
+        String(localized: "Opens a search of the book's text.",
+               comment: "Hint of the reader's Search in Book button on the iPhone.")
+    }
 
     /// A result row's hint. The Mac's "Activate to navigate to this result"
     /// names a gesture.
-    static let rowHint = "Goes to this result."
+    static var rowHint: String {
+        String(localized: "Goes to this result.",
+               comment: "Hint of a row in the iPhone's Search in Book results: activating it moves the book to that match.")
+    }
 
     /// How long typing must pause before a search runs and its count is said:
     /// one second, as the Library's search waits (the spec, "Searching"), so
@@ -25,7 +31,7 @@ enum PhoneBookSearchVocabulary {
 
     /// The sheet's button that closes it: the word the headings sheet uses.
     /// Its hint is the Mac's (`BookSearchWording.backToBookHint`).
-    static let backToBook = PhoneHeadingsVocabulary.backToBook
+    static var backToBook: String { PhoneHeadingsVocabulary.backToBook }
 }
 
 /// What a search of an open book reads, copied from the reader so that the

@@ -27,6 +27,18 @@ final class PhoneImportWordingTests: XCTestCase {
         XCTAssertNil(PhoneImportWording.importing([]))
     }
 
+    /// A count in a sentence is a count, grouped for the region as every
+    /// count is, in both sentences that hold one (FR34).
+    func testACountInASentenceIsGroupedForTheRegion() {
+        let many = Array(repeating: "Dune", count: 1234)
+        let grouped = 1234.formatted()
+        XCTAssertEqual(PhoneImportWording.importing(many), "Importing \(grouped) books")
+        XCTAssertEqual(
+            PhoneImportWording.stoppedWhenClosed(many),
+            "Importing \(grouped) books was stopped when TextMouth closed. Add them again."
+        )
+    }
+
     // MARK: - Downloading
 
     /// The card's line, and the sentence after a stalled download.
@@ -174,7 +186,7 @@ final class PhoneImportWordingTests: XCTestCase {
     func testAddToLibraryButtonHint() {
         XCTAssertEqual(
             PhoneImportWording.addToLibraryButtonHint,
-            "Opens a sheet with the ways to add to the library: open a book, or import a folder."
+            "Opens options to open a book or import a folder."
         )
     }
 }

@@ -129,7 +129,7 @@ enum PhoneBackgroundWork {
     /// flush and the audio session's release in the background.
     private static func installSleepTimerHold(_ lifeCycle: PhoneLifeCycle) {
         SleepTimerService.shared.phoneExpiryHold = { [weak lifeCycle] in
-            let endHold = lifeCycle?.beginHold("Sleep timer putting the book to sleep") ?? {}
+            let endHold = lifeCycle?.beginHold("Sleep timer putting the book to sleep") ?? {} // l10n: no (a background task's name, in the system's diagnostics only)
             return {
                 if PhoneBackgroundWork.isInBackground {
                     PhoneLifeCycle.flushPendingWrites(because: "sleep-timer-expired-in-background")

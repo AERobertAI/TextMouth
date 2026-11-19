@@ -45,7 +45,7 @@ final class TextMouthSceneDelegate: UIResponder, UIWindowSceneDelegate {
     /// background task, begun at once, since Apple's documentation says to
     /// begin one "as early as possible", not at the end of this method.
     func sceneDidEnterBackground(_ scene: UIScene) {
-        let endTask = TextMouthAppDelegate.beginBackgroundTask(named: "Saving the book's place")
+        let endTask = TextMouthAppDelegate.beginBackgroundTask(named: "Saving the book's place") // l10n: no (a background task's name, in the system's diagnostics only)
         TextMouthAppDelegate.model.lifeCycle.sceneDidEnterBackground()
         endTask()
     }

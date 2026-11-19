@@ -359,7 +359,7 @@ final class PhoneImportCopier: ObservableObject {
         if underWay {
             // A background task while anything imports, ended by its
             // expiry too (the app delegate's `beginBackgroundTask(named:)`).
-            if endHold == nil { endHold = model.lifeCycle.beginHold("Importing books") }
+            if endHold == nil { endHold = model.lifeCycle.beginHold("Importing books") } // l10n: no (a background task's name, in the system's diagnostics only)
             setScreenKeptAwake(true)
         } else {
             endHold?()

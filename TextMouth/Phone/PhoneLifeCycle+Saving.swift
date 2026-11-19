@@ -71,7 +71,7 @@ extension PhoneLifeCycle {
                 + "background=\(isInBackground)"
         )
         guard isInBackground else { return }
-        let endHold = beginHold("Saving at a memory warning")
+        let endHold = beginHold("Saving at a memory warning") // l10n: no (a background task's name, in the system's diagnostics only)
         Self.flushPendingWrites(because: "memory-warning")
         endHold()
     }

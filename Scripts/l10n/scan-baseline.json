@@ -1,31 +1,4 @@
 {
   "version": 1,
-  "files": {
-    "TextMouth/Phone/PhoneAudioWording.swift": 1,
-    "TextMouth/Phone/PhoneBackgroundHold.swift": 2,
-    "TextMouth/Phone/PhoneBookSearch.swift": 2,
-    "TextMouth/Phone/PhoneFolderVocabulary.swift": 28,
-    "TextMouth/Phone/PhoneGoToModel.swift": 5,
-    "TextMouth/Phone/PhoneHeadingsModel.swift": 6,
-    "TextMouth/Phone/PhoneImportRefusal.swift": 7,
-    "TextMouth/Phone/PhoneImportWording.swift": 13,
-    "TextMouth/Phone/PhoneLibraryVocabulary.swift": 33,
-    "TextMouth/Phone/PhoneLifeCycle+Saving.swift": 1,
-    "TextMouth/Phone/PhoneReaderVocabulary.swift": 13,
-    "TextMouth/Phone/PhoneReaderWording.swift": 23,
-    "TextMouth/Phone/PhoneRowWording.swift": 10,
-    "TextMouth/Phone/PhoneSession.swift": 2,
-    "TextMouth/Phone/PhoneSettingsVocabulary.swift": 43,
-    "TextMouth/Phone/PhoneSettingsWording.swift": 14,
-    "TextMouth/Phone/PhoneVoiceModel.swift": 12,
-    "TextMouth/Platform/iOS/App/TextMouthSceneDelegate.swift": 1,
-    "TextMouth/Platform/iOS/IOSUnavailable.swift": 1,
-    "TextMouth/Platform/iOS/Services/PackageFileEditing+iOS.swift": 1,
-    "TextMouth/Platform/iOS/Services/PhoneAudioSession.swift": 4,
-    "TextMouth/Platform/iOS/Services/PhoneBackgroundWork.swift": 1,
-    "TextMouth/Platform/iOS/Services/PhoneImportCopier.swift": 1,
-    "TextMouth/Platform/iOS/Services/WatchedProcess+iOS.swift": 7,
-    "TextMouth/Platform/iOS/Views/LogsInFinder+iOS.swift": 1,
-    "TextMouth/Platform/iOS/Views/Reader/PhoneReaderSheetContent.swift": 1
-  }
+  "files": {}
 }
