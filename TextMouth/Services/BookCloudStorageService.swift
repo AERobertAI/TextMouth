@@ -248,8 +248,8 @@ final class BookCloudStorageService: BookCloudStorage {
             listen(to: survey, of: package, into: parts, listening: &listening)
             var heard = parts.percents
             var current = survey.progress(bySize: bySize, parts: heard)
-            let service = items.location(of: package.url).provider?.displayName ?? "the sync service"
-            let asOneItem = survey.packageItem == nil ? "" : ", which syncs the package as one item"
+            let service = items.location(of: package.url).provider?.displayName ?? "the sync service" // l10n: no (debug log text)
+            let asOneItem = survey.packageItem == nil ? "" : ", which syncs the package as one item" // l10n: no (debug log text)
             logEvent(
                 "CLOUD_DOWNLOAD_STARTED: \(name): \(current.totalFiles - current.completedFiles) of "
                     + "\(current.totalFiles) files to come from \(service)\(asOneItem)"
@@ -291,7 +291,7 @@ final class BookCloudStorageService: BookCloudStorage {
                 heard = parts.percents
                 if !tracedParts, !heard.isEmpty {
                     tracedParts = true
-                    let whose = package.isPackage && heard[package.url.path] != nil ? "for the package as a whole" : "within files"
+                    let whose = package.isPackage && heard[package.url.path] != nil ? "for the package as a whole" : "within files" // l10n: no (debug log text)
                     DiagnosticLog.trace(.storage, "cloud download \(bookID): the sync service publishes progress \(whose)")
                 }
 
@@ -331,7 +331,7 @@ final class BookCloudStorageService: BookCloudStorage {
                 }
             }
         } catch is CancellationError {
-            let arrived = latest.map { "\($0.completedFiles) of \($0.totalFiles) files" } ?? "no files"
+            let arrived = latest.map { "\($0.completedFiles) of \($0.totalFiles) files" } ?? "no files" // l10n: no (debug log text)
             logEvent("CLOUD_DOWNLOAD_STOPPED: \(name): cancelled with \(arrived) on this Mac")
             throw CancellationError()
         } catch let error as BookCloudError {
@@ -527,10 +527,10 @@ final class BookCloudStorageService: BookCloudStorage {
         /// sync service syncs as one item, that they go as one.
         func removalWords(removing: [URL]) -> String {
             guard packageItem != nil else {
-                return "\(removing.count) of \(files.count) files"
+                return "\(removing.count) of \(files.count) files" // l10n: no (debug log text)
             }
             let removed = removing.isEmpty ? 0 : files.filter { $0.status.state.isOnThisMac }.count
-            return "\(removed) of \(files.count) files, as one package"
+            return "\(removed) of \(files.count) files, as one package" // l10n: no (debug log text)
         }
 
         /// The download errors reported by the items the sync service syncs

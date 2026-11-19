@@ -86,7 +86,7 @@ enum SavedFile {
         standIn: String
     ) -> URL? {
         let copy = preserveUnusable(url, bytes: bytes)
-        let preserved = copy.map { "preserved copy: \($0.lastPathComponent)" } ?? "no preserved copy could be made"
+        let preserved = copy.map { "preserved copy: \($0.lastPathComponent)" } ?? "no preserved copy could be made" // l10n: no (debug log text)
         DiagnosticLog.event(
             category,
             "\(tag): could not read \(url.lastPathComponent): \(reason); \(standIn); \(preserved)"
@@ -102,8 +102,12 @@ enum SavedFile {
         let fileName: String
 
         var errorDescription: String? {
-            "\(fileName) is only in the cloud and isn't on this Mac yet, so nothing was written over it. "
-                + "Try again in a moment."
+            SentenceWording.joined([
+                String(localized: "\(fileName) is only in the cloud and isn't on this Mac yet, so nothing was written over it.",
+                       comment: "First sentence of why a file was not saved: it is only in the cloud. %@ is the file's name, which stays as written."),
+                String(localized: "Try again in a moment.",
+                       comment: "Last sentence of why a cloud operation was refused for now: wait and try again."),
+            ])
         }
     }
 

@@ -323,7 +323,7 @@ enum MaintenancePass: String, Sendable {
     /// The startup batch that brings every text cache up to date.
     case textCacheUpdate = "text cache update"
     /// Redo Text Extraction, from Storage settings.
-    case textReextraction = "Redo Text Extraction"
+    case textReextraction = "Redo Text Extraction" // l10n: no (a pass's log name)
     /// The statistics pass that follows the text caches.
     case statistics = "statistics"
     /// The startup repair of the library and its packages.
