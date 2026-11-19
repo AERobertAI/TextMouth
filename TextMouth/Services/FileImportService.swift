@@ -89,7 +89,7 @@ enum FileImportError: LocalizedError, LogDescribing {
         case .hashingFailed: return "Failed to compute file hash." // l10n: no (debug log)
         case .importFailed(let msg): return "Import failed: \(msg)" // l10n: no (debug log)
         case .recordNotReadBack: return "The bookInfo.json file did not read back as it was written." // l10n: no (debug log)
-        case .unplayableAudio(let failure): return failure.message
+        case .unplayableAudio(let failure): return failure.logMessage
         case .unreadableArchive: return "The archive is damaged, incomplete, or not a ZIP archive." // l10n: no (debug log)
         case .archiveLinksOutside: return "The archive holds a link to a file outside it, which is never extracted." // l10n: no (debug log)
         case .archivePathOutside: return "The archive holds a file whose path leads outside it, which is never extracted." // l10n: no (debug log)

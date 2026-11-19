@@ -191,13 +191,19 @@ struct MemoryQuitMarker: Codable, Equatable, Sendable {
         var style = Date.FormatStyle(date: .long, time: .shortened)
         style.locale = locale
         style.timeZone = timeZone
-        let opening = "TextMouth quit on \(date.formatted(style)) to protect your Mac: its memory grew to "
-            + "\(MemoryFootprint.gigabytes(footprint)) GB"
+        let when = date.formatted(style)
+        let gigabytes = MemoryFootprint.gigabytes(footprint)
         if wasNothingPlaying {
-            return opening + " while nothing was playing. Your place was saved."
+            return String(localized: "TextMouth quit on \(when) to protect your Mac: its memory grew to \(gigabytes) GB while nothing was playing. Your place was saved.",
+                          comment: "Alert text at the next launch after TextMouth quit to protect the Mac, when nothing was playing. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.")
         }
-        let book = bookTitle.map { $0.isEmpty ? "a book" : $0 } ?? "a book"
-        return opening + " while \(book) played, because of a fault in macOS's audio. Your place was saved."
+        // A title the marker kept names the book; with none, the sentence says "a book".
+        guard let title = bookTitle, !title.isEmpty else {
+            return String(localized: "TextMouth quit on \(when) to protect your Mac: its memory grew to \(gigabytes) GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+                          comment: "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played whose title was not kept. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.")
+        }
+        return String(localized: "TextMouth quit on \(when) to protect your Mac: its memory grew to \(gigabytes) GB while \(title) played, because of a fault in macOS's audio. Your place was saved.",
+                      comment: "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1; %3$@ is the book's title.")
     }
 
     /// Write the marker to `url`, replacing any there.
@@ -437,9 +443,11 @@ final class PlaybackMemoryGuard {
         Task { @MainActor in
             let alert = NSAlert()
             alert.alertStyle = .warning
-            alert.messageText = "TextMouth Quit to Protect Your Mac"
+            alert.messageText = String(localized: "TextMouth Quit to Protect Your Mac",
+                                       comment: "Title of the alert at launch telling that TextMouth quit at its last run because its memory grew too large while a book played.")
             alert.informativeText = marker.announcement()
-            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: String(localized: "OK",
+                                              comment: "Button that dismisses an alert, here the one that tells TextMouth quit to protect the Mac."))
             alert.runModal()
         }
 #else

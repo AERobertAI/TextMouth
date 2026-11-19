@@ -105,7 +105,9 @@ TextMouth/Services/AudioEditing/AudioExportFormat.swift
 TextMouth/Services/AudioEditing/AudioFilterPresets.swift
 TextMouth/Services/AudioEditing/AudioFilterRunner.swift
 TextMouth/Services/AudioEditing/FFmpeg.swift
+TextMouth/Services/AudioEngineService.swift
 TextMouth/Services/AudioInputPermission.swift
+TextMouth/Services/AudioPlaybackService.swift
 TextMouth/Services/BookCloudStorageService.swift
 TextMouth/Services/BookContentAnalysisService.swift
 TextMouth/Services/BookTextEditing.swift
@@ -145,10 +147,13 @@ TextMouth/Services/LibrarySessionLease.swift
 TextMouth/Services/LogWriter.swift
 TextMouth/Services/MP3/MP3Encoder.swift
 TextMouth/Services/MaintenanceFileAccess.swift
+TextMouth/Services/MediaGestureDetector.swift
+TextMouth/Services/NowPlayingService.swift
 TextMouth/Services/ObjCException.swift
 TextMouth/Services/OutsideTranscript.swift
 TextMouth/Services/OwnAudioConverter.swift
 TextMouth/Services/PersistenceFailureCenter.swift
+TextMouth/Services/PlaybackMemoryGuard.swift
 TextMouth/Services/ReaderRequestStore.swift
 TextMouth/Services/ReaderWorkingCopy.swift
 TextMouth/Services/ReadingStatsService.swift

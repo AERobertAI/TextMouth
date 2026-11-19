@@ -968,6 +968,9 @@
     "%@ through the book" : {
       "comment" : "What VoiceOver says for the reader's percent button. %@ is the percent, such as 22.9%."
     },
+    "%@ times speed" : {
+      "comment" : "What VoiceOver and braille say for the playback speed of an audiobook, such as \"1.25 times speed\". %@ is the speed's number, such as 1.25."
+    },
     "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch." : {
       "comment" : "Message of the alert about one book's Ogg audio that waits for disk space. %@ is what the book needs, such as \"“Harbor Dramas” needs 4.2 GB free\"."
     },
@@ -5815,6 +5818,9 @@
     "Changes not saved" : {
       "comment" : "Storage settings status: some changes could not be saved."
     },
+    "Changes the speed in steps of %@ times" : {
+      "comment" : "Accessibility hint of the audio speed control that adjusts in steps. %@ is the size of one step, such as 0.05."
+    },
     "Changes the view's name, what it lists, its conditions, its sort, and its limit." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
     },
@@ -6854,6 +6860,9 @@
     },
     "Decrease Speed" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed slower. Also the title of the menu command of the same name."
+    },
+    "Decrease audio speed by %@ times" : {
+      "comment" : "Accessibility label of the button that lowers the audio speed. %@ is the size of one step, such as 0.1."
     },
     "Default Pitch" : {
       "comment" : "Heading of the default pitch group in the Voice settings."
@@ -9093,6 +9102,9 @@
     "Increase Speed" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed faster. Also the title of the menu command of the same name."
     },
+    "Increase audio speed by %@ times" : {
+      "comment" : "Accessibility label of the button that raises the audio speed. %@ is the size of one step, such as 0.1."
+    },
     "Info: %@" : {
       "comment" : "Navigation title of the book information sheet. %@ is the book's title.\nThe window title of the read-only Book Information sheet of a feed's episode or article. %@ is the book's title.\nWindow title of the sheet that shows a book's information. %@ is the book's title."
     },
@@ -10345,6 +10357,12 @@
     "Maximum is %@." : {
       "comment" : "Second sentence of that refusal. %@ is the longest time allowed, spoken in words, such as \"1 hour\"."
     },
+    "Media controls not released: this book does not hold them." : {
+      "comment" : "Announcement when Release Media Controls is chosen in a window whose book does not hold the media controls, so nothing changed. It begins like the announcement Media controls released, so the two are told apart from their first words."
+    },
+    "Media controls released" : {
+      "comment" : "Announcement after Release Media Controls handed the media keys and AirPods back to the system."
+    },
     "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio." : {
       "comment" : "Explanation under the restart gesture's pattern heading in the Miscellaneous settings."
     },
@@ -11190,6 +11208,9 @@
     "Next sentence" : {
       "comment" : "Announcement after the reader moved to the next sentence."
     },
+    "Next track" : {
+      "comment" : "Name of the Next Track media event, a choice for one step of the media-key pattern in Settings."
+    },
     "No Library Window" : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The submenu's one item, dimmed, while no Library window is in front."
     },
@@ -11717,7 +11738,7 @@
       "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\"."
     },
     "OK" : {
-      "comment" : "Button that closes a notice.\nButton that closes an alert and changes nothing.\nButton that closes an alert that only informs. Title case.\nButton that dismisses an alert about a problem.\nButton that dismisses an alert after reading it.\nButton that dismisses the reader's error alert.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
+      "comment" : "Button that closes a notice.\nButton that closes an alert and changes nothing.\nButton that closes an alert that only informs. Title case.\nButton that dismisses an alert about a problem.\nButton that dismisses an alert after reading it.\nButton that dismisses an alert, here the one that tells TextMouth quit to protect the Mac.\nButton that dismisses the reader's error alert.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
     },
     "Of each feed's episodes and articles, lists only the one you opened last." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
@@ -12131,7 +12152,7 @@
       "comment" : "A part of a substitution rule's spoken summary. %@ is the rule's pattern."
     },
     "Pause" : {
-      "comment" : "Label of the button that pauses the book while it is playing.\nLabel of the reader's play and pause button while the book plays; it pauses.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\".\nTitle of the button in the Record window that pauses the recording."
+      "comment" : "Label of the button that pauses the book while it is playing.\nLabel of the reader's play and pause button while the book plays; it pauses.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\".\nName of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.\nName of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.\nTitle of the button in the Record window that pauses the recording."
     },
     "Pause %@" : {
       "comment" : "A pause as the audio editor's list and its row's buttons name it. %@ is the pause's number, an identifier written without digit grouping."
@@ -12219,7 +12240,7 @@
       "comment" : "The note in Feed Info about a feed whose address uses plain http, which is not encrypted. Plain http is a term; keep it."
     },
     "Play" : {
-      "comment" : "Label of the button that starts playing the book.\nLabel of the reader's play and pause button while the book is not playing; it plays."
+      "comment" : "Label of the button that starts playing the book.\nLabel of the reader's play and pause button while the book is not playing; it plays.\nName of the Play media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.\nName of the playback event whose sound is chosen in Settings, Sound Effects: playing starts."
     },
     "Play / Pause" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Starts or pauses reading aloud or playing the book. Also the title of the menu command of the same name.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts or pauses playback in the audio editor."
@@ -12269,6 +12290,9 @@
     },
     "Play the item below" : {
       "comment" : "A choice of the pop-up button that sets what happens when a feed's item ends: play the item below it in the list."
+    },
+    "Play/Pause toggle" : {
+      "comment" : "Name of the media event of the combined Play and Pause key, a choice for one step of the media-key pattern in Settings."
     },
     "Playback" : {
       "comment" : "Heading of the group of playback keyboard shortcuts in Settings, and the title of the Playback menu.\nName of the Settings tab for skipping, rewinding, the end of a book, the sleep timer, and the playback controls.\nTitle of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it."
@@ -12492,6 +12516,9 @@
     },
     "Previous sentence" : {
       "comment" : "Announcement after the reader moved to the previous sentence."
+    },
+    "Previous track" : {
+      "comment" : "Name of the Previous Track media event, a choice for one step of the media-key pattern in Settings."
     },
     "Print" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print\"."
@@ -14382,6 +14409,9 @@
     "Skip Section" : {
       "comment" : "Name of a heading row's command that makes speech skip the section, as a VoiceOver action and a context menu item."
     },
+    "Skip backward" : {
+      "comment" : "Name of the Skip Backward media event, a choice for one step of the media-key pattern in Settings."
+    },
     "Skip backward unit" : {
       "comment" : "VoiceOver label of the Skip Backward pop-up in the Playback settings."
     },
@@ -14407,6 +14437,9 @@
     },
     "Skip finished items" : {
       "comment" : "Label of the switch in a feed's Feed Info that passes over items already finished."
+    },
+    "Skip forward" : {
+      "comment" : "Name of the Skip Forward media event, a choice for one step of the media-key pattern in Settings."
     },
     "Skip forward unit" : {
       "comment" : "VoiceOver label of the Skip Forward pop-up in the Playback settings."
@@ -15404,6 +15437,9 @@
     "TextMouth Is Open on Another Mac" : {
       "comment" : "Title of the warning shown when another Mac has this library open too."
     },
+    "TextMouth Quit to Protect Your Mac" : {
+      "comment" : "Title of the alert at launch telling that TextMouth quit at its last run because its memory grew too large while a book played."
+    },
     "TextMouth Subscriptions" : {
       "comment" : "The title written into an exported OPML file of subscriptions. Title case."
     },
@@ -15841,6 +15877,39 @@
     },
     "TextMouth opens the book's text in your text editor, as a Markdown file." : {
       "comment" : "First sentence of the Edit Text explanation. Markdown is the name of a text format."
+    },
+    "TextMouth quit on %@ to protect your Mac: its memory grew to %@ GB while %@ played, because of a fault in macOS's audio. Your place was saved." : {
+      "comment" : "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1; %3$@ is the book's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth quit on %1$@ to protect your Mac: its memory grew to %2$@ GB while %3$@ played, because of a fault in macOS's audio. Your place was saved."
+          }
+        }
+      }
+    },
+    "TextMouth quit on %@ to protect your Mac: its memory grew to %@ GB while a book played, because of a fault in macOS's audio. Your place was saved." : {
+      "comment" : "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played whose title was not kept. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth quit on %1$@ to protect your Mac: its memory grew to %2$@ GB while a book played, because of a fault in macOS's audio. Your place was saved."
+          }
+        }
+      }
+    },
+    "TextMouth quit on %@ to protect your Mac: its memory grew to %@ GB while nothing was playing. Your place was saved." : {
+      "comment" : "Alert text at the next launch after TextMouth quit to protect the Mac, when nothing was playing. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth quit on %1$@ to protect your Mac: its memory grew to %2$@ GB while nothing was playing. Your place was saved."
+          }
+        }
+      }
     },
     "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Automatic does, as the alert says it before it is chosen."
@@ -16854,6 +16923,24 @@
     },
     "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another." : {
       "comment" : "Sentence of the second confirmation that deletes a folder: several feeds stay. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" names a sheet."
+    },
+    "The file %@ could not be read quickly enough." : {
+      "comment" : "A sentence telling an audio file could not be read fast enough to play. %@ is the file's name, such as 03.mp3."
+    },
+    "The file %@ failed partway through." : {
+      "comment" : "A sentence telling an audio file failed while playing. %@ is the file's name, such as 03.mp3."
+    },
+    "The file %@ is damaged, unreadable, or not an audio file." : {
+      "comment" : "A sentence telling an audio file cannot be read as audio. %@ is the file's name, such as 03.mp3."
+    },
+    "The file %@ is missing." : {
+      "comment" : "A sentence telling an audio file is not there. %@ is the file's name, such as 03.mp3."
+    },
+    "The file %@ stopped responding." : {
+      "comment" : "A sentence telling playback of an audio file stopped responding. %@ is the file's name, such as 03.mp3."
+    },
+    "The file %@ was stopped because TextMouth's memory grew too large." : {
+      "comment" : "A sentence telling TextMouth stopped an audio file to protect the Mac. %@ is the file's name, such as 03.mp3."
     },
     "The file could not be read. %@" : {
       "comment" : "Why the library index could not be loaded: a read error. %@ is the system's own description of the error."
@@ -20735,6 +20822,24 @@
     },
     "the feed “%@”" : {
       "comment" : "The feed itself, first in the list of what Delete Feed deleted, inside the announcement \"Deleted the feed “Finish It!”, its 5 downloaded episodes, and ...\". %@ is the feed's title. Lower case."
+    },
+    "the file %@ could not be read quickly enough" : {
+      "comment" : "A clause that ends a longer sentence about an audio file that cannot play: the disk was too slow. %@ is the file's name, such as 03.mp3."
+    },
+    "the file %@ failed partway through" : {
+      "comment" : "A clause that ends a longer sentence about an audio file that cannot play: it failed while playing. %@ is the file's name, such as 03.mp3."
+    },
+    "the file %@ is damaged, unreadable, or not an audio file" : {
+      "comment" : "A clause that ends a longer sentence about an audio file that cannot play: it cannot be read as audio. %@ is the file's name, such as 03.mp3."
+    },
+    "the file %@ is missing" : {
+      "comment" : "A clause that ends a longer sentence about an audio file that cannot play: the file is not there. %@ is the file's name, such as 03.mp3."
+    },
+    "the file %@ stopped responding" : {
+      "comment" : "A clause that ends a longer sentence about an audio file that cannot play: playback stopped responding. %@ is the file's name, such as 03.mp3."
+    },
+    "the file %@ was stopped because TextMouth's memory grew too large" : {
+      "comment" : "A clause that ends a longer sentence about an audio file that cannot play: TextMouth stopped it to protect the Mac. %@ is the file's name, such as 03.mp3."
     },
     "the identity marker of %@" : {
       "comment" : "A phrase naming a file that could not be read, inside Use This Library's account of why it can't tell which copy is newer. %@ is a copy of the library."
