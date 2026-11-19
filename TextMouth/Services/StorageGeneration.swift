@@ -64,19 +64,26 @@ enum StorageWork: Sendable, CaseIterable {
     var waitingMessage: String {
         switch self {
         case .importing:
-            return "Waiting for the current import to finish..."
+            return String(localized: "Waiting for the current import to finish...",
+                          comment: "Progress text while a move of the library waits for an import to finish first.")
         case .audioEditing:
-            return "Waiting for audio editing to finish..."
+            return String(localized: "Waiting for audio editing to finish...",
+                          comment: "Progress text while a move of the library waits for audio editing to finish first.")
         case .textExtraction:
-            return "Waiting for text extraction to finish..."
+            return String(localized: "Waiting for text extraction to finish...",
+                          comment: "Progress text while a move of the library waits for text extraction to finish first.")
         case .contentAnalysis:
-            return "Waiting for book analysis to finish..."
+            return String(localized: "Waiting for book analysis to finish...",
+                          comment: "Progress text while a move of the library waits for the analysis of books to finish first.")
         case .metadataRefresh:
-            return "Waiting for book metadata to be read..."
+            return String(localized: "Waiting for book metadata to be read...",
+                          comment: "Progress text while a move of the library waits for the reading of books' metadata to finish first.")
         case .savingFeeds:
-            return "Waiting for feed records to be saved..."
+            return String(localized: "Waiting for feed records to be saved...",
+                          comment: "Progress text while a move of the library waits for the feeds' records to be saved first.")
         case .removingFeedDownloads:
-            return "Waiting for feed downloads to be deleted..."
+            return String(localized: "Waiting for feed downloads to be deleted...",
+                          comment: "Progress text while a move of the library waits for the deletion of feed downloads to finish first.")
         }
     }
 }
@@ -115,13 +122,29 @@ struct StorageBusyError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch reason {
         case .movingDataDirectory:
-            return "TextMouth is already moving its data directory. Try again once that move is done."
+            return SentenceWording.joined([
+                String(localized: "TextMouth is already moving its data directory.",
+                       comment: "First sentence of why an operation was refused: the library is already being moved."),
+                String(localized: "Try again once that move is done.",
+                       comment: "Last sentence of why an operation was refused while the library is being moved."),
+            ])
         case .rebuildingDirectory:
-            return "TextMouth is rebuilding its data directory. Try again when that finishes."
+            return SentenceWording.joined([
+                String(localized: "TextMouth is rebuilding its data directory.",
+                       comment: "First sentence of why an operation was refused: the library is being rebuilt."),
+                String(localized: "Try again when that finishes.",
+                       comment: "Last sentence of why an operation was refused while something else finishes."),
+            ])
         case .movingBooksBetweenFolders:
-            return "TextMouth is moving books between folders. Try again when that finishes."
+            return SentenceWording.joined([
+                String(localized: "TextMouth is moving books between folders.",
+                       comment: "First sentence of why an operation was refused: books are being moved between folders."),
+                String(localized: "Try again when that finishes.",
+                       comment: "Last sentence of why an operation was refused while something else finishes."),
+            ])
         case .switchingLibraries:
-            return "TextMouth is switching to another library and opening again on it."
+            return String(localized: "TextMouth is switching to another library and opening again on it.",
+                          comment: "Why an operation was refused: TextMouth is switching to another library.")
         }
     }
 }
@@ -519,8 +542,8 @@ final class StorageBoundary: @unchecked Sendable {
         guard !owed.isEmpty else { return 0 }
         DiagnosticLog.event(
             .storage,
-            "DATA_DIRECTORY_MOVE: saving \(CountWording.phrase(owed.count, singular: "file", plural: "files")) again, "
-                + "since each was saved while the move copied the library"
+            "DATA_DIRECTORY_MOVE: saving \(CountWording.phrase(owed.count, singular: "file", plural: "files")) again, " // l10n: no (debug log text)
+                + "since each was saved while the move copied the library" // l10n: no (debug log text)
         )
         for file in owed.keys.sorted() {
             owed[file]?()
