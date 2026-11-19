@@ -36,25 +36,36 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
     /// failure message that names the problem, not for a listener.
     var reason: String {
         switch self {
-        case .cannotOpen: return "it cannot be opened as audio"
-        case .noAudio: return "it holds no audio that can be played"
-        case .cannotDecode: return "its audio cannot be decoded"
-        case .endsEarly: return "its audio breaks off before the length the file declares"
+        case .cannotOpen: return "it cannot be opened as audio" // l10n: no (a parser's damage reason)
+        case .noAudio: return "it holds no audio that can be played" // l10n: no (a parser's damage reason)
+        case .cannotDecode: return "its audio cannot be decoded" // l10n: no (a parser's damage reason)
+        case .endsEarly: return "its audio breaks off before the length the file declares" // l10n: no (a parser's damage reason)
         case .unsupportedSamples(let form): return AudioSampleFormWording.clause(for: form)
         }
     }
 
     /// The sentence that tells a listener about the file `file`: the damage
-    /// sentence every damaged file gets, with `container` and `original` as
-    /// `PackageDamage.message` takes them, or, for a valid file whose samples
+    /// sentence every damaged file gets, with `container` as
+    /// `PackageDamage.message` takes it, or, for a valid file whose samples
     /// cannot be decoded, the sentence that names their form and says what to
     /// do (`AudioSampleFormWording`).
-    func sentence(file: String, container: String, original: String) -> String {
+    func sentence(file: String, container: PackageDamage.Container) -> String {
         switch self {
         case .unsupportedSamples(let form):
             return AudioSampleFormWording.refusal(fileName: file, form: form)
         case .cannotOpen, .noAudio, .cannotDecode, .endsEarly:
-            return PackageDamage.message(file: file, reason: reason, container: container, original: original)
+            return PackageDamage.message(file: file, reason: reason, container: container)
+        }
+    }
+
+    /// `sentence(file:container:)` in English for the debug log, which stays
+    /// English whatever language the interface speaks (FR34).
+    func logSentence(file: String, container: PackageDamage.Container) -> String {
+        switch self {
+        case .unsupportedSamples:
+            return "The file “\(file)” is not damaged, but \(reason). Convert it to 16-bit or 24-bit integer samples, then import it again." // l10n: no (debug log)
+        case .cannotOpen, .noAudio, .cannotDecode, .endsEarly:
+            return PackageDamage.logMessage(file: file, reason: reason, container: container)
         }
     }
 }

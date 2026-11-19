@@ -479,15 +479,15 @@ final class XMLInputGuardTests: XCTestCase {
     /// package format but for what holds the file and what is opened again.
     func testTheRefusalSentencesNameTheFileAndSayWhatToDo() {
         XCTAssertEqual(
-            XMLInputGuard.refusalSentence(for: .ownDefinitions, file: "word/document.xml", in: "this document", original: "the document"),
+            XMLInputGuard.refusalSentence(for: .ownDefinitions, file: "word/document.xml", in: .document),
             "TextMouth can't safely read the file \u{201C}word/document.xml\u{201D} in this document, because it defines entities "
                 + "of its own. Open the document in the program that made it, save it again, then import it again.")
         XCTAssertEqual(
-            XMLInputGuard.refusalSentence(for: .encoding("UTF-7"), file: "word/document.xml", in: "this document", original: "the document"),
+            XMLInputGuard.refusalSentence(for: .encoding("UTF-7"), file: "word/document.xml", in: .document),
             "TextMouth can't safely read the file \u{201C}word/document.xml\u{201D} in this document, because it is written in the "
                 + "UTF-7 encoding. Save it as UTF-8, then import it again.")
         // Too many attributes is damage, in the format's own damaged-file sentence.
-        XCTAssertNil(XMLInputGuard.refusalSentence(for: .tooManyAttributes, file: "x", in: "this document", original: "the document"))
+        XCTAssertNil(XMLInputGuard.refusalSentence(for: .tooManyAttributes, file: "x", in: .document))
     }
 
     // MARK: - Cancel

@@ -238,7 +238,7 @@ final class UnsupportedSampleFormTests: XCTestCase {
         XCTAssertEqual(problems, [.cannotOpen, .cannotOpen, .noAudio])
         for problem in problems {
             XCTAssertTrue(
-                problem.sentence(file: "a.wav", container: "this audiobook", original: "the book").contains("damaged or incomplete")
+                problem.sentence(file: "a.wav", container: .audiobook).contains("damaged or incomplete")
             )
         }
     }

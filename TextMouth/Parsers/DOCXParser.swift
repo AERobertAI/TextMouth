@@ -4,7 +4,7 @@ import ZIPFoundation
 // MARK: - Error Types
 
 /// Errors that can occur when parsing a DOCX file
-enum DOCXParserError: LocalizedError {
+enum DOCXParserError: LocalizedError, LogDescribing {
     case fileNotFound(String)
     case invalidArchive
     case missingEntry(String)
@@ -21,15 +21,33 @@ enum DOCXParserError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .fileNotFound(let path): return "DOCX file not found at: \(path)"
-        case .invalidArchive: return "The DOCX file could not be opened as a ZIP archive."
-        case .missingEntry(let path): return "The DOCX file is missing required entry: \(path)"
+        case .fileNotFound(let path):
+            return String(localized: "DOCX file not found at: \(path)",
+                          comment: "Why a Word document (.docx) could not be imported: there is no file at its path. %@ is the path.")
+        case .invalidArchive:
+            return String(localized: "The DOCX file could not be opened as a ZIP archive.",
+                          comment: "Why a Word document (.docx) could not be imported: it could not be opened as a ZIP archive.")
+        case .missingEntry(let path):
+            return String(localized: "The DOCX file is missing required entry: \(path)",
+                          comment: "Why a Word document (.docx) could not be imported: a part it needs is not in it. %@ is the part's path inside the document.")
         case .malformedXML(let file, let reason):
-            return PackageDamage.message(
-                file: file, reason: reason, container: "this document", original: "the document"
-            )
+            return PackageDamage.message(file: file, reason: reason, container: .document)
         case .unsafeXML(let file, let problem):
-            return XMLInputGuard.refusalSentence(for: problem, file: file, in: "this document", original: "the document")
+            return XMLInputGuard.refusalSentence(for: problem, file: file, in: .document)
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .fileNotFound(let path): return "DOCX file not found at: \(path)" // l10n: no (debug log)
+        case .invalidArchive: return "The DOCX file could not be opened as a ZIP archive." // l10n: no (debug log)
+        case .missingEntry(let path): return "The DOCX file is missing required entry: \(path)" // l10n: no (debug log)
+        case .malformedXML(let file, let reason):
+            return PackageDamage.logMessage(file: file, reason: reason, container: .document)
+        case .unsafeXML(let file, let problem):
+            return XMLInputGuard.logRefusalSentence(for: problem, file: file, in: .document) ?? ""
         }
     }
 }
@@ -161,7 +179,7 @@ enum DOCXParser {
             } catch let damage as DOCXParserError {
                 reportIncompleteContent(damage)
             } catch {
-                reportIncompleteContent(.malformedXML(file: notesPart, reason: "it could not be unpacked"))
+                reportIncompleteContent(.malformedXML(file: notesPart, reason: "it could not be unpacked")) // l10n: no (a parser's damage reason)
             }
         }
         return markdown

@@ -56,7 +56,7 @@ struct ArchiveEntryLimits: Equatable, Sendable {
 /// a damaged or deliberately crafted archive does. Each reader names the
 /// entry in its own damage sentence with `reason`; on its own, the error
 /// describes the entry as a file in "this archive".
-enum ArchiveEntryOverflow: LocalizedError, Equatable {
+enum ArchiveEntryOverflow: LocalizedError, LogDescribing, Equatable {
     /// The entry at `path` holds more than `limit`, the most a reader takes
     /// from one entry.
     case pastLimit(path: String, limit: Int64)
@@ -77,14 +77,19 @@ enum ArchiveEntryOverflow: LocalizedError, Equatable {
     var reason: String {
         switch self {
         case .pastLimit(_, let limit):
-            return "it holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one file"
+            return "it holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one file" // l10n: no (a parser's damage reason)
         case .pastDeclaredSize(_, let declared):
-            return "it holds more than the \(ArchiveFigures.size(declared)) the archive records for it"
+            return "it holds more than the \(ArchiveFigures.size(declared)) the archive records for it" // l10n: no (a parser's damage reason)
         }
     }
 
     var errorDescription: String? {
-        PackageDamage.message(file: path, reason: reason, container: "this archive", original: "the archive")
+        PackageDamage.message(file: path, reason: reason, container: .archive)
+    }
+
+    /// The error in English for the debug log (FR34).
+    var logDescription: String {
+        PackageDamage.logMessage(file: path, reason: reason, container: .archive)
     }
 }
 
@@ -230,7 +235,7 @@ enum ArchiveEntryReader {
         // name and no absolute path, which the log policy allows.
         let member = entry.path
         DiagnosticLog.event(.import, "\(tag): \(member): \(error)")
-        return entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read"
+        return entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read" // l10n: no (a parser's damage reason)
     }
 
     /// Reads `entry` of `archive` wholly into memory and returns its bytes

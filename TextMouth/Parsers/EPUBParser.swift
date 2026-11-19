@@ -2,7 +2,7 @@ import Foundation
 import ZIPFoundation
 import SwiftSoup
 
-enum EPUBParserError: LocalizedError {
+enum EPUBParserError: LocalizedError, LogDescribing {
     case invalidArchive
     case fileNotFound(String)
     case missingContainer
@@ -28,28 +28,74 @@ enum EPUBParserError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidArchive: return "The EPUB file could not be opened as a ZIP archive."
-        case .fileNotFound(let path): return "The EPUB file was not found at: \(path)"
-        case .missingContainer: return "The EPUB is missing META-INF/container.xml."
-        case .missingOPF: return "The EPUB is missing its package document (OPF file)."
-        case .invalidOPF: return "The EPUB package document could not be parsed."
-        case .missingSpine: return "The EPUB has no reading order (spine)."
-        case .writeFailed(let msg): return "Failed to write EPUB metadata: \(msg)"
+        case .invalidArchive:
+            return String(localized: "The EPUB file could not be opened as a ZIP archive.",
+                          comment: "Why an EPUB book could not be imported: it could not be opened as a ZIP archive.")
+        case .fileNotFound(let path):
+            return String(localized: "The EPUB file was not found at: \(path)",
+                          comment: "Why an EPUB book could not be imported: there is no file at its path. %@ is the path.")
+        case .missingContainer:
+            return String(localized: "The EPUB is missing META-INF/container.xml.",
+                          comment: "Why an EPUB book could not be imported: it lacks the file that names its package document. META-INF/container.xml is a file's path and stays as it is.")
+        case .missingOPF:
+            return String(localized: "The EPUB is missing its package document (OPF file).",
+                          comment: "Why an EPUB book could not be imported: the package document (an OPF file) that its container names is not in it.")
+        case .invalidOPF:
+            return String(localized: "The EPUB package document could not be parsed.",
+                          comment: "Why an EPUB book could not be imported: its package document (an OPF file) could not be read.")
+        case .missingSpine:
+            return String(localized: "The EPUB has no reading order (spine).",
+                          comment: "Why an EPUB book could not be imported: its package document lists no reading order, which EPUB calls the spine.")
+        case .writeFailed(let msg):
+            return String(localized: "Failed to write EPUB metadata: \(msg)",
+                          comment: "Why a book's details could not be saved into its EPUB file. %@ is the reason, a phrase in English.")
         case .unsafeFile(let file, let problem):
-            return XMLInputGuard.refusalSentence(
-                for: problem, file: file, in: EPUBParser.bookNameInMessages, original: "the book")
+            return XMLInputGuard.refusalSentence(for: problem, file: file, in: .epubBook)
         case .damagedFile(let file, let reason):
-            return PackageDamage.message(
-                file: file, reason: reason, container: EPUBParser.bookNameInMessages, original: "the book"
-            )
+            return PackageDamage.message(file: file, reason: reason, container: .epubBook)
         case .noReadableChapters(let report):
             // Blank pages alone are not damage, so there is nothing to replace.
-            guard !report.isComplete else { return "This EPUB book has no text to read." }
+            guard !report.isComplete else {
+                return String(localized: "This EPUB book has no text to read.",
+                              comment: "Why an EPUB book could not be imported: every chapter in it is blank.")
+            }
+            var sentences = [report.message]
             let blank = report.blankChapterCount
-            let others = blank == 0 ? ""
-                : blank == 1 ? " The other chapter has no text."
-                : " The other \(blank) chapters have no text."
-            return "\(report.message)\(others) Get a fresh copy of the book, then import it again."
+            if blank == 1 {
+                sentences.append(String(localized: "The other chapter has no text.",
+                                        comment: "Sentence in the warning after an EPUB book was imported with chapters left out: exactly one other chapter is blank."))
+            } else if blank > 1 {
+                sentences.append(String(localized: "The other \(blank) chapters have no text.",
+                                        comment: "Sentence in the warning after an EPUB book was imported with chapters left out: several other chapters are blank. %lld is how many, two or more."))
+            }
+            sentences.append(String(localized: "Get a fresh copy of the book, then import it again.",
+                                    comment: "Last sentence of why an EPUB book could not be imported because of damage: what to do."))
+            return SentenceWording.joined(sentences)
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .invalidArchive: return "The EPUB file could not be opened as a ZIP archive." // l10n: no (debug log)
+        case .fileNotFound(let path): return "The EPUB file was not found at: \(path)" // l10n: no (debug log)
+        case .missingContainer: return "The EPUB is missing META-INF/container.xml." // l10n: no (debug log)
+        case .missingOPF: return "The EPUB is missing its package document (OPF file)." // l10n: no (debug log)
+        case .invalidOPF: return "The EPUB package document could not be parsed." // l10n: no (debug log)
+        case .missingSpine: return "The EPUB has no reading order (spine)." // l10n: no (debug log)
+        case .writeFailed(let msg): return "Failed to write EPUB metadata: \(msg)" // l10n: no (debug log)
+        case .unsafeFile(let file, let problem):
+            return XMLInputGuard.logRefusalSentence(for: problem, file: file, in: .epubBook) ?? ""
+        case .damagedFile(let file, let reason):
+            return PackageDamage.logMessage(file: file, reason: reason, container: .epubBook)
+        case .noReadableChapters(let report):
+            guard !report.isComplete else { return "This EPUB book has no text to read." } // l10n: no (debug log)
+            let blank = report.blankChapterCount
+            let others = blank == 0 ? "" // l10n: no (debug log)
+                : blank == 1 ? " The other chapter has no text." // l10n: no (debug log)
+                : " The other \(blank) chapters have no text." // l10n: no (debug log)
+            return "\(report.logMessage)\(others) Get a fresh copy of the book, then import it again." // l10n: no (debug log)
         }
     }
 }
@@ -58,7 +104,7 @@ enum EPUBParser {
 
     /// How sentences about a damaged or incomplete EPUB name the book, as in
     /// "The file “OEBPS/ch07.xhtml” in this EPUB book is damaged …".
-    static let bookNameInMessages = "this EPUB book"
+    static let bookNameInMessages = "this EPUB book" // l10n: no (a parser's damage reason: inside ExtractionReport's English chapter problems)
 
     /// Where every EPUB keeps its container file, which names the package
     /// document.
@@ -231,7 +277,7 @@ enum EPUBParser {
         do {
             writeArchive = try Archive(url: tempURL, accessMode: .update)
         } catch {
-            throw EPUBParserError.writeFailed("Could not open archive for writing")
+            throw EPUBParserError.writeFailed("Could not open archive for writing") // l10n: no (a parser's damage reason)
         }
 
         // Remove old OPF and add updated one. Reading finds the package
@@ -240,7 +286,7 @@ enum EPUBParser {
         // ZIP does is saved, and the new entry takes the spelling the ZIP
         // already used, so nothing else in the book is renamed.
         guard let oldEntry = writeArchive.file(at: opfPath) else {
-            throw EPUBParserError.writeFailed("Could not find OPF entry")
+            throw EPUBParserError.writeFailed("Could not find OPF entry") // l10n: no (a parser's damage reason)
         }
         let storedOPFPath = oldEntry.path
         try writeArchive.remove(oldEntry)
@@ -261,7 +307,7 @@ enum EPUBParser {
         // This catches a corrupt update while the source EPUB is still intact.
         guard let preparedArchive = Archive.openedForReading(at: tempURL),
               let preparedOPF = try? extractString(archive: preparedArchive, path: opfPath) else {
-            throw EPUBParserError.writeFailed("Updated archive failed validation")
+            throw EPUBParserError.writeFailed("Updated archive failed validation") // l10n: no (a parser's damage reason)
         }
         _ = try parseOPF(preparedOPF, file: opfPath)
 
@@ -325,7 +371,7 @@ enum EPUBParser {
         // cannot change a package document and write it back as Foundation's tree does, and
         // nothing less faithful should rewrite a book's own file, so iOS does not save a
         // book's details into its EPUB yet.
-        throw IOSUnavailable.feature("Saving a book's details into its EPUB file")
+        throw IOSUnavailable.feature("Saving a book's details into its EPUB file") // l10n: no (inside IOSUnavailable's English sentence until that area converts)
 #endif
     }
 
@@ -535,13 +581,13 @@ enum EPUBParser {
 
     /// - Parameter file: The package document's path inside the book, which a
     ///   refusal of it names.
-    static func parseOPF(_ xml: String, file: String = "package document") throws -> OPFData {
+    static func parseOPF(_ xml: String, file: String = "package document") throws -> OPFData { // l10n: no (a stand-in file name inside a parser's damage reason)
         try readingXML(xml, file: file) { doc in
             // One walk of the document finds every element asked for below.
             let index = XMLElementIndex(doc)
 
             // Metadata
-            let title = index.elements(named: "title").first?.stringValue ?? "Untitled"
+            let title = index.elements(named: "title").first?.stringValue ?? "Untitled" // l10n: no (stored id: the placeholder title a book is saved with, question 9)
 
             let author = authorName(in: doc, index: index) ?? Book.unknownAuthor
 
@@ -654,7 +700,7 @@ enum EPUBParser {
         }
         guard entry.checksum == 0 || checksum == entry.checksum else {
             throw EPUBParserError.damagedFile(
-                file: entry.path, reason: "its contents do not match the checksum stored with them"
+                file: entry.path, reason: "its contents do not match the checksum stored with them" // l10n: no (a parser's damage reason)
             )
         }
 

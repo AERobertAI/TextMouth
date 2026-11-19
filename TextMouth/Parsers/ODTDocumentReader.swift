@@ -252,7 +252,7 @@ final class ODTMetadataReader: ODTXMLReader {
 /// The damage of a part of an OpenDocument package that the book can be read
 /// without: `styles.xml` or `meta.xml`. Its sentence is the one every format
 /// gives for a damaged file in a package (`PackageDamage`).
-struct ODTPartDamage: LocalizedError {
+struct ODTPartDamage: LocalizedError, LogDescribing {
     /// The part's path inside the package.
     let file: String
     /// What was wrong, completing "is damaged or incomplete: …".
@@ -262,11 +262,17 @@ struct ODTPartDamage: LocalizedError {
     init(file: String, error: Error) {
         self.file = file
         reason = error is DocumentTooLargeError
-            ? "it holds more than TextMouth reads from one file"
-            : "its markup is not well-formed or it could not be unpacked"
+            ? "it holds more than TextMouth reads from one file" // l10n: no (a parser's damage reason)
+            : "its markup is not well-formed or it could not be unpacked" // l10n: no (a parser's damage reason)
     }
 
     var errorDescription: String? {
-        PackageDamage.message(file: file, reason: reason, container: "this document", original: "the document")
+        PackageDamage.message(file: file, reason: reason, container: .document)
+    }
+
+    /// The damage in English for the debug log, which is the only place it
+    /// is told (FR34).
+    var logDescription: String {
+        PackageDamage.logMessage(file: file, reason: reason, container: .document)
     }
 }
