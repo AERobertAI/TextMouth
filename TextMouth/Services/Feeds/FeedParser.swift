@@ -117,7 +117,7 @@ struct FeedParseRepair: Equatable, Sendable {
 
     /// The fault as a log line describes it.
     var description: String {
-        "\(problem) (line \(line), column \(column)), after \(itemsBeforeFault) item(s)"
+        "\(problem) (line \(line), column \(column)), after \(itemsBeforeFault) item(s)" // l10n: no (debug log text, which stays English)
     }
 }
 

@@ -291,15 +291,20 @@ enum FeedSubscribeError: Error, Equatable, Sendable {
     var message: String {
         switch self {
         case .invalidAddress:
-            return "That isn't a web address. Enter a feed's address, or the address of a page that names one."
+            return String(localized: "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+                          comment: "Why Subscribe refused: the address typed is not a web address.")
         case .folderMissing:
-            return "The folder chosen for this feed is no longer in the library. Choose another folder."
+            return String(localized: "The folder chosen for this feed is no longer in the library. Choose another folder.",
+                          comment: "Why Subscribe refused: the folder chosen for the feed was removed from the library.")
         case .alreadySubscribed(let title):
-            return "You're already subscribed to \(title)."
+            return String(localized: "You're already subscribed to \(title).",
+                          comment: "Why Subscribe refused: the feed is already in the library. %@ is the feed's title.")
         case .unsubscribedAlready(let title):
-            return "\(title) is in your library, unsubscribed. Choose Resubscribe on its row, or in its Feed Info, to check it again."
+            return String(localized: "\(title) is in your library, unsubscribed. Choose \(FeedWording.resubscribeTitle) on its row, or in its \(FeedWording.feedInfoName), to check it again.",
+                          comment: "Why Subscribe refused: the feed is in the library but unsubscribed. The first %@ is the feed's title; the second is the name of the Resubscribe command; the third is the name of the Feed Info sheet.")
         case .pageNamesNoFeed:
-            return "That page doesn't name a feed."
+            return String(localized: "That page doesn't name a feed.",
+                          comment: "Why Subscribe refused: the web page names no feed.")
         case let .refreshFailed(error, host):
             return error.message(about: host, host: host)
         case .folderNotMade(let error):
@@ -566,12 +571,12 @@ final class FeedCenter: ObservableObject {
     private static func sweepNote(_ sweep: FeedItemPackage.HolderSweep) -> String {
         var notes: [String] = []
         if !sweep.putBack.isEmpty {
-            notes.append("put back \(sweep.putBack.joined(separator: " and ")) into the package of the download whose deletion was refused")
+            notes.append("put back \(sweep.putBack.joined(separator: " and ")) into the package of the download whose deletion was refused") // l10n: no (debug log text, which stays English)
         }
         if !sweep.removed.isEmpty {
-            notes.append("removed \(sweep.removed.joined(separator: " and ")) as Removal Behavior says, left by a Delete Download cut short")
+            notes.append("removed \(sweep.removed.joined(separator: " and ")) as Removal Behavior says, left by a Delete Download cut short") // l10n: no (debug log text, which stays English)
         }
-        return notes.isEmpty ? "nothing was left in it" : notes.joined(separator: "; ")
+        return notes.isEmpty ? "nothing was left in it" : notes.joined(separator: "; ") // l10n: no (debug log text, which stays English)
     }
 
     /// Stops the scheduled refreshes, as when a test ends.
@@ -742,7 +747,7 @@ final class FeedCenter: ObservableObject {
             }
             DiagnosticLog.event(
                 .feeds,
-                "FEED_SUBSCRIBED: \(record.feed.title) (\(FeedHost.of(record.feed.feedURL))): \(record.items.count) item(s) kept"
+                "FEED_SUBSCRIBED: \(record.feed.title) (\(FeedHost.logName(record.feed.feedURL))): \(record.items.count) item(s) kept"
             )
             events.send(.subscribed(feedID: record.feed.id))
             // The feed's newest downloaded at once (FR11).
@@ -841,8 +846,8 @@ final class FeedCenter: ObservableObject {
         DiagnosticLog.event(
             .feeds,
             "FEED_UNSUBSCRIBED: \(feed.title): checking stops; "
-                + "\(CountWording.phrase(outcome.downloadCount, singular: "download stays", plural: "downloads stay")); "
-                + "deleted \(CountWording.phrase(outcome.deletedKeptCount, singular: "package", plural: "packages")) "
+                + "\(CountWording.phrase(outcome.downloadCount, singular: "download stays", plural: "downloads stay")); " // l10n: no (debug log text, which stays English)
+                + "deleted \(CountWording.phrase(outcome.deletedKeptCount, singular: "package", plural: "packages")) " // l10n: no (debug log text, which stays English)
                 + "kept for removed downloads"
         )
         return outcome
@@ -1186,8 +1191,8 @@ final class FeedCenter: ObservableObject {
                 record.feed.keepEntriesOverride = nil
             }
             moved.append(feed.id)
-            let kept = entries < 0 ? "every entry" : CountWording.phrase(entries, singular: "entry", plural: "entries")
-            let choice = own.map { "\($0.choice.rawValue) counting \($0.newestCount)" } ?? "the global setting"
+            let kept = entries < 0 ? "every entry" : CountWording.phrase(entries, singular: "entry", plural: "entries") // l10n: no (debug log text, which stays English)
+            let choice = own.map { "\($0.choice.rawValue) counting \($0.newestCount)" } ?? "the global setting" // l10n: no (debug log text, which stays English)
             DiagnosticLog.event(.feeds, "FEED_ITEM_POLICY_MOVED: \(feed.title): keeping \(kept) became \(choice)")
         }
         return moved

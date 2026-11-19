@@ -211,7 +211,7 @@ enum FeedEpisodeExtras {
                 do {
                     let chapters = try PodcastChapters.read(data)
                     fetched.chapters = chapters
-                    let count = CountWording.phrase(chapters.chapters.count, singular: "chapter", plural: "chapters")
+                    let count = CountWording.phrase(chapters.chapters.count, singular: "chapter", plural: "chapters") // l10n: no (debug log text, which stays English)
                     DiagnosticLog.event(.feeds, "FEED_CHAPTERS_FETCHED: \(episode): \(count)")
                 } catch {
                     DiagnosticLog.event(.feeds, "FEED_CHAPTERS_REFUSED: \(episode): from \(host): \(logReason(of: error))")
@@ -231,7 +231,7 @@ enum FeedEpisodeExtras {
                 do {
                     let document = try TimedTextReader.read(data, as: link.format)
                     fetched.transcript = document
-                    let count = CountWording.phrase(document.cues.count, singular: "passage", plural: "passages")
+                    let count = CountWording.phrase(document.cues.count, singular: "passage", plural: "passages") // l10n: no (debug log text, which stays English)
                     DiagnosticLog.event(.feeds, "FEED_TRANSCRIPT_FETCHED: \(episode): \(format), \(count)")
                     return fetched
                 } catch {

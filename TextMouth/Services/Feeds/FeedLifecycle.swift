@@ -176,7 +176,7 @@ extension FeedCenter {
     func deleteDownload(_ itemID: FeedItem.ID, of feedID: UUID) throws {
         guard let item = store.record(of: feedID)?.item(itemID), item.state.bookID != nil else { return }
         if let library, let book = downloadedRow(of: item, in: feedID) {
-            try removeDownload(book, in: library, keepingPackage: true, by: "Delete Download")
+            try removeDownload(book, in: library, keepingPackage: true, by: "Delete Download") // l10n: no (debug log text, which stays English)
         }
         noteDownloadRemoved(itemID, of: feedID)
     }
@@ -187,7 +187,7 @@ extension FeedCenter {
     /// the item a record names becomes not downloaded.
     /// - Throws: what `deleteDownload(_:of:)` throws.
     func deleteDownload(ofBook book: Book, in library: FeedLibraryHost) throws {
-        try removeDownload(book, in: library, keepingPackage: true, by: "the library's Remove")
+        try removeDownload(book, in: library, keepingPackage: true, by: "the library's Remove") // l10n: no (debug log text, which stays English)
         if let (feed, item) = store.item(downloadedAs: book.id) {
             noteDownloadRemoved(item.id, of: feed.id)
         }
@@ -209,7 +209,7 @@ extension FeedCenter {
     ///   whatever kept the file; nothing was removed then.
     private func removeDownload(_ book: Book, in library: FeedLibraryHost, keepingPackage: Bool, by command: String) throws {
         if let use = library.feedBookUse(of: book.id) {
-            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETE_REFUSED: \(book.title): it \(use.clause), by \(command)")
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETE_REFUSED: \(book.title): it \(use.logName), by \(command)")
             throw FeedDownloadInUseError(title: book.title, use: use)
         }
         guard book.isFeedItem else { throw FeedItemPackageError.notAFeedPackage }
@@ -278,7 +278,7 @@ extension FeedCenter {
 
     /// What became of a removed download's package, as its log line says.
     private static func removalNote(_ removal: FeedFileRemoval) -> String {
-        removal.keepsPackage ? "its file deleted, its place and bookmarks kept" : "its package deleted whole"
+        removal.keepsPackage ? "its file deleted, its place and bookmarks kept" : "its package deleted whole" // l10n: no (debug log text, which stays English)
     }
 
     /// Deletes the item `itemID` of the feed `feedID`, as Delete Episode does:
@@ -293,7 +293,7 @@ extension FeedCenter {
         downloads.cancel(itemID, of: feedID)
         guard let item = store.record(of: feedID)?.item(itemID) else { return }
         if let library, let row = downloadedRow(of: item, in: feedID) ?? library.feedItemRows(of: feedID).kept[itemID] {
-            try removeDownload(row, in: library, keepingPackage: false, by: "Delete Episode")
+            try removeDownload(row, in: library, keepingPackage: false, by: "Delete Episode") // l10n: no (debug log text, which stays English)
         }
         if item.state.bookID != nil {
             noteDownloadRemoved(itemID, of: feedID)
@@ -477,7 +477,7 @@ extension FeedCenter {
         }
         guard !due.isEmpty else { return report }
 
-        let outcome = await removeDue(due, from: library, by: "the delete-after rule", at: now, putOffEvent: "FEED_SWEEP_PUT_OFF")
+        let outcome = await removeDue(due, from: library, by: "the delete-after rule", at: now, putOffEvent: "FEED_SWEEP_PUT_OFF") // l10n: no (debug log text, which stays English)
         report.leftInCloudBookIDs = outcome.leftInCloud
         report.inUseBookIDs += outcome.inUse
         guard !outcome.wasPutOff else { return report }

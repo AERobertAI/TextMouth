@@ -312,7 +312,7 @@ enum FeedIndexFiles {
         if indexBytes != nil, !unlisted.isEmpty {
             DiagnosticLog.event(
                 .feeds,
-                "FEED_INDEX: \(feedID.uuidString.prefix(8)): took \(CountWording.phrase(unlisted.count, singular: "package", plural: "packages")) "
+                "FEED_INDEX: \(feedID.uuidString.prefix(8)): took \(CountWording.phrase(unlisted.count, singular: "package", plural: "packages")) " // l10n: no (debug log text, which stays English)
                     + "its index did not list from their records"
             )
         }
@@ -373,7 +373,7 @@ enum FeedIndexFiles {
             because: reason,
             logging: "FEED_INDEX_UNREADABLE",
             in: .feeds,
-            standIn: "the rows of feed \(feedID.uuidString) are read from its packages"
+            standIn: "the rows of feed \(feedID.uuidString) are read from its packages" // l10n: no (debug log text, which stays English)
         )
     }
 
