@@ -91,7 +91,7 @@ A feed's episodes are counted the same way wherever TextMouth counts them: on it
 The count begins with how many of the feed's entries TextMouth lists, of how many the feed lists, as in "10 of 381 episodes listed": under the first two List and download choices, every entry you haven't deleted.
 Under Only the newest 10 listed, the newest 10, less those played whose download isn't here, beside every one downloaded, downloading, or waiting to download, wherever it falls (see [Listing and downloading](feed-downloads.md)).
 Then come the episodes downloaded, downloading, and new, and last those not yet played, each left out when it is 0; one waiting to download counts as neither downloaded nor downloading.
-When TextMouth lists every entry the feed lists, the count is the number alone, as in "381 episodes"; a feed longer than the 2,000 entries TextMouth reads says "more than 2000", as in "10 of more than 2000 episodes listed"; and articles count "unread" rather than "unplayed".
+When TextMouth lists every entry the feed lists, the count is the number alone, as in "381 episodes"; a feed longer than the 2,000 entries TextMouth reads says "more than 2,000", as in "10 of more than 2,000 episodes listed"; and articles count "unread" rather than "unplayed".
 The feed's size counts the episodes you deleted too, since the feed still lists them.
 A feed whose record doesn't hold its size yet, as one subscribed in an earlier version, gives its size after its next check, which reads the whole feed once.
 

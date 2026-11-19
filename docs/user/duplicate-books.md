@@ -216,7 +216,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
 - When TextMouth closes with the question unanswered, the next launch moves the copy to the Trash, whatever Settings says about the Trash, and says so in an alert titled "Duplicate Copies Moved to the Trash".
   As in "TextMouth moved the new copy of “Moby-Dick” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed.
   To get it back, open the Trash and choose Put Back."
-- For two or three copies it says "TextMouth moved the new copies of “A”, “B”, and “C” to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed.
+- For two or three copies it says, with the titles listed as “A” and “B” for two and “A”, “B”, and “C” for three, "TextMouth moved the new copies of “A”, “B”, and “C” to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed.
   To get them back, open the Trash and choose Put Back.", and for more, "TextMouth moved 4 new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed.
   To get them back, open the Trash and choose Put Back."
 - A copy whose question is less than a day old stays, since another Mac sharing the library may be asking it.
