@@ -8,10 +8,18 @@ extension AVSpeechSynthesisVoice {
     /// Used in both global settings and per-book voice pickers.
     var qualityLabel: String {
         switch quality {
-        case .default: return "Standard"
-        case .enhanced: return "Enhanced"
-        case .premium: return "Premium"
-        @unknown default: return "Unknown"
+        case .default:
+            return String(localized: "Standard",
+                          comment: "A voice's quality tier, the plainest, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Standard quality\".")
+        case .enhanced:
+            return String(localized: "Enhanced",
+                          comment: "A voice's quality tier, better than Standard, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Enhanced quality\".")
+        case .premium:
+            return String(localized: "Premium",
+                          comment: "A voice's quality tier, the best, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Premium quality\".")
+        @unknown default:
+            return String(localized: "Unknown",
+                          comment: "A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.")
         }
     }
 }

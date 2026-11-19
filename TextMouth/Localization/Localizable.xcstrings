@@ -1667,6 +1667,9 @@
     "%@?" : {
       "comment" : "Makes a title into a question, such as the title of a removal confirmation: \"Move Book to Trash?\". %@ is the title without its question mark."
     },
+    "%@x" : {
+      "comment" : "The voice pitch as a multiplier of the voice's own, as the pitch sliders say it, such as \"1.2x\". %@ is the multiplier with one decimal."
+    },
     "%@…" : {
       "comment" : "Adds an ellipsis to the title of a command, which says a question follows the command: \"Delete Download…\". %@ is the title without the ellipsis."
     },
@@ -4253,7 +4256,7 @@
       }
     },
     "%lld words per minute" : {
-      "comment" : "VoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.\nWhat VoiceOver says for the playback bar's speed of a text book. %lld is the number of words read in a minute.",
+      "comment" : "Announcement of a text book's new speed after it changed. %lld is the speed in words per minute.\nVoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.\nWhat VoiceOver says for the playback bar's speed of a text book. %lld is the number of words read in a minute.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -5297,6 +5300,9 @@
     },
     "Audio speed" : {
       "comment" : "Label of an audiobook's speed slider; VoiceOver reads it before the speed."
+    },
+    "Audio speed reset to %@" : {
+      "comment" : "Announcement after an audiobook's speed returned to normal. %@ is the speed as VoiceOver says it, such as \"1.0 times speed\"."
     },
     "Audio that TextMouth converts at import keeps only the converted file." : {
       "comment" : "Caption under the Keep Originals switch while it is off."
@@ -6864,6 +6870,29 @@
     "Decrease audio speed by %@ times" : {
       "comment" : "Accessibility label of the button that lowers the audio speed. %@ is the size of one step, such as 0.1."
     },
+    "Decrease speed by %lld words per minute" : {
+      "comment" : "VoiceOver label of the playback bar's button that lowers a text book's speed. %lld is the size of one step in words per minute.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Decrease speed by %lld word per minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Decrease speed by %lld words per minute"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Default Pitch" : {
       "comment" : "Heading of the default pitch group in the Voice settings."
     },
@@ -7766,6 +7795,9 @@
           }
         }
       }
+    },
+    "Enhanced" : {
+      "comment" : "A voice's quality tier, better than Standard, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Enhanced quality\"."
     },
     "Enter" : {
       "comment" : "Name of the keypad's Enter key, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Enter\"."
@@ -9104,6 +9136,29 @@
     },
     "Increase audio speed by %@ times" : {
       "comment" : "Accessibility label of the button that raises the audio speed. %@ is the size of one step, such as 0.1."
+    },
+    "Increase speed by %lld words per minute" : {
+      "comment" : "VoiceOver label of the playback bar's button that raises a text book's speed. %lld is the size of one step in words per minute.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Increase speed by %lld word per minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Increase speed by %lld words per minute"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Info: %@" : {
       "comment" : "Navigation title of the book information sheet. %@ is the book's title.\nThe window title of the read-only Book Information sheet of a feed's episode or article. %@ is the book's title.\nWindow title of the sheet that shows a book's information. %@ is the book's title."
@@ -11576,6 +11631,9 @@
         }
       }
     },
+    "Normal (1.0x)" : {
+      "comment" : "The voice pitch when it is the normal one, as the pitch sliders say it. 1.0x means the voice's own pitch, unchanged."
+    },
     "Not Created" : {
       "comment" : "Storage settings status: the data directory does not exist yet."
     },
@@ -12230,6 +12288,9 @@
     "Pitch" : {
       "comment" : "Heading of the voice sheet's pitch group, and the label of its pitch slider.\nTitle of the default pitch slider in the Voice settings."
     },
+    "Pitch %@" : {
+      "comment" : "Announcement of the voice's new pitch after it changed. %@ is the pitch multiplier with one decimal, such as 1.2."
+    },
     "Pitch: %@" : {
       "comment" : "Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x."
     },
@@ -12442,6 +12503,9 @@
     },
     "Post a notification for each feed with new episodes" : {
       "comment" : "Label of the switch that posts a notification for each feed with new items after a refresh."
+    },
+    "Premium" : {
+      "comment" : "A voice's quality tier, the best, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Premium quality\"."
     },
     "Preparing %@ of %@…" : {
       "comment" : "Status line of the Search Library window while a search must prepare books' text, which takes longer. %1$@ is the number of books prepared so far, and %2$@ is the count of all the books with its noun, such as \"737 books\".",
@@ -13944,6 +14008,12 @@
     "Seconds must be less than 60." : {
       "comment" : "Problem said of a typed time whose seconds, after minutes or hours, reach 60."
     },
+    "Section included: %@" : {
+      "comment" : "Announcement after a heading's section that was skipped is read again. %@ is the heading's text."
+    },
+    "Section skipped: %@" : {
+      "comment" : "Announcement after a heading's section is set to be skipped. %@ is the heading's text."
+    },
     "Security" : {
       "comment" : "Label of the note about a feed that uses plain http, in Feed Info."
     },
@@ -14147,6 +14217,9 @@
     },
     "Settings" : {
       "comment" : "Name of the application menu's Settings command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Settings applied as global defaults" : {
+      "comment" : "Announcement after the open book's own voice, speed, and pitch were applied as the global settings."
     },
     "Settings could not be saved: %@" : {
       "comment" : "Failure notice: the settings could not be saved. %@ is the reason, a sentence from the system."
@@ -14760,6 +14833,9 @@
     "Speech log: no lines." : {
       "comment" : "A line of the speech refusal report: the speech log has no lines to show."
     },
+    "Speech paused: the voice did not start. Press Play to try again." : {
+      "comment" : "Announcement when the voice did not start a passage, even on fresh synthesizers, so speech paused there. Play is the name of a button."
+    },
     "Speech stopped at character %@ of %@ in the chapter." : {
       "comment" : "A line of the speech refusal report. %1$@ is the character offset where speech stopped and %2$@ the chapter's length in characters, each written without digit grouping like the speech log's offsets.",
       "localizations" : {
@@ -14770,6 +14846,9 @@
           }
         }
       }
+    },
+    "Speech stopped: the Mac's speech engine refused this text." : {
+      "comment" : "Announcement when the Mac's speech engine refused a text twice and speech ended where it was, in a window with no report sheet to say so."
     },
     "Speech stopped: the speech engine refused this passage. Details are in the book's window." : {
       "comment" : "Announcement when speech stopped because the speech engine refused a passage and the book's window is not in front, so its report sheet cannot speak."
@@ -14828,6 +14907,9 @@
     },
     "Speex" : {
       "comment" : "The name of the Speex speech format. Inside sentences about importing a file of that format."
+    },
+    "Standard" : {
+      "comment" : "A voice's quality tier, the plainest, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Standard quality\"."
     },
     "Start New Library" : {
       "comment" : "Button of the question that confirms starting a new, empty library."
@@ -18881,7 +18963,7 @@
       "comment" : "Hint of the audio editor's Undo button."
     },
     "Unknown" : {
-      "comment" : "Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information."
+      "comment" : "A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.\nShown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information."
     },
     "Unknown Length" : {
       "comment" : "A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's \"Cut Unknown Length\"."
@@ -19119,6 +19201,9 @@
     },
     "Voice and speed" : {
       "comment" : "Heading of the lines of a speech refusal report about the voice and the speaking speed."
+    },
+    "Voice changed to %@" : {
+      "comment" : "Announcement after a voice was chosen for the open book. %@ is the voice's name."
     },
     "Voice language" : {
       "comment" : "VoiceOver label of the Language pop-up in the Voice settings."

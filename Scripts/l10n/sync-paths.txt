@@ -83,6 +83,7 @@ TextMouth/Models/TranscriptCleanupRules.swift
 TextMouth/Models/TranscriptCleanupWording.swift
 TextMouth/Models/TranscriptTextIndex.swift
 TextMouth/Models/TranscriptionWording.swift
+TextMouth/Parsers/ParserUtilities.swift
 TextMouth/Phone/PhoneAppWording.swift
 TextMouth/Phone/PhoneBookmarksModel.swift
 TextMouth/Phone/PhoneSleepDeadline.swift
@@ -92,6 +93,7 @@ TextMouth/Platform/iOS/Views/Reader/PhoneSleepTimerSheet.swift
 TextMouth/Platform/macOS/App/TextMouthApp.swift
 TextMouth/Platform/macOS/Services/MenuVisibilityManager.swift
 TextMouth/Platform/macOS/Services/WatchedProcess.swift
+TextMouth/Platform/macOS/Views/VoiceOverFocus.swift
 TextMouth/Services/ArchiveBudget.swift
 TextMouth/Services/ArchiveExtraction.swift
 TextMouth/Services/AsyncBridge.swift
@@ -164,6 +166,7 @@ TextMouth/Services/RecordingTake.swift
 TextMouth/Services/SavedFile.swift
 TextMouth/Services/SleepTimerRegistry.swift
 TextMouth/Services/SleepTimerService.swift
+TextMouth/Services/SpeechService.swift
 TextMouth/Services/StorageDestinationAssessment.swift
 TextMouth/Services/StorageGeneration.swift
 TextMouth/Services/TextMouthPaths.swift
@@ -206,6 +209,7 @@ TextMouth/ViewModels/ReaderViewModel+Navigation.swift
 TextMouth/ViewModels/ReaderViewModel+OggConversion.swift
 TextMouth/ViewModels/ReaderViewModel+Playback.swift
 TextMouth/ViewModels/ReaderViewModel+ReadingList.swift
+TextMouth/ViewModels/ReaderViewModel+VoiceAndSpeed.swift
 TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift
 TextMouth/ViewModels/ReaderViewModel.swift
 TextMouth/ViewModels/SettingsViewModel.swift

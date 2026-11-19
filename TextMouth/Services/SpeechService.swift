@@ -952,8 +952,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         /// What the utterance did, as the log line says it.
         var whatItDid: String {
             switch self {
-            case .neverStarted: return "never started"
-            case .wentIdle: return "went idle"
+            case .neverStarted: return "never started" // l10n: no (written to the debug log)
+            case .wentIdle: return "went idle" // l10n: no (written to the debug log)
             }
         }
         /// How many recoveries the watchdog made at the place first.
@@ -966,8 +966,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         /// What the old synthesizer did, for `replaceDirectSynthesizer(after:)`.
         var replacementReason: String {
             switch self {
-            case .neverStarted: return "the live utterance never started"
-            case .wentIdle: return "the live utterance went idle"
+            case .neverStarted: return "the live utterance never started" // l10n: no (written to the debug log)
+            case .wentIdle: return "the live utterance went idle" // l10n: no (written to the debug log)
             }
         }
     }
@@ -1469,7 +1469,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         // place first.
         let isWordStall = directSynth.isSpeaking || directSynth.isPaused
         if isWordStall {
-            replaceDirectSynthesizer(after: "no word was reported while it said it spoke")
+            replaceDirectSynthesizer(after: "no word was reported while it said it spoke") // l10n: no (written to the debug log)
         }
         #endif
 
@@ -1543,7 +1543,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             "DIRECT_START_WATCHDOG_RECOVERY: utterance at offset=\(place) chunkEnd=\(directModeChunkEnd) never started; "
                 + "going on at offset=\(offset), recovery \(recoveriesHere + 1) of \(Self.directStartWatchdogRecoveriesPerPlace) there"
         )
-        replaceDirectSynthesizer(after: "the live utterance never started")
+        replaceDirectSynthesizer(after: "the live utterance never started") // l10n: no (written to the debug log)
         if renderedAudioMatchesSpeech {
             switchToRenderedAudioOrSpeakDirectly(at: offset, failureTag: "DIRECT_START_WATCHDOG_ENGINE_FAILED")
         } else {
@@ -1556,7 +1556,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// (`pauseAfterStalls(at:because:)`): "Speech paused", as the reader shows
     /// it, Paused, with Play to go on from there (REV11; it once said
     /// "Speech stopped").
-    nonisolated static let voiceDidNotStartAnnouncement = "Speech paused: the voice did not start. Press Play to try again."
+    nonisolated static var voiceDidNotStartAnnouncement: String {
+        String(localized: "Speech paused: the voice did not start. Press Play to try again.",
+               comment: "Announcement when the voice did not start a passage, even on fresh synthesizers, so speech paused there. Play is the name of a button.")
+    }
 
     /// Stop speech at `offset` as a pause, the cursor kept there, once a
     /// watchdog's recoveries at the place have all ended in the same stall
@@ -1604,7 +1607,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// has no reader to tell (`onSpeechRefused`); a reader tells the
     /// listener itself (`SpeechRefusalWording.announcement`). Play speaks on
     /// from there.
-    nonisolated static let engineRefusedAnnouncement = "Speech stopped: the Mac's speech engine refused this text."
+    nonisolated static var engineRefusedAnnouncement: String {
+        String(localized: "Speech stopped: the Mac's speech engine refused this text.",
+               comment: "Announcement when the Mac's speech engine refused a text twice and speech ended where it was, in a window with no report sheet to say so.")
+    }
 
     /// Speak again after the system cancelled the live utterance on its own
     /// (`DIRECT_CANCEL_UNEXPECTED`), as it does when the speech engine
@@ -1776,7 +1782,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// while a fresh instance spoke it at once). `reason`, which the log
     /// line gives, says what the old one did: by default, that the system
     /// cancelled the live utterance.
-    private func replaceDirectSynthesizer(after reason: String = "the system cancelled the live utterance") {
+    private func replaceDirectSynthesizer(after reason: String = "the system cancelled the live utterance") { // l10n: no (written to the debug log)
         stopDirectSynthesizer()
         directSynth.delegate = nil
         directSynth = AVSpeechSynthesizer()
@@ -2363,8 +2369,14 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// User-facing pitch label shared by reader and global settings screens.
     nonisolated static func pitchLabel(_ pitch: Double) -> String {
-        if abs(pitch - 1.0) < 0.05 { return "Normal (1.0x)" }
-        return String(format: "%.1fx", pitch)
+        if abs(pitch - 1.0) < 0.05 {
+            return String(localized: "Normal (1.0x)",
+                          comment: "The voice pitch when it is the normal one, as the pitch sliders say it. 1.0x means the voice's own pitch, unchanged.")
+        }
+        // The multiplier with one decimal, then its "x": a pitch that is not the normal one.
+        let multiplier = String(format: "%.1f", pitch)
+        return String(localized: "\(multiplier)x",
+                      comment: "The voice pitch as a multiplier of the voice's own, as the pitch sliders say it, such as \"1.2x\". %@ is the multiplier with one decimal.")
     }
 
     // MARK: - Position Tracking
@@ -2585,7 +2597,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
               MainActor.assumeIsolated({ PhoneAudioSession.shared.isInterrupted }) else { return false }
         let place = retryOffset(from: directModeBaseOffset, to: directModeChunkEnd)
         transitionLog(.event, "DIRECT_CANCEL_INTERRUPTED: live utterance cancelled during an audio interruption at offset=\(place); speech holds its place")
-        replaceDirectSynthesizer(after: "an audio interruption cancelled the live utterance")
+        replaceDirectSynthesizer(after: "an audio interruption cancelled the live utterance") // l10n: no (written to the debug log)
         pendingDirectSeekOffset = place
         if !isPaused {
             isPaused = true
@@ -3047,7 +3059,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 // Read before logging, so the line says what the synthesizer reports now.
                 let synthesizerIsSpeaking = self.directSynth.isSpeaking
                 let synthesizerIsPaused = self.directSynth.isPaused
-                let appState = self.isPaused ? "was paused" : "expected playback"
+                let appState = self.isPaused ? "was paused" : "expected playback" // l10n: no (written to the debug log)
                 self.transitionLog(.event, "DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app \(appState); watchdog armed=\(self.directPlaybackWatchdogTimer != nil) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
                 if self.isPaused {
                     self.retryCancelledDirectUtteranceAtResume(cancelled.utterance)
