@@ -199,10 +199,7 @@ enum LibrarySearchWording {
     /// found, then, after semicolons, what the list leaves out and which
     /// books were not searched.
     static func finished(found: String, notes: [String]) -> String {
-        notes.reduce(found) { status, note in
-            String(localized: "\(status); \(note)",
-                   comment: "Joins a finished search's status to a note after it, which says what the list leaves out or which books were not searched. %1$@ is the text so far and %2$@ the note. English uses a semicolon and a space.")
-        }
+        SentenceWording.semicolonJoined([found] + notes)
     }
 
     // MARK: - The Results

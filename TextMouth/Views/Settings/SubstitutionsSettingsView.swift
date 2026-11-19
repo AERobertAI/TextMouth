@@ -569,7 +569,7 @@ extension SubstitutionRule {
         if isRegex { parts.append(SubstitutionsWording.regexPart) }
         if caseSensitive { parts.append(SubstitutionsWording.casePart) }
         if isWholeWordEffective { parts.append(SubstitutionsWording.wholeWordPart) }
-        return SubstitutionsWording.commaJoined(parts)
+        return SentenceWording.commaJoined(parts)
     }
 }
 
@@ -921,13 +921,6 @@ enum SubstitutionsWording {
     static var wholeWordPart: String {
         String(localized: "Whole word only",
                comment: "A part of a substitution rule's spoken summary: the rule matches whole words only.")
-    }
-    /// The parts of a spoken summary, in order, joined with commas.
-    static func commaJoined(_ parts: [String]) -> String {
-        parts.dropFirst().reduce(parts.first ?? "") { text, next in
-            String(localized: "\(text), \(next)",
-                   comment: "Joins two parts of a spoken label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.")
-        }
     }
 
     // MARK: The Editor

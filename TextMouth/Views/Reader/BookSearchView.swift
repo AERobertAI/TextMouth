@@ -253,8 +253,7 @@ enum BookSearchWording {
     /// A result's context, then the heading that holds it.
     static func contextAndLocation(_ context: String, location: String?) -> String {
         guard let location else { return context }
-        return String(localized: "\(context), \(location)",
-                      comment: "A search result's matching text with its context, then the heading or chapter that holds it. %1$@ is the matching text and %2$@ is the place.")
+        return SentenceWording.commaJoined([context, location])
     }
 }
 

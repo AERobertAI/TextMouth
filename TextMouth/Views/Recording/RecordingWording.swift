@@ -204,17 +204,11 @@ enum RecordingWording {
     }
     /// The elapsed time as the screen shows it: "Elapsed: 1:04".
     static func elapsedText(_ seconds: TimeInterval) -> String {
-        labelled(elapsedLabel, TimeFormatting.format(seconds))
+        SentenceWording.labelled(elapsedLabel, TimeFormatting.format(seconds))
     }
     /// The elapsed time as VoiceOver speaks it: "1 minute, 4 seconds".
     static func elapsedValue(_ seconds: TimeInterval) -> String {
         TimeFormatting.spoken(seconds)
-    }
-
-    /// A label and its value as the window shows them, "Elapsed: 1:04".
-    static func labelled(_ label: String, _ value: String) -> String {
-        String(localized: "\(label): \(value)",
-               comment: "A label and its value on one line, such as \"Elapsed: 1:04\" in the Record window. %1$@ is the label and %2$@ its value. English puts a colon and a space between them.")
     }
 
     // MARK: - Level
@@ -379,7 +373,7 @@ enum RecordingWording {
     }
     /// The stepper's text as the screen shows it: its label and the seconds.
     static func announceIntervalText(seconds: Int) -> String {
-        labelled(announceIntervalLabel, String(seconds)) // l10n: no (a count of seconds shown beside its label as figures, ungrouped like the stepper's own)
+        SentenceWording.labelled(announceIntervalLabel, String(seconds)) // l10n: no (a count of seconds shown beside its label as figures, ungrouped like the stepper's own)
     }
     /// The stepper's value as VoiceOver speaks it: "10 seconds".
     static func announceIntervalValue(seconds: Int) -> String {

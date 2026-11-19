@@ -169,7 +169,7 @@ enum DuplicateFinderEngine {
                 }
             }
         }
-        return DuplicateFinderWording.heading(values)
+        return SentenceWording.semicolonJoined(values)
     }
 }
 
@@ -312,14 +312,6 @@ enum DuplicateFinderWording {
                comment: "The shared title and author of a group of duplicate books that match by both, in the group's heading. %1$@ is the title and %2$@ is the author.")
     }
 
-    /// A group's heading: one value for each criterion checked, in the
-    /// criteria's order, joined by semicolons.
-    static func heading(_ values: [String]) -> String {
-        values.dropFirst().reduce(values.first ?? "") { heading, next in
-            String(localized: "\(heading); \(next)",
-                   comment: "Joins the values a group of duplicate books shares, one for each match criterion checked, in the group's heading. %1$@ is the values so far and %2$@ the next. English uses a semicolon and a space.")
-        }
-    }
 
     /// A duplicate's row, everything it shows in one label: "Atlas, by
     /// Dorothy Vance, EPUB, in Travel, added October 6, 2026". The date the
