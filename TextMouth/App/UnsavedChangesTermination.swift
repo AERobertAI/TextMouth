@@ -33,7 +33,9 @@ enum UnsavedChangesChoice: Equatable {
 /// unsaved, in the banner's words, then Retry, Quit Anyway, and Cancel.
 enum UnsavedChangesPrompt {
     /// The alert's title.
-    static let title = "Some Changes Could Not Be Saved"
+    static var title: String {
+        String(localized: "Some Changes Could Not Be Saved", comment: "Title of the alert shown when TextMouth is asked to quit while some changes could not be written to disk.")
+    }
 
     /// What the alert explains: each unsaved subsystem's sentence, as the
     /// Library window's banner words it, between a line saying that
@@ -41,12 +43,37 @@ enum UnsavedChangesPrompt {
     /// so a VoiceOver user hears the whole decision before choosing.
     static func message(for unsaved: [PersistenceFailure]) -> String {
         let rows = PersistenceBannerRow.rows(for: unsaved).map(\.text)
-        return (["Quitting now leaves these changes unsaved:"] + rows + [choices]).joined(separator: "\n\n")
+        return ([quittingLeavesUnsaved] + rows + [choices]).joined(separator: "\n\n")
     }
 
-    /// What each of the prompt's buttons does.
-    static let choices = "Choose Retry to try saving them again, Quit Anyway to quit without them, "
-        + "or Cancel to keep TextMouth open."
+    /// The line that opens the alert's message, before the list of what is
+    /// unsaved.
+    static var quittingLeavesUnsaved: String {
+        String(localized: "Quitting now leaves these changes unsaved:", comment: "First line of the alert's message when quitting would leave changes unsaved; a list of what is unsaved follows it.")
+    }
+
+    /// What each of the prompt's buttons does. The names it quotes are the
+    /// buttons' own words (`retryTitle`, `quitAnywayTitle`, `cancelTitle`),
+    /// so the sentence and the buttons agree in every language.
+    static var choices: String {
+        String(localized: "Choose \(retryTitle) to try saving them again, \(quitAnywayTitle) to quit without them, or \(cancelTitle) to keep TextMouth open.",
+               comment: "Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.")
+    }
+
+    /// The first button: tries to save again.
+    static var retryTitle: String {
+        String(localized: "Retry", comment: "Button of the unsaved-changes alert that tries to save the changes again.")
+    }
+
+    /// The second button: quits without saving.
+    static var quitAnywayTitle: String {
+        String(localized: "Quit Anyway", comment: "Button of the unsaved-changes alert that quits TextMouth and leaves the changes unsaved.")
+    }
+
+    /// The third button: keeps TextMouth open.
+    static var cancelTitle: String {
+        PhoneAppWording.cancel
+    }
 
 #if os(macOS)
     /// Shows the prompt as an app-modal alert, bringing TextMouth forward,
@@ -58,10 +85,12 @@ enum UnsavedChangesPrompt {
         alert.alertStyle = .warning
         alert.messageText = title
         alert.informativeText = message(for: unsaved)
-        alert.addButton(withTitle: "Retry")
-        alert.addButton(withTitle: "Quit Anyway")
-        // AppKit gives the button titled Cancel the Escape key.
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: retryTitle)
+        alert.addButton(withTitle: quitAnywayTitle)
+        // AppKit gives Escape to a button titled Cancel in the system's
+        // language only, so the key is set explicitly, whatever the title.
+        let cancelButton = alert.addButton(withTitle: cancelTitle)
+        cancelButton.keyEquivalent = "\u{1b}" // l10n: no (the Escape key)
         NSApp.activate()
         switch alert.runModal() {
         case .alertFirstButtonReturn: return .retry

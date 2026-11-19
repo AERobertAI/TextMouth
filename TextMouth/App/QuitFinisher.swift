@@ -9,13 +9,16 @@ import Foundation
 /// panel say the same thing, as often as the person asks to quit again.
 enum QuitHoldWording {
     /// The panel's title.
-    static let title = "Quitting TextMouth"
+    static var title: String {
+        String(localized: "Quitting TextMouth", comment: "Title of the panel TextMouth shows, and the start of what it says aloud, while it finishes work before quitting.")
+    }
 
     /// The words for `phrases`, what each piece of work is doing
     /// (`QuitHold.Work.finishing`): what is under way, and that TextMouth
     /// quits afterwards.
     static func message(finishing phrases: [String]) -> String {
-        "TextMouth is finishing up before it quits: \(list(phrases)). It will quit as soon as that is done."
+        String(localized: "TextMouth is finishing up before it quits: \(list(phrases)). It will quit as soon as that is done.",
+               comment: "Panel text and announcement while TextMouth finishes work before quitting. %@ is the list of what is under way, such as \"saving the library and keeping downloads\", already joined in the language's own list style.")
     }
 
     /// The words for `works`, each as it describes itself now.
@@ -24,14 +27,10 @@ enum QuitHoldWording {
         message(finishing: works.map { $0.finishing() })
     }
 
-    /// `items` in a sentence: "a", "a and b", or "a, b, and c".
+    /// `items` in a sentence: "a", "a and b", or "a, b, and c" in English,
+    /// in the region's own list style (`CountWording.list`).
     static func list(_ items: [String]) -> String {
-        switch items.count {
-        case 0: return ""
-        case 1: return items[0]
-        case 2: return "\(items[0]) and \(items[1])"
-        default: return items.dropLast().joined(separator: ", ") + ", and " + items[items.count - 1]
-        }
+        CountWording.list(items)
     }
 }
 
