@@ -230,7 +230,7 @@ final class PronunciationLexiconTests: XCTestCase {
         XCTAssertEqual(service.rules.count, PronunciationLexicon.ruleLimit)
         XCTAssertEqual(
             outcome.message,
-            "Added 5000 rules from “huge.pls”. 2 entries were not read, because a lexicon adds at most 5000 rules at a time."
+            "Added 5,000 rules from “huge.pls”. 2 entries were not read, because a lexicon adds at most 5,000 rules at a time."
         )
     }
 

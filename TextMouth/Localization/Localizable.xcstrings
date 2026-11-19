@@ -2730,6 +2730,52 @@
         }
       }
     },
+    "%lld entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside." : {
+      "comment" : "A sentence of the alert after a pronunciation lexicon import. %lld is the number of entries that give only a phonetic spelling.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entry gives only a phonetic spelling, which TextMouth cannot use, so it was set aside."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld entries were not read, because a lexicon adds at most %@ rules at a time." : {
+      "comment" : "A sentence of the alert after a pronunciation lexicon import. %1$lld is the number of entries left unread; %2$@ is the most rules one import adds, written as a grouped number (a fixed cap, always a plural count).",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entry was not read, because a lexicon adds at most %@ rules at a time."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entries were not read, because a lexicon adds at most %@ rules at a time."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld episodes" : {
       "comment" : "A count of podcast episodes in a list, counted beside books. %lld is the number of episodes.",
       "localizations" : {
@@ -3640,6 +3686,52 @@
         }
       }
     },
+    "%lld rules were already in your rules." : {
+      "comment" : "A sentence of the alert after a pronunciation lexicon import. %lld is the number of the lexicon's rules that the user's rules already held.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rule was already in your rules."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rules were already in your rules."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld rules were left out, because a regular expression, or a rule that is off, cannot be written in a lexicon." : {
+      "comment" : "A sentence of the alert after substitution rules were saved as a pronunciation lexicon. %lld is the number of rules left out.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rule was left out, because a regular expression, or a rule that is off, cannot be written in a lexicon."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rules were left out, because a regular expression, or a rule that is off, cannot be written in a lexicon."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld seconds" : {
       "comment" : "A count of whole seconds inside a duration or a setting's length. %lld is the number of seconds.",
       "localizations" : {
@@ -4503,6 +4595,29 @@
         }
       }
     },
+    "Added %lld rules from “%@”." : {
+      "comment" : "A sentence of the alert after a pronunciation lexicon import. %1$lld is the number of rules added; %2$@ is the file's name.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Added %lld rule from “%@”."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Added %lld rules from “%@”."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Added Last" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .dateAdded."
     },
@@ -4528,6 +4643,9 @@
     },
     "Adds speed buttons and the current speed" : {
       "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings."
+    },
+    "Adds the lexicon's spelling-to-words entries after your rules. Entries that only give phonetic spellings are set aside." : {
+      "comment" : "VoiceOver hint of the Import Rules button in Settings, Text, Substitutions: what is added and what is left out."
     },
     "Adds the new copy to the library as a separate book." : {
       "comment" : "VoiceOver hint of the Keep Both button of the duplicate-book question."
@@ -5824,6 +5942,9 @@
     },
     "Choose a new location for the library" : {
       "comment" : "VoiceOver label of the Change Location button in Storage settings."
+    },
+    "Choose a pronunciation lexicon file to add its entries as substitution rules." : {
+      "comment" : "Message of the Open panel that Import Rules shows, asking for a pronunciation lexicon file."
     },
     "Choose a voice for reading. Change takes effect immediately." : {
       "comment" : "VoiceOver hint of the voice pop-up in the Voice settings."
@@ -7722,6 +7843,9 @@
     "Export Audio" : {
       "comment" : "Title of the audio editor's Export Audio sheet."
     },
+    "Export Failed" : {
+      "comment" : "Title of the alert when substitution rules could not be saved as a pronunciation lexicon."
+    },
     "Export Keynote presentations from Keynote as PDF files, then import those." : {
       "comment" : "Advice after the refusal of a Keynote presentation, which TextMouth reads in no slide format."
     },
@@ -7733,6 +7857,35 @@
     },
     "Export Pages documents from Pages as Word documents or EPUB books, then import those." : {
       "comment" : "Advice after the refusal of a Pages document: how to get the book out of Pages."
+    },
+    "Export Rules…" : {
+      "comment" : "Title of the button in Settings, Text, Substitutions that saves the rules as a pronunciation lexicon file."
+    },
+    "Export substitution rules as a pronunciation lexicon file" : {
+      "comment" : "VoiceOver label of the Export Rules button in Settings, Text, Substitutions."
+    },
+    "Exported %lld rules to “%@”." : {
+      "comment" : "A sentence of the alert after substitution rules were saved as a pronunciation lexicon. %1$lld is the number of rules written; %2$@ is the file's name.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Exported %lld rule to “%@”."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Exported %lld rules to “%@”."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Exported %lld subscriptions to %@." : {
       "comment" : "What VoiceOver says once the subscriptions are exported. %lld is how many; %@ is the file's name.",
@@ -8554,6 +8707,9 @@
     "Import Behavior" : {
       "comment" : "Heading of the section of Storage settings about what an import does."
     },
+    "Import Failed" : {
+      "comment" : "Title of the alert when a pronunciation lexicon file could not be imported."
+    },
     "Import Folder" : {
       "comment" : "Title of the panel that chooses folders to import. Title case."
     },
@@ -8562,6 +8718,9 @@
     },
     "Import OPML…" : {
       "comment" : "Title of the Library menu's command that imports an OPML file of subscriptions. The ellipsis says a panel follows. OPML is a file format; keep it."
+    },
+    "Import Rules…" : {
+      "comment" : "Title of the button in Settings, Text, Substitutions that adds rules from a pronunciation lexicon file."
     },
     "Import Subscriptions" : {
       "comment" : "Heading of the sheet that imports an OPML file of subscriptions. Title case."
@@ -8580,6 +8739,9 @@
     },
     "Import questions can't be answered while the library is moving." : {
       "comment" : "First sentence of what an import question says when it is answered while the library is being moved."
+    },
+    "Import substitution rules from a pronunciation lexicon file" : {
+      "comment" : "VoiceOver label of the Import Rules button in Settings, Text, Substitutions."
     },
     "Imported %lld books, but %@" : {
       "comment" : "Sentence of the alert about a ZIP batch that left something out. %1$lld is the number of books imported and %2$@ the sections that say what failed or is missing, each a heading and a line for each entry.",
@@ -11022,6 +11184,9 @@
     "No rule changes this transcript." : {
       "comment" : "Error shown when Apply is pressed in the Clean Up Transcript sheet but no rule changes the transcript.\nSummary line of the Clean Up Transcript sheet when the rules would change nothing."
     },
+    "No rules were added from “%@”." : {
+      "comment" : "A sentence of the alert after a pronunciation lexicon import: nothing was added. %@ is the file's name."
+    },
     "No shortcut" : {
       "comment" : "Said of an action that has no keyboard shortcut, in place of its keys, such as \"Release Media Controls: No shortcut\"."
     },
@@ -13172,6 +13337,12 @@
     "Rule name" : {
       "comment" : "VoiceOver label of the field that names a substitution rule in the rule editor."
     },
+    "Rules Exported" : {
+      "comment" : "Title of the alert after substitution rules were saved as a pronunciation lexicon."
+    },
+    "Rules Imported" : {
+      "comment" : "Title of the alert after a pronunciation lexicon was imported as substitution rules."
+    },
     "Rules you added or changed will be lost." : {
       "comment" : "Last sentence of the message of the question asked before the Substitutions settings replace every rule with the defaults."
     },
@@ -13300,6 +13471,9 @@
     "Save your subscriptions as an OPML file, which other feed readers import." : {
       "comment" : "The message of the Save panel that saves the subscriptions as an OPML file."
     },
+    "Save your substitution rules as a pronunciation lexicon file." : {
+      "comment" : "Message of the Save panel that Export Rules shows."
+    },
     "Saved %@" : {
       "comment" : "Said as an edited filter preset is saved. %@ is the preset's name."
     },
@@ -13329,6 +13503,9 @@
     },
     "Saves this recording as an audiobook in the %@ folder, titled by when it was recorded." : {
       "comment" : "VoiceOver hint of the button that saves a recording left behind. %@ is the label of the pop-up that chooses the folder."
+    },
+    "Saves your plain text rules that are on. Rules that use regular expressions, and rules that are off, are left out." : {
+      "comment" : "VoiceOver hint of the Export Rules button in Settings, Text, Substitutions: which rules are saved and which are left out."
     },
     "Saving" : {
       "comment" : "Title of the sheet shown while the audio editor saves the edits into the book."
@@ -14988,6 +15165,9 @@
     "TextMouth could not read the sort settings in the unreadable index." : {
       "comment" : "Part of the library index recovery sheet: the sort settings could not be read from the unreadable index."
     },
+    "TextMouth could not read “%@”." : {
+      "comment" : "Message of the alert when a pronunciation lexicon file could not be read at all. %@ is the file's name."
+    },
     "TextMouth could not record the removal in its package, %@." : {
       "comment" : "First sentence of the error shown when Remove from Library Only cannot mark the book's package, so the book stays in the library. %@ is the package's folder name. The sentence that says why follows it."
     },
@@ -14996,6 +15176,9 @@
     },
     "TextMouth could not save a copy of the unreadable file." : {
       "comment" : "First sentence of the library index recovery sheet when no copy of the unreadable file was saved."
+    },
+    "TextMouth could not save “%@”." : {
+      "comment" : "Message of the alert when a pronunciation lexicon file could not be saved. %@ is the file's name."
     },
     "TextMouth couldn't get the library's files from %@." : {
       "comment" : "First sentence of why the library can't be used: fetching its files from the cloud failed. %@ is the cloud service's name, or \"the cloud\" when it is unknown."
@@ -17170,6 +17353,9 @@
     },
     "There are no feeds to refresh." : {
       "comment" : "What VoiceOver says when Refresh All Feeds finds no feed in the library."
+    },
+    "There are no rules to export. Only plain text rules that are on can be written in a lexicon." : {
+      "comment" : "Message of the alert when Export Rules finds no rule it can write as a pronunciation lexicon."
     },
     "There are no subscriptions to export." : {
       "comment" : "What Export OPML says when the library has no feed."
@@ -20347,6 +20533,9 @@
     "“%@” is already being added to the library." : {
       "comment" : "What VoiceOver says when Cancel Download comes too late: the download's book is already being imported. %@ is the title."
     },
+    "“%@” is an XML file, but not a pronunciation lexicon." : {
+      "comment" : "Message of the alert when a file chosen as a pronunciation lexicon is XML of another kind. %@ is the file's name."
+    },
     "“%@” is being exported. %@, then %@." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle can't be read again while it is being exported, with what to do, as a refusal for a book in use says it (FeedBookUse.exporting): \"“Ledger” is being exported. Wait until the export ends, then try again.\". Placeholders in order: bookTitle, FeedBookUse.exporting.remedy, FeedBookUse.tryAgain.",
       "localizations" : {
@@ -20357,6 +20546,9 @@
           }
         }
       }
+    },
+    "“%@” is not a pronunciation lexicon: it is not a complete, valid XML file." : {
+      "comment" : "Message of the alert when a file chosen as a pronunciation lexicon is not valid XML. %@ is the file's name."
     },
     "“%@” is now read as %@." : {
       "comment" : "VoiceOver announcement once a book was read again. %1$@ is the book's title and %2$@ describes how it is read now, such as \"Windows-1251 (Cyrillic), chosen\".",
@@ -20377,6 +20569,9 @@
     },
     "“%@” is still working. Quit once the change is done." : {
       "comment" : "Said in an audio editor when TextMouth can't quit because its work is under way. %@ is the book's title."
+    },
+    "“%@” is too large to read as a pronunciation lexicon." : {
+      "comment" : "Message of the alert when a pronunciation lexicon file is too large. %@ is the file's name."
     },
     "“%@” isn't a filter's name." : {
       "comment" : "Problem found in a typed filter chain: the text before an equals sign is not a filter's name. %@ is that text."
@@ -20435,6 +20630,9 @@
           }
         }
       }
+    },
+    "“%@” uses XML entities of its own, which TextMouth does not read in a lexicon." : {
+      "comment" : "Message of the alert when a pronunciation lexicon declares XML entities, which are refused for safety. %@ is the file's name."
     },
     "“%@” was imported, with %@ of audio." : {
       "comment" : "First sentence of the question offering to transcribe a new audiobook. %1$@ is the audiobook's title; %2$@ is its length in words, such as \"6 hours, 12 minutes\".",

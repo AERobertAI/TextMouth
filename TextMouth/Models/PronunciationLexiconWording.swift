@@ -9,31 +9,61 @@ enum PronunciationLexiconWording {
     // MARK: - The buttons
 
     /// The title of the Import button.
-    static let importButton = "Import Rules…"
+    static var importButton: String {
+        String(localized: "Import Rules…",
+               comment: "Title of the button in Settings, Text, Substitutions that adds rules from a pronunciation lexicon file.")
+    }
     /// What VoiceOver reads for the Import button.
-    static let importLabel = "Import substitution rules from a pronunciation lexicon file"
+    static var importLabel: String {
+        String(localized: "Import substitution rules from a pronunciation lexicon file",
+               comment: "VoiceOver label of the Import Rules button in Settings, Text, Substitutions.")
+    }
     /// The Import button's hint: what it takes and what it leaves.
-    static let importHint = "Adds the lexicon's spelling-to-words entries after your rules. Entries that only give phonetic spellings are set aside."
+    static var importHint: String {
+        String(localized: "Adds the lexicon's spelling-to-words entries after your rules. Entries that only give phonetic spellings are set aside.",
+               comment: "VoiceOver hint of the Import Rules button in Settings, Text, Substitutions: what is added and what is left out.")
+    }
     /// The title of the Export button.
-    static let exportButton = "Export Rules…"
+    static var exportButton: String {
+        String(localized: "Export Rules…",
+               comment: "Title of the button in Settings, Text, Substitutions that saves the rules as a pronunciation lexicon file.")
+    }
     /// What VoiceOver reads for the Export button.
-    static let exportLabel = "Export substitution rules as a pronunciation lexicon file"
+    static var exportLabel: String {
+        String(localized: "Export substitution rules as a pronunciation lexicon file",
+               comment: "VoiceOver label of the Export Rules button in Settings, Text, Substitutions.")
+    }
     /// The Export button's hint.
-    static let exportHint = "Saves your plain text rules that are on. Rules that use regular expressions, and rules that are off, are left out."
+    static var exportHint: String {
+        String(localized: "Saves your plain text rules that are on. Rules that use regular expressions, and rules that are off, are left out.",
+               comment: "VoiceOver hint of the Export Rules button in Settings, Text, Substitutions: which rules are saved and which are left out.")
+    }
     /// The message of the Open panel Import chooses a file in.
-    static let importPanelMessage = "Choose a pronunciation lexicon file to add its entries as substitution rules."
+    static var importPanelMessage: String {
+        String(localized: "Choose a pronunciation lexicon file to add its entries as substitution rules.",
+               comment: "Message of the Open panel that Import Rules shows, asking for a pronunciation lexicon file.")
+    }
     /// The message of the Save panel Export names a file in.
-    static let exportPanelMessage = "Save your substitution rules as a pronunciation lexicon file."
+    static var exportPanelMessage: String {
+        String(localized: "Save your substitution rules as a pronunciation lexicon file.",
+               comment: "Message of the Save panel that Export Rules shows.")
+    }
     /// The name the Save panel offers.
-    static let exportFileName = "Substitution Rules.pls"
+    static let exportFileName = "Substitution Rules.pls" // l10n: no (file name offered by the Save panel, kept English like every file name TextMouth writes)
 
     // MARK: - Import
 
     /// The title of the alert after an import that added rules or found
     /// everything already there.
-    static let importedTitle = "Rules Imported"
+    static var importedTitle: String {
+        String(localized: "Rules Imported",
+               comment: "Title of the alert after a pronunciation lexicon was imported as substitution rules.")
+    }
     /// The title of the alert after an import that could not read its file.
-    static let importFailedTitle = "Import Failed"
+    static var importFailedTitle: String {
+        String(localized: "Import Failed",
+               comment: "Title of the alert when a pronunciation lexicon file could not be imported.")
+    }
 
     /// The sentence after an import: how many rules were added from the
     /// file, how many were already among the rules, and how many entries
@@ -46,54 +76,68 @@ enum PronunciationLexiconWording {
     static func imported(fileName: String, added: Int, alreadyPresent: Int, setAside: Int, unread: Int = 0) -> String {
         var sentences = [
             added == 0
-                ? "No rules were added from “\(fileName)”."
-                : "Added \(CountWording.phrase(added, singular: "rule", plural: "rules")) from “\(fileName)”."
+                ? String(localized: "No rules were added from “\(fileName)”.",
+                         comment: "A sentence of the alert after a pronunciation lexicon import: nothing was added. %@ is the file's name.")
+                : String(localized: "Added \(added) rules from “\(fileName)”.",
+                         comment: "A sentence of the alert after a pronunciation lexicon import. %1$lld is the number of rules added; %2$@ is the file's name.")
         ]
         if alreadyPresent > 0 {
             sentences.append(
-                alreadyPresent == 1
-                    ? "1 rule was already in your rules."
-                    : "\(alreadyPresent) rules were already in your rules."
+                String(localized: "\(alreadyPresent) rules were already in your rules.",
+                       comment: "A sentence of the alert after a pronunciation lexicon import. %lld is the number of the lexicon's rules that the user's rules already held.")
             )
         }
         if setAside > 0 {
             sentences.append(
-                setAside == 1
-                    ? "1 entry gives only a phonetic spelling, which TextMouth cannot use, so it was set aside."
-                    : "\(setAside) entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside."
+                String(localized: "\(setAside) entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside.",
+                       comment: "A sentence of the alert after a pronunciation lexicon import. %lld is the number of entries that give only a phonetic spelling.")
             )
         }
         if unread > 0 {
+            // The limit is written grouped for the region ("5,000"), like every count of rules; it is
+            // a fixed cap, always a plural count of rules, so the sentence's plural varies on `unread` only.
+            let limit = PronunciationLexicon.ruleLimit.formatted()
             sentences.append(
-                (unread == 1 ? "1 entry was not read" : "\(unread) entries were not read")
-                    + ", because a lexicon adds at most \(PronunciationLexicon.ruleLimit) rules at a time."
+                String(localized: "\(unread) entries were not read, because a lexicon adds at most \(limit) rules at a time.",
+                       comment: "A sentence of the alert after a pronunciation lexicon import. %1$lld is the number of entries left unread; %2$@ is the most rules one import adds, written as a grouped number (a fixed cap, always a plural count).")
             )
         }
-        return sentences.joined(separator: " ")
+        return SentenceWording.joined(sentences)
     }
 
     /// Why a file could not be read as a lexicon.
     static func importFailure(fileName: String, _ error: PronunciationLexicon.ReadError?) -> String {
         switch error {
         case .notXML?:
-            return "“\(fileName)” is not a pronunciation lexicon: it is not a complete, valid XML file."
+            return String(localized: "“\(fileName)” is not a pronunciation lexicon: it is not a complete, valid XML file.",
+                          comment: "Message of the alert when a file chosen as a pronunciation lexicon is not valid XML. %@ is the file's name.")
         case .notALexicon?:
-            return "“\(fileName)” is an XML file, but not a pronunciation lexicon."
+            return String(localized: "“\(fileName)” is an XML file, but not a pronunciation lexicon.",
+                          comment: "Message of the alert when a file chosen as a pronunciation lexicon is XML of another kind. %@ is the file's name.")
         case .declaresEntities?:
-            return "“\(fileName)” uses XML entities of its own, which TextMouth does not read in a lexicon."
+            return String(localized: "“\(fileName)” uses XML entities of its own, which TextMouth does not read in a lexicon.",
+                          comment: "Message of the alert when a pronunciation lexicon declares XML entities, which are refused for safety. %@ is the file's name.")
         case .tooLarge?:
-            return "“\(fileName)” is too large to read as a pronunciation lexicon."
+            return String(localized: "“\(fileName)” is too large to read as a pronunciation lexicon.",
+                          comment: "Message of the alert when a pronunciation lexicon file is too large. %@ is the file's name.")
         case nil:
-            return "TextMouth could not read “\(fileName)”."
+            return String(localized: "TextMouth could not read “\(fileName)”.",
+                          comment: "Message of the alert when a pronunciation lexicon file could not be read at all. %@ is the file's name.")
         }
     }
 
     // MARK: - Export
 
     /// The title of the alert after rules were written.
-    static let exportedTitle = "Rules Exported"
+    static var exportedTitle: String {
+        String(localized: "Rules Exported",
+               comment: "Title of the alert after substitution rules were saved as a pronunciation lexicon.")
+    }
     /// The title of the alert when no rule can be written, or the file could not be.
-    static let exportFailedTitle = "Export Failed"
+    static var exportFailedTitle: String {
+        String(localized: "Export Failed",
+               comment: "Title of the alert when substitution rules could not be saved as a pronunciation lexicon.")
+    }
 
     /// The sentence after an export: how many rules were written, and how
     /// many were left out and why.
@@ -101,22 +145,28 @@ enum PronunciationLexiconWording {
     /// "Exported 5 rules to “rules.pls”. 2 rules were left out, because a
     /// regular expression or a rule that is off cannot be written in a lexicon."
     static func exported(fileName: String, written: Int, leftOut: Int) -> String {
-        var sentences = ["Exported \(CountWording.phrase(written, singular: "rule", plural: "rules")) to “\(fileName)”."]
+        var sentences = [
+            String(localized: "Exported \(written) rules to “\(fileName)”.",
+                   comment: "A sentence of the alert after substitution rules were saved as a pronunciation lexicon. %1$lld is the number of rules written; %2$@ is the file's name.")
+        ]
         if leftOut > 0 {
             sentences.append(
-                (leftOut == 1 ? "1 rule was left out" : "\(leftOut) rules were left out")
-                    + ", because a regular expression, or a rule that is off, cannot be written in a lexicon."
+                String(localized: "\(leftOut) rules were left out, because a regular expression, or a rule that is off, cannot be written in a lexicon.",
+                       comment: "A sentence of the alert after substitution rules were saved as a pronunciation lexicon. %lld is the number of rules left out.")
             )
         }
-        return sentences.joined(separator: " ")
+        return SentenceWording.joined(sentences)
     }
 
     /// The sentence when no rule can be written at all.
-    static let nothingToExport =
-        "There are no rules to export. Only plain text rules that are on can be written in a lexicon."
+    static var nothingToExport: String {
+        String(localized: "There are no rules to export. Only plain text rules that are on can be written in a lexicon.",
+               comment: "Message of the alert when Export Rules finds no rule it can write as a pronunciation lexicon.")
+    }
 
     /// The sentence when the file could not be saved.
     static func exportWriteFailure(fileName: String) -> String {
-        "TextMouth could not save “\(fileName)”."
+        String(localized: "TextMouth could not save “\(fileName)”.",
+               comment: "Message of the alert when a pronunciation lexicon file could not be saved. %@ is the file's name.")
     }
 }
