@@ -155,7 +155,6 @@ final class LibraryCloudFetchTests: XCTestCase {
                 + "library's own library-identity.json arrives from iCloud Drive later, iCloud Drive may keep two copies "
                 + "of it, and this Mac and the other would disagree about which library this is."
         )
-        XCTAssertEqual(LibraryFileWaitWording.naming(file), "its identity file, library-identity.json")
     }
 
     /// The words of the choice: the reason names the file that did not come,

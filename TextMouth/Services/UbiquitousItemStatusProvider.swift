@@ -205,9 +205,9 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
         let components = url.standardizedFileURL.pathComponents
         // Each "Library" with a place's name after it and one more component
         // after that, the container or the drive's folder.
-        for index in components.indices.dropLast(2) where matches(components[index], "Library") {
+        for index in components.indices.dropLast(2) where matches(components[index], "Library") { // l10n: no (a path component)
             let place = components[index + 1]
-            if matches(place, "Mobile Documents") {
+            if matches(place, "Mobile Documents") { // l10n: no (a path component)
                 return .iCloudDrive
             }
             if matches(place, "CloudStorage") {

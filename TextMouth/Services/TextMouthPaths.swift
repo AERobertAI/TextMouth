@@ -76,8 +76,8 @@ enum TextMouthPaths {
     static func recordRelocation(from oldRoot: URL, to newRoot: URL, in preferences: UserDefaults) -> String {
         DataDirectoryPreferences.customPath.write(newRoot.path, to: preferences)
         DataDirectoryPreferences.bookmark.write(DataDirectoryPreferences.makeBookmark(of: newRoot), to: preferences)
-        return "DATA_DIRECTORY_FOUND: \(DataDirectoryPaths.shortName(of: oldRoot)) was missing; its bookmark "
-            + "found the library at \(DataDirectoryPaths.shortName(of: newRoot)), which is the data directory now"
+        return "DATA_DIRECTORY_FOUND: \(DataDirectoryPaths.shortName(of: oldRoot)) was missing; its bookmark " // l10n: no (debug log text)
+            + "found the library at \(DataDirectoryPaths.shortName(of: newRoot)), which is the data directory now" // l10n: no (debug log text)
     }
 
     /// The active data directory of this process: the root of the current
@@ -142,14 +142,14 @@ enum TextMouthPaths {
     // MARK: - Subdirectories
 
     /// The name of the folder of books inside the data directory.
-    static let libraryFolderName = "Library"
+    static let libraryFolderName = "Library" // l10n: no (a folder's name on disk)
 
     static var libraryDir: URL {
         root.appendingPathComponent(libraryFolderName, isDirectory: true)
     }
 
     /// The name of the folder of logs inside the data directory.
-    static let logsFolderName = "Logs"
+    static let logsFolderName = "Logs" // l10n: no (a folder's name on disk)
 
     /// The folder the diagnostic logs are written to now (`logDestination`):
     /// the data directory's Logs folder, or this Mac's
@@ -692,7 +692,7 @@ enum TextMouthPaths {
         let result = str.unicodeScalars.filter { allowed.contains($0) }.map { Character($0) }
         var s = String(result)
         s = s.trimmingCharacters(in: .whitespaces)
-        if s.isEmpty { s = "Unknown" }
+        if s.isEmpty { s = "Unknown" } // l10n: no (a file name written on disk)
         s = s.replacingOccurrences(of: " ", with: "_")
         if s.count > 60 { s = String(s.prefix(60)) }
         return s

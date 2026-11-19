@@ -341,13 +341,15 @@ struct LibraryCopyReader: Sendable {
     private static func words(for error: Error) -> String {
         if let decoding = error as? DecodingError {
             switch decoding {
-            case .keyNotFound(let key, _): return "it has no \(key.stringValue)"
-            case .dataCorrupted: return "its contents are damaged"
-            default: return "its contents aren't a library file this TextMouth knows"
+            // A damage reason names what is wrong inside a file, so it stays English (question 3);
+            // Compare Libraries' sentences carry it as it is.
+            case .keyNotFound(let key, _): return "it has no \(key.stringValue)" // l10n: no (damage reason inside a file, question 3)
+            case .dataCorrupted: return "its contents are damaged" // l10n: no (damage reason inside a file, question 3)
+            default: return "its contents aren't a library file this TextMouth knows" // l10n: no (damage reason inside a file, question 3)
             }
         }
         return (error as? CocoaError)?.code == .fileReadNoSuchFile
-            ? "no file is there"
+            ? "no file is there" // l10n: no (a reason in English, carried as it is by Compare Libraries' sentences)
             : error.localizedDescription
     }
 }

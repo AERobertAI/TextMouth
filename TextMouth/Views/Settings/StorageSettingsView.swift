@@ -19,13 +19,17 @@ enum StorageOperation: Equatable {
     var runningMessage: String {
         switch self {
         case .rebuild:
-            return "Rebuilding the data directory..."
+            return String(localized: "Rebuilding the data directory...",
+                          comment: "Storage settings status line while Rebuild Directory runs.")
         case .resetToDefault:
-            return "Moving data to the default location..."
+            return String(localized: "Moving data to the default location...",
+                          comment: "Storage settings status line while Reset to Default Location runs.")
         case .move(let destination):
-            return "Moving data to \(destination.path)..."
+            return String(localized: "Moving data to \(destination.path)...",
+                          comment: "Storage settings status line while the library moves to a chosen folder. %@ is the folder's path.")
         case .useLibrary(let folder):
-            return "Switching to the library in \(folder.path)..."
+            return String(localized: "Switching to the library in \(folder.path)...",
+                          comment: "Storage settings status line while TextMouth switches to the library in a chosen folder. %@ is the folder's path.")
         }
     }
 }
@@ -47,13 +51,17 @@ struct StorageStatus: Equatable {
     /// The status while the folder at `folder`, chosen for the library, is
     /// looked at before anything is offered (FR02).
     static func checking(_ folder: URL) -> StorageStatus {
-        StorageStatus(message: "Checking \(folder.path)...", isFailure: false)
+        StorageStatus(
+            message: String(localized: "Checking \(folder.path)...",
+                            comment: "Storage settings status line while a chosen folder is looked at. %@ is the folder's path."),
+            isFailure: false
+        )
     }
 
     /// The status once an operation has finished with `outcome`: its own
     /// words, which after a failure are those of the library's error alert.
     static func finished(_ outcome: OperationOutcome) -> StorageStatus {
-        StorageStatus(message: outcome.message ?? "Done.", isFailure: !outcome.succeeded)
+        StorageStatus(message: outcome.message ?? StorageSettingsWording.done, isFailure: !outcome.succeeded)
     }
 
     /// The finished status, announced once. VoiceOver does not read a
@@ -82,56 +90,307 @@ enum StorageLocationWording {
     /// when none does, so nothing is shown.
     static func booksNeedingNewerTextMouth(_ count: Int) -> String? {
         guard count > 0 else { return nil }
+        // One sentence for each count: "It is kept" for one book, "They are kept" for more.
         if count == 1 {
-            return "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown."
+            return String(localized: "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown.",
+                          comment: "Storage settings note: one book of the library was added by a newer TextMouth, which this one keeps but can't show.")
         }
-        return "\(count) books in this library need a newer version of TextMouth. They are kept as they are, but not shown."
+        return String(localized: "\(count) books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
+                      comment: "Storage settings note: several books of the library were added by a newer TextMouth, which this one keeps but can't show. %lld is how many books.")
     }
 
     /// The button that opens the folder chooser: Change Location while the
     /// library is available, Choose Another Library while it isn't.
     static func chooserTitle(isLibraryAvailable: Bool) -> String {
-        isLibraryAvailable ? "Change Location..." : "Choose Another Library..."
+        isLibraryAvailable
+            ? String(localized: "Change Location...",
+                     comment: "Button in Storage settings that opens a folder chooser to move the library. The three dots show that a chooser opens.")
+            : String(localized: "Choose Another Library...",
+                     comment: "Button in Storage settings, shown while the library isn't available, that opens a folder chooser to pick another library. The three dots show that a chooser opens.")
     }
 
     /// What VoiceOver calls that button.
     static func chooserLabel(isLibraryAvailable: Bool) -> String {
-        isLibraryAvailable ? "Choose a new location for the library" : "Choose another library"
+        isLibraryAvailable
+            ? String(localized: "Choose a new location for the library",
+                     comment: "VoiceOver label of the Change Location button in Storage settings.")
+            : String(localized: "Choose another library",
+                     comment: "VoiceOver label of the Choose Another Library button in Storage settings.")
     }
 
     /// What that button does.
     static func chooserHint(isLibraryAvailable: Bool) -> String {
         isLibraryAvailable
-            ? "Opens a folder chooser. An empty folder receives a copy of the library; "
-                + "a folder that holds a TextMouth library can be used as it is."
-            : "Opens a folder chooser to pick a folder that holds a TextMouth library, which TextMouth then opens instead."
+            ? String(localized: "Opens a folder chooser. An empty folder receives a copy of the library; a folder that holds a TextMouth library can be used as it is.",
+                     comment: "VoiceOver hint of the Change Location button in Storage settings.")
+            : String(localized: "Opens a folder chooser to pick a folder that holds a TextMouth library, which TextMouth then opens instead.",
+                     comment: "VoiceOver hint of the Choose Another Library button in Storage settings.")
     }
 
     /// The button, shown while the library isn't available, that opens the
     /// library in the default location, or starts a new one there.
-    static let useDefaultTitle = "Use Default Location..."
+    static var useDefaultTitle: String {
+        String(localized: "Use Default Location...",
+               comment: "Button in Storage settings, shown while the library isn't available, that opens the library in the default location or starts a new one there. The three dots show that a question follows.")
+    }
     /// What VoiceOver calls it.
-    static let useDefaultLabel = "Use the default location"
+    static var useDefaultLabel: String {
+        String(localized: "Use the default location",
+               comment: "VoiceOver label of the Use Default Location button in Storage settings.")
+    }
     /// What it does.
-    static let useDefaultHint = "Opens the library in the default location, ~/.TextMouth, or starts a new one there, "
-        + "instead of the library that isn't available."
+    static var useDefaultHint: String {
+        String(localized: "Opens the library in the default location, ~/.TextMouth, or starts a new one there, instead of the library that isn't available.",
+               comment: "VoiceOver hint of the Use Default Location button in Storage settings. ~/.TextMouth is the default folder's path and stays as written.")
+    }
 
     /// The folder chooser's title.
     static func panelTitle(isLibraryAvailable: Bool) -> String {
-        isLibraryAvailable ? "Choose a Location for the Library" : "Choose Another Library"
+        isLibraryAvailable
+            ? String(localized: "Choose a Location for the Library",
+                     comment: "Title of the folder chooser that Change Location opens.")
+            : String(localized: "Choose Another Library",
+                     comment: "Title of the folder chooser that Choose Another Library opens.")
     }
 
     /// What the folder chooser explains.
     static func panelMessage(isLibraryAvailable: Bool) -> String {
         isLibraryAvailable
-            ? "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it. "
-                + "You can make a new folder here."
-            : "Choose a folder that holds a TextMouth library to use it instead."
+            ? SentenceWording.joined([
+                String(localized: "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it.",
+                       comment: "First sentence of the message of the folder chooser that Change Location opens."),
+                String(localized: "You can make a new folder here.",
+                       comment: "Last sentence of the message of the folder chooser that Change Location opens: the chooser has a button that makes a folder."),
+            ])
+            : String(localized: "Choose a folder that holds a TextMouth library to use it instead.",
+                     comment: "Message of the folder chooser that Choose Another Library opens.")
     }
 
     /// The folder chooser's button, which names the action.
     static func panelPrompt(isLibraryAvailable: Bool) -> String {
-        isLibraryAvailable ? "Choose Location" : "Choose Library"
+        isLibraryAvailable
+            ? String(localized: "Choose Location",
+                     comment: "Button of the folder chooser that Change Location opens: picks the folder.")
+            : String(localized: "Choose Library",
+                     comment: "Button of the folder chooser that Choose Another Library opens: picks the folder.")
+    }
+}
+
+/// The words of Storage settings' other controls and alerts, each defined
+/// once for the screen, VoiceOver, and the tests.
+enum StorageSettingsWording {
+    /// The status after an operation that has nothing more to say.
+    static var done: String {
+        String(localized: "Done.",
+               comment: "Storage settings status line after an operation finished and has nothing more to say.")
+    }
+
+    /// The status's words for each state of the data directory.
+    static var changesNotSaved: String {
+        String(localized: "Changes not saved",
+               comment: "Storage settings status: some changes could not be saved.")
+    }
+    static var active: String {
+        String(localized: "Active",
+               comment: "Storage settings status: the data directory exists and is working.")
+    }
+    static var notCreated: String {
+        String(localized: "Not Created",
+               comment: "Storage settings status: the data directory does not exist yet.")
+    }
+
+    /// Begins the message when moving the data directory failed; the reason follows after a colon.
+    static var moveFailureContext: String {
+        String(localized: "Failed to move directory",
+               comment: "Begins the message when moving the data directory failed; the reason follows after a colon.")
+    }
+
+    // MARK: The Storage Directory Section
+    static var storageDirectoryHeader: String {
+        String(localized: "Storage Directory",
+               comment: "Heading of the first section of Storage settings, about where the library lives.")
+    }
+    static var customLocation: String {
+        String(localized: "Custom location",
+               comment: "Under the data directory's path in Storage settings: the library is not in the default location.")
+    }
+    static var defaultLocation: String {
+        String(localized: "Default location",
+               comment: "Under the data directory's path in Storage settings: the library is in the default location.")
+    }
+    static func dataDirectoryLabel(path: String) -> String {
+        String(localized: "Data directory: \(path)",
+               comment: "VoiceOver label of the data directory's row in Storage settings. %@ is the folder's path.")
+    }
+    static var statusLabel: String {
+        String(localized: "Status",
+               comment: "Label of the data directory's status row in Storage settings.")
+    }
+    static var retrySavingTitle: String {
+        String(localized: "Retry Saving",
+               comment: "Button in Storage settings that tries again to save changes that could not be saved.")
+    }
+    static var retrySavingHint: String {
+        String(localized: "Tries again to save every change that could not be saved",
+               comment: "VoiceOver hint of the Retry Saving button in Storage settings.")
+    }
+    static var rebuildDirectoryTitle: String {
+        String(localized: "Rebuild Directory",
+               comment: "Button in Storage settings that rebuilds the data directory's structure. Also the title of its confirmation.")
+    }
+    static var rebuildDirectoryLabel: String {
+        String(localized: "Rebuild TextMouth directory",
+               comment: "VoiceOver label of the Rebuild Directory button in Storage settings.")
+    }
+    static var rebuildDirectoryHint: String {
+        String(localized: "Recreates the directory structure and migrates any books using old storage",
+               comment: "VoiceOver hint of the Rebuild Directory button in Storage settings.")
+    }
+    static var resetToDefaultTitle: String {
+        String(localized: "Reset to Default",
+               comment: "Button in Storage settings that moves the library back to the default location.")
+    }
+    static var resetToDefaultLabel: String {
+        String(localized: "Reset to default location",
+               comment: "VoiceOver label of the Reset to Default button in Storage settings.")
+    }
+    static var resetToDefaultHint: String {
+        String(localized: "Moves data back to the default location at ~/.TextMouth",
+               comment: "VoiceOver hint of the Reset to Default button in Storage settings. ~/.TextMouth is the default folder's path and stays as written.")
+    }
+
+    // MARK: The Import and Removal Sections
+    static var afterImportingTitle: String {
+        String(localized: "After Importing a Book",
+               comment: "Label of the pop-up in Storage settings that says what to do with a book's original file after importing it.")
+    }
+    static var originalFileLabel: String {
+        String(localized: "Original file handling",
+               comment: "VoiceOver label of the After Importing a Book pop-up in Storage settings.")
+    }
+    static var originalFileHint: String {
+        String(localized: "What to do with the original file after importing a book",
+               comment: "VoiceOver hint of the After Importing a Book pop-up in Storage settings.")
+    }
+    static var originalRemains: String {
+        String(localized: "The original file will remain untouched after import.",
+               comment: "Caption in Storage settings when the original file is kept after an import.")
+    }
+    static var importBehaviorHeader: String {
+        String(localized: "Import Behavior",
+               comment: "Heading of the section of Storage settings about what an import does.")
+    }
+    static var confirmBeforeRemovingTitle: String {
+        String(localized: "Confirm before removing a book",
+               comment: "Checkbox in Storage settings: ask before a book is removed.")
+    }
+    static var moveToTrashTitle: String {
+        String(localized: "Move to Trash instead of deleting",
+               comment: "Checkbox in Storage settings: removed books' files go to the Trash instead of being deleted at once.")
+    }
+    static var removalBehaviorHeader: String {
+        String(localized: "Removal Behavior",
+               comment: "Heading of the section of Storage settings about what removing a book does.")
+    }
+    static var libraryStatisticsHeader: String {
+        String(localized: "Library Statistics",
+               comment: "Heading of the section of Storage settings that lists counts about the library.")
+    }
+
+    // MARK: The Maintenance Section
+    static var findDuplicatesTitle: String {
+        String(localized: "Find Duplicate Books...",
+               comment: "Button in Storage settings that opens the duplicate finder. The three dots show that a window opens.")
+    }
+    static var findDuplicatesLabel: String {
+        String(localized: "Find duplicate books",
+               comment: "VoiceOver label of the Find Duplicate Books button in Storage settings.")
+    }
+    static var findDuplicatesHint: String {
+        String(localized: "Scans the library for books with matching files, titles, or authors",
+               comment: "VoiceOver hint of the Find Duplicate Books button in Storage settings.")
+    }
+    static var findDuplicatesCaption: String {
+        String(localized: "Finds duplicate books in all folders by file content, title, or author.",
+               comment: "Caption under the Find Duplicate Books button in Storage settings.")
+    }
+    static var redoExtractionTitle: String {
+        String(localized: "Redo Text Extraction...",
+               comment: "Button in Storage settings that reads every book's text again. The three dots show that a question follows.")
+    }
+    static var redoExtractionLabel: String {
+        String(localized: "Redo text extraction",
+               comment: "VoiceOver label of the Redo Text Extraction button in Storage settings.")
+    }
+    static var redoExtractionHint: String {
+        String(localized: "Re-extracts cached text from all books. Useful after parser fixes or format improvements.",
+               comment: "VoiceOver hint of the Redo Text Extraction button in Storage settings.")
+    }
+    static func extractionProgress(current: Int, total: Int) -> String {
+        String(localized: "\(current)/\(total)",
+               comment: "How far Redo Text Extraction has got, beside its progress bar. %1$lld is how many books are done; %2$lld is how many books there are.")
+    }
+    static func extractionProgressLabel(current: Int, total: Int) -> String {
+        String(localized: "Text extraction progress: \(current) of \(total)",
+               comment: "VoiceOver label of the progress of Redo Text Extraction. %1$lld is how many books are done; %2$lld is how many books there are.")
+    }
+    static var redoExtractionCaption: String {
+        SentenceWording.joined([
+            String(localized: "Re-extracts every book's cached text.",
+                   comment: "First sentence of the caption under the Redo Text Extraction button in Storage settings."),
+            String(localized: "Use it after parser updates.",
+                   comment: "Last sentence of the caption under the Redo Text Extraction button in Storage settings. \"It\" is Redo Text Extraction."),
+        ])
+    }
+    static var libraryMaintenanceHeader: String {
+        String(localized: "Library Maintenance",
+               comment: "Heading of the section of Storage settings with the duplicate finder and Redo Text Extraction.")
+    }
+
+    // MARK: The Alerts
+    static var cancelTitle: String {
+        String(localized: "Cancel",
+               comment: "Button of a confirmation in Storage settings that changes nothing.")
+    }
+    static var rebuildButtonTitle: String {
+        String(localized: "Rebuild",
+               comment: "Button of the Rebuild Directory confirmation that rebuilds the directory.")
+    }
+    static var rebuildMessage: String {
+        SentenceWording.joined([
+            String(localized: "This recreates the directory structure and migrates books using old storage.",
+                   comment: "First sentence of the Rebuild Directory confirmation."),
+            String(localized: "Your books and reading positions are kept.",
+                   comment: "Last sentence of the Rebuild Directory confirmation."),
+        ])
+    }
+    static var resetAlertTitle: String {
+        String(localized: "Reset to Default Location?",
+               comment: "Title of the question asked before moving the library back to the default location.")
+    }
+    static var resetAndMoveTitle: String {
+        String(localized: "Reset & Move",
+               comment: "Button of the Reset to Default Location question that moves the library.")
+    }
+    static func resetMessage(from root: String, to defaultRoot: String) -> String {
+        String(localized: "This moves all data from \(root) back to the default location, \(defaultRoot).",
+               comment: "Message of the question asked before moving the library back to the default location. %1$@ is the current folder's path; %2$@ is the default folder's path.")
+    }
+    static var redoAlertTitle: String {
+        String(localized: "Redo Text Extraction?",
+               comment: "Title of the question asked before Redo Text Extraction.")
+    }
+    static var reExtractAllTitle: String {
+        String(localized: "Re-extract All",
+               comment: "Button of the Redo Text Extraction question that starts the extraction.")
+    }
+    static var redoMessage: String {
+        SentenceWording.joined([
+            String(localized: "This re-extracts the cached text of every book, which may take a while for a large library.",
+                   comment: "First sentence of the Redo Text Extraction question."),
+            String(localized: "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+                   comment: "Last sentence of the Redo Text Extraction question."),
+        ])
     }
 }
 
@@ -220,7 +479,7 @@ struct StorageSettingsView: View {
         )
         Form {
             Section {
-                LabeledContent("Location") {
+                LabeledContent(DataDirectoryUnavailableText.locationLabel) {
                     VStack(alignment: .trailing, spacing: 4) {
                         Text(TextMouthPaths.rootPath)
                             .textSelection(.enabled)
@@ -229,19 +488,19 @@ struct StorageSettingsView: View {
                             .font(.caption)
 
                         if TextMouthPaths.isCustomPath {
-                            Text("Custom location")
+                            Text(StorageSettingsWording.customLocation)
                                 .font(.caption2)
                                 .foregroundColor(.orange)
                         } else {
-                            Text("Default location")
+                            Text(StorageSettingsWording.defaultLocation)
                                 .font(.caption2)
                                 .foregroundColor(.green)
                         }
                     }
                 }
-                .accessibilityLabel("Data directory: \(TextMouthPaths.rootPath)")
+                .accessibilityLabel(StorageSettingsWording.dataDirectoryLabel(path: TextMouthPaths.rootPath))
 
-                LabeledContent("Status") {
+                LabeledContent(StorageSettingsWording.statusLabel) {
                     Text(Self.statusText(
                         isRecoveringIndex: isRecoveringIndex,
                         directoryExists: directoryExists,
@@ -286,20 +545,20 @@ struct StorageSettingsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    Button("Retry Saving") {
+                    Button(StorageSettingsWording.retrySavingTitle) {
                         failureCenter.retryUnsavedChanges(announcing: true)
                     }
-                    .accessibilityHint("Tries again to save every change that could not be saved")
+                    .accessibilityHint(StorageSettingsWording.retrySavingHint)
                 }
 
                 locationButtons
 
-                Button("Rebuild Directory") {
+                Button(StorageSettingsWording.rebuildDirectoryTitle) {
                     showRebuildConfirmation = true
                 }
                 .disabled(maintenanceUnavailable)
-                .accessibilityLabel("Rebuild TextMouth directory")
-                .accessibilityHint("Recreates the directory structure and migrates any books using old storage")
+                .accessibilityLabel(StorageSettingsWording.rebuildDirectoryLabel)
+                .accessibilityHint(StorageSettingsWording.rebuildDirectoryHint)
 
                 // While the library moves, its progress and Cancel, as every
                 // Library window's sheet shows them (FR02); otherwise what
@@ -321,23 +580,23 @@ struct StorageSettingsView: View {
                     .accessibilityHint(LibraryComparisonWording.stopHint)
                 }
             } header: {
-                Text("Storage Directory")
+                Text(StorageSettingsWording.storageDirectoryHeader)
             }
 
             Section {
-                Picker("After Importing a Book", selection: $settingsViewModel.importDeleteBehavior) {
+                Picker(StorageSettingsWording.afterImportingTitle, selection: $settingsViewModel.importDeleteBehavior) {
                     ForEach(ImportDeleteBehavior.allCases, id: \.self) { behavior in
                         Text(behavior.title).tag(behavior)
                     }
                 }
-                .accessibilityLabel("Original file handling")
-                .accessibilityHint("What to do with the original file after importing a book")
+                .accessibilityLabel(StorageSettingsWording.originalFileLabel)
+                .accessibilityHint(StorageSettingsWording.originalFileHint)
 
                 // Deleting the original follows "Move to Trash instead of
                 // deleting" below, so these say which it will be.
                 switch settingsViewModel.importDeleteBehavior {
                 case .keepOriginal:
-                    Text("The original file will remain untouched after import.")
+                    Text(StorageSettingsWording.originalRemains)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 case .deleteAfterImport:
@@ -360,17 +619,17 @@ struct StorageSettingsView: View {
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } header: {
-                Text("Import Behavior")
+                Text(StorageSettingsWording.importBehaviorHeader)
             }
 
             Section {
-                Toggle("Confirm before removing a book", isOn: Binding(
+                Toggle(StorageSettingsWording.confirmBeforeRemovingTitle, isOn: Binding(
                     get: { removal.preferences.confirmsFirst },
                     set: { removal.setConfirmsFirst($0) }
                 ))
                 .accessibilityHint(removalPreferences.confirmationExplanation)
 
-                Toggle("Move to Trash instead of deleting", isOn: Binding(
+                Toggle(StorageSettingsWording.moveToTrashTitle, isOn: Binding(
                     get: { removal.preferences.movesToTrash },
                     set: { removal.setMovesToTrash($0) }
                 ))
@@ -383,7 +642,7 @@ struct StorageSettingsView: View {
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } header: {
-                Text("Removal Behavior")
+                Text(StorageSettingsWording.removalBehaviorHeader)
             }
 
             Section {
@@ -397,46 +656,46 @@ struct StorageSettingsView: View {
                     }
                 }
             } header: {
-                Text("Library Statistics")
+                Text(StorageSettingsWording.libraryStatisticsHeader)
             }
 
             Section {
-                Button("Find Duplicate Books...") {
+                Button(StorageSettingsWording.findDuplicatesTitle) {
                     showDuplicateFinder = true
                 }
                 // Removing a duplicate changes the library, which must not
                 // change while it moves (FR02).
                 .disabled(isMovingLibrary)
-                .accessibilityLabel("Find duplicate books")
-                .accessibilityHint("Scans the library for books with matching files, titles, or authors")
+                .accessibilityLabel(StorageSettingsWording.findDuplicatesLabel)
+                .accessibilityHint(StorageSettingsWording.findDuplicatesHint)
 
-                Text("Search across all folders for potential duplicate books based on file content, title, or author.")
+                Text(StorageSettingsWording.findDuplicatesCaption)
                     .font(.caption)
                     .foregroundColor(.secondary)
 
                 // The batch's own progress object: only this part redraws as
                 // each book finishes (TODO PERF12).
                 ProgressObserver(progress: libraryViewModel.textExtraction) { extraction in
-                    Button("Redo Text Extraction...") {
+                    Button(StorageSettingsWording.redoExtractionTitle) {
                         showRedoExtractionConfirmation = true
                     }
                     .disabled(extraction.isExtracting || isMovingLibrary)
-                    .accessibilityLabel("Redo text extraction")
-                    .accessibilityHint("Re-extracts cached text from all books. Useful after parser fixes or format improvements.")
+                    .accessibilityLabel(StorageSettingsWording.redoExtractionLabel)
+                    .accessibilityHint(StorageSettingsWording.redoExtractionHint)
 
                     if extraction.isExtracting {
                         HStack(spacing: 8) {
                             ProgressView(value: Double(extraction.current),
                                          total: Double(max(extraction.total, 1)))
                                 .progressViewStyle(.linear)
-                            Text("\(extraction.current)/\(extraction.total)")
+                            Text(StorageSettingsWording.extractionProgress(current: extraction.current, total: extraction.total))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Text extraction progress: \(extraction.current) of \(extraction.total)")
+                        .accessibilityLabel(StorageSettingsWording.extractionProgressLabel(current: extraction.current, total: extraction.total))
                     } else {
-                        Text("Re-extract the cached text for all books. Use this after parser updates to refresh the cached content.")
+                        Text(StorageSettingsWording.redoExtractionCaption)
                             .font(.caption)
                             .foregroundColor(.secondary)
                         // What the last run did, such as how many books in the
@@ -450,7 +709,7 @@ struct StorageSettingsView: View {
                     }
                 }
             } header: {
-                Text("Library Maintenance")
+                Text(StorageSettingsWording.libraryMaintenanceHeader)
             }
 
             // What happens to the original audio of recordings and edited
@@ -467,21 +726,21 @@ struct StorageSettingsView: View {
         .task(id: directoryCheckKey) {
             directoryExists = await Self.directoryExists(at: directoryCheckKey.root)
         }
-        .alert("Rebuild Directory", isPresented: $showRebuildConfirmation) {
-            Button("Rebuild") {
+        .alert(StorageSettingsWording.rebuildDirectoryTitle, isPresented: $showRebuildConfirmation) {
+            Button(StorageSettingsWording.rebuildButtonTitle) {
                 start(.rebuild)
             }
-            Button("Cancel", role: .cancel) {}
+            Button(StorageSettingsWording.cancelTitle, role: .cancel) {}
         } message: {
-            Text("This will recreate the directory structure and migrate any books using old storage. Your books and reading positions will be preserved.")
+            Text(StorageSettingsWording.rebuildMessage)
         }
-        .alert("Reset to Default Location?", isPresented: $showResetToDefaultConfirmation) {
-            Button("Reset & Move") {
+        .alert(StorageSettingsWording.resetAlertTitle, isPresented: $showResetToDefaultConfirmation) {
+            Button(StorageSettingsWording.resetAndMoveTitle) {
                 start(.resetToDefault)
             }
-            Button("Cancel", role: .cancel) {}
+            Button(StorageSettingsWording.cancelTitle, role: .cancel) {}
         } message: {
-            Text("This will move all data from \(TextMouthPaths.rootPath) back to the default location at \(TextMouthPaths.defaultRoot.path).")
+            Text(StorageSettingsWording.resetMessage(from: TextMouthPaths.rootPath, to: TextMouthPaths.defaultRoot.path))
         }
         // What a chosen folder offers: Move Library Here, Use This Library,
         // or Start New Library (FR02).
@@ -496,17 +755,17 @@ struct StorageSettingsView: View {
             Button(confirmation.button) {
                 carryOut(confirmation.action)
             }
-            Button("Cancel", role: .cancel) {}
+            Button(StorageSettingsWording.cancelTitle, role: .cancel) {}
         } message: { confirmation in
             Text(confirmation.message)
         }
-        .alert("Redo Text Extraction?", isPresented: $showRedoExtractionConfirmation) {
-            Button("Re-extract All") {
+        .alert(StorageSettingsWording.redoAlertTitle, isPresented: $showRedoExtractionConfirmation) {
+            Button(StorageSettingsWording.reExtractAllTitle) {
                 redoTextExtraction()
             }
-            Button("Cancel", role: .cancel) {}
+            Button(StorageSettingsWording.cancelTitle, role: .cancel) {}
         } message: {
-            Text("This will re-extract the cached text for all books in your library. This may take a while for large libraries. Reading positions will be preserved, but character offsets may shift slightly if the extraction produces different text.")
+            Text(StorageSettingsWording.redoMessage)
         }
         .sheet(isPresented: $showDuplicateFinder) {
             DuplicateFinderView(libraryViewModel: libraryViewModel)
@@ -554,12 +813,12 @@ struct StorageSettingsView: View {
                 .accessibilityLabel(LibraryComparisonWording.title)
                 .accessibilityHint(LibraryComparisonWording.buttonHint)
                 if TextMouthPaths.isCustomPath {
-                    Button("Reset to Default") {
+                    Button(StorageSettingsWording.resetToDefaultTitle) {
                         showResetToDefaultConfirmation = true
                     }
                     .disabled(maintenanceUnavailable)
-                    .accessibilityLabel("Reset to default location")
-                    .accessibilityHint("Moves data back to the default location at ~/.TextMouth")
+                    .accessibilityLabel(StorageSettingsWording.resetToDefaultLabel)
+                    .accessibilityHint(StorageSettingsWording.resetToDefaultHint)
                 }
             }
         }
@@ -660,15 +919,15 @@ struct StorageSettingsView: View {
             return LibraryIndexRecoveryText.settingsStatus
         }
         if hasUnsavedChanges {
-            return "Changes not saved"
+            return StorageSettingsWording.changesNotSaved
         }
-        return directoryExists ? "Active" : "Not Created"
+        return directoryExists ? StorageSettingsWording.active : StorageSettingsWording.notCreated
     }
 
     /// What the status explains while changes are unsaved: each unsaved
     /// subsystem's sentence, as the Library window's notice words it.
     nonisolated static func unsavedExplanation(_ rows: [PersistenceBannerRow]) -> String {
-        rows.map(\.text).joined(separator: " ")
+        SentenceWording.joined(rows.map(\.text))
     }
 
     // MARK: - Choosing a Folder (FR02)
@@ -814,7 +1073,7 @@ struct StorageSettingsView: View {
         switch choice {
         case .confirm(let title, let message, let button, let action):
             if case .move = action, let refusal = libraryViewModel.openBooksRefusal {
-                status = .announced(after: .failure("Failed to move directory", refusal))
+                status = .announced(after: .failure(StorageSettingsWording.moveFailureContext, refusal))
                 return
             }
             status = nil

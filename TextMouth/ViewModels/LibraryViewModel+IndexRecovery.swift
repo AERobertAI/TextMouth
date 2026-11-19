@@ -35,16 +35,38 @@ struct LibraryIndexArrangement: OptionSet, Equatable, Sendable {
     /// could not read the reading list or the sort settings in the
     /// previous index."; nil for no part. The recovery sheet and the
     /// outcome of saving the provisional library both say it.
-    func notReadSentence(in index: String) -> String? {
-        var parts: [String] = []
-        if contains(.readingList) {
-            parts.append("the reading list")
+    func notReadSentence(in index: IndexNamed) -> String? {
+        // One whole sentence for each set of parts and each way the index is named.
+        switch (contains(.readingList), contains(.sortSettings), index) {
+        case (true, false, .previous):
+            return String(localized: "TextMouth could not read the reading list in the previous index.",
+                          comment: "Part of the outcome of saving a rebuilt library index: the reading list could not be kept from the old index.")
+        case (false, true, .previous):
+            return String(localized: "TextMouth could not read the sort settings in the previous index.",
+                          comment: "Part of the outcome of saving a rebuilt library index: the sort settings could not be kept from the old index.")
+        case (true, true, .previous):
+            return String(localized: "TextMouth could not read the reading list or the sort settings in the previous index.",
+                          comment: "Part of the outcome of saving a rebuilt library index: neither the reading list nor the sort settings could be kept from the old index.")
+        case (true, false, .unreadable):
+            return String(localized: "TextMouth could not read the reading list in the unreadable index.",
+                          comment: "Part of the library index recovery sheet: the reading list could not be read from the unreadable index.")
+        case (false, true, .unreadable):
+            return String(localized: "TextMouth could not read the sort settings in the unreadable index.",
+                          comment: "Part of the library index recovery sheet: the sort settings could not be read from the unreadable index.")
+        case (true, true, .unreadable):
+            return String(localized: "TextMouth could not read the reading list or the sort settings in the unreadable index.",
+                          comment: "Part of the library index recovery sheet: neither the reading list nor the sort settings could be read from the unreadable index.")
+        case (false, false, _):
+            return nil
         }
-        if contains(.sortSettings) {
-            parts.append("the sort settings")
-        }
-        guard !parts.isEmpty else { return nil }
-        return "TextMouth could not read \(parts.joined(separator: " or ")) in \(index)."
+    }
+
+    /// How a sentence names the index the parts could not be read from.
+    enum IndexNamed {
+        /// The index that was there before the rebuilt one was saved.
+        case previous
+        /// The index the recovery sheet is about, which cannot be read.
+        case unreadable
     }
 }
 
@@ -71,38 +93,47 @@ enum LibraryIndexRecoveryOutcome: Equatable {
     var message: String {
         switch self {
         case .restored(let bookCount):
-            return "The library index was read successfully. Your library has "
-                + "\(CountWording.books(bookCount)), and changes are being saved again."
+            return String(localized: "The library index was read successfully. Your library has \(CountWording.books(bookCount)), and changes are being saved again.",
+                          comment: "Outcome of Try Again on the library index recovery sheet: the index could be read. %@ is a count of books, such as \"743 books\".")
         case .savedProvisionalLibrary(let bookCount, let preservedCopy, let notKept):
-            return "The unreadable library index is no longer there, so TextMouth saved "
-                + "the library rebuilt from your books as the new index, with \(CountWording.books(bookCount))."
-                + Self.notKeptSentence(notKept)
-                + Self.keptCopySentence(preservedCopy)
+            return SentenceWording.joined([
+                String(localized: "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with \(CountWording.books(bookCount)).",
+                       comment: "Outcome of the library index recovery when the unreadable index had gone and the rebuilt library was saved as the new index. %@ is a count of books, such as \"743 books\".")
+            ] + Self.followingSentences(notKept: notKept, preservedCopy: preservedCopy))
         case .stillUnreadable(let reason):
-            return "The library index still could not be read. \(reason)"
+            return SentenceWording.joined([
+                String(localized: "The library index still could not be read.",
+                       comment: "First sentence of the outcome of Try Again on the library index recovery sheet when the index is still unreadable. The reason follows."),
+                reason,
+            ])
         case .rebuilt(let bookCount, let preservedCopy, let notKept):
-            return "The library index was rebuilt with \(CountWording.books(bookCount))."
-                + Self.notKeptSentence(notKept)
-                + Self.keptCopySentence(preservedCopy)
+            return SentenceWording.joined([
+                String(localized: "The library index was rebuilt with \(CountWording.books(bookCount)).",
+                       comment: "Outcome of Rebuild Library Index. %@ is a count of books, such as \"743 books\".")
+            ] + Self.followingSentences(notKept: notKept, preservedCopy: preservedCopy))
         case .rebuildFailed(let reason):
-            return "The library index was not rebuilt. \(reason)"
+            return SentenceWording.joined([
+                String(localized: "The library index was not rebuilt.",
+                       comment: "First sentence of the outcome of Rebuild Library Index when it replaced nothing. The reason follows."),
+                reason,
+            ])
         case .notRecovering:
-            return "The library index is already readable."
+            return String(localized: "The library index is already readable.",
+                          comment: "Outcome of a library index recovery command when no recovery was in progress.")
         }
     }
 
-    /// Names the parts of the arrangement the new index could not keep,
-    /// when any: " TextMouth could not read the reading list or the sort
-    /// settings in the previous index." The sentence after it names the
-    /// copy that keeps them.
-    private static func notKeptSentence(_ notKept: LibraryIndexArrangement) -> String {
-        notKept.notReadSentence(in: "the previous index").map { " " + $0 } ?? ""
+    /// The sentences that follow a saved index's first one: what of the
+    /// arrangement could not be kept, and where the old index's copy is.
+    private static func followingSentences(notKept: LibraryIndexArrangement, preservedCopy: URL?) -> [String] {
+        [notKept.notReadSentence(in: .previous), keptCopySentence(preservedCopy)].compactMap { $0 }
     }
 
     /// Names the preserved copy of the old index, when there is one.
-    private static func keptCopySentence(_ preservedCopy: URL?) -> String {
-        guard let preservedCopy else { return "" }
-        return " The previous index is kept at \(preservedCopy.path)."
+    private static func keptCopySentence(_ preservedCopy: URL?) -> String? {
+        guard let preservedCopy else { return nil }
+        return String(localized: "The previous index is kept at \(preservedCopy.path).",
+                      comment: "Part of the outcome of saving a rebuilt library index: where the old index's copy is kept. %@ is the copy's path.")
     }
 }
 

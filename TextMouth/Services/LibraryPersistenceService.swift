@@ -120,9 +120,9 @@ enum LibraryPersistenceService {
         var skippedWriteNote: String {
             switch self {
             case .unreadableIndex:
-                return "skipped writing the library index because it could not be read"
+                return "skipped writing the library index because it could not be read" // l10n: no (debug log text)
             case .dataDirectoryUnavailable:
-                return "skipped writing the library index because the data directory isn't available"
+                return "skipped writing the library index because the data directory isn't available" // l10n: no (debug log text)
             }
         }
     }
@@ -945,17 +945,17 @@ enum LibraryPersistenceService {
     /// they live, whose package also holds the text cache it wrote.
     private static func contentChange(from analyzed: Book, to latest: Book) -> String? {
         if latest.id != analyzed.id {
-            return "the record in its package belongs to book \(latest.id.uuidString.prefix(8))"
+            return "the record in its package belongs to book \(latest.id.uuidString.prefix(8))" // l10n: no (debug log text)
         }
         if latest.md5Hash != analyzed.md5Hash {
-            return "its source was replaced (MD5 \(analyzed.md5Hash) is now \(latest.md5Hash))"
+            return "its source was replaced (MD5 \(analyzed.md5Hash) is now \(latest.md5Hash))" // l10n: no (debug log text)
         }
         if latest.format != analyzed.format {
-            return "its format changed from \(analyzed.format.displayName) to \(latest.format.displayName)"
+            return "its format changed from \(analyzed.format.displayName) to \(latest.format.displayName)" // l10n: no (debug log text)
         }
         if latest.filePath != analyzed.filePath {
-            return "its source file moved from \(DiagnosticLog.loggablePath(analyzed.filePath)) "
-                + "to \(DiagnosticLog.loggablePath(latest.filePath))"
+            return "its source file moved from \(DiagnosticLog.loggablePath(analyzed.filePath)) " // l10n: no (debug log text)
+                + "to \(DiagnosticLog.loggablePath(latest.filePath))" // l10n: no (debug log text)
         }
         return nil
     }
@@ -1506,8 +1506,8 @@ enum LibraryPersistenceService {
         if kept > 0 {
             DiagnosticLog.event(
                 .storage,
-                "LIBRARY_ROWS_KEPT: \(CountWording.phrase(kept, singular: "row", plural: "rows")) of library.json "
-                    + "need a newer TextMouth; kept as they are and not shown"
+                "LIBRARY_ROWS_KEPT: \(CountWording.phrase(kept, singular: "row", plural: "rows")) of library.json " // l10n: no (debug log text)
+                    + "need a newer TextMouth; kept as they are and not shown" // l10n: no (debug log text)
             )
         }
         return library

@@ -47,22 +47,44 @@ enum DataDirectoryMigrationError: LocalizedError {
         case .invalidRelationship(let overlap, let source, let destination):
             return overlap.explanation(source: source, destination: destination)
         case .unreachableLink(let link, let target):
-            return "The new location, \(link.named.path), is a link to \(target), which cannot be found. "
-                + "Choose another location."
-        case .destinationNotEmpty: return "The selected data directory is not empty. Choose an empty location."
+            return SentenceWording.joined([
+                String(localized: "The new location, \(link.named.path), is a link to \(target), which cannot be found.",
+                       comment: "First sentence of why a move of the data directory was refused. %1$@ is the new location's path; %2$@ is the path the link leads to."),
+                DataDirectoryMoveWording.chooseAnotherLocation,
+            ])
+        case .destinationNotEmpty:
+            return SentenceWording.joined([
+                String(localized: "The selected data directory is not empty.",
+                       comment: "First sentence of why a move of the data directory was refused: the new location already holds something."),
+                String(localized: "Choose an empty location.",
+                       comment: "Last sentence of why a move of the data directory was refused: what to do."),
+            ])
         case .destinationNotAFolder(let location):
-            return "The new location, \(location.namedDescription), is a file, not a folder. Choose another location."
-        case .missingSource: return "The current data directory does not exist."
-        case .missingBook(let title): return "The migrated copy is missing the content for \(title)."
+            return SentenceWording.joined([
+                String(localized: "The new location, \(location.namedDescription), is a file, not a folder.",
+                       comment: "First sentence of why a move of the data directory was refused. %@ is the new location's path, with where it leads when it is a link."),
+                DataDirectoryMoveWording.chooseAnotherLocation,
+            ])
+        case .missingSource:
+            return String(localized: "The current data directory does not exist.",
+                          comment: "Why a move of the data directory was refused: the folder it would move from is missing.")
+        case .missingBook(let title):
+            return String(localized: "The migrated copy is missing the content for \(title).",
+                          comment: "Why a move of the data directory failed: the copy lacks a book's content. %@ is the book's title.")
         case .bookOutsideDataDirectory(let title, let path):
-            return "The book \(title) is stored at \(path), outside the data directory, so the move cannot carry it. "
-                + "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy "
-                + "stored in the data directory takes its place, or remove it from the library, "
-                + "then move the data directory again."
-        case .invalidLibrary: return "The migrated library index could not be validated."
+            return SentenceWording.joined([
+                String(localized: "The book \(title) is stored at \(path), outside the data directory, so the move cannot carry it.",
+                       comment: "First sentence of why a move of the data directory was refused. %1$@ is the book's title; %2$@ is the path where its file is stored."),
+                String(localized: "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+                       comment: "Last sentence of why a move of the data directory was refused: what to do. Replace Existing is the name of a button in the duplicate question. \"It\" is the book."),
+            ])
+        case .invalidLibrary:
+            return String(localized: "The migrated library index could not be validated.",
+                          comment: "Why a move of the data directory failed: the copied library index did not pass its check.")
         case .destinationChanged(let change): return change.explanation
         case .cancelled:
-            return "The move was cancelled, so nothing changed."
+            return String(localized: "The move was cancelled, so nothing changed.",
+                          comment: "Why a move of the data directory ended: the listener cancelled it.")
         }
     }
 }
@@ -97,14 +119,20 @@ struct DataDirectoryLocation {
     /// leads there when that name is a link: "/Volumes/Archive/.TextMouth,
     /// where /Users/me/.TextMouth leads".
     var realDescription: String {
-        isAlias ? "\(real.path), where \(named.path) leads" : real.path
+        isAlias
+            ? String(localized: "\(real.path), where \(named.path) leads",
+                     comment: "A folder's real path followed by the link that leads to it. %1$@ is the real path; %2$@ is the link's path.")
+            : real.path
     }
 
     /// The name as a message gives it, followed by the real folder when the
     /// name is a link: "/Users/me/.TextMouth, which leads to
     /// /Volumes/Archive/.TextMouth".
     var namedDescription: String {
-        isAlias ? "\(named.path), which leads to \(real.path)" : named.path
+        isAlias
+            ? String(localized: "\(named.path), which leads to \(real.path)",
+                     comment: "A link's path followed by the real folder it leads to. %1$@ is the link's path; %2$@ is the real path.")
+            : named.path
     }
 
     /// `path` without the /private that /var, /tmp, and /etc lead to.
@@ -198,24 +226,49 @@ enum DataDirectoryOverlap: Equatable {
     /// is inside the current data directory, /Users/me/.TextMouth. Choose a
     /// location outside it."
     func explanation(source: DataDirectoryLocation, destination: DataDirectoryLocation) -> String {
-        // The subject ends where the verb follows: "The new location, /a,"
-        // or, through a link, "The new location, /link, leads to /a, which".
-        let newLocation = destination.isAlias
-            ? "The new location, \(destination.named.path), leads to \(destination.real.path), which"
-            : "The new location, \(destination.real.path),"
+        // Each case is a whole sentence for each way the new location, and for
+        // the first case the current one, may be reached through a link.
+        let named = destination.named.path
+        let real = destination.real.path
+        let first: String
+        let advice: String
         switch self {
         case .sameFolder:
             // One folder: its real path was just named, so only a link to
             // the current data directory is added.
-            let currentLink = source.isAlias ? ", where \(source.named.path) leads" : ""
-            return "\(newLocation) is the current data directory\(currentLink). Choose another location."
+            switch (destination.isAlias, source.isAlias) {
+            case (false, false):
+                first = String(localized: "The new location, \(real), is the current data directory.",
+                               comment: "First sentence of why a move of the data directory was refused: the new location is the current data directory. %@ is the new location's path.")
+            case (true, false):
+                first = String(localized: "The new location, \(named), leads to \(real), which is the current data directory.",
+                               comment: "First sentence of why a move of the data directory was refused. %1$@ is the new location's link; %2$@ is the folder it leads to, which is the current data directory.")
+            case (false, true):
+                first = String(localized: "The new location, \(real), is the current data directory, where \(source.named.path) leads.",
+                               comment: "First sentence of why a move of the data directory was refused. %1$@ is the new location's path; %2$@ is a link that leads to the current data directory.")
+            case (true, true):
+                first = String(localized: "The new location, \(named), leads to \(real), which is the current data directory, where \(source.named.path) leads.",
+                               comment: "First sentence of why a move of the data directory was refused. %1$@ is the new location's link; %2$@ is the folder it leads to, which is the current data directory; %3$@ is a link that leads to the current data directory.")
+            }
+            advice = DataDirectoryMoveWording.chooseAnotherLocation
         case .destinationInsideSource:
-            return "\(newLocation) is inside the current data directory, \(source.realDescription). "
-                + "Choose a location outside it."
+            first = destination.isAlias
+                ? String(localized: "The new location, \(named), leads to \(real), which is inside the current data directory, \(source.realDescription).",
+                         comment: "First sentence of why a move of the data directory was refused. %1$@ is the new location's link; %2$@ is the folder it leads to; %3$@ is the current data directory, with the link that leads to it when there is one.")
+                : String(localized: "The new location, \(real), is inside the current data directory, \(source.realDescription).",
+                         comment: "First sentence of why a move of the data directory was refused. %1$@ is the new location's path; %2$@ is the current data directory, with the link that leads to it when there is one.")
+            advice = String(localized: "Choose a location outside it.",
+                            comment: "Last sentence of why a move of the data directory was refused because the new location is inside the current data directory. \"It\" is the current data directory.")
         case .sourceInsideDestination:
-            return "\(newLocation) contains the current data directory, \(source.realDescription). "
-                + "Choose a location that does not contain it."
+            first = destination.isAlias
+                ? String(localized: "The new location, \(named), leads to \(real), which contains the current data directory, \(source.realDescription).",
+                         comment: "First sentence of why a move of the data directory was refused. %1$@ is the new location's link; %2$@ is the folder it leads to; %3$@ is the current data directory, with the link that leads to it when there is one.")
+                : String(localized: "The new location, \(real), contains the current data directory, \(source.realDescription).",
+                         comment: "First sentence of why a move of the data directory was refused. %1$@ is the new location's path; %2$@ is the current data directory, with the link that leads to it when there is one.")
+            advice = String(localized: "Choose a location that does not contain it.",
+                            comment: "Last sentence of why a move of the data directory was refused because the new location contains the current data directory. \"It\" is the current data directory.")
         }
+        return SentenceWording.joined([first, advice])
     }
 }
 
@@ -251,20 +304,38 @@ struct DataDirectoryDestinationChange {
     /// Library and library.json. TextMouth left them there and is still
     /// using /Users/me/.TextMouth. Choose an empty location and try again."
     var explanation: String {
-        let prefix = "While TextMouth was copying its data,"
-        let inUse = "is still using \(source.namedDescription)."
+        let using = source.namedDescription
+        let emptyLocation = String(localized: "Choose an empty location and try again.",
+                                   comment: "Last sentence of why a move of the data directory did not finish because the new location changed while the data was copied: what to do.")
         switch finding {
         case .items(let names):
-            let count = CountWording.phrase(names.count, singular: "item", plural: "items")
-            let them = names.count == 1 ? "it" : "them"
-            return "\(prefix) \(count) appeared in \(destination.realDescription): \(Self.listing(names)). "
-                + "TextMouth left \(them) there and \(inUse) Choose an empty location and try again."
+            return SentenceWording.joined([
+                String(localized: "While TextMouth was copying its data, \(names.count) items appeared in \(destination.realDescription): \(Self.listing(names)).",
+                       comment: "First sentence of why a move of the data directory did not finish: items appeared in the new location while the data was copied. %1$lld is how many; %2$@ is the new location's path; %3$@ is their names as a list."),
+                names.count == 1
+                    ? String(localized: "TextMouth left it there and is still using \(using).",
+                             comment: "Second sentence of why a move of the data directory did not finish, when one item appeared: TextMouth left the item and kept using the current data directory. %@ is the current data directory's path.")
+                    : String(localized: "TextMouth left them there and is still using \(using).",
+                             comment: "Second sentence of why a move of the data directory did not finish, when several items appeared: TextMouth left the items and kept using the current data directory. %@ is the current data directory's path."),
+                emptyLocation,
+            ])
         case .replaced:
-            return "\(prefix) something else was put at \(destination.realDescription). "
-                + "TextMouth left it there and \(inUse) Choose an empty location and try again."
+            return SentenceWording.joined([
+                String(localized: "While TextMouth was copying its data, something else was put at \(destination.realDescription).",
+                       comment: "First sentence of why a move of the data directory did not finish: something else was put at the new location while the data was copied. %@ is the new location's path."),
+                String(localized: "TextMouth left it there and is still using \(using).",
+                       comment: "Second sentence of why a move of the data directory did not finish: TextMouth left what was put there and kept using the current data directory. %@ is the current data directory's path."),
+                emptyLocation,
+            ])
         case .redirected(let path):
-            return "\(prefix) \(destination.named.path) was changed to lead to \(path) instead of "
-                + "\(destination.real.path). TextMouth \(inUse) Try again."
+            return SentenceWording.joined([
+                String(localized: "While TextMouth was copying its data, \(destination.named.path) was changed to lead to \(path) instead of \(destination.real.path).",
+                       comment: "First sentence of why a move of the data directory did not finish: the new location's link was changed while the data was copied. %1$@ is the link's path; %2$@ is where it leads now; %3$@ is where it led before."),
+                String(localized: "TextMouth is still using \(using).",
+                       comment: "Second sentence of why a move of the data directory did not finish: TextMouth kept using the current data directory. %@ is the current data directory's path."),
+                String(localized: "Try again.",
+                       comment: "Last sentence of why a move of the data directory did not finish: what to do."),
+            ])
         }
     }
 
@@ -274,14 +345,10 @@ struct DataDirectoryDestinationChange {
     static func listing(_ names: [String]) -> String {
         var parts = Array(names.prefix(3))
         if names.count > parts.count {
-            parts.append("\(names.count - parts.count) more")
+            parts.append(String(localized: "\(names.count - parts.count) more",
+                                comment: "The last entry of a short list of names: how many more names there are. %lld is that number."))
         }
-        switch parts.count {
-        case 0: return ""
-        case 1: return parts[0]
-        case 2: return "\(parts[0]) and \(parts[1])"
-        default: return parts.dropLast().joined(separator: ", ") + ", and " + parts[parts.count - 1]
-        }
+        return CountWording.list(parts)
     }
 }
 
@@ -363,13 +430,19 @@ enum DataDirectoryMigrator {
     /// (TODO S10), as in "Done. Data is now at /Users/me/Archive, which leads
     /// to /Volumes/Archive/.TextMouth."
     static func doneMessage(dataAt destination: DataDirectoryLocation, copiedFrom source: DataDirectoryLocation) -> String {
-        var message = "Done. Data is now at \(destination.namedDescription)."
+        var sentences = [
+            String(localized: "Done.",
+                   comment: "First sentence of the message after the data directory moved."),
+            String(localized: "Data is now at \(destination.namedDescription).",
+                   comment: "Second sentence of the message after the data directory moved. %@ is the new location's path, with where it leads when it is a link."),
+        ]
         // A data directory reached through a link was copied from the folder
         // the link leads to; nothing was copied when the data stayed put.
         if source.isAlias, source.real.path != destination.real.path {
-            message += " It was copied from \(source.realDescription)."
+            sentences.append(String(localized: "It was copied from \(source.realDescription).",
+                                    comment: "Last sentence of the message after the data directory moved: where the copy was made from. %@ is the folder, with the link that leads to it."))
         }
-        return message
+        return SentenceWording.joined(sentences)
     }
 
     // MARK: Steps

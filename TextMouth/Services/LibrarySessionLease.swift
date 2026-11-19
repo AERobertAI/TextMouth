@@ -66,7 +66,7 @@ final class LibrarySessionLease {
     }
 
     /// The name of the folder of leases in the data directory.
-    nonisolated static let folderName = "Sessions"
+    nonisolated static let folderName = "Sessions" // l10n: no (a folder's name on disk)
     /// How recently another Mac must have been active to count as open.
     nonisolated static let activeWindow: TimeInterval = 3 * 60
     /// How long a lease may go untouched before it is removed.
@@ -450,7 +450,10 @@ final class LibrarySessionLease {
     }
 
     /// What a Mac whose lease can't be read yet is called.
-    nonisolated static let anotherMac = "another Mac"
+    nonisolated static var anotherMac: String {
+        String(localized: "another Mac",
+               comment: "What the warning that TextMouth is open on another Mac calls that Mac when its name can't be read yet. It sits where the Mac's name would go, inside curly quotes, so it has no capital letter.")
+    }
 
     /// Writes a record as people can read it.
     nonisolated private static var encoder: JSONEncoder {
@@ -470,19 +473,33 @@ final class LibrarySessionLease {
     // MARK: The Warning
 
     /// The warning's title.
-    static let warningTitle = "TextMouth Is Open on Another Mac"
+    static var warningTitle: String {
+        String(localized: "TextMouth Is Open on Another Mac",
+               comment: "Title of the warning shown when another Mac has this library open too.")
+    }
     /// The warning's button that keeps using the library here, the default.
-    static let continueTitle = "Continue"
+    static var continueTitle: String {
+        String(localized: "Continue",
+               comment: "Button of the warning that TextMouth is open on another Mac: keeps using the library on this Mac.")
+    }
     /// The warning's button that quits.
-    static let quitTitle = "Quit TextMouth"
+    static var quitTitle: String {
+        String(localized: "Quit TextMouth",
+               comment: "Button of the warning that TextMouth is open on another Mac: quits TextMouth.")
+    }
 
     /// What the warning says about `other`.
     static func warningMessage(about other: OtherMac) -> String {
-        let when = other.minutesAgo == 0
-            ? "less than a minute ago"
-            : "\(CountWording.minutes(other.minutesAgo)) ago"
-        return "TextMouth is also open on “\(other.computerName)” (active \(when)). "
-            + "Using one library on two Macs at the same time can lose reading positions and changes."
+        let opening = other.minutesAgo == 0
+            ? String(localized: "TextMouth is also open on “\(other.computerName)” (active less than a minute ago).",
+                     comment: "First sentence of the warning that another Mac has this library open. %@ is that Mac's name.")
+            : String(localized: "TextMouth is also open on “\(other.computerName)” (active \(other.minutesAgo) minutes ago).",
+                     comment: "First sentence of the warning that another Mac has this library open. %1$@ is that Mac's name; %2$lld is how many minutes ago it was last active.")
+        return SentenceWording.joined([
+            opening,
+            String(localized: "Using one library on two Macs at the same time can lose reading positions and changes.",
+                   comment: "Last sentence of the warning that another Mac has this library open: the risk."),
+        ])
     }
 
     #if os(macOS)
@@ -520,7 +537,7 @@ final class LibrarySessionLease {
     /// This computer's name, as Sharing settings give it.
     static func systemComputerName() -> String {
         #if os(macOS)
-        (SCDynamicStoreCopyComputerName(nil, nil) as String?) ?? "this Mac"
+        (SCDynamicStoreCopyComputerName(nil, nil) as String?) ?? "this Mac" // l10n: no (stored in the lease file another Mac reads, question 9)
         #else
         UIDevice.current.name
         #endif

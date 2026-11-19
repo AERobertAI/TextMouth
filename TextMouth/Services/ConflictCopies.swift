@@ -354,24 +354,47 @@ struct ConflictCopyMemory: Sendable {
 /// alert, VoiceOver, and a braille display alike.
 enum ConflictCopyWording {
     /// The alert's title.
-    static let alertTitle = "Conflicting Copies Found"
+    static var alertTitle: String {
+        String(localized: "Conflicting Copies Found",
+               comment: "Title of the alert that reports conflicting copies of the library's files, set aside by a sync service.")
+    }
     /// The alert's button that closes it, the default.
-    static let okTitle = "OK"
+    static var okTitle: String {
+        String(localized: "OK",
+               comment: "Button that closes an alert and changes nothing.")
+    }
     /// The alert's button that shows the first copy's folder in Finder.
-    static let showTitle = "Show in Finder"
+    static var showTitle: String {
+        String(localized: "Show in Finder",
+               comment: "Button that shows a file or folder in the Finder.")
+    }
     /// What a copy not yet on this Mac holds, which TextMouth does not
     /// download to find out.
-    static let notOnThisMac = "Its contents aren't on this Mac yet, so TextMouth hasn't looked inside it."
+    static var notOnThisMac: String {
+        String(localized: "Its contents aren't on this Mac yet, so TextMouth hasn't looked inside it.",
+               comment: "Part of the report of a conflicting copy: the copy's file is only in the cloud, so TextMouth did not download it to look inside. \"It\" is the copy.")
+    }
     /// What is said last of every report: nothing was done.
-    static let untouched = "TextMouth hasn't merged it or removed it."
+    static var untouched: String {
+        String(localized: "TextMouth hasn't merged it or removed it.",
+               comment: "Last sentence of the report of a conflicting copy: nothing was done with it. \"It\" is the copy.")
+    }
 
     /// What the file called `file` is, in a sentence.
     private static func name(of subject: ConflictCopyFinding.Subject, file: String) -> String {
         switch subject {
-        case .libraryIndex: return "the library index, \(file)"
-        case .feedRecord: return "a feed's record, \(file)"
-        case .feedIndex: return "a feed's index of its episodes, \(file)"
-        case .bookRecord: return "a book's record, \(file)"
+        case .libraryIndex:
+            return String(localized: "the library index, \(file)",
+                          comment: "A phrase naming the library index file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.")
+        case .feedRecord:
+            return String(localized: "a feed's record, \(file)",
+                          comment: "A phrase naming a feed's record file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.")
+        case .feedIndex:
+            return String(localized: "a feed's index of its episodes, \(file)",
+                          comment: "A phrase naming a feed's index file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.")
+        case .bookRecord:
+            return String(localized: "a book's record, \(file)",
+                          comment: "A phrase naming a book's record file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.")
         }
     }
 
@@ -384,8 +407,12 @@ enum ConflictCopyWording {
         folder: String,
         holds: String
     ) -> String {
-        "\(service) set aside a conflicting copy of \(name(of: subject, file: original)): “\(copyName)”, in \(folder). "
-            + "\(holds) \(untouched)"
+        SentenceWording.joined([
+            String(localized: "\(service) set aside a conflicting copy of \(name(of: subject, file: original)): “\(copyName)”, in \(folder).",
+                   comment: "First sentence of the report of a conflicting copy. %1$@ is the sync service's name; %2$@ is a phrase naming the original file; %3$@ is the copy's name; %4$@ is the folder's path."),
+            holds,
+            untouched,
+        ])
     }
 
     /// The report of one unresolved version of a file.
@@ -395,62 +422,103 @@ enum ConflictCopyWording {
         file: String,
         version: ConflictVersion
     ) -> String {
-        var from = ""
-        if let computer = version.computerName {
-            from += " on “\(computer)”"
+        let what = name(of: subject, file: file)
+        let modified = version.modified?.formatted(date: .abbreviated, time: .shortened)
+        // One whole sentence for each way of knowing where and when it was saved.
+        let held: String
+        switch (version.computerName, modified) {
+        case let (computer?, modified?):
+            held = String(localized: "\(service) holds a conflicting version of \(what), saved on “\(computer)” on \(modified).",
+                          comment: "First sentence of the report of an unresolved version of a file. %1$@ is the sync service's name; %2$@ is a phrase naming the file; %3$@ is the name of the computer that saved it; %4$@ is the date and time it was saved.")
+        case let (computer?, nil):
+            held = String(localized: "\(service) holds a conflicting version of \(what), saved on “\(computer)”.",
+                          comment: "First sentence of the report of an unresolved version of a file. %1$@ is the sync service's name; %2$@ is a phrase naming the file; %3$@ is the name of the computer that saved it.")
+        case let (nil, modified?):
+            held = String(localized: "\(service) holds a conflicting version of \(what), saved on \(modified).",
+                          comment: "First sentence of the report of an unresolved version of a file. %1$@ is the sync service's name; %2$@ is a phrase naming the file; %3$@ is the date and time it was saved.")
+        case (nil, nil):
+            held = String(localized: "\(service) holds a conflicting version of \(what), saved at another time.",
+                          comment: "First sentence of the report of an unresolved version of a file whose computer and time of saving are not known. %1$@ is the sync service's name; %2$@ is a phrase naming the file.")
         }
-        if let modified = version.modified {
-            from += " on \(modified.formatted(date: .abbreviated, time: .shortened))"
-        }
-        return "\(service) holds a conflicting version of \(name(of: subject, file: file)), saved"
-            + "\(from.isEmpty ? " at another time" : from). \(untouched)"
+        return SentenceWording.joined([held, untouched])
     }
 
     /// What a copy of the library index holds, set against the index itself.
     static func libraryHolds(copy: Library?, original: Library?) -> String {
-        guard let copy else { return "It couldn't be read." }
-        let held = "It holds \(libraryCounts(copy))"
-        guard let original else { return held + "." }
-        return "\(held); library.json holds \(libraryCounts(original))."
+        guard let copy else { return couldNotBeRead }
+        guard let original else {
+            return String(localized: "It holds \(libraryCounts(copy)).",
+                          comment: "What a conflicting copy of the library index holds. %@ is its counts as a list, such as \"3 books, 1 folder, and 2 books on the reading list\".")
+        }
+        return String(localized: "It holds \(libraryCounts(copy)); library.json holds \(libraryCounts(original)).",
+                      comment: "What a conflicting copy of the library index holds, set against the index itself. %1$@ and %2$@ are counts as a list, such as \"3 books, 1 folder, and 2 books on the reading list\". library.json is a file name and stays as written.")
     }
 
-    /// A library's counts in words.
+    /// Said of a copy that could not be read.
+    private static var couldNotBeRead: String {
+        String(localized: "It couldn't be read.",
+               comment: "Part of the report of a conflicting copy: the copy's file could not be read. \"It\" is the copy.")
+    }
+
+    /// A library's counts in words: its books, folders, and the books on its reading list.
     private static func libraryCounts(_ library: Library) -> String {
-        let folders = CountWording.phrase(library.folders.count, singular: "folder", plural: "folders")
-        let list = CountWording.phrase(library.readingList.bookIDs.count, singular: "book", plural: "books")
-        return "\(CountWording.books(library.libraryBookCount)), \(folders), and \(list) on the reading list"
+        let folders = String(localized: "\(library.folders.count) folders",
+                             comment: "A count of folders in a list of counts about a conflicting copy of the library. %lld is the number of folders.")
+        let list = String(localized: "\(library.readingList.bookIDs.count) books on the reading list",
+                          comment: "A count of the books on the reading list in a list of counts about a conflicting copy of the library. %lld is the number of books.")
+        return CountWording.list([CountWording.books(library.libraryBookCount), folders, list])
     }
 
     /// What a copy of a book's record holds, set against the record itself.
     static func bookRecordHolds(copy: BookInfo?, original: BookInfo?) -> String {
-        guard let copy else { return "It couldn't be read." }
-        let held = "It holds the record of “\(copy.metadata.title)”: \(recordState(copy))"
-        guard let original else { return held + "." }
-        return "\(held); the record holds \(recordState(original))."
+        guard let copy else { return couldNotBeRead }
+        guard let original else {
+            return String(localized: "It holds the record of “\(copy.metadata.title)”: \(recordState(copy)).",
+                          comment: "What a conflicting copy of a book's record holds. %1$@ is the book's title; %2$@ is the record's place and bookmarks, such as \"chapter 3, saved Nov 18, 2026, and 2 bookmarks\".")
+        }
+        return String(localized: "It holds the record of “\(copy.metadata.title)”: \(recordState(copy)); the record holds \(recordState(original)).",
+                      comment: "What a conflicting copy of a book's record holds, set against the record itself. %1$@ is the book's title; %2$@ and %3$@ are a record's place and bookmarks, such as \"chapter 3, saved Nov 18, 2026, and 2 bookmarks\".")
     }
 
     /// A record's place and bookmarks in words.
     private static func recordState(_ info: BookInfo) -> String {
         let bookmarks = CountWording.bookmarks(info.bookmarks.count)
-        guard let place = info.state.readingPosition else { return "no place saved, and \(bookmarks)" }
+        guard let place = info.state.readingPosition else {
+            return String(localized: "no place saved, and \(bookmarks)",
+                          comment: "A record's place and bookmarks inside a sentence about a conflicting copy of a book's record: no reading place was saved. %@ is a count of bookmarks, such as \"2 bookmarks\".")
+        }
         let saved = place.lastUpdated.formatted(date: .abbreviated, time: .shortened)
-        return "chapter \(place.chapterIndex + 1), saved \(saved), and \(bookmarks)"
+        // The chapter's number names the chapter, so it is written without digit grouping.
+        return String(localized: "chapter \(String(place.chapterIndex + 1)), saved \(saved), and \(bookmarks)",
+                      comment: "A record's place and bookmarks inside a sentence about a conflicting copy of a book's record. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the date and time the place was saved; %3$@ is a count of bookmarks, such as \"2 bookmarks\".")
     }
 
     /// What a copy of a feed's own index holds, set against the index itself.
     static func feedIndexHolds(copy: FeedIndex?, original: FeedIndex?) -> String {
-        guard let copy else { return "It couldn't be read." }
-        let held = "It holds \(CountWording.phrase(copy.books.count, singular: "episode", plural: "episodes"))"
-        guard let original else { return held + "." }
-        return "\(held); the index holds \(CountWording.phrase(original.books.count, singular: "episode", plural: "episodes"))."
+        guard let copy else { return couldNotBeRead }
+        guard let original else {
+            return String(localized: "It holds \(CountWording.episodes(copy.books.count)).",
+                          comment: "What a conflicting copy of a feed's index holds. %@ is a count of episodes, such as \"12 episodes\".")
+        }
+        return String(localized: "It holds \(CountWording.episodes(copy.books.count)); the index holds \(CountWording.episodes(original.books.count)).",
+                      comment: "What a conflicting copy of a feed's index holds, set against the index itself. %1$@ and %2$@ are counts of episodes, such as \"12 episodes\".")
+    }
+
+    /// `count` items of a feed: "1 item", "2 items".
+    private static func items(_ count: Int) -> String {
+        String(localized: "\(count) items",
+               comment: "A count of a feed's items inside a sentence about a conflicting copy of the feed's record. %lld is the number of items.")
     }
 
     /// What a copy of a feed's record holds, set against the record itself.
     static func feedRecordHolds(copy: FeedRecord?, original: FeedRecord?) -> String {
-        guard let copy else { return "It couldn't be read." }
-        let held = "It holds the feed “\(copy.feed.title)” with \(CountWording.phrase(copy.items.count, singular: "item", plural: "items"))"
-        guard let original else { return held + "." }
-        return "\(held); the record holds \(CountWording.phrase(original.items.count, singular: "item", plural: "items"))."
+        guard let copy else { return couldNotBeRead }
+        guard let original else {
+            return String(localized: "It holds the feed “\(copy.feed.title)” with \(items(copy.items.count)).",
+                          comment: "What a conflicting copy of a feed's record holds. %1$@ is the feed's title; %2$@ is a count of items, such as \"12 items\".")
+        }
+        return String(localized: "It holds the feed “\(copy.feed.title)” with \(items(copy.items.count)); the record holds \(items(original.items.count)).",
+                      comment: "What a conflicting copy of a feed's record holds, set against the record itself. %1$@ is the feed's title; %2$@ and %3$@ are counts of items, such as \"12 items\".")
     }
 
     /// The alert's message for `findings`: each one's sentence, a few at most
@@ -458,8 +526,8 @@ enum ConflictCopyWording {
     static func message(for findings: [ConflictCopyFinding], shown limit: Int = 5) -> String {
         var parts = findings.prefix(limit).map(\.sentence)
         if findings.count > limit {
-            parts.append("And \(CountWording.phrase(findings.count - limit, singular: "more copy", plural: "more copies")), "
-                + "which the log lists.")
+            parts.append(String(localized: "And \(findings.count - limit) more copies, which the log lists.",
+                                comment: "Last paragraph of the report of conflicting copies: how many more copies there are than the report names. %lld is the number of copies."))
         }
         return parts.joined(separator: "\n\n")
     }
