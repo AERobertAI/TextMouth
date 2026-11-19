@@ -91,7 +91,7 @@ enum ManualBookOrder {
     /// What VoiceOver says when Move Book Up or Move Book Down is used with
     /// several books selected, since a move shifts one book one place.
     static var severalBooksToMoveAnnouncement: String {
-        String(localized: "Several books are selected, and a move shifts one book at a time. Select just one book, then try again.",
+        String(localized: "A move shifts one book at a time, and several are selected. Select one book, then try again.",
                comment: "VoiceOver announcement when Move Book Up or Move Book Down is used with several books selected.")
     }
 

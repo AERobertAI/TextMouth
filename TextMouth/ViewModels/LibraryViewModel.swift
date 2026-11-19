@@ -1025,9 +1025,9 @@ enum LibraryViewModelWording {
     /// bookInfo.json file stays.
     static func removalRecordLeftHeading(count: Int) -> String {
         count == 1
-            ? String(localized: "This book was removed from the library, but its bookInfo.json file could not be deleted. It will still stay out of the library:",
+            ? String(localized: "This book was removed from the library, but its bookInfo.json file could not be deleted. It stays out of the library:",
                      comment: "Heading of the error alert's list when Remove from Library Only removed one book but could not delete the bookInfo.json file in its package. bookInfo.json is a file name. The book's title and the reason follow on the next line.")
-            : String(localized: "These books were removed from the library, but their bookInfo.json files could not be deleted. They will still stay out of the library:",
+            : String(localized: "These books were removed from the library, but their bookInfo.json files could not be deleted. They stay out of the library:",
                      comment: "Heading of the error alert's list when Remove from Library Only removed several books but could not delete the bookInfo.json files in their packages. bookInfo.json is a file name. Each book's title and the reason follow on their own lines.")
     }
 }

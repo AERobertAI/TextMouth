@@ -315,12 +315,12 @@ final class DuplicateReplacementTests: XCTestCase {
         )
         XCTAssertEqual(
             Refusal.audioBeingEdited(title: "Atlas of Tides").sentence,
-            "The audio of “Atlas of Tides” is being edited. Close the audio editor, or wait until it has saved, "
+            "The audio of “Atlas of Tides” is being edited. Close the audio editor or wait for it to save, "
                 + "then choose Replace Existing again."
         )
         XCTAssertEqual(
             Refusal.filesInCloud(title: "Atlas of Tides").sentence,
-            "Some of the files of “Atlas of Tides” are only in the cloud, and replacing it now would leave them behind. "
+            "Some files of “Atlas of Tides” are only in the cloud, and replacing it now would leave them behind. "
                 + "Download the book, then choose Replace Existing again."
         )
         XCTAssertEqual(

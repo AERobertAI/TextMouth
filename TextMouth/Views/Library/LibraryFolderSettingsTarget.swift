@@ -32,13 +32,13 @@ enum LibraryFolderSettingsWording {
 
     /// What VoiceOver says the button does, in a feed's folder.
     static var feedHint: String {
-        String(localized: "Opens the settings of this feed: where its downloads go, what it lists and downloads, and what happens when an episode ends",
+        String(localized: "Opens the feed's settings: where its downloads go, what it lists and downloads, and what happens when an episode ends",
                comment: "Hint of the Library toolbar button, in the folder of a feed, that opens the feed's settings.")
     }
 
     /// What VoiceOver says the button does, in a plain folder.
     static var folderHint: String {
-        String(localized: "Opens the settings of this folder: what it holds, and what happens when one of its books ends",
+        String(localized: "Opens the folder's settings: what it holds, and what happens when one of its books ends",
                comment: "Hint of the Library toolbar button, in a plain folder, that opens the folder's settings.")
     }
 

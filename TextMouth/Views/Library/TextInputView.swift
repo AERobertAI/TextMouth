@@ -25,19 +25,9 @@ enum TextInputWording {
         String(localized: "Title:", comment: "Caption beside the title field of the New Book from Text sheet. VoiceOver skips it; the field has its own label.")
     }
 
-    /// What VoiceOver says the title field is for.
-    static var titleHint: String {
-        String(localized: "Enter a title for the new book", comment: "Hint of the title field of the New Book from Text sheet.")
-    }
-
     /// The caption beside the author field, which VoiceOver skips.
     static var authorCaption: String {
         String(localized: "Author:", comment: "Caption beside the author field of the New Book from Text sheet. VoiceOver skips it; the field has its own label.")
-    }
-
-    /// What VoiceOver says the author field is for.
-    static var authorHint: String {
-        String(localized: "Enter the author name", comment: "Hint of the author field of the New Book from Text sheet.")
     }
 
     /// The button that puts the clipboard's text in the editor.
@@ -47,7 +37,7 @@ enum TextInputWording {
 
     /// The hint of that button.
     static var pasteHint: String {
-        String(localized: "Replaces the text content with text from the system clipboard", comment: "Hint of the Paste from Clipboard button of the New Book from Text sheet.")
+        String(localized: "Replaces the text with the text on the clipboard", comment: "Hint of the Paste from Clipboard button of the New Book from Text sheet.")
     }
 
     /// The button that opens the text in the user's own editor.
@@ -57,7 +47,7 @@ enum TextInputWording {
 
     /// The hint of that button.
     static var openInEditorHint: String {
-        String(localized: "Opens the text content in an external text editor", comment: "Hint of the Open in Editor button of the New Book from Text sheet.")
+        String(localized: "Opens the text in an external editor", comment: "Hint of the Open in Editor button of the New Book from Text sheet.")
     }
 
     /// The button that brings the editor's saved file back.
@@ -67,7 +57,7 @@ enum TextInputWording {
 
     /// The hint of that button.
     static var reloadHint: String {
-        String(localized: "Reloads the text content from the external editor file", comment: "Hint of the Reload from Editor button of the New Book from Text sheet.")
+        String(localized: "Reloads the text from the editor's file", comment: "Hint of the Reload from Editor button of the New Book from Text sheet.")
     }
 
     /// The text area's label.
@@ -89,7 +79,7 @@ enum TextInputWording {
 
     /// The hint of the Cancel button.
     static var cancelHint: String {
-        String(localized: "Cancels creating a new book and closes this view", comment: "Hint of the Cancel button of the New Book from Text sheet.")
+        String(localized: "Closes this view without making a book", comment: "Hint of the Cancel button of the New Book from Text sheet.")
     }
 
     /// The button that adds the new book.
@@ -99,12 +89,7 @@ enum TextInputWording {
 
     /// The hint of that button while there is no text to add.
     static var addDisabledHint: String {
-        String(localized: "Disabled. Enter some text content first.", comment: "Hint of the Add to Library button of the New Book from Text sheet while the text area is empty and the button is dimmed.")
-    }
-
-    /// The hint of that button once there is text.
-    static var addHint: String {
-        String(localized: "Adds the new book to your library", comment: "Hint of the Add to Library button of the New Book from Text sheet.")
+        String(localized: "Enter some text first.", comment: "Hint of the Add to Library button of the New Book from Text sheet while the text area is empty and the button is dimmed.")
     }
 
     /// The sheet's window title.
@@ -300,7 +285,6 @@ struct TextInputView: View {
                 TextField(MetadataEditorWording.titleField, text: $title)
                     .textFieldStyle(.roundedBorder)
                     .accessibilityLabel(MetadataEditorWording.titleField)
-                    .accessibilityHint(TextInputWording.titleHint)
             }
 
             HStack {
@@ -309,7 +293,6 @@ struct TextInputView: View {
                 TextField(MetadataEditorWording.authorField, text: $author)
                     .textFieldStyle(.roundedBorder)
                     .accessibilityLabel(MetadataEditorWording.authorField)
-                    .accessibilityHint(TextInputWording.authorHint)
             }
 
             // MARK: - Top Button Bar
@@ -375,11 +358,8 @@ struct TextInputView: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(!TextImportPolicy.canAdd(text: textContent))
                 .accessibilityLabel(TextInputWording.addToLibrary)
-                .accessibilityHint(
-                    !TextImportPolicy.canAdd(text: textContent)
-                        ? TextInputWording.addDisabledHint
-                        : TextInputWording.addHint
-                )
+                // The hint says why the button is dimmed; once it is not, the label says all.
+                .accessibilityHint(!TextImportPolicy.canAdd(text: textContent) ? TextInputWording.addDisabledHint : "")
             }
         }
         .padding()

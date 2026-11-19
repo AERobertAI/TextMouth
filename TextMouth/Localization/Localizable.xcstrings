@@ -2509,6 +2509,9 @@
     "A filter preset needs a name." : {
       "comment" : "Said when a filter preset is saved with a blank name."
     },
+    "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth." : {
+      "comment" : "Error shown when a folder's new name is refused: the name is empty, is a single or double dot, ends in .tmb, or is one TextMouth keeps for itself. The quoted pieces are literal text."
+    },
     "A folder named %@ already exists in %@." : {
       "comment" : "Error shown when a folder's new name or place is taken. %1$@ is the existing folder's name, in straight double quotes. %2$@ is where it is: its folder's location in straight double quotes, or the name of the library's top level.",
       "localizations" : {
@@ -2520,11 +2523,14 @@
         }
       }
     },
-    "A library in the cloud can take a while: files that are only in the cloud are brought to this Mac to be read." : {
+    "A library in the cloud can take a while: its cloud-only files are downloaded to this Mac to be read." : {
       "comment" : "Sentence of what the Compare Libraries sheet says while it works: a library kept in a cloud drive is slow because files that are only in the cloud are downloaded first."
     },
     "A limit chooses among books, episodes, and articles, never feeds." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Show at Most's hint while the view lists feeds alone, when it is dimmed (finding 6)."
+    },
+    "A move shifts one book at a time, and several are selected. Select one book, then try again." : {
+      "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used with several books selected."
     },
     "A new timer replaces the one running." : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while a timer runs: setting one of the timers below stops it.",
@@ -2816,9 +2822,6 @@
     "Adds speed buttons and the current speed" : {
       "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings."
     },
-    "Adds the new book to your library" : {
-      "comment" : "Hint of the Add to Library button of the New Book from Text sheet."
-    },
     "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page." : {
       "comment" : "Hint and caption of the Playback setting that adds the page to Where Am I?, a command that says where the reader is. \"Page 12 of 300\" is an example of how the page is said."
     },
@@ -2920,7 +2923,7 @@
     "Always" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A visibility as the Visibility pop-up names it: \"Always\", \"When Applicable\", or \"Hidden\". This is the case .always."
     },
-    "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, an episode, or an article, and Feeds while there is a feed. Hidden leaves it out. A window showing a view keeps it until you choose another." : {
+    "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the three visibilities do, and that a window keeps its view."
     },
     "Ampersand" : {
@@ -3629,9 +3632,6 @@
         }
       }
     },
-    "Cancels creating a new book and closes this view" : {
-      "comment" : "Hint of the Cancel button of the New Book from Text sheet."
-    },
     "Caret" : {
       "comment" : "Name of the punctuation key \"^\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Caret\"."
     },
@@ -3768,9 +3768,6 @@
     "Choose a destination outside %@." : {
       "comment" : "First sentence of the error shown when a folder is moved into itself. %@ is the folder's location, in straight double quotes."
     },
-    "Choose a folder name that is not empty, is not \".\" or \"..\", does not end in \".tmb\", and is not reserved by TextMouth." : {
-      "comment" : "Error shown when a folder's new name is refused: the name is empty, is a single or double dot, ends in .tmb, or is one TextMouth keeps for itself. The quoted pieces are literal text."
-    },
     "Choose a voice for reading. Change takes effect immediately." : {
       "comment" : "VoiceOver hint of the voice pop-up in the Voice settings."
     },
@@ -3816,7 +3813,7 @@
     "Choose where to move the books and subfolders before deleting \"%@\"." : {
       "comment" : "Explanation in the sheet that chooses where a folder's contents go before the folder is deleted. %@ is the folder's name."
     },
-    "Chooses a folder holding another copy of this library and lists what differs. Nothing in either copy is changed." : {
+    "Chooses a folder with another copy of this library and lists what differs. Neither copy changes." : {
       "comment" : "VoiceOver hint of the Compare Libraries button in Storage settings."
     },
     "Chooses what a book opened from the list does when it ends." : {
@@ -3975,6 +3972,9 @@
     "Closes this book's window" : {
       "comment" : "Hint of the Close button of the reader's view for a book that is not ready to read."
     },
+    "Closes this view without making a book" : {
+      "comment" : "Hint of the Cancel button of the New Book from Text sheet."
+    },
     "Closes this without changing the transcript." : {
       "comment" : "VoiceOver hint of the Cancel button of the Clean Up Transcript sheet."
     },
@@ -4028,11 +4028,11 @@
     "Comparing stopped. Nothing was changed." : {
       "comment" : "What the Compare Libraries sheet says once the listener stopped the comparison."
     },
-    "Comparing the library in use with the copy in the folder you chose, to say which is newer. This can take up to a minute. Choose Stop Comparing to skip it." : {
-      "comment" : "What Storage settings says while it compares the library in use with a chosen folder's copy before Use This Library. \"Stop Comparing\" is the name of the button that skips it."
-    },
     "Comparing this library with the copy in %@." : {
       "comment" : "First sentence of what the Compare Libraries sheet says while it works. %@ is the other copy's folder path."
+    },
+    "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it." : {
+      "comment" : "What Storage settings says while it compares the library in use with a chosen folder's copy before Use This Library. \"Stop Comparing\" is the name of the button that skips it."
     },
     "Condition %@" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The test pop-up's spoken label: \"Condition 2\". %@ is the condition's number, an identifier written without digit grouping."
@@ -4537,9 +4537,6 @@
     "Disable" : {
       "comment" : "Title of the context menu item that turns a substitution rule off."
     },
-    "Disabled. Enter some text content first." : {
-      "comment" : "Hint of the Add to Library button of the New Book from Text sheet while the text area is empty and the button is dimmed."
-    },
     "Discard" : {
       "comment" : "Button of the audio editor's close question that undoes the unsaved edits.\nTitle of the button that deletes a recording, in the Record window's list of recordings left behind and in the question asked when it closes.\nTitle of the question's button that deletes the recording, when the Record window is closed."
     },
@@ -4991,17 +4988,14 @@
     "Enter a search term above." : {
       "comment" : "Status line of Search in Book before anything is typed."
     },
-    "Enter a title for the new book" : {
-      "comment" : "Hint of the title field of the New Book from Text sheet."
-    },
     "Enter edit mode" : {
       "comment" : "Spoken label of the toolbar button that enters edit mode in the Library list."
     },
     "Enter or paste the text for the new book" : {
       "comment" : "Hint of the text area of the New Book from Text sheet."
     },
-    "Enter the author name" : {
-      "comment" : "Hint of the author field of the New Book from Text sheet."
+    "Enter some text first." : {
+      "comment" : "Hint of the Add to Library button of the New Book from Text sheet while the text area is empty and the button is dimmed."
     },
     "Enters edit mode, for selecting several books to move or remove." : {
       "comment" : "Hint of the toolbar's edit mode button while edit mode is off."
@@ -5813,10 +5807,10 @@
     "It holds the folders of the feeds %@." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is a list of the feeds' titles in quotation marks."
     },
-    "It is the folder of the feed %@: whichever you choose, the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed." : {
+    "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder, when it is the folder of one feed. %@ is the feed's title in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
     },
-    "It is the folder of the feeds %@: whichever you choose, each feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed." : {
+    "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder, when it is the folder of several feeds. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
     },
     "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them." : {
@@ -6251,11 +6245,11 @@
     "Makes a view of your own from the conditions you choose." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
     },
-    "Makes a view of your own with this view's conditions and sort." : {
-      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint."
-    },
     "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back." : {
       "comment" : "VoiceOver hint of the Apply button of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet."
+    },
+    "Makes your own view with these conditions and sort." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint."
     },
     "Manifest not updated: %@ Fix it in your editor and save again; until then, %@ keeps its headings." : {
       "comment" : "Announcement after an edited manifest.json was refused. %1$@ is the reason, a whole sentence in English that names what is wrong inside the file and may stay in English; %2$@ is the book's title.",
@@ -6665,6 +6659,12 @@
     "Moved to the match." : {
       "comment" : "Announcement after the reader moved to a search match whose place is unknown."
     },
+    "Moves it one place down" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's hint."
+    },
+    "Moves it one place up" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's hint."
+    },
     "Moves the cursor back a tenth of a second." : {
       "comment" : "Hint of the audio editor's Skip Back Short button."
     },
@@ -6703,12 +6703,6 @@
     },
     "Moves the cursor to the start of the audio." : {
       "comment" : "Hint of the audio editor's Go to Start button."
-    },
-    "Moves the view one place down the list" : {
-      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's hint."
-    },
-    "Moves the view one place up the list" : {
-      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's hint."
     },
     "Moving %lld books..." : {
       "comment" : "Status shown and spoken in the Move sheet while the books' packages move. %lld is how many books. The three dots mean it is in progress.",
@@ -7349,8 +7343,14 @@
     "Opens the book." : {
       "comment" : "Hint of a book's row in the Library list."
     },
+    "Opens the feed's settings: where its downloads go, what it lists and downloads, and what happens when an episode ends" : {
+      "comment" : "Hint of the Library toolbar button, in the folder of a feed, that opens the feed's settings."
+    },
     "Opens the filter presets, to edit, add, reorder, delete, or reset." : {
       "comment" : "Hint of the Filter Presets button in Storage settings."
+    },
+    "Opens the folder's settings: what it holds, and what happens when one of its books ends" : {
+      "comment" : "Hint of the Library toolbar button, in a plain folder, that opens the folder's settings."
     },
     "Opens the folder." : {
       "comment" : "Hint of a folder's row in the Library list."
@@ -7358,13 +7358,7 @@
     "Opens the last book you were reading" : {
       "comment" : "Hint of the Continue button at the top of the Library list."
     },
-    "Opens the settings of this feed: where its downloads go, what it lists and downloads, and what happens when an episode ends" : {
-      "comment" : "Hint of the Library toolbar button, in the folder of a feed, that opens the feed's settings."
-    },
-    "Opens the settings of this folder: what it holds, and what happens when one of its books ends" : {
-      "comment" : "Hint of the Library toolbar button, in a plain folder, that opens the folder's settings."
-    },
-    "Opens the text content in an external text editor" : {
+    "Opens the text in an external editor" : {
       "comment" : "Hint of the Open in Editor button of the New Book from Text sheet."
     },
     "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth." : {
@@ -8144,7 +8138,7 @@
     "Reload from Editor" : {
       "comment" : "Button of the New Book from Text sheet that reads the text again from the file the other app's editor saved. Shown after Open in Editor."
     },
-    "Reloads the text content from the external editor file" : {
+    "Reloads the text from the editor's file" : {
       "comment" : "Hint of the Reload from Editor button of the New Book from Text sheet."
     },
     "Remove" : {
@@ -8448,7 +8442,7 @@
     "Replacement text. Leave empty to skip matched text." : {
       "comment" : "VoiceOver label of the replacement field in the substitution rule editor."
     },
-    "Replaces the text content with text from the system clipboard" : {
+    "Replaces the text with the text on the clipboard" : {
       "comment" : "Hint of the Paste from Clipboard button of the New Book from Text sheet."
     },
     "Replacing kept the existing copy's transcript." : {
@@ -9143,9 +9137,6 @@
     "Settings" : {
       "comment" : "Name of the application menu's Settings command, in a sentence saying why a keyboard shortcut cannot take its key."
     },
-    "Several books are selected, and a move shifts one book at a time. Select just one book, then try again." : {
-      "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used with several books selected."
-    },
     "Shift" : {
       "comment" : "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\"."
     },
@@ -9583,13 +9574,13 @@
     "Some details appear once the book is downloaded." : {
       "comment" : "Note in Book Information when the book's file is only in the cloud, so the sheet shows the details the library keeps and the others wait for a download."
     },
-    "Some of the files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again." : {
+    "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again." : {
       "comment" : "Why Replace Existing waits: some files of the library's copy are only in the cloud. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Some of the files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again."
+            "value" : "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again."
           }
         }
       }
@@ -10256,7 +10247,7 @@
     "That match is no longer in the book's text. Search again to find it." : {
       "comment" : "Announcement when a search match is no longer in the book's text."
     },
-    "That would place %@ %lld levels deep, but folders can be nested at most %lld levels." : {
+    "That would put %@ %lld levels deep, but folders nest at most %lld levels." : {
       "comment" : "Error shown when a folder edit would nest a folder too deep. %1$@ is the folder's location, in straight double quotes. %2$lld is how many levels deep it would be. %3$lld is the most levels allowed.",
       "localizations" : {
         "en" : {
@@ -10265,13 +10256,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "That would place %@ %lld level deep, but folders can be nested at most %lld levels."
+                  "value" : "That would put %@ %lld level deep, but folders nest at most %lld levels."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "That would place %@ %lld levels deep, but folders can be nested at most %lld levels."
+                  "value" : "That would put %@ %lld levels deep, but folders nest at most %lld levels."
                 }
               }
             }
@@ -10469,7 +10460,7 @@
         }
       }
     },
-    "The Library window's View pop-up offers these views, in this order. A new Library window opens at the first one it offers." : {
+    "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the list is, and where a new window opens."
     },
     "The audio can't be edited" : {
@@ -10499,13 +10490,13 @@
     "The audio of %@ couldn't be opened for editing." : {
       "comment" : "Said when the audio editor couldn't open a book. %@ is the book's title. A sentence giving the reason follows."
     },
-    "The audio of “%@” is being edited. Close the audio editor, or wait until it has saved, then choose %@ again." : {
+    "The audio of “%@” is being edited. Close the audio editor or wait for it to save, then choose %@ again." : {
       "comment" : "Why Replace Existing waits: the library's copy has its audio open in the audio editor. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The audio of “%1$@” is being edited. Close the audio editor, or wait until it has saved, then choose %2$@ again."
+            "value" : "The audio of “%1$@” is being edited. Close the audio editor or wait for it to save, then choose %2$@ again."
           }
         }
       }
@@ -10680,13 +10671,13 @@
     "The folder is no longer in the library. It may have been moved, renamed, or deleted in another window." : {
       "comment" : "Error shown when a folder edit is refused because the folder is gone from the library."
     },
-    "The folders %@ and %@ cannot both be moved into %@, because their names refer to the same folder on this disk." : {
+    "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk." : {
       "comment" : "Error shown when two folders moved together would land on the same name. %1$@ and %2$@ are the two folders' names, in straight double quotes. %3$@ is where they go: a folder's location in straight double quotes, or the name of the library's top level.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The folders %1$@ and %2$@ cannot both be moved into %3$@, because their names refer to the same folder on this disk."
+            "value" : "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk."
           }
         }
       }
@@ -10732,24 +10723,24 @@
     "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses." : {
       "comment" : "Explanation under the restart gesture's time window slider in the Miscellaneous settings."
     },
-    "The new copy took the place of “%@”, but the old copy's files could not be deleted, so they stay in its folder: %@" : {
+    "The new copy replaced “%@”, but the old copy's files could not be deleted and stay in its folder: %@" : {
       "comment" : "Alert after Replace Existing when the old copy's files could not be deleted. %1$@ is the book's title. %2$@ is why they could not be deleted.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The new copy took the place of “%1$@”, but the old copy's files could not be deleted, so they stay in its folder: %2$@"
+            "value" : "The new copy replaced “%1$@”, but the old copy's files could not be deleted and stay in its folder: %2$@"
           }
         }
       }
     },
-    "The new copy took the place of “%@”, but the old copy's files could not be moved to the Trash, so they stay in its folder: %@" : {
+    "The new copy replaced “%@”, but the old copy's files could not be moved to the Trash and stay in its folder: %@" : {
       "comment" : "Alert after Replace Existing when the old copy's files could not be moved to the Trash. %1$@ is the book's title. %2$@ is why they could not be moved.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The new copy took the place of “%1$@”, but the old copy's files could not be moved to the Trash, so they stay in its folder: %2$@"
+            "value" : "The new copy replaced “%1$@”, but the old copy's files could not be moved to the Trash and stay in its folder: %2$@"
           }
         }
       }
@@ -11014,7 +11005,7 @@
     "These books could not be removed from the library and remain in it:" : {
       "comment" : "Heading of the error alert's list when Remove from Library Only could not mark the packages of several books, so they stay in the library. Each book's title and the reason follow on their own lines.\nHeading over the books that could not be removed from the library, several of them. One line for each book follows."
     },
-    "These books were removed from the library, but their bookInfo.json files could not be deleted. They will still stay out of the library:" : {
+    "These books were removed from the library, but their bookInfo.json files could not be deleted. They stay out of the library:" : {
       "comment" : "Heading of the error alert's list when Remove from Library Only removed several books but could not delete the bookInfo.json files in their packages. bookInfo.json is a file name. Each book's title and the reason follow on their own lines."
     },
     "These edits need the original audio, which is no longer kept." : {
@@ -11142,7 +11133,7 @@
         }
       }
     },
-    "This book was removed from the library, but its bookInfo.json file could not be deleted. It will still stay out of the library:" : {
+    "This book was removed from the library, but its bookInfo.json file could not be deleted. It stays out of the library:" : {
       "comment" : "Heading of the error alert's list when Remove from Library Only removed one book but could not delete the bookInfo.json file in its package. bookInfo.json is a file name. The book's title and the reason follow on the next line."
     },
     "This book's only page is %@." : {
@@ -11940,11 +11931,11 @@
         }
       }
     },
-    "With %@, each feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed." : {
-      "comment" : "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is the title of the button that deletes everything, such as \"Move Everything to Trash\". \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
-    },
-    "With %@, the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed." : {
+    "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. %@ is the title of the button that deletes everything, such as \"Move Everything to Trash\". \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
+    },
+    "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is the title of the button that deletes everything, such as \"Move Everything to Trash\". \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
     },
     "With %@, the folder and everything in it leave the library, and %@." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder. %1$@ is the title of its button that deletes everything, such as \"Move Everything to Trash\", and %2$@ says what happens to the files, such as \"their files go to the Trash, where you can recover them until the Trash is emptied\".",

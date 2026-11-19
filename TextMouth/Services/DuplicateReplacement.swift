@@ -123,10 +123,10 @@ enum DuplicateReplacement {
             case .inUse(let use, let title):
                 return use.refusal(of: "“\(title)”", doing: "replacing it", retry: DuplicateReplacement.retry) // l10n: no (inside FeedBookUse's English sentences until the feeds area converts)
             case .audioBeingEdited(let title):
-                return String(localized: "The audio of “\(title)” is being edited. Close the audio editor, or wait until it has saved, then choose \(DuplicateReplacement.replaceExistingName) again.",
+                return String(localized: "The audio of “\(title)” is being edited. Close the audio editor or wait for it to save, then choose \(DuplicateReplacement.replaceExistingName) again.",
                               comment: "Why Replace Existing waits: the library's copy has its audio open in the audio editor. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
             case .filesInCloud(let title):
-                return String(localized: "Some of the files of “\(title)” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose \(DuplicateReplacement.replaceExistingName) again.",
+                return String(localized: "Some files of “\(title)” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose \(DuplicateReplacement.replaceExistingName) again.",
                               comment: "Why Replace Existing waits: some files of the library's copy are only in the cloud. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
             case .storageBusy(.movingBooksBetweenFolders):
                 return String(localized: "TextMouth is moving books between folders. Wait until that finishes, then choose \(DuplicateReplacement.replaceExistingName) again.",
@@ -224,10 +224,10 @@ enum DuplicateReplacement {
     /// `movesToTrash` says, and the old files stay in their folder.
     static func oldCopyLeftMessage(title: String, movesToTrash: Bool, reason: String) -> String {
         if movesToTrash {
-            return String(localized: "The new copy took the place of “\(title)”, but the old copy's files could not be moved to the Trash, so they stay in its folder: \(reason)",
+            return String(localized: "The new copy replaced “\(title)”, but the old copy's files could not be moved to the Trash and stay in its folder: \(reason)",
                           comment: "Alert after Replace Existing when the old copy's files could not be moved to the Trash. %1$@ is the book's title. %2$@ is why they could not be moved.")
         }
-        return String(localized: "The new copy took the place of “\(title)”, but the old copy's files could not be deleted, so they stay in its folder: \(reason)",
+        return String(localized: "The new copy replaced “\(title)”, but the old copy's files could not be deleted and stay in its folder: \(reason)",
                       comment: "Alert after Replace Existing when the old copy's files could not be deleted. %1$@ is the book's title. %2$@ is why they could not be deleted.")
     }
 

@@ -753,7 +753,7 @@ final class ImportDecisionFlowTests: XCTestCase {
         )
         XCTAssertEqual(
             whileEdited.failureMessage,
-            "The audio of “Earlier Atlas of Tides” is being edited. Close the audio editor, or wait until it has saved, "
+            "The audio of “Earlier Atlas of Tides” is being edited. Close the audio editor or wait for it to save, "
                 + "then choose Replace Existing again."
         )
         XCTAssertEqual(scene.model.importDecisions.current?.id, asked.id)
@@ -902,8 +902,8 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(relaunched.books.filter { $0.id == existing.id }.map(\.tmbDirectoryName), [copy.tmbDirectoryName])
         XCTAssertEqual(
             scene.model.errorMessage,
-            "The new copy took the place of “Earlier Atlas of Tides”, but the old copy's files could not be deleted, "
-                + "so they stay in its folder: \(refusal.localizedDescription)"
+            "The new copy replaced “Earlier Atlas of Tides”, but the old copy's files could not be deleted "
+                + "and stay in its folder: \(refusal.localizedDescription)"
         )
     }
 

@@ -23,7 +23,7 @@ enum LibraryComparisonWording {
 
     /// What the Storage settings button says to VoiceOver it does.
     static var buttonHint: String {
-        String(localized: "Chooses a folder holding another copy of this library and lists what differs. Nothing in either copy is changed.",
+        String(localized: "Chooses a folder with another copy of this library and lists what differs. Neither copy changes.",
                comment: "VoiceOver hint of the Compare Libraries button in Storage settings.")
     }
 
@@ -113,7 +113,7 @@ enum LibraryComparisonWording {
         SentenceWording.joined([
             String(localized: "Comparing this library with the copy in \(folder).",
                    comment: "First sentence of what the Compare Libraries sheet says while it works. %@ is the other copy's folder path."),
-            String(localized: "A library in the cloud can take a while: files that are only in the cloud are brought to this Mac to be read.",
+            String(localized: "A library in the cloud can take a while: its cloud-only files are downloaded to this Mac to be read.",
                    comment: "Sentence of what the Compare Libraries sheet says while it works: a library kept in a cloud drive is slow because files that are only in the cloud are downloaded first."),
             String(localized: "Nothing is changed.",
                    comment: "Last sentence of what the Compare Libraries sheet says while it works: the comparison changes nothing in either copy."),
@@ -365,7 +365,7 @@ enum LibraryComparisonWording {
     /// What Storage settings says while it compares the copy in a chosen
     /// folder with the library in use, to say which is newer.
     static var comparingForUseSentence: String {
-        String(localized: "Comparing the library in use with the copy in the folder you chose, to say which is newer. This can take up to a minute. Choose Stop Comparing to skip it.",
+        String(localized: "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
                comment: "What Storage settings says while it compares the library in use with a chosen folder's copy before Use This Library. \"Stop Comparing\" is the name of the button that skips it.")
     }
     /// The button that stops that comparison.

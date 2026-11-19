@@ -33,7 +33,7 @@ extension FolderOperationConflict: LocalizedError {
     var message: String {
         switch self {
         case .invalidName:
-            return String(localized: "Choose a folder name that is not empty, is not \".\" or \"..\", does not end in \".tmb\", and is not reserved by TextMouth.",
+            return String(localized: "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth.",
                           comment: "Error shown when a folder's new name is refused: the name is empty, is a single or double dot, ends in .tmb, or is one TextMouth keeps for itself. The quoted pieces are literal text.")
         case .invalidPath(let path):
             if path.isEmpty {
@@ -63,7 +63,7 @@ extension FolderOperationConflict: LocalizedError {
                        comment: "Second sentence of the error about a folder name that is taken, added when the two names are spelled differently, in capital letters or in how an accent is stored."),
             ])
         case .namesCollide(let firstPath, let secondPath, let parentPath):
-            return String(localized: "The folders \(Self.quoted(Self.name(of: firstPath))) and \(Self.quoted(Self.name(of: secondPath))) cannot both be moved into \(Self.place(parentPath)), because their names refer to the same folder on this disk.",
+            return String(localized: "The folders \(Self.quoted(Self.name(of: firstPath))) and \(Self.quoted(Self.name(of: secondPath))) can't both move into \(Self.place(parentPath)): their names mean the same folder on this disk.",
                           comment: "Error shown when two folders moved together would land on the same name. %1$@ and %2$@ are the two folders' names, in straight double quotes. %3$@ is where they go: a folder's location in straight double quotes, or the name of the library's top level.")
         case .destinationInsideFolder(let folderPath, let destinationPath):
             return SentenceWording.joined([
@@ -74,7 +74,7 @@ extension FolderOperationConflict: LocalizedError {
             ])
         case .tooDeep(let path):
             let depth = FolderSubtree.components(of: path).count
-            return String(localized: "That would place \(Self.quoted(path)) \(depth) levels deep, but folders can be nested at most \(BookFolder.maxDepth) levels.",
+            return String(localized: "That would put \(Self.quoted(path)) \(depth) levels deep, but folders nest at most \(BookFolder.maxDepth) levels.",
                           comment: "Error shown when a folder edit would nest a folder too deep. %1$@ is the folder's location, in straight double quotes. %2$lld is how many levels deep it would be. %3$lld is the most levels allowed.")
         }
     }

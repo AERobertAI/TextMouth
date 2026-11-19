@@ -87,7 +87,7 @@ final class LibraryFolderSettingsTargetTests: XCTestCase {
         XCTAssertEqual(feed.accessibilityLabel, "Feed settings for Evening Dispatch")
         XCTAssertEqual(
             feed.accessibilityHint,
-            "Opens the settings of this feed: where its downloads go, what it lists and downloads, and what happens when an episode ends"
+            "Opens the feed's settings: where its downloads go, what it lists and downloads, and what happens when an episode ends"
         )
         XCTAssertEqual(feed.systemImage, "slider.horizontal.3")
     }
@@ -99,7 +99,7 @@ final class LibraryFolderSettingsTargetTests: XCTestCase {
         XCTAssertEqual(folder.accessibilityLabel, "Folder settings for Essays")
         XCTAssertEqual(
             folder.accessibilityHint,
-            "Opens the settings of this folder: what it holds, and what happens when one of its books ends"
+            "Opens the folder's settings: what it holds, and what happens when one of its books ends"
         )
         XCTAssertEqual(folder.systemImage, "slider.horizontal.3")
     }

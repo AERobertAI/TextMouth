@@ -890,9 +890,9 @@ struct FolderRemovalWording: Equatable {
     private var ownFeedsChoiceSentences: [String] {
         guard let feeds = Self.quoted(ownFeedTitles) else { return [] }
         return [ownFeedTitles.count == 1
-            ? String(localized: "It is the folder of the feed \(feeds): whichever you choose, the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed.",
+            ? String(localized: "It is the folder of the feed \(feeds). Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
                      comment: "Sentence of the dialog that asks how to delete a folder, when it is the folder of one feed. %@ is the feed's title in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command.")
-            : String(localized: "It is the folder of the feeds \(feeds): whichever you choose, each feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed.",
+            : String(localized: "It is the folder of the feeds \(feeds). Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
                      comment: "Sentence of the dialog that asks how to delete a folder, when it is the folder of several feeds. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command.")]
     }
 
@@ -907,7 +907,7 @@ struct FolderRemovalWording: Equatable {
                        comment: "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. %@ is the feed's title in quotation marks."),
                 String(localized: "With Move Contents Out, the feed's folder moves with the rest.",
                        comment: "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. \"Move Contents Out\" is the name of one of its buttons."),
-                String(localized: "With \(button), the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed.",
+                String(localized: "With \(button), the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
                        comment: "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. %@ is the title of the button that deletes everything, such as \"Move Everything to Trash\". \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."),
             ]
         }
@@ -916,7 +916,7 @@ struct FolderRemovalWording: Equatable {
                    comment: "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is a list of the feeds' titles in quotation marks."),
             String(localized: "With Move Contents Out, their folders move with the rest.",
                    comment: "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. \"Move Contents Out\" is the name of one of its buttons."),
-            String(localized: "With \(button), each feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed.",
+            String(localized: "With \(button), the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
                    comment: "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is the title of the button that deletes everything, such as \"Move Everything to Trash\". \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."),
         ]
     }
