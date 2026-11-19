@@ -7,7 +7,7 @@ import Foundation
 /// whichever Kindle format the book is in. Every case here is a full
 /// sentence a listener can act on; none names the file, which an import's
 /// failure does (`ImportFailure`).
-enum KFXError: LocalizedError, Equatable {
+enum KFXError: LocalizedError, LogDescribing, Equatable {
     /// The file is a Kindle Create package (a ZIP holding a `.kdf` database,
     /// the file Kindle Create and Kindle Previewer write for an author).
     /// TextMouth does not read it; it is a later item.
@@ -23,11 +23,24 @@ enum KFXError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .kindleCreatePackage:
-            return "This file is a Kindle Create package, which TextMouth can't read yet."
+            return String(localized: "This file is a Kindle Create package, which TextMouth can't read yet.",
+                          comment: "Why a file could not be imported: it is a package that Kindle Create writes for an author, which TextMouth does not read yet. Kindle Create is a program's name.")
         case .noFlowingText:
-            return "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
+            return String(localized: "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it.",
+                          comment: "Why a Kindle (KFX) book could not be imported: its pages are fixed layouts or pictures, as in a comic or a print replica, with no text that flows.")
         case .partOfABook:
-            return "This file holds only part of a Kindle book. Open the book's main .kfx file."
+            return String(localized: "This file holds only part of a Kindle book. Open the book's main .kfx file.",
+                          comment: "Why a Kindle (KFX) file could not be imported: it is a part of a book, such as the metadata file beside the main file, and what to do. .kfx is a file extension and stays as it is.")
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .kindleCreatePackage: return "This file is a Kindle Create package, which TextMouth can't read yet." // l10n: no (debug log)
+        case .noFlowingText: return "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it." // l10n: no (debug log)
+        case .partOfABook: return "This file holds only part of a Kindle book. Open the book's main .kfx file." // l10n: no (debug log)
         }
     }
 }

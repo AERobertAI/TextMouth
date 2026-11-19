@@ -69,11 +69,17 @@ enum DocumentByteLimit {
 /// A document that holds more than the most TextMouth reads from one
 /// document (`DocumentByteLimit`). Its sentence names the limit, never the
 /// file: an import's failure names the file before it (`ImportFailure`).
-struct DocumentTooLargeError: LocalizedError, Equatable {
+struct DocumentTooLargeError: LocalizedError, LogDescribing, Equatable {
     /// The limit the document passed, in bytes.
     let limit: Int64
 
     var errorDescription: String? {
-        "This document holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one document."
+        String(localized: "This document holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one document.",
+               comment: "Why a document could not be imported: it is larger than the most TextMouth reads from one document. %@ is that limit with its unit, such as \"64 MB\".")
+    }
+
+    /// The failure in English for the debug log (FR34).
+    var logDescription: String {
+        "This document holds more than \(limit) bytes, the most TextMouth reads from one document." // l10n: no (debug log)
     }
 }

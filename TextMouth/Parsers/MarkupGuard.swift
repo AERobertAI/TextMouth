@@ -536,7 +536,7 @@ enum MarkupDeclaration {
 
 /// Why markup is not read. Each sentence is one a listener can act on, and none
 /// says the file is damaged, since it may not be.
-enum MarkupRefusal: LocalizedError, Equatable {
+enum MarkupRefusal: LocalizedError, LogDescribing, Equatable {
     /// The markup holds elements nested more than `limit` levels deep.
     case nestedTooDeeply(limit: Int)
     /// One document's tree would take too much memory.
@@ -549,17 +549,53 @@ enum MarkupRefusal: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .nestedTooDeeply(limit):
-            return "This file's markup nests more than \(limit.formatted()) levels deep, which TextMouth can't read safely. "
-                + "Get another copy of the file, or save it in another format, then import it again."
+            return SentenceWording.joined([
+                String(localized: "This file's markup nests more than \(limit.formatted()) levels deep, which TextMouth can't read safely.",
+                       comment: "First sentence of why a file was refused: its markup has elements inside elements more levels deep than TextMouth reads. %@ is the most levels, a number."),
+                Self.getAnotherCopyAdvice,
+            ])
         case .tooMuchMarkup:
-            return "One document in this file holds too much markup for TextMouth to read without running out of memory. "
-                + "Divide the document into smaller files, then import them."
+            return SentenceWording.joined([
+                String(localized: "One document in this file holds too much markup for TextMouth to read without running out of memory.",
+                       comment: "First sentence of why a file was refused: one of its documents has so much markup that reading it would take too much memory."),
+                String(localized: "Divide the document into smaller files, then import them.",
+                       comment: "Last sentence of why a file with too much markup was refused: what to do."),
+            ])
         case let .tooManyAttributes(limit):
-            return "One tag in this file has more than \(limit.formatted()) attributes, which TextMouth can't read safely. "
-                + "Get another copy of the file, or save it in another format, then import it again."
+            return SentenceWording.joined([
+                String(localized: "One tag in this file has more than \(limit.formatted()) attributes, which TextMouth can't read safely.",
+                       comment: "First sentence of why a file was refused: one of its markup tags has more attributes than TextMouth reads. %@ is the most attributes, a number."),
+                Self.getAnotherCopyAdvice,
+            ])
         case .tooMuchWork:
-            return "This file's markup is built in a way that would take TextMouth far too long to read. "
-                + "Get another copy of the file, or save it in another format, then import it again."
+            return SentenceWording.joined([
+                String(localized: "This file's markup is built in a way that would take TextMouth far too long to read.",
+                       comment: "First sentence of why a file was refused: its markup is built so that reading it would take far too long."),
+                Self.getAnotherCopyAdvice,
+            ])
+        }
+    }
+
+    /// What to do about a file refused for its markup, said last in three of
+    /// its sentences.
+    private static var getAnotherCopyAdvice: String {
+        String(localized: "Get another copy of the file, or save it in another format, then import it again.",
+               comment: "Last sentence of why a file was refused for its markup: what to do.")
+    }
+
+    /// The refusal in English for the debug log, which stays English
+    /// whatever language the interface speaks (FR34).
+    var logDescription: String {
+        let advice = "Get another copy of the file, or save it in another format, then import it again." // l10n: no (debug log)
+        switch self {
+        case let .nestedTooDeeply(limit):
+            return "This file's markup nests more than \(limit) levels deep, which TextMouth can't read safely. \(advice)" // l10n: no (debug log)
+        case .tooMuchMarkup:
+            return "One document in this file holds too much markup for TextMouth to read without running out of memory. Divide the document into smaller files, then import them." // l10n: no (debug log)
+        case let .tooManyAttributes(limit):
+            return "One tag in this file has more than \(limit) attributes, which TextMouth can't read safely. \(advice)" // l10n: no (debug log)
+        case .tooMuchWork:
+            return "This file's markup is built in a way that would take TextMouth far too long to read. \(advice)" // l10n: no (debug log)
         }
     }
 }

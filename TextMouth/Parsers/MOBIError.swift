@@ -3,7 +3,7 @@ import Foundation
 /// Why a Kindle (MOBI) book cannot be read. Every case's sentence is one a
 /// listener can act on; none names the file, which an import's failure
 /// does (`ImportFailure`).
-enum MOBIError: LocalizedError, Equatable {
+enum MOBIError: LocalizedError, LogDescribing, Equatable {
     /// The file is not a Palm database of a kind that holds a book
     /// (`MOBIPalmDatabase`): too short, a type and creator that are not
     /// `BOOKMOBI` or `TEXtREAd`, or no record 0.
@@ -26,18 +26,37 @@ enum MOBIError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .notAKindleBook:
-            return "This file is not a Kindle book that TextMouth can read."
+            return String(localized: "This file is not a Kindle book that TextMouth can read.",
+                          comment: "Why a file could not be imported as a Kindle (MOBI) book: it is not a Kindle book of a kind TextMouth reads.")
         case .damaged(let detail):
             // A fault only a programmer can name (a table's place, a count)
             // is left out of what a listener hears: the sentence says what to do.
             guard !detail.isEmpty else {
-                return "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again."
+                return String(localized: "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again.",
+                              comment: "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do.")
             }
-            return "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy of the book, then import it again."
+            return String(localized: "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy of the book, then import it again.",
+                          comment: "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
         case .copyProtected:
-            return "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
+            return String(localized: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.",
+                          comment: "Why a Kindle (MOBI) book could not be imported: it is encrypted or carries copy protection (DRM), which TextMouth never removes.")
         case .unsupportedCompression:
-            return "This Kindle book is compressed in a way TextMouth can't read yet."
+            return String(localized: "This Kindle book is compressed in a way TextMouth can't read yet.",
+                          comment: "Why a Kindle (MOBI) book could not be imported: its text is compressed in a way TextMouth does not read.")
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .notAKindleBook: return "This file is not a Kindle book that TextMouth can read." // l10n: no (debug log)
+        case .damaged(let detail):
+            return detail.isEmpty
+                ? "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again." // l10n: no (debug log)
+                : "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy of the book, then import it again." // l10n: no (debug log)
+        case .copyProtected: return "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." // l10n: no (debug log)
+        case .unsupportedCompression: return "This Kindle book is compressed in a way TextMouth can't read yet." // l10n: no (debug log)
         }
     }
 }

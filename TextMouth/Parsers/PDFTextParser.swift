@@ -10,7 +10,7 @@ import os
 // MARK: - Error Types
 
 /// Errors that can occur when parsing a PDF file
-enum PDFParserError: LocalizedError {
+enum PDFParserError: LocalizedError, LogDescribing {
     case fileNotFound(String)
     case cannotOpenPDF
     /// The PDF opens but is locked by a password TextMouth does not have,
@@ -23,12 +23,34 @@ enum PDFParserError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .fileNotFound(let path): return "PDF file not found at: \(path)"
-        case .cannotOpenPDF: return "The PDF file could not be opened."
-        case .passwordProtected: return "This PDF needs a password to open."
-        case .noTextContent: return "No text content could be extracted from the PDF."
+        case .fileNotFound(let path):
+            return String(localized: "PDF file not found at: \(path)",
+                          comment: "Why a PDF could not be imported: there is no file at its path. %@ is the path.")
+        case .cannotOpenPDF:
+            return String(localized: "The PDF file could not be opened.",
+                          comment: "Why a PDF could not be imported: PDFKit could not open it.")
+        case .passwordProtected:
+            return String(localized: "This PDF needs a password to open.",
+                          comment: "Why a PDF could not be imported: it is locked with a password TextMouth does not have.")
+        case .noTextContent:
+            return String(localized: "No text content could be extracted from the PDF.",
+                          comment: "Why a PDF could not be imported: none of its pages holds text.")
         case .ocrFailed(let reason):
-            return "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason))."
+            return String(localized: "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason)).",
+                          comment: "Why a PDF could not be imported: its pages are pictures, and text recognition (OCR) could not run. %@ is the reason, a phrase in English with no full stop.")
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .fileNotFound(let path): return "PDF file not found at: \(path)" // l10n: no (debug log)
+        case .cannotOpenPDF: return "The PDF file could not be opened." // l10n: no (debug log)
+        case .passwordProtected: return "This PDF needs a password to open." // l10n: no (debug log)
+        case .noTextContent: return "No text content could be extracted from the PDF." // l10n: no (debug log)
+        case .ocrFailed(let reason):
+            return "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason))." // l10n: no (debug log)
         }
     }
 }
@@ -190,7 +212,7 @@ enum PDFTextParser {
                 .joined(separator: "\n\n")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        return Extraction(markdown: markdown, report: ExtractionReport(container: "this PDF", pdf: diagnostics))
+        return Extraction(markdown: markdown, report: ExtractionReport(container: "this PDF", pdf: diagnostics)) // l10n: no (a parser's damage reason: finishes a page's reason, inside the pages' translated warning)
     }
 
     /// Read metadata (title, author) from PDF document attributes
@@ -381,7 +403,7 @@ enum PDFTextParser {
         }
 
         /// What OCR says when there is no recognizer to ask.
-        static let notAvailable = "text recognition is not available"
+        static let notAvailable = "text recognition is not available" // l10n: no (a parser's damage reason: finishes a page's reason, inside the pages' translated warning)
 
         /// Recognizes text in pictures; nil when this process has no OCR.
         let recognizer: (any PDFPageTextRecognizer)?
@@ -412,7 +434,7 @@ enum PDFTextParser {
                     if case .unavailable(let reason) = error { unavailableReason = reason }
                     result.failure = result.failure ?? error.reason
                 } catch {
-                    result.failure = result.failure ?? "text recognition failed: \(error.localizedDescription)"
+                    result.failure = result.failure ?? "text recognition failed: \(error.localizedDescription)" // l10n: no (a parser's damage reason: finishes a page's reason, inside the pages' translated warning)
                 }
             }
             return result

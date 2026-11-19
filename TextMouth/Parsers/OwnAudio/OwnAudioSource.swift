@@ -33,27 +33,32 @@ enum OwnAudioError: Error, Equatable, Sendable {
 /// reason finishes "… because <reason>."
 enum OwnAudioWording {
     /// A True Audio file locked with a password (format 2).
-    static let ttaPassword = "it is locked with a password"
+    static let ttaPassword = "it is locked with a password" // l10n: no (a parser's damage reason: finishes "because …", question 3)
     /// A True Audio file of floating-point samples or another unknown form.
-    static let ttaForm = "it is a kind of True Audio file TextMouth does not know"
+    static let ttaForm = "it is a kind of True Audio file TextMouth does not know" // l10n: no (a parser's damage reason: finishes "because …", question 3)
     /// A True Audio file whose channels, bit depth, or sample rate no
     /// encoder writes.
-    static let ttaShape = "its channels, bit depth, or sample rate are outside what True Audio allows"
+    static let ttaShape = "its channels, bit depth, or sample rate are outside what True Audio allows" // l10n: no (a parser's damage reason: finishes "because …", question 3)
 
-    /// The sentence for a file named `fileName` given up with `error`.
+    /// The sentence for a file named `fileName` given up with `error`. The
+    /// reason inside "because …" is a parser's English (question 3).
     static func sentence(for error: OwnAudioError, fileName: String) -> String {
         switch error {
         case .notThisFormat:
-            return "The audio file \(fileName) is not the kind of file its name says."
+            return String(localized: "The audio file \(fileName) is not the kind of file its name says.",
+                          comment: "Why an audio file could not be converted at import: its bytes are not of the format its extension names. %@ is the file's name.")
         case let .unsupported(reason):
-            return "TextMouth can't read the audio file \(fileName) because \(reason)."
+            return String(localized: "TextMouth can't read the audio file \(fileName) because \(reason).",
+                          comment: "Why an audio file could not be converted at import: it is of a format TextMouth reads, in a form it refuses. %1$@ is the file's name and %2$@ the reason, a clause in English that follows \"because\" and has no full stop.")
         case .truncated:
-            return "The audio file \(fileName) ends before its audio does, so it could not be converted."
+            return String(localized: "The audio file \(fileName) ends before its audio does, so it could not be converted.",
+                          comment: "Why an audio file could not be converted at import: the file stops before the audio its header promises. %@ is the file's name.")
         case .damaged:
-            return "The audio file \(fileName) is damaged, so it could not be converted."
+            return String(localized: "The audio file \(fileName) is damaged, so it could not be converted.",
+                          comment: "Why an audio file could not be converted at import: a checksum failed or a field holds a value no encoder writes. %@ is the file's name.")
         case .companionDamaged:
-            return "The correction file \(companionName(of: fileName)) is damaged or belongs to another recording, "
-                + "so \(fileName) could not be converted."
+            return String(localized: "The correction file \(companionName(of: fileName)) is damaged or belongs to another recording, so \(fileName) could not be converted.",
+                          comment: "Why a hybrid WavPack file could not be converted at import: the correction file beside it (the same name ending in .wvc) is damaged or belongs to another recording. %1$@ is the correction file's name and %2$@ the WavPack file's name.")
         }
     }
 

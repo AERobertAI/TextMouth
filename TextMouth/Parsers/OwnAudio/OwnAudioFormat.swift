@@ -15,9 +15,13 @@ enum OwnAudioFormat: String, CaseIterable, Equatable, Sendable {
     /// The name a listener hears for the format.
     var displayName: String {
         switch self {
-        case .trueAudio: return "True Audio"
-        case .wavPack: return "WavPack"
-        case .monkeysAudio: return "Monkey's Audio"
+        case .trueAudio:
+            return String(localized: "True Audio",
+                          comment: "The name of an audio format, in a failure to read a file and in Book Information: True Audio, in .tta files. A format's own name, usually kept as it is.")
+        case .wavPack: return "WavPack" // l10n: no (a format's own name)
+        case .monkeysAudio:
+            return String(localized: "Monkey's Audio",
+                          comment: "The name of an audio format, in a failure to read a file and in Book Information: Monkey's Audio, in .ape files. A format's own name, usually kept as it is.")
         }
     }
 
