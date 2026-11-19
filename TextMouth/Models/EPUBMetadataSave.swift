@@ -158,7 +158,7 @@ extension EPUBMetadataSaveWording {
     /// file the user imported is not.
     nonisolated static var writeBackToggleHint: String {
         SentenceWording.joined([
-            String(localized: "Writes the title, author, publisher, and date into the copy of this book that TextMouth keeps in its library.",
+            String(localized: "Writes the title, author, publisher, and date into the library's copy of this book.",
                    comment: "First sentence of the hint of the metadata editor's switch that also writes the EPUB file."),
             String(localized: "The original file you imported is not touched.",
                    comment: "Last sentence of the hint of the metadata editor's switch that also writes the EPUB file: the file the user first imported stays as it was."),

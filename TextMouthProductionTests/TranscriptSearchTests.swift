@@ -446,12 +446,12 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(
             said(.editHeld(.headingChanged, keptCopy: copy)),
             lead + ", because its edited text can't be used: it changes a chapter's heading, which comes from the audio. "
-                + "Put the heading back as it was and save again, and the text shows. "
+                + "Put it back and save again, and the text shows. "
                 + "Your edited text was also kept as content.md.edited-20261023T093000Z, in the book's package."
         )
         XCTAssertEqual(
             said(.editHeld(.notText, keptCopy: nil)),
-            lead + ", because its edited text can't be used: it isn't UTF-8 text. Save it as UTF-8 in your editor, "
+            lead + ", because its edited text can't be used: it isn't UTF-8 text. Save it as UTF-8, "
                 + "and the text shows. No copy of your edited text could be kept, so TextMouth leaves content.md as it is."
         )
         // None of them names a command: a book with a transcript offers
@@ -466,8 +466,8 @@ final class TranscriptSearchTests: XCTestCase {
         // other sentences are those sentences' own.
         XCTAssertEqual(
             BookTextEditWording.held(.noChapters, bookTitle: "Breakwater Notes", keptCopy: nil),
-            "Breakwater Notes can't open while its edited text can't be used: it has no chapter left with anything in it. "
-                + "Undo the change in your editor and save again, and the book opens. "
+            "Breakwater Notes can't open while its edited text can't be used: it has no chapter with any text. "
+                + "Undo the change and save again, and the book opens. "
                 + "No copy of your edited text could be kept, so TextMouth leaves content.md as it is."
         )
         XCTAssertEqual(

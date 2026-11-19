@@ -34,7 +34,7 @@ enum BookManifestEditWording {
         SentenceWording.joined([
             String(localized: "TextMouth opens the book's manifest.json in your text editor.",
                    comment: "First sentence of the Edit Manifest explanation. manifest.json is a file name and stays as written."),
-            String(localized: "It lists the book's tracks in the order they play, each with the title its heading shows; you can reorder and retitle them, group them under headings of your own, and set the pauses between them.",
+            String(localized: "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them.",
                    comment: "Second sentence of the Edit Manifest explanation: what the manifest lists and what the user can change in it."),
             String(localized: "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
                    comment: "Third sentence of the Edit Manifest explanation. TextEdit is the Mac's text editor; Smart Quotes, Edit and Substitutions are its menu names, so use the words macOS shows for them."),

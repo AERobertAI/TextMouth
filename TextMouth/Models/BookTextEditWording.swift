@@ -36,7 +36,7 @@ enum BookTextEditWording {
                    comment: "Second sentence of the Edit Text explanation. \"<!-- chapter:\" is the literal text that begins a chapter line in the file; it stays exactly as written."),
             String(localized: "Each <!-- page: … --> marks where a page begins.",
                    comment: "Third sentence of the Edit Text explanation. \"<!-- page: … -->\" is the literal text of a page marker in the file; it stays exactly as written."),
-            String(localized: "When you save, TextMouth reads your changes and updates the book, keeping your place as near as it can.",
+            String(localized: "When you save, the book updates and keeps your place as near as it can.",
                    comment: "Fourth sentence of the Edit Text explanation: what happens when the user saves the edited text."),
             String(localized: "This explanation appears only once.",
                    comment: "Last sentence of the Edit Text explanation: it is shown only the first time."),
@@ -128,7 +128,7 @@ enum BookTextEditWording {
     /// Why an edit was not taken, as VoiceOver hears it once a check found
     /// it, then where the edited text was kept (`kept(_:)`), as in "Text not
     /// updated: the edited text of Harbour Pilots isn't UTF-8 text. Save it
-    /// as UTF-8 in your editor; until then, the book keeps the text it had.
+    /// as UTF-8; the book keeps its old text until then.
     /// Your edited text was also kept as content.md.edited-20261004T123012Z,
     /// in the book's package."
     static func notTaken(_ refusal: BookTextEditRefusal, bookTitle: String, keptCopy: URL?) -> String {
@@ -140,34 +140,34 @@ enum BookTextEditWording {
     static func refused(_ refusal: BookTextEditRefusal, bookTitle: String) -> String {
         switch refusal {
         case .notText:
-            return String(localized: "Text not updated: the edited text of \(bookTitle) isn't UTF-8 text. Save it as UTF-8 in your editor; until then, the book keeps the text it had.",
+            return String(localized: "Text not updated: the edited text of \(bookTitle) isn't UTF-8 text. Save it as UTF-8; the book keeps its old text until then.",
                           comment: "Announcement when an edited text was refused because it is not UTF-8 text. %@ is the book's title. UTF-8 is a text encoding.")
         case .noChapters:
-            return String(localized: "Text not updated: the edited text of \(bookTitle) has no chapter left with anything in it. Undo the change in your editor and save again; until then, the book keeps the text it had.",
+            return String(localized: "Text not updated: the edited text of \(bookTitle) has no chapter with any text. Undo the change and save again; the book keeps its old text until then.",
                           comment: "Announcement when an edited text was refused because no chapter has any text left. %@ is the book's title.")
         case .nestedTooDeeply(let chapter, let limit):
             // The chapter is named by its number: its title is the book's text.
             let nests = MarkdownNestingWording.nestsTooDeeply(limit: limit)
             if let chapter {
-                return String(localized: "Text not updated: chapter \(String(chapter)) of the edited text of \(bookTitle) \(nests), which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change; until then, the book keeps the text it had.",
+                return String(localized: "Text not updated: chapter \(String(chapter)) of the edited text of \(bookTitle) \(nests), which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
                               comment: "Announcement when an edited text was refused because one chapter nests lists or quotes too deeply. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the book's title; %3$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.")
             }
-            return String(localized: "Text not updated: the edited text of \(bookTitle) \(nests), which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change; until then, the book keeps the text it had.",
+            return String(localized: "Text not updated: the edited text of \(bookTitle) \(nests), which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
                           comment: "Announcement when an edited text was refused because it nests lists or quotes too deeply. %1$@ is the book's title; %2$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.")
         case .sourceChanged:
-            return String(localized: "Text not updated: the original file of \(bookTitle) changed too, so TextMouth reads the book's text from that file again the next time the book opens.",
+            return String(localized: "Text not updated: the original file of \(bookTitle) changed too. The book's text is read from it again the next time the book opens.",
                           comment: "Announcement when an edited text was not taken because the book's own file changed too. %@ is the book's title.")
         case .transcriptChanged:
-            return String(localized: "Text not updated: the transcript of \(bookTitle) changed too, as when it is transcribed again, so TextMouth writes the book's text from that transcript again the next time the book opens.",
+            return String(localized: "Text not updated: the transcript of \(bookTitle) changed too. The book's text is written from it again the next time the book opens.",
                           comment: "Announcement when an edited text was not taken because the book's transcript changed too. %@ is the book's title.")
         case .chaptersChanged(let found, let expected):
-            return String(localized: "Text not updated: the edited transcript of \(bookTitle) has \(chapters(found)), but the audiobook has \(chapters(expected)). Keep every line beginning with <!-- chapter: and save again; until then, the book keeps the text it had.",
+            return String(localized: "Text not updated: the edited transcript of \(bookTitle) has \(chapters(found)), but the audiobook has \(chapters(expected)). Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
                           comment: "Announcement when an edited transcript was refused because its number of chapters no longer matches the audiobook's. %1$@ is the book's title; %2$@ and %3$@ are counts of chapters such as \"3 chapters\". \"<!-- chapter:\" is literal text in the file and stays exactly as written.")
         case .headingChanged:
-            return String(localized: "Text not updated: the edited transcript of \(bookTitle) changes a chapter's heading, which comes from its audio. Put the heading back as it was and save again; until then, the book keeps the text it had.",
+            return String(localized: "Text not updated: the edited transcript of \(bookTitle) changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then.",
                           comment: "Announcement when an edited transcript was refused because the user changed a chapter's heading. %@ is the book's title.")
         case .wordsWithoutSentences:
-            return String(localized: "Text not updated: the edited transcript of \(bookTitle) adds words to a chapter the transcript heard no speech in, where they can't be kept. Remove them and save again; until then, the book keeps the text it had.",
+            return String(localized: "Text not updated: the edited transcript of \(bookTitle) adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
                           comment: "Announcement when an edited transcript was refused because the user added words to a chapter with no speech. %@ is the book's title.")
         case .failed(let reason):
             return String(localized: "Text not updated: \(reason)",
@@ -197,7 +197,7 @@ enum BookTextEditWording {
     /// What a reader shows in place of a book it does not open while the
     /// book's edited text cannot be taken (`BookTextEditPending`), as in
     /// "Harbour Pilots can't open while its edited text can't be used: it
-    /// isn't UTF-8 text. Save it as UTF-8 in your editor, and the book
+    /// isn't UTF-8 text. Save it as UTF-8, and the book
     /// opens. Your edited text was also kept as content.md.edited-…, in the
     /// book's package." The reader opens the book once an edit is taken.
     static func held(_ refusal: BookTextEditRefusal, bookTitle: String, keptCopy: URL?) -> String {
@@ -210,36 +210,36 @@ enum BookTextEditWording {
 
     /// Why an edit cannot be used while it stands, and what the user can do
     /// about it, as the end of a sentence about the book: "it isn't UTF-8
-    /// text. Save it as UTF-8 in your editor, and the book opens." For an
+    /// text. Save it as UTF-8, and the book opens." For an
     /// audiobook (`forAudiobook`), whose book does open, with its audio and
     /// without its text, what follows saving is that the text shows.
     static func heldReason(_ refusal: BookTextEditRefusal, forAudiobook: Bool = false) -> String {
         switch refusal {
         case .notText:
             return forAudiobook
-                ? String(localized: "it isn't UTF-8 text. Save it as UTF-8 in your editor, and the text shows.",
+                ? String(localized: "it isn't UTF-8 text. Save it as UTF-8, and the text shows.",
                          comment: "Reason after a colon, for an audiobook whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding.")
-                : String(localized: "it isn't UTF-8 text. Save it as UTF-8 in your editor, and the book opens.",
+                : String(localized: "it isn't UTF-8 text. Save it as UTF-8, and the book opens.",
                          comment: "Reason after a colon, for a book whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding.")
         case .noChapters:
             return forAudiobook
-                ? String(localized: "it has no chapter left with anything in it. Undo the change in your editor and save again, and the text shows.",
+                ? String(localized: "it has no chapter with any text. Undo the change and save again, and the text shows.",
                          comment: "Reason after a colon, for an audiobook whose edited text has no chapter with any text; begins in lower case.")
-                : String(localized: "it has no chapter left with anything in it. Undo the change in your editor and save again, and the book opens.",
+                : String(localized: "it has no chapter with any text. Undo the change and save again, and the book opens.",
                          comment: "Reason after a colon, for a book whose edited text has no chapter with any text; begins in lower case.")
         case .nestedTooDeeply(let chapter, let limit):
             let nests = MarkdownNestingWording.nestsTooDeeply(limit: limit)
             if let chapter {
                 return forAudiobook
-                    ? String(localized: "its chapter \(String(chapter)) \(nests), which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change, and the text shows.",
+                    ? String(localized: "its chapter \(String(chapter)) \(nests), which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
                              comment: "Reason after a colon, for an audiobook whose edited text nests one chapter too deeply; begins in lower case. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.")
-                    : String(localized: "its chapter \(String(chapter)) \(nests), which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change, and the book opens.",
+                    : String(localized: "its chapter \(String(chapter)) \(nests), which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
                              comment: "Reason after a colon, for a book whose edited text nests one chapter too deeply; begins in lower case. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.")
             }
             return forAudiobook
-                ? String(localized: "it \(nests), which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change, and the text shows.",
+                ? String(localized: "it \(nests), which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
                          comment: "Reason after a colon, for an audiobook whose edited text nests too deeply; begins in lower case. %@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.")
-                : String(localized: "it \(nests), which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change, and the book opens.",
+                : String(localized: "it \(nests), which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
                          comment: "Reason after a colon, for a book whose edited text nests too deeply; begins in lower case. %@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.")
         case .sourceChanged:
             return String(localized: "the book's own file changed too. Open the book again to read its text from that file.",
@@ -251,10 +251,10 @@ enum BookTextEditWording {
             return String(localized: "it has \(chapters(found)), where the audiobook has \(chapters(expected)). Keep every line beginning with <!-- chapter: and save again, and the text shows.",
                           comment: "Reason after a colon: the edited transcript's number of chapters no longer matches the audiobook's; begins in lower case. %1$@ and %2$@ are counts of chapters such as \"3 chapters\". \"<!-- chapter:\" is literal text in the file and stays exactly as written.")
         case .headingChanged:
-            return String(localized: "it changes a chapter's heading, which comes from the audio. Put the heading back as it was and save again, and the text shows.",
+            return String(localized: "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows.",
                           comment: "Reason after a colon: the user changed a chapter's heading in an edited transcript; begins in lower case.")
         case .wordsWithoutSentences:
-            return String(localized: "it adds words to a chapter the transcript heard no speech in, where they can't be kept. Remove them and save again, and the text shows.",
+            return String(localized: "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows.",
                           comment: "Reason after a colon: the user added words to a chapter of a transcript that has no speech; begins in lower case.")
         case .failed(let reason):
             return reason
@@ -312,7 +312,7 @@ enum BookTextEditWording {
     /// Why an edit could not be committed while the book's record could
     /// not take it.
     static var recordUnavailable: String {
-        String(localized: "the book's record can't be changed now. TextMouth tries again the next time you save or come back to TextMouth.",
+        String(localized: "the book's record can't be changed now. TextMouth tries again when you next save or return.",
                comment: "Reason after a colon: an edit could not be saved to the library now; begins in lower case.")
     }
 

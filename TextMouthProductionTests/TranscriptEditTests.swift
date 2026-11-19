@@ -394,7 +394,7 @@ final class TranscriptEditTests: XCTestCase {
             in: world
         )
 
-        XCTAssertTrue(heard.first?.contains("adds words to a chapter the transcript heard no speech in") == true, "\(heard)")
+        XCTAssertTrue(heard.first?.contains("adds words to a chapter with no speech") == true, "\(heard)")
         XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(transcript))
     }
 
@@ -403,12 +403,12 @@ final class TranscriptEditTests: XCTestCase {
         XCTAssertEqual(
             BookTextEditWording.refused(.headingChanged, bookTitle: "Harbour Pilots"),
             "Text not updated: the edited transcript of Harbour Pilots changes a chapter's heading, which comes from its audio. "
-                + "Put the heading back as it was and save again; until then, the book keeps the text it had."
+                + "Put it back and save again; the book keeps its old text until then."
         )
         XCTAssertEqual(
             BookTextEditWording.refused(.wordsWithoutSentences, bookTitle: "Harbour Pilots"),
-            "Text not updated: the edited transcript of Harbour Pilots adds words to a chapter the transcript heard no speech in, "
-                + "where they can't be kept. Remove them and save again; until then, the book keeps the text it had."
+            "Text not updated: the edited transcript of Harbour Pilots adds words to a chapter with no speech, "
+                + "where they can't be kept. Remove them and save again; the book keeps its old text until then."
         )
         XCTAssertTrue(BookTextEditRefusal.headingChanged.keepsEarlierText)
         XCTAssertTrue(BookTextEditRefusal.wordsWithoutSentences.keepsEarlierText)
