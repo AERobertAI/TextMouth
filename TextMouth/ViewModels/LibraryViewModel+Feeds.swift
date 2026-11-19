@@ -427,14 +427,14 @@ enum FeedFolderNaming {
     /// which turns "/" into "-"), cut to `maximumLength` characters at a
     /// word where it can be, or "Feed" for a title no folder name can hold.
     static func baseName(for title: String) -> String {
-        guard let normalized = BookFolder.normalizedName(title) else { return "Feed" }
+        guard let normalized = BookFolder.normalizedName(title) else { return "Feed" } // l10n: no (a folder name made on disk, stored as made)
         guard normalized.count > maximumLength else { return normalized }
         let cut = String(normalized.prefix(maximumLength))
         // Cut at the last space, unless that leaves too little of the title.
         if let space = cut.lastIndex(of: " "), cut.distance(from: cut.startIndex, to: space) >= maximumLength / 2 {
             return BookFolder.normalizedName(String(cut[..<space])) ?? cut
         }
-        return BookFolder.normalizedName(cut) ?? "Feed"
+        return BookFolder.normalizedName(cut) ?? "Feed" // l10n: no (a folder name made on disk, stored as made)
     }
 
     /// The names tried in turn for a folder called `base`: `base` itself,
@@ -444,7 +444,13 @@ enum FeedFolderNaming {
     }
 
     /// Why no folder was made when the folder chosen to hold it is gone.
-    static let parentMissingMessage = "The folder chosen to hold the feed's folder is no longer in the library. Choose another one."
+    static var parentMissingMessage: String {
+        String(localized: "The folder chosen to hold the feed's folder is no longer in the library. Choose another one.",
+               comment: "Why Subscribe could not make the feed's folder: the folder chosen to hold it was removed from the library.")
+    }
     /// Why no folder was made when no name could be used.
-    static let notMadeMessage = "TextMouth couldn't make a folder for this feed."
+    static var notMadeMessage: String {
+        String(localized: "TextMouth couldn't make a folder for this feed.",
+               comment: "Why Subscribe could not make the feed's folder, when no better reason is known.")
+    }
 }

@@ -279,9 +279,9 @@ extension LibraryViewModel {
         DiagnosticLog.event(
             .storage,
             "FEED_DOWNLOADS_RETURNED: \(feedID.uuidString.prefix(8)): "
-                + "\(CountWording.phrase(outcome.returned.count, singular: "download", plural: "downloads")) of a feed "
+                + "\(CountWording.phrase(outcome.returned.count, singular: "download", plural: "downloads")) of a feed " // l10n: no (debug log text, which stays English)
                 + "whose record is gone became books \(folderPath.isEmpty ? "at the library's top level" : "in its folder"); "
-                + "deleted \(CountWording.phrase(outcome.deletedKeptPackages, singular: "package", plural: "packages")) "
+                + "deleted \(CountWording.phrase(outcome.deletedKeptPackages, singular: "package", plural: "packages")) " // l10n: no (debug log text, which stays English)
                 + "kept for removed downloads"
                 + (outcome.stayed.isEmpty ? "" : "; \(outcome.stayed.count) stayed in the feed's folder")
         )
@@ -352,7 +352,7 @@ extension LibraryViewModel {
             DiagnosticLog.event(
                 .storage,
                 "FEED_DOWNLOADS_RETURN: \(feedID.uuidString.prefix(8)): the feed's folder stays, holding "
-                    + "\(CountWording.phrase(left.count, singular: "item", plural: "items")) no row named; "
+                    + "\(CountWording.phrase(left.count, singular: "item", plural: "items")) no row named; " // l10n: no (debug log text, which stays English)
                     + "the next launch reads it again"
             )
             return false
