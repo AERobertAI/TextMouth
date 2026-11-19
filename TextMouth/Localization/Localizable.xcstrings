@@ -7528,9 +7528,6 @@
         }
       }
     },
-    "Enhanced" : {
-      "comment" : "The quality of a speech voice, in the voice pickers and the names VoiceOver reads for them: the middle tier, which the listener downloads. The tiers are Standard, Enhanced, and Premium."
-    },
     "Enter" : {
       "comment" : "Name of the keypad's Enter key, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Enter\"."
     },
@@ -11524,8 +11521,8 @@
     "Number Sign" : {
       "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\"."
     },
-    "OCR could not run on %@ of %lld pages, so text that appears only in their images is missing: %@." : {
-      "comment" : "Warning after an import of a PDF where several pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, two or more, written with digit grouping; %2$lld is how many pages the PDF has; %3$@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.",
+    "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@." : {
+      "comment" : "Warning after an import of a PDF where some pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, one or more, written with digit grouping; %2$lld is how many pages the PDF has, two or more; %3$@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -11533,13 +11530,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "OCR could not run on %@ of %lld page, so text that appears only in their images is missing: %@."
+                  "value" : "OCR could not run on %@ of %lld page, so text found only in their images is missing: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "OCR could not run on %@ of %lld pages, so text that appears only in their images is missing: %@."
+                  "value" : "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
                 }
               }
             }
@@ -11547,30 +11544,7 @@
         }
       }
     },
-    "OCR could not run on 1 of %lld pages, so text that appears only in its images is missing: %@." : {
-      "comment" : "Warning after an import of a PDF where one page needed text recognition (OCR) where it could not run. %lld is how many pages the PDF has, two or more. %@ is the page and why, such as \"page 3 (text recognition is not available)\", the reason in English.",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "OCR could not run on 1 of %lld page, so text that appears only in its images is missing: %@."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "OCR could not run on 1 of %lld pages, so text that appears only in its images is missing: %@."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "OCR could not run on all %lld pages, so text that appears only in their images is missing: %@." : {
+    "OCR could not run on all %lld pages, so text found only in their images is missing: %@." : {
       "comment" : "Warning after an import of a PDF whose every page needed text recognition (OCR) where it could not run. %lld is how many pages the PDF has, two or more. %@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.",
       "localizations" : {
         "en" : {
@@ -11579,13 +11553,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "OCR could not run on all %lld page, so text that appears only in its images is missing: %@."
+                  "value" : "OCR could not run on all %lld page, so text found only in its images is missing: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "OCR could not run on all %lld pages, so text that appears only in their images is missing: %@."
+                  "value" : "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
                 }
               }
             }
@@ -11593,7 +11567,7 @@
         }
       }
     },
-    "OCR could not run on the PDF's only page, so text that appears only in its images is missing: %@." : {
+    "OCR could not run on the PDF's only page, so text found only in its images is missing: %@." : {
       "comment" : "Warning after an import of a PDF whose only page needed text recognition (OCR) where it could not run. %@ is the page and why, such as \"page 1 (text recognition is not available)\", the reason in English."
     },
     "OK" : {
@@ -11625,7 +11599,7 @@
     "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings." : {
       "comment" : "Part of the question asked about a duplicate where one copy is an audiobook played from a recording and the other is read aloud from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy."
     },
-    "One document in this file holds too much markup for TextMouth to read without running out of memory." : {
+    "One document in this file has too much markup for TextMouth to read in memory." : {
       "comment" : "First sentence of why a file was refused: one of its documents has so much markup that reading it would take too much memory."
     },
     "One tag in this file has more than %@ attributes, which TextMouth can't read safely." : {
@@ -12301,9 +12275,6 @@
     },
     "Post a notification for each feed with new episodes" : {
       "comment" : "Label of the switch that posts a notification for each feed with new items after a refresh."
-    },
-    "Premium" : {
-      "comment" : "The quality of a speech voice, in the voice pickers and the names VoiceOver reads for them: the best tier, which the listener downloads. The tiers are Standard, Enhanced, and Premium."
     },
     "Preparing %@ of %@…" : {
       "comment" : "Status line of the Search Library window while a search must prepare books' text, which takes longer. %1$@ is the number of books prepared so far, and %2$@ is the count of all the books with its noun, such as \"737 books\".",
@@ -14581,9 +14552,6 @@
     "Speex" : {
       "comment" : "The name of the Speex speech format. Inside sentences about importing a file of that format."
     },
-    "Standard" : {
-      "comment" : "The quality of a speech voice, in the voice pickers and the names VoiceOver reads for them: the basic tier that every Mac has. The tiers are Standard, Enhanced, and Premium."
-    },
     "Start New Library" : {
       "comment" : "Button of the question that confirms starting a new, empty library."
     },
@@ -15249,30 +15217,16 @@
         }
       }
     },
-    "TextMouth can't safely read the file “%@” in this DAISY book, because it defines entities of its own." : {
-      "comment" : "First sentence of why a file inside a DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book."
+    "TextMouth can't safely read the file “%@” in this book, because it defines entities of its own." : {
+      "comment" : "First sentence of why a file inside an EPUB or DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book."
     },
-    "TextMouth can't safely read the file “%@” in this DAISY book, because it is written in the %@ encoding." : {
-      "comment" : "First sentence of why a file inside a DAISY book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.",
+    "TextMouth can't safely read the file “%@” in this book, because it is written in the %@ encoding." : {
+      "comment" : "First sentence of why a file inside an EPUB or DAISY book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "TextMouth can't safely read the file “%1$@” in this DAISY book, because it is written in the %2$@ encoding."
-          }
-        }
-      }
-    },
-    "TextMouth can't safely read the file “%@” in this EPUB book, because it defines entities of its own." : {
-      "comment" : "First sentence of why a file inside an EPUB book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book."
-    },
-    "TextMouth can't safely read the file “%@” in this EPUB book, because it is written in the %@ encoding." : {
-      "comment" : "First sentence of why a file inside an EPUB book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "TextMouth can't safely read the file “%1$@” in this EPUB book, because it is written in the %2$@ encoding."
+            "value" : "TextMouth can't safely read the file “%1$@” in this book, because it is written in the %2$@ encoding."
           }
         }
       }
@@ -15908,13 +15862,13 @@
     "That's after the end of the audio, at %@." : {
       "comment" : "Said when a time typed into the audio editor's Go to Time lies past the end. %@ is the audio's length in words."
     },
-    "The %@ ends %@ into its file “%@”, which is only %@ long." : {
+    "The %@ ends %@ into “%@”, which is only %@ long." : {
       "comment" : "First sentence of why an audiobook could not be imported: a section ends after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it ends and %4$@ how long the file is, both spoken times; %3$@ is the file's name.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The %1$@ ends %2$@ into its file “%3$@”, which is only %4$@ long."
+            "value" : "The %1$@ ends %2$@ into “%3$@”, which is only %4$@ long."
           }
         }
       }
@@ -16066,24 +16020,24 @@
         }
       }
     },
-    "The %@ starts %@ into its file “%@”, before the %@, which comes earlier in the book and starts %@ in." : {
+    "The %@ starts %@ into “%@”, before the earlier %@, which starts %@ in." : {
       "comment" : "First sentence of why an audiobook could not be imported: a section starts before another section that comes earlier in the book and is in the same audio file. %1$@ and %4$@ are sections, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (masculine noun phrases in English, without their article); %2$@ and %5$@ are how far into the file each starts, spoken times; %3$@ is the file's name.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The %1$@ starts %2$@ into its file “%3$@”, before the %4$@, which comes earlier in the book and starts %5$@ in."
+            "value" : "The %1$@ starts %2$@ into “%3$@”, before the earlier %4$@, which starts %5$@ in."
           }
         }
       }
     },
-    "The %@ starts %@ into its file “%@”, which is only %@ long." : {
+    "The %@ starts %@ into “%@”, which is only %@ long." : {
       "comment" : "First sentence of why an audiobook could not be imported: a section starts after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it starts and %4$@ how long the file is, both spoken times; %3$@ is the file's name.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The %1$@ starts %2$@ into its file “%3$@”, which is only %4$@ long."
+            "value" : "The %1$@ starts %2$@ into “%3$@”, which is only %4$@ long."
           }
         }
       }
@@ -16810,41 +16764,19 @@
         }
       }
     },
-    "The file “%@” in this DAISY book is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
-      "comment" : "Why a DAISY book could not be imported: a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "The file “%1$@” in this DAISY book is damaged or incomplete: %2$@. Get a fresh copy of the book, then import it again."
-          }
-        }
-      }
-    },
-    "The file “%@” in this DAISY book refers to “%@”, which is outside the book's folder." : {
+    "The file “%@” in this DAISY book refers to “%@”, outside the book's folder." : {
       "comment" : "First sentence of why a DAISY book kept as loose files could not be imported: one of its files refers to a file outside the book's folder. %1$@ is the referring file's path inside the folder and %2$@ the reference, as the file writes it.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The file “%1$@” in this DAISY book refers to “%2$@”, which is outside the book's folder."
-          }
-        }
-      }
-    },
-    "The file “%@” in this EPUB book is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
-      "comment" : "Why an EPUB book could not be imported: a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "The file “%1$@” in this EPUB book is damaged or incomplete: %2$@. Get a fresh copy of the book, then import it again."
+            "value" : "The file “%1$@” in this DAISY book refers to “%2$@”, outside the book's folder."
           }
         }
       }
     },
     "The file “%@” in this archive is damaged or incomplete: %@. Get a fresh copy of the archive, then import it again." : {
-      "comment" : "Why a ZIP archive could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
+      "comment" : "Why a ZIP archive or comic book archive (a ZIP of pictures named .cbz) could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -16854,24 +16786,13 @@
         }
       }
     },
-    "The file “%@” in this audiobook is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
-      "comment" : "Why an audiobook could not be imported: one of its audio files is damaged. %1$@ is the audio file's name and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
+    "The file “%@” in this book is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
+      "comment" : "Why a book could not be imported (a DAISY book, an EPUB book, or an audiobook): a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The file “%1$@” in this audiobook is damaged or incomplete: %2$@. Get a fresh copy of the book, then import it again."
-          }
-        }
-      }
-    },
-    "The file “%@” in this comic book archive is damaged or incomplete: %@. Get a fresh copy of the archive, then import it again." : {
-      "comment" : "Why a comic book archive (a ZIP of pictures named .cbz) could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "The file “%1$@” in this comic book archive is damaged or incomplete: %2$@. Get a fresh copy of the archive, then import it again."
+            "value" : "The file “%1$@” in this book is damaged or incomplete: %2$@. Get a fresh copy of the book, then import it again."
           }
         }
       }
@@ -16887,13 +16808,13 @@
         }
       }
     },
-    "The file “%@” is damaged or incomplete: it begins with a %@ byte-order mark, but the rest of it is not valid %@ text." : {
+    "The file “%@” is damaged or incomplete: it begins with a %@ byte-order mark, but the rest is not valid %@ text." : {
       "comment" : "First sentence of why a file could not be imported: it begins with the byte-order mark of a Unicode encoding, but the bytes after it are not valid in that encoding. %1$@ is the file's name; %2$@ and %3$@ are both the encoding's standard name, such as UTF-16LE, which stays as it is.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The file “%1$@” is damaged or incomplete: it begins with a %2$@ byte-order mark, but the rest of it is not valid %3$@ text."
+            "value" : "The file “%1$@” is damaged or incomplete: it begins with a %2$@ byte-order mark, but the rest is not valid %3$@ text."
           }
         }
       }
@@ -17948,7 +17869,7 @@
     "This Feed's Settings" : {
       "comment" : "Heading of the group of settings a feed can have of its own, in Feed Info. Title case."
     },
-    "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it." : {
+    "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it." : {
       "comment" : "Why a Kindle (KFX) book could not be imported: its pages are fixed layouts or pictures, as in a comic or a print replica, with no text that flows."
     },
     "This Kindle book is compressed in a way TextMouth can't read yet." : {
@@ -17957,10 +17878,10 @@
     "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." : {
       "comment" : "Why a Kindle (MOBI) book could not be imported: it is encrypted or carries copy protection (DRM), which TextMouth never removes."
     },
-    "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again." : {
+    "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again." : {
       "comment" : "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do."
     },
-    "This Kindle book is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
+    "This Kindle book is damaged or incomplete: %@. Get a fresh copy, then import it again." : {
       "comment" : "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop."
     },
     "This Mac can't run the speech model that transcription uses." : {
@@ -18187,11 +18108,11 @@
     "This file needs a password, which TextMouth can't send yet." : {
       "comment" : "Why a feed item's download failed: the server asks for a password."
     },
-    "This file's markup is built in a way that would take TextMouth far too long to read." : {
-      "comment" : "First sentence of why a file was refused: its markup is built so that reading it would take far too long."
-    },
     "This file's markup nests more than %@ levels deep, which TextMouth can't read safely." : {
       "comment" : "First sentence of why a file was refused: its markup has elements inside elements more levels deep than TextMouth reads. %@ is the most levels, a number."
+    },
+    "This file's markup would take TextMouth far too long to read." : {
+      "comment" : "First sentence of why a file was refused: its markup is built so that reading it would take far too long."
     },
     "This folder has no stored name, so it cannot be changed safely." : {
       "comment" : "Error shown when a folder edit is refused because the folder has no name on record."
@@ -18871,7 +18792,7 @@
       "comment" : "Hint of the audio editor's Undo button."
     },
     "Unknown" : {
-      "comment" : "Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information.\nThe quality of a speech voice that macOS reports as a tier TextMouth does not know, in the voice pickers."
+      "comment" : "Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information."
     },
     "Unknown Length" : {
       "comment" : "A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's \"Cut Unknown Length\"."
