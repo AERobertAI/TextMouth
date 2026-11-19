@@ -4,13 +4,16 @@
 # Each conversion wave adds its own lines here. Git merges this file by union (.gitattributes: merge=union), so two
 # waves that add lines never conflict; keep the file sorted when you add yours. The last wave adds "TextMouth/**".
 TextMouth/Models/Book.swift
+TextMouth/Models/CountWording.swift
 TextMouth/Models/DocumentContent.swift
 TextMouth/Models/EndOfBookWording.swift
 TextMouth/Models/NextBookWindow.swift
 TextMouth/Models/ReadingList.swift
 TextMouth/Models/ReadingListReaderWording.swift
 TextMouth/Models/ReadingListWording.swift
+TextMouth/Models/SentenceWording.swift
 TextMouth/Models/SleepTimerHandOverWording.swift
+TextMouth/Phone/PhoneAppWording.swift
 TextMouth/Phone/PhoneBookmarksModel.swift
 TextMouth/Phone/PhoneSleepDeadline.swift
 TextMouth/Phone/PhoneSleepTimerModel.swift
@@ -23,6 +26,3 @@ TextMouth/ViewModels/ReaderViewModel+Playback.swift
 TextMouth/ViewModels/ReaderViewModel+ReadingList.swift
 TextMouth/Views/Reader/BookmarkPanelView.swift
 TextMouth/Views/Reader/SleepTimerView.swift
-TextMouth/Models/CountWording.swift
-TextMouth/Models/SentenceWording.swift
-TextMouth/Phone/PhoneAppWording.swift
