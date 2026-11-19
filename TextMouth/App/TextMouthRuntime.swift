@@ -337,8 +337,9 @@ struct TextMouthRuntime: @unchecked Sendable {
     func finishWithSandbox() {
         guard isHostedTest, Self.sandboxProcess(named: homeDirectory.lastPathComponent) != nil else { return }
         if keepsSandbox {
-            let note = "This test sandbox was kept because \(Self.keepSandboxVariable) was 1. "
-                + "Later test runs leave it alone; delete this folder when you are done with it.\n"
+            // A note for the developer, not interface text: a file in a test sandbox.
+            let note = "This test sandbox was kept because \(Self.keepSandboxVariable) was 1. " // l10n: no (developer note written into a test sandbox)
+                + "Later test runs leave it alone; delete this folder when you are done with it.\n" // l10n: no (developer note written into a test sandbox)
             try? note.write(to: homeDirectory.appendingPathComponent(Self.keptSandboxMarker), atomically: true, encoding: .utf8)
         } else {
             try? FileManager.default.removeItem(at: homeDirectory)

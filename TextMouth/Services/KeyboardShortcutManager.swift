@@ -337,7 +337,7 @@ final class KeyboardShortcutManager: ObservableObject {
         ShortcutEdits.log(moved.sharedKeys, source: storeLogSource, field: editsPreference.key)
         let sources = [
             savedMap.map { "\(savedMapKey) (\($0.edits.keysByEditedAction.count) actions)" },
-            fileLists.map { "config.json (\($0.count) actions)" },
+            fileLists.map { "config.json (\($0.count) actions)" }, // l10n: no (log text)
         ].compactMap { $0 }
         let edited = moved.edits.editedActions.map(\.rawValue)
         DiagnosticLog.event(
@@ -433,7 +433,7 @@ final class KeyboardShortcutManager: ObservableObject {
 
     /// Display string for the primary binding of an action
     func primaryDisplayString(for action: ShortcutAction) -> String {
-        bindings[action]?.first?.displayString ?? "None"
+        bindings[action]?.first?.displayString ?? ShortcutAction.noneName
     }
 
     /// An action's keys in force in words, as VoiceOver and a braille

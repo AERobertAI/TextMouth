@@ -140,7 +140,7 @@ final class ShortcutManagerTests: XCTestCase {
 
         XCTAssertEqual(manager.edits, ShortcutEdits())
         XCTAssertEqual(spoken, [ShortcutsSettingsWording.resetDone])
-        XCTAssertEqual(ShortcutsSettingsWording.resetDone, "The keyboard shortcuts are reset to the defaults.")
+        XCTAssertEqual(ShortcutsSettingsWording.resetDone, "Shortcuts reset to defaults.")
     }
 
     // MARK: - Following the Store

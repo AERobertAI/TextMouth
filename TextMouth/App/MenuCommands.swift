@@ -1,5 +1,50 @@
 import SwiftUI
 
+// MARK: - Menu Titles
+
+/// The titles of the menu bar's own menus, in the interface language. Each
+/// `CommandMenu` shows its title as a String, so the menu bar reads what this
+/// says. `MenuVisibilityManager` hides a menu by its title, matching the key
+/// below (the English text), the text in the app's bundle, and the text in a
+/// locale (`titles(for:locale:)`), so each key here is listed in its
+/// `readerMenuKeys` or `libraryMenuKeys`; a test checks they agree.
+enum MenuWording {
+    /// The Edit menu's Find submenu, which holds Search Library.
+    static var find: String {
+        String(localized: "Find", comment: "Title of the Find submenu of the Edit menu, which holds the command that searches the whole library.")
+    }
+
+    /// The Playback menu, which only reader windows show.
+    static var playback: String {
+        String(localized: "Playback", comment: "Title of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it.")
+    }
+
+    /// The Navigate menu, which only reader windows show.
+    static var navigate: String {
+        String(localized: "Navigate", comment: "Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it.")
+    }
+
+    /// The Library menu, which only Library windows show.
+    static var library: String {
+        String(localized: "Library", comment: "Title of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.")
+    }
+
+    /// The Bookmarks menu, which only reader windows show.
+    static var bookmarks: String {
+        String(localized: "Bookmarks", comment: "Title of the Bookmarks menu in the menu bar, which holds the commands that add and move between a book's bookmarks. Only a reader window shows it.")
+    }
+
+    /// The Book menu, which only reader windows show.
+    static var book: String {
+        String(localized: "Book", comment: "Title of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it.")
+    }
+
+    /// The Library menu's Move to Folder command, which asks for the folder.
+    static var moveToFolder: String {
+        String(localized: "Move to Folder...", comment: "Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows.")
+    }
+}
+
 // MARK: - Window Type Tracking
 
 /// Identifies which type of window currently has focus. The AppKit-backed
@@ -185,7 +230,7 @@ struct EditCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .textEditing) {
-            Menu("Find") {
+            Menu(MenuWording.find) {
                 // The window listens for this name once a Library window has
                 // appeared (`LibrarySearchWindowController.attach`).
                 Button(ShortcutAction.searchLibrary.title) {
@@ -212,46 +257,46 @@ struct PlaybackCommands: Commands {
     }
 
     var body: some Commands {
-        CommandMenu("Playback") {
-            Button("Play / Pause") {
+        CommandMenu(MenuWording.playback) {
+            Button(ShortcutAction.togglePlayback.title) {
                 NotificationCenter.default.post(name: .togglePlayback, object: nil)
             }
 
             Divider()
 
-            Button("Skip Forward") {
+            Button(ShortcutAction.skipForward.title) {
                 NotificationCenter.default.post(name: .skipForward, object: nil)
             }
 
-            Button("Skip Backward") {
+            Button(ShortcutAction.skipBackward.title) {
                 NotificationCenter.default.post(name: .skipBackward, object: nil)
             }
 
             Divider()
 
-            Button("Cycle Forward Navigation Unit") {
+            Button(ShortcutAction.cycleForwardNavigationUnit.title) {
                 NotificationCenter.default.post(name: .cycleForwardNavigationUnit, object: nil)
             }
             // Customizable shortcuts are handled by KeyboardShortcutManager.
             // A SwiftUI keyboardShortcut here would post an untargeted duplicate.
 
-            Button("Cycle Backward Navigation Unit") {
+            Button(ShortcutAction.cycleBackwardNavigationUnit.title) {
                 NotificationCenter.default.post(name: .cycleBackwardNavigationUnit, object: nil)
             }
 
             Divider()
 
-            Button("Increase Speed") {
+            Button(ShortcutAction.increaseSpeed.title) {
                 NotificationCenter.default.post(name: .increaseSpeed, object: nil)
             }
 
-            Button("Decrease Speed") {
+            Button(ShortcutAction.decreaseSpeed.title) {
                 NotificationCenter.default.post(name: .decreaseSpeed, object: nil)
             }
 
             Divider()
 
-            Button("Where Am I?") {
+            Button(ShortcutAction.whereAmI.title) {
                 NotificationCenter.default.post(name: .whereAmI, object: nil)
             }
 
@@ -265,7 +310,7 @@ struct PlaybackCommands: Commands {
             if canReleaseMediaControls == true {
                 Divider()
 
-                Button("Release Media Controls") {
+                Button(ShortcutAction.releaseMediaControls.title) {
                     NotificationCenter.default.post(name: .releaseMediaControls, object: nil)
                 }
             }
@@ -296,26 +341,26 @@ struct NavigationCommands: Commands {
     @FocusedValue(\.isReaderWindow) var isReaderWindow
 
     var body: some Commands {
-        CommandMenu("Navigate") {
-            Button("Go to Library") {
+        CommandMenu(MenuWording.navigate) {
+            Button(ShortcutAction.goToLibrary.title) {
                 NotificationCenter.default.post(name: .goToLibrary, object: nil)
             }
 
-            Button("Go Back") {
+            Button(ShortcutAction.goBack.title) {
                 NotificationCenter.default.post(name: .goBack, object: nil)
             }
 
-            Button("Go Forward") {
+            Button(ShortcutAction.goForward.title) {
                 NotificationCenter.default.post(name: .goForward, object: nil)
             }
 
             Divider()
 
-            Button("Next Heading") {
+            Button(ShortcutAction.nextHeading.title) {
                 NotificationCenter.default.post(name: .nextHeading, object: nil)
             }
 
-            Button("Previous Heading") {
+            Button(ShortcutAction.previousHeading.title) {
                 NotificationCenter.default.post(name: .previousHeading, object: nil)
             }
 
@@ -359,17 +404,17 @@ struct NavigationCommands: Commands {
 
             Divider()
 
-            Button("Show Headings") {
+            Button(ShortcutAction.showHeadingList.title) {
                 NotificationCenter.default.post(name: .showHeadingList, object: nil)
             }
 
-            Button("Show Sleep Timer") {
+            Button(ShortcutAction.showSleepTimer.title) {
                 NotificationCenter.default.post(name: .showSleepTimer, object: nil)
             }
 
             Divider()
 
-            Button("Book Info") {
+            Button(ShortcutAction.showBookInfo.title) {
                 NotificationCenter.default.post(name: .showBookInfo, object: nil)
             }
             // Cmd+I is handled by KeyboardShortcutManager which includes window focus
@@ -409,7 +454,7 @@ struct LibraryCommands: Commands {
     }
 
     var body: some Commands {
-        CommandMenu("Library") {
+        CommandMenu(MenuWording.library) {
             // Chooses DAISY books kept as loose files by their folders, in a
             // folder-only panel the Library window presents (TODO I02). The
             // Open Book… panel stays file-only, so Return on a folder there
@@ -490,19 +535,19 @@ struct LibraryCommands: Commands {
 
             Divider()
 
-            Button("Edit Mode") {
+            Button(ShortcutAction.toggleEditMode.title) {
                 NotificationCenter.default.post(name: .toggleEditMode, object: nil)
             }
             // Cmd+E handled by KeyboardShortcutManager for window targeting
 
             Divider()
 
-            Button("New Folder") {
+            Button(ShortcutAction.newFolder.title) {
                 NotificationCenter.default.post(name: .newFolder, object: nil)
             }
             // Cmd+Shift+N handled by KeyboardShortcutManager for window targeting
 
-            Button("Move to Folder...") {
+            Button(MenuWording.moveToFolder) {
                 NotificationCenter.default.post(name: .moveToFolder, object: nil)
             }
             // Cmd+Shift+M handled by KeyboardShortcutManager for window targeting
@@ -512,13 +557,13 @@ struct LibraryCommands: Commands {
             // Only a Library window takes these two, and says what it did or
             // why it could not, so they are dimmed in any other window,
             // where nothing would answer.
-            Button("Move Book Up") {
+            Button(ShortcutAction.moveBookUp.title) {
                 NotificationCenter.default.post(name: .moveBookUp, object: nil)
             }
             .disabled(!libraryWindowCanTakeCommands)
             // Cmd+Shift+Up handled by KeyboardShortcutManager
 
-            Button("Move Book Down") {
+            Button(ShortcutAction.moveBookDown.title) {
                 NotificationCenter.default.post(name: .moveBookDown, object: nil)
             }
             .disabled(!libraryWindowCanTakeCommands)
@@ -608,22 +653,22 @@ struct LibraryCommands: Commands {
 /// the Shortcuts tab cannot drift apart again (#1937).
 struct BookmarkCommands: Commands {
     var body: some Commands {
-        CommandMenu("Bookmarks") {
-            Button(ShortcutAction.addBookmark.rawValue) {
+        CommandMenu(MenuWording.bookmarks) {
+            Button(ShortcutAction.addBookmark.title) {
                 NotificationCenter.default.post(name: .addBookmark, object: nil)
             }
 
-            Button(ShortcutAction.showBookmarkList.rawValue) {
+            Button(ShortcutAction.showBookmarkList.title) {
                 NotificationCenter.default.post(name: .showBookmarkList, object: nil)
             }
 
             Divider()
 
-            Button(ShortcutAction.nextBookmark.rawValue) {
+            Button(ShortcutAction.nextBookmark.title) {
                 NotificationCenter.default.post(name: .nextBookmark, object: nil)
             }
 
-            Button(ShortcutAction.previousBookmark.rawValue) {
+            Button(ShortcutAction.previousBookmark.title) {
                 NotificationCenter.default.post(name: .previousBookmark, object: nil)
             }
         }
@@ -740,7 +785,7 @@ struct BookCommands: Commands {
             }
         }
 
-        CommandMenu("Book") {
+        CommandMenu(MenuWording.book) {
             Button(BookTextEditWording.editTitle) {
                 NotificationCenter.default.post(name: .editBookText, object: nil)
             }

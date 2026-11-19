@@ -53,7 +53,7 @@ struct TextMouthApp: App {
 
         // Book reader windows — opened programmatically via openWindow(id:value:)
         // Restoration disabled so old reader windows don't reopen on launch.
-        WindowGroup("Book Reader", id: BookReaderWindowView.windowID, for: UUID.self) { $bookID in
+        WindowGroup(SceneWording.bookReaderTitle, id: BookReaderWindowView.windowID, for: UUID.self) { $bookID in
             // Each window keeps its own sleep timer above the book it shows,
             // so the timer stays with the window when listening goes on to
             // another book in it (0.2.5, November 13, 2026).
@@ -80,5 +80,14 @@ struct TextMouthApp: App {
                 .environmentObject(shortcutManager)
                 .environmentObject(soundEffectService)
         }
+    }
+}
+
+/// The titles of the app's scenes, in the interface language.
+enum SceneWording {
+    /// The title of a book reader's window group, before the window names its
+    /// own book.
+    static var bookReaderTitle: String {
+        String(localized: "Book Reader", comment: "Title of a window in which a book is read, before the window shows its own book's title. Also the name of the window group.")
     }
 }

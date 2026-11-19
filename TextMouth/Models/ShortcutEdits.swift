@@ -492,9 +492,9 @@ extension ShortcutEdits {
         var reason: String {
             switch self {
             case .cannotWorkIn(let scope):
-                return "works in \(scope.inSentence), which it cannot"
+                return "works in \(scope.configInSentence), which it cannot" // l10n: no (repair-log text: the debug log stays English)
             case .refused(let refusal):
-                return "\"\(refusal.key.configText)\" cannot be its shortcut: \(refusal.reason)"
+                return "\"\(refusal.key.configText)\" cannot be its shortcut: \(refusal.logReason)" // l10n: no (repair-log text: the debug log stays English)
             }
         }
     }
@@ -568,7 +568,7 @@ extension ShortcutEdits {
     /// it lists, with its keys.
     static func reading(_ data: Data) -> StoredReading {
         guard let entries = try? JSONDecoder().decode([String: LenientStoredKeys].self, from: data) else {
-            let unreadable = SkippedEntry(name: nil, reason: "could not be read as keyboard shortcuts; using none")
+            let unreadable = SkippedEntry(name: nil, reason: "could not be read as keyboard shortcuts; using none") // l10n: no (repair-log text: the debug log stays English)
             return StoredReading(edits: ShortcutEdits(), skipped: [unreadable])
         }
         var keys: [ShortcutAction: [KeyBinding]] = [:]
@@ -579,11 +579,11 @@ extension ShortcutEdits {
         for (name, entry) in entries.sortedStably(by: { $0.key < $1.key }) {
             // A record written under an action's former name still names it.
             guard let action = ShortcutAction.exactlyNamed(name) else {
-                skipped.append(SkippedEntry(name: name, reason: "names nothing TextMouth knows; leaving it out"))
+                skipped.append(SkippedEntry(name: name, reason: "names nothing TextMouth knows; leaving it out")) // l10n: no (repair-log text: the debug log stays English)
                 continue
             }
             guard let actionKeys = entry.keys else {
-                skipped.append(SkippedEntry(name: name, reason: "could not be read as a list of shortcuts; leaving it out"))
+                skipped.append(SkippedEntry(name: name, reason: "could not be read as a list of shortcuts; leaving it out")) // l10n: no (repair-log text: the debug log stays English)
                 continue
             }
             keys[action] = actionKeys
@@ -591,7 +591,7 @@ extension ShortcutEdits {
                 guard let scope = ShortcutScope(rawValue: scopeName), action.availableScopes.contains(scope) else {
                     skipped.append(SkippedEntry(
                         name: name,
-                        reason: "works in \"\(scopeName)\", which it cannot; working where it does by default"
+                        reason: "works in \"\(scopeName)\", which it cannot; working where it does by default" // l10n: no (repair-log text: the debug log stays English)
                     ))
                     continue
                 }

@@ -35,7 +35,7 @@ struct BuildIdentity: Equatable {
     /// ("unknown"), so those caches also key on what the build's parser
     /// reads, where they need it.
     var cacheProducer: String {
-        "app \(version) build \(buildNumber) commit \(gitCommit) built \(buildDate)"
+        "app \(version) build \(buildNumber) commit \(gitCommit) built \(buildDate)" // l10n: no (cache key written to disk, never shown)
     }
 
     /// A single searchable line keeps support log collection screen-reader

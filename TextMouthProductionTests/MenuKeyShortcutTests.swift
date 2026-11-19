@@ -679,8 +679,7 @@ final class MenuKeyShortcutTests: XCTestCase {
         )
         XCTAssertEqual(
             ShortcutsSettingsWording.refused(.editsText(commandLeft), for: .recordingStop),
-            "Command + Left Arrow not recorded for New Recording: Stop: a text field edits with it, "
-                + "and a menu command's shortcut would take it from the field."
+            "Command + Left Arrow not recorded for New Recording: Stop: text fields use it for editing."
         )
         XCTAssertEqual(
             ShortcutsSettingsWording.refused(.secondKeyEquivalent(controlG), for: .openBook),
@@ -796,7 +795,7 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertNil(ShortcutAction.togglePlayback.refusal(of: KeyBinding(key: "q", command: true, shift: true)), "Shift-Command-Q is no command of TextMouth's menus")
         XCTAssertEqual(
             ShortcutsSettingsWording.refused(.systemCommand(commandQ, command: "Quit TextMouth"), for: .togglePlayback),
-            "Command + Q not recorded for Play / Pause: Quit TextMouth has it in the menus, and no shortcut may take it."
+            "Command + Q not recorded for Play / Pause: Quit TextMouth uses it in the menus."
         )
         // No default key is checked here: refusal(of:) never refuses an
         // action's own default, so KeyboardReachabilityTests checks them

@@ -1,10 +1,6 @@
 {
   "version": 1,
   "files": {
-    "TextMouth/App/BuildIdentity.swift": 1,
-    "TextMouth/App/QuitFinisher.swift": 4,
-    "TextMouth/App/TextMouthRuntime.swift": 2,
-    "TextMouth/App/UnsavedChangesTermination.swift": 7,
     "TextMouth/Models/AddToLibraryWording.swift": 9,
     "TextMouth/Models/AudioBuiltInFilter.swift": 8,
     "TextMouth/Models/AudioEditList.swift": 2,
@@ -34,7 +30,6 @@
     "TextMouth/Models/ImportProgressWording.swift": 49,
     "TextMouth/Models/InProcessEngineWording.swift": 3,
     "TextMouth/Models/JSONValue.swift": 2,
-    "TextMouth/Models/KeyboardShortcut.swift": 227,
     "TextMouth/Models/LenientFields.swift": 1,
     "TextMouth/Models/LibraryCloudWording.swift": 69,
     "TextMouth/Models/LibraryComparisonWording.swift": 101,
@@ -56,7 +51,6 @@
     "TextMouth/Models/RefusedFormatAdvice.swift": 10,
     "TextMouth/Models/RemovalWording.swift": 102,
     "TextMouth/Models/RemovedFromLibraryMarker.swift": 1,
-    "TextMouth/Models/ShortcutEdits.swift": 6,
     "TextMouth/Models/SpeechExportWording.swift": 41,
     "TextMouth/Models/SpeechRefusalReport.swift": 47,
     "TextMouth/Models/TimeEntry.swift": 3,
@@ -211,7 +205,6 @@
     "TextMouth/Services/ImportAudioConverter.swift": 12,
     "TextMouth/Services/ImportFailure.swift": 17,
     "TextMouth/Services/KeptBooks.swift": 2,
-    "TextMouth/Services/KeyboardShortcutManager.swift": 2,
     "TextMouth/Services/LegacyBookMigration.swift": 22,
     "TextMouth/Services/LibraryCopyReader.swift": 4,
     "TextMouth/Services/LibraryLoadResult.swift": 16,
@@ -302,7 +295,6 @@
     "TextMouth/Views/Settings/AudioEditingSettingsSection.swift": 28,
     "TextMouth/Views/Settings/AudioFilterPresetsView.swift": 32,
     "TextMouth/Views/Settings/BrailleSettingsView.swift": 22,
-    "TextMouth/Views/Settings/KeyboardShortcutsSettingsView.swift": 39,
     "TextMouth/Views/Settings/RepeatedSymbolsSettingsView.swift": 24,
     "TextMouth/Views/Settings/SoundEffectsSettingsView.swift": 14,
     "TextMouth/Views/Settings/StorageSettingsView.swift": 29
