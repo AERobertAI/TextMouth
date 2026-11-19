@@ -8,7 +8,7 @@ import UIKit
 enum ReaderOggWording {
     /// What Play says while the book's audio is being converted.
     static var beingConverted: String {
-        String(localized: "This book's audio is being converted from Ogg to AAC. It plays once the conversion ends.",
+        String(localized: "This book's audio is being converted from Ogg to AAC. It plays when that ends.",
                comment: "What Play says while the book's Ogg audio is being converted to AAC.")
     }
     /// What Play says for a book whose conversion failed at this launch: it
@@ -20,7 +20,7 @@ enum ReaderOggWording {
     /// What Play says for a book found still in Ogg, whose conversion it
     /// starts.
     static var needsConverting: String {
-        String(localized: "This book's audio needs converting from Ogg to AAC before it plays. TextMouth is converting it now, and it plays once the conversion ends.",
+        String(localized: "This book's audio needs converting from Ogg to AAC. TextMouth is converting it now, and it plays when that ends.",
                comment: "What Play says for a book found still in Ogg, whose conversion TextMouth starts.")
     }
 }

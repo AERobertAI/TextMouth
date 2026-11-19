@@ -106,7 +106,7 @@ enum PageImageWording {
     /// this kind of picture (DNG image). Save it as a PNG or JPEG picture,
     /// then import that copy."
     static func unreadableKind(_ kind: String) -> String {
-        String(localized: "TextMouth can't read this kind of picture (\(kind)). Save it as a PNG or JPEG picture, then import that copy.",
+        String(localized: "TextMouth can't read this kind of picture (\(kind)). Save it as a PNG or JPEG, then import that copy.",
                comment: "Why a picture was refused at import: a kind of picture the system knows but TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\".")
     }
 
@@ -121,7 +121,7 @@ enum PageImageWording {
     /// picture is 30,000 by 30,000 pixels, larger than the 100 megapixels
     /// TextMouth reads in one picture."
     static func tooLarge(width: Int, height: Int) -> String {
-        String(localized: "This picture is \(dimensions(width: width, height: height)), larger than the \(maximumMegapixels) megapixels TextMouth reads in one picture.",
+        String(localized: "This picture is \(dimensions(width: width, height: height)), larger than the \(maximumMegapixels) megapixels TextMouth reads.",
                comment: "Why a picture was refused at import: it says it holds more pixels than TextMouth decodes. %1$@ is its size, such as \"30,000 by 30,000 pixels\", and %2$lld the limit in megapixels.")
     }
 
@@ -135,7 +135,7 @@ enum PageImageWording {
     /// A TIFF of more pages than TextMouth reads, by its count: "This picture
     /// holds 3,000 pages, more than the 2,000 TextMouth reads in one book."
     static func tooManyPages(_ count: Int) -> String {
-        String(localized: "This picture holds \(count) pages, more than the \(ArchiveFigures.count(maximumPages)) TextMouth reads in one book.",
+        String(localized: "This picture holds \(count) pages, more than the \(ArchiveFigures.count(maximumPages)) TextMouth reads.",
                comment: "Why a picture of many pages, such as a TIFF, was refused at import. %1$lld is the number of pages it holds and %2$@ the limit, already formatted.")
     }
 
@@ -144,7 +144,7 @@ enum PageImageWording {
     /// comic book archive holds more than the 2,000 pictures TextMouth reads
     /// in one book."
     static var tooManyPictures: String {
-        String(localized: "This comic book archive holds more than the \(ArchiveFigures.count(maximumPages)) pictures TextMouth reads in one book.",
+        String(localized: "This comic book archive holds more than the \(ArchiveFigures.count(maximumPages)) pictures TextMouth reads.",
                comment: "Why a comic book archive was refused at import: it holds more pictures than TextMouth reads. %@ is the limit, already formatted.")
     }
 

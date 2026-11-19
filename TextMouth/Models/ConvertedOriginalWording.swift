@@ -12,13 +12,13 @@ enum ConvertedOriginalWording {
 
     /// The toggle's accessibility hint.
     static var hint: String {
-        String(localized: "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package.",
+        String(localized: "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package.",
                comment: "VoiceOver hint of the switch that keeps the originals of converted audio.")
     }
 
     /// The caption while the setting is on.
     static var keepingCaption: String {
-        String(localized: "When TextMouth converts audio at import, it keeps the original file too. An original takes about as much disk space as its converted file, or about twice as much when it is uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+        String(localized: "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
                comment: "Caption under the Keep Originals switch while it is on. \"Original file\" names the choice Export offers; keep it the same as that choice's translation.")
     }
 

@@ -41,7 +41,7 @@ enum PlaylistImportWording {
 
     /// The refusal of an HLS stream.
     static var streaming: String {
-        String(localized: "It is a streaming playlist for audio on the web, which TextMouth does not import.",
+        String(localized: "It is a streaming playlist for web audio, which TextMouth does not import.",
                comment: "Refusal of a playlist that is an HLS stream, a list of pieces of one broadcast on the web. \"It\" is the playlist. Follows the sentence naming the file.")
     }
 

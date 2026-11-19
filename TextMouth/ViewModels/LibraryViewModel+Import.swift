@@ -236,7 +236,7 @@ extension LibraryViewModel {
         let panel = NSOpenPanel()
         panel.title = String(localized: "Import Folder",
                              comment: "Title of the panel that chooses folders to import. Title case.")
-        panel.message = String(localized: "Choose each folder to import: a DAISY book's folder, which holds its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook.",
+        panel.message = String(localized: "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook.",
                                comment: "Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book.")
         panel.prompt = String(localized: "Import",
                               comment: "Title of the button of the Import Folder panel that imports the chosen folders.")

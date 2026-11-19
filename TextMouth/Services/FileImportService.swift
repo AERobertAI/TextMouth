@@ -76,7 +76,7 @@ enum FileImportError: LocalizedError, LogDescribing {
             return String(localized: "This file has no text to read.",
                           comment: "Why a text, Markdown, or HTML file was refused at import: it is empty or holds only white space or markup.")
         case .unsupportedXML:
-            return String(localized: "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads.",
+            return String(localized: "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
                           comment: "Why an XML file was refused at import: its root element is not one of the three kinds TextMouth reads. DTBook, Word 2003 XML, and PEF are format names.")
         }
     }

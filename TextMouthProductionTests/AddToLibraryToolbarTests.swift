@@ -222,7 +222,7 @@ final class AddToLibraryToolbarTests: XCTestCase {
         XCTAssertEqual(AddToLibraryWording.buttonLabel, "Add to Library")
         XCTAssertEqual(
             AddToLibraryWording.buttonHint,
-            "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed"
+            "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed"
         )
     }
 

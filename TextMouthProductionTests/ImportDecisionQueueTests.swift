@@ -229,7 +229,7 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual(batchWording.title, "Create Folder for Imported Books? 3 of 3")
         XCTAssertEqual(
             batchWording.message,
-            "2 books were imported from “Chart Shelf.zip”. Would you like to create a new folder to hold them?"
+            "2 books were imported from “Chart Shelf.zip”. Create a new folder to hold them?"
         )
     }
 
@@ -322,9 +322,9 @@ final class ImportDecisionQueueTests: XCTestCase {
             kind: .duplicate(.init(book: text, existing: audio, originalURL: nil, warning: nil)),
             request: ImportRequest()
         )
-        let acrossKinds = "One copy is played from its recording and the other is read aloud from its text, "
+        let acrossKinds = "One copy is played from a recording and the other is read aloud from text, "
             + "so replacing keeps only the existing copy's folder and place on the reading list, "
-            + "not its reading position, its bookmarks and their notes, or its settings."
+            + "not its reading position, bookmarks and their notes, or settings."
 
         for question in [audioForText, textForAudio] {
             XCTAssertTrue(
@@ -403,8 +403,8 @@ final class ImportDecisionQueueTests: XCTestCase {
     /// What Replace Existing keeps of a text book, and what it does not.
     private static let textKeptWords =
         "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text "
-        + "wherever those are found, and its settings, folder, and place on the reading list. "
-        + "An edit of its text is kept beside the new text as a copy, not applied to it."
+        + "where found, and its settings, folder, and place on the reading list. "
+        + "An edit of its text is kept as a copy beside the new text, not applied."
 
     /// What Replace Existing keeps of an audiobook, and what it does not.
     private static let audioKeptWords =

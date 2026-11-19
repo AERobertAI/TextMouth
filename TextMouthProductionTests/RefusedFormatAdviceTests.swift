@@ -13,7 +13,7 @@ final class RefusedFormatAdviceTests: XCTestCase {
             ("pages", "Export Pages documents from Pages as Word documents or EPUB books, then import those."),
             ("key", "Export Keynote presentations from Keynote as PDF files, then import those."),
             ("numbers", "Export Numbers spreadsheets from Numbers as PDF files, then import those."),
-            ("wpd", "Save WordPerfect documents as Word documents or HTML files in a program that reads them, such as LibreOffice, then import those."),
+            ("wpd", "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those."),
             ("chm", "Convert Compiled HTML Help files to HTML files or PDF files, then import those."),
             ("djvu", "Convert DjVu documents to PDF files, then import those."),
             ("xps", "Convert XPS documents to PDF files, then import those."),

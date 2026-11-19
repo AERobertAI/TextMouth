@@ -28,7 +28,7 @@ enum RefusedFormatAdvice {
     }
     /// WordPerfect documents, which no part of macOS reads.
     static var wordPerfect: String {
-        String(localized: "Save WordPerfect documents as Word documents or HTML files in a program that reads them, such as LibreOffice, then import those.",
+        String(localized: "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
                comment: "Advice after the refusal of a WordPerfect document, which no part of macOS reads. LibreOffice is a program's name.")
     }
     /// Compiled HTML Help files.

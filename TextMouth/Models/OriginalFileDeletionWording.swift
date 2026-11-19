@@ -40,11 +40,11 @@ struct OriginalFileDeletionWording: Equatable {
         mode.buttonTitle()
     }
 
-    /// What the confirmation asks: "The book has been imported successfully.
+    /// What the confirmation asks: "The book was imported.
     /// Move the original file “Notes.epub” to the Trash? You can recover it
     /// from the Trash until the Trash is emptied."
     var confirmationMessage: String {
-        let imported = String(localized: "The book has been imported successfully.",
+        let imported = String(localized: "The book was imported.",
                               comment: "First sentence of the confirmation that asks about deleting the original file of a book just imported. The question about the file follows it.")
         return SentenceWording.joined([imported, question, consequence])
     }

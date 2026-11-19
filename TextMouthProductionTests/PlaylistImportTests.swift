@@ -102,7 +102,7 @@ final class PlaylistImportTests: XCTestCase {
             XCTAssertEqual(
                 failure.errorDescription,
                 "Could not import “\(name)”. Reading the file failed: "
-                    + "It is a streaming playlist for audio on the web, which TextMouth does not import.",
+                    + "It is a streaming playlist for web audio, which TextMouth does not import.",
                 name
             )
         }
@@ -436,7 +436,7 @@ final class PlaylistImportTests: XCTestCase {
 
         XCTAssertEqual(
             PlaylistImportWording.streaming,
-            "It is a streaming playlist for audio on the web, which TextMouth does not import."
+            "It is a streaming playlist for web audio, which TextMouth does not import."
         )
         XCTAssertEqual(
             PlaylistImportWording.onlyWebAddresses,

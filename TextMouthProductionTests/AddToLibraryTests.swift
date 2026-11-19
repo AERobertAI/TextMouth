@@ -73,7 +73,7 @@ final class AddToLibraryTests: XCTestCase {
         XCTAssertEqual(AddToLibraryWording.buttonLabel, "Add to Library")
         XCTAssertEqual(
             AddToLibraryWording.buttonHint,
-            "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed"
+            "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed"
         )
         XCTAssertEqual(AddToLibraryWording.cancel, "Cancel")
     }
@@ -85,9 +85,9 @@ final class AddToLibraryTests: XCTestCase {
         XCTAssertEqual(AddToLibraryWording.summary(.openBook), LibraryView.importBookHint)
         XCTAssertEqual(
             AddToLibraryWording.summary(.importFolder),
-            "Chooses a folder that holds a DAISY book or audio tracks and imports it as one book."
+            "Imports a folder holding a DAISY book or audio tracks as one book."
         )
-        XCTAssertEqual(AddToLibraryWording.summary(.newFromText), "Makes a new book from text you paste or type.")
+        XCTAssertEqual(AddToLibraryWording.summary(.newFromText), "Makes a book from text you paste or type.")
         XCTAssertEqual(AddToLibraryWording.summary(.newRecording), "Records from a microphone into a new audiobook.")
         XCTAssertEqual(
             AddToLibraryWording.summary(.addFeed),
@@ -104,7 +104,7 @@ final class AddToLibraryTests: XCTestCase {
     func testTheHintOfADimmedChoiceAndTheSpokenLabel() {
         XCTAssertEqual(
             AddToLibraryWording.unavailableHint(.newFromText),
-            "Makes a new book from text you paste or type. Not available in this window."
+            "Makes a book from text you paste or type. Not available in this window."
         )
         XCTAssertEqual(AddToLibraryWording.label(.openBook, key: "Command + O"), "Open Book…, Command + O")
         XCTAssertEqual(AddToLibraryWording.label(.openBook, key: nil), "Open Book…")

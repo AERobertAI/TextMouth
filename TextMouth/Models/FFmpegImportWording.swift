@@ -169,7 +169,7 @@ enum FFmpegImportWording {
     /// "TextMouth can't convert the sound of “Clip.avi”: it is in a kind of
     /// audio TextMouth does not read."
     static func soundNotDecoded(fileName: String) -> String {
-        String(localized: "TextMouth can't convert the sound of “\(fileName)”: it is in a kind of audio TextMouth does not read.",
+        String(localized: "TextMouth can't convert the sound of “\(fileName)”: it is in a kind of audio it does not read.",
                comment: "Why a file was not imported: its sound is in a codec TextMouth does not decode. %@ is the file's name.")
     }
 
@@ -181,7 +181,7 @@ enum FFmpegImportWording {
     /// its sound changes its rate or its channels partway through, by more
     /// than TextMouth can follow."
     static func formChanged(fileName: String) -> String {
-        String(localized: "TextMouth can't convert “\(fileName)”: its sound changes its rate or its channels partway through, by more than TextMouth can follow.",
+        String(localized: "TextMouth can't convert “\(fileName)”: its sound changes rate or channels partway through, by more than it can follow.",
                comment: "Why a file was not imported: its sound changes its sample rate or its number of channels partway through, by more than the converter can follow. %@ is the file's name.")
     }
 
@@ -212,7 +212,7 @@ enum FFmpegImportWording {
     /// holds far fewer: "TextMouth can't convert “Radio.mkv”: part of its
     /// sound is stored in one piece too large for TextMouth to decode."
     static func frameTooLarge(fileName: String) -> String {
-        String(localized: "TextMouth can't convert “\(fileName)”: part of its sound is stored in one piece too large for TextMouth to decode.",
+        String(localized: "TextMouth can't convert “\(fileName)”: part of its sound is in one piece too large to decode.",
                comment: "Why a file was not imported: one frame of its sound holds more samples than TextMouth decodes at once. %@ is the file's name.")
     }
 

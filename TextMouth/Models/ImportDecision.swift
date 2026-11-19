@@ -310,7 +310,7 @@ struct ImportDecisionWording: Equatable {
     private static func zipFolderMessage(count: Int, archive: String) -> String {
         let imported = String(localized: "\(count) books were imported from “\(archive)”.",
                               comment: "First sentence of the question asked when a ZIP archive added several books. %1$lld is the number of books and %2$@ the archive's file name.")
-        let ask = String(localized: "Would you like to create a new folder to hold them?",
+        let ask = String(localized: "Create a new folder to hold them?",
                          comment: "Second sentence of the question asked when a ZIP archive added several books: whether to put them in a new folder. \"Them\" is the books.")
         return SentenceWording.joined([imported, ask])
     }
@@ -336,7 +336,7 @@ struct ImportDecisionWording: Equatable {
     /// old text is kept as a copy, never laid over the new text
     /// (`DuplicateReplacement`).
     static var replacingKeepsTextSentence: String {
-        String(localized: "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text wherever those are found, and its settings, folder, and place on the reading list. An edit of its text is kept beside the new text as a copy, not applied to it.",
+        String(localized: "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text where found, and its settings, folder, and place on the reading list. An edit of its text is kept as a copy beside the new text, not applied.",
                comment: "Part of the question asked about a duplicate book that is read from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy.")
     }
 
@@ -388,7 +388,7 @@ struct ImportDecisionWording: Equatable {
     /// "not an audiobook": a DAISY talking book, which TextMouth reads from
     /// its text, is an audiobook to its owner (ST04 verify, finding 2).
     static var replacingAcrossKindsSentence: String {
-        String(localized: "One copy is played from its recording and the other is read aloud from its text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, its bookmarks and their notes, or its settings.",
+        String(localized: "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
                comment: "Part of the question asked about a duplicate where one copy is an audiobook played from a recording and the other is read aloud from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy.")
     }
 
@@ -442,7 +442,7 @@ struct ImportDecisionWording: Equatable {
         let newCopy = duplicate.book.sourceFilePath
             .flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0).lastPathComponent }
             ?? duplicate.book.title
-        let choice = String(localized: "“\(newCopy)” matches “\(matchingTitle)”, which is already in your library. Replace the existing copy, or keep both as separate books?",
+        let choice = String(localized: "“\(newCopy)” matches “\(matchingTitle)”, already in your library. Replace the existing copy, or keep both as separate books?",
                             comment: "First paragraph of the question asked when a book just imported matches one in the library. %1$@ is the new copy's file name (or its title when it came from no file) and %2$@ the title of the library's copy.")
         let kept = replacingKeepsSentence(
             existing: matchingFormat,
@@ -481,7 +481,7 @@ enum DuplicateCopyWording {
     /// keep the new copy of “Atlas of Tides”. Answer again once the library
     /// is back." The copy is intact, so Cancel is not offered.
     static func libraryUnreachable(bookTitle: String) -> String {
-        String(localized: "The library can't be reached right now, so TextMouth can't keep the new copy of “\(bookTitle)”. Answer again once the library is back.",
+        String(localized: "The library can't be reached, so TextMouth can't keep the new copy of “\(bookTitle)”. Answer again once it is back.",
                comment: "What the duplicate question says when Keep Both or Replace Existing is chosen while the library cannot be reached. %@ is the new copy's title.")
     }
 

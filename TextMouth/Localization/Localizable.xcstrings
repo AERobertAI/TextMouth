@@ -3082,9 +3082,6 @@
     "Already in Library" : {
       "comment" : "Title of the library's alert as a ZIP batch that found books but added none, because the library already held every one. Title case."
     },
-    "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package." : {
-      "comment" : "VoiceOver hint of the switch that keeps the originals of converted audio."
-    },
     "Also write the markers as Audacity labels" : {
       "comment" : "Label of the checkbox in the audio editor's Export Audio sheet that writes the markers as a label file too. Audacity is the name of an audio editing program."
     },
@@ -3956,7 +3953,7 @@
     "Choose at least one kind of item for the view to list." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no kind listed."
     },
-    "Choose each folder to import: a DAISY book's folder, which holds its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook." : {
+    "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook." : {
       "comment" : "Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book."
     },
     "Choose how to remove %@ from the library." : {
@@ -3988,9 +3985,6 @@
     },
     "Chooses a folder holding another copy of this library and lists what differs. Nothing in either copy is changed." : {
       "comment" : "VoiceOver hint of the Compare Libraries button in Storage settings."
-    },
-    "Chooses a folder that holds a DAISY book or audio tracks and imports it as one book." : {
-      "comment" : "One-line summary and VoiceOver hint of the Import Folder choice of the Add to Library sheet."
     },
     "Chooses what a book opened from the list does when it ends." : {
       "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button.",
@@ -4432,6 +4426,9 @@
     },
     "Create Folder for Imported Books?" : {
       "comment" : "Title of the question asked when a ZIP archive added several books: whether to put them in a new folder. Title case."
+    },
+    "Create a new folder to hold them?" : {
+      "comment" : "Second sentence of the question asked when a ZIP archive added several books: whether to put them in a new folder. \"Them\" is the books."
     },
     "Current Timer" : {
       "comment" : "Heading of the sleep timer sheet's section about the timer running now.",
@@ -5855,6 +5852,9 @@
         }
       }
     },
+    "Imports a folder holding a DAISY book or audio tracks as one book." : {
+      "comment" : "One-line summary and VoiceOver hint of the Import Folder choice of the Add to Library sheet."
+    },
     "In %@" : {
       "comment" : "Speak Info: the part of a summary that says where a book or a feed's folder is. %@ is the folder's path, such as Fiction/Mystery."
     },
@@ -6003,7 +6003,7 @@
     "It holds the folders of the feeds %@." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is a list of the feeds' titles in quotation marks."
     },
-    "It is a streaming playlist for audio on the web, which TextMouth does not import." : {
+    "It is a streaming playlist for web audio, which TextMouth does not import." : {
       "comment" : "Refusal of a playlist that is an HLS stream, a list of pieces of one broadcast on the web. \"It\" is the playlist. Follows the sentence naming the file."
     },
     "It is the folder of the feed %@: whichever you choose, the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed." : {
@@ -6168,6 +6168,9 @@
           }
         }
       }
+    },
+    "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package." : {
+      "comment" : "VoiceOver hint of the switch that keeps the originals of converted audio."
     },
     "Keeps only the selection." : {
       "comment" : "Hint of the audio editor's Trim to Selection button."
@@ -6449,7 +6452,7 @@
     "Make Single Press" : {
       "comment" : "VoiceOver action and context menu item of a keyboard shortcut's key button: changes a key pressed twice quickly into a single press of the key."
     },
-    "Makes a new book from text you paste or type." : {
+    "Makes a book from text you paste or type." : {
       "comment" : "One-line summary and VoiceOver hint of the New from Text choice of the Add to Library sheet."
     },
     "Makes a view of your own from the conditions you choose." : {
@@ -7372,7 +7375,7 @@
     "One Unit for Both Directions" : {
       "comment" : "A choice of the playback bar's navigation unit menus setting: one shared menu sets the unit of both skip buttons."
     },
-    "One copy is played from its recording and the other is read aloud from its text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, its bookmarks and their notes, or its settings." : {
+    "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings." : {
       "comment" : "Part of the question asked about a duplicate where one copy is an audiobook played from a recording and the other is read aloud from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy."
     },
     "Only an audiobook's audio can be edited." : {
@@ -7475,7 +7478,7 @@
     "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe." : {
       "comment" : "VoiceOver hint of the Transcribe button of the question offered after an import. Transcribe Audio is the command's name; Transcribe is the sheet's button."
     },
-    "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed" : {
+    "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed" : {
       "comment" : "VoiceOver hint of the Add to Library toolbar button. Names the five choices the sheet offers, in the order the sheet lists them."
     },
     "Opens jump to page controls" : {
@@ -8585,7 +8588,7 @@
     "Replacement text. Leave empty to skip matched text." : {
       "comment" : "VoiceOver label of the replacement field in the substitution rule editor."
     },
-    "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text wherever those are found, and its settings, folder, and place on the reading list. An edit of its text is kept beside the new text as a copy, not applied to it." : {
+    "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text where found, and its settings, folder, and place on the reading list. An edit of its text is kept as a copy beside the new text, not applied." : {
       "comment" : "Part of the question asked about a duplicate book that is read from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy."
     },
     "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same, rather than the transcript file found beside the new copy's audio." : {
@@ -8897,7 +8900,7 @@
     "Save Name" : {
       "comment" : "Button that keeps the new name typed for a marker."
     },
-    "Save WordPerfect documents as Word documents or HTML files in a program that reads them, such as LibreOffice, then import those." : {
+    "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those." : {
       "comment" : "Advice after the refusal of a WordPerfect document, which no part of macOS reads. LibreOffice is a program's name."
     },
     "Save and Export" : {
@@ -9961,7 +9964,7 @@
     "Stops the download. Nothing is installed." : {
       "comment" : "VoiceOver hint of the Cancel Download button."
     },
-    "Stops the import under way and those waiting. Books already imported stay in the library." : {
+    "Stops the import under way and those waiting. Books already imported stay." : {
       "comment" : "VoiceOver hint of the import overlay's Cancel button."
     },
     "Stops the search, keeping the matches found so far" : {
@@ -10201,16 +10204,16 @@
     "TextMouth can't convert %@ files because its converter is missing from the app." : {
       "comment" : "Why a file was not imported: the converter TextMouth carries is missing from the app, which only a damaged copy is. %@ is the name of the file's format, such as WMA or Matroska. Advice to install the app again follows."
     },
-    "TextMouth can't convert the sound of “%@”: it is in a kind of audio TextMouth does not read." : {
+    "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read." : {
       "comment" : "Why a file was not imported: its sound is in a codec TextMouth does not decode. %@ is the file's name."
     },
-    "TextMouth can't convert “%@”: its sound changes its rate or its channels partway through, by more than TextMouth can follow." : {
+    "TextMouth can't convert “%@”: its sound changes rate or channels partway through, by more than it can follow." : {
       "comment" : "Why a file was not imported: its sound changes its sample rate or its number of channels partway through, by more than the converter can follow. %@ is the file's name."
     },
-    "TextMouth can't convert “%@”: part of its sound is stored in one piece too large for TextMouth to decode." : {
+    "TextMouth can't convert “%@”: part of its sound is in one piece too large to decode." : {
       "comment" : "Why a file was not imported: one frame of its sound holds more samples than TextMouth decodes at once. %@ is the file's name."
     },
-    "TextMouth can't read this kind of picture (%@). Save it as a PNG or JPEG picture, then import that copy." : {
+    "TextMouth can't read this kind of picture (%@). Save it as a PNG or JPEG, then import that copy." : {
       "comment" : "Why a picture was refused at import: a kind of picture the system knows but TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\"."
     },
     "TextMouth can't read “%@” as %@. It may be damaged, or named for another format." : {
@@ -10366,6 +10369,9 @@
     },
     "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone." : {
       "comment" : "Error in the Record window when macOS has denied TextMouth the microphone. Names the places in System Settings, as macOS words them, where the user can allow it."
+    },
+    "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again." : {
+      "comment" : "Caption under the Keep Originals switch while it is on. \"Original file\" names the choice Export offers; keep it the same as that choice's translation."
     },
     "TextMouth kept the text you changed in %@." : {
       "comment" : "First sentence of the message when an automatic rebuild left a book's edited text alone. %@ is the book's title."
@@ -10799,9 +10805,6 @@
     "The book has a transcript already, so TextMouth kept it." : {
       "comment" : "Notice that a transcript file was not attached because the book already had its own transcript."
     },
-    "The book has been imported successfully." : {
-      "comment" : "First sentence of the confirmation that asks about deleting the original file of a book just imported. The question about the file follows it."
-    },
     "The book has no package to hold its text." : {
       "comment" : "Why an import failed: the book has no package folder to hold its text. Follows \"Import failed: \"."
     },
@@ -10830,6 +10833,9 @@
     },
     "The book left the library during transcription, so its transcript wasn't saved." : {
       "comment" : "Error shown when the book was removed from the library during a transcription."
+    },
+    "The book was imported." : {
+      "comment" : "First sentence of the confirmation that asks about deleting the original file of a book just imported. The question about the file follows it."
     },
     "The book's audio changed since it was transcribed (%@), so the transcript no longer fits. Transcribe again." : {
       "comment" : "Error shown when the book's audio files changed since the transcription. %@ is the reason, a short phrase in English."
@@ -10981,7 +10987,7 @@
     "The labels of the label file “%@” run past the end of its audio, so its headings were not used." : {
       "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because its labels lie past the end of its audio. %@ is the label file's name."
     },
-    "The library can't be reached right now, so TextMouth can't keep the new copy of “%@”. Answer again once the library is back." : {
+    "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back." : {
       "comment" : "What the duplicate question says when Keep Both or Replace Existing is chosen while the library cannot be reached. %@ is the new copy's title."
     },
     "The library can't move books now. Try again once it is available." : {
@@ -11402,7 +11408,7 @@
         }
       }
     },
-    "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads." : {
+    "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads." : {
       "comment" : "Why an XML file was refused at import: its root element is not one of the three kinds TextMouth reads. DTBook, Word 2003 XML, and PEF are format names."
     },
     "This audio has no chapter markers." : {
@@ -11501,10 +11507,10 @@
     "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts." : {
       "comment" : "What Play says for a book whose Ogg audio failed to convert at this launch."
     },
-    "This book's audio is being converted from Ogg to AAC. It plays once the conversion ends." : {
+    "This book's audio is being converted from Ogg to AAC. It plays when that ends." : {
       "comment" : "What Play says while the book's Ogg audio is being converted to AAC."
     },
-    "This book's audio needs converting from Ogg to AAC before it plays. TextMouth is converting it now, and it plays once the conversion ends." : {
+    "This book's audio needs converting from Ogg to AAC. TextMouth is converting it now, and it plays when that ends." : {
       "comment" : "What Play says for a book found still in Ogg, whose conversion TextMouth starts."
     },
     "This book's only page is %@." : {
@@ -11513,7 +11519,7 @@
     "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a braille book that is read as UEB but whose braille shows English Braille, American Edition's signs (BrailleCodeDetector): which code it looks like and where to choose it. Plain, so that VoiceOver and a braille display read it as it is."
     },
-    "This comic book archive holds more than the %@ pictures TextMouth reads in one book." : {
+    "This comic book archive holds more than the %@ pictures TextMouth reads." : {
       "comment" : "Why a comic book archive was refused at import: it holds more pictures than TextMouth reads. %@ is the limit, already formatted."
     },
     "This comic book archive holds no pictures TextMouth can read." : {
@@ -11564,7 +11570,7 @@
     "This picture could not be decoded. It may be damaged." : {
       "comment" : "Why a picture was refused at import: the system could not decode it. Two sentences."
     },
-    "This picture holds %lld pages, more than the %@ TextMouth reads in one book." : {
+    "This picture holds %lld pages, more than the %@ TextMouth reads." : {
       "comment" : "Why a picture of many pages, such as a TIFF, was refused at import. %1$lld is the number of pages it holds and %2$@ the limit, already formatted.",
       "localizations" : {
         "en" : {
@@ -11573,13 +11579,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "This picture holds %lld page, more than the %@ TextMouth reads in one book."
+                  "value" : "This picture holds %lld page, more than the %@ TextMouth reads."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "This picture holds %lld pages, more than the %@ TextMouth reads in one book."
+                  "value" : "This picture holds %lld pages, more than the %@ TextMouth reads."
                 }
               }
             }
@@ -11587,7 +11593,7 @@
         }
       }
     },
-    "This picture is %@, larger than the %lld megapixels TextMouth reads in one picture." : {
+    "This picture is %@, larger than the %lld megapixels TextMouth reads." : {
       "comment" : "Why a picture was refused at import: it says it holds more pixels than TextMouth decodes. %1$@ is its size, such as \"30,000 by 30,000 pixels\", and %2$lld the limit in megapixels.",
       "localizations" : {
         "en" : {
@@ -11596,13 +11602,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "This picture is %@, larger than the %lld megapixel TextMouth reads in one picture."
+                  "value" : "This picture is %@, larger than the %lld megapixel TextMouth reads."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "This picture is %@, larger than the %lld megapixels TextMouth reads in one picture."
+                  "value" : "This picture is %@, larger than the %lld megapixels TextMouth reads."
                 }
               }
             }
@@ -12268,9 +12274,6 @@
     "When Applicable" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A visibility as the Visibility pop-up names it: \"Always\", \"When Applicable\", or \"Hidden\". This is the case .whenApplicable."
     },
-    "When TextMouth converts audio at import, it keeps the original file too. An original takes about as much disk space as its converted file, or about twice as much when it is uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again." : {
-      "comment" : "Caption under the Keep Originals switch while it is on. \"Original file\" names the choice Export offers; keep it the same as that choice's translation."
-    },
     "When a book ends" : {
       "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.",
       "localizations" : {
@@ -12436,9 +12439,6 @@
     },
     "Works in %@" : {
       "comment" : "Says where a keyboard shortcut works, in a row of the Shortcuts tab or an announcement. %@ names the windows, such as \"every window\", \"Library windows\", or \"the audio editor\"."
-    },
-    "Would you like to create a new folder to hold them?" : {
-      "comment" : "Second sentence of the question asked when a ZIP archive added several books: whether to put them in a new folder. \"Them\" is the books."
     },
     "Writes chapter markers and markers beside the audio, in an Audacity label file of the same name." : {
       "comment" : "Hint of the Also write the markers as Audacity labels checkbox. Audacity is the name of an audio editing program."
@@ -13582,13 +13582,13 @@
         }
       }
     },
-    "“%@” matches “%@”, which is already in your library. Replace the existing copy, or keep both as separate books?" : {
+    "“%@” matches “%@”, already in your library. Replace the existing copy, or keep both as separate books?" : {
       "comment" : "First paragraph of the question asked when a book just imported matches one in the library. %1$@ is the new copy's file name (or its title when it came from no file) and %2$@ the title of the library's copy.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "“%1$@” matches “%2$@”, which is already in your library. Replace the existing copy, or keep both as separate books?"
+            "value" : "“%1$@” matches “%2$@”, already in your library. Replace the existing copy, or keep both as separate books?"
           }
         }
       }

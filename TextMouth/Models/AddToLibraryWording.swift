@@ -25,7 +25,7 @@ enum AddToLibraryWording {
 
     /// The toolbar button's accessibility hint: what its sheet offers.
     static var buttonHint: String {
-        String(localized: "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed",
+        String(localized: "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed",
                comment: "VoiceOver hint of the Add to Library toolbar button. Names the five choices the sheet offers, in the order the sheet lists them.")
     }
 
@@ -41,9 +41,9 @@ enum AddToLibraryWording {
     static func summary(_ choice: AddToLibraryChoice) -> String {
         switch choice {
         case .openBook: return LibraryView.importBookHint
-        case .importFolder: return String(localized: "Chooses a folder that holds a DAISY book or audio tracks and imports it as one book.",
+        case .importFolder: return String(localized: "Imports a folder holding a DAISY book or audio tracks as one book.",
                           comment: "One-line summary and VoiceOver hint of the Import Folder choice of the Add to Library sheet.")
-        case .newFromText: return String(localized: "Makes a new book from text you paste or type.",
+        case .newFromText: return String(localized: "Makes a book from text you paste or type.",
                           comment: "One-line summary and VoiceOver hint of the New from Text choice of the Add to Library sheet.")
         case .newRecording: return String(localized: "Records from a microphone into a new audiobook.",
                           comment: "One-line summary and VoiceOver hint of the Record choice of the Add to Library sheet.")

@@ -203,7 +203,7 @@ enum ImportProgressWording {
     /// imports waiting behind it never start, and every book already
     /// imported stays.
     static var cancelButtonHint: String {
-        String(localized: "Stops the import under way and those waiting. Books already imported stay in the library.",
+        String(localized: "Stops the import under way and those waiting. Books already imported stay.",
                comment: "VoiceOver hint of the import overlay's Cancel button.")
     }
 

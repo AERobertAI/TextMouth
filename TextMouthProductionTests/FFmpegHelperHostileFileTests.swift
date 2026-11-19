@@ -224,7 +224,7 @@ final class FFmpegHelperHostileFileTests: XCTestCase {
             XCTAssertEqual(error as? FFmpegAudioConverter.Failure, .frameTooLarge(fileName: "Long Chunk.mka"))
             XCTAssertEqual(
                 error.localizedDescription,
-                "TextMouth can't convert “Long Chunk.mka”: part of its sound is stored in one piece too large for TextMouth to decode."
+                "TextMouth can't convert “Long Chunk.mka”: part of its sound is in one piece too large to decode."
             )
         }
     }

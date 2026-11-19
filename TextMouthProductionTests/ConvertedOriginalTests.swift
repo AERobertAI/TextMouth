@@ -72,7 +72,7 @@ final class ConvertedOriginalTests: XCTestCase {
         XCTAssertEqual(ConvertedOriginalWording.label, "Keep originals of converted audio")
         XCTAssertEqual(
             ConvertedOriginalWording.hint,
-            "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package."
+            "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package."
         )
         XCTAssertEqual(
             ConvertedOriginalWording.caption(keeping: true),
