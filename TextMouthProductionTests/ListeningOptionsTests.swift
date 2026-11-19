@@ -403,19 +403,19 @@ final class ListeningOptionsTests: XCTestCase {
     func testTheContinuationHintForEveryNoun() {
         XCTAssertEqual(
             ListeningOptionsWording.continuationHint(.episode),
-            "What happens when one of this feed's episodes ends: play the episode below it or the one above it in the list, stop, or follow the global setting"
+            "Chooses what happens when one of this feed's episodes ends"
         )
         XCTAssertEqual(
             ListeningOptionsWording.continuationHint(.article),
-            "What happens when one of this feed's articles ends: play the article below it or the one above it in the list, stop, or follow the global setting"
+            "Chooses what happens when one of this feed's articles ends"
         )
         XCTAssertEqual(
             ListeningOptionsWording.continuationHint(.item),
-            "What happens when one of this feed's items ends: play the item below it or the one above it in the list, stop, or follow the global setting"
+            "Chooses what happens when one of this feed's items ends"
         )
         XCTAssertEqual(
             ListeningOptionsWording.continuationHint(.book),
-            "What happens when one of this folder's books ends: play the book below it or the one above it in the folder, stop, or follow the global setting"
+            "Chooses what happens when one of this folder's books ends"
         )
     }
 
@@ -427,19 +427,19 @@ final class ListeningOptionsTests: XCTestCase {
         XCTAssertEqual(ListeningOptionsWording.skipFinishedLabel(.book), "Skip finished books")
         XCTAssertEqual(
             ListeningOptionsWording.skipFinishedHint(.episode),
-            "When listening goes on to another episode, pass over the episodes already finished"
+            "Applies when listening goes on to another episode"
         )
         XCTAssertEqual(
             ListeningOptionsWording.skipFinishedHint(.article),
-            "When listening goes on to another article, pass over the articles already finished"
+            "Applies when listening goes on to another article"
         )
         XCTAssertEqual(
             ListeningOptionsWording.skipFinishedHint(.item),
-            "When listening goes on to another item, pass over the items already finished"
+            "Applies when listening goes on to another item"
         )
         XCTAssertEqual(
             ListeningOptionsWording.skipFinishedHint(.book),
-            "When listening goes on to another book, pass over the books already finished"
+            "Applies when listening goes on to another book"
         )
     }
 
@@ -451,15 +451,15 @@ final class ListeningOptionsTests: XCTestCase {
         XCTAssertEqual(ListeningOptionsWording.predownloadLabel(.item), "Download the next item before this one ends")
         XCTAssertEqual(
             ListeningOptionsWording.predownloadHint(.episode, enabled: true),
-            "When 10 minutes or less of the episode playing are left, download the episode that plays next, if it is not on this Mac yet"
+            "When 10 minutes or less are left, downloads the next episode if it is not on this Mac yet"
         )
         XCTAssertEqual(
             ListeningOptionsWording.predownloadHint(.article, enabled: true),
-            "When 10 minutes or less of the article playing are left, download the article that plays next, if it is not on this Mac yet"
+            "When 10 minutes or less are left, downloads the next article if it is not on this Mac yet"
         )
         XCTAssertEqual(
             ListeningOptionsWording.predownloadHint(.item, enabled: true),
-            "When 10 minutes or less of the item playing are left, download the item that plays next, if it is not on this Mac yet"
+            "When 10 minutes or less are left, downloads the next item if it is not on this Mac yet"
         )
         XCTAssertEqual(
             ListeningOptionsWording.predownloadHint(.episode, enabled: false),

@@ -5148,6 +5148,18 @@
     "Applies the rules to text before it is spoken" : {
       "comment" : "VoiceOver hint of the Enable text substitutions switch in the Substitutions settings."
     },
+    "Applies when listening goes on to another article" : {
+      "comment" : "VoiceOver hint of the Skip finished articles switch in a news feed's Feed Info."
+    },
+    "Applies when listening goes on to another book" : {
+      "comment" : "VoiceOver hint of the Skip finished books switch in a folder's settings."
+    },
+    "Applies when listening goes on to another episode" : {
+      "comment" : "VoiceOver hint of the Skip finished episodes switch in a podcast feed's Feed Info."
+    },
+    "Applies when listening goes on to another item" : {
+      "comment" : "VoiceOver hint of the Skip finished items switch in a feed's Feed Info."
+    },
     "Apply" : {
       "comment" : "Button of the Clean Up Transcript sheet that makes the corrections in the transcript.\nButton of the audio editor's Apply Filter sheet that applies the filter."
     },
@@ -6310,6 +6322,18 @@
           }
         }
       }
+    },
+    "Chooses what happens when one of this feed's articles ends" : {
+      "comment" : "VoiceOver hint of the pop-up button in a news feed's Feed Info that sets what happens when one of its articles ends."
+    },
+    "Chooses what happens when one of this feed's episodes ends" : {
+      "comment" : "VoiceOver hint of the pop-up button in a podcast feed's Feed Info that sets what happens when one of its episodes ends."
+    },
+    "Chooses what happens when one of this feed's items ends" : {
+      "comment" : "VoiceOver hint of the pop-up button in a feed's Feed Info that sets what happens when one of its items ends."
+    },
+    "Chooses what happens when one of this folder's books ends" : {
+      "comment" : "VoiceOver hint of the pop-up button in a folder's settings that sets what happens when one of its books ends."
     },
     "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes." : {
       "comment" : "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. %@ is the name of its choice This Window.",
@@ -19511,6 +19535,98 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "What was kept for %lld removed downloads was deleted."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "When %lld minutes or less are left, downloads the next article if it is not on this Mac yet" : {
+      "comment" : "VoiceOver hint of the Download the next article switch in a news feed's Feed Info. %lld is the number of minutes left that start the download.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minute or less is left, downloads the next article if it is not on this Mac yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minutes or less are left, downloads the next article if it is not on this Mac yet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet" : {
+      "comment" : "VoiceOver hint of a switch that downloads the next book (a folder's settings do not show it today). %lld is the number of minutes left that start the download.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minute or less is left, downloads the next book if it is not on this Mac yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "When %lld minutes or less are left, downloads the next episode if it is not on this Mac yet" : {
+      "comment" : "VoiceOver hint of the Download the next episode switch in a podcast feed's Feed Info. %lld is the number of minutes left that start the download.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minute or less is left, downloads the next episode if it is not on this Mac yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minutes or less are left, downloads the next episode if it is not on this Mac yet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "When %lld minutes or less are left, downloads the next item if it is not on this Mac yet" : {
+      "comment" : "VoiceOver hint of the Download the next item switch in a feed's Feed Info. %lld is the number of minutes left that start the download.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minute or less is left, downloads the next item if it is not on this Mac yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minutes or less are left, downloads the next item if it is not on this Mac yet"
                 }
               }
             }
