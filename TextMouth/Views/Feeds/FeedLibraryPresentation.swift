@@ -339,7 +339,7 @@ struct FeedItemRowContent: Equatable, Identifiable {
     nonisolated static func selectionID(feedID: UUID, itemID: FeedItem.ID) -> UUID {
         // A UUID string is always 36 characters long, so no two pairs of
         // identities are written the same way.
-        let name = "TextMouth feed item row \(feedID.uuidString) \(itemID)"
+        let name = "TextMouth feed item row \(feedID.uuidString) \(itemID)" // l10n: no (a name hashed into an identifier, never shown)
         var bytes = Array(SHA256.hash(data: Data(name.utf8)).prefix(16))
         // The version in the high half of byte 6, and the variant (binary
         // 10) in the top two bits of byte 8.

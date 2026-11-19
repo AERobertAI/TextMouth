@@ -289,7 +289,7 @@ struct FeedInfoSheet: View {
                 // While they are shown, Done gives Escape up, so only their
                 // Cancel New Folder takes it, as the Move sheet's Cancel
                 // does, and a second Escape presses Done (REV13 app 5).
-                Button("Done", action: onDone)
+                Button(FeedWording.doneTitle, action: onDone)
                     .keyboardShortcut(isMakingFolder ? nil : KeyboardShortcut.cancelAction)
             }
         }
@@ -300,7 +300,7 @@ struct FeedInfoSheet: View {
             Button(confirmation.confirmTitle, role: .destructive) {
                 confirmed(confirmation)
             }
-            Button("Cancel", role: .cancel) {}
+            Button(FeedWording.cancelTitle, role: .cancel) {}
         } message: { confirmation in
             Text(confirmation.message)
         }
@@ -539,7 +539,7 @@ struct FeedInfoValue: View {
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label), \(spokenValue ?? value)")
+        .accessibilityLabel(SentenceWording.commaJoined([label, spokenValue ?? value]))
     }
 }
 
@@ -607,7 +607,7 @@ struct FeedItemDescriptionSheet: View {
                 // Return presses Close: nothing in the sheet takes typing.
                 // A button carries one shortcut, so Escape closes through
                 // the key equivalent below instead.
-                Button("Close", action: onClose)
+                Button(FeedWording.closeTitle, action: onClose)
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -628,70 +628,156 @@ extension FeedWording {
     /// unsubscribing keeps a feed (FR11, branch D), and Delete Feed… closes
     /// its own Feed Info (FR14), so only Delete Feed… in another window, or
     /// a record lost outside TextMouth, does.
-    static let feedGone = "This feed is no longer in your library."
+    static var feedGone: String {
+        String(localized: "This feed is no longer in your library.",
+               comment: "Feed Info's line for a feed whose record went while the sheet was open.")
+    }
     /// The unsubscription date's label in Feed Info (FR11, branch D).
-    static let unsubscribedLabel = "Unsubscribed"
+    static var unsubscribedLabel: String { unsubscribedNote }
+
+    /// The Done button of a sheet that keeps every change as it is made.
+    static var doneTitle: String {
+        String(localized: "Done",
+               comment: "Title of the button that closes a sheet whose changes were already kept, such as Feed Info. Title case.")
+    }
+    /// The OK button of an alert that only informs.
+    static var okTitle: String {
+        String(localized: "OK",
+               comment: "Button that closes an alert that only informs. Title case.")
+    }
+    /// The Cancel button of a confirmation.
+    static var cancelTitle: String {
+        String(localized: "Cancel",
+               comment: "Button that closes a sheet or dialog without doing what it offered.")
+    }
+    /// The Close button of a sheet that only shows something.
+    static var closeTitle: String {
+        String(localized: "Close",
+               comment: "Button that closes a sheet, such as the sleep timer sheet over a book's reader.")
+    }
     /// Unsubscribe's spoken hint in Feed Info (FR11, branch D): it asks
     /// first only when it would delete the places kept for removed
     /// downloads (FR14).
     static func unsubscribeHint(asksFirst: Bool) -> String {
-        let stops = "stops checking this feed; the feed and its downloads stay"
-        return asksFirst ? "Asks first, then \(stops)" : stops.capitalizingFirstLetter
+        asksFirst
+            ? String(localized: "Asks first, then stops checking this feed; the feed and its downloads stay",
+                     comment: "VoiceOver hint of the Unsubscribe button in Feed Info when it asks a question first.")
+            : String(localized: "Stops checking this feed; the feed and its downloads stay",
+                     comment: "VoiceOver hint of the Unsubscribe button in Feed Info when it acts at once.")
     }
     /// Resubscribe's spoken hint in Feed Info (FR11, branch D).
-    static let resubscribeHint = "Checks this feed again from now on, and at once"
+    static var resubscribeHint: String {
+        String(localized: "Checks this feed again from now on, and at once",
+               comment: "VoiceOver hint of the Resubscribe button in Feed Info.")
+    }
     /// The address's label in Feed Info.
-    static let addressLabelInInfo = "Address"
+    static var addressLabelInInfo: String {
+        String(localized: "Address",
+               comment: "Label of the feed's address in Feed Info. Title case.")
+    }
     /// The web site's label.
-    static let siteLabel = "Web site"
+    static var siteLabel: String {
+        String(localized: "Web site",
+               comment: "Label of the feed's web site in Feed Info.")
+    }
     /// The author's label.
-    static let authorLabel = "Published by"
+    static var authorLabel: String {
+        String(localized: "Published by",
+               comment: "Label of the feed's publisher in Feed Info.")
+    }
     /// The items' label: "Episodes".
     static func itemsLabel(_ noun: ItemNoun) -> String {
-        noun.plural.capitalized
+        noun.choose(
+            episode: String(localized: "Episodes",
+                            comment: "Label of the count of a feed's episodes in Feed Info. Title case."),
+            article: String(localized: "Articles",
+                            comment: "Label of the count of a feed's articles in Feed Info. Title case."),
+            item: String(localized: "Items",
+                         comment: "Label of the count of a feed's items, episodes and articles, in Feed Info. Title case."))
     }
     /// The last check's label.
-    static let lastCheckLabel = "Last check"
+    static var lastCheckLabel: String {
+        String(localized: "Last check",
+               comment: "Label of when the feed was last checked, in Feed Info.")
+    }
     /// The subscription date's label.
-    static let subscribedLabel = "Subscribed"
+    static var subscribedLabel: String {
+        String(localized: "Subscribed",
+               comment: "Label of when the listener subscribed to the feed, in Feed Info.")
+    }
     /// The plain-http note's label.
-    static let securityLabel = "Security"
+    static var securityLabel: String {
+        String(localized: "Security",
+               comment: "Label of the note about a feed that uses plain http, in Feed Info.")
+    }
     /// The plain-http note in Feed Info.
-    static let insecureNote = "Plain http: what this feed sends can be read or changed on the way."
+    static var insecureNote: String {
+        String(localized: "Plain http: what this feed sends can be read or changed on the way.",
+               comment: "The note in Feed Info about a feed whose address uses plain http, which is not encrypted. Plain http is a term; keep it.")
+    }
     /// The folder picker's caption in Feed Info.
-    static let folderInfoCaption = "Downloads go to"
+    static var folderInfoCaption: String {
+        String(localized: "Downloads go to",
+               comment: "Caption of the folder picker in Feed Info: the library folder the feed's downloads are listed in.")
+    }
     /// The folder picker's spoken label in Feed Info.
-    static let folderInfoLabel = "Folder the feed's downloads go to"
+    static var folderInfoLabel: String {
+        String(localized: "Folder the feed's downloads go to",
+               comment: "VoiceOver label of the folder picker in Feed Info.")
+    }
     /// The line under Feed Info's folder picker. A feed's downloads stay in
     /// the feed's own folder in the data directory, and the library folder
     /// only lists them (FR11), so all of them follow the choice.
-    static let folderInfoHelp = "Choosing another folder lists the feed's episodes and articles there instead, "
-        + "those already downloaded too."
+    static var folderInfoHelp: String {
+        String(localized: "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
+               comment: "The line under the folder picker in Feed Info.")
+    }
     /// The stand-in Feed Info's folder picker shows while the feed's folder is gone.
-    static let chooseFolderOption = "Choose a folder"
+    static var chooseFolderOption: String {
+        String(localized: "Choose a folder",
+               comment: "What Feed Info's folder picker shows while the feed's folder was removed from the library.")
+    }
     /// The Description heading in Feed Info; the text area under it is
     /// labelled `descriptionTextLabel(title:)`, so VoiceOver does not say
     /// Description twice.
-    static let descriptionLabel = "Description"
+    static var descriptionLabel: String {
+        String(localized: "Description",
+               comment: "Heading of the feed's or the item's description, in Feed Info and Show Description.")
+    }
     /// The heading of the feed's own settings.
-    static let ownSettingsHeading = "This Feed's Settings"
+    static var ownSettingsHeading: String {
+        String(localized: "This Feed's Settings",
+               comment: "Heading of the group of settings a feed can have of its own, in Feed Info. Title case.")
+    }
     /// A "Use the global setting" checkbox's title, naming the global value:
     /// "Use the global setting (Every item listed, newest 5 downloaded)".
     static func useGlobal(_ globalCaption: String) -> String {
-        "Use the global setting (\(globalCaption))"
+        String(localized: "Use the global setting (\(globalCaption))",
+               comment: "Title of the checkbox that makes a feed follow the global setting. %@ is the global setting's value, such as \"Every item listed, newest 5 downloaded\".")
     }
     /// A "Use the global setting" checkbox's hint.
-    static let useGlobalHint = "When checked, this feed follows the setting in Settings, Feeds; uncheck it to give the feed its own"
+    static var useGlobalHint: String {
+        String(localized: "When checked, this feed follows the setting in Settings, \(FeedSettingsWording.tabTitle); uncheck it to give the feed its own",
+               comment: "VoiceOver hint of the checkbox that makes a feed follow the global setting. %@ is the name of the Feeds tab of Settings.")
+    }
     /// The web page's label in Show Description.
-    static let webPageLabel = "Web page"
+    static var webPageLabel: String {
+        String(localized: "Web page",
+               comment: "Label of an item's web page in Show Description.")
+    }
     /// The spoken label of a description's text area, naming whose it is:
     /// Feed Info's, with the feed's title, and Show Description's, with the
     /// item's.
     static func descriptionTextLabel(title: String) -> String {
-        "Description of \(title)"
+        String(localized: "Description of \(title)",
+               comment: "VoiceOver label of the text area that shows a description. %@ is the feed's or the item's title.")
     }
     /// What Show Description says for an item without one.
     static func noDescription(isArticle: Bool) -> String {
-        "This \(isArticle ? "article" : "episode") has no description."
+        isArticle
+            ? String(localized: "This article has no description.",
+                     comment: "What Show Description says for an article that has no description.")
+            : String(localized: "This episode has no description.",
+                     comment: "What Show Description says for an episode that has no description.")
     }
 }
