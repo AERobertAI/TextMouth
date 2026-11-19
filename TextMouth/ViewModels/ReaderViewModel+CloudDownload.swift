@@ -165,18 +165,27 @@ enum ReaderCloudWording {
 
     /// The download view's heading.
     static func heading(title: String) -> String {
-        "Downloading \(title)"
+        String(localized: "Downloading \(title)",
+               comment: "Heading of the view that shows a book downloading from the cloud before it opens. %@ is the book's title.")
     }
 
     /// What VoiceOver calls the download view's progress bar.
-    static let progressLabel = "Download progress"
+    static var progressLabel: String {
+        String(localized: "Download progress",
+               comment: "VoiceOver label of the progress bar of a book downloading from the cloud.")
+    }
 
     /// The line below the heading: where the book comes from and, for a
     /// chapter, which one is waited for.
     static func source(provider: CloudProvider?, chapterNumber: Int?) -> String {
-        let service = provider?.displayName ?? "the cloud service"
-        guard let chapterNumber else { return "From \(service)" }
-        return "Chapter \(chapterNumber), from \(service)"
+        let service = CloudProvider.nameInSentence(provider)
+        guard let chapterNumber else {
+            return String(localized: "From \(service)",
+                          comment: "Line under the download view's heading: where the book comes from. %@ is the cloud service's name, or \"the cloud service\" when it is unknown.")
+        }
+        // A chapter's number names the chapter, so it is written without digit grouping.
+        return String(localized: "Chapter \(String(chapterNumber)), from \(service)",
+                      comment: "Line under the download view's heading: which chapter is waited for and where it comes from. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the cloud service's name, or \"the cloud service\" when it is unknown.")
     }
 
     /// The download's progress, from 0 to 1, or nil when it shows no
@@ -202,22 +211,38 @@ enum ReaderCloudWording {
     /// 1:05 elapsed" ("1 minute, 5 seconds elapsed" spoken), or "Starting,
     /// 0:05 elapsed" before any report.
     static func progressValue(of download: ReaderDownload, elapsed: TimeInterval, spoken: Bool) -> String {
-        let waited = "\(spoken ? TimeFormatting.spoken(elapsed) : TimeFormatting.format(elapsed)) elapsed"
+        let time = spoken ? TimeFormatting.spoken(elapsed) : TimeFormatting.format(elapsed)
+        let waited = String(localized: "\(time) elapsed",
+                            comment: "The time a download has waited, in the download view's progress value. %@ is the time, such as \"1:05\" on screen or \"1 minute, 5 seconds\" spoken.")
         guard let progress = download.progress else {
-            return "Starting, \(waited)"
+            return SentenceWording.commaJoined([
+                String(localized: "Starting",
+                       comment: "Start of the download progress value before the sync service has reported any progress. The time waited follows it."),
+                waited,
+            ])
         }
         if showsNoPercentage(progress) {
-            var parts = ["1 file left"]
+            var parts = [String(localized: "1 file left",
+                                comment: "Part of the download progress value when one file is all that is left and no percentage is known.")]
             let bytesLeft = progress.totalBytes - progress.completedBytes
             if progress.totalBytes > 0, bytesLeft > 0 {
                 parts.append(ArchiveFigures.size(bytesLeft))
             }
             parts.append(waited)
-            return parts.joined(separator: ", ")
+            return SentenceWording.commaJoined(parts)
         }
-        let files = "\(progress.completedFiles) of "
-            + CountWording.phrase(progress.totalFiles, singular: "file", plural: "files")
-        return "\(files), \(progress.percent)\(spoken ? " percent" : "%")"
+        let files = Self.files(progress.totalFiles)
+        return spoken
+            ? String(localized: "\(progress.completedFiles) of \(files), \(progress.percent) percent",
+                     comment: "Spoken download progress value. %1$lld is how many files are done; %2$@ is the count of all the files, such as \"3 files\"; %3$lld is the percent done, from 0 to 100.")
+            : String(localized: "\(progress.completedFiles) of \(files), \(progress.percent)%",
+                     comment: "Shown download progress value. %1$lld is how many files are done; %2$@ is the count of all the files, such as \"3 files\"; %3$lld is the percent done, from 0 to 100, and the percent sign follows it.")
+    }
+
+    /// `count` files of a book: "1 file", "3 files".
+    private static func files(_ count: Int) -> String {
+        String(localized: "\(count) files",
+               comment: "A count of the files of a book that is downloading. %lld is the number of files.")
     }
 
     /// The time waited at `date` for a download started at `startedAt`, in
@@ -229,47 +254,66 @@ enum ReaderCloudWording {
 
     /// Spoken as a download starts.
     static func downloadStarted(title: String, provider: CloudProvider?, chapterNumber: Int?) -> String {
-        let service = provider?.displayName ?? "the cloud service"
-        let downloading = "Downloading \(title) from \(service)."
+        let service = CloudProvider.nameInSentence(provider)
+        let downloading = String(localized: "Downloading \(title) from \(service).",
+                                 comment: "Spoken as a book's download starts. %1$@ is the book's title; %2$@ is the cloud service's name, or \"the cloud service\" when it is unknown.")
         guard let chapterNumber else { return downloading }
-        return "Chapter \(chapterNumber) isn't on this Mac. \(downloading)"
+        return SentenceWording.joined([
+            // A chapter's number names the chapter, so it is written without digit grouping.
+            String(localized: "Chapter \(String(chapterNumber)) isn't on this Mac.",
+                   comment: "Spoken as a chapter's download starts. %@ is the chapter's number, an identifier written without digit grouping."),
+            downloading,
+        ])
     }
 
     /// Spoken as a download reaches `percent`, one of the milestones.
     static func milestone(_ percent: Int) -> String {
-        "\(percent) percent downloaded."
+        String(localized: "\(percent) percent downloaded.",
+               comment: "Spoken as a download reaches a milestone. %lld is the percent done, from 0 to 100.")
     }
 
     /// Spoken every so often while a download shows no percentage.
     static func stillDownloading(elapsed: TimeInterval) -> String {
-        "Still downloading, \(TimeFormatting.spoken(elapsed)) elapsed."
+        String(localized: "Still downloading, \(TimeFormatting.spoken(elapsed)) elapsed.",
+               comment: "Spoken every so often while a download shows no percentage. %@ is the time waited, spoken, such as \"1 minute, 5 seconds\".")
     }
 
     /// Spoken when the opening download is done and the book loads.
-    static let downloadedLoading = "Downloaded. Loading."
+    static var downloadedLoading: String {
+        String(localized: "Downloaded. Loading.",
+               comment: "Spoken when the book's download is done and the book loads.")
+    }
 
     /// Spoken when a chapter's download is done and playback goes on.
-    static let downloaded = "Downloaded."
+    static var downloaded: String {
+        String(localized: "Downloaded.",
+               comment: "Spoken when a chapter's download is done and playback goes on.")
+    }
 
     /// Shown and spoken when the opening download is cancelled.
     static func notDownloaded(title: String) -> String {
-        "\(title) isn't downloaded."
+        String(localized: "\(title) isn't downloaded.",
+               comment: "Shown and spoken when the book's download is cancelled. %@ is the book's title.")
     }
 
     /// Spoken when a chapter's download is cancelled.
     static func chapterNotDownloaded(number: Int, title: String) -> String {
-        "Chapter \(number) of \(title) isn't downloaded."
+        // A chapter's number names the chapter, so it is written without digit grouping.
+        String(localized: "Chapter \(String(number)) of \(title) isn't downloaded.",
+               comment: "Spoken when a chapter's download is cancelled. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the book's title.")
     }
 
     /// Shown and spoken when the book's package has not arrived yet.
     static func waitingForSync(title: String, provider: CloudProvider?) -> String {
-        "\(title) hasn't arrived on this Mac yet. \(provider?.displayName ?? "The cloud service") may still be syncing it."
+        String(localized: "\(title) hasn't arrived on this Mac yet. \(CloudProvider.nameStartingSentence(provider)) may still be syncing it.",
+               comment: "Shown and spoken when the book's files have not arrived from the sync service. %1$@ is the book's title; %2$@ is the cloud service's name, or \"The cloud service\" when it is unknown.")
     }
 
     /// Shown and spoken when a file is only in the cloud again right after
     /// its download.
     static func partNotOnThisMac(title: String) -> String {
-        "Part of \(title) isn't on this Mac."
+        String(localized: "Part of \(title) isn't on this Mac.",
+               comment: "Shown and spoken when a file of the book is only in the cloud again right after its download. %@ is the book's title.")
     }
 
     /// What `failure` is shown and spoken as.
@@ -684,7 +728,7 @@ extension ReaderViewModel {
         cloudServices.states.record(.downloadFailed(explanation), for: book.id)
         DiagnosticLog.event(
             .storage,
-            "READER_DOWNLOAD_FAILED: \(book.title)\(Self.logSuffix(for: purpose)): \(Self.logReason(cloudError))"
+            "READER_DOWNLOAD_FAILED: \(book.title)\(Self.logSuffix(for: purpose)): \(cloudError.logReason)"
         )
         switch purpose {
         case .opening:
@@ -884,7 +928,7 @@ extension ReaderViewModel {
             endDownloadWork(cancelling: true)
             return
         }
-        stopWaitingForDownload(purpose, because: "the reader closed")
+        stopWaitingForDownload(purpose, because: "the reader closed") // l10n: no (debug log reason)
     }
 
     /// Deletes the working copy, off the main thread, once nothing plays from
@@ -924,31 +968,5 @@ extension ReaderViewModel {
     /// the chapter for a chapter's.
     private static func logSuffix(for purpose: ReaderDownloadPurpose) -> String {
         purpose.chapterNumber.map { " (chapter \($0))" } ?? ""
-    }
-
-    /// How a log line names why a download failed.
-    private static func logReason(_ error: BookCloudError) -> String {
-        switch error {
-        case .offline:
-            return "offline"
-        case .stalled(let seconds):
-            return "stalled for \(seconds) seconds"
-        case .provider(let message), .removalFailed(let message):
-            return "the sync service said: \(message)"
-        case .notUploaded:
-            return "changes not uploaded"
-        case .cloudCopyNotProven(let doubt):
-            return BookCloudWording.logReason(doubt)
-        case .bookIsOpen:
-            return "the book is open"
-        case .keptOnThisMac:
-            return "the book is kept on this Mac"
-        case .keptForReadingList:
-            return "the book is kept on this Mac for the reading list"
-        case .keptOnThisMacAndForReadingList:
-            return "the book is kept on this Mac and for the reading list"
-        case .packageMissing:
-            return "the package is not on this Mac"
-        }
     }
 }

@@ -612,7 +612,7 @@ final class LibraryCloudCommands {
         guard !keptNow.isEmpty else { return nil }
         let downloadable = keptNow.filter(canStartDownload)
         let titles = keptNow.map(\.title)
-        DiagnosticLog.event(.storage, "KEEP_ON_MAC: keeping \(CountWording.list(titles)) on this Mac")
+        DiagnosticLog.event(.storage, "KEEP_ON_MAC: keeping \(titles.joined(separator: ", ")) on this Mac") // l10n: no (debug log, English)
         VoiceOverAnnouncer.announce(
             LibraryCloudWording.keepStarted(titles: titles, downloading: downloadable.count),
             from: window
@@ -631,7 +631,7 @@ final class LibraryCloudCommands {
         released.forEach { keptBookRetryTimes[$0] = nil }
         // A book the reading list also keeps stays kept; the words say so.
         let stillKept = books.filter { released.contains($0.id) && kept.isKeptForReadingList($0.id) }.count
-        DiagnosticLog.event(.storage, "KEEP_ON_MAC: stopped keeping \(CountWording.list(titles)) on this Mac")
+        DiagnosticLog.event(.storage, "KEEP_ON_MAC: stopped keeping \(titles.joined(separator: ", ")) on this Mac") // l10n: no (debug log, English)
         VoiceOverAnnouncer.announce(
             LibraryCloudWording.stoppedKeeping(titles: titles, stillKept: stillKept),
             from: window
@@ -1036,7 +1036,7 @@ final class LibraryCloudCommands {
         if origin.announcesStart {
             VoiceOverAnnouncer.announce(LibraryCloudWording.downloadStarted(titles: titles), from: window)
         }
-        DiagnosticLog.event(.storage, "\(origin.logTags.started): \(CountWording.list(titles))")
+        DiagnosticLog.event(.storage, "\(origin.logTags.started): \(titles.joined(separator: ", "))") // l10n: no (debug log, English)
 
         let queuedIDs = queued.map(\.id)
         return Task { [self, weak window] in
@@ -1107,7 +1107,7 @@ final class LibraryCloudCommands {
             guard !Task.isCancelled, !(error is CancellationError) else { return nil }
             let failure = (error as? BookCloudError) ?? .provider(error.localizedDescription)
             let explanation = failure.explanation(in: provider)
-            DiagnosticLog.event(.storage, "\(origin.logTags.failed): \(book.title): \(explanation)")
+            DiagnosticLog.event(.storage, "\(origin.logTags.failed): \(book.title): \(failure.logReason)")
             ending = .failed(title: book.title, explanation: explanation)
         }
         // A book removed from the library meanwhile has no row to tell.
@@ -1176,7 +1176,7 @@ final class LibraryCloudCommands {
         }
         DiagnosticLog.event(
             .storage,
-            "REMOVE_DOWNLOAD_STARTED: \(CountWording.list(targets.map(\.title)))"
+            "REMOVE_DOWNLOAD_STARTED: \(targets.map(\.title).joined(separator: ", "))" // l10n: no (debug log, English)
         )
 
         let failures = await Task.detached(priority: .userInitiated) {
@@ -1205,7 +1205,7 @@ final class LibraryCloudCommands {
             if let failure {
                 let explanation = failure.explanation(in: provider)
                 refused.append((title: book.title, explanation: explanation))
-                DiagnosticLog.event(.storage, "REMOVE_DOWNLOAD_REFUSED: \(book.title): \(explanation)")
+                DiagnosticLog.event(.storage, "REMOVE_DOWNLOAD_REFUSED: \(book.title): \(failure.logReason)")
             } else {
                 removed.append(book.title)
                 states.record(.inCloud, for: book.id)

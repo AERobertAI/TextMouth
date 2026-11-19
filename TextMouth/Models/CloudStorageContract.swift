@@ -379,6 +379,33 @@ enum BookCloudError: Error, Equatable, Sendable {
     /// The book's package is not on this Mac.
     case packageMissing
 
+    /// Why the operation did not happen, in a few English words for a debug
+    /// log line, which stays English whatever language the interface speaks.
+    var logReason: String {
+        switch self {
+        case .offline:
+            return "offline" // l10n: no (debug log text)
+        case .stalled(let seconds):
+            return "stalled for \(seconds) seconds" // l10n: no (debug log text)
+        case .provider(let message), .removalFailed(let message):
+            return "the sync service said: \(message)" // l10n: no (debug log text)
+        case .notUploaded:
+            return "changes not uploaded" // l10n: no (debug log text)
+        case .cloudCopyNotProven(let doubt):
+            return BookCloudWording.logReason(doubt)
+        case .bookIsOpen:
+            return "the book is open" // l10n: no (debug log text)
+        case .keptOnThisMac:
+            return "the book is kept on this Mac" // l10n: no (debug log text)
+        case .keptForReadingList:
+            return "the book is kept on this Mac for the reading list" // l10n: no (debug log text)
+        case .keptOnThisMacAndForReadingList:
+            return "the book is kept on this Mac and for the reading list" // l10n: no (debug log text)
+        case .packageMissing:
+            return "the package is not on this Mac" // l10n: no (debug log text)
+        }
+    }
+
     /// The sentence that sends the listener to Stop Keeping on This Mac.
     private static var stopKeepingFirst: String {
         String(localized: "Choose \(LibraryCloudWording.stopKeepingName) first.",
@@ -534,11 +561,11 @@ enum BookCloudWording {
     /// The same reason in a log line's words.
     static func logReason(_ doubt: CloudCopyDoubt) -> String {
         switch doubt {
-        case .uploadNotReported: return "the sync service gave no upload state"
-        case .uploadFailed(let message): return "the upload failed: \(message)"
-        case .inConflict: return "the sync service holds conflicting versions"
-        case .notCurrent: return "the copy here is not said to be current"
-        case .currentNotReported: return "the sync service reports no downloading status at all"
+        case .uploadNotReported: return "the sync service gave no upload state" // l10n: no (debug log text)
+        case .uploadFailed(let message): return "the upload failed: \(message)" // l10n: no (debug log text)
+        case .inConflict: return "the sync service holds conflicting versions" // l10n: no (debug log text)
+        case .notCurrent: return "the copy here is not said to be current" // l10n: no (debug log text)
+        case .currentNotReported: return "the sync service reports no downloading status at all" // l10n: no (debug log text)
         }
     }
 }
