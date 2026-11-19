@@ -290,7 +290,7 @@ enum RemovalMode: Equatable, CaseIterable {
     /// The same for a caller that names the noun as text, as `FeedCommands`
     /// still does: "item" means items of a folder, any other word books.
     func failureMessage(_ failures: [String], noun: String) -> String {
-        failureMessage(failures, noun: noun == "item" ? .item : .book // l10n: no (compares a noun id, not interface text))
+        failureMessage(failures, noun: noun == "item" ? .item : .book) // l10n: no (compares a noun id, not interface text)
     }
 }
 
