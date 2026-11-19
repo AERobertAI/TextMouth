@@ -13989,7 +13989,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elige Rehacer extracción de texto para volver a leer el archivo del libro."
+            "value" : "Elige Repetir extracción de texto para volver a leer el archivo del libro."
           }
         }
       }
@@ -14738,7 +14738,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Borrar selección"
+            "value" : "Quitar selección"
           }
         }
       }
@@ -25246,7 +25246,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mantiene el orden que fijas con Move Book Up, Move Book Down o arrastrando."
+            "value" : "Mantiene el orden que fijas con Mover libro hacia arriba, Mover libro hacia abajo o arrastrando."
           }
         }
       }
@@ -27507,7 +27507,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Micrófono para Punch In"
+            "value" : "Micrófono para Grabar encima"
           }
         }
       }
@@ -30275,7 +30275,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No hay ningún micrófono conectado. Conecta uno para usar Punch In."
+            "value" : "No hay ningún micrófono conectado. Conecta uno para grabar encima."
           }
         }
       }
@@ -35179,7 +35179,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Grabando sobre %1$@ en %2$@, con %3$@, después del pitido. Punch In o Detener la termina; Quitar selección la descarta."
+            "value" : "Grabando sobre %1$@ en %2$@, con %3$@, después del pitido. Grabar encima o Detener la termina; Quitar selección la descarta."
           }
         }
       }
@@ -35229,7 +35229,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Grabando para insertar en %1$@, con %2$@, después del pitido. Punch In o Detener la termina; Quitar selección la descarta."
+            "value" : "Grabando para insertar en %1$@, con %2$@, después del pitido. Grabar encima o Detener la termina; Quitar selección la descarta."
           }
         }
       }
@@ -40158,7 +40158,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Decir progreso de descarga"
+            "value" : "Leer progreso de descarga"
           }
         }
       }
@@ -40169,7 +40169,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Decir información completa"
+            "value" : "Leer información completa"
           }
         }
       }
@@ -40180,7 +40180,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Decir progreso de importación"
+            "value" : "Leer progreso de importación"
           }
         }
       }
@@ -40191,7 +40191,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Decir información"
+            "value" : "Leer información"
           }
         }
       }
@@ -40202,7 +40202,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Decir selección"
+            "value" : "Leer selección"
           }
         }
       }
@@ -47813,7 +47813,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El micrófono con el que graba Punch In. TextMouth lo recuerda, aparte de la entrada de macOS."
+            "value" : "El micrófono que usa Grabar encima para grabar. TextMouth lo recuerda, aparte de la entrada de macOS."
           }
         }
       }
@@ -48790,7 +48790,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La lista de lectura está vacía. Para agregar un libro, elige Add to Reading List en su menú contextual, sus acciones de VoiceOver o el menú Library."
+            "value" : "La lista de lectura está vacía. Para agregar un libro, elige Agregar a la lista de lectura en su menú contextual, sus acciones de VoiceOver o el menú Biblioteca."
           }
         }
       }
@@ -52718,7 +52718,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escribe el título o el editor de un podcast y pulsa Return para buscar en el directorio de Apple"
+            "value" : "Escribe el título o el editor de un podcast y pulsa Retorno para buscar en el directorio de Apple"
           }
         }
       }
@@ -52751,7 +52751,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escribe o pega la dirección de un canal o de una página web y pulsa Return"
+            "value" : "Escribe o pega la dirección de un canal o de una página web y pulsa Retorno"
           }
         }
       }
@@ -56578,7 +56578,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "indica un número, como 0.5, o decibeles, como -6dB"
+            "value" : "indica un número, como 0.5, o decibelios, como -6dB"
           }
         }
       }
