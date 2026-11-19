@@ -308,8 +308,8 @@ final class RecordingRecoveryTests: XCTestCase {
         XCTAssertEqual(RecordingWording.discardRecoveredLabel(take), "Discard: \(take)")
         XCTAssertEqual(RecordingWording.recoveredDiscarded(startedAt: Self.recordedAt, duration: 64.4), "Discarded the recording of \(when), 1 minute, 4 seconds.")
         XCTAssertEqual(RecordingWording.recoveredDiscarded(startedAt: Self.recordedAt, duration: nil), "Discarded the recording of \(when), which holds no sound.")
-        XCTAssertTrue(RecordingWording.recoveredAnnouncement(count: 1).hasPrefix("TextMouth kept a recording from before it last quit"))
-        XCTAssertTrue(RecordingWording.recoveredAnnouncement(count: 3).hasPrefix("TextMouth kept 3 recordings from before it last quit"))
+        XCTAssertTrue(RecordingWording.recoveredAnnouncement(count: 1).hasPrefix("Found a recording from before TextMouth last quit"))
+        XCTAssertTrue(RecordingWording.recoveredAnnouncement(count: 3).hasPrefix("Found 3 recordings from before TextMouth last quit"))
     }
 
     // MARK: - Helpers

@@ -286,12 +286,12 @@ enum MiscellaneousSettingsWording {
     }
     /// The Bluetooth switch's hint.
     static var bluetoothHint: String {
-        String(localized: "When enabled, prevents spurious auto-resume when Bluetooth audio devices disconnect",
+        String(localized: "Stops playback resuming when headphones disconnect",
                comment: "VoiceOver hint of the Enable Bluetooth monitoring switch in the Miscellaneous settings.")
     }
     /// The text under the Bluetooth switch.
     static var bluetoothExplanation: String {
-        String(localized: "Monitors Bluetooth audio disconnections and blocks the spurious play command macOS sends when headphones are removed.",
+        String(localized: "Blocks the spurious play command macOS sends when Bluetooth headphones are removed.",
                comment: "Explanation under the Enable Bluetooth monitoring switch in the Miscellaneous settings. macOS is the name of the operating system.")
     }
     /// The delay as the screen shows it, beside its slider.
@@ -311,7 +311,7 @@ enum MiscellaneousSettingsWording {
     }
     /// The text under the slider.
     static var disconnectDelayExplanation: String {
-        String(localized: "How long to suppress spurious media commands after a Bluetooth device disconnects. Increase if playback sometimes auto-resumes after removing headphones.",
+        String(localized: "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
                comment: "Explanation under the Bluetooth disconnect delay slider in the Miscellaneous settings.")
     }
     /// The Bluetooth group's heading.
@@ -327,12 +327,12 @@ enum MiscellaneousSettingsWording {
     }
     /// The restart gesture switch's hint.
     static var restartGestureHint: String {
-        String(localized: "Lets you restart the most recent sleep timer with a sequence of media-control button presses",
+        String(localized: "Restarts the most recent sleep timer with a sequence of media-control presses",
                comment: "VoiceOver hint of the Enable restart-timer gesture switch in the Miscellaneous settings.")
     }
     /// The text under the restart gesture switch.
     static var restartGestureExplanation: String {
-        String(localized: "Experimental. Press a configurable sequence of media keys or AirPods controls within a short time window to re-arm the most recently used sleep timer — handy for restarting a timer that just expired without going back to the keyboard.",
+        String(localized: "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
                comment: "Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written.")
     }
     /// The restart gesture group's heading.
@@ -347,7 +347,7 @@ enum MiscellaneousSettingsWording {
     }
     /// The text under the pattern's heading.
     static var patternExplanation: String {
-        String(localized: "Sequence of media-control events that trigger the restart. The final event in the sequence is consumed (not passed to playback) so it can't accidentally start audio.",
+        String(localized: "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
                comment: "Explanation under the restart gesture's pattern heading in the Miscellaneous settings.")
     }
     /// The time window as the screen shows it, above its slider.
@@ -367,7 +367,7 @@ enum MiscellaneousSettingsWording {
     }
     /// The text under the time window slider.
     static var timeWindowExplanation: String {
-        String(localized: "Maximum total elapsed time for the sequence to count as a match. Shorter windows reduce accidental matches but require quicker presses.",
+        String(localized: "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
                comment: "Explanation under the restart gesture's time window slider in the Miscellaneous settings.")
     }
 
@@ -376,7 +376,7 @@ enum MiscellaneousSettingsWording {
     /// key in words: "The keyboard shortcut for the same action is Restart
     /// Sleep Timer in the Shortcuts tab; its default is Shift + Command + R."
     nonisolated static func restartShortcutNote(action: String, tab: String, defaultKeys: String) -> String {
-        String(localized: "The keyboard shortcut for the same action is \(action) in the \(tab) tab; its default is \(defaultKeys).",
+        String(localized: "Set its shortcut with \(action) in the \(tab) tab; the default is \(defaultKeys).",
                comment: "Note under the restart gesture in the Miscellaneous settings. %1$@ is the name of the shortcut's action, %2$@ is the name of the Settings tab where shortcuts are set, and %3$@ is the default key in words, such as \"Shift + Command + R\".")
     }
 

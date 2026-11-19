@@ -143,7 +143,7 @@ enum BookSearchWording {
 
     /// The Match Case checkbox's hint.
     static var matchCaseHint: String {
-        String(localized: "When checked, a match must have the same capital and small letters as the search text",
+        String(localized: "When checked, matches must use the same upper and lower case",
                comment: "VoiceOver hint of the Match Case checkbox.")
     }
 

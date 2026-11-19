@@ -224,7 +224,7 @@ final class ResultHintTests: XCTestCase {
     func testTheRestartGesturesNoteNamesTheShortcutsTabAndTheKeyInWords() {
         XCTAssertEqual(
             MiscellaneousSettingsView.restartShortcutNote,
-            "The keyboard shortcut for the same action is Restart Sleep Timer in the Shortcuts tab; its default is Shift + Command + R."
+            "Set its shortcut with Restart Sleep Timer in the Shortcuts tab; the default is Shift + Command + R."
         )
     }
 
@@ -475,7 +475,7 @@ final class TextRulesResetTests: XCTestCase {
     /// Reset to Defaults says it asks, and the alert counts the rules it
     /// replaces and the defaults that replace them.
     func testResettingTheTextRulesAsksFirstAndCountsThem() {
-        XCTAssertEqual(SubstitutionsSettingsView.resetHint, "Asks first, then replaces every rule with TextMouth's default rules.")
+        XCTAssertEqual(SubstitutionsSettingsView.resetHint, "Asks first, then replaces every rule with the defaults.")
         XCTAssertEqual(SubstitutionsSettingsView.resetConfirmationTitle, "Reset Text Rules to Defaults?")
         XCTAssertEqual(
             SubstitutionsSettingsView.resetConfirmationMessage(ruleCount: 15, defaultCount: 16),

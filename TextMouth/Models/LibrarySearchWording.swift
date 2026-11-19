@@ -72,7 +72,7 @@ enum LibrarySearchWording {
 
     /// The Close button's hint.
     static var closeHint: String {
-        String(localized: "Close Search Library; its results stay for the next time it opens",
+        String(localized: "Closes Search Library; results stay for next time",
                comment: "VoiceOver hint of the Close button of the Search Library window. Search Library is the window's name.")
     }
 

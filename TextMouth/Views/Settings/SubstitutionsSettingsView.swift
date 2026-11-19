@@ -718,7 +718,7 @@ enum SubstitutionsWording {
     }
     /// The switch's hint.
     static var enableHint: String {
-        String(localized: "When enabled, text is processed through substitution rules before being spoken",
+        String(localized: "Applies the rules to text before it is spoken",
                comment: "VoiceOver hint of the Enable text substitutions switch in the Substitutions settings.")
     }
     /// The button that adds a rule.
@@ -743,7 +743,7 @@ enum SubstitutionsWording {
     }
     /// Reset to Defaults' hint: what it does, and that it asks first.
     static var resetHint: String {
-        String(localized: "Asks first, then replaces every rule with TextMouth's default rules.",
+        String(localized: "Asks first, then replaces every rule with the defaults.",
                comment: "VoiceOver hint of the Reset to Defaults button in the Substitutions settings.")
     }
     /// The title of the alert Reset to Defaults asks with.
@@ -773,7 +773,7 @@ enum SubstitutionsWording {
     }
     /// The line under that.
     static var emptyHint: String {
-        String(localized: "Add rules to change how text is spoken. Rules are applied in order from top to bottom.",
+        String(localized: "Add rules to change how text is spoken. They apply top to bottom.",
                comment: "Shown under \"No substitution rules.\" in the Substitutions settings.")
     }
     /// A rule's context-menu item that turns it off.
@@ -1013,7 +1013,7 @@ enum SubstitutionsWording {
     }
     /// The same switch's VoiceOver hint.
     static var wholeWordHint: String {
-        String(localized: "Match only when the pattern is not adjacent to letters, digits, or underscores",
+        String(localized: "Skips matches next to letters, digits, or underscores",
                comment: "VoiceOver hint of the Match whole word only switch in the substitution rule editor.")
     }
     /// The test input field's placeholder.

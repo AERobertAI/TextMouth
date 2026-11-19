@@ -20,7 +20,7 @@ enum LeadingArticleWording {
     /// The pop-up's hint, which VoiceOver speaks and the pointer shows as a
     /// tooltip: what the setting decides, in words that need no example.
     static var pickerHint: String {
-        String(localized: "Chooses whether The, A, and An at the start of a title count when the Library sorts titles and when you type a title's first letters to go to it.",
+        String(localized: "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters.",
                comment: "Hint and tooltip of the Leading Articles pop-up in the Library settings. The, A, and An are the English articles the setting skips.")
     }
 

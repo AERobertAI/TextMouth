@@ -32,7 +32,7 @@ enum RecordingWording {
     }
     /// The microphone pop-up's hint.
     static var microphoneHint: String {
-        String(localized: "The microphone to record from. TextMouth remembers this choice for its own recordings; the input macOS uses for everything else stays as it is.",
+        String(localized: "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged.",
                comment: "VoiceOver hint and tooltip of the Microphone pop-up in the Record window. TextMouth is the app's name.")
     }
     /// What the pop-up shows when no microphone is connected.
@@ -50,7 +50,7 @@ enum RecordingWording {
     }
     /// The title field's hint.
     static var titleHint: String {
-        String(localized: "The name the recording is saved under, as an audiobook in your library.",
+        String(localized: "The audiobook's title in your library.",
                comment: "VoiceOver hint and tooltip of the Title field in the Record window.")
     }
     /// The title a recording starts with: "Recording" and when the window
@@ -191,7 +191,7 @@ enum RecordingWording {
     }
     /// Its hint.
     static var privacySettingsHint: String {
-        String(localized: "Opens System Settings at Privacy & Security, Microphone, where TextMouth can be allowed to use the microphone.",
+        String(localized: "Opens the Microphone privacy settings in System Settings.",
                comment: "VoiceOver hint of the Open Privacy Settings button of the Record window. Privacy & Security and Microphone are the names of places in macOS's System Settings, as macOS words them in the language.")
     }
 
@@ -325,7 +325,7 @@ enum RecordingWording {
     /// What the window says, and VoiceOver announces, once a take has held
     /// nothing but silence for a few seconds.
     static func noSound(device: String) -> String {
-        String(localized: "No sound is reaching TextMouth from \(device). Check that the microphone is on and not muted.",
+        String(localized: "No sound from \(device). Check that the microphone is on and not muted.",
                comment: "Said by the Record window when a recording has held nothing but silence for a few seconds. %@ is the name of the microphone.")
     }
 
@@ -363,7 +363,7 @@ enum RecordingWording {
     }
     /// Its hint.
     static var announceLevelHint: String {
-        String(localized: "While recording, VoiceOver speaks the level this often. Through speakers, VoiceOver's speech can be recorded.",
+        String(localized: "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded.",
                comment: "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level.")
     }
     /// The stepper choosing how often.
@@ -507,10 +507,10 @@ enum RecordingWording {
     /// with them.
     static func recoveredAnnouncement(count: Int) -> String {
         guard count != 1 else {
-            return String(localized: "TextMouth kept a recording from before it last quit, listed under \(recoveredHeading). Save it as an audiobook, or discard it.",
+            return String(localized: "Found a recording from before TextMouth last quit, under \(recoveredHeading). Save or discard it.",
                           comment: "Announcement of the Record window when it finds one recording left behind. %@ is the heading of the list of recovered recordings.")
         }
-        return String(localized: "TextMouth kept \(count) recordings from before it last quit, listed under \(recoveredHeading). Save each as an audiobook, or discard it.",
+        return String(localized: "Found \(count) recordings from before TextMouth last quit, under \(recoveredHeading). Save or discard each.",
                       comment: "Announcement of the Record window when it finds several recordings left behind. %1$lld is how many and %2$@ is the heading of the list of recovered recordings.")
     }
 
@@ -539,7 +539,7 @@ enum RecordingWording {
     }
     /// Its hint.
     static var saveRecoveredHint: String {
-        String(localized: "Saves this recording as an audiobook in the folder chosen in \(folderLabel), titled for when it was recorded.",
+        String(localized: "Saves this recording as an audiobook in the \(folderLabel) folder, titled by when it was recorded.",
                comment: "VoiceOver hint of the button that saves a recording left behind. %@ is the label of the pop-up that chooses the folder.")
     }
     /// The button that deletes a take left behind.
@@ -585,12 +585,12 @@ enum RecordingWording {
     }
     /// What the question explains while recording.
     static var closeWhileRecordingExplanation: String {
-        String(localized: "Closing this window ends the recording. \(stopAndSaveButton) keeps what was recorded as an audiobook in your library, \(discardButton) deletes it, and \(cancelButton) keeps recording.",
+        String(localized: "Closing ends the recording. \(stopAndSaveButton) saves it as an audiobook, \(discardButton) deletes it, and \(cancelButton) keeps recording.",
                comment: "Explanation under the question asked when the Record window is closed while recording. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that stops and saves, the one that deletes the recording, and the one that keeps recording.")
     }
     /// What the question explains for a recording that could not be saved.
     static var closeWithUnsavedExplanation: String {
-        String(localized: "This recording hasn't been saved. \(saveButton) tries again to save it as an audiobook in your library, \(discardButton) deletes it, and \(cancelButton) keeps the window open.",
+        String(localized: "This recording isn't saved. \(saveButton) tries again, \(discardButton) deletes it, and \(cancelButton) keeps the window open.",
                comment: "Explanation under the question asked when the Record window is closed with a recording that could not be saved. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that saves, the one that deletes the recording, and the one that keeps the window open.")
     }
     /// The first, default button while recording.

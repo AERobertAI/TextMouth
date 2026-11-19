@@ -45,7 +45,7 @@ enum LogsSettingsWording {
     /// pointer's help tag say it: both choices, and that a change applies to
     /// the next line and moves no file.
     static var pickerHint: String {
-        String(localized: "Chooses where TextMouth writes its diagnostic logs. \(dataDirectoryChoice) keeps them in its Logs folder, beside your books, where they move with the library and sync with it when it is in the cloud. \(machineChoice) keeps them in \(MachineLocalPaths.logsName), which never syncs. A change applies from the next line written; logs already written are not moved.",
+        String(localized: "Where TextMouth writes its diagnostic logs. \(dataDirectoryChoice) keeps them with your books, so they move and sync with the library. \(machineChoice) keeps them in \(MachineLocalPaths.logsName), which never syncs. A change applies from the next line; existing logs stay.",
                comment: "VoiceOver hint and tooltip of the Log location pop-up in the Storage settings. %1$@ and %2$@ are the names of its two choices, as the pop-up lists them, and %3$@ is the folder's path on this Mac, which stays as written.")
     }
 
@@ -59,16 +59,16 @@ enum LogsSettingsWording {
             return String(localized: "Logs are written to \(folder).",
                           comment: "The line under the Log location pop-up in the Storage settings. %@ is the folder's full path, which stays as written.")
         case .fallback(.libraryUnavailable):
-            return String(localized: "The library isn't available, so logs are written to \(folder) until it is.",
+            return String(localized: "The library isn't available, so logs go to \(folder) until it is.",
                           comment: "The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written.")
         case .fallback(.dataDirectoryMissing):
-            return String(localized: "The data directory is missing, so logs are written to \(folder) until it is back.",
+            return String(localized: "The data directory is missing, so logs go to \(folder) until it is back.",
                           comment: "The line under the Log location pop-up in the Storage settings while the data directory is missing. %@ is the folder's full path, which stays as written.")
         case .fallback(.logsFolderMissing):
-            return String(localized: "The data directory has no Logs folder, so logs are written to \(folder) until it has one again.",
+            return String(localized: "The data directory has no Logs folder, so logs go to \(folder) until it has one.",
                           comment: "The line under the Log location pop-up in the Storage settings while the data directory has no Logs folder. %@ is the folder's full path, which stays as written.")
         case .fallback(.logsFolderUnusable(let reason)):
-            return String(localized: "The data directory's Logs folder can't be written (\(reason)), so logs are written to \(folder) until it can.",
+            return String(localized: "The data directory's Logs folder can't be written (\(reason)), so logs go to \(folder) until it can.",
                           comment: "The line under the Log location pop-up in the Storage settings while the data directory's Logs folder cannot be written. %1$@ is the reason the system gives, which may be in English, and %2$@ is the folder's full path, which stays as written.")
         }
     }

@@ -393,7 +393,7 @@ final class RecordingWindowTests: XCTestCase {
         }
         XCTAssertTrue(saved, "the take was not saved: \(harness.model.phase)")
         XCTAssertTrue(harness.announcements.sentences.contains(
-            "AirPods Pro was disconnected, so recording stopped. What was recorded until then is kept."
+            "AirPods Pro was disconnected, so recording stopped. What was recorded is kept."
         ))
         XCTAssertEqual(harness.saver.calls.first?.take.duration ?? 0, 2, accuracy: 0.01)
     }
@@ -443,7 +443,7 @@ final class RecordingWindowTests: XCTestCase {
     func testSilenceIsAnnouncedOnceAfterFiveSeconds() async throws {
         let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.usb.id)
         await harness.model.record()
-        let warning = "No sound is reaching TextMouth from Studio Microphone. Check that the microphone is on and not muted."
+        let warning = "No sound from Studio Microphone. Check that the microphone is on and not muted."
 
         await harness.backend.record(seconds: 1, levels: RecordingLevels(average: -70, peak: -60))
         await harness.model.service.refresh()

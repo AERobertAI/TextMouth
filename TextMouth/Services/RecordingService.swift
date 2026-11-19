@@ -34,13 +34,13 @@ enum RecordingFailure: Error, Equatable, Sendable, LocalizedError {
             return String(localized: "TextMouth couldn't start recording from \(name).",
                           comment: "Error in the Record window when recording from the chosen microphone failed to start. %@ is the microphone's name.")
         case .deviceDisconnected(let name):
-            return String(localized: "\(name) was disconnected, so recording stopped. What was recorded until then is kept.",
+            return String(localized: "\(name) was disconnected, so recording stopped. What was recorded is kept.",
                           comment: "Error in the Record window when the microphone was unplugged while recording. %@ is the microphone's name.")
         case .diskFull:
-            return String(localized: "The disk is almost full, so recording stopped. What was recorded until then is kept.",
+            return String(localized: "The disk is almost full, so recording stopped. What was recorded is kept.",
                           comment: "Error in the Record window when the disk filled up while recording.")
         case .stoppedUnexpectedly:
-            return String(localized: "Recording stopped because the microphone reported a problem. What was recorded until then is kept.",
+            return String(localized: "Recording stopped because the microphone reported a problem. What was recorded is kept.",
                           comment: "Error in the Record window when recording stopped by itself because capture failed.")
         case .couldNotFinish:
             return String(localized: "The recording couldn't be finished properly. What was recorded is kept.",

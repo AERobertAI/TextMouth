@@ -1073,7 +1073,7 @@ enum SettingsWording {
     }
     /// The same pop-up's VoiceOver hint.
     static var navigationUnitControlsHint: String {
-        String(localized: "Choose no per-book control, one picker for both directions, or one menu with separate forward and backward pickers",
+        String(localized: "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
                comment: "VoiceOver hint of the Navigation unit controls pop-up in the Playback settings.")
     }
     /// The bookmark button checkbox's title.
@@ -1088,7 +1088,7 @@ enum SettingsWording {
     }
     /// The same checkbox's VoiceOver hint.
     static var showBookmarkHint: String {
-        String(localized: "Adds a button to add or remove a bookmark at the current position",
+        String(localized: "Adds or removes a bookmark at the current position",
                comment: "VoiceOver hint of the Show bookmark button checkbox in the Playback settings.")
     }
     /// The speed controls checkbox's title.
@@ -1103,12 +1103,12 @@ enum SettingsWording {
     }
     /// The same checkbox's VoiceOver hint.
     static var showSpeedHint: String {
-        String(localized: "Shows the speed adjustment buttons and current speed display",
+        String(localized: "Adds speed buttons and the current speed",
                comment: "VoiceOver hint of the Show speed controls checkbox in the Playback settings.")
     }
     /// The text under the playback control choices.
     static var navigationMenuExplanation: String {
-        String(localized: "Navigation menu changes are saved as defaults for the current book. Hiding the menus always uses the global skip choices while retaining book defaults for later.",
+        String(localized: "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept.",
                comment: "Explanation under the playback controls group's choices in the Playback settings.")
     }
     /// The playback controls group's heading.
