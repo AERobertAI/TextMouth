@@ -155,7 +155,7 @@ extension LibraryViewModel {
         let adopted = Self.adoptNewerRecordedPositions(in: &books, journaled: journaled, access: access, skips: skips)
         guard adopted > 0 else { return false }
         library.books = books
-        let phrase = CountWording.phrase(adopted, singular: "book", plural: "books")
+        let phrase = CountWording.phrase(adopted, singular: "book", plural: "books") // l10n: no (debug log text)
         DiagnosticLog.event(
             .storage,
             "LIBRARY_INDEX: took the reading positions of \(phrase) from their records, "
@@ -247,8 +247,8 @@ extension LibraryViewModel {
             DiagnosticLog.event(
                 .storage,
                 "FEED_INDEX: took the reading positions of "
-                    + "\(CountWording.phrase(adopted, singular: "feed item", plural: "feed items")) from their records, "
-                    + "which held checkpoints saved after their feeds' indexes"
+                    + "\(CountWording.phrase(adopted, singular: "feed item", plural: "feed items")) from their records, " // l10n: no (debug log text)
+                    + "which held checkpoints saved after their feeds' indexes" // l10n: no (debug log text)
             )
         }
         let joiningIDs = Set(rows.map(\.id))
@@ -429,10 +429,10 @@ extension LibraryViewModel {
         )
         guard added > 0 else { return false }
         library = repaired
-        let rows = CountWording.phrase(added, singular: "folder row", plural: "folder rows")
+        let rows = CountWording.phrase(added, singular: "folder row", plural: "folder rows") // l10n: no (debug log text)
         let source = includingFoldersOnDisk
-            ? "the folders on disk and the folders books are in, since the library began with no books or folders"
-            : "folders books are in that had none"
+            ? "the folders on disk and the folders books are in, since the library began with no books or folders" // l10n: no (debug log text)
+            : "folders books are in that had none" // l10n: no (debug log text)
         logFolderRepair("added \(rows) for \(source)")
         return true
     }
@@ -855,19 +855,18 @@ extension LibraryViewModel {
     nonisolated static func textReextractionOutcome(skippedInCloud: Int, heldByEdits: Int = 0) -> OperationOutcome {
         var sentences: [String] = []
         if skippedInCloud > 0 {
-            let books = CountWording.phrase(skippedInCloud, singular: "book in the cloud was", plural: "books in the cloud were")
-            sentences.append("\(books) skipped.")
+            sentences.append(String(localized: "\(skippedInCloud) books in the cloud were skipped.",
+                                    comment: "Part of the message after Redo Text Extraction finished: books whose files are only in the cloud were left out. %lld is how many books."))
         }
         if heldByEdits > 0 {
-            let books = CountWording.phrase(
-                heldByEdits,
-                singular: "book whose edited text can't be used yet was",
-                plural: "books whose edited text can't be used yet were"
-            )
-            sentences.append("\(books) skipped.")
+            sentences.append(String(localized: "\(heldByEdits) books whose edited text can't be used yet were skipped.",
+                                    comment: "Part of the message after Redo Text Extraction finished: books whose edited text is not taken yet were left out. %lld is how many books."))
         }
         guard !sentences.isEmpty else { return .success(nil) }
-        return .success((["Done."] + sentences).joined(separator: " "))
+        return .success(SentenceWording.joined([
+            String(localized: "Done.",
+                   comment: "First sentence of the message after Redo Text Extraction finished with some books skipped."),
+        ] + sentences))
     }
 
     /// Share automatic and manual extraction, releasing large parser results per
@@ -895,7 +894,14 @@ extension LibraryViewModel {
             return
         }
 
-        textExtraction.begin(force ? "Re-extracting text" : "Updating text cache", total: books.count)
+        textExtraction.begin(
+            force
+                ? String(localized: "Re-extracting text",
+                         comment: "Title of the progress shown while Redo Text Extraction reads every book's text again.")
+                : String(localized: "Updating text cache",
+                         comment: "Title of the progress shown while TextMouth brings every book's text cache up to date."),
+            total: books.count
+        )
 
         let updateProgress: @MainActor @Sendable (TextCacheUpdate) -> Void = { [weak self] update in
             guard let self else { return }
@@ -1251,7 +1257,7 @@ extension LibraryViewModel {
         let sourceURL = book.bookFileURL
         guard FileStamp(of: cacheURL) != nil else { return .readAgain }
         guard FileManager.default.fileExists(atPath: sourceURL.path) else {
-            return .unreadable(why: "its file is missing", missingFile: true)
+            return .unreadable(why: "its file is missing", missingFile: true) // l10n: no (debug log text)
         }
         // Whether content.md holds other bytes than its record describes.
         var contentChanged = false
@@ -1519,9 +1525,18 @@ extension LibraryViewModel {
     // run the same work.
 
     /// Words that begin each maintenance failure, before the reason.
-    private static let rebuildFailureContext = "Failed to rebuild directory"
-    private static let resetFailureContext = "Failed to rebuild to default"
-    private static let moveFailureContext = "Failed to move directory"
+    private static var rebuildFailureContext: String {
+        String(localized: "Failed to rebuild directory",
+               comment: "Begins the message when Rebuild Directory failed; the reason follows after a colon.")
+    }
+    private static var resetFailureContext: String {
+        String(localized: "Failed to rebuild to default",
+               comment: "Begins the message when Reset to Default failed; the reason follows after a colon.")
+    }
+    private static var moveFailureContext: String {
+        String(localized: "Failed to move directory",
+               comment: "Begins the message when moving the data directory failed; the reason follows after a colon.")
+    }
 
     /// Rebuild the .TextMouth directory structure, migrate all books,
     /// adopt orphaned .tmb packages, and extract missing content caches.
@@ -1559,7 +1574,8 @@ extension LibraryViewModel {
     /// library.", counting the library's own books, never a feed's items
     /// (FR11), which the rebuild leaves where they are.
     nonisolated static func rebuildDirectoryDoneMessage(_ library: Library) -> String {
-        "Done. \(CountWording.books(library.libraryBookCount)) in library."
+        String(localized: "Done. \(CountWording.books(library.libraryBookCount)) in library.",
+               comment: "Message after Rebuild Directory finished. %@ is a count of the library's books, such as \"743 books\".")
     }
 
     /// The work of Rebuild Directory: the legacy migration report, or the
@@ -1877,7 +1893,7 @@ extension LibraryViewModel {
             Self.countBooksOnlyInCloud(books, in: root, access: access)
         }
         guard notDownloaded == 0 else {
-            let count = CountWording.phrase(notDownloaded, singular: "book is", plural: "books are")
+            let count = CountWording.phrase(notDownloaded, singular: "book is", plural: "books are") // l10n: no (debug log text)
             DiagnosticLog.event(.storage, "DATA_DIRECTORY_MOVE: refused, since \(count) only in the cloud")
             throw DataDirectoryMoveRefusal.booksNotDownloaded(notDownloaded)
         }
@@ -1931,8 +1947,8 @@ extension LibraryViewModel {
         kept.feedShelf.changeRows { $0 = StorageBoundary.shared.rebasedToCurrent($0) }
         DiagnosticLog.event(
             .storage,
-            "DATA_DIRECTORY_MOVE: the library changed while it was copied; kept the change, "
-                + "\(CountWording.phrase(moved, singular: "book path", plural: "book paths")) moved"
+            "DATA_DIRECTORY_MOVE: the library changed while it was copied; kept the change, " // l10n: no (debug log text)
+                + "\(CountWording.phrase(moved, singular: "book path", plural: "book paths")) moved" // l10n: no (debug log text)
         )
         return kept
     }
@@ -2042,7 +2058,10 @@ extension LibraryViewModel {
     // MARK: - Using Another Library (FR02)
 
     /// Words that begin each Use This Library failure, before the reason.
-    private static let switchFailureContext = "Failed to switch libraries"
+    private static var switchFailureContext: String {
+        String(localized: "Failed to switch libraries",
+               comment: "Begins the message when Use This Library failed; the reason follows after a colon.")
+    }
 
     /// Use This Library, and Start New Library while the library isn't
     /// available (FR02): makes the library in `folder` the one TextMouth
@@ -2087,9 +2106,11 @@ extension LibraryViewModel {
         let unsaved = failureCenter.unsavedFailures()
         if dataDirectoryUnavailability == nil, !unsaved.isEmpty {
             let reasons = PersistenceBannerRow.rows(for: unsaved).map(\.text)
-            let message = ["\(Self.switchFailureContext): Some changes are not saved, and switching libraries would lose them."]
-                + reasons + ["Choose Retry Saving, then try again."]
-            return .failure(message.joined(separator: " "))
+            let message = [String(localized: "\(Self.switchFailureContext): Some changes are not saved, and switching libraries would lose them.",
+                                  comment: "First sentence of why Use This Library was refused: changes could not be saved yet. %@ is the failure's lead-in, \"Failed to switch libraries\".")]
+                + reasons + [String(localized: "Choose Retry Saving, then try again.",
+                                    comment: "Last sentence of why Use This Library was refused. Retry Saving is the name of a button on the failure banner.")]
+            return .failure(SentenceWording.joined(message))
         }
 
         // A fetch of the old library's files is dropped first: its passes
@@ -2113,10 +2134,12 @@ extension LibraryViewModel {
             if droppedFetch {
                 recheckAfterDroppedLibraryFetch()
             }
-            return .failure(
-                "TextMouth will open the library in \(folder.path) the next time it opens, but it couldn't open again "
-                    + "by itself: \(error.localizedDescription) Quit TextMouth and open it again."
-            )
+            return .failure(SentenceWording.joined([
+                String(localized: "TextMouth will open the library in \(folder.path) the next time it opens, but it couldn't open again by itself: \(error.localizedDescription)",
+                       comment: "First part of the message when Use This Library could not open TextMouth again. %1$@ is the library's folder; %2$@ is the system's reason, a sentence."),
+                String(localized: "Quit TextMouth and open it again.",
+                       comment: "Last sentence of the message when Use This Library could not open TextMouth again: what to do."),
+            ]))
         }
         // The changes a library that isn't available couldn't take are given
         // up, as the confirmation said, so quitting doesn't ask about them.
@@ -2124,7 +2147,8 @@ extension LibraryViewModel {
             failureCenter.withdraw(failure.key)
         }
         relauncher.quit()
-        return .success("Opening the library in \(folder.path)…")
+        return .success(String(localized: "Opening the library in \(folder.path)…",
+                               comment: "Message after Use This Library succeeded: TextMouth opens again on the library. %@ is the library's folder."))
     }
 
     // MARK: - Finished Books at Their Ends (TODO P07)
@@ -2566,7 +2590,7 @@ struct TextMouthRelauncher {
         // (phase 0): opening throws, so Use This Library reports it, and
         // quitting does nothing, so this instance carries on.
         return TextMouthRelauncher(
-            openNewInstance: { throw IOSUnavailable.feature("Opening TextMouth again") },
+            openNewInstance: { throw IOSUnavailable.feature("Opening TextMouth again") // l10n: no (a feature name in an error the iPhone never shows) },
             quit: {}
         )
         #endif
