@@ -194,15 +194,15 @@ struct MemoryQuitMarker: Codable, Equatable, Sendable {
         let when = date.formatted(style)
         let gigabytes = MemoryFootprint.gigabytes(footprint)
         if wasNothingPlaying {
-            return String(localized: "TextMouth quit on \(when) to protect your Mac: its memory grew to \(gigabytes) GB while nothing was playing. Your place was saved.",
+            return String(localized: "TextMouth quit on \(when): its memory grew to \(gigabytes) GB while nothing was playing. Your place was saved.",
                           comment: "Alert text at the next launch after TextMouth quit to protect the Mac, when nothing was playing. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.")
         }
         // A title the marker kept names the book; with none, the sentence says "a book".
         guard let title = bookTitle, !title.isEmpty else {
-            return String(localized: "TextMouth quit on \(when) to protect your Mac: its memory grew to \(gigabytes) GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+            return String(localized: "TextMouth quit on \(when): its memory grew to \(gigabytes) GB while a book played, because of a fault in macOS's audio. Your place was saved.",
                           comment: "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played whose title was not kept. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.")
         }
-        return String(localized: "TextMouth quit on \(when) to protect your Mac: its memory grew to \(gigabytes) GB while \(title) played, because of a fault in macOS's audio. Your place was saved.",
+        return String(localized: "TextMouth quit on \(when): its memory grew to \(gigabytes) GB while \(title) played, because of a fault in macOS's audio. Your place was saved.",
                       comment: "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1; %3$@ is the book's title.")
     }
 

@@ -16288,6 +16288,39 @@
         }
       }
     },
+    "TextMouth quit on %@: its memory grew to %@ GB while %@ played, because of a fault in macOS's audio. Your place was saved." : {
+      "comment" : "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1; %3$@ is the book's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth quit on %1$@: its memory grew to %2$@ GB while %3$@ played, because of a fault in macOS's audio. Your place was saved."
+          }
+        }
+      }
+    },
+    "TextMouth quit on %@: its memory grew to %@ GB while a book played, because of a fault in macOS's audio. Your place was saved." : {
+      "comment" : "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played whose title was not kept. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth quit on %1$@: its memory grew to %2$@ GB while a book played, because of a fault in macOS's audio. Your place was saved."
+          }
+        }
+      }
+    },
+    "TextMouth quit on %@: its memory grew to %@ GB while nothing was playing. Your place was saved." : {
+      "comment" : "Alert text at the next launch after TextMouth quit to protect the Mac, when nothing was playing. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth quit on %1$@: its memory grew to %2$@ GB while nothing was playing. Your place was saved."
+          }
+        }
+      }
+    },
     "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Automatic does, as the alert says it before it is chosen."
     },
