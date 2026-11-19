@@ -73,7 +73,7 @@ A change applies from the next chapter spoken.
 The Text tab's Import Rules… reads a W3C pronunciation lexicon (a .pls file) and adds its spelling-to-words entries after your rules, as plain text rules that match a whole word and ignore case.
 Its hint says the entries go after your rules, and that entries giving only phonetic spellings are set aside.
 An alert titled "Rules Imported" then says what happened, as in "Added 3 rules from “names.pls”.
-It goes on, as needed, with "1 rule was already in your rules." and "2 entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside."
+It goes on, as needed, with "1 rule was already in your rules." and "2 entries give only a phonetic spelling, so they were set aside."
 A rule already among yours is skipped, and a lexicon adds at most 5000 rules at a time, saying how many entries it did not read.
 A file that is not a lexicon, or is larger than 8 MB, ends in an alert titled "Import Failed".
 Export Rules… saves your plain text rules that are on as a lexicon, named "Substitution Rules.pls" at first.
@@ -93,7 +93,7 @@ In a regular expression rule's replacement, $1, $2, and so on put back what each
 ## Reset sound effects
 <!-- id: reset-sound-effects; keys: soundEffectsEnabled, soundEffectsVolume, soundEffectAssignments, sound assignments, Reset to Defaults; src: TextMouth/Views/Settings/SoundEffectsSettingsView.swift -->
 
-The Sounds tab's Reset to Defaults gives the sound assignments, the volume, and sounds on their defaults again at once, and VoiceOver says "The sound effects are reset to the defaults."
+The Sounds tab's Reset to Defaults gives the sound assignments, the volume, and sounds on their defaults again at once, and VoiceOver says "Sound effects reset to defaults"
 
 ## Books Finished and listening time
 <!-- id: books-finished-listening-time; keys: reading_stats.json, streak, Recently Finished, Today, This Week, All Time, sleep; src: TextMouth/Views/Settings/ReadingStatsView.swift, TextMouth/Models/ReadingStatsTile.swift, TextMouth/Services/ReadingStatsService.swift -->
