@@ -941,140 +941,7 @@ struct LibraryView: View {
         }
     }
 
-    // MARK: - Wording
-
-/// The words of the Library window's list, its toolbar, and its folder
-/// menu that no other wording enum owns (FR34). Cancel and OK come from
-/// `PhoneAppWording`, "New Folder" from `LibrarySheetWording`, and the sort
-/// fields' names from `LibrarySortField.title`.
-enum LibraryListWording {
-    /// What VoiceOver calls the View pop-up, whose items are the views' names.
-    static var viewPickerLabel: String {
-        String(localized: "Library view", comment: "Spoken label of the View pop-up of a Library window, which chooses the view of the library shown, such as Unopened.")
-    }
-
-    /// The View pop-up's title.
-    static var view: String {
-        String(localized: "View", comment: "Title of the pop-up in a Library window that chooses the view of the library shown.")
-    }
-
-    /// The search field's prompt.
-    static var searchPrompt: String {
-        String(localized: "Search books", comment: "Prompt of the Library window's search field, which narrows the listed books.")
-    }
-
-    /// The rotor that moves between books.
-    static var booksRotor: String {
-        String(localized: "Books", comment: "Name of the VoiceOver rotor that moves between the books of the Library list.")
-    }
-
-    /// The Folders section's header and the rotor that moves between folders.
-    static var foldersHeader: String {
-        String(localized: "Folders", comment: "Header of the Library list's section of folders, and name of the VoiceOver rotor that moves between them.")
-    }
-
-    /// The toolbar button that goes to the parent folder.
-    static var upOneLevel: String {
-        String(localized: "Up One Level", comment: "Toolbar button of a Library window that goes up to the folder that holds the folder shown.")
-    }
-
-    /// What VoiceOver calls it.
-    static var goUpOneFolderLevel: String {
-        String(localized: "Go up one folder level", comment: "Spoken label of the toolbar button that goes up to the folder that holds the folder shown.")
-    }
-
-    /// The edit mode toolbar button's title while edit mode is on.
-    static var done: String {
-        String(localized: "Done", comment: "Title of the toolbar button that leaves edit mode in the Library list, shown while edit mode is on.")
-    }
-
-    /// The edit mode toolbar button's title while edit mode is off.
-    static var edit: String {
-        String(localized: "Edit", comment: "Title of the toolbar button that enters edit mode in the Library list, for selecting several books.")
-    }
-
-    /// What VoiceOver calls the button while edit mode is on.
-    static var exitEditMode: String {
-        String(localized: "Exit edit mode", comment: "Spoken label of the toolbar button that leaves edit mode in the Library list.")
-    }
-
-    /// What VoiceOver calls the button while edit mode is off.
-    static var enterEditMode: String {
-        String(localized: "Enter edit mode", comment: "Spoken label of the toolbar button that enters edit mode in the Library list.")
-    }
-
-    /// The edit button's hint while edit mode is on.
-    static func exitsEditMode(selectedCount: Int) -> String {
-        String(localized: "Exits edit mode. \(selectedCount) books selected.", comment: "Hint of the toolbar's edit mode button while edit mode is on. %lld is how many books are selected.")
-    }
-
-    /// The edit button's hint while edit mode is off.
-    static var entersEditMode: String {
-        String(localized: "Enters edit mode, for selecting several books to move or remove.", comment: "Hint of the toolbar's edit mode button while edit mode is off.")
-    }
-
-    /// What VoiceOver calls the toolbar's New Folder button.
-    static var createNewFolder: String {
-        String(localized: "Create new folder", comment: "Spoken label of the toolbar button that opens the sheet that makes a new folder.")
-    }
-
-    /// The title of the question about deleting a folder that holds books.
-    static var deleteFolderQuestion: String {
-        String(localized: "Delete Folder?", comment: "Title of the question asked before a folder that holds books or folders is deleted.")
-    }
-
-    /// The answer that moves a folder's contents out before it is deleted.
-    static var moveContentsOut: String {
-        String(localized: "Move Contents Out", comment: "Button of the question about deleting a folder: it moves the folder's books and subfolders to another place, then deletes the folder.")
-    }
-
-    /// The Sort menu's title.
-    static var sort: String {
-        String(localized: "Sort", comment: "Title of the Library window's toolbar menu that chooses how the books are sorted.")
-    }
-
-    /// The Sort menu's item that gives every subfolder this sort.
-    static var applySortToSubfolders: String {
-        String(localized: "Apply Sort to All Subfolders", comment: "Item of the Sort menu that gives every subfolder of the folder shown the sort chosen here.")
-    }
-
-    /// The Continue button's visible text.
-    static func continueVisible(_ title: String) -> String {
-        String(localized: "Continue: \(title)", comment: "Text of the Continue button at the top of the Library list. %@ is the title of the book last read.")
-    }
-
-    /// The Continue button's hint.
-    static var continueHint: String {
-        String(localized: "Opens the last book you were reading", comment: "Hint of the Continue button at the top of the Library list.")
-    }
-
-    /// What VoiceOver calls the Continue button, before its time.
-    static func continueListeningTo(_ title: String) -> String {
-        String(localized: "Continue listening to \(title)", comment: "Spoken label of the Continue button at the top of the Library list. %@ is the title of the book last read. The time left may follow it.")
-    }
-
-    /// The folder menu's item that renames the folder.
-    static var renameFolder: String {
-        String(localized: "Rename Folder...", comment: "Item of a folder's menu that opens the sheet that renames the folder. The three dots mean a sheet opens.")
-    }
-
-    /// The folder menu's item that moves the folder.
-    static var moveFolder: String {
-        String(localized: "Move Folder...", comment: "Item of a folder's menu that opens the sheet that moves the folder under another folder. The three dots mean a sheet opens.")
-    }
-
-    /// The folder menu's item that deletes the folder.
-    static var deleteFolder: String {
-        String(localized: "Delete Folder...", comment: "Item of a folder's menu that deletes the folder. The three dots mean a question follows.")
-    }
-
-    /// The Open Book choice's hint, which the Add to Library sheet reuses.
-    static var importBookHint: String {
-        String(localized: "Opens a file picker to import books in any format TextMouth reads.", comment: "Hint of the choice that opens a file picker to import books, in the Add to Library sheet.")
-    }
-}
-
-// MARK: - The Sort Menu
+    // MARK: - The Sort Menu
 
     /// The Sort menu. Every item reads the one sort the location shows and
     /// changes it only through userChangedSort, so the menu, the window
@@ -2630,5 +2497,138 @@ extension LibraryView {
             onOpenBook: onOpenBook,
             feedFolders: feedFolders
         )
+    }
+}
+
+// MARK: - Wording
+
+/// The words of the Library window's list, its toolbar, and its folder
+/// menu that no other wording enum owns (FR34). Cancel and OK come from
+/// `PhoneAppWording`, "New Folder" from `LibrarySheetWording`, and the sort
+/// fields' names from `LibrarySortField.title`.
+enum LibraryListWording {
+    /// What VoiceOver calls the View pop-up, whose items are the views' names.
+    static var viewPickerLabel: String {
+        String(localized: "Library view", comment: "Spoken label of the View pop-up of a Library window, which chooses the view of the library shown, such as Unopened.")
+    }
+
+    /// The View pop-up's title.
+    static var view: String {
+        String(localized: "View", comment: "Title of the pop-up in a Library window that chooses the view of the library shown.")
+    }
+
+    /// The search field's prompt.
+    static var searchPrompt: String {
+        String(localized: "Search books", comment: "Prompt of the Library window's search field, which narrows the listed books.")
+    }
+
+    /// The rotor that moves between books.
+    static var booksRotor: String {
+        String(localized: "Books", comment: "Name of the VoiceOver rotor that moves between the books of the Library list.")
+    }
+
+    /// The Folders section's header and the rotor that moves between folders.
+    static var foldersHeader: String {
+        String(localized: "Folders", comment: "Header of the Library list's section of folders, and name of the VoiceOver rotor that moves between them.")
+    }
+
+    /// The toolbar button that goes to the parent folder.
+    static var upOneLevel: String {
+        String(localized: "Up One Level", comment: "Toolbar button of a Library window that goes up to the folder that holds the folder shown.")
+    }
+
+    /// What VoiceOver calls it.
+    static var goUpOneFolderLevel: String {
+        String(localized: "Go up one folder level", comment: "Spoken label of the toolbar button that goes up to the folder that holds the folder shown.")
+    }
+
+    /// The edit mode toolbar button's title while edit mode is on.
+    static var done: String {
+        String(localized: "Done", comment: "Title of the toolbar button that leaves edit mode in the Library list, shown while edit mode is on.")
+    }
+
+    /// The edit mode toolbar button's title while edit mode is off.
+    static var edit: String {
+        String(localized: "Edit", comment: "Title of the toolbar button that enters edit mode in the Library list, for selecting several books.")
+    }
+
+    /// What VoiceOver calls the button while edit mode is on.
+    static var exitEditMode: String {
+        String(localized: "Exit edit mode", comment: "Spoken label of the toolbar button that leaves edit mode in the Library list.")
+    }
+
+    /// What VoiceOver calls the button while edit mode is off.
+    static var enterEditMode: String {
+        String(localized: "Enter edit mode", comment: "Spoken label of the toolbar button that enters edit mode in the Library list.")
+    }
+
+    /// The edit button's hint while edit mode is on.
+    static func exitsEditMode(selectedCount: Int) -> String {
+        String(localized: "Exits edit mode. \(selectedCount) books selected.", comment: "Hint of the toolbar's edit mode button while edit mode is on. %lld is how many books are selected.")
+    }
+
+    /// The edit button's hint while edit mode is off.
+    static var entersEditMode: String {
+        String(localized: "Enters edit mode, for selecting several books to move or remove.", comment: "Hint of the toolbar's edit mode button while edit mode is off.")
+    }
+
+    /// What VoiceOver calls the toolbar's New Folder button.
+    static var createNewFolder: String {
+        String(localized: "Create new folder", comment: "Spoken label of the toolbar button that opens the sheet that makes a new folder.")
+    }
+
+    /// The title of the question about deleting a folder that holds books.
+    static var deleteFolderQuestion: String {
+        String(localized: "Delete Folder?", comment: "Title of the question asked before a folder that holds books or folders is deleted.")
+    }
+
+    /// The answer that moves a folder's contents out before it is deleted.
+    static var moveContentsOut: String {
+        String(localized: "Move Contents Out", comment: "Button of the question about deleting a folder: it moves the folder's books and subfolders to another place, then deletes the folder.")
+    }
+
+    /// The Sort menu's title.
+    static var sort: String {
+        String(localized: "Sort", comment: "Title of the Library window's toolbar menu that chooses how the books are sorted.")
+    }
+
+    /// The Sort menu's item that gives every subfolder this sort.
+    static var applySortToSubfolders: String {
+        String(localized: "Apply Sort to All Subfolders", comment: "Item of the Sort menu that gives every subfolder of the folder shown the sort chosen here.")
+    }
+
+    /// The Continue button's visible text.
+    static func continueVisible(_ title: String) -> String {
+        String(localized: "Continue: \(title)", comment: "Text of the Continue button at the top of the Library list. %@ is the title of the book last read.")
+    }
+
+    /// The Continue button's hint.
+    static var continueHint: String {
+        String(localized: "Opens the last book you were reading", comment: "Hint of the Continue button at the top of the Library list.")
+    }
+
+    /// What VoiceOver calls the Continue button, before its time.
+    static func continueListeningTo(_ title: String) -> String {
+        String(localized: "Continue listening to \(title)", comment: "Spoken label of the Continue button at the top of the Library list. %@ is the title of the book last read. The time left may follow it.")
+    }
+
+    /// The folder menu's item that renames the folder.
+    static var renameFolder: String {
+        String(localized: "Rename Folder...", comment: "Item of a folder's menu that opens the sheet that renames the folder. The three dots mean a sheet opens.")
+    }
+
+    /// The folder menu's item that moves the folder.
+    static var moveFolder: String {
+        String(localized: "Move Folder...", comment: "Item of a folder's menu that opens the sheet that moves the folder under another folder. The three dots mean a sheet opens.")
+    }
+
+    /// The folder menu's item that deletes the folder.
+    static var deleteFolder: String {
+        String(localized: "Delete Folder...", comment: "Item of a folder's menu that deletes the folder. The three dots mean a question follows.")
+    }
+
+    /// The Open Book choice's hint, which the Add to Library sheet reuses.
+    static var importBookHint: String {
+        String(localized: "Opens a file picker to import books in any format TextMouth reads.", comment: "Hint of the choice that opens a file picker to import books, in the Add to Library sheet.")
     }
 }
