@@ -254,7 +254,7 @@ extension RepeatedSymbolsSettingsView {
     }
     /// The style picker's spoken hint.
     nonisolated static var styleHint: String {
-        String(localized: "Choose how the voice reads one symbol written several times in a row, such as a line of asterisks",
+        String(localized: "How the voice reads a symbol written several times in a row",
                comment: "VoiceOver hint of the pop-up button that chooses how the voice reads a run of one symbol.")
     }
     /// The threshold field and stepper's label, shown beside them too.
@@ -269,12 +269,12 @@ extension RepeatedSymbolsSettingsView {
     }
     /// The threshold field's spoken hint.
     nonisolated static var thresholdFieldHint: String {
-        String(localized: "A number from 2 to 99. A run with at least this many symbols is read as a count or left out, as the style says.",
+        String(localized: "A number from 2 to 99",
                comment: "VoiceOver hint of the field that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.")
     }
     /// The threshold stepper's spoken hint.
     nonisolated static var thresholdStepperHint: String {
-        String(localized: "Raises or lowers the number of symbols by one, from 2 to 99",
+        String(localized: "Changes the number by one, from 2 to 99",
                comment: "VoiceOver hint of the stepper that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.")
     }
     /// The Never collapse checkbox's label.
@@ -284,7 +284,7 @@ extension RepeatedSymbolsSettingsView {
     }
     /// The Never collapse checkbox's spoken hint.
     nonisolated static var neverCollapseHint: String {
-        String(localized: "When checked, every run is read symbol by symbol, whatever the style",
+        String(localized: "Overrides the style",
                comment: "VoiceOver hint of the Never collapse checkbox in Settings, Text, Repeated Symbols.")
     }
     /// The symbols field's visible caption.
@@ -299,7 +299,7 @@ extension RepeatedSymbolsSettingsView {
     }
     /// The symbols field's tooltip and spoken hint: what its characters mean.
     nonisolated static var symbolsHint: String {
-        String(localized: "Each character listed can form a run. Spaces are ignored, a symbol listed twice counts once, and letters and digits never form runs.",
+        String(localized: "Each character listed can form a run. Spaces are ignored, and letters and digits never form runs.",
                comment: "Tooltip and VoiceOver hint of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.")
     }
     /// The reset button's title.
@@ -314,7 +314,7 @@ extension RepeatedSymbolsSettingsView {
     }
     /// The reset button's spoken hint.
     nonisolated static var resetHint: String {
-        String(localized: "Restores the standard list: asterisks, hyphens, equals signs, and the other ASCII symbols, with bullets, dashes, the ellipsis, and box-drawing lines",
+        String(localized: "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines",
                comment: "VoiceOver hint of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.")
     }
     /// What VoiceOver says once the list is reset.
@@ -324,7 +324,7 @@ extension RepeatedSymbolsSettingsView {
     }
     /// The caption under the group's controls.
     nonisolated static var explanation: String {
-        String(localized: "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Runs are rewritten before the rules above, in speech only: the screen and braille keep every symbol.",
+        String(localized: "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
                comment: "Caption under the controls of Settings, Text, Repeated Symbols that explains what a run is and that only speech changes.")
     }
 

@@ -4606,6 +4606,9 @@
     "A newer TextMouth edited this audio, so this version leaves its edits alone." : {
       "comment" : "Said when the book's saved edit history was written by a later version of TextMouth than this one."
     },
+    "A number from 2 to 99" : {
+      "comment" : "VoiceOver hint of the field that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols."
+    },
     "A number from 2 to 99. A run with at least this many symbols is read as a count or left out, as the style says." : {
       "comment" : "VoiceOver hint of the field that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols."
     },
@@ -4613,6 +4616,9 @@
       "comment" : "Problem found in a typed filter chain: a single quote is opened and never closed. %@ is the text of the part holding it."
     },
     "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Runs are rewritten before the rules above, in speech only: the screen and braille keep every symbol." : {
+      "comment" : "Caption under the controls of Settings, Text, Repeated Symbols that explains what a run is and that only speech changes."
+    },
+    "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol." : {
       "comment" : "Caption under the controls of Settings, Text, Repeated Symbols that explains what a run is and that only speech changes."
     },
     "A stretch of the edits runs past the end of “%@”." : {
@@ -5971,6 +5977,9 @@
     },
     "Changes not saved" : {
       "comment" : "Storage settings status: some changes could not be saved."
+    },
+    "Changes the number by one, from 2 to 99" : {
+      "comment" : "VoiceOver hint of the stepper that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols."
     },
     "Changes the speed in steps of %@ times" : {
       "comment" : "Accessibility hint of the audio speed control that adjusts in steps. %@ is the size of one step, such as 0.05."
@@ -7746,6 +7755,9 @@
     "Each character listed can form a run. Spaces are ignored, a symbol listed twice counts once, and letters and digits never form runs." : {
       "comment" : "Tooltip and VoiceOver hint of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols."
     },
+    "Each character listed can form a run. Spaces are ignored, and letters and digits never form runs." : {
+      "comment" : "Tooltip and VoiceOver hint of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols."
+    },
     "Each line beginning with <!-- chapter: starts a chapter; keep those lines." : {
       "comment" : "Second sentence of the Edit Text explanation. \"<!-- chapter:\" is the literal text that begins a chapter line in the file; it stays exactly as written."
     },
@@ -9077,6 +9089,9 @@
     },
     "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts." : {
       "comment" : "Hint of the double press time stepper in Settings: what the time is, and that a key that has one action for a single press and another for a double press waits for that time before acting on a single press."
+    },
+    "How the voice reads a symbol written several times in a row" : {
+      "comment" : "VoiceOver hint of the pop-up button that chooses how the voice reads a run of one symbol."
     },
     "ISBN" : {
       "comment" : "Name of the book information sheet's row that shows a book's ISBN, its international book number."
@@ -12286,6 +12301,9 @@
     "Out at %@." : {
       "comment" : "Said as the audio editor's Mark Out marks the selection's end. %@ is the time in words. A sentence about the selection it makes may follow."
     },
+    "Overrides the style" : {
+      "comment" : "VoiceOver hint of the Never collapse checkbox in Settings, Text, Repeated Symbols."
+    },
     "Page" : {
       "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.\nLabel of the Go to Page field, where the user types a page of the book."
     },
@@ -13781,6 +13799,9 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once the view is restored, by its restored name. Placeholders in order: name."
     },
     "Restores the standard list: asterisks, hyphens, equals signs, and the other ASCII symbols, with bullets, dashes, the ellipsis, and box-drawing lines" : {
+      "comment" : "VoiceOver hint of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols."
+    },
+    "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines" : {
       "comment" : "VoiceOver hint of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols."
     },
     "Restores this action's default shortcuts, which follow later releases' changes" : {
