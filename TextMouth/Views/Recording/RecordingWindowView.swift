@@ -67,11 +67,11 @@ struct RecordingWindowView: View {
                     in: RecordingWording.announceIntervals,
                     step: 5
                 ) {
-                    Text("\(RecordingWording.announceIntervalLabel): \(model.levelAnnouncementInterval)")
+                    Text(RecordingWording.announceIntervalText(seconds: model.levelAnnouncementInterval))
                 }
                 // A stepper's title does not become its accessibility label.
                 .accessibilityLabel(RecordingWording.announceIntervalLabel)
-                .accessibilityValue("\(model.levelAnnouncementInterval) seconds")
+                .accessibilityValue(RecordingWording.announceIntervalValue(seconds: model.levelAnnouncementInterval))
             }
 
             Section {

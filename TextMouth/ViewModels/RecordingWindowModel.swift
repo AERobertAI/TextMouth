@@ -578,9 +578,7 @@ final class RecordingWindowModel: ObservableObject {
         RecordingTakeFiles.remove(recovered.url)
         RecordingTakeFiles.remove(RecordingTakeFiles.encodingURL(for: recovered.url))
         recoveredTakes.removeAll { $0.id == recovered.id }
-        tell(RecordingWording.recoveredDiscarded(
-            RecordingWording.recoveredTake(startedAt: recovered.startedAt, duration: recovered.duration)
-        ))
+        tell(RecordingWording.recoveredDiscarded(startedAt: recovered.startedAt, duration: recovered.duration))
     }
 
     // MARK: Once a Second
