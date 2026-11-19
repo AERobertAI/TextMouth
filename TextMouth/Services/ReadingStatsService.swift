@@ -394,7 +394,7 @@ final class ReadingStatsService: ObservableObject {
             because: reason,
             logging: "READING_STATS_FILE",
             in: .statistics,
-            standIn: "the statistics start afresh"
+            standIn: "the statistics start afresh" // l10n: no (written to the debug log)
         )
     }
 

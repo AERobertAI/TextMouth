@@ -1338,6 +1338,17 @@
     "%@, edited by hand" : {
       "comment" : "What VoiceOver says for a field of the book information sheet that the user edited by hand. %@ is the field's name, such as \"Book title\"."
     },
+    "%@, finished %@" : {
+      "comment" : "VoiceOver label of a row of Recently Finished in Settings, Stats. %1$@ is the book's title; %2$@ is the date it was finished, such as November 18, 2026.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, finished %2$@"
+          }
+        }
+      }
+    },
     "%@, hidden" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a row's action or the context menu gives the view name a visibility (finding 12): \"Feeds, hidden\", \"Feeds, shown always\", \"Feeds, shown when applicable\". The pop-up says its own new value. This is the case .hidden. Placeholders in order: name."
     },
@@ -1771,6 +1782,29 @@
         }
       }
     },
+    "%lld audiobooks" : {
+      "comment" : "A count of finished audiobooks, one item of the Stats pane's breakdown of finished books by kind, such as \"2 audiobooks\". %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld audiobook"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld audiobooks"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld bookmarks" : {
       "comment" : "A count of bookmarks standing alone, as Speak Info and a feed item's row say it. %lld is the number of bookmarks.",
       "localizations" : {
@@ -1948,6 +1982,52 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld books couldn't be read"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books finished all time" : {
+      "comment" : "What VoiceOver says for the Stats pane's tile of books finished in all, the library's whole history; a colon and the count of each kind may follow. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book finished all time"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books finished all time"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books finished this year" : {
+      "comment" : "What VoiceOver says for the Stats pane's tile of books finished this year; a colon and the count of each kind may follow. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book finished this year"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books finished this year"
                 }
               }
             }
@@ -2455,7 +2535,7 @@
       }
     },
     "%lld days" : {
-      "comment" : "A number of days, as the audio editor's original audio is kept for them. %lld is the number of days.\nA number of days, as the setting that deletes downloads after playing says it. %lld is the number of days.",
+      "comment" : "A count of days in a row, the Stats pane's current listening streak, such as \"3 days\". %lld is the number of days.\nA number of days, as the audio editor's original audio is kept for them. %lld is the number of days.\nA number of days, as the setting that deletes downloads after playing says it. %lld is the number of days.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -3499,6 +3579,29 @@
         }
       }
     },
+    "%lld other books" : {
+      "comment" : "A count of finished books of no known kind, one item of the Stats pane's breakdown of finished books by kind, such as \"1 other book\". %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld other book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld other books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld other files" : {
       "comment" : "Last part of a list of the kinds of file a place holds: how many files of the kinds not named. %lld is the number of files.",
       "localizations" : {
@@ -3610,6 +3713,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld percent, %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld podcast episodes" : {
+      "comment" : "A count of finished podcast episodes, one item of the Stats pane's breakdown of finished books by kind, such as \"1 podcast episode\". %lld is the number of episodes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld podcast episode"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld podcast episodes"
                 }
               }
             }
@@ -3840,6 +3966,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld subfolders"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld text books" : {
+      "comment" : "A count of finished text books, one item of the Stats pane's breakdown of finished books by kind, such as \"4 text books\". %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld text book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld text books"
                 }
               }
             }
@@ -4736,6 +4885,9 @@
     "All Folders" : {
       "comment" : "Name of the library's top level in the Folders view, where the window title and the folder announcements call it that. It holds every folder."
     },
+    "All Time" : {
+      "comment" : "Title of the Stats pane's tile showing the total listening time."
+    },
     "All books by the same author" : {
       "comment" : "Hint of the Same Author criterion of Find Duplicate Books."
     },
@@ -5489,6 +5641,12 @@
           }
         }
       }
+    },
+    "Books Finished All Time" : {
+      "comment" : "Title of the Stats pane's tile showing how many books were ever finished."
+    },
+    "Books Finished This Year" : {
+      "comment" : "Title of the Stats pane's tile showing how many books were finished this year."
     },
     "Books Imported" : {
       "comment" : "Title of the library's alert as a ZIP batch that added several books ends with something to tell about some of them, such as chapters left out. Title case."
@@ -6579,6 +6737,9 @@
     "Create new folder" : {
       "comment" : "Spoken label of the toolbar button that opens the sheet that makes a new folder."
     },
+    "Current Streak" : {
+      "comment" : "Title of the Stats pane's tile showing how many days in a row the user has listened."
+    },
     "Current Timer" : {
       "comment" : "Heading of the sleep timer sheet's section about the timer running now.",
       "localizations" : {
@@ -6589,6 +6750,9 @@
           }
         }
       }
+    },
+    "Current listening streak" : {
+      "comment" : "What VoiceOver says before the count of days of the current listening streak on the Stats pane; a colon and the count follow."
     },
     "Current pattern: %@" : {
       "comment" : "A summary of the restart gesture's steps under its editor in the Miscellaneous settings, shown and read by VoiceOver. %@ is the steps in order, such as \"Previous track, then Play\"."
@@ -9602,11 +9766,20 @@
     "Listening" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The heading over the listening options."
     },
+    "Listening Time" : {
+      "comment" : "Heading of the section of Settings, Stats that shows the listening time of today, this week, and all time."
+    },
     "Listening statistics could not be saved: %@" : {
       "comment" : "Failure notice: the listening statistics could not be saved. %@ is the reason, a sentence from the system."
     },
     "Listening statistics saved." : {
       "comment" : "Announcement after a retry saved the listening statistics that had failed to save."
+    },
+    "Listening time this week" : {
+      "comment" : "What VoiceOver says before the listening time of this week on the Stats pane; a colon and the time follow."
+    },
+    "Listening time today" : {
+      "comment" : "What VoiceOver says before the listening time of today on the Stats pane; a colon and the time follow."
     },
     "Listing %lld matches in %@" : {
       "comment" : "Announcement once Show All has listed every match of a book. %1$lld is the number of matches and %2$@ is the book's title.",
@@ -12268,7 +12441,7 @@
       "comment" : "How VoiceOver reads the problem shown under a field. %@ is the problem's sentence."
     },
     "Progress" : {
-      "comment" : "Label of the progress bar of a save or an export in the audio editor."
+      "comment" : "Heading of the section of Settings, Stats that shows the listening streak and the number of books finished.\nLabel of the progress bar of a save or an export in the audio editor."
     },
     "Publication Date" : {
       "comment" : "Name of the book information sheet's field for a book's publication date."
@@ -12549,6 +12722,9 @@
     },
     "Rebuilding the data directory..." : {
       "comment" : "Storage settings status line while Rebuild Directory runs."
+    },
+    "Recently Finished" : {
+      "comment" : "Heading of the section of Settings, Stats that lists the books finished most recently, each with the date."
     },
     "Record" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Starts recording in the Record window.\nTitle of the button in the Record window that starts recording."
@@ -17544,6 +17720,9 @@
     "This Mac is offline, so “%@” can't be downloaded. Connect to the internet and try again." : {
       "comment" : "Why a feed item's download failed: this Mac has no internet. %@ is the item's title."
     },
+    "This Week" : {
+      "comment" : "Title of the Stats pane's tile showing the listening time of this week."
+    },
     "This Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there.",
       "localizations" : {
@@ -18034,6 +18213,9 @@
     "To use it, open the book and choose %@ from the Book menu." : {
       "comment" : "Last sentence of a notice after an import, saying how to attach the transcript file by hand. %@ is the name of the Attach Transcript command in the Book menu."
     },
+    "Today" : {
+      "comment" : "Title of the Stats pane's tile showing the listening time of today."
+    },
     "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives." : {
       "comment" : "Why an import's archive was refused when it holds other archives. %1$@ is the total size they expand to, such as \"2 GB\"; %2$@ is the limit for archives that hold audio or other archives.",
       "localizations" : {
@@ -18098,6 +18280,9 @@
     },
     "Total book time: %@" : {
       "comment" : "Part of the full Where Am I? summary: the book's whole length. %@ is the time in words, such as \"4 hours, 50 minutes\"."
+    },
+    "Total listening time" : {
+      "comment" : "What VoiceOver says before the total listening time on the Stats pane; a colon and the time follow."
     },
     "Total time: %@" : {
       "comment" : "The book's total time as the reader's status row speaks it. %@ is the time in words, such as \"4 hours, 50 minutes, 33 seconds\"."

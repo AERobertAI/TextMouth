@@ -65,6 +65,7 @@ TextMouth/Models/ReaderTimeWording.swift
 TextMouth/Models/ReadingList.swift
 TextMouth/Models/ReadingListReaderWording.swift
 TextMouth/Models/ReadingListWording.swift
+TextMouth/Models/ReadingStatsTile.swift
 TextMouth/Models/RefusedFormatAdvice.swift
 TextMouth/Models/RemovalWording.swift
 TextMouth/Models/RemovedFromLibraryMarker.swift
@@ -148,6 +149,7 @@ TextMouth/Services/OwnAudioConverter.swift
 TextMouth/Services/PersistenceFailureCenter.swift
 TextMouth/Services/ReaderRequestStore.swift
 TextMouth/Services/ReaderWorkingCopy.swift
+TextMouth/Services/ReadingStatsService.swift
 TextMouth/Services/RecordingCaptureBackend.swift
 TextMouth/Services/RecordingEncoder.swift
 TextMouth/Services/RecordingService.swift
@@ -250,6 +252,7 @@ TextMouth/Views/Settings/KeyboardShortcutsSettingsView.swift
 TextMouth/Views/Settings/LibraryViewsSettingsView.swift
 TextMouth/Views/Settings/LogsSettingsSection.swift
 TextMouth/Views/Settings/MiscellaneousSettingsView.swift
+TextMouth/Views/Settings/ReadingStatsView.swift
 TextMouth/Views/Settings/SettingsView.swift
 TextMouth/Views/Settings/StorageSettingsView.swift
 TextMouth/Views/Settings/SubstitutionsSettingsView.swift
