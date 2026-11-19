@@ -33,6 +33,7 @@ A reader window's book changing in place (0.2.5): listening goes on to the next 
   The view stores the closure and gives it to its reader as nextBookWindowSwitcher as the reader is made (makeReader); a reader with no scene to set it in, as one made by a test, has none and always opens a new window.
   The registry of open readers is the library's: LibraryViewModel.openBookIDs, the books a reader is open for, counted per book (openReaderCounts).
   A reader registers its book as it is made (registerOpenBook(_:)) and unregisters it as it closes (unregisterOpenBook(_:)), and a book stays in openBookIDs until its last reader closes, so two readers of one book leave it open until both have closed.
+  It publishes `openBookIDs` a turn late (see [The registry of open readers and when it publishes](#the-registry-of-open-readers-and-when-it-publishes)).
   It is the one registry there is: the sleep timer's last-resort deadline asks it (SleepTimerService.heldTimerDeadline, in [Timers and statistics](timers-and-statistics.md)), and so does showNextBook, to tell whether the next book is open in another window.
 - Who may write it: the reader, in ReaderViewModel+NextBookWindow, once for every move to another book (the end of a book going on, Next and Previous in Reading List, Next and Previous in Folder).
   It calls showNextBook(_:under:openingANewWindowWith:), which asks the pure NextBookWindowRule (Models/NextBookWindow.swift) what to do, and does it.
@@ -65,6 +66,25 @@ A reader window's book changing in place (0.2.5): listening goes on to the next 
     - finding the element marked voiceOverFocusID and placing focus once (placeFocus).
 
   The play button's own trigger does the same when it runs, so VoiceOver is never told twice; that a switched window's focus lands as a new window's does has not been checked by hand with VoiceOver.
+
+### The registry of open readers and when it publishes
+<!-- id: open-readers-registry-publish; keys: openBookIDs, isBookOpenNow, openBookIDsNow, openReaderCounts, StateObject, AttributeGraph, B22, publish; src: TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouthProductionTests/RunLoopWaiting.swift -->
+
+A reader registers its book as it is made, and SwiftUI makes it inside its update, in the autoclosure of a `@StateObject`.
+Changing another object's `@Published` state there starts a transaction in the middle of the update, which aborts the app in AttributeGraph (B22: opening a ZIP from Finder as TextMouth started).
+So the registry has two faces:
+- The truth, which changes at once: `openReaderCounts`, and FR04's audio activity (`audioEditActivity.setOpenInReader`), which `registerOpenBook(_:)` and `unregisterOpenBook(_:)` write.
+- The published `openBookIDs`, which follows on the main queue's next turn.
+  One publish serves every change made in a turn, reading the counts as they stand then, so a register followed by an unregister leaves no book behind; `openBookIDs` is set only when it changes.
+
+Every check that decides something asks the truth, never the published set: `isBookOpenNow(_:)` for one book, and `openBookIDsNow` for all.
+Moving, deleting, and editing the audio of a book, the cloud's removal of a download, the text cache's order, a feed's open-in-reader rule, the sleep timer's held-for-book check, and `showNextBook` all do.
+What observes `openBookIDs` (the live reading positions, the audio activity mirror, a feed's publisher) is content to be one turn late.
+
+The rule for new code: a model built in a `@StateObject` autoclosure (a reader, here) must not change another object's `@Published` state in its `init`, or in anything the view's `makeReader` calls.
+Do it on the next turn (`DispatchQueue.main.async`), as the reader window does for a missing book's held sleep timer (`BookReaderWindowView.makeReader`), or make the truth synchronous and the published copy follow, as this registry does.
+`ConfigService`'s `lastOpenedBookID` is written in the registration, which is safe only because no view observes `ConfigService` and its two subscribers filter to other fields.
+A test that reads `openBookIDs` waits for the turn with `waitForMainQueueTurn()` (see [Tests in Spanish](../../developer/testing.md#tests-in-spanish)).
 
 ## Each Library window's place
 <!-- id: library-window-place; keys: view picker, number keys, view switch, navigation stack, deleted folder, window state, per-window; src: TextMouth/Views/ContentView.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/FolderNavigationHistory.swift, TextMouth/Models/LibraryViewDefinitionStore.swift, TextMouth/Models/LibraryViewDefinitionList.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/App/MenuCommands.swift -->

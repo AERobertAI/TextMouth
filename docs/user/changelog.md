@@ -15,6 +15,18 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Copy-protected Matroska and WebM files are named as such, with "TextMouth cannot open copy-protected files."
 - A partly damaged file imports with the damaged stretch kept as silence, so its length and chapters hold, and TextMouth says so: "Part of “Lecture.wma” could not be decoded and is kept as silence."
 
+### A crash fixed
+- TextMouth could crash when a book's window opened as TextMouth started, as it does when you open a ZIP from Finder.
+- It no longer does.
+
+### TextMouth begins speaking Spanish
+- On a Mac or iPhone set to Spanish, the sleep timer, the bookmarks, and the Reading List now appear and speak in Spanish.
+- The rest of TextMouth stays in English for now, and the other parts follow.
+
+### Shorter VoiceOver hints
+- The VoiceOver hints of the sleep timer, the bookmarks, and the Reading List are shorter: each says what the control does once, without repeating its label or naming the key.
+- Settings, Playback has a shorter hint for Open the next book in, and so do Feed Info and Folder Settings.
+
 ## 0.5.3 (November 18, 2026)
 
 ### Audio that macOS can't read, on the iPhone

@@ -45,7 +45,7 @@ Book.hasOwnSettings (Models/Book+OwnSettings.swift): whether a book keeps a sett
 It is the one rule by which a feed item's package is kept once its file goes (FeedItemPackage.holdsListenerState) and by which Delete Download and the library's Remove name its "own settings" (FeedWording.KeptParts).
 
 ## CountWording
-<!-- id: countwording; keys: pluralization, count text, grammatical number; src: TextMouth/Models/CountWording.swift, TextMouth/Models/DocumentContent.swift, TextMouth/Views/ContentView.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/TextExtractionProgress.swift -->
+<!-- id: countwording; keys: pluralization, count text, grammatical number, plural forms, localized list, FR34, TL14; status: incomplete; issues: FR34, TL14; src: TextMouth/Models/CountWording.swift, TextMouth/Models/DocumentContent.swift, TextMouth/Views/ContentView.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/TextExtractionProgress.swift -->
 
 CountWording (Models/CountWording.swift): a count with the right singular or plural word, so the screen and VoiceOver say the same thing:
 - hours(_:), minutes(_:), and seconds(_:), as in "1 minute", which TimeFormatting.spoken's durations use too, and part(_:of:singular:plural:), as in "0 of 1 book", the noun agreeing with the whole;
@@ -56,6 +56,16 @@ CountWording (Models/CountWording.swift): a count with the right singular or plu
 Where episodes and articles are listed beside books, as in Recently Opened and the Reading List, each kind is counted apart, "9 books, 1 article" (listItems(books:episodes:articles:feeds:) and listItems(of:feeds:), of which booksAndFeeds is the case without feed items).
 A section is headed the same way, "Books (9), Articles (1)" (booksHeader(of:)).
 CountWording.list(_:) is the one "a, b, and c" joiner, which the cloud, removal, feed, shortcut, and filter wording use.
+The named counts are localized plural strings: books, feeds, bookmarks, hours, minutes, seconds, episodes, and articles.
+Each has its English `one` and `other` forms in the String Catalog, so each language counts by its own rules.
+The number is written for the region, so 1,000 books has its separator.
+list(_:), listItems, and booksAndFeeds join through the region's list style (`.list(type: .and)`), so the English follows the region too.
+In en_US that is "A, B, and C", and in en_GB "A, B and C".
+booksHeader and the decimal of secondsToTheTenth are localized strings of their own.
+phrase(_:singular:plural:) and part(_:of:...) are still English, which is the limitation.
+Each phrase call becomes its sentence's own plural string as that sentence's area converts.
+part needs a plural that agrees with a second number, which `l10n.py plural` does not write yet (TL14).
+How a count becomes a plural string is in [Localizing TextMouth's code](../developer/localization.md).
 
 ## ManualBookOrder and LibraryBookSorter
 <!-- id: manualbookorder-librarybooksorter; keys: drag reorder, library sort, tie-break; src: TextMouth/Models/LibraryBookSorter.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/ReadingList.swift, TextMouth/Models/LibrarySortState.swift -->
@@ -96,7 +106,7 @@ EndOfBookRule (Models/EndOfBookRule.swift): the one place the order of the setti
 The reader's behavior and the settings sheet's picker come from it (see [The reader's moves between books, and search](state/reader-navigation.md)).
 
 ## Wording types for sentences
-<!-- id: wording-types-sentences; keys: UI strings, localization, messages, user-facing text, tested wording; src: TextMouth/Models/RemovalWording.swift, TextMouth/Models/EndOfBookWording.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/Models/SpeechRefusalReport.swift, TextMouth/Models/OperationOutcome.swift, TextMouth/Models/ImportDecision.swift, TextMouth/Models/ReadingStatsTile.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Models/TranscriptCleanupWording.swift, TextMouth/Models/AudioEditWording.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/ReadingListReaderWording.swift, TextMouth/Models/ListeningOptionsWording.swift, TextMouth/Models/FolderSettingsWording.swift, TextMouth/Models/AddToLibraryWording.swift, TextMouth/Models/ReaderTimeWording.swift, TextMouth/Models/FeedDownloadProgressWording.swift -->
+<!-- id: wording-types-sentences; keys: UI strings, localization, SentenceWording, PhoneAppWording, messages, user-facing text, tested wording; src: TextMouth/Models/RemovalWording.swift, TextMouth/Models/EndOfBookWording.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/Models/SpeechRefusalReport.swift, TextMouth/Models/OperationOutcome.swift, TextMouth/Models/ImportDecision.swift, TextMouth/Models/ReadingStatsTile.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/Models/TranscriptCleanupWording.swift, TextMouth/Models/AudioEditWording.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/ReadingListReaderWording.swift, TextMouth/Models/ListeningOptionsWording.swift, TextMouth/Models/FolderSettingsWording.swift, TextMouth/Models/AddToLibraryWording.swift, TextMouth/Models/ReaderTimeWording.swift, TextMouth/Models/FeedDownloadProgressWording.swift, TextMouth/Models/SentenceWording.swift, TextMouth/Phone/PhoneAppWording.swift -->
 
 The wording of each of these is built once for both the screen and VoiceOver, by a type in Models/ (FeedDownloadRemovalWording is in RemovalWording.swift, and SpeechRefusalWording in SpeechRefusalReport.swift):
 - RemovalWording: removals;
@@ -118,7 +128,10 @@ The wording of each of these is built once for both the screen and VoiceOver, by
 - ReaderTimeWording: the reader's times (its jump fields' labels, refusals, and announcements, the copied place, and the speed named beside time left and total);
 - ImportProgressWording: an import's progress;
 - FeedDownloadProgressWording: the feed downloads' progress, which says its sizes, its time left, and its lines to VoiceOver as an import's progress does (ImportProgressWording.spokenStatus(title:lines:));
-- SpeechRefusalWording: the report of a speech refusal.
+- SpeechRefusalWording: the report of a speech refusal;
+- SentenceWording: `joined(_:)`, the one way to put whole sentences, each ended with its own full stop, into a longer text;
+  an empty list is "", one sentence is returned as it is, and each pair is joined by a localized pattern (a space in English), so Japanese and Chinese can join with none;
+- PhoneAppWording (Phone/PhoneAppWording.swift): the iPhone's shared words (the alert's title and button, Cancel, Close, Save, OK, Play, and the like), localized once with the Mac's English keys, so one translation serves both apps.
 
 ## LibraryInfoWording
 <!-- id: libraryinfowording; keys: info sentence, full info, folder info, feed info; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Feeds/FeedWording.swift, TextMouthProductionTests/LibraryInfoWordingTests.swift, TextMouth/Models/CountWording.swift -->

@@ -143,7 +143,8 @@ The originals, and the original policy.
 - Who may write it: Storage settings' Audio Editing group (AudioEditingSettingsSection, whose AudioEditingSettingsModel follows the store through PreferenceObserver) and config.json, for the global policy.
   LibraryViewModel.setAudioOriginalPolicy(_:forBook:), for a book's own, which the editor's Audio Info calls (AudioEditSession.setPolicyOverride(_:)).
   Only AudioOriginalSweep deletes an original, at launch (startLibrary), after each recording or edit is saved, and after a book's own policy changes (sweepAudioOriginalsInBackground), off the main thread as storage work.
-  It deletes only when the policy says its time is up, the book's file holds exactly the applied edits (AudioEditList.canForgetOriginal), and AudioEditActivity says the book is neither open in a reader (mirrored from LibraryViewModel.openBookIDs) nor being edited or rendered.
+  It deletes only when the policy says its time is up, the book's file holds exactly the applied edits (AudioEditList.canForgetOriginal), and AudioEditActivity says the book is neither open in a reader nor being edited or rendered.
+  Its open-in-reader mark is set at once as a reader registers or unregisters, and `openBookIDs` follows a turn later ([why](windows.md#the-registry-of-open-readers-and-when-it-publishes)).
   It asks under the history's lock, which a render takes only once its use has begun, so a render never loses the original it reads.
 - How others observe it: the list notes when its original was deleted, and undo stops at the audio as last rendered.
   A sweep never downloads: a package whose history is only in the cloud waits for a later sweep, on this Mac or another, deleting an original reads none of it, and a history it can't read is left alone.

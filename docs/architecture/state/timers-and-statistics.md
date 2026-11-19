@@ -133,6 +133,7 @@ The sleep timer held for the next book (0.2.5): a running timer goes on with lis
   It acts only when no reader is open for the book, which the service asks the library's registry of open readers through the check the hold was given (isBookOpen:, the reader's bookIsOpenCheck, kept as heldBookIsOpen and cleared with the hold).
   Otherwise it looks again a deadline later, as a download keeps its autoplay request.
   The registry of open readers is LibraryViewModel.openBookIDs, counted per book by registerOpenBook(_:) and unregisterOpenBook(_:) over openReaderCounts, in [A reader window's book changes in place](windows.md).
+  The check asks isBookOpenNow, the registry's synchronous truth, since the published set follows a turn late ([why](windows.md#the-registry-of-open-readers-and-when-it-publishes)).
   The service does not know the library. expiryCount counts the times a timer has run out and only goes up; lastExpiredOwnerID and lastExpiryNumber say who it ran out for, and when.
 
 ### Who may write the held timer
