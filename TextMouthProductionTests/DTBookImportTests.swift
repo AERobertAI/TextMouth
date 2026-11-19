@@ -280,7 +280,7 @@ final class DTBookImportTests: XCTestCase {
             XCTAssertEqual(
                 error.localizedDescription,
                 "Could not import “catalog.xml”. Checking its format failed: This XML file is not a DTBook book, "
-                    + "a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads."
+                    + "a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads."
             )
         }
         XCTAssertEqual(try folderEntries(), [])

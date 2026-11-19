@@ -421,7 +421,7 @@ private final class ProgressReporter {
 /// that copy from a later process that took its identifier (#652).
 final class ArchiveExtractionDirectory {
     /// The name of the folder extraction directories are made in.
-    static let folderName = "Archive Extraction"
+    static let folderName = "Archive Extraction" // l10n: no (a folder's name on disk, which a sweep matches)
     /// What every extraction directory's name starts with.
     static let namePrefix = "extract-"
 

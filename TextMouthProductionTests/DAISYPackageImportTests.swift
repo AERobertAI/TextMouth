@@ -1011,7 +1011,7 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(panel.prompt, "Import")
         XCTAssertEqual(
             panel.message,
-            "Choose each folder to import: a DAISY book's folder, which holds its ncc.html or .opf file, "
+            "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, "
                 + "or a folder of audio tracks, which becomes one audiobook."
         )
     }

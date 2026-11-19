@@ -159,7 +159,7 @@ enum ImportAudioConverter {
     }
 
     /// Why a file could not be converted, in words a listener can be told.
-    enum Failure: LocalizedError, Equatable {
+    enum Failure: LocalizedError, LogDescribing, Equatable {
         /// The audio file could not be read as audio, or is only in the cloud.
         case unreadable(fileName: String)
         /// The converted file failed its check: it would not play, or its
@@ -194,27 +194,61 @@ enum ImportAudioConverter {
         var errorDescription: String? {
             switch self {
             case let .unreadable(fileName):
-                return "The audio file \(fileName) could not be read for converting."
+                return String(localized: "The audio file \(fileName) could not be read for converting.",
+                              comment: "Why an audio file could not be converted at import: it could not be read as audio, or it is only in the cloud. %@ is the file's name.")
             case let .checkFailed(fileName, reason):
-                return "The audio converted from \(fileName) failed its check: \(reason)."
+                return String(localized: "The audio converted from \(fileName) failed its check: \(reason).",
+                              comment: "Why a converted audio file was refused: it failed the check made after conversion. %1$@ is the source file's name and %2$@ the reason, a phrase with no full stop.")
             case let .cannotName(fileName):
-                return "The audio converted from \(fileName) could not be given its name."
+                return String(localized: "The audio converted from \(fileName) could not be given its name.",
+                              comment: "Why a converted audio file was refused: it could not be given its final name. %@ is the source file's name.")
             case let .killed(fileName, reason):
-                return "Converting \(fileName) was stopped because \(reason)."
+                // The reason is a phrase in English (`KillReason.words`), which the debug log writes too.
+                return String(localized: "Converting \(fileName) was stopped because \(reason).",
+                              comment: "Why an audio conversion was stopped: it ran too long or used too much memory. %1$@ is the source file's name and %2$@ the reason, a clause in English that follows \"because\".")
             case let .processFailed(fileName, status):
-                return "Converting \(fileName) failed (the converter ended with code \(status))."
+                return String(localized: "Converting \(fileName) failed (the converter ended with code \(String(status))).",
+                              comment: "Why an audio conversion failed: the converting program ended with an error. %1$@ is the source file's name and %2$@ the program's exit code, an identifier written without digit grouping.")
             case let .notEnoughSpace(fileName, bytesNeeded):
-                return "There is not enough free disk space to convert \(fileName): "
-                    + "it needs \(ImportProgressWording.size(bytesNeeded)) free."
+                return String(localized: "There is not enough free disk space to convert \(fileName): it needs \(ImportProgressWording.size(bytesNeeded)) free.",
+                              comment: "Why an audio conversion did not start: the disk holds too little free space. %1$@ is the source file's name and %2$@ the free space it needs, with its unit, such as \"1.2 GB\".")
             case let .unlabelledChannels(fileName, channels):
-                return "The audio file \(fileName) has \(channels) channels but does not say which is which, "
-                    + "so TextMouth cannot mix it to stereo."
+                return String(localized: "The audio file \(fileName) has \(channels) channels but does not say which is which, so TextMouth cannot mix it to stereo.",
+                              comment: "Why an audio file was not converted: it has more than two channels and does not say which is which, so a mix to stereo would keep two arbitrary channels. %1$@ is the file's name and %2$lld the number of channels, always more than two.")
             case let .notRead(fileName, problem):
                 return OwnAudioWording.sentence(for: problem, fileName: fileName)
             case let .notWritten(fileName, reason):
-                return "The audio converted from \(fileName) could not be written (\(reason))."
+                return String(localized: "The audio converted from \(fileName) could not be written (\(reason)).",
+                              comment: "Why converted audio was not saved as an .m4a file. %1$@ is the source file's name and %2$@ the error's domain and code, in the system's words.")
             case let .unsupportedSamples(fileName, form):
                 return AudioSampleFormWording.refusal(fileName: fileName, form: form)
+            }
+        }
+
+        /// The failure in English for the debug log, which stays English
+        /// whatever language the interface speaks (FR34).
+        var logDescription: String {
+            switch self {
+            case let .unreadable(fileName):
+                return "The audio file \(fileName) could not be read for converting." // l10n: no (debug log)
+            case let .checkFailed(fileName, reason):
+                return "The audio converted from \(fileName) failed its check: \(reason)." // l10n: no (debug log)
+            case let .cannotName(fileName):
+                return "The audio converted from \(fileName) could not be given its name." // l10n: no (debug log)
+            case let .killed(fileName, reason):
+                return "Converting \(fileName) was stopped because \(reason)." // l10n: no (debug log)
+            case let .processFailed(fileName, status):
+                return "Converting \(fileName) failed (the converter ended with code \(status))." // l10n: no (debug log)
+            case let .notEnoughSpace(fileName, bytesNeeded):
+                return "There is not enough free disk space to convert \(fileName): it needs \(bytesNeeded) bytes free." // l10n: no (debug log)
+            case let .unlabelledChannels(fileName, channels):
+                return "The audio file \(fileName) has \(channels) channels but does not say which is which." // l10n: no (debug log)
+            case let .notRead(fileName, _):
+                return "TextMouth's own reader could not read the audio file \(fileName)." // l10n: no (debug log)
+            case let .notWritten(fileName, reason):
+                return "The audio converted from \(fileName) could not be written (\(reason))." // l10n: no (debug log)
+            case let .unsupportedSamples(fileName, _):
+                return "The audio file \(fileName) is of a form no decoder reads." // l10n: no (debug log)
             }
         }
     }
@@ -750,7 +784,7 @@ enum ImportAudioConverter {
     /// can be changed in one place.
     static func downmixArguments(from input: URL, to output: URL, target: Target) -> [String] {
         [
-            "-f", "caff", "-d", "LEI\(downmixBitDepth(for: target))@\(Int(target.sampleRate))",
+            "-f", "caff", "-d", "LEI\(downmixBitDepth(for: target))@\(Int(target.sampleRate))", // l10n: no (afconvert's arguments)
             "-c", String(maximumChannels), "--mix", input.path, output.path,
         ]
     }
@@ -902,7 +936,7 @@ enum ImportAudioConverter {
             // readers whose bytes are of none: the phone could convert such a
             // file, so it is unreadable, as it is where afinfo can't read it.
             guard ownReaderExtensions.contains(source.pathExtension.lowercased()) else {
-                throw IOSUnavailable.feature("Converting this kind of file")
+                throw IOSUnavailable.feature("Converting this kind of file") // l10n: no (inside IOSUnavailable's English sentence until the iPhone's files convert)
             }
             throw Failure.unreadable(fileName: name)
             #else

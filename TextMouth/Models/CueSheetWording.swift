@@ -8,7 +8,8 @@ enum CueSheetWording {
     /// The heading of a track the sheet gives no title: "Track 3", by the
     /// number the sheet gives the track.
     static func untitledTrack(number: Int) -> String {
-        "Track \(number)"
+        String(localized: "Track \(String(number))",
+               comment: "Heading of a track that a cue sheet gives no title, made at import. %@ is the track's number from the sheet, an identifier written without digit grouping.")
     }
 
     /// The heading of a track whose own performer is not the book's author:
@@ -16,27 +17,36 @@ enum CueSheetWording {
     /// as a compilation's tracks name their singers. A comma before "by" makes
     /// VoiceOver pause there, and braille shows it as written.
     static func trackHeading(title: String, performer: String) -> String {
-        "\(title), by \(performer)"
+        String(localized: "\(title), by \(performer)",
+               comment: "Heading of a track whose performer is not the book's author, made at import: the title, a comma, then \"by\" and the performer. %1$@ is the track's title and %2$@ the performer. The comma makes VoiceOver pause.")
     }
 
     /// The refusal of a cue sheet larger than TextMouth reads
     /// (`CueSheet.maximumByteCount`).
     static func tooLarge(fileName: String) -> String {
-        "The cue sheet “\(fileName)” is too large to read."
+        String(localized: "The cue sheet “\(fileName)” is too large to read.",
+               comment: "Refusal of a cue sheet that is larger than TextMouth reads. %@ is the cue sheet's file name.")
     }
 
     /// The refusal of a cue sheet chosen on its own that places no track: no
     /// audio track of it has a start (an INDEX 01 line) in a file it names.
-    static let noTracks = "It lists no audio track with a start that TextMouth can read."
+    static var noTracks: String {
+        String(localized: "It lists no audio track with a start that TextMouth can read.",
+               comment: "Refusal of a cue sheet chosen on its own that places no track. \"It\" is the cue sheet. Follows the sentence naming the file.")
+    }
 
     /// The refusal of a cue sheet chosen on its own whose tracks begin, or
     /// end, past the end of the audio it names.
-    static let timesPastAudio = "Its tracks run past the end of the audio it names, so it was made for another copy of that audio."
+    static var timesPastAudio: String {
+        String(localized: "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+               comment: "Refusal of a cue sheet chosen on its own whose tracks begin or end past the end of the audio it names. \"Its\" and \"it\" are the cue sheet.")
+    }
 
     /// The heading of an Audacity label with no text (FMT06): "Label 4", by
     /// its place among the file's labels, from 1.
     static func untitledLabel(number: Int) -> String {
-        "Label \(number)"
+        String(localized: "Label \(String(number))",
+               comment: "Heading made at import for an Audacity label that has no text. %@ is the label's place among the file's labels, from 1, an identifier written without digit grouping.")
     }
 
     /// The kinds of file that give a folder's audio its headings.
@@ -46,19 +56,13 @@ enum CueSheetWording {
         /// An Audacity label file (FMT06).
         case labelFile
 
-        /// The kind as a notice names it.
+        /// The kind as a skipped entry's reason names it, inside the English
+        /// reasons of `M3UPlaylist.SkipReason.words(listedIn:)`, which a
+        /// parser words and stays English (question 3).
         var name: String {
             switch self {
-            case .cueSheet: return "cue sheet"
-            case .labelFile: return "label file"
-            }
-        }
-
-        /// What the kind's entries are called.
-        var entries: String {
-            switch self {
-            case .cueSheet: return "tracks"
-            case .labelFile: return "labels"
+            case .cueSheet: return "cue sheet" // l10n: no (inside M3UPlaylist's English skip reasons, which a parser words)
+            case .labelFile: return "label file" // l10n: no (inside M3UPlaylist's English skip reasons, which a parser words)
             }
         }
     }
@@ -81,22 +85,33 @@ enum CueSheetWording {
     /// than its source, or one the import could not measure first).
     static func headingsDidNotFit(_ names: [String]) -> String {
         let listed = CountWording.list(names.map { "“\($0)”" })
-        return "The headings from \(listed) run past the end of the audio, so the tracks were imported without them."
+        return String(localized: "The headings from \(listed) run past the end of the audio, so the tracks were imported without them.",
+                      comment: "Notice after an import of tracks that came without the headings of some cue sheets and label files, because a heading lay past the end of the audio. %@ is the files' names in curly quotes, listed as a sentence lists them.")
     }
 
     /// The notice of a folder's or archive's cue sheet or label file that
     /// was not used, so the tracks it would have arranged imported as they
     /// are.
     static func sheetUnused(_ name: String, kind: ListKind = .cueSheet, because reason: UnusedReason) -> String {
-        switch reason {
-        case .namesNoAudio where kind == .labelFile:
-            return "The label file “\(name)” matches no audio file beside it by name, so its headings were not used."
-        case .namesNoAudio:
-            return "The \(kind.name) “\(name)” names none of the audio beside it, so its headings were not used."
-        case .unreadable:
-            return "TextMouth could not read the \(kind.name) “\(name)”, so its headings were not used."
-        case .timesPastAudio:
-            return "The \(kind.entries) of the \(kind.name) “\(name)” run past the end of its audio, so its headings were not used."
+        switch (kind, reason) {
+        case (.labelFile, .namesNoAudio):
+            return String(localized: "The label file “\(name)” matches no audio file beside it by name, so its headings were not used.",
+                          comment: "Notice that an Audacity label file of an imported folder or archive was not used, because no audio file beside it has its name. %@ is the label file's name.")
+        case (.cueSheet, .namesNoAudio):
+            return String(localized: "The cue sheet “\(name)” names none of the audio beside it, so its headings were not used.",
+                          comment: "Notice that a cue sheet of an imported folder or archive was not used, because it names none of the audio beside it. %@ is the cue sheet's name.")
+        case (.labelFile, .unreadable):
+            return String(localized: "TextMouth could not read the label file “\(name)”, so its headings were not used.",
+                          comment: "Notice that an Audacity label file of an imported folder or archive was not used, because it could not be read. %@ is the label file's name.")
+        case (.cueSheet, .unreadable):
+            return String(localized: "TextMouth could not read the cue sheet “\(name)”, so its headings were not used.",
+                          comment: "Notice that a cue sheet of an imported folder or archive was not used, because it could not be read. %@ is the cue sheet's name.")
+        case (.labelFile, .timesPastAudio):
+            return String(localized: "The labels of the label file “\(name)” run past the end of its audio, so its headings were not used.",
+                          comment: "Notice that an Audacity label file of an imported folder or archive was not used, because its labels lie past the end of its audio. %@ is the label file's name.")
+        case (.cueSheet, .timesPastAudio):
+            return String(localized: "The tracks of the cue sheet “\(name)” run past the end of its audio, so its headings were not used.",
+                          comment: "Notice that a cue sheet of an imported folder or archive was not used, because its tracks lie past the end of its audio. %@ is the cue sheet's name.")
         }
     }
 }

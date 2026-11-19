@@ -87,7 +87,7 @@ final class ProgressOverlayTests: XCTestCase {
         // Not "after the current book" since a book of pictures stops before its next page (FMT34).
         XCTAssertEqual(
             ImportProgressWording.cancelButtonHint,
-            "Stops the import under way and those waiting. Books already imported stay in the library."
+            "Stops the import under way and those waiting. Books already imported stay."
         )
         XCTAssertEqual(ProgressOverlay.cancelButtonLabel, ImportProgressWording.cancelButtonLabel)
         XCTAssertEqual(ProgressOverlay.cancelButtonHint, ImportProgressWording.cancelButtonHint)

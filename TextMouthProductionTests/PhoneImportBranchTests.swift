@@ -19,8 +19,8 @@ final class PhoneImportBranchTests: XCTestCase {
         let description = try Self.iOSBranch(after: "var errorDescription: String? {", in: source)
         XCTAssertTrue(description.contains("if underlying is PhoneImportRefusal { return reason }"))
         // The Mac's two sentences, in the #else branches, as they were.
-        XCTAssertTrue(source.contains("#else\n        \"\\(step.activity) failed: \\(Self.description(of: underlying))\"\n        #endif"))
-        XCTAssertTrue(source.contains("#else\n        \"Could not import “\\(fileName)”. \\(reason)\"\n        #endif"))
+        XCTAssertTrue(source.contains("#else\n        Self.failedSentence(step: step, because: Self.description(of: underlying))\n        #endif"))
+        XCTAssertTrue(source.contains("#else\n        SentenceWording.joined([ImportProgressWording.failed(fileName), reason])\n        #endif"))
     }
 
     /// Audio the import would convert is refused on iOS in both of the

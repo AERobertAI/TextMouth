@@ -137,11 +137,11 @@ final class FeedUIDeleteFeedTests: XCTestCase {
         XCTAssertEqual(RemovalMode.deletePermanently.outcomePhrase(plural: true), "are deleted permanently and cannot be recovered")
         XCTAssertEqual(RemovalMode.keepFiles.outcomePhrase(plural: false), "stays in the TextMouth library folder")
         XCTAssertEqual(
-            RemovalMode.moveToTrash.filesClause(of: "its"),
+            RemovalMode.moveToTrash.filesClause(plural: false),
             "its files go to the Trash, where you can recover them until the Trash is emptied"
         )
-        XCTAssertEqual(RemovalMode.deletePermanently.filesClause(of: "their"), "their files are deleted permanently and cannot be recovered")
-        XCTAssertEqual(RemovalMode.keepFiles.filesClause(of: "its"), "its files stay in the TextMouth library folder")
+        XCTAssertEqual(RemovalMode.deletePermanently.filesClause(plural: true), "their files are deleted permanently and cannot be recovered")
+        XCTAssertEqual(RemovalMode.keepFiles.filesClause(plural: false), "its files stay in the TextMouth library folder")
     }
 
     /// What a feed kept is named by what its packages hold, for one or

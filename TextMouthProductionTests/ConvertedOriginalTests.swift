@@ -72,12 +72,12 @@ final class ConvertedOriginalTests: XCTestCase {
         XCTAssertEqual(ConvertedOriginalWording.label, "Keep originals of converted audio")
         XCTAssertEqual(
             ConvertedOriginalWording.hint,
-            "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package."
+            "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package."
         )
         XCTAssertEqual(
             ConvertedOriginalWording.caption(keeping: true),
-            "When TextMouth converts audio at import, it keeps the original file too. An original takes about as "
-                + "much disk space as its converted file, or about twice as much when it is uncompressed. Export "
+            "TextMouth keeps the original file of audio it converts at import. An original takes about as "
+                + "much disk space as its converted file, or twice as much when uncompressed. Export "
                 + "offers it as the Original file. A feed episode's original is not kept: it can be downloaded again."
         )
         XCTAssertEqual(

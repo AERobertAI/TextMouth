@@ -52,21 +52,21 @@ final class PageImageWordingTests: XCTestCase {
         )
         XCTAssertEqual(
             PageImageWording.unreadableKind("DNG image"),
-            "TextMouth can't read this kind of picture (DNG image). Save it as a PNG or JPEG picture, then import that copy."
+            "TextMouth can't read this kind of picture (DNG image). Save it as a PNG or JPEG, then import that copy."
         )
         XCTAssertEqual(
             PageImageWording.tooLarge(width: 30_000, height: 30_000),
-            "This picture is 30,000 by 30,000 pixels, larger than the 100 megapixels TextMouth reads in one picture."
+            "This picture is 30,000 by 30,000 pixels, larger than the 100 megapixels TextMouth reads."
         )
         XCTAssertEqual(PageImageWording.cannotDecode, "This picture could not be decoded. It may be damaged.")
         XCTAssertEqual(
             PageImageWording.tooManyPages(3_000),
-            "This picture holds 3,000 pages, more than the 2,000 TextMouth reads in one book."
+            "This picture holds 3,000 pages, more than the 2,000 TextMouth reads."
         )
         // An archive is refused at its first picture past the limit, so its pictures are never counted.
         XCTAssertEqual(
             PageImageWording.tooManyPictures,
-            "This comic book archive holds more than the 2,000 pictures TextMouth reads in one book."
+            "This comic book archive holds more than the 2,000 pictures TextMouth reads."
         )
         XCTAssertEqual(PageImageError.tooManyPictures.errorDescription, PageImageWording.tooManyPictures)
     }

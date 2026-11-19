@@ -1409,8 +1409,8 @@ final class ImportDecisionFlowTests: XCTestCase {
         let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
         // The drive drops off: the copy cannot be found where it was.
         scene.model.noteDataDirectoryUnavailable(.driveNotConnected(volume: "Spare Disk", folder: "/Volumes/Spare Disk/TextMouth"))
-        let unreachable = "The library can't be reached right now, so TextMouth can't keep the new copy of “Atlas of Tides”. "
-            + "Answer again once the library is back."
+        let unreachable = "The library can't be reached, so TextMouth can't keep the new copy of “Atlas of Tides”. "
+            + "Answer again once it is back."
 
         XCTAssertEqual(scene.model.answerCurrentImportDecision(.keepBoth).failureMessage, unreachable)
         XCTAssertEqual(scene.model.answerCurrentImportDecision(.replaceExisting).failureMessage, unreachable)

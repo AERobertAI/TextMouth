@@ -29,6 +29,17 @@
         }
       }
     },
+    "%@ %lld of %lld" : {
+      "comment" : "A question's title followed by its place among the questions waiting, when the title ends in a question mark. %1$@ is the title, %2$lld the question's place and %3$lld the number of questions, such as \"Create Folder for Imported Books? 2 of 3\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$lld of %3$lld"
+          }
+        }
+      }
+    },
     "%@ (%@)" : {
       "comment" : "A feed that could not be subscribed to, with the reason in parentheses. The first %@ is the feed's title; the second is the reason, in the engine's words.\nThe second choice of the Log location pop-up in the Storage settings. %1$@ is the choice's name, and %2$@ is the folder's name on this Mac, a path that stays as written, such as ~/Library/Logs/TextMouth.",
       "localizations" : {
@@ -316,6 +327,17 @@
     },
     "%@ elapsed" : {
       "comment" : "The time a download has waited, in the download view's progress value. %@ is the time, such as \"1:05\" on screen or \"1 minute, 5 seconds\" spoken."
+    },
+    "%@ failed: %@" : {
+      "comment" : "Why an import failed: the step it was at, then the reason. %1$@ is the step starting a sentence, such as \"Reading its text\" or \"Copying it into the library\", and %2$@ the reason, a sentence of the system's or the app's.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ failed: %2$@"
+          }
+        }
+      }
     },
     "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file." : {
       "comment" : "Said when a save or an export writes a file format that has no place for chapter markers. %1$@ is the format's name, such as \"WAV\", and %2$lld the number of chapter markers left out.",
@@ -788,7 +810,7 @@
       }
     },
     "%@ of %@" : {
-      "comment" : "The audio editor's time display as VoiceOver speaks it. %1$@ is the cursor's time and %2$@ the audio's length, both in words such as \"12 minutes, 4.3 seconds\".\nThe audio editor's time display as shown and brailled. %1$@ is the cursor's time and %2$@ the audio's length, both as clock times such as \"12:04.3\".",
+      "comment" : "How many bytes of an archive's declared total have been extracted. %1$@ is the size done and %2$@ the total size, each with its unit, such as \"1.2 GB of 3.4 GB\".\nThe audio editor's time display as VoiceOver speaks it. %1$@ is the cursor's time and %2$@ the audio's length, both in words such as \"12 minutes, 4.3 seconds\".\nThe audio editor's time display as shown and brailled. %1$@ is the cursor's time and %2$@ the audio's length, both as clock times such as \"12:04.3\".",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -808,6 +830,9 @@
           }
         }
       }
+    },
+    "%@ on this book" : {
+      "comment" : "Line of the import overlay: how long the book under way has taken. %@ is the time in words, such as \"1 minute, 5 seconds\"."
     },
     "%@ or %@" : {
       "comment" : "Joins two keyboard shortcuts of one action with \"or\", as in \"Space or K\". %1$@ is the shortcuts so far and %2$@ the next one.",
@@ -901,6 +926,12 @@
     },
     "%@ through the book" : {
       "comment" : "What VoiceOver says for the reader's percent button. %@ is the percent, such as 22.9%."
+    },
+    "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch." : {
+      "comment" : "Message of the alert about one book's Ogg audio that waits for disk space. %@ is what the book needs, such as \"“Harbor Dramas” needs 4.2 GB free\"."
+    },
+    "%@ to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch." : {
+      "comment" : "Message of the alert about several books' Ogg audio that waits for disk space. %@ is what each book needs, listed as a sentence lists them, such as \"“A” needs 1 GB free and “B” needs 2 GB free\"."
     },
     "%@ tries again, %@ quits without saving, %@ keeps TextMouth open." : {
       "comment" : "Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.",
@@ -1083,7 +1114,7 @@
       }
     },
     "%@, %lld of %lld" : {
-      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a move: the view and its new place, \"Reading List, 4 of 6\", short enough to hear after each of many moves. Placeholders in order: name, number, count.",
+      "comment" : "A question's title, a comma, then its place among the questions waiting. %1$@ is the title, %2$lld the question's place and %3$lld the number of questions, such as \"Duplicate Book Found, 2 of 3\".\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a move: the view and its new place, \"Reading List, 4 of 6\", short enough to hear after each of many moves. Placeholders in order: name, number, count.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1210,7 +1241,7 @@
       }
     },
     "%@, by %@" : {
-      "comment" : "A book's title and author in a search result's heading. %1$@ is the book's title and %2$@ its author.",
+      "comment" : "A book's title and author in a search result's heading. %1$@ is the book's title and %2$@ its author.\nHeading of a track whose performer is not the book's author, made at import: the title, a comma, then \"by\" and the performer. %1$@ is the track's title and %2$@ the performer. The comma makes VoiceOver pause.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1319,7 +1350,7 @@
       "comment" : "An audio file's sample form, an adjective of \"samples\" in a refusal such as \"uses 64-bit integer samples\". %@ is the number of bits, an identifier written without digit grouping."
     },
     "%@." : {
-      "comment" : "A spoken clause of an announcement ended with a full stop. %@ is the clause. English adds a full stop; change only the mark.\nEnds a line about waiting downloads as a sentence of its own. %@ is the line, such as \"2 waiting for room on this Mac\".\nEnds a sentence with its full stop. %@ is the sentence without it. Chinese and Japanese use their own full stop here.\nEnds the notifications setting's hint with a full stop, before the sentence that says notifications are refused. %@ is the hint, without its full stop.\nLibrary view editor: ends a filter's description with a full stop. %@ is the whole description.\nLibrary view editor: the note shown in place of the sort choice while the view lists feeds alone. %@ is a sentence without its full stop, saying feeds are always listed by title; this adds the full stop.\nMakes a clause into a whole sentence by adding its full stop. %@ is the clause, already starting with a capital letter.\nVoiceOver announcement of Next in Folder or Previous in Folder when no item lies that way. %@ is a sentence without its full stop, such as \"No more books in folder\"; this adds the full stop."
+      "comment" : "A spoken clause of an announcement ended with a full stop. %@ is the clause. English adds a full stop; change only the mark.\nEnds a line about waiting downloads as a sentence of its own. %@ is the line, such as \"2 waiting for room on this Mac\".\nEnds a line of a progress display with its full stop, so VoiceOver reads the lines as sentences. %@ is the line.\nEnds a sentence with its full stop. %@ is the sentence without it. Chinese and Japanese use their own full stop here.\nEnds a title with a full stop so it reads as a sentence before the question that follows. %@ is the title.\nEnds the notifications setting's hint with a full stop, before the sentence that says notifications are refused. %@ is the hint, without its full stop.\nLibrary view editor: ends a filter's description with a full stop. %@ is the whole description.\nLibrary view editor: the note shown in place of the sort choice while the view lists feeds alone. %@ is a sentence without its full stop, saying feeds are always listed by title; this adds the full stop.\nMakes a clause into a whole sentence by adding its full stop. %@ is the clause, already starting with a capital letter.\nVoiceOver announcement of Next in Folder or Previous in Folder when no item lies that way. %@ is a sentence without its full stop, such as \"No more books in folder\"; this adds the full stop."
     },
     "%@. %@" : {
       "comment" : "Joins two spoken clauses of an announcement. %1$@ is the clauses so far and %2$@ the next one. English ends the first with a full stop and a space; a language that writes no full stop, or another mark, changes only that.\nWhat VoiceOver says when the Library Not Available screen appears. %1$@ is the screen's heading; %2$@ is why the library can't be used.",
@@ -1552,6 +1583,29 @@
     "%@…" : {
       "comment" : "Adds an ellipsis to the title of a command, which says a question follows the command: \"Delete Download…\". %@ is the title without the ellipsis."
     },
+    "%lld .%@ files" : {
+      "comment" : "Part of a list of the kinds of file a place holds: how many files have one extension. %1$lld is the number of files and %2$@ the extension without its dot, such as \"ogg\". The dot before the extension is part of the text.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld .%@ file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld .%@ files"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld Books" : {
       "comment" : "The object of a removal button's title, in title case, as in \"Move 3 Books to Trash\". %lld is how many books, a count.",
       "localizations" : {
@@ -1713,6 +1767,29 @@
         }
       }
     },
+    "%lld books are missing chapters:" : {
+      "comment" : "Heading in the alert about a ZIP batch: how many books were imported without some of their chapters. One line for each book follows. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book is missing chapters:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books are missing chapters:"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld books aren't downloaded." : {
       "comment" : "First sentence of why a move of the library was refused: some books' files are only in the cloud. %lld is how many books.",
       "localizations" : {
@@ -1775,6 +1852,52 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld books from the library"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books have pages that could not be read:" : {
+      "comment" : "Heading in the alert about a ZIP batch: how many books have pages that text recognition could not read. One line for each book follows. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book has pages that could not be read:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books have pages that could not be read:"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books imported" : {
+      "comment" : "Part of the announcement that a ZIP batch ended: how many books were imported. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book imported"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books imported"
                 }
               }
             }
@@ -1854,6 +1977,29 @@
         }
       }
     },
+    "%lld books processed" : {
+      "comment" : "The total of the import overlay's count: how many books are being imported, whether each is done, skipped as a duplicate, or failed. %lld is the number of books. Follows \"3 of\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book processed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books processed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld books the other lacks" : {
       "comment" : "Part of a list in Use This Library's account of which copy is newer. %lld is how many books only this copy has, a count.",
       "localizations" : {
@@ -1917,6 +2063,29 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld libros ya estaban en ella."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books were imported from “%@”." : {
+      "comment" : "First sentence of the question asked when a ZIP archive added several books. %1$lld is the number of books and %2$@ the archive's file name.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book was imported from “%@”."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books were imported from “%@”."
                 }
               }
             }
@@ -2013,6 +2182,17 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "%lld by %lld pixels" : {
+      "comment" : "A picture's size. %1$lld is its width and %2$lld its height, both in pixels, such as \"1,224 by 1,584 pixels\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld by %2$lld pixels"
           }
         }
       }
@@ -2363,7 +2543,7 @@
       }
     },
     "%lld failed" : {
-      "comment" : "How many of the feed downloads of a run failed, after the count of those done: \"3 of 9 done, 1 failed\". %lld is the number that failed.",
+      "comment" : "How many of the feed downloads of a run failed, after the count of those done: \"3 of 9 done, 1 failed\". %lld is the number that failed.\nPart of the announcement that a ZIP batch ended: how many books failed to import. %lld is the number of books.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -2477,6 +2657,75 @@
         }
       }
     },
+    "%lld files failed:" : {
+      "comment" : "Heading in the alert about a ZIP batch: how many files failed to import. One line for each file follows. %lld is the number of files.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file failed:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files failed:"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld files without an extension" : {
+      "comment" : "Part of a list of the kinds of file a place holds: how many files have no extension. %lld is the number of files.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file without an extension"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files without an extension"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld files, %@" : {
+      "comment" : "The files a book left out, counted and named, inside a sentence: the count, a comma, then their names. %1$lld is the number of files and %2$@ their names in curly quotes, listed as a sentence lists them.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file, %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files, %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld folders" : {
       "comment" : "A count of folders in a list of counts about a conflicting copy of the library. %lld is the number of folders.",
       "localizations" : {
@@ -2524,7 +2773,7 @@
       }
     },
     "%lld items" : {
-      "comment" : "A count of a feed's items inside a sentence about a conflicting copy of the feed's record. %lld is the number of items.\nA count of a feed's items when it holds both episodes and articles. %lld is the number of items.",
+      "comment" : "A count of a feed's items inside a sentence about a conflicting copy of the feed's record. %lld is the number of items.\nA count of a feed's items when it holds both episodes and articles. %lld is the number of items.\nThe total of an archive extraction's count: how many items (files and folders) the archive holds. %lld is the number of items. Follows \"120 of\".",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -2640,7 +2889,7 @@
       }
     },
     "%lld more" : {
-      "comment" : "The last entry of a short list of names: how many more names there are. %lld is that number.\nThe last item of a list of file names, standing for the files not named. %lld is how many more files there are.",
+      "comment" : "Last item of a list of skipped playlist entries, counting the entries not named. %lld is how many more there are.\nLast item of a list of the files a book left out, counting the files not named. %lld is how many more there are.\nThe last entry of a short list of names: how many more names there are. %lld is that number.\nThe last item of a list of file names, standing for the files not named. %lld is how many more files there are.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -2655,6 +2904,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld more"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld more imports waiting" : {
+      "comment" : "Line of the import overlay: how many imports wait their turn behind the one shown. %lld is the number of imports waiting.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld more import waiting"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld more imports waiting"
                 }
               }
             }
@@ -2892,6 +3164,17 @@
         }
       }
     },
+    "%lld of %@" : {
+      "comment" : "A count done, then \"of\", then a phrase that names the total and what is counted, such as \"3 of 10 books processed\" or \"12 of 176 tracks\". %lld is the number done and %@ the total's phrase, which has its own plural forms.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$@"
+          }
+        }
+      }
+    },
     "%lld of %@ listed" : {
       "comment" : "A feed's size when the library lists fewer entries than the feed has. The first %lld is how many are listed; %@ is the feed's size with its noun, such as \"381 episodes\" or \"more than 2000 episodes\".",
       "localizations" : {
@@ -2948,6 +3231,29 @@
         }
       }
     },
+    "%lld other files" : {
+      "comment" : "Last part of a list of the kinds of file a place holds: how many files of the kinds not named. %lld is the number of files.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld other file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld other files"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld other original files could not be removed either." : {
       "comment" : "Sentence after a failure notice: more original files could not be removed too. %lld is how many more.",
       "localizations" : {
@@ -2964,6 +3270,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld other original files could not be removed either."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld pages" : {
+      "comment" : "The total of a count of pages of a book of pictures read by text recognition at import. %lld is the number of pages. Follows \"3 of\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld page"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld pages"
                 }
               }
             }
@@ -3158,6 +3487,29 @@
         }
       }
     },
+    "%lld skipped as duplicates" : {
+      "comment" : "Part of the announcement that a ZIP batch ended: how many books were skipped because the library already held them. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld skipped as a duplicate"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld skipped as duplicates"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld subfolders" : {
       "comment" : "Speak Info and Folder Settings: how many subfolders a folder has. %lld is the number of subfolders, a count.",
       "localizations" : {
@@ -3220,6 +3572,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld timed passages were unreadable and left out."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld tracks" : {
+      "comment" : "The total of a count of audio tracks, such as the tracks of a book converted at import. %lld is the number of tracks. Follows \"12 of\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld track"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld tracks"
                 }
               }
             }
@@ -3523,6 +3898,9 @@
     "; %@ stays" : {
       "comment" : "A clause that ends the announcement of Unsubscribe: the one download the feed kept stays. %@ is the download, such as \"its downloaded episode\". Starts with a semicolon."
     },
+    "A .%@ file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu." : {
+      "comment" : "Advice after the refusal of a transcript file chosen as a book. %@ is the file's extension without its dot. \"Attach Transcript…\" is a command of the Book menu: keep its name the same as that command's and the menu's."
+    },
     "A Little Faster" : {
       "comment" : "Title of a premade audio filter preset: plays the audio a quarter faster without raising its pitch."
     },
@@ -3575,6 +3953,9 @@
     "A limit chooses among books, episodes, and articles, never feeds." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Show at Most's hint while the view lists feeds alone, when it is dimmed (finding 6)."
     },
+    "A managed package named %@ already exists." : {
+      "comment" : "Why a TextMouth package could not be imported: the library already holds a package of that name. %@ is the package's name."
+    },
     "A new timer replaces the one running." : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while a timer runs: setting one of the timers below stops it.",
       "localizations" : {
@@ -3594,6 +3975,9 @@
     },
     "A stretch of the edits runs past the end of “%@”." : {
       "comment" : "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name."
+    },
+    "A symbolic link cannot be deleted as a managed book package." : {
+      "comment" : "Why a book's files were not deleted: its package is a symbolic link, and deleting it could delete another book. Follows \"Import failed: \"."
     },
     "A transcript is being attached to %@. Transcribe it once that finishes." : {
       "comment" : "Alert shown when Transcribe Audio is chosen for an audiobook that a transcript is being attached to. %@ is the audiobook's title."
@@ -3647,8 +4031,14 @@
         }
       }
     },
+    "AVI video" : {
+      "comment" : "The name of the AVI video format, as people say it. Inside sentences about importing a file of that format."
+    },
     "Aa" : {
       "comment" : "A small tag in a substitution rule's row: the rule is case sensitive. A capital and a small letter of the language's alphabet."
+    },
+    "About %@ left" : {
+      "comment" : "Line of the import overlay and the feed downloads: the estimated time left. %@ is the time in words, such as \"4 minutes\"."
     },
     "Action: skip" : {
       "comment" : "A part of a substitution rule's spoken summary: the rule removes the text it matches."
@@ -3814,6 +4204,9 @@
     "Add step" : {
       "comment" : "Title of the button that adds a step to the restart gesture in the Miscellaneous settings."
     },
+    "Add to Library" : {
+      "comment" : "Heading and navigation title of the sheet that lists the ways to add to the library. Title case.\nTitle of the Library toolbar button that opens the sheet of ways to add to the library. Title case.\nVoiceOver label of the Library toolbar button that opens the sheet of ways to add to the library. Title case."
+    },
     "Add to Reading List" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Adds the selected books to the end of the reading list. Also the title of the menu command of the same name."
     },
@@ -3867,6 +4260,9 @@
     },
     "Adds speed buttons and the current speed" : {
       "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings."
+    },
+    "Adds the new copy to the library as a separate book." : {
+      "comment" : "VoiceOver hint of the Keep Both button of the duplicate-book question."
     },
     "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page." : {
       "comment" : "Hint and caption of the Playback setting that adds the page to Where Am I?, a command that says where the reader is. \"Page 12 of 300\" is an example of how the page is said."
@@ -3965,6 +4361,9 @@
     },
     "Already at the start." : {
       "comment" : "Said when a step back in the audio editor can go no further."
+    },
+    "Already in Library" : {
+      "comment" : "Title of the library's alert as a ZIP batch that found books but added none, because the library already held every one. Title case."
     },
     "Also write the markers as Audacity labels" : {
       "comment" : "Label of the checkbox in the audio editor's Export Audio sheet that writes the markers as a label file too. Audacity is the name of an audio editing program."
@@ -4346,6 +4745,9 @@
     "Audio speed" : {
       "comment" : "Label of an audiobook's speed slider; VoiceOver reads it before the speed."
     },
+    "Audio that TextMouth converts at import keeps only the converted file." : {
+      "comment" : "Caption under the Keep Originals switch while it is off."
+    },
     "Audio: %@." : {
       "comment" : "Line of the Transcribe Audio sheet giving the audiobook's length. %@ is the length in words, such as \"6 hours, 12 minutes, 4 seconds\"."
     },
@@ -4417,6 +4819,9 @@
     "Back 10 Seconds" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back ten seconds."
     },
+    "Back Cover" : {
+      "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the back cover, made at import. Title case."
+    },
     "Back One Second" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back one second."
     },
@@ -4434,6 +4839,9 @@
     },
     "Backward navigation unit: %@" : {
       "comment" : "VoiceOver label of the playback bar's menu that picks the unit the backward button moves by. %@ is the unit now chosen, such as \"Sentence\"."
+    },
+    "Before heading 1 of %lld" : {
+      "comment" : "Where the reader is when it precedes the first heading of a book. %lld is the number of headings in the book."
     },
     "Before page %@" : {
       "comment" : "Where the reader is before the first page of a book that has pages. %@ is the first page's label, an identifier."
@@ -4463,6 +4871,20 @@
     },
     "Book" : {
       "comment" : "The object of a removal confirmation's title for one book, in title case, as in \"Move Book to Trash?\".\nThe word that begins the title of a reader window for a book, before its title and author: \"Book: <title> by <author>\".\nTitle of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it."
+    },
+    "Book %lld of %lld: “%@”, %@" : {
+      "comment" : "Line of the import overlay for one book of a ZIP batch. %1$lld is the book's place in the batch, %2$lld the number of books, %3$@ the book's file name, and %4$@ what is being done to it, such as \"reading its text\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Book %1$lld of %2$lld: “%3$@”, %4$@"
+          }
+        }
+      }
+    },
+    "Book Imported" : {
+      "comment" : "Title of the library's alert as an import that added its book ends with something to tell, such as chapters left out. The book is in the library, so it is no error. Title case."
     },
     "Book Info" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book's information, such as title and author. Also the title of the menu command of the same name.\nTitle of the reader toolbar's button that opens the book's information sheet."
@@ -4664,6 +5086,9 @@
         }
       }
     },
+    "Books Imported" : {
+      "comment" : "Title of the library's alert as a ZIP batch that added several books ends with something to tell about some of them, such as chapters left out. Title case."
+    },
     "Books can't be added while the library is moving." : {
       "comment" : "What a Library window says when a command that adds a book is chosen while the library is being moved."
     },
@@ -4724,7 +5149,7 @@
       "comment" : "Speak Info: the part of a book's summary that names its author. %@ is the author's name."
     },
     "Cancel" : {
-      "comment" : "Button of a confirmation in Storage settings that changes nothing.\nButton of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton of the sheet that shows the library being moved: cancels the move.\nButton that closes a question and changes nothing.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without doing what it offered.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the feed downloads section's button that stops the feed downloads.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
+      "comment" : "Button of a confirmation in Storage settings that changes nothing.\nButton of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton of the sheet that shows the library being moved: cancels the move.\nButton that closes a question and changes nothing.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without doing what it offered.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nTitle and VoiceOver label of the Cancel button of the duplicate-book question.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the Cancel button of the Add to Library sheet, which closes it.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the feed downloads section's button that stops the feed downloads.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -4739,6 +5164,9 @@
     },
     "Cancel Feed Downloads" : {
       "comment" : "What VoiceOver calls the Cancel button of the feed downloads section; the import overlay has a Cancel too, so the name says what it cancels. Title case."
+    },
+    "Cancel Import" : {
+      "comment" : "VoiceOver label of the import overlay's Cancel button. Title case."
     },
     "Cancel Move" : {
       "comment" : "VoiceOver label of the button that cancels the move of the library."
@@ -4757,11 +5185,17 @@
     "Cancelling" : {
       "comment" : "VoiceOver value of the move's progress bar while the move is being cancelled."
     },
+    "Cancelling after this book..." : {
+      "comment" : "Line of the import overlay once Cancel is pressed while a book is under way: the import stops after that book. Ends with an ellipsis written as three full stops."
+    },
     "Cancelling the move." : {
       "comment" : "Announcement when the listener cancels the move of the library."
     },
     "Cancelling the move…" : {
       "comment" : "Status line of the move sheet while the move is being cancelled."
+    },
+    "Cancelling..." : {
+      "comment" : "Line of a progress display once Cancel is pressed: the work stops at its next step. Ends with an ellipsis written as three full stops."
     },
     "Caret" : {
       "comment" : "Name of the punctuation key \"^\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Caret\"."
@@ -5123,6 +5557,9 @@
     "Choose at least one kind of item for the view to list." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no kind listed."
     },
+    "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook." : {
+      "comment" : "Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book."
+    },
     "Choose how to remove %@ from the library." : {
       "comment" : "First sentence of the confirmation that asks how to remove books. %@ is what is removed, such as \"“Notes”\" or \"3 books\"."
     },
@@ -5437,8 +5874,53 @@
     "Control" : {
       "comment" : "Name of the Control modifier key, spoken or brailled in a keyboard shortcut such as \"Control + Shift + R\"."
     },
+    "Convert Compiled HTML Help files to HTML files or PDF files, then import those." : {
+      "comment" : "Advice after the refusal of a Compiled HTML Help file."
+    },
+    "Convert DjVu documents to PDF files, then import those." : {
+      "comment" : "Advice after the refusal of a DjVu scan."
+    },
+    "Convert XPS documents to PDF files, then import those." : {
+      "comment" : "Advice after the refusal of an XPS document."
+    },
     "Convert it to 16-bit or 24-bit integer samples, then import it again." : {
       "comment" : "Ends every refusal of an audio file whose samples TextMouth can't decode: what the listener can do about it."
+    },
+    "Converting %@ failed (the converter ended with code %@)." : {
+      "comment" : "Why an audio conversion failed: the converting program ended with an error. %1$@ is the source file's name and %2$@ the program's exit code, an identifier written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Converting %1$@ failed (the converter ended with code %2$@)."
+          }
+        }
+      }
+    },
+    "Converting %@ was stopped because %@." : {
+      "comment" : "Why an audio conversion was stopped: it ran too long or used too much memory. %1$@ is the source file's name and %2$@ the reason, a clause in English that follows \"because\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Converting %1$@ was stopped because %2$@."
+          }
+        }
+      }
+    },
+    "Converting Audio" : {
+      "comment" : "Title of the overlay shown while the library's Ogg audio is converted to AAC. Title case."
+    },
+    "Converting audio: %@ of “%@”" : {
+      "comment" : "Line of the overlay shown while a book's Ogg audio is converted to AAC. %1$@ is how many of how many tracks are done, such as \"12 of 176 tracks\", and %2$@ the book's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Converting audio: %1$@ of “%2$@”"
+          }
+        }
+      }
     },
     "Copied %@." : {
       "comment" : "Said as the audio editor's Copy copies the selection. %@ is its length in words."
@@ -5477,6 +5959,12 @@
     },
     "Could not download “%@”." : {
       "comment" : "Announced as a long run of one feed download ends in failure. %@ is the episode's or article's title. Its row says why."
+    },
+    "Could not import “%@”." : {
+      "comment" : "VoiceOver announcement as an import that ran long fails. %@ is the file's name. The library's alert says why."
+    },
+    "Could not move to the library" : {
+      "comment" : "Starts every failure of Move to Library, followed by a colon and the reason. Has no full stop."
     },
     "Could not remove the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be removed because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
@@ -5581,6 +6069,15 @@
           }
         }
       }
+    },
+    "Create Folder" : {
+      "comment" : "Title and VoiceOver label of the button that puts the books of a ZIP archive in a new folder. Title case."
+    },
+    "Create Folder for Imported Books?" : {
+      "comment" : "Title of the question asked when a ZIP archive added several books: whether to put them in a new folder. Title case."
+    },
+    "Create a new folder to hold them?" : {
+      "comment" : "Second sentence of the question asked when a ZIP archive added several books: whether to put them in a new folder. \"Them\" is the books."
     },
     "Current Timer" : {
       "comment" : "Heading of the sleep timer sheet's section about the timer running now.",
@@ -5786,6 +6283,9 @@
     "Delete Line" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Line\"."
     },
+    "Delete Original File Permanently?" : {
+      "comment" : "Title of the confirmation that asks whether to delete the original file of a book just imported permanently. Title case."
+    },
     "Delete Permanently" : {
       "comment" : "Title of the button that removes books and deletes their files permanently, in title case."
     },
@@ -5814,6 +6314,12 @@
     },
     "Delete the feed “%@”?" : {
       "comment" : "Title of the confirmation before Delete Feed. %@ is the feed's title."
+    },
+    "Delete the original file permanently?" : {
+      "comment" : "Question of the confirmation about the original file of a book just imported, when the file's name is not known."
+    },
+    "Delete the original file “%@” permanently?" : {
+      "comment" : "Question of the confirmation about the original file of a book just imported. %@ is the file's name."
     },
     "Delete the view “%@”?" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question Delete… asks. Placeholders in order: name."
@@ -5905,6 +6411,9 @@
     },
     "Discarded the recording of %@, which holds no sound." : {
       "comment" : "Said by the Record window after a recording left behind that held no sound was discarded. %@ is when it was recorded, a date and time."
+    },
+    "Discards the new copy. The library stays as it was." : {
+      "comment" : "VoiceOver hint of the Cancel button of the duplicate-book question."
     },
     "Disconnect delay" : {
       "comment" : "Title of the slider in the Miscellaneous settings that sets how long media commands are suppressed after a Bluetooth device disconnects."
@@ -6237,6 +6746,12 @@
     "Duplicate" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that makes a custom copy of a view."
     },
+    "Duplicate Book Found" : {
+      "comment" : "Title of the question asked when a book just imported matches one already in the library. Title case."
+    },
+    "Duplicate Copies Moved to the Trash" : {
+      "comment" : "Title of the alert that tells of new copies of duplicate books that the launch moved to the Trash. Title case."
+    },
     "Duration" : {
       "comment" : "Choice of the headings sheet's display picker: each heading shows how long it lasts.\nName of the book information sheet's row that shows an audiobook's length."
     },
@@ -6373,6 +6888,9 @@
     },
     "Edits" : {
       "comment" : "Label of the number of edits made, in the audio editor's Audio Info sheet."
+    },
+    "Edits of its audio or of its manifest are not kept." : {
+      "comment" : "Last sentence of what Replace Existing keeps of a duplicate audiobook: the library copy's edits of its audio or of its manifest are lost."
     },
     "Edits one track at a time, listed by chapter name." : {
       "comment" : "Explains the question about which track of a book to edit."
@@ -6700,8 +7218,17 @@
     "Export Audio" : {
       "comment" : "Title of the audio editor's Export Audio sheet."
     },
+    "Export Keynote presentations from Keynote as PDF files, then import those." : {
+      "comment" : "Advice after the refusal of a Keynote presentation, which TextMouth reads in no slide format."
+    },
+    "Export Numbers spreadsheets from Numbers as PDF files, then import those." : {
+      "comment" : "Advice after the refusal of a Numbers spreadsheet."
+    },
     "Export OPML…" : {
       "comment" : "Title of the Library menu's command that exports the subscriptions as an OPML file. The ellipsis says a panel follows. OPML is a file format; keep it."
+    },
+    "Export Pages documents from Pages as Word documents or EPUB books, then import those." : {
+      "comment" : "Advice after the refusal of a Pages document: how to get the book out of Pages."
     },
     "Exported %lld subscriptions to %@." : {
       "comment" : "What VoiceOver says once the subscriptions are exported. %lld is how many; %@ is the file's name.",
@@ -6769,6 +7296,20 @@
     "Export…" : {
       "comment" : "Button of the audio editor's Export Audio sheet that asks where to save the file.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file."
     },
+    "Extracting archive..." : {
+      "comment" : "Line of the import overlay as a ZIP import starts, before its archive is opened. Ends with an ellipsis written as three full stops, which says the work goes on."
+    },
+    "Extracting “%@”: %@..." : {
+      "comment" : "Line of the import overlay while an archive is extracted. %1$@ is the archive's name and %2$@ how far the extraction has got, such as \"120 of 300 items, 1.2 GB of 3.4 GB\". Ends with an ellipsis written as three full stops.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Extracting “%1$@”: %2$@..."
+          }
+        }
+      }
+    },
     "Fade In" : {
       "comment" : "Title of a premade audio filter preset: fades the audio in over one second."
     },
@@ -6791,6 +7332,9 @@
           }
         }
       }
+    },
+    "Failed to compute file hash." : {
+      "comment" : "Why an import failed: the file's checksum could not be computed."
     },
     "Failed to load book" : {
       "comment" : "Heading of the view shown in place of a book that could not be loaded; the reason follows it."
@@ -6981,6 +7525,20 @@
     "Finished downloading “%@”." : {
       "comment" : "Announced as a long run of one feed download ends. %@ is the episode's or article's title."
     },
+    "Finished importing “%@”." : {
+      "comment" : "VoiceOver announcement as the import of one book that ran long ends. %@ is the book's file name."
+    },
+    "Finished importing “%@”: %@." : {
+      "comment" : "VoiceOver announcement as a ZIP batch that ran long ends. %1$@ is the archive's name and %2$@ the counts, such as \"97 books imported, 2 skipped as duplicates, 1 failed\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Finished importing “%1$@”: %2$@."
+          }
+        }
+      }
+    },
     "Finished: %@" : {
       "comment" : "VoiceOver announcement as a book ends with no book to follow it. %@ is the book's title. Sentences saying why may follow it.",
       "localizations" : {
@@ -7001,6 +7559,9 @@
     "First in the Sort" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .viewSort."
     },
+    "Flash video" : {
+      "comment" : "The name of the Flash video format, as people say it. Inside sentences about importing a file of that format."
+    },
     "Folder" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The kind a folder's summary names after the folder's name.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .folder."
     },
@@ -7009,6 +7570,9 @@
     },
     "Folder missing" : {
       "comment" : "The note on a feed's row when its library folder was removed."
+    },
+    "Folder name" : {
+      "comment" : "Label of the field where the name of the new folder for a ZIP archive's books is typed."
     },
     "Folder names stay as you typed them." : {
       "comment" : "Last sentence of the note under the Leading Articles pop-up: folder names are never changed by the setting."
@@ -7128,6 +7692,9 @@
     },
     "From %@" : {
       "comment" : "Line under the download view's heading: where the book comes from. %@ is the cloud service's name, or \"the cloud service\" when it is unknown."
+    },
+    "Front Cover" : {
+      "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the front cover, made at import. Title case."
     },
     "Genre" : {
       "comment" : "Name of the book information sheet's field for an audiobook's genre; VoiceOver reads it as the field's label."
@@ -7285,6 +7852,17 @@
     "Heading" : {
       "comment" : "A unit of text a picker moves or rewinds by: one heading. Used by the rewind, skip, and navigation unit pickers."
     },
+    "Heading %lld of %lld" : {
+      "comment" : "Where the reader is: the heading it is in. %1$lld is that heading's place among the book's headings and %2$lld the number of headings.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Heading %1$lld of %2$lld"
+          }
+        }
+      }
+    },
     "Heading Levels" : {
       "comment" : "Name of the VoiceOver rotor that moves among the headings of the headings list."
     },
@@ -7424,10 +8002,13 @@
       "comment" : "A choice of the Leading Articles pop-up: a title's leading article does not count when typing or when sorting."
     },
     "Import" : {
-      "comment" : "Title of the button that starts an import, such as an OPML file of subscriptions."
+      "comment" : "Title of the button of the Import Folder panel that imports the chosen folders.\nTitle of the button that starts an import, such as an OPML file of subscriptions."
     },
     "Import Behavior" : {
       "comment" : "Heading of the section of Storage settings about what an import does."
+    },
+    "Import Folder" : {
+      "comment" : "Title of the panel that chooses folders to import. Title case."
     },
     "Import Folder…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Imports a DAISY book, or a folder of audio tracks, as a book. Also the title of the menu command of the same name."
@@ -7438,11 +8019,94 @@
     "Import Subscriptions" : {
       "comment" : "Heading of the sheet that imports an OPML file of subscriptions. Title case."
     },
+    "Import cancelled after %@." : {
+      "comment" : "Sentence of the alert about a ZIP batch the reader cancelled partway. %@ is how many of how many books were done, such as \"3 of 10 books\"."
+    },
+    "Import cancelled while extracting the archive, before any book was imported." : {
+      "comment" : "Sentence of the alert about a ZIP batch the reader cancelled while its archive was still being extracted."
+    },
+    "Import failed: %@" : {
+      "comment" : "Why an import failed. %@ is the reason, a sentence."
+    },
     "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again." : {
       "comment" : "Last sentence of why a move of the data directory was refused: what to do. Replace Existing is the name of a button in the duplicate question. \"It\" is the book."
     },
     "Import questions can't be answered while the library is moving." : {
       "comment" : "First sentence of what an import question says when it is answered while the library is being moved."
+    },
+    "Imported %lld books, but %@" : {
+      "comment" : "Sentence of the alert about a ZIP batch that left something out. %1$lld is the number of books imported and %2$@ the sections that say what failed or is missing, each a heading and a line for each entry.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Imported %lld book, but %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Imported %lld books, but %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Imported %lld books." : {
+      "comment" : "Sentence of the alert about a ZIP batch that was cancelled after it imported some books. %lld is the number of books imported.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Imported %lld book."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Imported %lld books."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Importing Books" : {
+      "comment" : "Title of the overlay that shows the imports under way. VoiceOver reads it first."
+    },
+    "Importing “%@”: %@, %@." : {
+      "comment" : "VoiceOver announcement as a ZIP batch that has run long passes a quarter of its books. %1$@ is the archive's name, %2$@ how far it has got, such as \"25 of 100 books processed\", and %3$@ the time left, such as \"about 4 minutes left\", starting with a lowercase letter.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Importing “%1$@”: %2$@, %3$@."
+          }
+        }
+      }
+    },
+    "Importing “%@”: %@." : {
+      "comment" : "VoiceOver announcement as a ZIP batch that has run long passes a quarter of its books, with no estimate of the time left. %1$@ is the archive's name and %2$@ how far it has got, such as \"25 of 100 books processed\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Importing “%1$@”: %2$@."
+          }
+        }
+      }
+    },
+    "Imports a folder holding a DAISY book or audio tracks as one book." : {
+      "comment" : "One-line summary and VoiceOver hint of the Import Folder choice of the Add to Library sheet."
     },
     "In %@" : {
       "comment" : "Speak Info: the part of a summary that says where a book or a feed's folder is. %@ is the folder's path, such as Fiction/Mystery."
@@ -7514,6 +8178,9 @@
     "Information" : {
       "comment" : "Heading of the group of keyboard shortcuts that speak information, such as Where Am I, in Settings."
     },
+    "Inner Cover" : {
+      "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls an inner cover, made at import. Title case."
+    },
     "Insert" : {
       "comment" : "Button of the audio editor's Insert Silence and Insert Chapter Marker sheets that makes the insertion.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\"."
     },
@@ -7553,6 +8220,15 @@
     "Inside the data directory" : {
       "comment" : "A choice of the Log location pop-up in the Storage settings: the diagnostic logs are written in the Logs folder of the data directory, the folder that holds the library."
     },
+    "Install TextMouth again, then import the book again." : {
+      "comment" : "Advice ending the notice about a book's files that TextMouth's own converter could not read because the converter is missing from the app."
+    },
+    "Install TextMouth again, then import the file again." : {
+      "comment" : "Advice ending the sentences about a file that TextMouth's own converter could not read because the converter is missing from the app."
+    },
+    "Invalid TextMouth package: %@" : {
+      "comment" : "Why a TextMouth package (.tmb) was refused at import. %@ is the reason, a phrase in English."
+    },
     "Invalid regex: %@" : {
       "comment" : "Shown in the substitution rule editor when the pattern is not a valid regular expression. %@ is the reason the system gives, which may be in English. Regex is short for regular expression."
     },
@@ -7583,6 +8259,9 @@
     "It can be read again now. Choose Try Again to use it." : {
       "comment" : "Why Rebuild Library Index replaced nothing: the library index can be read again. It follows the sentence \"The library index was not rebuilt.\", so \"It\" is the index. Try Again is a button name."
     },
+    "It cannot be recovered." : {
+      "comment" : "Sentence of the confirmation about the original file of a book just imported, and the hint of its Delete Permanently button: the file is gone for good."
+    },
     "It could not be copied into the library." : {
       "comment" : "First sentence of why a book could not move into the current library format. \"It\" is the book's original file."
     },
@@ -7610,8 +8289,11 @@
     "It has the same books, places, bookmarks, reading list, and folders." : {
       "comment" : "Sentence of Use This Library's account: the other copy matches the library in use exactly."
     },
+    "It holds %@, which TextMouth does not import." : {
+      "comment" : "Sentence of the alert about an archive that holds no book: what it holds instead. %@ is the kinds of files it holds with their counts, such as \"176 .ogg files\" or \"10 .jpg files, 3 .png files, and 4 other files\"."
+    },
     "It holds %@." : {
-      "comment" : "What a conflicting copy of a feed's index holds. %@ is a count of episodes, such as \"12 episodes\".\nWhat a conflicting copy of the library index holds. %@ is its counts as a list, such as \"3 books, 1 folder, and 2 books on the reading list\"."
+      "comment" : "Sentence of the alert about a folder that holds no book: what it holds instead. %@ is the kinds of files it holds with their counts, such as \"1 .txt file\" or \"10 .jpg files, 3 .png files, and 4 other files\".\nWhat a conflicting copy of a feed's index holds. %@ is a count of episodes, such as \"12 episodes\".\nWhat a conflicting copy of the library index holds. %@ is its counts as a list, such as \"3 books, 1 folder, and 2 books on the reading list\"."
     },
     "It holds %@; library.json holds %@." : {
       "comment" : "What a conflicting copy of the library index holds, set against the index itself. %1$@ and %2$@ are counts as a list, such as \"3 books, 1 folder, and 2 books on the reading list\". library.json is a file name and stays as written.",
@@ -7634,6 +8316,9 @@
           }
         }
       }
+    },
+    "It holds no files." : {
+      "comment" : "Sentence of the alert about an archive or folder that holds no book: it holds no files at all."
     },
     "It holds the feed “%@” with %@." : {
       "comment" : "What a conflicting copy of a feed's record holds. %1$@ is the feed's title; %2$@ is a count of items, such as \"12 items\".",
@@ -7685,14 +8370,26 @@
         }
       }
     },
+    "It is a streaming playlist for web audio, which TextMouth does not import." : {
+      "comment" : "Refusal of a playlist that is an HLS stream, a list of pieces of one broadcast on the web. \"It\" is the playlist. Follows the sentence naming the file."
+    },
     "It is the folder of the feed %@: whichever you choose, the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder, when it is the folder of one feed. %@ is the feed's title in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
     },
     "It is the folder of the feeds %@: whichever you choose, each feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder, when it is the folder of several feeds. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
     },
+    "It lists no audio track with a start that TextMouth can read." : {
+      "comment" : "Refusal of a cue sheet chosen on its own that places no track. \"It\" is the cue sheet. Follows the sentence naming the file."
+    },
+    "It lists only web addresses, and TextMouth imports only files on this Mac." : {
+      "comment" : "Refusal of a playlist that lists only web addresses. \"It\" is the playlist. Follows the sentence naming the file."
+    },
     "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them." : {
       "comment" : "Second sentence of the Edit Manifest explanation: what the manifest lists and what the user can change in it."
+    },
+    "It may be damaged, or another kind of file." : {
+      "comment" : "Second sentence of the refusal of a document that could not be read: the file may be damaged or of another kind."
     },
     "It may be paused, signed out, or not running." : {
       "comment" : "Second sentence of why a book download stopped: the likely causes. \"It\" is the cloud service."
@@ -7700,8 +8397,34 @@
     "It may have been moved or renamed, or %@ may not have synced it to this Mac yet." : {
       "comment" : "The likely cause of a missing folder in a cloud service's folder. %@ is the cloud service's name."
     },
+    "It names no audio file in its own folder that TextMouth can import." : {
+      "comment" : "Refusal of a playlist or cue sheet with no track left to import. \"It\" is the playlist. A sentence about the skipped entries may follow."
+    },
     "It runs only through ffmpeg." : {
       "comment" : "Ends a line under a filter preset's chain field that says why TextMouth's own filters can't run it: only the ffmpeg program can. ffmpeg is the program's name."
+    },
+    "It skipped %lld entries: %@." : {
+      "comment" : "Sentence after the refusal of a playlist: how many entries it skipped, and which. %1$lld is the number of entries and %2$@ the list of them, each with its reason in parentheses.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "It skipped %lld entry: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "It skipped %lld entries: %@."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "It stays in %@" : {
       "comment" : "Announcement after Remove Download removed one book's files from this Mac: the book is still in the cloud. %@ is the cloud service's name, or \"the cloud\" when it is unknown."
@@ -7864,6 +8587,9 @@
     "Its text is replaced by the new reading." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What any re-read does to the book's text."
     },
+    "Its tracks run past the end of the audio it names, so it was made for another copy of that audio." : {
+      "comment" : "Refusal of a cue sheet chosen on its own whose tracks begin or end past the end of the audio it names. \"Its\" and \"it\" are the cue sheet."
+    },
     "Jump" : {
       "comment" : "Button of a jump panel (Go to Percent, Time or Page) that jumps to what was typed."
     },
@@ -7891,7 +8617,7 @@
       "comment" : "Announcement after Go to Page jumped. %@ is the page's label, an identifier written without digit grouping."
     },
     "Keep" : {
-      "comment" : "Choice of the Original audio picker: keep the original audio of a recording or edited audiobook until its book is removed."
+      "comment" : "Choice of the Original audio picker: keep the original audio of a recording or edited audiobook until its book is removed.\nTitle and VoiceOver label of the button that keeps the original file of a book just imported. Title case."
     },
     "Keep %lld Books on This Mac" : {
       "comment" : "Library menu command that keeps the selected books' files downloaded on this Mac. %lld is the number of books selected.",
@@ -7916,6 +8642,9 @@
         }
       }
     },
+    "Keep Both" : {
+      "comment" : "Title and VoiceOver label of the button of the duplicate-book question that keeps both copies. Title case."
+    },
     "Keep Original" : {
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: the original file stays where it was."
     },
@@ -7927,6 +8656,9 @@
     },
     "Keep on This Mac" : {
       "comment" : "Library menu command that keeps a book's files downloaded on this Mac. Also the name other sentences use for the command."
+    },
+    "Keep originals of converted audio" : {
+      "comment" : "Label of the Storage settings switch that keeps the original file of each audio file an import converts."
     },
     "Keep these books on this Mac" : {
       "comment" : "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac.",
@@ -7941,6 +8673,9 @@
     },
     "Keeping %@ on this Mac" : {
       "comment" : "Announcement when Keep on This Mac starts. %@ is the book's title, or a count of books such as \"3 books\"."
+    },
+    "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package." : {
+      "comment" : "VoiceOver hint of the switch that keeps the originals of converted audio."
     },
     "Keeps only the selection." : {
       "comment" : "Hint of the audio editor's Trim to Selection button."
@@ -7975,6 +8710,9 @@
     },
     "Kept on this Mac for the reading list" : {
       "comment" : "Note in Book Information for a book that only the reading list keeps downloaded on this Mac."
+    },
+    "Label %@" : {
+      "comment" : "Heading made at import for an Audacity label that has no text. %@ is the label's place among the file's labels, from 1, an identifier written without digit grouping."
     },
     "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain." : {
       "comment" : "Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas."
@@ -8023,6 +8761,12 @@
     "Leaves the audiobook untranscribed; Transcribe Audio does it later." : {
       "comment" : "VoiceOver hint of the Not Now button of the question offered after an import. Transcribe Audio is the command's name."
     },
+    "Leaves the imported books where they are." : {
+      "comment" : "VoiceOver hint of the No Thanks button of the ZIP archive question."
+    },
+    "Leaves the original file where it is." : {
+      "comment" : "VoiceOver hint of the Keep button of the question about the original file."
+    },
     "Left Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Arrow\"."
     },
@@ -8043,6 +8787,9 @@
     },
     "Less Than" : {
       "comment" : "Name of the punctuation key \"<\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Less Than\"."
+    },
+    "Less than a minute left" : {
+      "comment" : "Line of the import overlay and the feed downloads: the time left is under a minute."
     },
     "Level" : {
       "comment" : "Label of the microphone's loudness while recording, in the Record window."
@@ -8391,6 +9138,9 @@
     "Make sure its folder can be written to, then try again." : {
       "comment" : "Last sentence of why Rebuild Library Index replaced nothing: what to do."
     },
+    "Makes a book from text you paste or type." : {
+      "comment" : "One-line summary and VoiceOver hint of the New from Text choice of the Add to Library sheet."
+    },
     "Makes a view of your own from the conditions you choose." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
     },
@@ -8587,6 +9337,9 @@
     },
     "Matches" : {
       "comment" : "Name of the VoiceOver rotor in the Search Library window that moves between the matches listed."
+    },
+    "Matroska" : {
+      "comment" : "The name of the Matroska container format, as people say it. Inside sentences about importing a file of that format."
     },
     "Maximum is %@." : {
       "comment" : "Second sentence of that refusal. %@ is the longest time allowed, spoken in words, such as \"1 hour\"."
@@ -8806,11 +9559,20 @@
     "Move Library Here?" : {
       "comment" : "Title of the question asked before copying the library into the folder the listener chose."
     },
+    "Move Original File to Trash?" : {
+      "comment" : "Title of the confirmation that asks whether to move the original file of a book just imported to the Trash. Title case."
+    },
     "Move Up" : {
       "comment" : "Name of a filter preset's Move Up button, also its VoiceOver action and context menu item.\nName of the command that moves a substitution rule up the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place up, as a VoiceOver action and a context menu item."
     },
     "Move cancelled." : {
       "comment" : "First sentence of the message after the move of the library was cancelled."
+    },
+    "Move the original file to the Trash?" : {
+      "comment" : "Question of the confirmation about the original file of a book just imported, when the file's name is not known."
+    },
+    "Move the original file “%@” to the Trash?" : {
+      "comment" : "Question of the confirmation about the original file of a book just imported. %@ is the file's name."
     },
     "Move to Folder" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected books into a folder."
@@ -8986,6 +9748,9 @@
     "Moves the cursor to the start of the audio." : {
       "comment" : "Hint of the audio editor's Go to Start button."
     },
+    "Moves the imported books into a new folder with this name." : {
+      "comment" : "VoiceOver hint of the Create Folder button of the ZIP archive question. \"This name\" is the name in the folder name field."
+    },
     "Moves the view one place down the list" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's hint."
     },
@@ -9093,6 +9858,9 @@
     },
     "Moving the library… %lld percent" : {
       "comment" : "Status line of the move sheet while the library is copied. %lld is the percent done, from 0 to 100."
+    },
+    "Musepack" : {
+      "comment" : "The name of the Musepack audio format. Inside sentences about importing a file of that format."
     },
     "Name" : {
       "comment" : "Label of the name field of a filter preset or an audio marker.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The name field's label."
@@ -9242,6 +10010,9 @@
     "No Library Window" : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The submenu's one item, dimmed, while no Library window is in front."
     },
+    "No Thanks" : {
+      "comment" : "Title and VoiceOver label of the button that leaves the books of a ZIP archive where they are. Title case."
+    },
     "No audio files were found in %@." : {
       "comment" : "Said when a book of several audio tracks has no audio file to edit. %@ is the book's title."
     },
@@ -9264,6 +10035,9 @@
     },
     "No books are selected." : {
       "comment" : "Why a Library menu command did nothing: no book is selected."
+    },
+    "No books were found in “%@”." : {
+      "comment" : "What the library says as an archive holds no book TextMouth reads. %@ is the archive's name. A sentence about what it holds may follow."
     },
     "No chapter marker after the cursor." : {
       "comment" : "Said when the audio editor's Next Chapter finds no chapter marker after the cursor."
@@ -9313,6 +10087,9 @@
     "No headings found in this document." : {
       "comment" : "Message in the headings sheet when the book has no headings."
     },
+    "No import is under way." : {
+      "comment" : "What the Speak Import Progress command says when no import is under way."
+    },
     "No key was pressed twice." : {
       "comment" : "Announced by VoiceOver at the end of a trial of the double press time when no second press came in time."
     },
@@ -9341,6 +10118,35 @@
           }
         }
       }
+    },
+    "No new books in “%@”: all %lld were already in your library." : {
+      "comment" : "What the library says as an archive holds three or more books, all of which the library already has. %1$@ is the archive's name and %2$lld the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "No new books in “%@”: all %lld was already in your library."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "No new books in “%@”: all %lld were already in your library."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "No new books in “%@”: both were already in your library." : {
+      "comment" : "What the library says as an archive holds two books, both of which the library already has. %@ is the archive's name."
+    },
+    "No new books in “%@”: its one book was already in your library." : {
+      "comment" : "What the library says as an archive holds one book, which the library already has. %@ is the archive's name."
     },
     "No next book in the reading list." : {
       "comment" : "VoiceOver announcement when Next in Reading List finds no book below this one.",
@@ -9439,6 +10245,64 @@
     "No substitution rules." : {
       "comment" : "Shown in the Substitutions settings while the list holds no rule."
     },
+    "No text could be read from this comic book archive: OCR could not run (%@)." : {
+      "comment" : "Why a comic book archive was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English."
+    },
+    "No text could be read from this picture: OCR could not run (%@)." : {
+      "comment" : "Why a picture was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English."
+    },
+    "No text was found in the one picture of this comic book archive." : {
+      "comment" : "Why a comic book archive of one picture was refused at import: text recognition found no text in it."
+    },
+    "No text was found in this picture." : {
+      "comment" : "Why a picture was refused at import: text recognition found no text in it."
+    },
+    "No text was found on any of the %lld pages of this comic book archive." : {
+      "comment" : "Why a comic book archive of several pictures was refused at import: text recognition found no text on any page. %lld is the number of pages, always more than one.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "No text was found on any of the %lld page of this comic book archive."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "No text was found on any of the %lld pages of this comic book archive."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "No text was found on any of the %lld pages of this picture." : {
+      "comment" : "Why a picture of several pages, such as a TIFF, was refused at import: text recognition found no text on any page. %lld is the number of pages, always more than one.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "No text was found on any of the %lld page of this picture."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "No text was found on any of the %lld pages of this picture."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "None" : {
       "comment" : "A choice of the Rewind on Resume unit picker: playback resumes where it stopped, with no rewinding.\nShown in place of a keyboard shortcut when an action has none."
     },
@@ -9508,11 +10372,17 @@
     "Not Downloaded" : {
       "comment" : "The note on a feed's episode or article row, and in a book's row, when its file is not on this Mac. Title case."
     },
+    "Not Enough Space to Convert Audio" : {
+      "comment" : "Title of the alert that says a book's Ogg audio waits for disk space to be converted to AAC. Title case."
+    },
     "Not Now" : {
       "comment" : "Button of the question offered after an import that leaves the audiobook untranscribed for now."
     },
     "Not Within the Last" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
+    },
+    "Not available in this window." : {
+      "comment" : "Second sentence of the hint of a dimmed choice of the Add to Library sheet: its menu command does not work in the window the sheet is in. The choice's own summary comes first."
     },
     "Not checked" : {
       "comment" : "How an unsubscribed feed's last check reads when this Mac never checked it. Spoken after a comma with its first letter in lower case."
@@ -9522,6 +10392,29 @@
     },
     "Not checked yet" : {
       "comment" : "How a feed's last check reads before it was ever checked. Spoken after a comma with its first letter in lower case."
+    },
+    "Not extracted: TextMouth extracts archives within an archive only %lld levels deep." : {
+      "comment" : "Why an archive found inside an archive was not extracted: it lies deeper than TextMouth searches. %lld is the number of levels TextMouth goes into.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Not extracted: TextMouth extracts archives within an archive only %lld level deep."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Not extracted: TextMouth extracts archives within an archive only %lld levels deep."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Not in a folder" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book in no folder."
@@ -9579,6 +10472,9 @@
           }
         }
       }
+    },
+    "Nothing Imported" : {
+      "comment" : "Title of the library's alert as a ZIP batch that brought no new book ends. Nothing failed, so it is no error. Title case."
     },
     "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first of a choice between two seven-bit codes: nothing can tell whether it is right, since every printable ASCII byte is a cell in every seven-bit code, so a wrong one reads with no error (research of October 25, section 8.3)."
@@ -9648,11 +10544,20 @@
     "Offer to transcribe after importing an audiobook" : {
       "comment" : "Label of the checkbox in Playback settings that makes TextMouth ask about transcribing after each audiobook is imported."
     },
+    "Ogg" : {
+      "comment" : "The name of the Ogg container format. Inside sentences about importing a file of that format."
+    },
     "One Unit for Both Directions" : {
       "comment" : "A choice of the playback bar's navigation unit menus setting: one shared menu sets the unit of both skip buttons."
     },
+    "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings." : {
+      "comment" : "Part of the question asked about a duplicate where one copy is an audiobook played from a recording and the other is read aloud from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy."
+    },
     "Only an audiobook's audio can be edited." : {
       "comment" : "Said when Edit Audio… is chosen for something that is not an audiobook kept in a package of its own."
+    },
+    "Only an episode or article downloaded in its feed can move into the library." : {
+      "comment" : "Why Move to Library did nothing: none of the chosen items is an episode or article downloaded in its feed. Follows \"Could not move to the library: \"."
     },
     "Only at launch and when I ask" : {
       "comment" : "Title of the checkbox that turns the refresh interval off, so feeds refresh only at launch and on request."
@@ -9795,6 +10700,9 @@
     "Opens a folder chooser. An empty folder receives a copy of the library; a folder that holds a TextMouth library can be used as it is." : {
       "comment" : "VoiceOver hint of the Change Location button in Storage settings."
     },
+    "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed" : {
+      "comment" : "VoiceOver hint of the Add to Library toolbar button. Names the five choices the sheet offers, in the order the sheet lists them."
+    },
     "Opens a sheet to type a feed's address and choose its folder" : {
       "comment" : "VoiceOver hint of the Add Feed button in the Add to Library sheet."
     },
@@ -9882,7 +10790,7 @@
       "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.\nLabel of the Go to Page field, where the user types a page of the book."
     },
     "Page %@" : {
-      "comment" : "Announcement on reaching a page of a book that has pages, and the start of a sentence naming a page. %@ is the page's label as the book names it, such as 13 or xii, an identifier written without digit grouping."
+      "comment" : "Announcement on reaching a page of a book that has pages, and the start of a sentence naming a page. %@ is the page's label as the book names it, such as 13 or xii, an identifier written without digit grouping.\nTitle of the chapter of one page of a book of pictures, made at import. %@ is the page's number, an identifier written without digit grouping."
     },
     "Page %@ of %@" : {
       "comment" : "Where the reader is in a book that has pages. %1$@ is the page's label (a number or a roman numeral, an identifier written without digit grouping); %2$@ is the number of pages, written without digit grouping.",
@@ -9910,8 +10818,34 @@
     "Paragraph" : {
       "comment" : "A unit of text a picker moves or rewinds by: one paragraph. Used by the rewind, skip, and navigation unit pickers."
     },
+    "Part of %@ could not be decoded and is kept as silence." : {
+      "comment" : "Notice that part of one file's sound could not be decoded and the book keeps it as silence. %@ is the file's name in curly quotes."
+    },
     "Part of %@ isn't on this Mac." : {
       "comment" : "Shown and spoken when a file of the book is only in the cloud again right after its download. %@ is the book's title."
+    },
+    "Part of %lld files, %@, could not be decoded and is kept as silence." : {
+      "comment" : "Notice that part of several files' sound could not be decoded and the book keeps it as silence. %1$lld is the number of files and %2$@ their names in curly quotes, listed as a sentence lists them.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Part of %lld file, %@, could not be decoded and is kept as silence."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Part of %lld files, %@, could not be decoded and is kept as silence."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Part of the Title" : {
       "comment" : "A choice of the Leading Articles pop-up: the leading article counts like any other word of the title."
@@ -10349,6 +11283,12 @@
     "Puts back the transcript as it was before the last cleanup." : {
       "comment" : "VoiceOver hint of the Undo Cleanup button of the Clean Up Transcript sheet."
     },
+    "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list." : {
+      "comment" : "VoiceOver hint of the Replace Existing button of the duplicate-book question, when one copy is an audiobook and the other is not. \"The existing copy\" is the copy in the library."
+    },
+    "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings." : {
+      "comment" : "VoiceOver hint of the Replace Existing button of the duplicate-book question, when both copies are of one kind. \"The existing copy\" is the copy in the library."
+    },
     "Putting back the transcript from before…" : {
       "comment" : "Line of the Clean Up Transcript sheet while it puts back the transcript from before the cleanup."
     },
@@ -10566,6 +11506,9 @@
     "Ready to record from %@." : {
       "comment" : "Status line of the Record window while nothing is recording. %@ is the name of the microphone."
     },
+    "RealMedia" : {
+      "comment" : "The name of the RealMedia format. Inside sentences about importing a file of that format."
+    },
     "Reason" : {
       "comment" : "Label of why the library index could not be read, on the library index recovery sheet."
     },
@@ -10660,6 +11603,9 @@
     },
     "Records a new shortcut." : {
       "comment" : "VoiceOver hint of a keyboard shortcut's key button, and of the add shortcut button, in Settings: the next key pressed becomes the shortcut."
+    },
+    "Records from a microphone into a new audiobook." : {
+      "comment" : "One-line summary and VoiceOver hint of the Record choice of the Add to Library sheet."
     },
     "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it." : {
       "comment" : "Hint of the audio editor's Punch In button. \"Stop\" is the name of a button."
@@ -11030,8 +11976,14 @@
     "Rename" : {
       "comment" : "Button of a marker's row in the audio editor's list that gives the marker a name."
     },
+    "Repack the pages of RAR comics as CBZ comics, then import those." : {
+      "comment" : "Advice after the refusal of a comic whose pages are in a RAR archive."
+    },
     "Replace %@" : {
       "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": replacing a stretch of audio with a new recording. %@ is the replaced length in title-cased words, such as \"2.5 Seconds\"."
+    },
+    "Replace Existing" : {
+      "comment" : "Title and VoiceOver label of the button of the duplicate-book question that replaces the copy in the library. Title case."
     },
     "Replace Transcript" : {
       "comment" : "Button of the question asked before a transcript from a file replaces an audiobook's transcript, which replaces it."
@@ -11059,8 +12011,23 @@
     "Replacement text. Leave empty to skip matched text." : {
       "comment" : "VoiceOver label of the replacement field in the substitution rule editor."
     },
+    "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text where found, and its settings, folder, and place on the reading list. An edit of its text is kept as a copy beside the new text, not applied." : {
+      "comment" : "Part of the question asked about a duplicate book that is read from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy."
+    },
+    "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same, rather than the transcript file found beside the new copy's audio." : {
+      "comment" : "Part of the question asked about a duplicate audiobook whose new copy came with a transcript file beside its audio: Replace Existing keeps the library copy's own transcript over that file. \"The existing copy\" is the library's copy. A sentence about what is not kept follows."
+    },
+    "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same." : {
+      "comment" : "Part of the question asked about a duplicate audiobook: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy. A sentence about what is not kept follows."
+    },
+    "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list." : {
+      "comment" : "Part of the question asked about a duplicate audiobook whose new copy came with a transcript file beside its audio: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy. Sentences about the transcript and what is not kept follow."
+    },
     "Replacing kept the existing copy's transcript." : {
       "comment" : "The reason, in a notice after an import, that a transcript file beside the audio was not attached: Replace Existing kept the existing copy's own transcript."
+    },
+    "Replacing “%@”. This can take a moment." : {
+      "comment" : "VoiceOver announcement as Replace Existing begins for a duplicate book; the sheet's buttons are dimmed until it is done. %@ is the book's title."
     },
     "Reset" : {
       "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".\nName of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults."
@@ -11394,6 +12361,9 @@
     },
     "Save Name" : {
       "comment" : "Button that keeps the new name typed for a marker."
+    },
+    "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those." : {
+      "comment" : "Advice after the refusal of a WordPerfect document, which no part of macOS reads. LibreOffice is a program's name."
     },
     "Save and Export" : {
       "comment" : "Heading of the audio editor's buttons for saving and exporting."
@@ -12263,6 +13233,9 @@
     "Some Changes Could Not Be Saved" : {
       "comment" : "Title of the alert shown when TextMouth is asked to quit while some changes could not be written to disk."
     },
+    "Some Files Not Imported" : {
+      "comment" : "Title of the library's alert as a ZIP batch that added at least one book ends having left some files out: a file failed or the batch was cancelled. Title case."
+    },
     "Some changes are not saved." : {
       "comment" : "Sentence that replaces a claim of success when some changes could not be saved. The failure notices follow."
     },
@@ -12349,6 +13322,9 @@
           }
         }
       }
+    },
+    "Speex" : {
+      "comment" : "The name of the Speex speech format. Inside sentences about importing a file of that format."
     },
     "Start New Library" : {
       "comment" : "Button of the question that confirms starting a new, empty library."
@@ -12629,6 +13605,9 @@
     "Stops the download. Nothing is installed." : {
       "comment" : "VoiceOver hint of the Cancel Download button."
     },
+    "Stops the import under way and those waiting. Books already imported stay." : {
+      "comment" : "VoiceOver hint of the import overlay's Cancel button."
+    },
     "Stops the search, keeping the matches found so far" : {
       "comment" : "VoiceOver hint of the Stop button of the Search Library window."
     },
@@ -12897,6 +13876,43 @@
     "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens." : {
       "comment" : "Announcement when an edited text was not taken because the book's transcript changed too. %@ is the book's title."
     },
+    "Text recognition could not read %@: %@." : {
+      "comment" : "Warning after a book of pictures was imported: text recognition could not read some pages. %1$@ is how many of how many, such as \"1 of 12 pages\", and %2$@ names the pages and why, such as \"page 3 (its picture could not be decoded)\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Text recognition could not read %1$@: %2$@."
+          }
+        }
+      }
+    },
+    "Text recognition could not read any of the %lld pages: %@." : {
+      "comment" : "Why a book of several pages of pictures was refused at import: text recognition could not read any page. %1$lld is the number of pages and %2$@ names the pages and why, such as \"pages 1 and 2 (its picture could not be decoded)\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Text recognition could not read any of the %lld page: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Text recognition could not read any of the %lld pages: %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Text recognition could not read the only page: %@." : {
+      "comment" : "Why a book of one page of a picture was refused at import: text recognition could not read its only page. %@ names the page and why, such as \"page 1 (its picture could not be decoded)\"."
+    },
     "Text substitution rules could not be saved: %@" : {
       "comment" : "Failure notice: the text substitution rules could not be saved. %@ is the reason, a sentence from the system."
     },
@@ -12921,6 +13937,18 @@
     "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files." : {
       "comment" : "Alert explaining why a chosen file was not attached as a transcript. WebVTT and SubRip are subtitle file formats, and .vtt and .srt their file extensions."
     },
+    "TextMouth can't convert %@ files because its converter is missing from the app." : {
+      "comment" : "Why a file was not imported: the converter TextMouth carries is missing from the app, which only a damaged copy is. %@ is the name of the file's format, such as WMA or Matroska. Advice to install the app again follows."
+    },
+    "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read." : {
+      "comment" : "Why a file was not imported: its sound is in a codec TextMouth does not decode. %@ is the file's name."
+    },
+    "TextMouth can't convert “%@”: its sound changes rate or channels partway through, by more than it can follow." : {
+      "comment" : "Why a file was not imported: its sound changes its sample rate or its number of channels partway through, by more than the converter can follow. %@ is the file's name."
+    },
+    "TextMouth can't convert “%@”: part of its sound is in one piece too large to decode." : {
+      "comment" : "Why a file was not imported: one frame of its sound holds more samples than TextMouth decodes at once. %@ is the file's name."
+    },
     "TextMouth can't play this kind of file (%@)." : {
       "comment" : "Why a feed's episode could not be downloaded: the file is of a kind TextMouth does not play. %@ is the file's type or extension, such as audio/x-flac."
     },
@@ -12935,17 +13963,43 @@
         }
       }
     },
+    "TextMouth can't read this kind of picture (%@). Save it as a PNG or JPEG, then import that copy." : {
+      "comment" : "Why a picture was refused at import: a kind of picture the system knows but TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\"."
+    },
+    "TextMouth can't read “%@” as %@. It may be damaged, or named for another format." : {
+      "comment" : "Why a file was not imported: its bytes are not of the format its name says, or are damaged. %1$@ is the file's name and %2$@ the name of the format its name says, such as WMA or AVI video.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format."
+          }
+        }
+      }
+    },
+    "TextMouth cannot open copy-protected files." : {
+      "comment" : "Advice after the refusal of audio that is locked to a store's own player, such as Audible's .aa and .aax files."
+    },
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
     },
     "TextMouth could not check whether to move it to the Trash." : {
       "comment" : "Why a book's original was kept: TextMouth could not read the choice about the Trash. \"It\" is the original file."
     },
+    "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again." : {
+      "comment" : "What the duplicate question says when Keep Both could not take the waiting mark off the new copy. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button."
+    },
     "TextMouth could not move %@ to the current library format." : {
       "comment" : "First sentence of the alert about books that could not move into the current library format. %@ is a count of books, such as \"3 books\"."
     },
     "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books." : {
       "comment" : "First sentence of the library index recovery sheet: what the unreadable file holds."
+    },
+    "TextMouth could not read the cue sheet “%@”, so its headings were not used." : {
+      "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because it could not be read. %@ is the cue sheet's name."
+    },
+    "TextMouth could not read the label file “%@”, so its headings were not used." : {
+      "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because it could not be read. %@ is the label file's name."
     },
     "TextMouth could not read the reading list in the previous index." : {
       "comment" : "Part of the outcome of saving a rebuilt library index: the reading list could not be kept from the old index."
@@ -13026,6 +14080,9 @@
     "TextMouth couldn't save its list of this feed's downloads, so the download was kept. Try again once the library can be saved." : {
       "comment" : "Why a feed episode's download could not be deleted: the list of the feed's downloads could not be saved."
     },
+    "TextMouth couldn't save the feed's list of its items, so nothing moved." : {
+      "comment" : "Why Move to Library did nothing: the feed's record could not be saved. Follows \"Could not move to the library: \"."
+    },
     "TextMouth couldn't save the library before deleting the feed “%@”, so nothing was deleted." : {
       "comment" : "Why Delete Feed did nothing: the library could not be saved first. %@ is the feed's title."
     },
@@ -13040,6 +14097,9 @@
     },
     "TextMouth does not have permission to read the file." : {
       "comment" : "Why the library index could not be loaded: macOS refused TextMouth permission to read it."
+    },
+    "TextMouth does not open RAR archives. Unpack them, then import what they hold." : {
+      "comment" : "Advice after the refusal of a RAR archive that is no comic."
     },
     "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its %lld chapter markers once saved." : {
       "comment" : "Said when a save writes the book's file in a format whose chapter markers TextMouth writes but never reads back as the book's chapters. %1$@ is the format's name, such as \"CAF\", and %2$lld the number of chapter markers.",
@@ -13181,6 +14241,12 @@
     "TextMouth is rebuilding its data directory." : {
       "comment" : "First sentence of why an operation was refused: the library is being rebuilt."
     },
+    "TextMouth is replacing “%@” with the new copy. Try again when that finishes." : {
+      "comment" : "Why an action on a book is refused while Replace Existing makes the new copy ready, such as Edit Text or opening the book. %@ is the book's title."
+    },
+    "TextMouth is still carrying out your last answer. Wait until it finishes." : {
+      "comment" : "What an import question says when it is answered again while the previous answer is still being carried out."
+    },
     "TextMouth is still saving them." : {
       "comment" : "The reason that ends \"Changes to the feed “Planet Money” could not be saved:\" in the quit prompt and banner. Them are the feed's changes."
     },
@@ -13199,11 +14265,26 @@
     "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone." : {
       "comment" : "Error in the Record window when macOS has denied TextMouth the microphone. Names the places in System Settings, as macOS words them, where the user can allow it."
     },
+    "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again." : {
+      "comment" : "Caption under the Keep Originals switch while it is on. \"Original file\" names the choice Export offers; keep it the same as that choice's translation."
+    },
     "TextMouth kept the text you changed in %@." : {
       "comment" : "First sentence of the message when an automatic rebuild left a book's edited text alone. %@ is the book's title."
     },
     "TextMouth left it there and is still using %@." : {
       "comment" : "Second sentence of why a move of the data directory did not finish, when one item appeared: TextMouth left the item and kept using the current data directory. %@ is the current data directory's path.\nSecond sentence of why a move of the data directory did not finish: TextMouth left what was put there and kept using the current data directory. %@ is the current data directory's path."
+    },
+    "TextMouth left out %@, which hold no sound it can read." : {
+      "comment" : "Notice that a book left out several files that hold no sound TextMouth can read. %@ is the files' count and names, such as \"2 files, “a.spx” and “b.spx”\"."
+    },
+    "TextMouth left out %@, which holds no sound it can read." : {
+      "comment" : "Notice that a book left out one file that holds no sound TextMouth can read. %@ is the file's name in curly quotes."
+    },
+    "TextMouth left out %@, which need TextMouth's converter, missing from the app." : {
+      "comment" : "Notice that a book left out several files that only TextMouth's own converter reads, because the converter is missing from the app. %@ is the files' count and names, such as \"2 files, “a.avi” and “b.wmv”\". Advice to install the app again follows."
+    },
+    "TextMouth left out %@, which needs TextMouth's converter, missing from the app." : {
+      "comment" : "Notice that a book left out one file that only TextMouth's own converter reads, because the converter is missing from the app. %@ is the file's name in curly quotes. Advice to install the app again follows."
     },
     "TextMouth left them there and is still using %@." : {
       "comment" : "Second sentence of why a move of the data directory did not finish, when several items appeared: TextMouth left the items and kept using the current data directory. %@ is the current data directory's path."
@@ -13219,6 +14300,35 @@
     },
     "TextMouth moved %@ to the current library format, but with problems:" : {
       "comment" : "Lead-in of the alert about several books that moved into the current library format with problems. %@ is a count of books, such as \"3 books\". The books' lines follow."
+    },
+    "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back." : {
+      "comment" : "Alert after the launch moved the new copies of four or more duplicate books to the Trash, because their questions were never answered. %lld is the number of books. \"Put Back\" is Finder's command in the Trash.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back." : {
+      "comment" : "Alert after the launch moved the new copies of two or three duplicate books to the Trash, because their questions were never answered. %@ is their titles in curly quotes, listed as a sentence lists them. \"Put Back\" is Finder's command in the Trash."
+    },
+    "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back." : {
+      "comment" : "Alert after the launch moved the new copy of one duplicate book to the Trash, because its question was never answered. %@ is the book's title. \"Put Back\" is Finder's command in the Trash."
     },
     "TextMouth moves them back once it has finished moving books between folders." : {
       "comment" : "Why a failed move of files waits: it runs when books have been moved between folders. \"Them\" is the files."
@@ -13249,6 +14359,32 @@
     },
     "TextMouth saves them once the move of its data directory ends." : {
       "comment" : "Why a failed save waits: it runs when the move of the data directory ends. \"Them\" is the changes that could not be saved."
+    },
+    "TextMouth skipped %lld entries of “%@”: %@." : {
+      "comment" : "Notice after a playlist imported with entries left out. %1$lld is the number of entries skipped, %2$@ the playlist's name, and %3$@ the list of the entries, each with its reason in parentheses.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth skipped %lld entry of “%@”: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth skipped %lld entries of “%@”: %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "TextMouth stopped reading this document because %@." : {
+      "comment" : "Why a document was refused at import: the program that reads it ran too long or used too much memory and was stopped. %@ is the reason, a clause in English that follows \"because\"."
     },
     "TextMouth stops checking this feed for new articles." : {
       "comment" : "The first sentence of the confirmation before Unsubscribe, for a feed of articles."
@@ -13317,6 +14453,18 @@
     },
     "TextMouth writes %@ with the identity this Mac knows for the library, and opens it." : {
       "comment" : "First sentence of the question asked before restoring the library's identity file. %@ is the identity file's name, which stays as written."
+    },
+    "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file." : {
+      "comment" : "Why a file was not imported: TextMouth's converter could not confine itself before reading it, so it did not read the file. %@ is the file's name. Advice to install the app again follows."
+    },
+    "TextMouth's converter gave back audio of “%@” that TextMouth could not read." : {
+      "comment" : "Why a file was not imported: what TextMouth's converter gave back was not audio TextMouth reads, which only a damaged copy of the app could make. %@ is the file's name. Advice to install the app again follows."
+    },
+    "TextMouth's converter stopped before the end of “%@”, so it could not be imported." : {
+      "comment" : "Why a file was not imported: TextMouth's converter ended before the end of its sound, with no error. %@ is the file's name."
+    },
+    "TextMouth's converter stopped unexpectedly while reading “%@”. The file may be damaged." : {
+      "comment" : "Why a file was not imported: TextMouth's converter stopped unexpectedly while reading it, as a damaged file can make it do. %@ is the file's name."
     },
     "TextMouth's own filters don't include “%@”. They are %@; with ffmpeg installed, every filter it has works." : {
       "comment" : "Problem said of a filter TextMouth doesn't run itself. %1$@ is the filter's name as typed, and %2$@ the list of the filters TextMouth does run, such as \"a, b, and c\".",
@@ -13687,6 +14835,29 @@
     "The address of %@ doesn't hold a feed TextMouth can read." : {
       "comment" : "Why a feed could not be refreshed or subscribed to: its address holds something that is not a feed, such as a web page. %@ is the feed's title or server."
     },
+    "The archive also holds %lld other books that were not imported; unzip it to import them." : {
+      "comment" : "Second sentence of the notice about an archive that holds other books than the one imported. %lld is the number of other books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The archive also holds %lld other book that was not imported; unzip it to import it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The archive also holds %lld other books that were not imported; unzip it to import them."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "The archive expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free." : {
       "comment" : "First sentence of why an import's archive was refused for want of disk space. %1$@ is the size the archive expands to; %2$@ is the free space; %3$@ is the space TextMouth keeps free.",
       "localizations" : {
@@ -13731,8 +14902,17 @@
         }
       }
     },
+    "The archive holds a file whose path leads outside it, which is never extracted." : {
+      "comment" : "Why an archive was refused at import: it holds a file whose path climbs out of the folder it is extracted into."
+    },
+    "The archive holds a link to a file outside it, which is never extracted." : {
+      "comment" : "Why an archive was refused at import: it holds a symbolic link to a file outside it."
+    },
     "The archive holds more than the %@ it declares, so extraction stopped." : {
       "comment" : "First sentence of why an import's archive stopped extracting: it holds more than it declares. %@ is the size it declares, such as \"2 GB\"."
+    },
+    "The archive is damaged, incomplete, or not a ZIP archive." : {
+      "comment" : "Why an archive was refused at import: it could not be read as a ZIP archive."
     },
     "The archive “%@” inside it expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free." : {
       "comment" : "First sentence of why an import's archive was refused for want of disk space, when the archive is inside another. %1$@ is the inner archive's name; %2$@ is the size it expands to; %3$@ is the free space; %4$@ is the space TextMouth keeps free.",
@@ -13754,6 +14934,31 @@
     "The audio can't be edited" : {
       "comment" : "Title of the alert saying the audio editor couldn't open."
     },
+    "The audio converted from %@ could not be given its name." : {
+      "comment" : "Why a converted audio file was refused: it could not be given its final name. %@ is the source file's name."
+    },
+    "The audio converted from %@ could not be written (%@)." : {
+      "comment" : "Why converted audio was not saved as an .m4a file. %1$@ is the source file's name and %2$@ the error's domain and code, in the system's words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The audio converted from %1$@ could not be written (%2$@)."
+          }
+        }
+      }
+    },
+    "The audio converted from %@ failed its check: %@." : {
+      "comment" : "Why a converted audio file was refused: it failed the check made after conversion. %1$@ is the source file's name and %2$@ the reason, a phrase with no full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The audio converted from %1$@ failed its check: %2$@."
+          }
+        }
+      }
+    },
     "The audio couldn't be exported." : {
       "comment" : "Said when the audio editor's export fails. A sentence giving the reason follows."
     },
@@ -13765,6 +14970,32 @@
     },
     "The audio editor for %@ is already open." : {
       "comment" : "Said when Edit Audio… is chosen for a book whose editor is already open; that window comes forward. %@ is the book's title."
+    },
+    "The audio file %@ could not be read for converting." : {
+      "comment" : "Why an audio file could not be converted at import: it could not be read as audio, or it is only in the cloud. %@ is the file's name."
+    },
+    "The audio file %@ has %lld channels but does not say which is which, so TextMouth cannot mix it to stereo." : {
+      "comment" : "Why an audio file was not converted: it has more than two channels and does not say which is which, so a mix to stereo would keep two arbitrary channels. %1$@ is the file's name and %2$lld the number of channels, always more than two.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The audio file %@ has %lld channel but does not say which is which, so TextMouth cannot mix it to stereo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The audio file %@ has %lld channels but does not say which is which, so TextMouth cannot mix it to stereo."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "The audio file “%@” that the edits need is missing from the book." : {
       "comment" : "Said when an audio file that the edits need is missing. %@ is its path inside the book's package."
@@ -13800,6 +15031,9 @@
     },
     "The book has a transcript already, so TextMouth kept it." : {
       "comment" : "Notice that a transcript file was not attached because the book already had its own transcript."
+    },
+    "The book has no package to hold its text." : {
+      "comment" : "Why an import failed: the book has no package folder to hold its text. Follows \"Import failed: \"."
     },
     "The book is being transcribed again. Clean up its transcript once that finishes." : {
       "comment" : "Error shown when a cleanup is tried while the book is being transcribed."
@@ -13839,6 +15073,9 @@
     "The book left the library during transcription, so its transcript wasn't saved." : {
       "comment" : "Error shown when the book was removed from the library during a transcription."
     },
+    "The book was imported." : {
+      "comment" : "First sentence of the confirmation that asks about deleting the original file of a book just imported. The question about the file follows it."
+    },
     "The book's audio changed since it was transcribed (%@), so the transcript no longer fits. Transcribe again." : {
       "comment" : "Error shown when the book's audio files changed since the transcription. %@ is the reason, a short phrase in English."
     },
@@ -13851,6 +15088,9 @@
     "The book's files aren't on this Mac yet. %@ may still be syncing them." : {
       "comment" : "Why a book can't be used yet: its files have not arrived. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."
     },
+    "The book's package and content paths do not match a managed library location." : {
+      "comment" : "Why a book's files were not deleted: its paths do not lie inside the library. Follows \"Import failed: \"."
+    },
     "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is." : {
       "comment" : "Error shown when a transcript could not replace a book's text because the text's unsaved changes could not be copied first."
     },
@@ -13859,6 +15099,9 @@
     },
     "The book's transcript couldn't be read, so it wasn't exported." : {
       "comment" : "Error in an export's summary: the audiobook's transcript could not be read, so no captions file was written."
+    },
+    "The bookInfo.json file did not read back as it was written." : {
+      "comment" : "Why an import failed: the book's record file, bookInfo.json, was written but did not read back as written."
     },
     "The books are in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
@@ -13877,11 +15120,20 @@
     "The cloud service" : {
       "comment" : "How a sentence names the cloud service when it is unknown, at the start of the sentence, so it has a capital letter."
     },
+    "The copy just imported is incomplete." : {
+      "comment" : "First sentence of the last paragraph of the question asked about a duplicate book whose new copy is missing chapters. What it lacks follows."
+    },
     "The copy made in the library did not match the original, so the copy was discarded." : {
       "comment" : "Why a book could not move into the current library format: the copy differed from the original."
     },
     "The copy was already complete when Cancel was pressed, so the move went ahead." : {
       "comment" : "Sentence added to the done message of a move of the library when Cancel was pressed after the copy was complete."
+    },
+    "The cue sheet “%@” is too large to read." : {
+      "comment" : "Refusal of a cue sheet that is larger than TextMouth reads. %@ is the cue sheet's file name."
+    },
+    "The cue sheet “%@” names none of the audio beside it, so its headings were not used." : {
+      "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because it names none of the audio beside it. %@ is the cue sheet's name."
     },
     "The current data directory does not exist." : {
       "comment" : "Why a move of the data directory was refused: the folder it would move from is missing."
@@ -13961,6 +15213,12 @@
     },
     "The episode leaves the list for good; the book it became in your library stays." : {
       "comment" : "First sentence of the confirmation before an episode that was moved into the library is deleted from its feed."
+    },
+    "The existing copy's files are deleted permanently and cannot be recovered." : {
+      "comment" : "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files are deleted permanently."
+    },
+    "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." : {
+      "comment" : "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files go to the Trash."
     },
     "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another." : {
       "comment" : "Sentence of the second confirmation that deletes a folder: one feed stays. %@ is the feed's title in quotation marks. \"Feed Info\" names a sheet."
@@ -14063,6 +15321,9 @@
     "The file's address isn't a web address TextMouth can open." : {
       "comment" : "Why a feed item's download failed: its address is not an http or https address."
     },
+    "The files of the new copy of “%@” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again." : {
+      "comment" : "What the duplicate question says when the new copy's files are gone while the question waited. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button."
+    },
     "The files that couldn't be read are listed." : {
       "comment" : "Sentence of the results of Compare Libraries saying the unread files are listed below."
     },
@@ -14118,6 +15379,9 @@
     "The folder chosen for this feed is no longer in the library. Choose another folder." : {
       "comment" : "Why Subscribe refused: the folder chosen for the feed was removed from the library."
     },
+    "The folder chosen is no longer in the library. Choose another folder." : {
+      "comment" : "Why Move to Library did nothing: the folder chosen was removed from the library. Follows \"Could not move to the library: \"."
+    },
     "The folder chosen to hold the feed's folder is no longer in the library. Choose another one." : {
       "comment" : "Why Subscribe could not make the feed's folder: the folder chosen to hold it was removed from the library."
     },
@@ -14136,6 +15400,9 @@
     "The folder of %@ is no longer in the library." : {
       "comment" : "What VoiceOver says when a feed's row is opened and its library folder was removed. %@ is the feed's title."
     },
+    "The headings from %@ run past the end of the audio, so the tracks were imported without them." : {
+      "comment" : "Notice after an import of tracks that came without the headings of some cue sheets and label files, because a heading lay past the end of the audio. %@ is the files' names in curly quotes, listed as a sentence lists them."
+    },
     "The import was stopped before its end." : {
       "comment" : "What the Import OPML sheet says once the listener stopped the import before its end."
     },
@@ -14150,6 +15417,12 @@
         }
       }
     },
+    "The label file “%@” matches no audio file beside it by name, so its headings were not used." : {
+      "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because no audio file beside it has its name. %@ is the label file's name."
+    },
+    "The labels of the label file “%@” run past the end of its audio, so its headings were not used." : {
+      "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because its labels lie past the end of its audio. %@ is the label file's name."
+    },
     "The library already had different content under its package name, %@, so it was stored in a new package, %@, and its original file was kept at %@." : {
       "comment" : "Warning about a book that moved into the current library format. %1$@ is the name of the package that already held other content; %2$@ is the name of the new package; %3$@ is the path where the original file was kept.",
       "localizations" : {
@@ -14163,6 +15436,12 @@
     },
     "The library at %@ isn't available." : {
       "comment" : "Error text when the library's folder can't be used. It follows what failed, as in \"Listening statistics could not be saved: The library at /Volumes/Backup/TextMouth isn't available.\" %@ is the folder's path."
+    },
+    "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back." : {
+      "comment" : "What the duplicate question says when Keep Both or Replace Existing is chosen while the library cannot be reached. %@ is the new copy's title."
+    },
+    "The library can't move books now. Try again once it is available." : {
+      "comment" : "Why Move to Library did nothing: the library's index is being recovered or the data directory is away or moving. Follows \"Could not move to the library: \"."
     },
     "The library can't move while a book is open. Close %@ first." : {
       "comment" : "Why a move of the library was refused: a book is open in a reader. %@ is the book's title, in quotation marks."
@@ -14412,8 +15691,48 @@
     "The original file at %@ could not be read to check a copy of it." : {
       "comment" : "First sentence of why a book could not move into the current library format. %@ is the path of the original."
     },
+    "The original file could not be deleted: %@" : {
+      "comment" : "Alert about the original file of an imported book that could not be deleted, its name not known. %@ is the reason, a sentence of the system's."
+    },
+    "The original file could not be moved to the Trash: %@" : {
+      "comment" : "Alert about the original file of an imported book that could not be moved to the Trash, its name not known. %@ is the reason, a sentence of the system's."
+    },
     "The original file is missing from %@." : {
       "comment" : "Why a book could not move into the current library format. %@ is the path where the original file should be."
+    },
+    "The original file was kept." : {
+      "comment" : "Sentence of an import's notice or alert: the original file was kept because something was left out of the book or the batch."
+    },
+    "The original file was kept: TextMouth imported only the DAISY book “%@” from the archive “%@”." : {
+      "comment" : "Notice after one DAISY book was imported from an archive of other books, so the original file was kept. %1$@ is the book's title and %2$@ the archive's file name. A sentence about the other books follows.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The original file was kept: TextMouth imported only the DAISY book “%1$@” from the archive “%2$@”."
+          }
+        }
+      }
+    },
+    "The original file was kept: TextMouth imported the audio of “%@” from the archive “%@”, and the archive is the only copy of its text." : {
+      "comment" : "Notice after the audio of a DAISY book was imported from an archive that keeps its text, so the original file was kept. %1$@ is the book's title and %2$@ the archive's file name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The original file was kept: TextMouth imported the audio of “%1$@” from the archive “%2$@”, and the archive is the only copy of its text."
+          }
+        }
+      }
+    },
+    "The original file was kept: it is a folder, and an import never deletes a folder." : {
+      "comment" : "Notice after a book was imported from a folder, such as an RTFD: the original was kept because an import never deletes a folder."
+    },
+    "The original file will be moved to the Trash after a successful import." : {
+      "comment" : "Caption in Storage settings under the choice that deletes the original file after an import, while files go to the Trash."
+    },
+    "The original file will be permanently deleted after a successful import." : {
+      "comment" : "Caption in Storage settings under the choice that deletes the original file after an import, while files are deleted permanently."
     },
     "The original file will remain untouched after import." : {
       "comment" : "Caption in Storage settings when the original file is kept after an import."
@@ -14423,6 +15742,28 @@
     },
     "The original file you imported is not touched." : {
       "comment" : "Last sentence of the hint of the metadata editor's switch that also writes the EPUB file: the file the user first imported stays as it was."
+    },
+    "The original file “%@” could not be deleted: %@" : {
+      "comment" : "Alert about the original file of an imported book that could not be deleted. %1$@ is the file's name and %2$@ the reason, a sentence of the system's.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The original file “%1$@” could not be deleted: %2$@"
+          }
+        }
+      }
+    },
+    "The original file “%@” could not be moved to the Trash: %@" : {
+      "comment" : "Alert about the original file of an imported book that could not be moved to the Trash. %1$@ is the file's name and %2$@ the reason, a sentence of the system's.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The original file “%1$@” could not be moved to the Trash: %2$@"
+          }
+        }
+      }
     },
     "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book." : {
       "comment" : "Hint of the Original audio picker in Storage settings (Audio Editing): what an original is, what keeping it costs (345 MB is for an hour of a recording), and that a change reaches originals already kept."
@@ -14435,6 +15776,12 @@
     },
     "The place, bookmarks, and transcript kept for it are deleted too." : {
       "comment" : "A sentence of the confirmation before a feed's episode or article is deleted: what TextMouth kept of the listener's for it goes too."
+    },
+    "The playlist “%@” is not a complete, valid playlist file." : {
+      "comment" : "Refusal of an XSPF playlist that is not a readable XML playlist. %@ is the playlist's file name."
+    },
+    "The playlist “%@” uses XML entities of its own, which TextMouth does not read." : {
+      "comment" : "Refusal of an XSPF playlist that declares XML entities of its own. %@ is the playlist's file name."
     },
     "The podcast directory at %@ couldn't answer the search (error %@). Try again later." : {
       "comment" : "Why a podcast search failed: the directory answered with an error. The first %@ is the server's host name; the second is the error's number, an identifier written without digit grouping, such as 503.",
@@ -14660,6 +16007,9 @@
     "The text of %@ was read again from its own file." : {
       "comment" : "First sentence of the message after a book's text was read again from its own file. %@ is the book's title."
     },
+    "The tracks of the cue sheet “%@” run past the end of its audio, so its headings were not used." : {
+      "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because its tracks lie past the end of its audio. %@ is the cue sheet's name."
+    },
     "The transcript and the text made from it are deleted." : {
       "comment" : "First sentence of the question asked before an audiobook's transcript is deleted."
     },
@@ -14668,6 +16018,9 @@
     },
     "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes." : {
       "comment" : "Error shown when the transcript changed after the Clean Up Transcript sheet showed its changes. Clean Up Transcript is the command's name."
+    },
+    "The transcript file found beside the new copy's audio replaces the existing copy's transcript." : {
+      "comment" : "Part of the question asked about a duplicate audiobook: the transcript file found beside the new copy's audio takes the place of the library copy's transcript."
     },
     "The transcript files beside the audio weren't attached: %@" : {
       "comment" : "Notice after an import: the transcript files beside each track's audio were not attached. %@ is the reason, a sentence."
@@ -14775,6 +16128,17 @@
         }
       }
     },
+    "There is not enough free disk space to convert %@: it needs %@ free." : {
+      "comment" : "Why an audio conversion did not start: the disk holds too little free space. %1$@ is the source file's name and %2$@ the free space it needs, with its unit, such as \"1.2 GB\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "There is not enough free disk space to convert %1$@: it needs %2$@ free."
+          }
+        }
+      }
+    },
     "There isn't enough free space for %lld more books" : {
       "comment" : "Announcement when some reading list books start downloading and others are left out for want of space. %lld is the number of books left out.",
       "localizations" : {
@@ -14834,6 +16198,9 @@
     },
     "There isn't room on this Mac for this episode (%@)." : {
       "comment" : "Why a feed's episode could not be downloaded: the disk is too full. %@ is the file's size with its unit, such as 61 MB."
+    },
+    "There isn’t enough free space on the disk." : {
+      "comment" : "Why an import failed when the disk is full. Said instead of the system's own sentence, which names a hidden internal file."
     },
     "There's an empty filter between two commas." : {
       "comment" : "Problem found in a typed filter chain (the audio editor's Apply Filter and the filter presets): two commas in a row leave a filter with nothing in it."
@@ -14921,6 +16288,9 @@
         }
       }
     },
+    "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads." : {
+      "comment" : "Why an XML file was refused at import: its root element is not one of the three kinds TextMouth reads. DTBook, Word 2003 XML, and PEF are format names."
+    },
     "This article has no description." : {
       "comment" : "What Show Description says for an article that has no description."
     },
@@ -14971,6 +16341,9 @@
     "This book has no pages." : {
       "comment" : "Announcement when a page command is used in a book that has no pages."
     },
+    "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it." : {
+      "comment" : "Why a book's files were not deleted: it has no package inside the library. Follows \"Import failed: \". \"Remove it from the library only\" is a choice of the removal commands."
+    },
     "This book has only one page." : {
       "comment" : "Announcement when a page command is used in a book that has one page, so there is no other page to go to."
     },
@@ -15014,11 +16387,26 @@
         }
       }
     },
+    "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts." : {
+      "comment" : "What Play says for a book whose Ogg audio failed to convert at this launch."
+    },
+    "This book's audio is being converted from Ogg to AAC. It plays when that ends." : {
+      "comment" : "What Play says while the book's Ogg audio is being converted to AAC."
+    },
+    "This book's audio needs converting from Ogg to AAC. TextMouth is converting it now, and it plays when that ends." : {
+      "comment" : "What Play says for a book found still in Ogg, whose conversion TextMouth starts."
+    },
     "This book's only page is %@." : {
       "comment" : "First sentence of the Go to Page field's hint for a book of one page. %@ is that page's label, an identifier written without digit grouping."
     },
     "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a braille book that is read as UEB but whose braille shows English Braille, American Edition's signs (BrailleCodeDetector): which code it looks like and where to choose it. Plain, so that VoiceOver and a braille display read it as it is."
+    },
+    "This comic book archive holds more than the %@ pictures TextMouth reads." : {
+      "comment" : "Why a comic book archive was refused at import: it holds more pictures than TextMouth reads. %@ is the limit, already formatted."
+    },
+    "This comic book archive holds no pictures TextMouth can read." : {
+      "comment" : "Why a comic book archive was refused at import: it holds no picture TextMouth reads."
     },
     "This download isn't in its feed's folder, so TextMouth left its files as they are." : {
       "comment" : "Why a feed episode's download could not be deleted: it is not in its feed's folder."
@@ -15034,6 +16422,30 @@
     },
     "This feed needs a password, which TextMouth can't send yet." : {
       "comment" : "Why a feed could not be fetched: the server asks for a password."
+    },
+    "This file could not be read as a Word 2003 XML document." : {
+      "comment" : "Why a file was refused at import: it could not be read as a Word 2003 XML document. A sentence saying it may be damaged follows."
+    },
+    "This file could not be read as a Word 97-2003 document." : {
+      "comment" : "Why a file was refused at import: it could not be read as a Word 97-2003 (.doc) document. A sentence saying it may be damaged follows."
+    },
+    "This file could not be read as a comic book archive. It may be damaged, or another kind of file." : {
+      "comment" : "Why a file was refused at import: it is no ZIP archive, so it cannot be a comic book archive. Two sentences."
+    },
+    "This file could not be read as a picture. It may be damaged, or another kind of file." : {
+      "comment" : "Why a file was refused at import: its bytes are no picture at all. Two sentences."
+    },
+    "This file could not be read as a rich text document with attachments." : {
+      "comment" : "Why a file was refused at import: it could not be read as a rich text (RTFD) document with attachments. A sentence saying it may be damaged follows."
+    },
+    "This file could not be read as a rich text document." : {
+      "comment" : "Why a file was refused at import: it could not be read as a rich text (RTF) document. A sentence saying it may be damaged follows."
+    },
+    "This file could not be read as an OpenDocument text document." : {
+      "comment" : "Why a file was refused at import: it could not be read as an OpenDocument text (.odt) document. A sentence saying it may be damaged follows."
+    },
+    "This file has no text to read." : {
+      "comment" : "Why a text, Markdown, or HTML file was refused at import: it is empty or holds only white space or markup."
     },
     "This file needs a password, which TextMouth can't send yet." : {
       "comment" : "Why a feed item's download failed: the server asks for a password."
@@ -15066,6 +16478,55 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "This moves all data from %1$@ back to the default location, %2$@."
+          }
+        }
+      }
+    },
+    "This picture could not be decoded. It may be damaged." : {
+      "comment" : "Why a picture was refused at import: the system could not decode it. Two sentences."
+    },
+    "This picture holds %lld pages, more than the %@ TextMouth reads." : {
+      "comment" : "Why a picture of many pages, such as a TIFF, was refused at import. %1$lld is the number of pages it holds and %2$@ the limit, already formatted.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This picture holds %lld page, more than the %@ TextMouth reads."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This picture holds %lld pages, more than the %@ TextMouth reads."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "This picture is %@, larger than the %lld megapixels TextMouth reads." : {
+      "comment" : "Why a picture was refused at import: it says it holds more pixels than TextMouth decodes. %1$@ is its size, such as \"30,000 by 30,000 pixels\", and %2$lld the limit in megapixels.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This picture is %@, larger than the %lld megapixel TextMouth reads."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This picture is %@, larger than the %lld megapixels TextMouth reads."
+                }
+              }
+            }
           }
         }
       }
@@ -15291,6 +16752,9 @@
         }
       }
     },
+    "To use it, choose %@ on the Text tab in Settings." : {
+      "comment" : "Advice after the refusal of a pronunciation lexicon on the Mac. %@ is the title of the import button on the Text tab of Settings, which is another string of the app."
+    },
     "To use it, open the book and choose %@ from the Book menu." : {
       "comment" : "Last sentence of a notice after an import, saying how to attach the transcript file by hand. %@ is the name of the Attach Transcript command in the Book menu."
     },
@@ -15367,6 +16831,9 @@
     },
     "Track" : {
       "comment" : "Label of the pop-up that chooses which audio track of a book to edit."
+    },
+    "Track %@" : {
+      "comment" : "Heading of a track that a cue sheet gives no title, made at import. %@ is the track's number from the sheet, an identifier written without digit grouping."
     },
     "Transcribe" : {
       "comment" : "Button of the Transcribe Audio sheet that starts transcribing the audiobook.\nButton of the question offered after an import that opens Transcribe Audio for the new audiobook."
@@ -15645,8 +17112,14 @@
     "Undoes the newest edit." : {
       "comment" : "Hint of the audio editor's Undo button."
     },
+    "Unknown" : {
+      "comment" : "Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length."
+    },
     "Unknown Length" : {
       "comment" : "A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's \"Cut Unknown Length\"."
+    },
+    "Unknown duration" : {
+      "comment" : "Spoken in place of a length of time that is not a usable number, such as an enormous or missing length."
     },
     "Unopened" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book never opened.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .unopened."
@@ -15767,6 +17240,12 @@
     "Unsubscribe…" : {
       "comment" : "Title of the command that stops checking a feed, when it asks first because it would delete places and bookmarks kept for removed downloads. The ellipsis says a question follows. Title case."
     },
+    "Unsupported file format: .%@" : {
+      "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. No advice follows."
+    },
+    "Unsupported file format: .%@." : {
+      "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. Advice on what to do follows."
+    },
     "Until then, changing the location and rebuilding the directory are unavailable." : {
       "comment" : "Last sentence of the Storage settings explanation while the library index can't be read."
     },
@@ -15876,6 +17355,12 @@
     "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded." : {
       "comment" : "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level."
     },
+    "WMA" : {
+      "comment" : "The name of the Windows Media Audio format, as people say it. Inside sentences about importing a file of that format."
+    },
+    "WMV video" : {
+      "comment" : "The name of the Windows Media Video format, as people say it. Inside sentences about importing a file of that format."
+    },
     "Wait until the export ends" : {
       "comment" : "What to do before trying again, when a book's download is being exported and cannot be deleted or replaced. Written without a full stop."
     },
@@ -15906,6 +17391,9 @@
     "Waiting for the current import to finish..." : {
       "comment" : "Progress text while a move of the library waits for an import to finish first."
     },
+    "Waiting for the data directory move to finish..." : {
+      "comment" : "Line of the import overlay while a move of the data directory holds an import back. Ends with an ellipsis written as three full stops."
+    },
     "Waiting to Download" : {
       "comment" : "The note on a feed's episode or article row whose automatic download waits for a network without data limits or for room on this Mac. Title case."
     },
@@ -15917,6 +17405,9 @@
     },
     "Web site" : {
       "comment" : "Label of the feed's web site in Feed Info."
+    },
+    "WebM" : {
+      "comment" : "The name of the WebM format. Inside sentences about importing a file of that format."
     },
     "What happens when a book finishes playing" : {
       "comment" : "VoiceOver hint of the When book ends pop-up in the Playback settings."
@@ -16102,6 +17593,9 @@
     "Whole word only" : {
       "comment" : "A part of a substitution rule's spoken summary: the rule matches whole words only."
     },
+    "Windows Media" : {
+      "comment" : "The name of the Windows Media container format, as people say it. Inside sentences about importing a file of that format."
+    },
     "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
       "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",
       "localizations" : {
@@ -16186,6 +17680,9 @@
     "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below." : {
       "comment" : "Last sentence of the library index recovery sheet: what still works, and what does not until an option is chosen."
     },
+    "You can recover it from the Trash until the Trash is emptied." : {
+      "comment" : "Sentence of the confirmation about the original file of a book just imported, and the hint of its Move to Trash button: the file can be recovered from the Trash."
+    },
     "You cleaned it up on %@." : {
       "comment" : "Sentence of Book Information's Transcript detail saying when the user cleaned up the transcript. %@ is a date, such as \"October 5, 2026\"."
     },
@@ -16200,6 +17697,12 @@
     },
     "You edited this transcript on %@. Transcribing again replaces your edits." : {
       "comment" : "Line of the Transcribe Audio sheet warning that transcribing again replaces the user's own edits. %@ is a date, such as \"October 5, 2026\"."
+    },
+    "You will be asked whether to delete the original file permanently after each import." : {
+      "comment" : "Caption in Storage settings under the choice that asks about the original file after each import, while files are deleted permanently."
+    },
+    "You will be asked whether to move the original file to the Trash after each import." : {
+      "comment" : "Caption in Storage settings under the choice that asks about the original file after each import, while files go to the Trash."
     },
     "You're already subscribed to %@." : {
       "comment" : "Why Subscribe refused: the feed is already in the library. %@ is the feed's title."
@@ -16260,6 +17763,9 @@
     "a folder no longer in the library" : {
       "comment" : "Library view editor: the name a folder condition gives a folder that is no longer in the library, inside a filter's description such as \"folder is a folder no longer in the library\"."
     },
+    "a kind the system does not name" : {
+      "comment" : "Stands for the system's description of a kind of picture it has no description for, inside parentheses: \"TextMouth can't read this kind of picture (a kind the system does not name).\""
+    },
     "a menu command has one shortcut" : {
       "comment" : "The reason, said after \"not recorded\", why a second key cannot be added to a menu command's shortcut. Lower case, since it follows a colon."
     },
@@ -16306,6 +17812,9 @@
     },
     "adding it to the library" : {
       "comment" : "What a feed download is doing once its file has come: it is being imported as a book. Follows the download's progress line after a comma. Lower case, without a full stop."
+    },
+    "adding it to the library folder" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, adding it to the library folder\") and, capitalized by the app, starts a failure (\"Adding it to the library folder failed: ...\"). Starts with a lowercase letter and has no full stop."
     },
     "all %lld files" : {
       "comment" : "End of the transcription progress bar's spoken value once every audio file is transcribed, after \"100 percent, \". %lld is the number of files.",
@@ -16450,6 +17959,12 @@
         }
       }
     },
+    "checking its format" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking its format\") and, capitalized by the app, starts a failure (\"Checking its format failed: ...\"). Starts with a lowercase letter and has no full stop."
+    },
+    "checking the package" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking the package\") and, capitalized by the app, starts a failure (\"Checking the package failed: ...\"). Starts with a lowercase letter and has no full stop."
+    },
     "choose %@ again" : {
       "comment" : "The next step after a refusal to delete a feed whose download is in use: \"Close it, then choose Delete Feed… again.\" %@ is the name of the Delete Feed command. Lower case, without a full stop, to follow \"then\"."
     },
@@ -16464,6 +17979,18 @@
     },
     "content.md is only in the cloud, so TextMouth leaves it as it is." : {
       "comment" : "Reason after a colon: a rebuild left the book's text file alone because it is only in the cloud. content.md is a file name and stays as written."
+    },
+    "converting its DAISY audio" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its DAISY audio\") and, capitalized by the app, starts a failure (\"Converting its DAISY audio failed: ...\"). Starts with a lowercase letter and has no full stop."
+    },
+    "converting its audio" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its audio\") and, capitalized by the app, starts a failure (\"Converting its audio failed: ...\"). Starts with a lowercase letter and has no full stop."
+    },
+    "copying it into the library" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, copying it into the library\") and, capitalized by the app, starts a failure (\"Copying it into the library failed: ...\"). Starts with a lowercase letter and has no full stop."
+    },
+    "creating its package" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, creating its package\") and, capitalized by the app, starts a failure (\"Creating its package failed: ...\"). Starts with a lowercase letter and has no full stop."
     },
     "custom" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The row's word for a view the listener made."
@@ -16494,6 +18021,9 @@
     },
     "every window" : {
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in every window.\": all windows. Lower case in English, since it is in the middle of a sentence."
+    },
+    "extracting the archive" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, extracting the archive\") and, capitalized by the app, starts a failure (\"Extracting the archive failed: ...\"). Starts with a lowercase letter and has no full stop."
     },
     "fading out" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.",
@@ -16687,11 +18217,40 @@
     "it has no chapter with any text. Undo the change and save again, and the text shows." : {
       "comment" : "Reason after a colon, for an audiobook whose edited text has no chapter with any text; begins in lower case."
     },
+    "it is %@, larger than %lld megapixels" : {
+      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: it holds more pixels than TextMouth decodes. %1$@ is its size, such as \"30,000 by 30,000 pixels\", and %2$lld the limit in megapixels. Starts with a lowercase letter, with no full stop.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "it is %@, larger than %lld megapixel"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "it is %@, larger than %lld megapixels"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "it is a kind of picture TextMouth can't read (%@)" : {
+      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: a kind of picture TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\". Starts with a lowercase letter, with no full stop."
+    },
     "it isn't UTF-8 text. Save it as UTF-8, and the book opens." : {
       "comment" : "Reason after a colon, for a book whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding."
     },
     "it isn't UTF-8 text. Save it as UTF-8, and the text shows." : {
       "comment" : "Reason after a colon, for an audiobook whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding."
+    },
+    "it lasts no time" : {
+      "comment" : "The reason inside \"The audio converted from <file> failed its check: <reason>.\": the converted file has no length at all. Starts with a lowercase letter and has no full stop, which the sentence adds."
     },
     "it needs room for %@ on this Mac" : {
       "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row: the disk lacks room. %@ is the size needed with its unit, such as 61 MB. Lower case, without a full stop."
@@ -16787,6 +18346,9 @@
         }
       }
     },
+    "its contents do not match the checksum stored with them" : {
+      "comment" : "Why a page's file in a comic book archive is damaged, after \"its file is damaged or incomplete:\": its bytes do not match the checksum the archive stores for them. Starts with a lowercase letter, with no full stop."
+    },
     "its downloaded article" : {
       "comment" : "The one downloaded article of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case."
     },
@@ -16795,6 +18357,12 @@
     },
     "its downloaded item" : {
       "comment" : "The one downloaded item, an episode or an article, of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case."
+    },
+    "its file could not be read as a picture" : {
+      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is no picture. Starts with a lowercase letter, with no full stop."
+    },
+    "its file is damaged or incomplete: %@" : {
+      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is damaged. %@ is the reason, which the archive reader gives in English or `failsChecksum`. Starts with a lowercase letter, with no full stop."
     },
     "its files are deleted permanently and cannot be recovered" : {
       "comment" : "A clause about one book's files when it is deleted permanently, inside a sentence of a removal confirmation."
@@ -16807,6 +18375,9 @@
     },
     "its package is in neither its library folder nor its feed's" : {
       "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in neither folder. Lower case, without a full stop."
+    },
+    "its picture could not be decoded" : {
+      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: the system could not decode its picture. Starts with a lowercase letter, with no full stop."
     },
     "its row names no package the library manages" : {
       "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library, after \"“Title” stays in its feed:\". Lower case, without a full stop."
@@ -16897,6 +18468,29 @@
     },
     "needs download" : {
       "comment" : "Status of a language's speech model that is not on this Mac yet, said after the language's name in the Transcribe Audio sheet and Settings."
+    },
+    "nests quotes, lists, or emphasis more than %lld levels deep" : {
+      "comment" : "Verb phrase inside the sentences that refuse a text of Markdown that nests too deeply. %lld is the deepest nesting read, a count of levels. The subject comes before it and a clause follows.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "nests quotes, lists, or emphasis more than %lld level deep"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "nests quotes, lists, or emphasis more than %lld levels deep"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "never" : {
       "comment" : "What the caption of the delete-after-playing setting says while the setting is off: \"Delete downloads after playing: never\". Lower case."
@@ -17076,11 +18670,23 @@
     "reader windows" : {
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in reader windows.\": the windows where a book is read. Lower case in English, since it is in the middle of a sentence."
     },
+    "reading its audio" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its audio\") and, capitalized by the app, starts a failure (\"Reading its audio failed: ...\"). Starts with a lowercase letter and has no full stop."
+    },
+    "reading its manifest" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its manifest\") and, capitalized by the app, starts a failure (\"Reading its manifest failed: ...\"). Starts with a lowercase letter and has no full stop."
+    },
+    "reading its text" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its text\") and, capitalized by the app, starts a failure (\"Reading its text failed: ...\"). Starts with a lowercase letter and has no full stop."
+    },
     "reading state is %@" : {
       "comment" : "Library view editor: a condition inside a filter's description. %@ is a reading state's name: Unopened, In Progress, or Finished."
     },
     "reading state is not %@" : {
       "comment" : "Library view editor: a condition inside a filter's description. %@ is a reading state's name: Unopened, In Progress, or Finished."
+    },
+    "reading the file" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading the file\") and, capitalized by the app, starts a failure (\"Reading the file failed: ...\"). Starts with a lowercase letter and has no full stop."
     },
     "reading the text of %lld books again in another encoding" : {
       "comment" : "What the Mac is still doing when the user quits, said after \"Quit is waiting for\" or the like: books whose text is being read again in another character encoding. %lld is the number of books. Begins in lower case.",
@@ -17110,6 +18716,12 @@
     },
     "regex" : {
       "comment" : "A small tag in a substitution rule's row: the rule's pattern is a regular expression. Short for regular expression, in lower case."
+    },
+    "returning it to the library" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, returning it to the library\") and, capitalized by the app, starts a failure (\"Returning it to the library failed: ...\"). Starts with a lowercase letter and has no full stop."
+    },
+    "saving its bookInfo.json file" : {
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, saving its bookInfo.json file\") and, capitalized by the app, starts a failure (\"Saving its bookInfo.json file failed: ...\"). Starts with a lowercase letter and has no full stop."
     },
     "saving the changes to your feed subscriptions" : {
       "comment" : "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop."
@@ -17330,6 +18942,9 @@
     "this copy" : {
       "comment" : "What the Compare Libraries sheet calls the library in use inside a sentence, in lower case: \"Book only in this copy\"."
     },
+    "this format" : {
+      "comment" : "Stands for the name of a file's format inside a sentence about importing it, when the file's name and its bytes name none, as in \"TextMouth can't read “Clip” as this format.\""
+    },
     "title or author contains “%@”" : {
       "comment" : "Library view editor: a condition inside a filter's description. %@ is the text the listener typed to look for."
     },
@@ -17401,6 +19016,17 @@
     "“%@”" : {
       "comment" : "Puts a book's, folder's, or feed's title in quotation marks inside a sentence. %@ is the title."
     },
+    "“%@” (%@)" : {
+      "comment" : "One skipped entry of a playlist in a list: its location in curly quotes, then its reason in parentheses. %1$@ is the location and %2$@ the reason.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” (%2$@)"
+          }
+        }
+      }
+    },
     "“%@” becomes “%@”, inside words too: %@." : {
       "comment" : "Heading of one rule's changes in the Clean Up Transcript sheet, for a rule that also changes the text inside longer words. %1$@ is the text the rule looks for; %2$@ is the text it puts in its place; %3$@ is the number of corrections, such as \"4 corrections\".",
       "localizations" : {
@@ -17445,6 +19071,9 @@
         }
       }
     },
+    "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again." : {
+      "comment" : "What the duplicate question says when the library's copy changed while the new copy was being made ready. %@ is the book's title. \"Replace Existing\" is a button of the question."
+    },
     "“%@” could not be moved back after a failed move, so its files are at %@ instead of %@: %@" : {
       "comment" : "Failure notice: a book's files could not be put back after a move failed. %1$@ is the book's title; %2$@ is where its files are now; %3$@ is where they belong; %4$@ is the reason, a sentence from the system.",
       "localizations" : {
@@ -17469,6 +19098,15 @@
     },
     "“%@” downloads once this Mac is on a network without data limits." : {
       "comment" : "Why a feed item's download did not run now: the network has data limits. Says the same as the row's wait reason. %@ is the item's title."
+    },
+    "“%@” holds no DAISY book and no audio tracks to import as one book." : {
+      "comment" : "What the library says as a folder chosen to import holds no DAISY book and no audio tracks. %@ is the folder's name. A sentence about what it holds follows."
+    },
+    "“%@” holds no sound to import." : {
+      "comment" : "Why a file was not imported: it holds no sound, such as a video without a sound track. %@ is the file's name."
+    },
+    "“%@” is a pronunciation lexicon, not a playlist." : {
+      "comment" : "Refusal of a .pls file that is a pronunciation lexicon, not a playlist. %@ is the file's name."
     },
     "“%@” is already being added to the library." : {
       "comment" : "What VoiceOver says when Cancel Download comes too late: the download's book is already being imported. %@ is the title."
@@ -17514,6 +19152,28 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "“%1$@” keeps %2$@."
+          }
+        }
+      }
+    },
+    "“%@” matches “%@”, already in your library. Replace the existing copy, or keep both as separate books?" : {
+      "comment" : "First paragraph of the question asked when a book just imported matches one in the library. %1$@ is the new copy's file name (or its title when it came from no file) and %2$@ the title of the library's copy.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” matches “%2$@”, already in your library. Replace the existing copy, or keep both as separate books?"
+          }
+        }
+      }
+    },
+    "“%@” needs %@ free" : {
+      "comment" : "A book's need for free disk space, inside the alert about Ogg audio that waits for space. %1$@ is the book's title and %2$@ the free space it needs, with its unit, such as \"4.2 GB\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” needs %2$@ free"
           }
         }
       }
@@ -17564,6 +19224,28 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "“%1$@” wasn't attached to %2$@: %3$@"
+          }
+        }
+      }
+    },
+    "“%@”, %@" : {
+      "comment" : "Line of the import overlay for the one book being imported. %1$@ is the book's file name and %2$@ what is being done to it, such as \"reading its text\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@”, %2$@"
+          }
+        }
+      }
+    },
+    "“%@”, %@: %@" : {
+      "comment" : "Line of the import overlay for an archive holding one audiobook, while it is extracted. %1$@ is the archive's file name, %2$@ the step, such as \"extracting the archive\", and %3$@ how far the extraction has got, such as \"12 of 30 items, 120 MB of 340 MB\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@”, %2$@: %3$@"
           }
         }
       }

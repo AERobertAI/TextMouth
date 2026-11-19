@@ -37,19 +37,24 @@ enum PlaylistImportWording {
     /// What a skipped entry's reason calls a playlist ("outside the
     /// playlist's folder", `M3UPlaylist.SkipReason.words(listedIn:)`); a cue
     /// sheet's names are told as "cue sheet" instead (FMT24).
-    static let playlistKind = "playlist"
+    static let playlistKind = "playlist" // l10n: no (inside M3UPlaylist's English skip reasons, which a parser words)
 
     /// The refusal of an HLS stream.
-    static let streaming = "It is a streaming playlist for audio on the web, which TextMouth does not import."
+    static var streaming: String {
+        String(localized: "It is a streaming playlist for web audio, which TextMouth does not import.",
+               comment: "Refusal of a playlist that is an HLS stream, a list of pieces of one broadcast on the web. \"It\" is the playlist. Follows the sentence naming the file.")
+    }
 
     /// The refusal of an XSPF playlist that is no readable XML playlist.
     static func notReadable(fileName: String) -> String {
-        "The playlist “\(fileName)” is not a complete, valid playlist file."
+        String(localized: "The playlist “\(fileName)” is not a complete, valid playlist file.",
+               comment: "Refusal of an XSPF playlist that is not a readable XML playlist. %@ is the playlist's file name.")
     }
 
     /// The refusal of an XSPF playlist that declares XML entities.
     static func declaresEntities(fileName: String) -> String {
-        "The playlist “\(fileName)” uses XML entities of its own, which TextMouth does not read."
+        String(localized: "The playlist “\(fileName)” uses XML entities of its own, which TextMouth does not read.",
+               comment: "Refusal of an XSPF playlist that declares XML entities of its own. %@ is the playlist's file name.")
     }
 
     /// Whether this build has the Text settings tab where a lexicon is
@@ -68,13 +73,19 @@ enum PlaylistImportWording {
     /// (FMT08); without it (the iPhone, which has no such tab) it ends at
     /// "not a playlist."
     static func pronunciationLexicon(fileName: String, advising: Bool = hasLexiconImport) -> String {
-        let refusal = "“\(fileName)” is a pronunciation lexicon, not a playlist."
+        let refusal = String(localized: "“\(fileName)” is a pronunciation lexicon, not a playlist.",
+                             comment: "Refusal of a .pls file that is a pronunciation lexicon, not a playlist. %@ is the file's name.")
         guard advising else { return refusal }
-        return refusal + " To use it, choose \(PronunciationLexiconWording.importButton) on the Text tab in Settings."
+        let advice = String(localized: "To use it, choose \(PronunciationLexiconWording.importButton) on the Text tab in Settings.",
+                            comment: "Advice after the refusal of a pronunciation lexicon on the Mac. %@ is the title of the import button on the Text tab of Settings, which is another string of the app.")
+        return SentenceWording.joined([refusal, advice])
     }
 
     /// The refusal of a playlist that lists only web addresses.
-    static let onlyWebAddresses = "It lists only web addresses, and TextMouth imports only files on this Mac."
+    static var onlyWebAddresses: String {
+        String(localized: "It lists only web addresses, and TextMouth imports only files on this Mac.",
+               comment: "Refusal of a playlist that lists only web addresses. \"It\" is the playlist. Follows the sentence naming the file.")
+    }
 
     /// The refusal of a playlist with no track left, followed, when entries
     /// were skipped, by what became of them. `kind` names the list in a
@@ -84,9 +95,12 @@ enum PlaylistImportWording {
         skipped: [M3UPlaylist.Skipped],
         listedIn kind: String = PlaylistImportWording.playlistKind
     ) -> String {
-        let refusal = "It names no audio file in its own folder that TextMouth can import."
+        let refusal = String(localized: "It names no audio file in its own folder that TextMouth can import.",
+                             comment: "Refusal of a playlist or cue sheet with no track left to import. \"It\" is the playlist. A sentence about the skipped entries may follow.")
         guard !skipped.isEmpty else { return refusal }
-        return "\(refusal) It skipped \(entries(skipped.count)): \(skippedList(skipped, listedIn: kind))."
+        let skippedSentence = String(localized: "It skipped \(skipped.count) entries: \(skippedList(skipped, listedIn: kind)).",
+                                     comment: "Sentence after the refusal of a playlist: how many entries it skipped, and which. %1$lld is the number of entries and %2$@ the list of them, each with its reason in parentheses.")
+        return SentenceWording.joined([refusal, skippedSentence])
     }
 
     /// The notice of a playlist that imported with entries left out, naming
@@ -98,12 +112,8 @@ enum PlaylistImportWording {
         listedIn kind: String = PlaylistImportWording.playlistKind
     ) -> String? {
         guard !skipped.isEmpty else { return nil }
-        return "TextMouth skipped \(entries(skipped.count)) of “\(playlistName)”: \(skippedList(skipped, listedIn: kind))."
-    }
-
-    /// `count` entries: "1 entry", "2 entries".
-    private static func entries(_ count: Int) -> String {
-        CountWording.phrase(count, singular: "entry", plural: "entries")
+        return String(localized: "TextMouth skipped \(skipped.count) entries of “\(playlistName)”: \(skippedList(skipped, listedIn: kind)).",
+                      comment: "Notice after a playlist imported with entries left out. %1$lld is the number of entries skipped, %2$@ the playlist's name, and %3$@ the list of the entries, each with its reason in parentheses.")
     }
 
     /// The most characters one named entry keeps (its location, before the
@@ -152,14 +162,17 @@ enum PlaylistImportWording {
         // Only the first `namedLimit` entries are ever looked at, however
         // many the playlist skipped.
         for entry in skipped.prefix(namedLimit) {
-            let item = "“\(shortened(entry.location))” (\(entry.reason.words(listedIn: kind)))"
+            // The reason is a parser's English (question 3).
+            let item = String(localized: "“\(shortened(entry.location))” (\(entry.reason.words(listedIn: kind)))",
+                              comment: "One skipped entry of a playlist in a list: its location in curly quotes, then its reason in parentheses. %1$@ is the location and %2$@ the reason.")
             // Two characters for the ", " that joins it to the one before.
             if !items.isEmpty, length + item.count + 2 > listLimit { break }
             items.append(item)
             length += item.count + 2
         }
         if skipped.count > items.count {
-            items.append("\(skipped.count - items.count) more")
+            items.append(String(localized: "\(skipped.count - items.count) more",
+                                comment: "Last item of a list of skipped playlist entries, counting the entries not named. %lld is how many more there are."))
         }
         return CountWording.list(items)
     }
