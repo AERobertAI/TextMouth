@@ -114,7 +114,7 @@ enum CountWording {
     /// Library's edit bar counts the books selected (TODO A10; it said "0 of
     /// 1 books").
     static func part(_ part: Int, of whole: Int, singular: String, plural: String) -> String {
-        "\(part) of \(phrase(whole, singular: singular, plural: plural))"
+        "\(part) of \(phrase(whole, singular: singular, plural: plural))" // l10n: no (a plural that agrees with the second number waits for TL14; each caller's wave rewrites its sentence)
     }
 
     /// `part` of `whole` things named by `noun`, which agrees with the
