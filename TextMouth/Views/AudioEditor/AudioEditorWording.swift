@@ -58,7 +58,7 @@ enum AudioEditorWording {
 
     /// Said when the book's reader did not close.
     static func readerStillOpen(book: String) -> String {
-        String(localized: "\(book) is still open in a reader. Close the reader, then choose Edit Audio again.",
+        String(localized: "\(book) is open in a reader. Close it, then choose Edit Audio again.",
                comment: "Said when a book's reader did not close, so the audio editor can't open. %@ is the book's title. \"Edit Audio\" is the name of the command.")
     }
 
@@ -70,7 +70,7 @@ enum AudioEditorWording {
 
     /// What the track question explains.
     static var chooseTrackExplanation: String {
-        String(localized: "The editor works on one track at a time. Tracks are listed by their chapter names.",
+        String(localized: "Edits one track at a time, listed by chapter name.",
                comment: "Explains the question about which track of a book to edit.")
     }
 
@@ -110,7 +110,7 @@ enum AudioEditorWording {
 
     /// What starting over does.
     static var historyUnusableExplanation: String {
-        String(localized: "A copy of it was kept in the book's package. Start over with no edits, or cancel and leave the book as it is.",
+        String(localized: "A copy was kept in the book's package. Start over with no edits, or cancel.",
                comment: "Explains the question about an unreadable audio edit history: what Start Over and Cancel do.")
     }
 
@@ -500,7 +500,7 @@ enum AudioEditorWording {
 
     /// Shown when no marker has been dropped.
     static var noMarkers: String {
-        String(localized: "No markers yet. Add Marker drops one at the cursor, even while the audio plays.",
+        String(localized: "No markers yet. Add Marker drops one at the cursor.",
                comment: "Shown in the audio editor's list when no marker has been dropped. \"Add Marker\" is the name of the command.")
     }
 
@@ -597,7 +597,7 @@ enum AudioEditorWording {
 
     /// Said by Paste when the audio cut was too long to keep.
     static var cutTooLongToPaste: String {
-        String(localized: "The audio cut was too long to keep for pasting. To move a long stretch, paste right after cutting it.",
+        String(localized: "Too long to keep for pasting. To move it, paste right after cutting.",
                comment: "Said by the audio editor's Paste when the audio cut was too long to keep for pasting.")
     }
 
@@ -632,7 +632,7 @@ enum AudioEditorWording {
 
     /// Said by Trim to Selection when the selection is all of the audio.
     static var selectionIsEverything: String {
-        String(localized: "The selection is all of the audio, so there's nothing to trim.", comment: "Said by the audio editor's Trim to Selection when the selection is all of the audio.")
+        String(localized: "The selection is all the audio; nothing to trim.", comment: "Said by the audio editor's Trim to Selection when the selection is all of the audio.")
     }
 
     /// Said as Trim to Selection trims.
@@ -729,13 +729,13 @@ enum AudioEditorWording {
 
     /// What the silence's length field takes.
     static var silenceExplanation: String {
-        String(localized: "How long a silence to insert at the cursor: seconds, such as 2.5, or minutes and seconds, such as 1:30.",
+        String(localized: "Length of silence to insert: seconds (2.5) or minutes and seconds (1:30).",
                comment: "Explains the silence length field of the audio editor's Insert Silence sheet. The examples are typed times.")
     }
 
     /// What the chapter marker's title field takes.
     static var chapterExplanation: String {
-        String(localized: "The title of a chapter marker at the cursor. A chapter marker already at the cursor is renamed.",
+        String(localized: "Title for a chapter marker at the cursor. One already there is renamed.",
                comment: "Explains the title field of the audio editor's Insert Chapter Marker sheet.")
     }
 
@@ -746,7 +746,7 @@ enum AudioEditorWording {
 
     /// Why a silence of no length can't be inserted.
     static var silenceTooShort: String {
-        String(localized: "Silence has to last longer than no time at all.", comment: "Problem shown when the silence to insert in the audio editor has no length.")
+        String(localized: "Silence must be longer than zero.", comment: "Problem shown when the silence to insert in the audio editor has no length.")
     }
 
     /// Why a silence of more than a day can't be inserted.
@@ -802,7 +802,7 @@ enum AudioEditorWording {
 
     /// The microphone pop-up's hint.
     static var microphoneHint: String {
-        String(localized: "The microphone Punch In records from. TextMouth remembers it, as the Record window does, apart from the input macOS uses for everything else.",
+        String(localized: "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
                comment: "Hint of the audio editor's microphone pop-up. \"Record window\" is TextMouth's window that records audio.")
     }
 
@@ -901,7 +901,7 @@ enum AudioEditorWording {
 
     /// Shown when there are no presets.
     static var noPresets: String {
-        String(localized: "There are no filter presets. Add some in Storage settings, under Audio Editing.",
+        String(localized: "No filter presets. Add some in Storage settings, under Audio Editing.",
                comment: "Shown in the audio editor's Apply Filter sheet when there are no filter presets. \"Storage settings\" and \"Audio Editing\" are the names of a settings tab and its group.")
     }
 
@@ -930,7 +930,7 @@ enum AudioEditorWording {
     /// Apply's hint while a press would preview first
     /// (`AudioEditorModel.applyWouldPreview`).
     static var applyPreviewsFirstHint: String {
-        String(localized: "Plays the filtered audio first; choose Apply again to apply the filter.",
+        String(localized: "Plays a preview; choose Apply again to apply.",
                comment: "Hint of the audio editor's Apply button while a press would play a preview first.")
     }
 
@@ -978,7 +978,7 @@ enum AudioEditorWording {
 
     /// Said by Save with nothing to save.
     static var nothingToSave: String {
-        String(localized: "There's nothing to save: the book's audio already holds every edit.", comment: "Said by the audio editor's Save when there is nothing to save.")
+        String(localized: "Nothing to save: the book's audio holds every edit.", comment: "Said by the audio editor's Save when there is nothing to save.")
     }
 
     /// The save's sheet title.
@@ -1082,14 +1082,14 @@ enum AudioEditorWording {
     }
 
     static var exportLabelsHint: String {
-        String(localized: "Writes the chapter markers and the markers beside the audio, in an Audacity label file of the same name, which Audacity imports as a label track.",
+        String(localized: "Writes chapter markers and markers beside the audio, in an Audacity label file of the same name.",
                comment: "Hint of the Also write the markers as Audacity labels checkbox. Audacity is the name of an audio editing program.")
     }
 
     /// The checkbox's hint while the audio has no marker of either kind to
     /// write.
     static var exportLabelsNothingHint: String {
-        String(localized: "The audio has no chapter markers or markers yet, so no label file would be written.",
+        String(localized: "No chapter markers or markers, so no label file would be written.",
                comment: "Hint of the Also write the markers as Audacity labels checkbox while the audio has no markers of either kind.")
     }
 
@@ -1135,7 +1135,7 @@ enum AudioEditorWording {
 
     /// What Export… does.
     static var exportButtonHint: String {
-        String(localized: "Asks where to save the file, then writes it. The book's own file stays as it is.",
+        String(localized: "Exports to a file you choose; the book's own file is unchanged.",
                comment: "Hint of the audio editor's Export… button.")
     }
 
@@ -1179,12 +1179,12 @@ enum AudioEditorWording {
 
     /// Said by Revert to Original with nothing to undo.
     static var nothingToRevert: String {
-        String(localized: "There's nothing to revert: no edit can be undone.", comment: "Said by the audio editor's Revert to Original when no edit can be undone.")
+        String(localized: "Nothing to revert: no edit can be undone.", comment: "Said by the audio editor's Revert to Original when no edit can be undone.")
     }
 
     /// Said by Revert to Original when no original is kept.
     static var revertNoOriginal: String {
-        String(localized: "No original audio is kept for this book, so it can't be reverted. Undo takes back the edits made since it was last saved.",
+        String(localized: "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
                comment: "Said by the audio editor's Revert to Original when the book keeps no original audio.")
     }
 
@@ -1293,7 +1293,7 @@ enum AudioEditorWording {
 
     /// What its answers do.
     static var closeExplanation: String {
-        String(localized: "The book's audio doesn't hold them yet. Discard undoes them; the next time you edit this book, Redo brings them back until you make another edit.",
+        String(localized: "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
                comment: "Explains the question asked as the audio editor's window with unsaved edits closes: what Discard does.")
     }
 
@@ -1308,18 +1308,18 @@ enum AudioEditorWording {
 
     /// Said when the window can't close while work is under way.
     static var closeWhileWorking: String {
-        String(localized: "The editor is still working. Close it once the change is done.", comment: "Said when the audio editor's window can't close because a change, save, or export is under way.")
+        String(localized: "Still working. Close once the change is done.", comment: "Said when the audio editor's window can't close because a change, save, or export is under way.")
     }
 
     /// Said when the window can't close while a punch-in records.
     static var closeWhileRecording: String {
-        String(localized: "A recording is under way. Stop it, or discard it with Clear Selection, then close the editor.",
+        String(localized: "Recording. Stop or discard it with Clear Selection, then close.",
                comment: "Said when the audio editor's window can't close because a punch-in records. \"Clear Selection\" is the name of a command.")
     }
 
     /// Said when Discard can't reach the audio as saved.
     static var discardKept: String {
-        String(localized: "The book's audio holds edits its history no longer has, so the edits stay, to be saved or undone the next time you edit this book.",
+        String(localized: "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book.",
                comment: "Said when the audio editor's Discard can't reach the audio as it was saved: the edits stay.")
     }
 
@@ -1328,21 +1328,21 @@ enum AudioEditorWording {
     /// What the question about an editor's unsaved edits explains as
     /// TextMouth quits.
     static var quitExplanation: String {
-        String(localized: "TextMouth is quitting, and the book's audio doesn't hold these edits yet. Discard undoes them; the next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+        String(localized: "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
                comment: "Explains the question about the audio editor's unsaved edits asked as TextMouth quits: what Discard and Cancel do.")
     }
 
     /// Said, in the editor of `book`, when TextMouth can't quit while its
     /// work is under way.
     static func quitWhileWorking(book: String) -> String {
-        String(localized: "The editor of “\(book)” is still working. Quit TextMouth once the change is done.",
+        String(localized: "“\(book)” is still working. Quit once the change is done.",
                comment: "Said in an audio editor when TextMouth can't quit because its work is under way. %@ is the book's title.")
     }
 
     /// Said, in the editor of `book`, when TextMouth can't quit while a
     /// punch-in records there.
     static func quitWhileRecording(book: String) -> String {
-        String(localized: "A recording is under way in the editor of “\(book)”. Stop it, or discard it with Clear Selection, then quit TextMouth.",
+        String(localized: "“\(book)” is recording. Stop or discard it with Clear Selection, then quit.",
                comment: "Said in an audio editor when TextMouth can't quit because a punch-in records there. %@ is the book's title. \"Clear Selection\" is the name of a command.")
     }
 
@@ -1373,7 +1373,7 @@ enum AudioEditorWording {
     static func explanation(of action: ShortcutAction) -> String {
         switch action {
         case .editorPlayPause:
-            return String(localized: "Plays from the cursor, or pauses where the audio is.", comment: "Hint of the audio editor's Play or Pause button.")
+            return String(localized: "Plays from the cursor, or pauses.", comment: "Hint of the audio editor's Play or Pause button.")
         case .editorStop:
             return String(localized: "Stops playing, and goes back to where playing began.", comment: "Hint of the audio editor's Stop button.")
         case .editorSkipBack:
@@ -1399,9 +1399,9 @@ enum AudioEditorWording {
         case .editorNextChapter:
             return String(localized: "Moves the cursor to the next chapter marker.", comment: "Hint of the audio editor's Next Chapter button.")
         case .editorPreviousPause:
-            return String(localized: "Moves the cursor to where the sound after the previous pause begins.", comment: "Hint of the audio editor's Previous Pause button.")
+            return String(localized: "Moves the cursor to the end of the previous pause.", comment: "Hint of the audio editor's Previous Pause button.")
         case .editorNextPause:
-            return String(localized: "Moves the cursor to where the sound after the next pause begins.", comment: "Hint of the audio editor's Next Pause button.")
+            return String(localized: "Moves the cursor to the end of the next pause.", comment: "Hint of the audio editor's Next Pause button.")
         case .editorWhereAmI:
             return String(localized: "Says where the cursor is, in which chapter, and what is selected.", comment: "Hint of the audio editor's Where Am I button.")
         case .editorMarkIn:
@@ -1409,9 +1409,9 @@ enum AudioEditorWording {
         case .editorMarkOut:
             return String(localized: "Marks the selection's end at the cursor.", comment: "Hint of the audio editor's Mark Out button.")
         case .editorSelectToPreviousPause:
-            return String(localized: "Selects from where the sound after the previous pause begins to the cursor.", comment: "Hint of the audio editor's Select to Previous Pause button.")
+            return String(localized: "Selects from the end of the previous pause to the cursor.", comment: "Hint of the audio editor's Select to Previous Pause button.")
         case .editorSelectToNextPause:
-            return String(localized: "Selects from the cursor to where the sound after the next pause begins.", comment: "Hint of the audio editor's Select to Next Pause button.")
+            return String(localized: "Selects from the cursor to the end of the next pause.", comment: "Hint of the audio editor's Select to Next Pause button.")
         case .editorSelectChapter:
             return String(localized: "Selects the chapter the cursor is in.", comment: "Hint of the audio editor's Select Chapter button.")
         case .editorSelectAll:
@@ -1425,7 +1425,7 @@ enum AudioEditorWording {
         case .editorAddMarker:
             return String(localized: "Drops a marker at the cursor, even while the audio plays.", comment: "Hint of the audio editor's Add Marker button.")
         case .editorShowMarkers:
-            return String(localized: "Lists the markers, the chapter markers, and the pauses, to go to, name, select, or delete them.", comment: "Hint of the audio editor's Show Markers button.")
+            return String(localized: "Lists markers, chapter markers, and pauses, to go to, name, select, or delete.", comment: "Hint of the audio editor's Show Markers button.")
         case .editorUndo:
             return String(localized: "Undoes the newest edit.", comment: "Hint of the audio editor's Undo button.")
         case .editorRedo:
@@ -1435,25 +1435,25 @@ enum AudioEditorWording {
         case .editorCopy:
             return String(localized: "Copies the selection for Paste.", comment: "Hint of the audio editor's Copy button. \"Paste\" is the name of a command.")
         case .editorPaste:
-            return String(localized: "Pastes the audio cut or copied at the cursor, or over the selection. Right after a cut, it moves the audio cut.", comment: "Hint of the audio editor's Paste button.")
+            return String(localized: "Pastes at the cursor, or over the selection. Right after a cut, it moves the audio.", comment: "Hint of the audio editor's Paste button.")
         case .editorTrimToSelection:
-            return String(localized: "Keeps only the selection, removing the audio before and after it.", comment: "Hint of the audio editor's Trim to Selection button.")
+            return String(localized: "Keeps only the selection.", comment: "Hint of the audio editor's Trim to Selection button.")
         case .editorInsertSilence:
             return String(localized: "Inserts a silence of a length you type at the cursor.", comment: "Hint of the audio editor's Insert Silence button.")
         case .editorInsertChapter:
             return String(localized: "Sets a chapter marker at the cursor, with a title you type.", comment: "Hint of the audio editor's Insert Chapter Marker button.")
         case .editorApplyFilter:
-            return String(localized: "Runs a filter preset over the selection or the whole file, with a preview first.", comment: "Hint of the audio editor's Apply Filter button.")
+            return String(localized: "Runs a filter preset over the selection or the whole file.", comment: "Hint of the audio editor's Apply Filter button.")
         case .editorPunchIn:
-            return String(localized: "Records from the microphone over the selection, or at the cursor, after a beep. Again, or Stop, ends it.", comment: "Hint of the audio editor's Punch In button. \"Stop\" is the name of a button.")
+            return String(localized: "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.", comment: "Hint of the audio editor's Punch In button. \"Stop\" is the name of a button.")
         case .editorSave:
             return String(localized: "Saves the edits into the book's audio file, in the format the book keeps.", comment: "Hint of the audio editor's Save button.")
         case .editorExport:
-            return String(localized: "Exports the edited audio to a file outside the library, in a format you choose.", comment: "Hint of the audio editor's Export button.")
+            return String(localized: "Exports to a file outside the library, in a format you choose.", comment: "Hint of the audio editor's Export button.")
         case .editorRevert:
-            return String(localized: "Undoes every edit, back to the original audio; Redo brings them back.", comment: "Hint of the audio editor's Revert to Original button. \"Redo\" is the name of a command.")
+            return String(localized: "Undoes every edit, back to the original; Redo brings them back.", comment: "Hint of the audio editor's Revert to Original button. \"Redo\" is the name of a command.")
         case .editorInfo:
-            return String(localized: "Shows the audio's length, file, and edits, and sets what happens to this book's original audio.", comment: "Hint of the audio editor's Audio Info button.")
+            return String(localized: "Shows length, file, and edits; sets what happens to the original audio.", comment: "Hint of the audio editor's Audio Info button.")
         default: return ""
         }
     }

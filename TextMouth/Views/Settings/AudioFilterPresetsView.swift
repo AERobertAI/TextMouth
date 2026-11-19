@@ -12,7 +12,7 @@ enum AudioFilterPresetsWording {
 
     /// What the presets are.
     static var explanation: String {
-        String(localized: "The presets the audio editor's Apply Filter lists, in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, and every filter ffmpeg has when ffmpeg is installed and turned on above.",
+        String(localized: "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
                comment: "Explains the filter presets sheet. Apply Filter is the audio editor's command. \"highpass=f=80,volume=3dB\" is filter syntax and stays as it is. ffmpeg is the name of a program. \"turned on above\" refers to the Use ffmpeg for filters switch in Storage settings.")
     }
 
@@ -63,7 +63,7 @@ enum AudioFilterPresetsWording {
 
     /// The chain field's hint.
     static var chainHint: String {
-        String(localized: "Filters in ffmpeg's syntax, separated by commas, each with its options after an equals sign, separated by colons.",
+        String(localized: "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons.",
                comment: "Hint of the chain field of a filter preset. ffmpeg is the name of a program.")
     }
 

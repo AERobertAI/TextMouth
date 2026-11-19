@@ -47,7 +47,7 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
             return String(localized: "The book is no longer in the library.",
                           comment: "Said when an audio edit can't proceed: the book was removed from the library, or is not an audiobook kept in a package of its own.")
         case .fileOutsidePackage:
-            return String(localized: "The book's edit history names a file outside the book, so TextMouth won't use it.",
+            return String(localized: "The edit history names a file outside the book, so it isn't used.",
                           comment: "Said when an audio edit can't proceed: the book's saved edit history points at a file outside the book's own package.")
         case .unreadableAudio:
             return String(localized: "The audio couldn't be read.",
@@ -57,16 +57,16 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
                           comment: "Said when an audio file that the edits need is missing. %@ is its path inside the book's package.")
         case .historyInCloud:
             return SentenceWording.joined([
-                String(localized: "The book's edit history is only in the cloud and isn't on this Mac yet.",
+                String(localized: "The edit history is only in the cloud, not on this Mac yet.",
                        comment: "Said when the audio editor can't open a book: its edit history is only in the cloud. A second sentence says to try again once the book has downloaded."),
                 String(localized: "Try again once the book has downloaded.",
                        comment: "Ends a message saying a file of the book is only in the cloud and isn't on this Mac yet: what to do about it.")
             ])
         case .historyFromNewerVersion:
-            return String(localized: "The book's audio was edited by a newer version of TextMouth, so this version leaves its edits alone.",
+            return String(localized: "A newer TextMouth edited this audio, so this version leaves its edits alone.",
                           comment: "Said when the book's saved edit history was written by a later version of TextMouth than this one.")
         case .historyUnusable:
-            return String(localized: "The book's edit history couldn't be read. A copy of it was kept in the book's package.",
+            return String(localized: "The edit history couldn't be read. A copy was kept in the book's package.",
                           comment: "Said when the book's saved edit history can't be read. A copy of the unreadable file was kept in the book's package.")
         case .invalidEdit(let reason):
             return reason
@@ -74,18 +74,18 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
             return String(localized: "Filters can't be applied here.",
                           comment: "Said when a filter or a volume change is asked for where nothing can render one.")
         case .bookIsOpen:
-            return String(localized: "The book is open in a reader. Close it there, then save the edited audio again.",
+            return String(localized: "The book is open in a reader. Close it, then save again.",
                           comment: "Said when saving the edited audio is refused because a reader has the book open and plays the file the save would replace.")
         case .audioInCloud:
             return SentenceWording.joined([
-                String(localized: "The book's audio is only in the cloud and isn't on this Mac yet.",
+                String(localized: "The audio is only in the cloud, not on this Mac yet.",
                        comment: "Said when an audio file that the edits need is only in the cloud. A second sentence says to download the book and try again."),
                 String(localized: "Download the book, then try again.",
                        comment: "Ends a message saying the book's audio is only in the cloud: what to do about it.")
             ])
         case .originalNeeded:
             return SentenceWording.joined([
-                String(localized: "These edits can only be made from the original audio, which is no longer kept.",
+                String(localized: "These edits need the original audio, which is no longer kept.",
                        comment: "Said when the edits wait to be rendered from an original audio that is gone. A second sentence says what helps."),
                 String(localized: "Undo or redo back to the audio as last saved.",
                        comment: "Ends a message saying the edits need an original audio that is gone: only undoing or redoing back to the audio as last saved helps.")
@@ -94,7 +94,7 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
             return String(localized: "The edited audio couldn't be written.",
                           comment: "Said when the edited audio could not be written, whatever the technical reason, which goes to the debug log.")
         case .mp3NeedsFFmpeg:
-            return String(localized: "MP3 can't be written: TextMouth's own encoder couldn't start, and ffmpeg isn't installed, or is turned off in Storage settings.",
+            return String(localized: "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
                           comment: "Said when MP3 is asked for and neither TextMouth's built-in encoder nor an installed ffmpeg program can write it. \"Storage settings\" is the name of a settings tab.")
         }
     }

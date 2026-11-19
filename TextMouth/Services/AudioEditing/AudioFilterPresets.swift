@@ -404,7 +404,7 @@ enum AudioFilterPresetError: LocalizedError, Equatable {
             return String(localized: "The library isn't available, so the filter presets can't be saved.",
                           comment: "Said when the filter presets can't be saved because the library's data folder can't be used.")
         case .fileArrived:
-            return String(localized: "The filter presets saved on another Mac just arrived, so they replaced these. Make the change again.",
+            return String(localized: "Presets from another Mac just arrived and replaced these. Make the change again.",
                           comment: "Said when a filter preset change is not made because the presets file synced in from another Mac while the premade presets stood in for it.")
         }
     }

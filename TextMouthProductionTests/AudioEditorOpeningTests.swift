@@ -173,7 +173,7 @@ final class AudioEditorOpeningTests: XCTestCase {
 
         let outcome = await AudioEditorLauncher.open(fixture.book, in: fixture.library, from: nil, controller: script.windows, services: script.services)
 
-        let sentence = "Harbour Survey is still open in a reader. Close the reader, then choose Edit Audio again."
+        let sentence = "Harbour Survey is open in a reader. Close it, then choose Edit Audio again."
         XCTAssertEqual(outcome, .refused(sentence))
         XCTAssertEqual(script.announced.last, sentence)
         XCTAssertTrue(script.presented.isEmpty)

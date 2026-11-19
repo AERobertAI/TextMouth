@@ -41,7 +41,7 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertFalse(model.canPerform(.editorSave))
 
         await model.save()
-        XCTAssertEqual(harness.announcements.sentences.last, "There's nothing to save: the book's audio already holds every edit.")
+        XCTAssertEqual(harness.announcements.sentences.last, "Nothing to save: the book's audio holds every edit.")
     }
 
     /// A save that renders a filter and a silence, the book keeping its
@@ -112,7 +112,7 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertNil(model.sheet)
         XCTAssertEqual(
             harness.announcements.sentences.last,
-            "The edits couldn't be saved. The book is open in a reader. Close it there, then save the edited audio again."
+            "The edits couldn't be saved. The book is open in a reader. Close it, then save again."
         )
     }
 
@@ -272,7 +272,7 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertTrue(model.labelEntries.isEmpty)
         XCTAssertEqual(
             AudioEditorWording.exportLabelsNothingHint,
-            "The audio has no chapter markers or markers yet, so no label file would be written."
+            "No chapter markers or markers, so no label file would be written."
         )
     }
 
@@ -310,7 +310,7 @@ final class AudioEditorSavingTests: XCTestCase {
         let model = harness.model
         model.askToRevert()
         XCTAssertFalse(model.confirmingRevert)
-        XCTAssertEqual(harness.announcements.sentences.last, "There's nothing to revert: no edit can be undone.")
+        XCTAssertEqual(harness.announcements.sentences.last, "Nothing to revert: no edit can be undone.")
 
         model.select(AudioTimeRange(start: 1, end: 2))
         await model.cut()
@@ -473,14 +473,14 @@ final class AudioEditorSavingTests: XCTestCase {
 
         ferry.model.isWorking = true
         XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateCancel)
-        XCTAssertEqual(ferry.announcements.sentences.last, "The editor of “Ferry Log” is still working. Quit TextMouth once the change is done.")
+        XCTAssertEqual(ferry.announcements.sentences.last, "“Ferry Log” is still working. Quit once the change is done.")
         ferry.model.isWorking = false
 
         await ferry.model.startPunchIn()
         XCTAssertTrue(controller.holdQuit(then: { XCTFail("quit while recording") }))
         XCTAssertEqual(
             ferry.announcements.sentences.last,
-            "A recording is under way in the editor of “Ferry Log”. Stop it, or discard it with Clear Selection, then quit TextMouth."
+            "“Ferry Log” is recording. Stop or discard it with Clear Selection, then quit."
         )
         await ferry.model.cancelPunchIn()
         XCTAssertNil(controller.quitReview)

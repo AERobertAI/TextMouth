@@ -185,7 +185,7 @@ enum AudioFilterError: LocalizedError, Equatable, Sendable {
         case .syntax(let sentence):
             return sentence
         case .needsFFmpeg:
-            return String(localized: "Labels and semicolons in a filter graph need ffmpeg. TextMouth's own filters take one chain of filters separated by commas.",
+            return String(localized: "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain.",
                           comment: "Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas.")
         case .unknownFilter(let name):
             return String(localized: "TextMouth's own filters don't include “\(name)”. They are \(Self.list(AudioBuiltInFilter.names)); with ffmpeg installed, every filter it has works.",
@@ -206,7 +206,7 @@ enum AudioFilterError: LocalizedError, Equatable, Sendable {
             return String(localized: "ffmpeg couldn't run the filters: \(words)",
                           comment: "Problem said when the ffmpeg program refused a filter chain or the audio. %@ is ffmpeg's own words, in English.")
         case .ffmpegMissing:
-            return String(localized: "ffmpeg couldn't be started. Check that it is still installed, or turn off Use ffmpeg in Storage settings.",
+            return String(localized: "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
                           comment: "Problem said when the ffmpeg program can't be started. \"Use ffmpeg\" is the name of a switch in the Storage settings.")
         }
     }

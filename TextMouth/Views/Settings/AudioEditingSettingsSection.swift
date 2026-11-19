@@ -16,7 +16,7 @@ enum AudioEditingSettingsWording {
     /// The policy picker's hint: what an original is, what it costs, and
     /// whom a change reaches.
     static var policyHint: String {
-        String(localized: "What happens to the original audio of recordings and edited audiobooks: the lossless take a recording is saved from, and a copy of an audiobook's file from before its first edit. Keeping an original lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change applies to the originals already kept, too. In a library in the cloud, an original syncs with its book.",
+        String(localized: "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
                comment: "Hint of the Original audio picker in Storage settings (Audio Editing): what an original is, what keeping it costs (345 MB is for an hour of a recording), and that a change reaches originals already kept.")
     }
 
@@ -34,13 +34,13 @@ enum AudioEditingSettingsWording {
     /// does when the switch is on. MP3 needs no ffmpeg: TextMouth writes it
     /// with the LAME encoder built in (`MP3Route`).
     static func ffmpegHint(path: String) -> String {
-        String(localized: "TextMouth found ffmpeg at \(path). When this is on, the audio editor's filters run through it, with every filter it has.",
+        String(localized: "Found at \(path). When on, the editor's filters run through ffmpeg, with every filter it has.",
                comment: "Hint of the Use ffmpeg for filters switch in Storage settings. %@ is the folder path where the ffmpeg program was found. ffmpeg is the program's name.")
     }
 
     /// The line shown when no ffmpeg is installed.
     static var noFFmpeg: String {
-        String(localized: "ffmpeg isn't installed, so the audio editor uses TextMouth's own filters.",
+        String(localized: "ffmpeg isn't installed; TextMouth's own filters are used.",
                comment: "Shown in Storage settings (Audio Editing) when no ffmpeg program is installed. ffmpeg is the program's name.")
     }
 
@@ -51,7 +51,7 @@ enum AudioEditingSettingsWording {
 
     /// What the preview switch does.
     static var previewFiltersHint: String {
-        String(localized: "When this is on, the audio editor's Apply Filter plays the filtered audio first, and applies the filter when you choose Apply again.",
+        String(localized: "Apply Filter plays a preview first, and applies when you choose Apply again.",
                comment: "Hint of the Preview filters before applying switch in Storage settings. Apply Filter and Apply are the audio editor's command and button.")
     }
 
@@ -62,7 +62,7 @@ enum AudioEditingSettingsWording {
 
     /// What the half-second switch does.
     static var playAfterMovesHint: String {
-        String(localized: "When this is on, the audio editor plays half a second at the cursor after each move, so you hear where it landed.",
+        String(localized: "Plays half a second at the cursor after each move.",
                comment: "Hint of the Play half a second after each move switch in Storage settings.")
     }
 
@@ -73,7 +73,7 @@ enum AudioEditingSettingsWording {
 
     /// What it opens.
     static var presetsHint: String {
-        String(localized: "Lists the audio editor's filter presets, to edit, add, reorder, delete, or reset them.",
+        String(localized: "Opens the filter presets, to edit, add, reorder, delete, or reset.",
                comment: "Hint of the Filter Presets button in Storage settings.")
     }
 
@@ -98,13 +98,13 @@ enum AudioEditingSettingsWording {
     static func explanation(_ policy: AudioOriginalPolicy) -> String {
         switch policy {
         case .keep:
-            return String(localized: "Each recording and edited audiobook keeps its original audio until the book is removed.",
+            return String(localized: "Originals are kept until the book is removed.",
                           comment: "Explains Storage settings' Original audio choice Keep: originals are kept until their book is removed.")
         case .delete:
-            return String(localized: "No original audio is kept: edits change a book's audio in place, and saved edits can't be undone.",
+            return String(localized: "No original is kept: edits change the audio in place, and saved edits can't be undone.",
                           comment: "Explains Storage settings' Original audio choice Don't keep: no original is kept, so saved edits can't be undone.")
         case .deleteAfter(let count):
-            return String(localized: "Each recording and edited audiobook keeps its original audio for \(Int(count.rounded())) days after it was saved or last edited; then the original is deleted.",
+            return String(localized: "Originals are kept for \(Int(count.rounded())) days after the book was saved or last edited, then deleted.",
                           comment: "Explains Storage settings' Original audio choice Keep for a number of days. %lld is the number of days.")
         }
     }
