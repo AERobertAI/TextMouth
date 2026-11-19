@@ -943,6 +943,9 @@
     "%@ so far" : {
       "comment" : "How far a feed download's file has come, when its size is not known. %@ is the bytes received so far with their unit, such as 12 MB."
     },
+    "%@ sound" : {
+      "comment" : "VoiceOver label of the pop-up button that chooses the sound for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause."
+    },
     "%@ stay in their feeds: %@" : {
       "comment" : "What the Move to Library sheet says about several items that stayed in their feeds for one reason. The first %@ is their titles in quotation marks; the second is the reason, a sentence or clause.",
       "localizations" : {
@@ -3730,7 +3733,7 @@
       }
     },
     "%lld percent" : {
-      "comment" : "Said at each quarter of a long save or export in the audio editor. %lld is how much is done, from 0 to 100.\nVoiceOver value of the move's progress bar while the library is copied. %lld is the percent done, from 0 to 100.",
+      "comment" : "Said at each quarter of a long save or export in the audio editor. %lld is how much is done, from 0 to 100.\nVoiceOver value of the move's progress bar while the library is copied. %lld is the percent done, from 0 to 100.\nVoiceOver value of the sound effects volume slider. %lld is the volume as a percentage from 0 to 100.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -7829,8 +7832,14 @@
     "Enable Bluetooth monitoring" : {
       "comment" : "Title and VoiceOver label of the switch in the Miscellaneous settings that turns on Bluetooth monitoring."
     },
+    "Enable Sound Effects" : {
+      "comment" : "Title of the switch in Settings, Sound Effects that turns the short sounds for playback actions on or off."
+    },
     "Enable restart-timer gesture" : {
       "comment" : "Title of the switch in the Miscellaneous settings that turns on the experimental gesture that restarts the sleep timer."
+    },
+    "Enable sound effects" : {
+      "comment" : "VoiceOver label of the switch in Settings, Sound Effects that turns the short sounds on or off."
     },
     "Enable text substitutions" : {
       "comment" : "Title and VoiceOver label of the switch in the Substitutions settings that turns text substitution rules on."
@@ -8724,6 +8733,9 @@
     },
     "Front Cover" : {
       "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the front cover, made at import. Title case."
+    },
+    "General" : {
+      "comment" : "Heading of the section of Settings, Sound Effects that holds the switch and the volume."
     },
     "Genre" : {
       "comment" : "Name of the book information sheet's field for an audiobook's genre; VoiceOver reads it as the field's label."
@@ -11665,7 +11677,7 @@
       }
     },
     "None" : {
-      "comment" : "A choice of the Rewind on Resume unit picker: playback resumes where it stopped, with no rewinding.\nShown in place of a keyboard shortcut when an action has none."
+      "comment" : "A choice of the Rewind on Resume unit picker: playback resumes where it stopped, with no rewinding.\nChoice in a Sound Effects pop-up button of Settings: no sound plays for the event.\nShown in place of a keyboard shortcut when an action has none."
     },
     "None (Use Global)" : {
       "comment" : "A choice of the playback bar's navigation unit menus setting: no per-book menu, so the global units are used."
@@ -12551,6 +12563,24 @@
     "Plays the selection, and stops at its end." : {
       "comment" : "Hint of the audio editor's Play Selection button."
     },
+    "Plays when Where Am I finishes speaking" : {
+      "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the end of the Where Am I announcement. Where Am I is the name of a command."
+    },
+    "Plays when Where Am I starts speaking" : {
+      "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the start of the Where Am I announcement. Where Am I is the name of a command."
+    },
+    "Plays when you pause reading" : {
+      "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the Pause event: when the sound plays."
+    },
+    "Plays when you skip backward" : {
+      "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the Skip Backward event: when the sound plays."
+    },
+    "Plays when you skip forward" : {
+      "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the Skip Forward event: when the sound plays."
+    },
+    "Plays when you start reading" : {
+      "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the Play event: when the sound plays."
+    },
     "Plus" : {
       "comment" : "Name of the punctuation key \"+\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Plus\"."
     },
@@ -12628,6 +12658,9 @@
     },
     "Preview" : {
       "comment" : "Button of the audio editor's Apply Filter sheet that plays the filtered sound."
+    },
+    "Preview %@ sound" : {
+      "comment" : "VoiceOver label of the button that plays the sound chosen for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause."
     },
     "Preview Voice" : {
       "comment" : "Button of the voice sheet that speaks a sample in the chosen voice.\nTitle of the button in the Voice settings that speaks a sample sentence in the selected voice."
@@ -13568,6 +13601,9 @@
     "Reset all shortcuts to defaults" : {
       "comment" : "VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again."
     },
+    "Reset all sound effects to defaults" : {
+      "comment" : "VoiceOver label of the Reset to Defaults button in Settings, Sound Effects."
+    },
     "Reset symbols to default" : {
       "comment" : "VoiceOver label of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols."
     },
@@ -13581,7 +13617,7 @@
       "comment" : "Title of the question asked before moving the library back to the default location."
     },
     "Reset to Defaults" : {
-      "comment" : "Button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again. It asks to confirm first.\nTitle of the button in the Substitutions settings that replaces every rule with TextMouth's default rules, after asking."
+      "comment" : "Button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again. It asks to confirm first.\nTitle of the button in Settings, Sound Effects that restores every sound effect setting.\nTitle of the button in the Substitutions settings that replaces every rule with TextMouth's default rules, after asking."
     },
     "Reset to Global Settings" : {
       "comment" : "Button of a text book's own settings sheet that removes its own voice, speed and pitch."
@@ -14588,13 +14624,13 @@
       "comment" : "The value of the microphone level in the Record window, spoken, when no sound reaches TextMouth."
     },
     "Skip Backward" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves back by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name.\nTitle of the pop-up in the Playback settings that chooses what the skip backward button moves by."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves back by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name.\nName of the playback event whose sound is chosen in Settings, Sound Effects: skipping backward.\nTitle of the pop-up in the Playback settings that chooses what the skip backward button moves by."
     },
     "Skip Controls" : {
       "comment" : "Heading of the group of skip pop-ups in the Playback settings."
     },
     "Skip Forward" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves forward by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name.\nTitle of the pop-up in the Playback settings that chooses what the skip forward button moves by."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves forward by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name.\nName of the playback event whose sound is chosen in Settings, Sound Effects: skipping forward.\nTitle of the pop-up in the Playback settings that chooses what the skip forward button moves by."
     },
     "Skip Section" : {
       "comment" : "Name of a heading row's command that makes speech skip the section, as a VoiceOver action and a context menu item."
@@ -14899,6 +14935,12 @@
           }
         }
       }
+    },
+    "Sound Assignments" : {
+      "comment" : "Heading of the section of Settings, Sound Effects that chooses the sound for each event."
+    },
+    "Sound effect volume" : {
+      "comment" : "VoiceOver label of the sound effects volume slider in Settings."
     },
     "Sounds" : {
       "comment" : "Name of the Settings tab for the sounds played for playback events."
@@ -17915,6 +17957,9 @@
     "The server says the file is gone." : {
       "comment" : "Why a feed item's download failed: the server says nothing is at the address (error 404)."
     },
+    "The sound effects are reset to the defaults." : {
+      "comment" : "Announcement after Reset to Defaults restored every sound effect setting."
+    },
     "The speech model for %@ isn't on this Mac yet. Download it first." : {
       "comment" : "Error shown when transcription is tried before the language's speech model is downloaded. %@ is the language's name."
     },
@@ -19357,6 +19402,12 @@
     "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded." : {
       "comment" : "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level."
     },
+    "Volume" : {
+      "comment" : "Title of the sound effects volume slider in Settings, Sound Effects."
+    },
+    "Volume: %lld%%" : {
+      "comment" : "Caption above the sound effects volume slider in Settings. %lld is the volume as a percentage from 0 to 100; the percent sign after it is written as %%."
+    },
     "WMA" : {
       "comment" : "The name of the Windows Media Audio format, as people say it. Inside sentences about importing a file of that format."
     },
@@ -19612,6 +19663,9 @@
     "When enabled, search text is treated as a regular expression" : {
       "comment" : "VoiceOver hint of the Use Regex switch in Search in Book."
     },
+    "When enabled, short sounds play for playback actions" : {
+      "comment" : "VoiceOver hint of the Enable Sound Effects switch."
+    },
     "When enabled, use \\b in the pattern for word boundaries" : {
       "comment" : "VoiceOver hint of the Regular expression switch in the substitution rule editor. \\b is regular expression syntax and stays as written."
     },
@@ -19656,6 +19710,12 @@
     },
     "Where" : {
       "comment" : "Heading of the lines of a speech refusal report that say where in the book speech stopped."
+    },
+    "Where Am I (End)" : {
+      "comment" : "Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement ends. Where Am I is the name of a command."
+    },
+    "Where Am I (Start)" : {
+      "comment" : "Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement starts. Where Am I is the name of a command."
     },
     "Where Am I?" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the reading position. Also the title of the menu command of the same name.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks the position and the selection.\nTitle of the reader toolbar's button that says where the reader is in the book."

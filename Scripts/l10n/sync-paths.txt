@@ -167,6 +167,7 @@ TextMouth/Services/RepeatedSymbolNames.swift
 TextMouth/Services/SavedFile.swift
 TextMouth/Services/SleepTimerRegistry.swift
 TextMouth/Services/SleepTimerService.swift
+TextMouth/Services/SoundEffectService.swift
 TextMouth/Services/SpeechService.swift
 TextMouth/Services/StorageDestinationAssessment.swift
 TextMouth/Services/StorageGeneration.swift
@@ -268,5 +269,6 @@ TextMouth/Views/Settings/MiscellaneousSettingsView.swift
 TextMouth/Views/Settings/ReadingStatsView.swift
 TextMouth/Views/Settings/RepeatedSymbolsSettingsView.swift
 TextMouth/Views/Settings/SettingsView.swift
+TextMouth/Views/Settings/SoundEffectsSettingsView.swift
 TextMouth/Views/Settings/StorageSettingsView.swift
 TextMouth/Views/Settings/SubstitutionsSettingsView.swift
