@@ -134,11 +134,22 @@ final class KeyboardReachabilityTests: XCTestCase {
         return name
     }
 
+    /// The menu's `MenuWording` titles that name a shortcut action with an
+    /// ellipsis its title lacks: the menu writes "Move to Folder..." where the
+    /// action is named "Move to Folder" (`withoutEllipsis(_:)`).
+    static let menuWordingActions: [String: ShortcutAction] = [
+        "MenuWording.moveToFolder": .moveToFolder,
+    ]
+
     /// What `argument` is: `ShortcutAction.<case>.title` or `.rawValue`, or a
     /// string literal equal to some action's raw value or title (an ellipsis at the
-    /// end counting for nothing, as `withoutEllipsis(_:)` says), or
+    /// end counting for nothing, as `withoutEllipsis(_:)` says), or a
+    /// `MenuWording` title that names an action (`menuWordingActions`), or
     /// else `.other`.
     static func source(ofMenuButton argument: String) -> MenuButtonSource {
+        if let action = menuWordingActions[argument] {
+            return .action(action)
+        }
         // ShortcutAction.<case>.title and ShortcutAction.<case>.rawValue.
         for ending in [".title", ".rawValue"] where argument.hasPrefix("ShortcutAction.") && argument.hasSuffix(ending) {
             let caseName = String(argument.dropFirst("ShortcutAction.".count).dropLast(ending.count))
