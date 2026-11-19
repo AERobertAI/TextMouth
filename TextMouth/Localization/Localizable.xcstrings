@@ -12614,6 +12614,9 @@
     "Plays half a second at the cursor after each move." : {
       "comment" : "Hint of the Play half a second after each move switch in Storage settings."
     },
+    "Plays short sounds for playback actions" : {
+      "comment" : "VoiceOver hint of the Enable Sound Effects switch."
+    },
     "Plays the book and pauses before it starts again." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends.",
       "localizations" : {
@@ -15059,6 +15062,9 @@
     },
     "Sound effect volume" : {
       "comment" : "VoiceOver label of the sound effects volume slider in Settings."
+    },
+    "Sound effects reset to defaults" : {
+      "comment" : "Announcement after Reset to Defaults restored every sound effect setting."
     },
     "Sounds" : {
       "comment" : "Name of the Settings tab for the sounds played for playback events."

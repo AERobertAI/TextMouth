@@ -10,7 +10,6 @@ struct SoundEffectsSettingsView: View {
         Form {
             Section {
                 Toggle(SoundEffectsSettingsWording.enableTitle, isOn: $soundEffectService.soundsEnabled)
-                    .accessibilityLabel(SoundEffectsSettingsWording.enableLabel)
                     .accessibilityHint(SoundEffectsSettingsWording.enableHint)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -71,14 +70,9 @@ enum SoundEffectsSettingsWording {
         String(localized: "Enable Sound Effects",
                comment: "Title of the switch in Settings, Sound Effects that turns the short sounds for playback actions on or off.")
     }
-    /// What VoiceOver reads for that switch.
-    static var enableLabel: String {
-        String(localized: "Enable sound effects",
-               comment: "VoiceOver label of the switch in Settings, Sound Effects that turns the short sounds on or off.")
-    }
-    /// The switch's hint.
+    /// The switch's hint. The switch speaks its title as its label.
     static var enableHint: String {
-        String(localized: "When enabled, short sounds play for playback actions",
+        String(localized: "Plays short sounds for playback actions",
                comment: "VoiceOver hint of the Enable Sound Effects switch.")
     }
 
@@ -161,7 +155,7 @@ enum SoundEffectsSettingsWording {
     /// What VoiceOver hears after the reset. It follows the audio filter
     /// presets' reset wording.
     static var resetDone: String {
-        String(localized: "The sound effects are reset to the defaults.",
+        String(localized: "Sound effects reset to defaults",
                comment: "Announcement after Reset to Defaults restored every sound effect setting.")
     }
 }
