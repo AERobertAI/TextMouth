@@ -47,7 +47,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
     func testEachChoicesHintSaysWhatItDoes() {
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.everyListedNewestDownloaded, count: 5, noun: nil),
-            "Lists every episode and article keeps the newest 5 downloaded, "
+            "Lists every episode and article, keeps the newest 5 downloaded, "
                 + "and removes older downloads it made, keeping their place, bookmarks, and settings."
         )
         XCTAssertEqual(
@@ -63,7 +63,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         // A feed's own words: its items, and "read" for articles.
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.everyListedNewestDownloaded, count: 3, noun: .episode),
-            "Lists every episode keeps the newest 3 downloaded, "
+            "Lists every episode, keeps the newest 3 downloaded, "
                 + "and removes older downloads it made, keeping their place, bookmarks, and settings."
         )
         XCTAssertEqual(
