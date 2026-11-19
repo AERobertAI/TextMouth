@@ -179,8 +179,7 @@ An audiobook can take one from a WebVTT (.vtt) or SubRip (.srt) file, on any mac
 - Attach Transcript… is in an open audiobook's Book menu.
   It is offered for the audiobooks that Transcribe Audio… is offered for: an audiobook in a package of its own.
 - It opens an Open panel.
-  The panel says "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of Moby-Dick.
-  Its times count from the start of the book's audio." and its button is Attach.
+  The panel says "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of Moby-Dick, timed from the start of its audio." and its button is Attach.
 - A book of several tracks takes one file for the whole book, whose times run on across the tracks.
 - While the file is saved, VoiceOver hears "Attaching “lecture.vtt” to Moby-Dick."
   When it is done, VoiceOver hears "Attached “lecture.vtt” to Moby-Dick: 7,077 words."

@@ -52,8 +52,8 @@ This is how another Mac restores a library from the cloud.
 The confirmation names both libraries, and says when the folder holds another copy of the library in use, such as the folder an earlier move left behind, which of the two copies is newer.
 First TextMouth compares the two, for up to a minute.
 Storage settings says:
-  "This can take up to a minute.
-  Choose Stop Comparing to skip it."
+  "Comparing this library with the copy in the folder you chose, to say which is newer.
+  This can take up to a minute; choose Stop Comparing to skip it."
 The confirmation then says, for example, that the copy in this folder is the newer, with newer places in so many books and so many books the other lacks, or that neither is newer, or that TextMouth couldn't tell (and why, such as that you stopped the comparison).
 It points to Compare Libraries for every difference.
 Changes not yet saved are written first, and the switch is refused while some still can't be saved: choose Retry Saving, then try again.

@@ -15,16 +15,15 @@ The iPhone has no Braille tab yet: it reads every braille book with the defaults
 <!-- id: language-braille-code-contraction; keys: Language pop-up, Braille code pop-up, Contraction pop-up, Grade 1, Grade 2, uncontracted; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift, TextMouth/Models/BrailleTableCatalog.swift -->
 
 - "Language" comes first.
-  Its hint is "The language of the braille code TextMouth reads braille files with and writes braille in."
+  Its hint is "The language of the braille code for reading and writing braille."
   English is listed first, and the other languages follow in alphabetical order. macOS names each language in your language; a language macOS cannot name takes the table's own name; for example, Munda shows as "Munda".
 - "Braille code" offers the chosen language's codes.
   English has "Unified English Braille" and "English Braille, American Edition", and this Mac's tables add more, such as "English braille as used in the U.K." on macOS 26.3.
   A code of another language is listed by its tables' display names, such as "French braille" or "Danish 6-dot braille (2022 standard)".
-  Its hint is "The braille code TextMouth reads braille files with and writes braille in."
+  Its hint is "The braille code for reading and writing braille."
 - "Contraction" offers what the chosen code's tables state: "Uncontracted (Grade 1)" and "Contracted (Grade 2)", and, for some of this Mac's tables, "Uncontracted (Grade 0)", "Partly contracted", or "As the table defines" for a table that states no contraction.
   A table that states no grade leaves out the grade in parentheses after "Uncontracted" or "Contracted".
-  Its hint is "Whether that code's braille is contracted.
-  Contracted braille writes common words and letter groups in fewer cells."
+  Its hint is "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells."
   Choosing another language or code keeps the contraction you had when the new code has it, and otherwise takes its contracted table, or its first.
 
 ### Defaults, and where the chosen table comes from
@@ -36,7 +35,7 @@ The iPhone has no Braille tab yet: it reads every braille book with the defaults
   For a table built into TextMouth it is "The chosen table is built into TextMouth (liblouis 3.39.0)."
   For one of this Mac's tables it is "The chosen table is one of this Mac's VoiceOver braille tables (liblouis 3.34.0).", with the version of this Mac's tables; when they name none, it says "The chosen table is one of this Mac's VoiceOver braille tables." alone.
   When this Mac no longer has the table chosen, as after a macOS update that removed it, it is "This Mac no longer has the chosen table, “mac:fr-bfu-g2.ctb”; choose another."
-- The caption under that sentence reads "TextMouth reads braille files (BRF, BRL, and PEF) with this code, and exports braille with it unless you choose another in the Export dialog.
+- The caption under that sentence reads "TextMouth reads braille files (BRF, BRL, and PEF) with this code and exports with it unless the Export dialog chooses another.
   A book keeps the code it was imported with."
   A change applies to the books imported from then on; a book already in the library keeps its code.
 
@@ -46,12 +45,12 @@ The iPhone has no Braille tab yet: it reads every braille book with the defaults
 - "Braille file characters" follows that caption: a pop-up button that chooses how a BRF or BRL file writes each braille cell as a character, for the books you add from now on.
   It is left out, as the other pop-ups are, when TextMouth finds no braille tables.
   Its items are "North American Braille ASCII", the default, and "Eurobraille, six-dot (German-speaking countries)".
-  Its hint is "How a BRF or BRL file writes each braille cell as a character.
+  Its hint is "How a BRF or BRL file writes each braille cell.
   Most files use North American Braille ASCII."
   VoiceOver says its value first, as in "North American Braille ASCII, Braille file characters, pop-up button".
-- Its own caption, under it, reads "TextMouth reads BRF and BRL files you add from now on with these characters; a file of Unicode braille patterns is recognized by itself.
+- Its own caption, under it, reads "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself.
   The Export dialog starts a BRF with them.
-  A book keeps the characters it was imported with, which Book Information can change."
+  A book keeps its import characters, which Book Information can change."
   Unicode braille patterns, the third code, is not an item here, since TextMouth recognizes a file of them by its bytes; the Export dialog and Book Information list all three.
   A book keeps the characters it was imported with, whatever this setting says later.
 - config.json holds the choice as brailleFileCode (see [Editing settings in config.json](config-json.md)).
@@ -61,8 +60,8 @@ The iPhone has no Braille tab yet: it reads every braille book with the defaults
 
 - "Guess the braille code of new books" follows, a switch that is on by default.
   It is left out, as the pop-ups are, when TextMouth finds no braille tables.
-  Its hint is "When on, a braille file read as Unified English Braille, contracted, that is clearly English Braille, American Edition, is read with that code instead."
-- Its caption, under it, reads "Only a book that clearly shows English Braille, American Edition is changed, when it is added.
+  Its hint is "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead."
+- Its caption, under it, reads "Only a book that clearly shows English Braille, American Edition changes, when added.
   Book Information says the code was guessed and can choose another."
   - The switch changes only the books you add from then on.
     A book already in the library is not guessed again, whichever way the switch is set, and turning it off changes no book.
@@ -106,7 +105,7 @@ This Mac's braille tables, in the Braille tab and in Export's braille options, a
   - "it needs more than 64 MB of memory"
   - "it translates too slowly, under 50 KB a second"
 - A check that could not run says nothing of the table: "TextMouth could not check this Mac's table “Greek braille”: the braille helper failed.
-  Choose it again to try once more."
+  Choose it again to retry."
   The reason after the colon is "the braille helper failed", "TextMouth could not make a folder to check it in", or "the braille helper was stopped because" and the watchdog's reason, in the words listed in [Adding books](adding-books.md).
   At an import or an export the sentence is "TextMouth could not check this Mac's braille table “mac:el.ctb”: the braille helper failed.
   Try again."

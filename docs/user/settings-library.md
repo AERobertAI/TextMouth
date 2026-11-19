@@ -17,7 +17,7 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
   The first reads "The View pop-up of a Library window offers these views in this order.
   A new window opens at the first one offered."
   The second reads "Always offers a view all the time.
-  When Applicable offers it only while it lists something: the Reading List while it holds a book, an episode, or an article, and Feeds while there is a feed.
+  When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed.
   Hidden leaves it out.
   A window keeps its view until you choose another."
 - The list, which VoiceOver calls "Views", has one row for each view, in order, and each row is one element that VoiceOver reads as its name, "built in" or "custom", its visibility, and its place, as in "Reading List, built in, always, 5 of 6".

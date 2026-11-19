@@ -139,5 +139,5 @@ Sound effects never hold up the window: a sound the system can't start is skippe
 <!-- id: reader-audio-being-converted-from-ogg; keys: Ogg Vorbis, AAC conversion, Play refused, converted, OggConversion; src: TextMouth/ViewModels/ReaderViewModel+OggConversion.swift, TextMouth/ViewModels/LibraryViewModel+OggConversion.swift, TextMouth/ViewModels/OggConversionProgress.swift -->
 
 Play refuses a book whose audio is being converted, saying "This book's audio is being converted from Ogg to AAC.
-It plays once the conversion ends."
+It plays when that ends."
 A book found still in Ogg is converted at once instead of played.
