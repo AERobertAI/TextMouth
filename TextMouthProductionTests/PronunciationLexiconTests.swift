@@ -317,7 +317,7 @@ final class PronunciationLexiconTests: XCTestCase {
         XCTAssertEqual(outcome.title, "Rules Imported")
         XCTAssertEqual(
             outcome.message,
-            "Added 1 rule from “names.pls”. 1 entry gives only a phonetic spelling, which TextMouth cannot use, so it was set aside."
+            "Added 1 rule from “names.pls”. 1 entry gives only a phonetic spelling, so it was set aside."
         )
         XCTAssertEqual(service.rules.map(\.pattern), ["a"])
     }
@@ -333,7 +333,7 @@ final class PronunciationLexiconTests: XCTestCase {
             LexiconFileActions.importLexicon(at: text, into: service),
             LexiconFileOutcome(
                 title: "Import Failed",
-                message: "“a.pls” is not a pronunciation lexicon: it is not a complete, valid XML file."
+                message: "“a.pls” is not a complete, valid XML file."
             )
         )
         let html = folder.appendingPathComponent("b.xml")
@@ -361,7 +361,7 @@ final class PronunciationLexiconTests: XCTestCase {
         XCTAssertEqual(outcome.title, "Rules Exported")
         XCTAssertEqual(
             outcome.message,
-            "Exported 1 rule to “rules.pls”. 1 rule was left out, because a regular expression, or a rule that is off, cannot be written in a lexicon."
+            "Exported 1 rule to “rules.pls”. 1 rule was left out: regular expressions and rules that are off cannot be written in a lexicon."
         )
         let other = try makeService()
         _ = LexiconFileActions.importLexicon(at: file, into: other)
@@ -385,7 +385,7 @@ final class PronunciationLexiconTests: XCTestCase {
     func testTheEntityRefusalWords() {
         XCTAssertEqual(
             PronunciationLexiconWording.importFailure(fileName: "a.pls", .declaresEntities),
-            "“a.pls” uses XML entities of its own, which TextMouth does not read in a lexicon."
+            "“a.pls” uses XML entities of its own, which TextMouth does not read."
         )
     }
 
@@ -396,7 +396,7 @@ final class PronunciationLexiconTests: XCTestCase {
         XCTAssertEqual(
             W.imported(fileName: "a.pls", added: 3, alreadyPresent: 1, setAside: 2),
             "Added 3 rules from “a.pls”. 1 rule was already in your rules. "
-                + "2 entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside."
+                + "2 entries give only a phonetic spelling, so they were set aside."
         )
         XCTAssertEqual(
             W.imported(fileName: "a.pls", added: 1, alreadyPresent: 2, setAside: 0),
@@ -404,20 +404,34 @@ final class PronunciationLexiconTests: XCTestCase {
         )
         XCTAssertEqual(
             W.importFailure(fileName: "a.pls", .tooLarge),
-            "“a.pls” is too large to read as a pronunciation lexicon."
+            "“a.pls” is too large to read."
         )
         XCTAssertEqual(
             W.exported(fileName: "a.pls", written: 5, leftOut: 2),
-            "Exported 5 rules to “a.pls”. 2 rules were left out, because a regular expression, or a rule that is off, cannot be written in a lexicon."
+            "Exported 5 rules to “a.pls”. 2 rules were left out: regular expressions and rules that are off cannot be written in a lexicon."
         )
         XCTAssertEqual(W.exported(fileName: "a.pls", written: 2, leftOut: 0), "Exported 2 rules to “a.pls”.")
         XCTAssertEqual(W.exportWriteFailure(fileName: "a.pls"), "TextMouth could not save “a.pls”.")
-        XCTAssertEqual(W.nothingToExport, "There are no rules to export. Only plain text rules that are on can be written in a lexicon.")
+        XCTAssertEqual(W.nothingToExport, "No rules to export: only plain text rules that are on can be written in a lexicon.")
         XCTAssertEqual(W.importedTitle, "Rules Imported")
         XCTAssertEqual(W.importFailedTitle, "Import Failed")
         XCTAssertEqual(W.exportedTitle, "Rules Exported")
         XCTAssertEqual(W.exportFailedTitle, "Export Failed")
-        XCTAssertEqual(W.exported(fileName: "a.pls", written: 1, leftOut: 1), "Exported 1 rule to “a.pls”. 1 rule was left out, because a regular expression, or a rule that is off, cannot be written in a lexicon.")
+        XCTAssertEqual(W.exported(fileName: "a.pls", written: 1, leftOut: 1), "Exported 1 rule to “a.pls”. 1 rule was left out: regular expressions and rules that are off cannot be written in a lexicon.")
+    }
+
+    /// A count of rules is grouped for the region, as every count is (FR34):
+    /// "1,234 rules", and the limit the same way.
+    func testCountsOfRulesAreGroupedForTheRegion() {
+        typealias W = PronunciationLexiconWording
+        XCTAssertEqual(
+            W.imported(fileName: "a.pls", added: 1_234, alreadyPresent: 1_000, setAside: 0),
+            "Added 1,234 rules from “a.pls”. 1,000 rules were already in your rules."
+        )
+        XCTAssertEqual(
+            W.exported(fileName: "a.pls", written: 2_000, leftOut: 0),
+            "Exported 2,000 rules to “a.pls”."
+        )
     }
 
     /// The two buttons' titles, labels and hints, the panels' messages, and
@@ -425,19 +439,19 @@ final class PronunciationLexiconTests: XCTestCase {
     func testTheButtonsAndPanelsWords() {
         typealias W = PronunciationLexiconWording
         XCTAssertEqual(W.importButton, "Import Rules…")
-        XCTAssertEqual(W.importLabel, "Import substitution rules from a pronunciation lexicon file")
+        XCTAssertEqual(W.importLabel, "Import rules from a pronunciation lexicon file")
         XCTAssertEqual(
             W.importHint,
-            "Adds the lexicon's spelling-to-words entries after your rules. Entries that only give phonetic spellings are set aside."
+            "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside"
         )
         XCTAssertEqual(W.exportButton, "Export Rules…")
-        XCTAssertEqual(W.exportLabel, "Export substitution rules as a pronunciation lexicon file")
+        XCTAssertEqual(W.exportLabel, "Export rules as a pronunciation lexicon file")
         XCTAssertEqual(
             W.exportHint,
-            "Saves your plain text rules that are on. Rules that use regular expressions, and rules that are off, are left out."
+            "Saves your plain text rules that are on; regular expression rules are left out"
         )
-        XCTAssertEqual(W.importPanelMessage, "Choose a pronunciation lexicon file to add its entries as substitution rules.")
-        XCTAssertEqual(W.exportPanelMessage, "Save your substitution rules as a pronunciation lexicon file.")
+        XCTAssertEqual(W.importPanelMessage, "Choose a pronunciation lexicon file to add as rules.")
+        XCTAssertEqual(W.exportPanelMessage, "Save your rules as a pronunciation lexicon file.")
         XCTAssertEqual(W.exportFileName, "Substitution Rules.pls")
     }
 }

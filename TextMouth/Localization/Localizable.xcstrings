@@ -2871,6 +2871,29 @@
         }
       }
     },
+    "%lld entries give only a phonetic spelling, so they were set aside." : {
+      "comment" : "A sentence of the alert after a pronunciation lexicon import. %lld is the number of entries that give only a phonetic spelling.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entry gives only a phonetic spelling, so it was set aside."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entries give only a phonetic spelling, so they were set aside."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside." : {
       "comment" : "A sentence of the alert after a pronunciation lexicon import. %lld is the number of entries that give only a phonetic spelling.",
       "localizations" : {
@@ -3919,6 +3942,29 @@
         }
       }
     },
+    "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon." : {
+      "comment" : "A sentence of the alert after substitution rules were saved as a pronunciation lexicon. %lld is the number of rules left out.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rule was left out: regular expressions and rules that are off cannot be written in a lexicon."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld seconds" : {
       "comment" : "A count of whole seconds inside a duration or a setting's length. %lld is the number of seconds.",
       "localizations" : {
@@ -4882,6 +4928,9 @@
     },
     "Adds speed buttons and the current speed" : {
       "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings."
+    },
+    "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside" : {
+      "comment" : "VoiceOver hint of the Import Rules button in Settings, Text, Substitutions: what is added and what is left out."
     },
     "Adds the lexicon's spelling-to-words entries after your rules. Entries that only give phonetic spellings are set aside." : {
       "comment" : "VoiceOver hint of the Import Rules button in Settings, Text, Substitutions: what is added and what is left out."
@@ -6230,6 +6279,9 @@
     },
     "Choose a new location for the library" : {
       "comment" : "VoiceOver label of the Change Location button in Storage settings."
+    },
+    "Choose a pronunciation lexicon file to add as rules." : {
+      "comment" : "Message of the Open panel that Import Rules shows, asking for a pronunciation lexicon file."
     },
     "Choose a pronunciation lexicon file to add its entries as substitution rules." : {
       "comment" : "Message of the Open panel that Import Rules shows, asking for a pronunciation lexicon file."
@@ -8226,6 +8278,9 @@
     "Export Rules…" : {
       "comment" : "Title of the button in Settings, Text, Substitutions that saves the rules as a pronunciation lexicon file."
     },
+    "Export rules as a pronunciation lexicon file" : {
+      "comment" : "VoiceOver label of the Export Rules button in Settings, Text, Substitutions."
+    },
     "Export substitution rules as a pronunciation lexicon file" : {
       "comment" : "VoiceOver label of the Export Rules button in Settings, Text, Substitutions."
     },
@@ -9107,6 +9162,9 @@
     },
     "Import questions can't be answered while the library is moving." : {
       "comment" : "First sentence of what an import question says when it is answered while the library is being moved."
+    },
+    "Import rules from a pronunciation lexicon file" : {
+      "comment" : "VoiceOver label of the Import Rules button in Settings, Text, Substitutions."
     },
     "Import substitution rules from a pronunciation lexicon file" : {
       "comment" : "VoiceOver label of the Import Rules button in Settings, Text, Substitutions."
@@ -11627,6 +11685,9 @@
     "No rule changes this transcript." : {
       "comment" : "Error shown when Apply is pressed in the Clean Up Transcript sheet but no rule changes the transcript.\nSummary line of the Clean Up Transcript sheet when the rules would change nothing."
     },
+    "No rules to export: only plain text rules that are on can be written in a lexicon." : {
+      "comment" : "Message of the alert when Export Rules finds no rule it can write as a pronunciation lexicon."
+    },
     "No rules were added from “%@”." : {
       "comment" : "A sentence of the alert after a pronunciation lexicon import: nothing was added. %@ is the file's name."
     },
@@ -13994,6 +14055,9 @@
     "Save to Global Settings" : {
       "comment" : "Button of a text book's own settings sheet that saves its voice, speed and pitch as the settings for every book."
     },
+    "Save your rules as a pronunciation lexicon file." : {
+      "comment" : "Message of the Save panel that Export Rules shows."
+    },
     "Save your subscriptions as an OPML file, which other feed readers import." : {
       "comment" : "The message of the Save panel that saves the subscriptions as an OPML file."
     },
@@ -14031,6 +14095,9 @@
       "comment" : "VoiceOver hint of the button that saves a recording left behind. %@ is the label of the pop-up that chooses the folder."
     },
     "Saves your plain text rules that are on. Rules that use regular expressions, and rules that are off, are left out." : {
+      "comment" : "VoiceOver hint of the Export Rules button in Settings, Text, Substitutions: which rules are saved and which are left out."
+    },
+    "Saves your plain text rules that are on; regular expression rules are left out" : {
       "comment" : "VoiceOver hint of the Export Rules button in Settings, Text, Substitutions: which rules are saved and which are left out."
     },
     "Saving" : {
@@ -21482,6 +21549,9 @@
         }
       }
     },
+    "“%@” is not a complete, valid XML file." : {
+      "comment" : "Message of the alert when a file chosen as a pronunciation lexicon is not valid XML. %@ is the file's name."
+    },
     "“%@” is not a pronunciation lexicon: it is not a complete, valid XML file." : {
       "comment" : "Message of the alert when a file chosen as a pronunciation lexicon is not valid XML. %@ is the file's name."
     },
@@ -21506,6 +21576,9 @@
       "comment" : "Said in an audio editor when TextMouth can't quit because its work is under way. %@ is the book's title."
     },
     "“%@” is too large to read as a pronunciation lexicon." : {
+      "comment" : "Message of the alert when a pronunciation lexicon file is too large. %@ is the file's name."
+    },
+    "“%@” is too large to read." : {
       "comment" : "Message of the alert when a pronunciation lexicon file is too large. %@ is the file's name."
     },
     "“%@” isn't a filter's name." : {
@@ -21567,6 +21640,9 @@
       }
     },
     "“%@” uses XML entities of its own, which TextMouth does not read in a lexicon." : {
+      "comment" : "Message of the alert when a pronunciation lexicon declares XML entities, which are refused for safety. %@ is the file's name."
+    },
+    "“%@” uses XML entities of its own, which TextMouth does not read." : {
       "comment" : "Message of the alert when a pronunciation lexicon declares XML entities, which are refused for safety. %@ is the file's name."
     },
     "“%@” was imported, with %@ of audio." : {

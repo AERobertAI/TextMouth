@@ -15,12 +15,12 @@ enum PronunciationLexiconWording {
     }
     /// What VoiceOver reads for the Import button.
     static var importLabel: String {
-        String(localized: "Import substitution rules from a pronunciation lexicon file",
+        String(localized: "Import rules from a pronunciation lexicon file",
                comment: "VoiceOver label of the Import Rules button in Settings, Text, Substitutions.")
     }
     /// The Import button's hint: what it takes and what it leaves.
     static var importHint: String {
-        String(localized: "Adds the lexicon's spelling-to-words entries after your rules. Entries that only give phonetic spellings are set aside.",
+        String(localized: "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
                comment: "VoiceOver hint of the Import Rules button in Settings, Text, Substitutions: what is added and what is left out.")
     }
     /// The title of the Export button.
@@ -30,22 +30,22 @@ enum PronunciationLexiconWording {
     }
     /// What VoiceOver reads for the Export button.
     static var exportLabel: String {
-        String(localized: "Export substitution rules as a pronunciation lexicon file",
+        String(localized: "Export rules as a pronunciation lexicon file",
                comment: "VoiceOver label of the Export Rules button in Settings, Text, Substitutions.")
     }
     /// The Export button's hint.
     static var exportHint: String {
-        String(localized: "Saves your plain text rules that are on. Rules that use regular expressions, and rules that are off, are left out.",
+        String(localized: "Saves your plain text rules that are on; regular expression rules are left out",
                comment: "VoiceOver hint of the Export Rules button in Settings, Text, Substitutions: which rules are saved and which are left out.")
     }
     /// The message of the Open panel Import chooses a file in.
     static var importPanelMessage: String {
-        String(localized: "Choose a pronunciation lexicon file to add its entries as substitution rules.",
+        String(localized: "Choose a pronunciation lexicon file to add as rules.",
                comment: "Message of the Open panel that Import Rules shows, asking for a pronunciation lexicon file.")
     }
     /// The message of the Save panel Export names a file in.
     static var exportPanelMessage: String {
-        String(localized: "Save your substitution rules as a pronunciation lexicon file.",
+        String(localized: "Save your rules as a pronunciation lexicon file.",
                comment: "Message of the Save panel that Export Rules shows.")
     }
     /// The name the Save panel offers.
@@ -89,7 +89,7 @@ enum PronunciationLexiconWording {
         }
         if setAside > 0 {
             sentences.append(
-                String(localized: "\(setAside) entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside.",
+                String(localized: "\(setAside) entries give only a phonetic spelling, so they were set aside.",
                        comment: "A sentence of the alert after a pronunciation lexicon import. %lld is the number of entries that give only a phonetic spelling.")
             )
         }
@@ -109,16 +109,16 @@ enum PronunciationLexiconWording {
     static func importFailure(fileName: String, _ error: PronunciationLexicon.ReadError?) -> String {
         switch error {
         case .notXML?:
-            return String(localized: "“\(fileName)” is not a pronunciation lexicon: it is not a complete, valid XML file.",
+            return String(localized: "“\(fileName)” is not a complete, valid XML file.",
                           comment: "Message of the alert when a file chosen as a pronunciation lexicon is not valid XML. %@ is the file's name.")
         case .notALexicon?:
             return String(localized: "“\(fileName)” is an XML file, but not a pronunciation lexicon.",
                           comment: "Message of the alert when a file chosen as a pronunciation lexicon is XML of another kind. %@ is the file's name.")
         case .declaresEntities?:
-            return String(localized: "“\(fileName)” uses XML entities of its own, which TextMouth does not read in a lexicon.",
+            return String(localized: "“\(fileName)” uses XML entities of its own, which TextMouth does not read.",
                           comment: "Message of the alert when a pronunciation lexicon declares XML entities, which are refused for safety. %@ is the file's name.")
         case .tooLarge?:
-            return String(localized: "“\(fileName)” is too large to read as a pronunciation lexicon.",
+            return String(localized: "“\(fileName)” is too large to read.",
                           comment: "Message of the alert when a pronunciation lexicon file is too large. %@ is the file's name.")
         case nil:
             return String(localized: "TextMouth could not read “\(fileName)”.",
@@ -151,7 +151,7 @@ enum PronunciationLexiconWording {
         ]
         if leftOut > 0 {
             sentences.append(
-                String(localized: "\(leftOut) rules were left out, because a regular expression, or a rule that is off, cannot be written in a lexicon.",
+                String(localized: "\(leftOut) rules were left out: regular expressions and rules that are off cannot be written in a lexicon.",
                        comment: "A sentence of the alert after substitution rules were saved as a pronunciation lexicon. %lld is the number of rules left out.")
             )
         }
@@ -160,7 +160,7 @@ enum PronunciationLexiconWording {
 
     /// The sentence when no rule can be written at all.
     static var nothingToExport: String {
-        String(localized: "There are no rules to export. Only plain text rules that are on can be written in a lexicon.",
+        String(localized: "No rules to export: only plain text rules that are on can be written in a lexicon.",
                comment: "Message of the alert when Export Rules finds no rule it can write as a pronunciation lexicon.")
     }
 
