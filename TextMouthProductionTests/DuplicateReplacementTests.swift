@@ -551,13 +551,13 @@ final class DuplicateReplacementTests: XCTestCase {
     func testTheListenerIsToldOfATranscriptFileReplacingDidNotUse() {
         XCTAssertEqual(
             TranscriptionWording.broughtTranscriptNotUsed(fileName: "Tide.vtt"),
-            "“Tide.vtt” was beside the audio but wasn't attached as the book's transcript: "
+            "“Tide.vtt” beside the audio wasn't attached: "
                 + "Replacing kept the existing copy's transcript. "
-                + "To use the file instead, open the book and choose Attach Transcript… from the Book menu."
+                + "To use it, open the book and choose Attach Transcript… from the Book menu."
         )
         XCTAssertEqual(
             TranscriptionWording.broughtTranscriptNotUsed(fileName: nil),
-            "The transcript files beside the audio weren't attached as the book's transcript: "
+            "The transcript files beside the audio weren't attached: "
                 + "Replacing kept the existing copy's transcript."
         )
     }

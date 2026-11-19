@@ -665,9 +665,9 @@ final class TranscriptEditTests: XCTestCase {
     /// The new sentences are exactly these: the note a feed episode's
     /// transcript carries, and the announcement of the first edit taken.
     func testTheFeedEpisodeTranscriptWordingIsPinned() {
-        let note = "This episode's transcript, with your changes, stays with the episode in its feed, "
-            + "even after its download is deleted. Deleting the episode or the feed deletes it; "
-            + "Move to Library keeps it with the episode as a book."
+        let note = "The transcript, with your changes, stays with the episode in its feed, "
+            + "even after its download is deleted. Deleting the episode or feed deletes it; "
+            + "Move to Library keeps it as a book."
         XCTAssertEqual(TranscriptionWording.feedEpisodeTranscriptNote, note)
         XCTAssertEqual(BookTextEditWording.updatedInFeed, "Text updated. " + note)
         XCTAssertEqual(BookTextEditWording.updated, "Text updated")

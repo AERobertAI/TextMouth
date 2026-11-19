@@ -29,14 +29,14 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertEqual(TranscriptionWording.attachCommandTitle, "Attach Transcript…")
         XCTAssertEqual(
             TranscriptionWording.attachPanelMessage(bookTitle: "Four Tones"),
-            "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of Four Tones. "
-                + "Its times count from the start of the book's audio."
+            "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of Four Tones, "
+                + "timed from the start of its audio."
         )
         XCTAssertEqual(TranscriptionWording.attachPanelPrompt, "Attach")
         XCTAssertEqual(TranscriptionWording.attachNoticeTitle, "Attach Transcript")
         XCTAssertEqual(
             TranscriptionWording.attachWhileTranscribing(bookTitle: "Four Tones"),
-            "Four Tones is being transcribed. Cancel the transcription first, or attach the transcript once it finishes."
+            "Four Tones is being transcribed. Cancel it, or attach the transcript once it finishes."
         )
         XCTAssertEqual(TranscriptionWording.attachUnknownFormat, "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files.")
         XCTAssertEqual(
@@ -94,7 +94,7 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertEqual(
             TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 7_077, skipped: 3),
             "Attached “lock.srt” to Lock Keeper: \(7_077.formatted()) words. "
-                + "3 timed passages couldn't be read and were left out."
+                + "3 timed passages were unreadable and left out."
         )
         // Passages cut short for their length (one cue has a limit).
         XCTAssertEqual(
@@ -103,8 +103,8 @@ final class TranscriptAttachTests: XCTestCase {
         )
         XCTAssertEqual(
             TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 30, skipped: 2, cut: 2),
-            "Attached “lock.srt” to Lock Keeper: 30 words. 2 timed passages couldn't be read and were left out. "
-                + "2 timed passages were too long and were cut short."
+            "Attached “lock.srt” to Lock Keeper: 30 words. 2 timed passages were unreadable and left out. "
+                + "2 timed passages were too long and cut short."
         )
     }
 
@@ -519,13 +519,13 @@ final class TranscriptAttachTests: XCTestCase {
 
         XCTAssertEqual(
             transcriptInCloud.notice?.message,
-            "“tone4.vtt” wasn't attached to Four Tones: The book's transcript is only in iCloud, "
-                + "so TextMouth leaves it as it is. Download the book, then try again."
+            "“tone4.vtt” wasn't attached to Four Tones: The transcript is only in iCloud, "
+                + "so TextMouth leaves it. Download the book, then try again."
         )
         XCTAssertEqual(
             textInCloud.notice?.message,
             "“tone4.vtt” wasn't attached to Four Tones: The book's text is only in iCloud, "
-                + "so TextMouth leaves it as it is. Download the book, then try again."
+                + "so TextMouth leaves it. Download the book, then try again."
         )
         assertNothingAttached(to: book, by: transcriptInCloud)
         assertNothingAttached(to: book, by: textInCloud)
@@ -658,7 +658,7 @@ final class TranscriptAttachTests: XCTestCase {
     /// What the notice says while the book `bookTitle` is being transcribed,
     /// as `testTheCommandsWords` pins it.
     private static func waitWhileTranscribing(_ bookTitle: String) -> String {
-        "\(bookTitle) is being transcribed. Cancel the transcription first, or attach the transcript once it finishes."
+        "\(bookTitle) is being transcribed. Cancel it, or attach the transcript once it finishes."
     }
 
     /// Checks that nothing was attached to `book` through `presenter`: no

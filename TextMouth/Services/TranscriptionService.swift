@@ -3,9 +3,17 @@ import Foundation
 
 // MARK: - Errors
 
+/// An error that words itself in English for the debug log, whatever language
+/// the interface speaks (FR34): the log never holds localized text, so a log
+/// line writes `logDescription` where the screen shows `errorDescription`.
+protocol LogDescribing: Error {
+    /// The error in English, never quoting the book's text or naming a path.
+    var logDescription: String { get }
+}
+
 /// Why a transcription could not run or did not finish, in words a listener
 /// understands, the same on screen, in VoiceOver, and in braille.
-enum TranscriptionError: LocalizedError, Equatable {
+enum TranscriptionError: LocalizedError, LogDescribing, Equatable {
     /// The system is older than macOS 26, which transcription needs.
     case needsNewerSystem
     /// The system is new enough, but this Mac cannot run the speech model.
@@ -54,7 +62,7 @@ enum TranscriptionError: LocalizedError, Equatable {
             return String(localized: "Transcription doesn't support \(language).",
                           comment: "Error shown when the chosen transcription language cannot be transcribed. %@ is the language's name.")
         case .modelNotInstalled(let language):
-            return String(localized: "The speech model for \(language) isn't on this Mac yet. It needs to be downloaded first.",
+            return String(localized: "The speech model for \(language) isn't on this Mac yet. Download it first.",
                           comment: "Error shown when transcription is tried before the language's speech model is downloaded. %@ is the language's name.")
         case .busy(let title):
             return String(localized: "TextMouth is already transcribing \(title). Try again when that finishes.",
@@ -81,7 +89,7 @@ enum TranscriptionError: LocalizedError, Equatable {
             return String(localized: "The book's audio changed while it was being transcribed: \(reason). Transcribe it again.",
                           comment: "Error shown when the book's audio files changed during a transcription, so the transcript was not saved. %@ is the reason, a short phrase in English.")
         case .bookRemoved:
-            return String(localized: "The book left the library while it was being transcribed, so its transcript wasn't saved.",
+            return String(localized: "The book left the library during transcription, so its transcript wasn't saved.",
                           comment: "Error shown when the book was removed from the library during a transcription.")
         }
     }

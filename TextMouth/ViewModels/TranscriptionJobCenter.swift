@@ -102,8 +102,8 @@ enum TranscriptionLog {
     /// `error` in the English the log writes: a `TranscriptionError`'s
     /// `logDescription`, or another error's own description.
     static func failureLog(for error: Error) -> String {
-        if let transcription = error as? TranscriptionError {
-            return transcription.logDescription
+        if let described = error as? any LogDescribing {
+            return described.logDescription
         }
         return "Transcription stopped: \(error.localizedDescription)"  // l10n: no (debug log)
     }

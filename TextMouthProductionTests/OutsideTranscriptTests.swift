@@ -165,8 +165,8 @@ final class OutsideTranscriptTests: XCTestCase {
     func testEachRefusalIsWordedForTheListener() {
         XCTAssertEqual(
             OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 3_725_000, audioEnd: 3_600_000).localizedDescription,
-            "The transcript runs to \(TimeFormatting.spoken(3_725)), past the end of the audio at "
-                + "\(TimeFormatting.spoken(3_600)), so it was made for other audio."
+            "The transcript runs to \(TimeFormatting.spoken(3_725)), past the audio's end at "
+                + "\(TimeFormatting.spoken(3_600)), so it is for other audio."
         )
         XCTAssertEqual(OutsideTranscriptError.noText.localizedDescription, "The transcript holds no text to attach.")
         XCTAssertEqual(
@@ -685,26 +685,26 @@ final class OutsideTranscriptTests: XCTestCase {
         )
         XCTAssertEqual(
             line(.imported, .subRip, "lecture.srt"),
-            "Attached from “lecture.srt” when the book was imported, on \(day). Transcribing again replaces this transcript."
+            "Attached from “lecture.srt” at import, on \(day). Transcribing again replaces this transcript."
         )
         XCTAssertEqual(
             line(.imported, .webVTT),
-            "Attached from WebVTT files when the book was imported, on \(day). Transcribing again replaces this transcript."
+            "Attached from WebVTT files at import, on \(day). Transcribing again replaces this transcript."
         )
         XCTAssertEqual(
             try lineOfStored(#"{"format":"ttml","origin":"imported"}"#),
-            "Attached from files when the book was imported, on \(day). Transcribing again replaces this transcript."
+            "Attached from files at import, on \(day). Transcribing again replaces this transcript."
         )
         // Files of two formats are named together, in the order read; a
         // list holding a format this TextMouth does not know names none.
         XCTAssertEqual(
             try lineOfStored(#"{"format":"webvtt","formats":["webvtt","srt"],"origin":"imported"}"#),
-            "Attached from WebVTT and SubRip files when the book was imported, on \(day). "
+            "Attached from WebVTT and SubRip files at import, on \(day). "
                 + "Transcribing again replaces this transcript."
         )
         XCTAssertEqual(
             try lineOfStored(#"{"format":"webvtt","formats":["webvtt","ttml"],"origin":"imported"}"#),
-            "Attached from files when the book was imported, on \(day). Transcribing again replaces this transcript."
+            "Attached from files at import, on \(day). Transcribing again replaces this transcript."
         )
         XCTAssertEqual(
             line(.podcast, .podcastJSON),

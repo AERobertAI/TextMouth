@@ -25,7 +25,7 @@ final class TranscriptCleanupSheetTests: XCTestCase {
     func testTheWordingWritesVersionsUngroupedAndCountsGroupedWithTheirPlurals() {
         XCTAssertEqual(
             TranscriptCleanupWording.newerBuiltInRules(version: 12345),
-            "TextMouth's own rules are newer, version 12345. To use them, delete your copy, or copy their new rules into it."
+            "TextMouth's own rules are newer, version 12345. To use them, delete your copy or copy their rules into it."
         )
         XCTAssertEqual(
             TranscriptCleanupWording.summary(corrections: 12345, sentences: 2000),
@@ -187,7 +187,7 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         XCTAssertEqual(own.rulesNoticeLines, [TranscriptCleanupWording.noRules(source: .builtIn)])
         XCTAssertTrue(own.readyLines.contains(TranscriptCleanupWording.noRules(source: .builtIn)))
         XCTAssertEqual(own.summaryLine, TranscriptCleanupWording.nothingToChange)
-        XCTAssertEqual(users.rulesNoticeLines, ["Your copy of the rules has no rules yet. Edit Rules… opens it, so you can add some."])
+        XCTAssertEqual(users.rulesNoticeLines, ["Your copy of the rules is empty. Edit Rules… opens it to add some."])
     }
 
     /// Coming back to TextMouth reads the rules again: when they changed, as
@@ -301,12 +301,12 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         XCTAssertEqual(inCloud.rulesNoticeLines, [TranscriptCleanupWording.userCopyInCloud])
         XCTAssertEqual(downloads.calls.count, 1)
         XCTAssertEqual(unusable.rulesNoticeLines, [
-            "Your copy of the rules couldn't be used: rules[0].pattern is empty. It was kept beside itself, and TextMouth's "
-                + "own rules are used until you correct it.",
+            "Your rules file can't be used: rules[0].pattern is empty. TextMouth keeps it and a copy, and uses its "
+                + "own rules until you correct it.",
         ])
         XCTAssertEqual(older.rulesLine, "Rules: your copy, version 2 of \(TranscriptCleanupRuleSet.dayName("2026-10-05")), 1 rule.")
         XCTAssertEqual(older.rulesNoticeLines, [
-            "TextMouth's own rules are newer, version 4. To use them, delete your copy, or copy their new rules into it.",
+            "TextMouth's own rules are newer, version 4. To use them, delete your copy or copy their rules into it.",
             "Couldn't open the rules: The volume is read-only.",
         ])
         XCTAssertEqual(announcements.messages, ["Couldn't open the rules: The volume is read-only."])
@@ -428,7 +428,7 @@ final class TranscriptCleanupSheetTests: XCTestCase {
 
         XCTAssertEqual(model.phase, .failed(
             "Couldn't clean up the transcript of Breakwater Notes: The transcript changed since this was shown. "
-                + "Open Clean Up Transcript again to see what would change now."
+                + "Reopen Clean Up Transcript to see the changes."
         ))
         XCTAssertEqual(model.focusTarget, .close)
         XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(changed))

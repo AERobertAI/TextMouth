@@ -51,7 +51,7 @@ final class TranscriptBookInfoTests: XCTestCase {
         )
         XCTAssertEqual(
             line(TranscriptSource(origin: .imported, format: .webVTT, fileName: "lecture.vtt")),
-            "Attached from “lecture.vtt” when the book was imported, on \(Self.day)."
+            "Attached from “lecture.vtt” at import, on \(Self.day)."
         )
         XCTAssertEqual(
             line(TranscriptSource(origin: .podcast, format: .podcastJSON)),
@@ -364,7 +364,7 @@ final class TranscriptBookInfoTests: XCTestCase {
         (TranscriptSource(origin: .attached, format: .webVTT, fileName: "lecture.vtt"), "Attached from “lecture.vtt” on \(day)."),
         (
             TranscriptSource(origin: .imported, format: .subRip, fileName: "lecture.srt"),
-            "Attached from “lecture.srt” when the book was imported, on \(day)."
+            "Attached from “lecture.srt” at import, on \(day)."
         ),
         (
             TranscriptSource(origin: .podcast, format: .podcastJSON),

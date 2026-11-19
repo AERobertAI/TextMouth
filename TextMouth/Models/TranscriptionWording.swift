@@ -40,7 +40,7 @@ enum TranscriptionWording {
     /// What a feed episode's transcript's listener is told as they edit or
     /// clean it up: it stays with the episode, not with its download.
     static var feedEpisodeTranscriptNote: String {
-        String(localized: "This episode's transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or the feed deletes it; Move to Library keeps it with the episode as a book.",
+        String(localized: "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.",
                comment: "Note under a podcast episode's transcript editor and cleanup sheet. Move to Library is the name of a command in the feed's episode menu.")
     }
 
@@ -59,7 +59,7 @@ enum TranscriptionWording {
 
     /// Why the command was refused for a book that is not an audiobook.
     static func notAnAudiobook(bookTitle: String) -> String {
-        String(localized: "\(bookTitle) isn't an audiobook. Only an audiobook's audio can be transcribed.",
+        String(localized: "\(bookTitle) isn't an audiobook; only audiobooks can be transcribed.",
                comment: "Alert shown when Transcribe Audio is chosen for a book that is text, not audio. %@ is the book's title.")
     }
 
@@ -108,7 +108,7 @@ enum TranscriptionWording {
     /// it: "Time to transcribe: about 6 minutes." (`TranscriptionEstimate`).
     static func estimateLine(forAudio seconds: TimeInterval?) -> String {
         guard let words = TranscriptionEstimate.words(forAudio: seconds) else {
-            return String(localized: "Time to transcribe: not known until the audio's length is.",
+            return String(localized: "Time to transcribe: not known yet.",
                           comment: "Line of the Transcribe Audio sheet before the audiobook's length is known, so no time estimate can be made.")
         }
         return String(localized: "Time to transcribe: \(words).",
@@ -169,7 +169,7 @@ enum TranscriptionWording {
 
     /// What the download button does.
     static var downloadHint: String {
-        String(localized: "Downloads the speech model from Apple. macOS keeps it and shares it with other apps. Nothing else is downloaded, and the book's audio never leaves this Mac.",
+        String(localized: "Downloads the speech model from Apple, kept and shared by macOS. Nothing else is downloaded, and the book's audio never leaves this Mac.",
                comment: "VoiceOver hint of the button that downloads a language's speech model.")
     }
 
@@ -272,14 +272,14 @@ enum TranscriptionWording {
         case .imported:
             // One file by its name; several by their formats, when known.
             if let fileName {
-                return String(localized: "Attached from “\(fileName)” when the book was imported, on \(day).",
+                return String(localized: "Attached from “\(fileName)” at import, on \(day).",
                               comment: "Sentence saying a transcript came from a file found beside the audio when the book was imported. %1$@ is the file's name; %2$@ is a date.")
             }
             if let formatNames {
-                return String(localized: "Attached from \(formatNames) files when the book was imported, on \(day).",
+                return String(localized: "Attached from \(formatNames) files at import, on \(day).",
                               comment: "Sentence saying a transcript came from files found beside the audio when the book was imported. %1$@ is the files' formats, such as \"WebVTT and SubRip\"; %2$@ is a date.")
             }
-            return String(localized: "Attached from files when the book was imported, on \(day).",
+            return String(localized: "Attached from files at import, on \(day).",
                           comment: "Sentence saying a transcript came from files found beside the audio when the book was imported, whose names and formats are not known. %@ is a date.")
         case .podcast:
             return String(localized: "The podcast's own transcript, downloaded with the episode on \(day).",
@@ -312,7 +312,7 @@ enum TranscriptionWording {
     /// book is downloaded. In the words of `textInCloud`, which says the same
     /// of the transcript's text.
     static var transcriptInCloud: String {
-        String(localized: "The book's transcript is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again.",
+        String(localized: "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
                comment: "Line of the Transcribe Audio sheet when the book's transcript file has not been downloaded from iCloud to this Mac.")
     }
 
@@ -323,7 +323,7 @@ enum TranscriptionWording {
     /// transcript after the audio was transcribed. Also what a refused
     /// install says (`TranscriptTextError.textOnlyInCloud`).
     static var textInCloud: String {
-        String(localized: "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again.",
+        String(localized: "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
                comment: "Line of the Transcribe Audio sheet, and an error, when the book's text file has not been downloaded from iCloud to this Mac.")
     }
 
@@ -375,7 +375,7 @@ enum TranscriptionWording {
 
     /// What Transcribe does.
     static var transcribeHint: String {
-        String(localized: "Transcribes the book's audio on this Mac, so VoiceOver and the braille display can read the narration as text.",
+        String(localized: "Transcribes the book's audio on this Mac, so VoiceOver and braille can read the narration as text.",
                comment: "VoiceOver hint of the Transcribe button.")
     }
     /// What Retranscribe does.
@@ -518,7 +518,7 @@ enum TranscriptionWording {
     }
     /// What the pop-up chooses.
     static var languagePickerHint: String {
-        String(localized: "The language audiobooks are transcribed in. A language marked needs download is downloaded from the Transcribe Audio sheet, only when you ask.",
+        String(localized: "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
                comment: "VoiceOver hint of the transcription language pop-up. \"needs download\" is the status word a language's menu item shows when its speech model is not on this Mac, and Transcribe Audio is the command's name.")
     }
     /// One language in the pop-up: "English (United States), installed".
@@ -534,12 +534,12 @@ enum TranscriptionWording {
     }
     /// What the checkbox does.
     static var offerHint: String {
-        String(localized: "After each audiobook is imported, TextMouth asks whether to transcribe it. Off, audiobooks are transcribed only when you choose Transcribe Audio.",
+        String(localized: "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
                comment: "VoiceOver hint of the checkbox that offers transcribing after an import. Transcribe Audio is the command's name.")
     }
     /// Where the language is chosen, said under the sheet's language line.
     static var languageHint: String {
-        String(localized: "The language is chosen in Settings, under Playback, Transcription.",
+        String(localized: "Choose the language in Settings, Playback, Transcription.",
                comment: "Line under the Transcribe Audio sheet's language line saying where the language is chosen. Settings, Playback, and Transcription are the names of the settings window, its Playback pane, and its Transcription group.")
     }
 
@@ -578,7 +578,7 @@ enum TranscriptionWording {
                comment: "Button of the question offered after an import that opens Transcribe Audio for the new audiobook.")
     }
     static var offerTranscribeHint: String {
-        String(localized: "Opens Transcribe Audio for the book, which starts transcribing at once when its language's speech model is on this Mac; otherwise, download the model there, then choose Transcribe.",
+        String(localized: "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe.",
                comment: "VoiceOver hint of the Transcribe button of the question offered after an import. Transcribe Audio is the command's name; Transcribe is the sheet's button.")
     }
     static var offerNotNowTitle: String {
@@ -586,7 +586,7 @@ enum TranscriptionWording {
                comment: "Button of the question offered after an import that leaves the audiobook untranscribed for now.")
     }
     static var offerNotNowHint: String {
-        String(localized: "Leaves the audiobook as it is. You can transcribe it later with Transcribe Audio.",
+        String(localized: "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
                comment: "VoiceOver hint of the Not Now button of the question offered after an import. Transcribe Audio is the command's name.")
     }
 
@@ -604,8 +604,9 @@ enum TranscriptionWording {
         var sentences = [
             String(localized: "The transcript and the text made from it are deleted.",
                    comment: "First sentence of the question asked before an audiobook's transcript is deleted."),
-            String(localized: "The audiobook's audio, your place, and your bookmarks stay as they are, and the book can be transcribed again.",
-                   comment: "Second sentence of the question asked before an audiobook's transcript is deleted: what stays, and that it can be transcribed again.")
+            whatStays,
+            String(localized: "The book can be transcribed again.",
+                   comment: "Last sentence of the question asked before an audiobook's transcript is deleted, after what stays.")
         ]
         if isEdited {
             sentences.append(String(localized: "Your edits to the transcript are deleted too.",
@@ -614,12 +615,12 @@ enum TranscriptionWording {
         return SentenceWording.joined(sentences)
     }
 
-    /// What a confirmation before a transcript is replaced promises stays:
+    /// What a confirmation before a transcript is deleted or replaced promises stays:
     /// "The audiobook's audio, your place, and your bookmarks stay as they
     /// are."
     private static var whatStays: String {
         String(localized: "The audiobook's audio, your place, and your bookmarks stay as they are.",
-               comment: "Sentence of the question asked before a transcript from a file replaces an audiobook's transcript: what stays.")
+               comment: "Sentence of the question asked before an audiobook's transcript is deleted or replaced by a file's: what stays.")
     }
 
     /// The confirmation's deleting button.
@@ -650,7 +651,7 @@ enum TranscriptionWording {
     /// "Moby-Dick is being transcribed. Cancel the transcription first, or
     /// delete the transcript once it finishes."
     static func deleteWhileTranscribing(bookTitle: String) -> String {
-        String(localized: "\(bookTitle) is being transcribed. Cancel the transcription first, or delete the transcript once it finishes.",
+        String(localized: "\(bookTitle) is being transcribed. Cancel it, or delete the transcript once it finishes.",
                comment: "Alert shown when Delete Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title.")
     }
 
@@ -669,7 +670,7 @@ enum TranscriptionWording {
     /// book's audio." A book of several tracks takes one file for the whole
     /// book, its times running on across the tracks.
     static func attachPanelMessage(bookTitle: String) -> String {
-        String(localized: "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of \(bookTitle). Its times count from the start of the book's audio.",
+        String(localized: "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of \(bookTitle), timed from the start of its audio.",
                comment: "Message of the file panel opened by Attach Transcript. %@ is the audiobook's title. WebVTT and SubRip are subtitle file formats, and .vtt and .srt their file extensions.")
     }
 
@@ -704,7 +705,7 @@ enum TranscriptionWording {
     /// "Moby-Dick is being transcribed. Cancel the transcription first, or
     /// attach the transcript once it finishes."
     static func attachWhileTranscribing(bookTitle: String) -> String {
-        String(localized: "\(bookTitle) is being transcribed. Cancel the transcription first, or attach the transcript once it finishes.",
+        String(localized: "\(bookTitle) is being transcribed. Cancel it, or attach the transcript once it finishes.",
                comment: "Alert shown when Attach Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title.")
     }
 
@@ -785,11 +786,11 @@ enum TranscriptionWording {
                    comment: "What VoiceOver hears once a transcript file is attached. %1$@ is the file's name; %2$@ is the audiobook's title; %3$@ is the number of words, such as \"7,077 words\".")
         ]
         if skipped > 0 {
-            sentences.append(String(localized: "\(skipped) timed passages couldn't be read and were left out.",
+            sentences.append(String(localized: "\(skipped) timed passages were unreadable and left out.",
                                     comment: "Sentence added to the announcement of an attached transcript when some of the file's timed passages could not be read. %lld is how many."))
         }
         if cut > 0 {
-            sentences.append(String(localized: "\(cut) timed passages were too long and were cut short.",
+            sentences.append(String(localized: "\(cut) timed passages were too long and cut short.",
                                     comment: "Sentence added to the announcement of an attached transcript when some of the file's timed passages were longer than TextMouth keeps. %lld is how many."))
         }
         return SentenceWording.joined(sentences)

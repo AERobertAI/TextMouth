@@ -35,7 +35,7 @@ enum TranscriptCleanupWording {
 
     /// The line saying what the cleanup is, and that it can be undone.
     static var experimentalLine: String {
-        String(localized: "Experimental. These rules correct words the speech recognizer writes differently from books read aloud. Check the changes below before you apply them. Undo Cleanup puts the transcript back.",
+        String(localized: "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
                comment: "Line at the top of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet.")
     }
 
@@ -58,13 +58,13 @@ enum TranscriptCleanupWording {
 
     /// The line saying the user's copy of the rules waits in the cloud.
     static var userCopyInCloud: String {
-        String(localized: "Your copy of the rules is only in the cloud. TextMouth asked for it, and uses its own rules until it is on this Mac.",
+        String(localized: "Your copy of the rules is only in the cloud, so TextMouth asked for it and uses its own meanwhile.",
                comment: "Line of the Clean Up Transcript sheet when the user's own rules file has not been downloaded from the cloud drive yet.")
     }
 
     /// The line saying the user's copy of the rules can't be used.
     static func userCopyUnusable(reason: String) -> String {
-        String(localized: "Your copy of the rules couldn't be used: \(reason). It was kept beside itself, and TextMouth's own rules are used until you correct it.",
+        String(localized: "Your rules file can't be used: \(reason). TextMouth keeps it and a copy, and uses its own rules until you correct it.",
                comment: "Line of the Clean Up Transcript sheet when the user's own rules file is damaged. %@ is the reason, a short technical phrase in English.")
     }
 
@@ -75,17 +75,17 @@ enum TranscriptCleanupWording {
     static func noRules(source: TranscriptCleanupRuleSource) -> String {
         switch source {
         case .builtIn:
-            return String(localized: "TextMouth comes with no rules of its own: measured on books read aloud, no correction was right in every book. Edit Rules… opens your own copy, where you can add rules, such as a name the recognizer always spells another way.",
+            return String(localized: "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
                           comment: "Line of the Clean Up Transcript sheet when the rules that come with the app are empty. Edit Rules… is the name of a button of the sheet.")
         case .user:
-            return String(localized: "Your copy of the rules has no rules yet. Edit Rules… opens it, so you can add some.",
+            return String(localized: "Your copy of the rules is empty. Edit Rules… opens it to add some.",
                           comment: "Line of the Clean Up Transcript sheet when the user's own rules file holds no rule. Edit Rules… is the name of a button of the sheet.")
         }
     }
 
     /// The line saying TextMouth's own rules are newer than the user's copy.
     static func newerBuiltInRules(version: Int) -> String {
-        String(localized: "TextMouth's own rules are newer, version \(String(version)). To use them, delete your copy, or copy their new rules into it.",
+        String(localized: "TextMouth's own rules are newer, version \(String(version)). To use them, delete your copy or copy their rules into it.",
                comment: "Line of the Clean Up Transcript sheet when the rules that come with the app are newer than the user's copy. %@ is the new version number, written without digit grouping.")
     }
 
@@ -105,7 +105,7 @@ enum TranscriptCleanupWording {
 
     /// The summary when the rules change nothing.
     static var nothingToChange: String {
-        String(localized: "Nothing to clean up: no rule changes this transcript.",
+        String(localized: "No rule changes this transcript.",
                comment: "Summary line of the Clean Up Transcript sheet when the rules would change nothing.")
     }
 
@@ -169,7 +169,7 @@ enum TranscriptCleanupWording {
 
     /// What each button does.
     static var applyHint: String {
-        String(localized: "Makes these corrections in the transcript. The transcript from before is kept, so Undo Cleanup can put it back.",
+        String(localized: "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
                comment: "VoiceOver hint of the Apply button of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet.")
     }
     static var undoHint: String {
@@ -177,7 +177,7 @@ enum TranscriptCleanupWording {
                comment: "VoiceOver hint of the Undo Cleanup button of the Clean Up Transcript sheet.")
     }
     static var editRulesHint: String {
-        String(localized: "Opens your copy of the rules, transcript-cleanup.json, in your text editor, making it from TextMouth's own rules the first time. Your changes are used when you come back to TextMouth.",
+        String(localized: "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
                comment: "VoiceOver hint of the Edit Rules button of the Clean Up Transcript sheet. transcript-cleanup.json is a file name and stays as it is.")
     }
     static var cancelHint: String {
@@ -224,7 +224,7 @@ enum TranscriptCleanupWording {
 
     /// Why the sheet does nothing for a transcript it can't read.
     static func unreadableTranscript(bookTitle: String) -> String {
-        String(localized: "The transcript of \(bookTitle) can't be read now. If the book is only in the cloud, download it, then try again.",
+        String(localized: "The transcript of \(bookTitle) can't be read. If the book is only in the cloud, download it and try again.",
                comment: "Alert shown when Clean Up Transcript is chosen for an audiobook whose transcript cannot be read. %@ is the audiobook's title.")
     }
 
