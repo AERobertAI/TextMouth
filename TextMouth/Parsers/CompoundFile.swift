@@ -12,7 +12,7 @@ struct OLEDamage: Error, Equatable, LocalizedError {
     let reason: String
 
     var errorDescription: String? {
-        "This file could not be read as a compound file. It may be damaged, or another kind of file."
+        "This file could not be read as a compound file. It may be damaged, or another kind of file." // l10n: no (a parser's damage reason: for logs and tests, never shown alone)
     }
 }
 

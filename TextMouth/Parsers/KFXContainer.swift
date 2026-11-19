@@ -109,7 +109,7 @@ struct KFXContainer {
         var budget = Self.maximumValues
         let info = try Self.struct(
             of: try view.slice(infoOffset, infoLength, "the container info"),
-            what: "container info", budget: &budget)
+            what: "container info", budget: &budget) // l10n: no (a parser's damage reason)
         try Self.refuseUnreadable(info)
 
         // The document symbol table, absent when its length is 0.
@@ -139,8 +139,8 @@ struct KFXContainer {
         entities.reserveCapacity(rows)
         for row in 0..<rows {
             let at = row * Self.entityRowSize
-            let offset = try table.uint64(at + 8, "an entity's offset")
-            let length = try table.uint64(at + 16, "an entity's length")
+            let offset = try table.uint64(at + 8, "an entity's offset") // l10n: no (a parser's damage reason)
+            let length = try table.uint64(at + 16, "an entity's length") // l10n: no (a parser's damage reason)
             // The entity lies in the file after the header, and holds at
             // least its own header.
             guard length >= Self.minimumEntityHeader, offset <= view.count - entityBase,

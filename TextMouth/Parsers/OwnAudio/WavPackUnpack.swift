@@ -8,12 +8,12 @@ import Foundation
 /// The words a listener hears about a WavPack file the reader refuses.
 extension OwnAudioWording {
     /// A WavPack file of DSD (one-bit) audio.
-    static let wavPackDSD = "it holds DSD audio, which TextMouth does not read"
+    static let wavPackDSD = "it holds DSD audio, which TextMouth does not read" // l10n: no (a parser's damage reason: finishes "because …", question 3)
     /// A WavPack file from before version 4 (2004), which starts as a WAVE
     /// file does.
-    static let wavPackOld = "it was made by a WavPack older than version 4, from before 2004"
+    static let wavPackOld = "it was made by a WavPack older than version 4, from before 2004" // l10n: no (a parser's damage reason: finishes "because …", question 3)
     /// A WavPack file whose channels or sample rate no encoder writes.
-    static let wavPackShape = "its channels or sample rate are outside what TextMouth reads"
+    static let wavPackShape = "its channels or sample rate are outside what TextMouth reads" // l10n: no (a parser's damage reason: finishes "because …", question 3)
 }
 
 /// One WavPack block, ready to unpack: everything its metadata says, and,

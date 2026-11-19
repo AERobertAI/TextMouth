@@ -368,7 +368,7 @@ extension EPUBParser {
         let documentTitle = normalizedLabel(document.title)
         let fallbackTitle = targets.first(where: { $0.fragment.isEmpty })?.heading.text
             ?? (!documentTitle.isEmpty && documentTitle != normalizedLabel(bookTitle)
-                ? documentTitle : "Chapter \(document.number)")
+                ? documentTitle : "Chapter \(document.number)") // l10n: no (stored id: a chapter title the book keeps as written, question 9)
         var chapter = try MarkdownDocParser.parseChapter(
             markdown: markdown, title: fallbackTitle, includeNavigationHeadings: true
         )

@@ -10,10 +10,10 @@ import Foundation
 extension OwnAudioWording {
     /// A file written before version 3.99 (April 2004), whose residuals are
     /// coded another way.
-    static let monkeysAudioOld = "it was made by a Monkey's Audio older than version 3.99, from before 2004"
+    static let monkeysAudioOld = "it was made by a Monkey's Audio older than version 3.99, from before 2004" // l10n: no (a parser's damage reason: finishes "because …", question 3)
     /// A file whose channels, bit depth, sample rate, or compression level
     /// no encoder writes, or whose frames are too large to hold in memory.
-    static let monkeysAudioShape = "its channels, bit depth, sample rate, or compression level are outside what TextMouth reads"
+    static let monkeysAudioShape = "its channels, bit depth, sample rate, or compression level are outside what TextMouth reads" // l10n: no (a parser's damage reason: finishes "because …", question 3)
 }
 
 /// TextMouth's own Monkey's Audio decoder, for files of version 3.99 and

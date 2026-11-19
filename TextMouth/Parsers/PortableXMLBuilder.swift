@@ -94,7 +94,7 @@ final class PortableXMLTreeBuilder {
             } else if attribute.name.hasPrefix("xmlns:") {
                 let prefix = String(attribute.name.dropFirst("xmlns:".count))
                 // A prefix cannot be bound to nothing; tidying reads it as the empty namespace.
-                if attribute.value.isEmpty && !isTidy { throw Self.error(201, "xmlns:\(prefix): Empty XML namespace is not allowed") }
+                if attribute.value.isEmpty && !isTidy { throw Self.error(201, "xmlns:\(prefix): Empty XML namespace is not allowed") } // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
                 declared[prefix] = attribute.value
             } else {
                 plain.append(attribute)
@@ -259,17 +259,17 @@ final class PortableXMLTreeBuilder {
         let prefix = String(qualifiedName[..<colon])
         let local = String(qualifiedName[qualifiedName.index(after: colon)...])
         if prefix.isEmpty || local.isEmpty {
-            if !isTidy { throw Self.error(202, "Failed to parse QName '\(qualifiedName)'") }
+            if !isTidy { throw Self.error(202, "Failed to parse QName '\(qualifiedName)'") } // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
             node.localName = qualifiedName
             node.prefix = ""
             return
         }
-        if local.contains(":") && !isTidy { throw Self.error(201, "Failed to parse QName '\(qualifiedName)'") }
+        if local.contains(":") && !isTidy { throw Self.error(201, "Failed to parse QName '\(qualifiedName)'") } // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
         node.localName = local
         node.prefix = prefix
         node.uri = namespace(forPrefix: prefix)
         if node.uri == nil && !isTidy {
-            throw Self.error(201, "Namespace prefix \(prefix) on \(local) is not defined")
+            throw Self.error(201, "Namespace prefix \(prefix) on \(local) is not defined") // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
         }
     }
 
@@ -316,12 +316,12 @@ final class PortableXMLStrictReader: NSObject, XMLParserDelegate {
     /// ever loaded, whatever a DTD declares.
     /// - Throws: The parser's error, or the builder's.
     static func read(_ data: Data, into builder: PortableXMLTreeBuilder) throws {
-        guard !data.isEmpty else { throw PortableXMLTreeBuilder.error(XMLParser.ErrorCode.emptyDocumentError.rawValue, "zero length data") }
+        guard !data.isEmpty else { throw PortableXMLTreeBuilder.error(XMLParser.ErrorCode.emptyDocumentError.rawValue, "zero length data") } // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
         // `XMLParser` does not expand a document's own entities (see the top of the file).
         if data.range(of: Data("<!ENTITY".utf8)) != nil {
             throw PortableXMLTreeBuilder.error(
                 XMLParser.ErrorCode.internalError.rawValue,
-                "The document declares entities of its own, which the portable XML reader does not expand."
+                "The document declares entities of its own, which the portable XML reader does not expand." // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
             )
         }
         let reader = PortableXMLStrictReader(builder: builder)
@@ -335,10 +335,10 @@ final class PortableXMLStrictReader: NSObject, XMLParserDelegate {
         // Tidying makes the text of such an entity (`&nbsp;` is a no-break
         // space); the lenient reader does, and so reads the document instead.
         if reader.sawUnresolvedEntity && builder.isTidy {
-            throw PortableXMLTreeBuilder.error(XMLParser.ErrorCode.undeclaredEntityError.rawValue, "The document refers to an entity it does not declare.")
+            throw PortableXMLTreeBuilder.error(XMLParser.ErrorCode.undeclaredEntityError.rawValue, "The document refers to an entity it does not declare.") // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
         }
         guard completed else {
-            throw parser.parserError ?? PortableXMLTreeBuilder.error(XMLParser.ErrorCode.internalError.rawValue, "The XML could not be read.")
+            throw parser.parserError ?? PortableXMLTreeBuilder.error(XMLParser.ErrorCode.internalError.rawValue, "The XML could not be read.") // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
         }
         builder.finish()
     }
@@ -418,7 +418,7 @@ enum PortableXMLLenientReader {
     ///   tree of its own that deep), an empty-document error for no data,
     ///   `MarkupRefusal` for too many tags, or SwiftSoup's error.
     static func read(_ data: Data, into builder: PortableXMLTreeBuilder) throws {
-        guard !data.isEmpty else { throw PortableXMLTreeBuilder.error(XMLParser.ErrorCode.emptyDocumentError.rawValue, "zero length data") }
+        guard !data.isEmpty else { throw PortableXMLTreeBuilder.error(XMLParser.ErrorCode.emptyDocumentError.rawValue, "zero length data") } // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
         let parsed: Document
         do {
             parsed = try MarkupGuard.parseXML(decodedText(of: data), deepestNesting: PortableXMLDocument.maximumDepth)

@@ -33,9 +33,9 @@ enum PortableXMLError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .tooDeep:
-            return "The XML document nests elements more than \(PortableXMLDocument.maximumDepth) levels deep."
+            return "The XML document nests elements more than \(PortableXMLDocument.maximumDepth) levels deep." // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
         case let .unsupportedXPath(expression):
-            return "The XPath expression \(expression) is not one the portable XML tree supports."
+            return "The XPath expression \(expression) is not one the portable XML tree supports." // l10n: no (a parser's damage reason: the XML tree's own errors stay English)
         }
     }
 }

@@ -80,7 +80,7 @@ struct MOBIHuffman {
                 let place = headerLength + (try record.uint16(headerLength + index * 2, "A dictionary entry's place"))
                 let word = try record.uint16(place, "A dictionary entry")
                 let length = word & 0x7FFF
-                let text = try record.window(place + 2, length, "A dictionary entry's bytes")
+                let text = try record.window(place + 2, length, "A dictionary entry's bytes") // l10n: no (a parser's damage reason)
                 entries.append(Entry(range: text.range, isText: word & 0x8000 != 0))
             }
         }

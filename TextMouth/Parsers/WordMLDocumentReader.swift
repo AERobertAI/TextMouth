@@ -50,7 +50,7 @@ enum WordMLDocumentReader {
         // begin are found by a first pass, when pages are asked for.
         let sections = includesPages ? try WordMLSectionScanner.scan(data) : []
         let reader = WordMLReader(
-            data: data, file: "the document", includesPages: includesPages, limit: DocumentByteLimit.current,
+            data: data, file: "the document", includesPages: includesPages, limit: DocumentByteLimit.current, // l10n: no (a parser's damage reason)
             sectionsStartPages: sections
         )
         try reader.read()

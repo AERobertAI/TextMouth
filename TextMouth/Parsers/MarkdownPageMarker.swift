@@ -55,7 +55,7 @@ struct MarkdownPageMarker: Equatable, Sendable {
     /// becomes one that names no page ("Page page").
     static func namesNoPage(_ label: String) -> Bool {
         let key = comparisonKey(withoutPagePrefix(collapsingWhitespace(label)))
-        return key.isEmpty || key == "PAGE" || key == "PAGE:"
+        return key.isEmpty || key == "PAGE" || key == "PAGE:" // l10n: no (the page marker's own syntax, not interface text)
     }
 
     /// Whether `label` is a page number as `isNoMoreThanLabel` reads one:

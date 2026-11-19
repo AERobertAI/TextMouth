@@ -28,7 +28,7 @@ enum MOBIParser {
 
     /// How a section that no contents entry titles, and that has no heading
     /// of its own, is titled: "Chapter 3" for the third chapter that holds text.
-    private static func untitledChapter(number: Int) -> String { "Chapter \(number)" }
+    private static func untitledChapter(number: Int) -> String { "Chapter \(number)" } // l10n: no (stored id: a chapter title the book keeps as written, question 9)
 
     // MARK: Reading
 

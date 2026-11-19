@@ -178,7 +178,7 @@ enum NeroChapterReader {
         return kept.enumerated().map { index, chapter in
             let start = index == 0 ? 0 : chapter.start
             let next = index + 1 < kept.count ? kept[index + 1].start : fileDuration
-            return (title: chapter.title.isEmpty ? "Chapter \(index + 1)" : chapter.title,
+            return (title: chapter.title.isEmpty ? "Chapter \(index + 1)" : chapter.title, // l10n: no (stored id: a chapter title the book keeps as written, question 9)
                     startTime: start,
                     duration: max(0, next - start))
         }

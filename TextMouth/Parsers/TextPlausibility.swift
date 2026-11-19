@@ -353,36 +353,36 @@ struct TextPlausibility: Equatable, Sendable {
     /// Cyrillic, then Greek.
     private static let alphabets: [Alphabet] = [
         // French has no "ÿ" here: it is in a few names only, and it is what Mac Roman makes of "Ø".
-        Alphabet("French", "àâæçéèêëîïôœùûü"),
-        Alphabet("German", "äöüß"),
-        Alphabet("Spanish", "áéíóúüñ"),
-        Alphabet("Portuguese", "àáâãçéêíóôõúü"),
-        Alphabet("Italian", "àèéìíîòóùú"),
-        Alphabet("Dutch", "áäçéèêëíïóôöúü"),
-        Alphabet("Swedish", "åäöéü"),
-        Alphabet("Danish and Norwegian", "æøåéèêóòôü"),
-        Alphabet("Finnish", "äöåšžé"),
-        Alphabet("Icelandic", "áðéíóúýþæö"),
-        Alphabet("Catalan", "àçéèíïóòúü·"),
-        Alphabet("Irish", "áéíóú"),
-        Alphabet("Polish", "ąćęłńóśźż"),
-        Alphabet("Czech", "áčďéěíňóřšťúůýž"),
-        Alphabet("Slovak", "áäčďéíĺľňóôŕšťúýž"),
-        Alphabet("Hungarian", "áéíóöőúüű"),
-        Alphabet("Croatian and Slovenian", "čćđšž"),
-        Alphabet("Romanian", "ăâîșțşţ"),
-        Alphabet("Albanian", "çë"),
-        Alphabet("Turkish", "çğıöşüâîû\u{130}"),
-        Alphabet("Lithuanian", "ąčęėįšųūž"),
-        Alphabet("Latvian", "āčēģīķļņšūž"),
-        Alphabet("Estonian", "äöõüšž"),
-        Alphabet("Russian", "абвгдежзийклмнопрстуфхцчшщъыьэюяё"),
-        Alphabet("Ukrainian", "абвгдежзийклмнопрстуфхцчшщьюяіїєґ"),
-        Alphabet("Belarusian", "абвгдежзійклмнопрстуўфхцчшыьэюяё"),
-        Alphabet("Bulgarian", "абвгдежзийклмнопрстуфхцчшщъьюя"),
-        Alphabet("Serbian", "абвгдђежзијклљмнњопрстћуфхцчџш"),
-        Alphabet("Macedonian", "абвгдѓежзѕијклљмнњопрстќуфхцчџш"),
-        Alphabet("Greek", "αβγδεζηθικλμνξοπρσςτυφχψωάέήίόύώϊϋΐΰ"),
+        Alphabet("French", "àâæçéèêëîïôœùûü"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("German", "äöüß"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Spanish", "áéíóúüñ"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Portuguese", "àáâãçéêíóôõúü"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Italian", "àèéìíîòóùú"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Dutch", "áäçéèêëíïóôöúü"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Swedish", "åäöéü"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Danish and Norwegian", "æøåéèêóòôü"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Finnish", "äöåšžé"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Icelandic", "áðéíóúýþæö"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Catalan", "àçéèíïóòúü·"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Irish", "áéíóú"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Polish", "ąćęłńóśźż"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Czech", "áčďéěíňóřšťúůýž"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Slovak", "áäčďéíĺľňóôŕšťúýž"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Hungarian", "áéíóöőúüű"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Croatian and Slovenian", "čćđšž"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Romanian", "ăâîșțşţ"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Albanian", "çë"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Turkish", "çğıöşüâîû\u{130}"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Lithuanian", "ąčęėįšųūž"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Latvian", "āčēģīķļņšūž"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Estonian", "äöõüšž"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Russian", "абвгдежзийклмнопрстуфхцчшщъыьэюяё"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Ukrainian", "абвгдежзийклмнопрстуфхцчшщьюяіїєґ"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Belarusian", "абвгдежзійклмнопрстуўфхцчшыьэюяё"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Bulgarian", "абвгдежзийклмнопрстуфхцчшщъьюя"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Serbian", "абвгдђежзијклљмнњопрстћуфхцчџш"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Macedonian", "абвгдѓежзѕијклљмнњопрстќуфхцчџш"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
+        Alphabet("Greek", "αβγδεζηθικλμνξοπρσςτυφχψωάέήίόύώϊϋΐΰ"), // l10n: no (an alphabet's name for the maintainer, never shown or compared)
     ]
 
     // MARK: Ordinary Characters
