@@ -604,6 +604,9 @@
     "%@ holds two versions of a file of this book, so its download can't be removed." : {
       "comment" : "First sentence of why Remove Download was refused: the cloud service holds conflicting versions. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."
     },
+    "%@ in" : {
+      "comment" : "Part of the iPhone reader's Where Am I? for an audiobook: how far into the recording the place is. %@ is the time in words, as in \"2 hours, 13 minutes in\"."
+    },
     "%@ in %@." : {
       "comment" : "Summary line of the Clean Up Transcript sheet. %1$@ is the number of corrections, such as \"23 corrections\"; %2$@ is the number of sentences they are in, such as \"19 sentences\".",
       "localizations" : {
@@ -614,6 +617,9 @@
           }
         }
       }
+    },
+    "%@ is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet." : {
+      "comment" : "First sentence of the refusal of a Word 6 or Word 95 document, which the iPhone can't read. %@ is the file's quoted name, or \"This file\"."
     },
     "%@ is already in the reading list." : {
       "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.",
@@ -651,6 +657,17 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@."
+          }
+        }
+      }
+    },
+    "%@ is in %@, which TextMouth on iPhone can't play yet." : {
+      "comment" : "First sentence of the refusal of an audio file the iPhone can't convert. %1$@ is the file's quoted name, or \"This file\". %2$@ is the audio format's name, as in \"Ogg\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is in %2$@, which TextMouth on iPhone can't play yet."
           }
         }
       }
@@ -818,6 +835,17 @@
     },
     "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder." : {
       "comment" : "What VoiceOver says when Move to Library is chosen and no selected book is a feed's download. %@ is the name of the Move to Library command, with its ellipsis."
+    },
+    "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have." : {
+      "comment" : "First sentence of the refusal of a braille book that needs a braille table only a Mac has. %1$@ is the file's quoted name, or \"This file\". %2$@ is the table's file name, as in \"fr-bfu-g2.ctb\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have."
+          }
+        }
+      }
     },
     "%@ not recorded for %@: %@" : {
       "comment" : "Announced by VoiceOver when a key cannot become a keyboard shortcut. %1$@ is the key in words, %2$@ is the action's name, and %3$@ is the reason, which starts in lower case.",
@@ -3431,6 +3459,17 @@
         }
       }
     },
+    "%lld of %lld" : {
+      "comment" : "Value of the iPhone reader's Headings button: the place of the heading among the book's headings. %1$lld is the heading's number and %2$lld how many headings the book has.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
     "%lld of %lld done" : {
       "comment" : "The feed downloads section's count: how many downloads are done of the run's total. A download that failed is done too. The first %lld is the number done, the second the total.",
       "localizations" : {
@@ -3523,7 +3562,7 @@
       }
     },
     "%lld percent" : {
-      "comment" : "Said at each quarter of a long save or export in the audio editor. %lld is how much is done, from 0 to 100.\nVoiceOver value of the move's progress bar while the library is copied. %lld is the percent done, from 0 to 100.",
+      "comment" : "Part of the iPhone reader's brief Where Am I? summary: how far through the book the place is. %lld is the whole percent.\nSaid at each quarter of a long save or export in the audio editor. %lld is how much is done, from 0 to 100.\nVoiceOver value of the move's progress bar while the library is copied. %lld is the percent done, from 0 to 100.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -4302,6 +4341,9 @@
     "Aa" : {
       "comment" : "A small tag in a substitution rule's row: the rule is case sensitive. A capital and a small letter of the language's alphabet."
     },
+    "About" : {
+      "comment" : "Heading of the iPhone Settings section that holds the app's version and its logs."
+    },
     "About %@ left" : {
       "comment" : "Line of the import overlay and the feed downloads: the estimated time left. %@ is the time in words, such as \"4 minutes\"."
     },
@@ -4460,6 +4502,12 @@
     "Add gesture step" : {
       "comment" : "VoiceOver label of the button that adds a step to the restart gesture in the Miscellaneous settings."
     },
+    "Add it again." : {
+      "comment" : "Last sentence of what VoiceOver says at launch when TextMouth had closed during the import of one file."
+    },
+    "Add it on your Mac, then send the book here." : {
+      "comment" : "Last sentence of every refusal of a file the iPhone app can't import yet: the Mac can add it, and the book then comes to the iPhone."
+    },
     "Add rules to change how text is spoken. They apply top to bottom." : {
       "comment" : "Shown under \"No substitution rules.\" in the Substitutions settings."
     },
@@ -4468,6 +4516,9 @@
     },
     "Add step" : {
       "comment" : "Title of the button that adds a step to the restart gesture in the Miscellaneous settings."
+    },
+    "Add them again." : {
+      "comment" : "Last sentence of what VoiceOver says at launch when TextMouth had closed during the import of several files."
     },
     "Add to Library" : {
       "comment" : "Button of the New Book from Text sheet that adds the new book to the library.\nHeading and navigation title of the sheet that lists the ways to add to the library. Title case.\nTitle of the Library toolbar button that opens the sheet of ways to add to the library. Title case.\nVoiceOver label of the Library toolbar button that opens the sheet of ways to add to the library. Title case."
@@ -5417,6 +5468,9 @@
     "Break" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Break\"."
     },
+    "Brings the text to the sentence being spoken." : {
+      "comment" : "Hint of the iPhone reader's book text while the book plays: activating it moves VoiceOver to the sentence being spoken."
+    },
     "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one." : {
       "comment" : "Last sentence of the second confirmation that deletes a folder, when the folder holds books that a newer TextMouth added. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.",
       "localizations" : {
@@ -5442,6 +5496,9 @@
     },
     "By %@" : {
       "comment" : "Speak Info: the part of a book's summary that names its author. %@ is the author's name."
+    },
+    "Can't play now: a call or another app is using the audio." : {
+      "comment" : "Announcement when Play fails on the iPhone because a phone call or another app holds the audio."
     },
     "Cancel" : {
       "comment" : "Button of a confirmation in Storage settings that changes nothing.\nButton of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton of the sheet that shows the library being moved: cancels the move.\nButton that closes a question and changes nothing.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without doing what it offered.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nTitle and VoiceOver label of the Cancel button of the duplicate-book question.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the Cancel button of the Add to Library sheet, which closes it.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the feed downloads section's button that stops the feed downloads.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
@@ -5527,6 +5584,29 @@
     },
     "Changes not saved" : {
       "comment" : "Storage settings status: some changes could not be saved."
+    },
+    "Changes the speed in steps of %lld words per minute." : {
+      "comment" : "Hint of the iPhone reader's speed control for a text book. %lld is the step, in words a minute.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Changes the speed in steps of %lld word per minute."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Changes the speed in steps of %lld words per minute."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Changes the view's name, what it lists, its conditions, its sort, and its limit." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
@@ -5900,6 +5980,12 @@
     "Chooses a folder with another copy of this library and lists what differs. Neither copy changes." : {
       "comment" : "VoiceOver hint of the Compare Libraries button in Storage settings."
     },
+    "Chooses the order of the books." : {
+      "comment" : "Hint of the iPhone Library's Sort button."
+    },
+    "Chooses what Play and the skip buttons move by." : {
+      "comment" : "Hint of the iPhone reader's Navigation unit control."
+    },
     "Chooses what a book opened from the list does when it ends." : {
       "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button.",
       "localizations" : {
@@ -5910,6 +5996,9 @@
           }
         }
       }
+    },
+    "Chooses what the Library lists." : {
+      "comment" : "Hint of the iPhone Library's row that chooses which view of the library is listed."
     },
     "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes." : {
       "comment" : "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. %@ is the name of its choice This Window.",
@@ -6246,6 +6335,9 @@
           }
         }
       }
+    },
+    "Converting this kind of file is not available on iPhone yet." : {
+      "comment" : "Error text when the iPhone app is asked to convert an audio file in a way only the Mac's helper program can."
     },
     "Copied %@." : {
       "comment" : "Said as the audio editor's Copy copies the selection. %@ is its length in words."
@@ -7142,6 +7234,9 @@
     "Downloading them now" : {
       "comment" : "Second part of the Keep on This Mac announcement when every kept book is only in the cloud: they start downloading."
     },
+    "Downloading “%@”" : {
+      "comment" : "Line of the iPhone's import progress card while a file that is only in iCloud comes down. %@ is the file's name, as in \"Downloading “Dune”\"."
+    },
     "Downloading “%@”." : {
       "comment" : "What VoiceOver says as Download starts. %@ is the episode's or article's title."
     },
@@ -7337,6 +7432,9 @@
     "Edited" : {
       "comment" : "Said after the keys of a keyboard shortcut action the listener changed in Settings, to tell it from one that follows the defaults."
     },
+    "Editing a file in another app is not available on iPhone yet." : {
+      "comment" : "Error text when the iPhone app is asked to open a file in another app to edit it and take it back."
+    },
     "Edits" : {
       "comment" : "Label of the number of edits made, in the audio editor's Audio Info sheet."
     },
@@ -7412,6 +7510,9 @@
     },
     "End of the audio." : {
       "comment" : "Said as the audio editor's playing reaches the end of the audio."
+    },
+    "End of the book." : {
+      "comment" : "What the iPhone reader says when a move forward by a length of time has nothing left to move to."
     },
     "End of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": no book follows it below. Written without its full stop.",
@@ -8155,8 +8256,14 @@
     "Folders is always shown: every folder and feed opens there." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's hint for Folders, whose visibility is fixed."
     },
+    "Follow in Braille" : {
+      "comment" : "Switch in iPhone Settings: while a book plays, the book's text moves on with the speech, for a braille display."
+    },
     "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press." : {
       "comment" : "VoiceOver hint of the Try a Double Press button: for five seconds key presses are not shortcuts, and TextMouth says whether two presses were a double press."
+    },
+    "For trying out with a braille display." : {
+      "comment" : "Last sentence of the hint of Follow in Braille in iPhone Settings."
     },
     "Format" : {
       "comment" : "Label of the pop-up in the audio editor's Export Audio sheet that chooses the file format.\nName of the book information sheet's row that shows an audiobook's file format.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .format."
@@ -8277,7 +8384,7 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes forward again after Go Back. Also the title of the menu command of the same name."
     },
     "Go To" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.\nButton of a marker's or a pause's row in the audio editor's list that moves the cursor there.\nName of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.",
+      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.\nButton of a marker's or a pause's row in the audio editor's list that moves the cursor there.\nLabel of the iPhone reader's button that opens the Go To sheet, and that sheet's title.\nName of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -8352,6 +8459,12 @@
     "Go up one folder level" : {
       "comment" : "Spoken label of the toolbar button that goes up to the folder that holds the folder shown."
     },
+    "Goes back to where the last jump began." : {
+      "comment" : "Hint of the iPhone reader's Return button."
+    },
+    "Goes to a page, a percent, or a time." : {
+      "comment" : "Hint of the iPhone reader's Go To button."
+    },
     "Goes to this bookmark and closes the list." : {
       "comment" : "VoiceOver hint of a bookmark's row in the Bookmarks list.",
       "localizations" : {
@@ -8365,6 +8478,9 @@
     },
     "Goes to this heading and closes the list." : {
       "comment" : "Hint of a heading's row in the headings list: what choosing it does."
+    },
+    "Goes to this result." : {
+      "comment" : "Hint of a row in the iPhone's Search in Book results: activating it moves the book to that match."
     },
     "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly." : {
       "comment" : "Explanation under the sleep timer's fade out stepper in the Playback settings."
@@ -8608,6 +8724,58 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Imported %lld books."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Importing %@" : {
+      "comment" : "What VoiceOver says once as one file or folder starts to import on the iPhone. %@ is its name, as in \"Importing Dune\"."
+    },
+    "Importing %@ was stopped when TextMouth closed." : {
+      "comment" : "First sentence of what VoiceOver says at launch when TextMouth had closed during imports. %@ is the quoted names of one to three files, joined as a list, as in \"“Dune” and “Emma”\"."
+    },
+    "Importing %lld books" : {
+      "comment" : "What VoiceOver says once as several files or folders start to import on the iPhone. %lld is how many, always two or more.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Importing %lld book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Importing %lld books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Importing %lld books was stopped when TextMouth closed." : {
+      "comment" : "First sentence of what VoiceOver says at launch when TextMouth had closed during the import of four or more files. %lld is how many.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Importing %lld book was stopped when TextMouth closed."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Importing %lld books was stopped when TextMouth closed."
                 }
               }
             }
@@ -9127,6 +9295,15 @@
     },
     "Jump" : {
       "comment" : "Button of a jump panel (Go to Percent, Time or Page) that jumps to what was typed."
+    },
+    "Jump to page" : {
+      "comment" : "VoiceOver label of the Jump button under the Page field of the iPhone's Go To sheet."
+    },
+    "Jump to percent" : {
+      "comment" : "VoiceOver label of the Jump button under the Percent field of the iPhone's Go To sheet."
+    },
+    "Jump to time" : {
+      "comment" : "VoiceOver label of the Jump button under the Time field of the iPhone's Go To sheet."
     },
     "Jumped to %@ in the recording." : {
       "comment" : "Announcement after Go to Time jumped in an audiobook. %@ is the time spoken in words, such as \"2 hours, 13 minutes, 5 seconds\"."
@@ -10416,6 +10593,47 @@
         }
       }
     },
+    "Moves back or forward by %lld seconds." : {
+      "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a length of time. %lld is how many seconds a move covers: 10, 15, 30, or 60.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Moves back or forward by %lld second."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Moves back or forward by %lld seconds."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Moves back or forward by bookmark." : {
+      "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a bookmark."
+    },
+    "Moves back or forward by heading." : {
+      "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a heading."
+    },
+    "Moves back or forward by page." : {
+      "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a page of the book."
+    },
+    "Moves back or forward by paragraph." : {
+      "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a paragraph."
+    },
+    "Moves back or forward by sentence." : {
+      "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a sentence."
+    },
+    "Moves back or forward by subheading." : {
+      "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a subheading."
+    },
     "Moves data back to the default location at ~/.TextMouth" : {
       "comment" : "VoiceOver hint of the Reset to Default button in Storage settings. ~/.TextMouth is the default folder's path and stays as written."
     },
@@ -10545,6 +10763,12 @@
     "Moves this item into a library folder as a book you can edit; it leaves the feed" : {
       "comment" : "What the Move to Library sheet says about one item, an episode or an article: it moves into a library folder as a book and leaves its feed."
     },
+    "Moves to the heading before, leaving the navigation unit as it is." : {
+      "comment" : "Hint of the iPhone reader's Previous Heading button."
+    },
+    "Moves to the next heading, leaving the navigation unit as it is." : {
+      "comment" : "Hint of the iPhone reader's Next Heading button."
+    },
     "Moving %lld books..." : {
       "comment" : "Status shown and spoken in the Move sheet while the books' packages move. %lld is how many books. The three dots mean it is in progress.",
       "localizations" : {
@@ -10630,6 +10854,12 @@
     },
     "Navigation unit controls in playback bar" : {
       "comment" : "VoiceOver label of the Navigation unit controls pop-up in the Playback settings."
+    },
+    "Navigation unit for audiobooks" : {
+      "comment" : "Label and title of the iPhone Settings row that chooses what an audiobook moves by until it has a unit of its own."
+    },
+    "Navigation unit for text books" : {
+      "comment" : "Label and title of the iPhone Settings row that chooses what a text book moves by until it has a unit of its own."
     },
     "Navigation unit: %@" : {
       "comment" : "VoiceOver label of the playback bar's shared menu that picks the unit both skip buttons move by. %@ is the unit now chosen, such as \"Sentence\"."
@@ -10813,6 +11043,9 @@
     "No books are selected." : {
       "comment" : "Why a Library menu command did nothing: no book is selected."
     },
+    "No books match." : {
+      "comment" : "The only row of the iPhone Library's list while a search matches nothing; also what VoiceOver says then."
+    },
     "No books were found in “%@”." : {
       "comment" : "What the library says as an archive holds no book TextMouth reads. %@ is the archive's name. A sentence about what it holds may follow."
     },
@@ -10947,6 +11180,24 @@
         }
       }
     },
+    "No next bookmark." : {
+      "comment" : "What the iPhone reader says when a move forward by bookmark has no next bookmark."
+    },
+    "No next heading." : {
+      "comment" : "What the iPhone reader says when a move forward by heading has no next heading."
+    },
+    "No next page." : {
+      "comment" : "What the iPhone reader says when a move forward by page has no next page."
+    },
+    "No next paragraph." : {
+      "comment" : "What the iPhone reader says when a move forward by paragraph has no next paragraph."
+    },
+    "No next sentence." : {
+      "comment" : "What the iPhone reader says when a move forward by sentence has no next sentence."
+    },
+    "No next subheading." : {
+      "comment" : "What the iPhone reader says when a move forward by subheading has no next subheading."
+    },
     "No original audio is kept for this book, so saved edits can't be undone." : {
       "comment" : "Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book keeps no original audio."
     },
@@ -10990,8 +11241,23 @@
         }
       }
     },
+    "No previous bookmark." : {
+      "comment" : "What the iPhone reader says when a move back by bookmark has no previous bookmark."
+    },
+    "No previous heading." : {
+      "comment" : "What the iPhone reader says when a move back by heading has no previous heading."
+    },
+    "No previous page." : {
+      "comment" : "What the iPhone reader says when a move back by page has no previous page."
+    },
+    "No previous paragraph." : {
+      "comment" : "What the iPhone reader says when a move back by paragraph has no previous paragraph."
+    },
     "No previous position to return to." : {
       "comment" : "Announcement of Go Back when the reader has no saved position to return to."
+    },
+    "No previous sentence." : {
+      "comment" : "What the iPhone reader says when a move back by sentence has no previous sentence."
     },
     "No previous sleep timer to restart." : {
       "comment" : "VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set.",
@@ -11003,6 +11269,9 @@
           }
         }
       }
+    },
+    "No previous subheading." : {
+      "comment" : "What the iPhone reader says when a move back by subheading has no previous subheading."
     },
     "No reason was given." : {
       "comment" : "Said in place of a reason when the system gave no reason a file could not be saved."
@@ -11079,6 +11348,9 @@
           }
         }
       }
+    },
+    "No voices are installed. Add voices in Settings, Accessibility, Read & Speak." : {
+      "comment" : "What the iPhone's voice list says once the voices have loaded and none is installed. \"Settings, Accessibility, Read & Speak\" is the path in iOS's own Settings app, so keep those names as iOS shows them in the language."
     },
     "None" : {
       "comment" : "A choice of the Rewind on Resume unit picker: playback resumes where it stopped, with no rewinding.\nShown in place of a keyboard shortcut when an action has none."
@@ -11298,6 +11570,9 @@
     "Now %@ long." : {
       "comment" : "Ends the announcement of an edit in the audio editor: the audio's new length. %@ is the length in words."
     },
+    "Now Playing: %@" : {
+      "comment" : "What VoiceOver says for the iPhone Library's Continue row while that book plays. %@ is the book's title."
+    },
     "Now Reading" : {
       "comment" : "Badge on a book's row in the Library list: the book is open in a reader window now."
     },
@@ -11480,6 +11755,9 @@
     "Opens %@, the folder the logs are written to now, in Finder." : {
       "comment" : "VoiceOver hint and tooltip of the Show Logs in Finder button. %@ is the folder's full path, which stays as written."
     },
+    "Opens TextMouth's settings." : {
+      "comment" : "Hint of the iPhone Library's Settings button."
+    },
     "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe." : {
       "comment" : "VoiceOver hint of the Transcribe button of the question offered after an import. Transcribe Audio is the command's name; Transcribe is the sheet's button."
     },
@@ -11492,11 +11770,17 @@
     "Opens a folder chooser. An empty folder receives a copy of the library; a folder that holds a TextMouth library can be used as it is." : {
       "comment" : "VoiceOver hint of the Change Location button in Storage settings."
     },
+    "Opens a search of the book's text." : {
+      "comment" : "Hint of the reader's Search in Book button on the iPhone."
+    },
     "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed" : {
       "comment" : "VoiceOver hint of the Add to Library toolbar button. Names the five choices the sheet offers, in the order the sheet lists them."
     },
     "Opens a sheet to type a feed's address and choose its folder" : {
       "comment" : "VoiceOver hint of the Add Feed button in the Add to Library sheet."
+    },
+    "Opens a sheet with the ways to add to the library: open a book, or import a folder." : {
+      "comment" : "Hint of the iPhone Library's Add to Library button."
     },
     "Opens it" : {
       "comment" : "VoiceOver hint of a downloaded feed item's row: its default action opens it."
@@ -11542,6 +11826,15 @@
     },
     "Opens the library in the default location, ~/.TextMouth, or starts a new one there, instead of the library that isn't available." : {
       "comment" : "VoiceOver hint of the Use Default Location button in Storage settings. ~/.TextMouth is the default folder's path and stays as written."
+    },
+    "Opens the list of bookmarks." : {
+      "comment" : "Hint of the iPhone reader's Bookmarks button."
+    },
+    "Opens the list of headings." : {
+      "comment" : "Hint of the iPhone reader's Headings button."
+    },
+    "Opens the sleep timer." : {
+      "comment" : "Hint of the iPhone reader's Sleep Timer button."
     },
     "Opens the text in an external editor" : {
       "comment" : "Hint of the Open in Editor button of the New Book from Text sheet."
@@ -11620,7 +11913,7 @@
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Up\"."
     },
     "Pages" : {
-      "comment" : "Heading of the group in Playback settings that holds the settings about pages."
+      "comment" : "Heading of the group in Playback settings that holds the settings about pages.\nName of the VoiceOver rotor on the iPhone reader's Play button that moves between pages."
     },
     "Panels" : {
       "comment" : "Heading of the group of keyboard shortcuts that open a reader's panels, such as the headings list and the sleep timer, in Settings."
@@ -11875,6 +12168,9 @@
     },
     "Plays a preview; choose Apply again to apply." : {
       "comment" : "Hint of the audio editor's Apply button while a press would play a preview first."
+    },
+    "Plays from here." : {
+      "comment" : "Hint of the iPhone reader's book text while the book is paused: activating it plays from the place VoiceOver is at."
     },
     "Plays from the cursor, or pauses." : {
       "comment" : "Hint of the audio editor's Play or Pause button."
@@ -12200,6 +12496,9 @@
     "Reader windows" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the reader windows, where a book is read."
     },
+    "Reading" : {
+      "comment" : "Heading of the iPhone Settings section that holds Follow in Braille."
+    },
     "Reading List" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .inReadingList.\nThe start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List.",
       "localizations" : {
@@ -12224,6 +12523,9 @@
     },
     "Reading State" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .readingState."
+    },
+    "Reading Statistics" : {
+      "comment" : "Row in iPhone Settings that opens the reading statistics, and the title of the screen it opens."
     },
     "Reading list, book %lld of %lld" : {
       "comment" : "Where a book read from the reading list stands in it, in the reader's header and in Where Am I?. %1$lld is the book's place in the list; %2$lld how many books the list holds.",
@@ -13566,6 +13868,9 @@
     "Sentence" : {
       "comment" : "A unit of text a picker moves or rewinds by: one sentence. Used by the rewind, skip, and navigation unit pickers."
     },
+    "Sentences" : {
+      "comment" : "Name of the VoiceOver rotor on the iPhone reader's book text that moves between sentences."
+    },
     "Separate Forward and Backward Units" : {
       "comment" : "A choice of the playback bar's navigation unit menus setting: a menu for each skip button."
     },
@@ -13651,7 +13956,7 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's hint."
     },
     "Settings" : {
-      "comment" : "Name of the application menu's Settings command, in a sentence saying why a keyboard shortcut cannot take its key."
+      "comment" : "Label and title of the iPhone Library's button that opens the app's settings.\nName of the application menu's Settings command, in a sentence saying why a keyboard shortcut cannot take its key.\nTitle of the iPhone's Settings screen."
     },
     "Settings could not be saved: %@" : {
       "comment" : "Failure notice: the settings could not be saved. %@ is the reason, a sentence from the system."
@@ -13661,6 +13966,12 @@
     },
     "Settle the conflict in %@ first." : {
       "comment" : "Last sentence of why Remove Download was refused over a conflict. %@ is the cloud service's name, or \"the cloud service\" when it is unknown."
+    },
+    "Share Logs…" : {
+      "comment" : "Button in iPhone Settings that shares TextMouth's recent logs as a text file. The ellipsis means the share sheet opens."
+    },
+    "Shares TextMouth's recent logs as a text file. They hold no book text." : {
+      "comment" : "Hint of the Share Logs button in iPhone Settings."
     },
     "Shift" : {
       "comment" : "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\"."
@@ -13868,6 +14179,9 @@
           }
         }
       }
+    },
+    "Showing the logs in Finder is not available on iPhone yet." : {
+      "comment" : "What the iPhone's Settings says when asked to show the logs in Finder, which the iPhone does not have."
     },
     "Shows length, file, and edits; sets what happens to the original audio." : {
       "comment" : "Hint of the audio editor's Audio Info button."
@@ -14265,6 +14579,9 @@
     "Start of the audio." : {
       "comment" : "Said as the audio editor's Go to Start lands at the start."
     },
+    "Start of the book." : {
+      "comment" : "What the iPhone reader says when a move back by a length of time has nothing before it."
+    },
     "Start of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: no book above it. Written without its full stop.",
       "localizations" : {
@@ -14309,6 +14626,9 @@
     },
     "Starts recording once a microphone is connected." : {
       "comment" : "VoiceOver hint of the Record button in the Record window while no microphone is connected."
+    },
+    "Statistics" : {
+      "comment" : "Heading of the iPhone Settings section that holds the row for Reading Statistics."
     },
     "Stats" : {
       "comment" : "Name of the Settings tab for reading statistics."
@@ -16909,6 +17229,9 @@
     "The publisher has removed this file." : {
       "comment" : "Why a feed item's download failed: the server says the publisher removed the file for good (error 410)."
     },
+    "The reading list is empty. To add a book, choose Add to Reading List from its actions." : {
+      "comment" : "The only row of the iPhone's empty Reading List. \"Add to Reading List\" is the name of a book's action, so keep it the same as that action's label."
+    },
     "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu." : {
       "comment" : "Shown and read as the only row of the Reading List while it holds no book. Add to Reading List is the name of the command in the Library menu.",
       "localizations" : {
@@ -17342,6 +17665,9 @@
     "This audiobook has no audio to transcribe." : {
       "comment" : "Error shown when transcription is tried for an audiobook with no audio file."
     },
+    "This audiobook has no text." : {
+      "comment" : "Text of the iPhone reader's book content for an audiobook that has no transcript."
+    },
     "This book could not be deleted and remains in the library:" : {
       "comment" : "Heading over the one book that could not be deleted permanently. A line about it follows."
     },
@@ -17453,6 +17779,9 @@
     "This comic book archive holds no pictures TextMouth can read." : {
       "comment" : "Why a comic book archive was refused at import: it holds no picture TextMouth reads."
     },
+    "This deletes the book and its files from this iPhone, and they can't be recovered." : {
+      "comment" : "First sentence of the message of the iPhone's question before a book is removed: nothing is kept on this iPhone."
+    },
     "This download isn't in its feed's folder, so TextMouth left its files as they are." : {
       "comment" : "Why a feed episode's download could not be deleted: it is not in its feed's folder."
     },
@@ -17467,6 +17796,9 @@
     },
     "This feed needs a password, which TextMouth can't send yet." : {
       "comment" : "Why a feed could not be fetched: the server asks for a password."
+    },
+    "This file" : {
+      "comment" : "Stands for a file's name at the start of a sentence about refusing it, when no name is known: \"This file is in Ogg, which...\"."
     },
     "This file could not be read as a Word 2003 XML document." : {
       "comment" : "Why a file was refused at import: it could not be read as a Word 2003 XML document. A sentence saying it may be damaged follows."
@@ -17500,6 +17832,9 @@
     },
     "This folder holds another copy of the library TextMouth is using." : {
       "comment" : "First sentence of Use This Library's account of the folder the listener chose."
+    },
+    "This folder is empty." : {
+      "comment" : "The only row of a folder in the iPhone Library that holds no book and no folder."
     },
     "This folder is no longer in the library." : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. What the sheet says in place of the folder, when the folder was deleted in another window while the sheet was open."
@@ -18382,6 +18717,9 @@
     "Using one library on two Macs at the same time can lose reading positions and changes." : {
       "comment" : "Last sentence of the warning that another Mac has this library open: the risk."
     },
+    "Version" : {
+      "comment" : "Label of the iPhone Settings row that names the app's version."
+    },
     "Vertical Bar" : {
       "comment" : "Name of the punctuation key \"|\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Vertical Bar\"."
     },
@@ -18468,6 +18806,9 @@
     },
     "WebM" : {
       "comment" : "The name of the WebM format. Inside sentences about importing a file of that format."
+    },
+    "What a book of this kind moves by until it has a unit of its own." : {
+      "comment" : "Hint of the two iPhone Settings rows that choose a navigation unit, one for text books and one for audiobooks."
     },
     "What happens when a book finishes playing" : {
       "comment" : "VoiceOver hint of the When book ends pop-up in the Playback settings."
@@ -18647,6 +18988,9 @@
     "While TextMouth was copying its data, something else was put at %@." : {
       "comment" : "First sentence of why a move of the data directory did not finish: something else was put at the new location while the data was copied. %@ is the new location's path."
     },
+    "While the book plays, moves Book content on with the speech, even while you're reading it." : {
+      "comment" : "First sentence of the hint of Follow in Braille in iPhone Settings. \"Book content\" is the name of the element that holds the book's text, as VoiceOver reads it."
+    },
     "Whole File" : {
       "comment" : "Choice in the audio editor's Apply Filter sheet: filter all of the audio."
     },
@@ -18778,6 +19122,9 @@
     },
     "You're already subscribed to %@." : {
       "comment" : "Why Subscribe refused: the feed is already in the library. %@ is the feed's title."
+    },
+    "Your Mac's library isn't touched." : {
+      "comment" : "Last sentence of the message of the iPhone's question before a book is removed: a copy of the book in a Mac's library stays."
     },
     "Your books and reading positions are kept." : {
       "comment" : "Last sentence of the Rebuild Directory confirmation."
@@ -20156,6 +20503,9 @@
           }
         }
       }
+    },
+    "“%@” couldn't be downloaded from iCloud. Check the connection, then add it again." : {
+      "comment" : "What VoiceOver says when a file's download from iCloud stalled and the import was cancelled. %@ is the file's name."
     },
     "“%@” couldn't be read: %@." : {
       "comment" : "Error shown when an audio file cannot be read. %1$@ is the audio file's name; %2$@ is the reason, a short phrase in English.",
