@@ -451,7 +451,7 @@ struct AddFeedSheet: View {
     /// are shown.
     private var buttons: some View {
         HStack {
-            Button("Cancel") {
+            Button(FeedWording.cancelTitle) {
                 model.cancel()
                 onCancel()
             }

@@ -24,7 +24,7 @@ struct FeedThresholdWording: Sendable {
     /// The caption for `value` under `rule`: "Delete downloads after
     /// playing: 1 day", or "…: never" while it is off.
     func caption(_ value: Int, rule: ThresholdSettingRule) -> String {
-        "\(label): \(FeedThresholdControl.isOff(value, rule: rule) ? offPhrase : valuePhrase(value))"
+        SentenceWording.labelled(label, FeedThresholdControl.isOff(value, rule: rule) ? offPhrase : valuePhrase(value))
     }
 }
 
@@ -210,22 +210,42 @@ struct FeedNumberField: View {
 
 extension FeedThresholdWording {
     /// How often feeds refresh while TextMouth runs.
-    static let refreshInterval = FeedThresholdWording(
-        label: "Refresh feeds every",
-        valuePhrase: { CountWording.phrase($0, singular: "hour", plural: "hours") },
-        offPhrase: "only at launch and when you ask",
-        offTitle: "Only at launch and when I ask",
-        hint: "Hours between refreshes of every feed while TextMouth runs, from 1 to 168",
-        offHint: "When checked, feeds refresh only when TextMouth opens, if that is on, and when you choose Check Feed or Refresh All Feeds"
-    )
+    static var refreshInterval: FeedThresholdWording {
+        FeedThresholdWording(
+            label: String(localized: "Refresh feeds every",
+                          comment: "Label of the number field and stepper that say how many hours pass between refreshes of every feed."),
+            valuePhrase: { CountWording.hours($0) },
+            offPhrase: String(localized: "only at launch and when you ask",
+                              comment: "What the caption of the refresh interval says while the setting is off: \"Refresh feeds every: only at launch and when you ask\". Lower case."),
+            offTitle: String(localized: "Only at launch and when I ask",
+                             comment: "Title of the checkbox that turns the refresh interval off, so feeds refresh only at launch and on request."),
+            hint: String(localized: "Hours between refreshes while TextMouth runs, from 1 to 168",
+                         comment: "VoiceOver hint of the refresh interval's number field and stepper. The range is the limits of the number, in hours."),
+            offHint: String(localized: "Feeds refresh only at launch, if that is on, and when you choose \(FeedWording.checkFeedTitle) or \(FeedWording.refreshAllCommand)",
+                            comment: "VoiceOver hint of the checkbox that turns the refresh interval off. The first %@ is the name of the Check Feed command; the second is the name of the Refresh All Feeds command.")
+        )
+    }
 
     /// How long after playing a download is deleted.
-    static let deleteDownloadsAfterPlaying = FeedThresholdWording(
-        label: "Delete downloads after playing",
-        valuePhrase: { $0 == 0 ? "at once" : CountWording.phrase($0, singular: "day", plural: "days") },
-        offPhrase: "never",
-        offTitle: "Never delete played downloads",
-        hint: "Days after an episode plays to the end that its download is deleted, from 0, at once, to 365; one open in a reader waits until it closes",
-        offHint: "When checked, played downloads are kept until you delete them"
-    )
+    static var deleteDownloadsAfterPlaying: FeedThresholdWording {
+        FeedThresholdWording(
+            label: String(localized: "Delete downloads after playing",
+                          comment: "Label of the number field and stepper that say how many days after an episode plays its download is deleted."),
+            valuePhrase: { days in
+                days == 0
+                    ? String(localized: "at once",
+                             comment: "The value of the days after playing that a download is deleted, when it is 0: the download is deleted as soon as it has played. Lower case.")
+                    : String(localized: "\(days) days",
+                             comment: "A number of days, as the setting that deletes downloads after playing says it. %lld is the number of days.")
+            },
+            offPhrase: String(localized: "never",
+                              comment: "What the caption of the delete-after-playing setting says while the setting is off: \"Delete downloads after playing: never\". Lower case."),
+            offTitle: String(localized: "Never delete played downloads",
+                             comment: "Title of the checkbox that turns off deleting downloads after playing."),
+            hint: String(localized: "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
+                         comment: "VoiceOver hint of the delete-after-playing number field and stepper. The range is the limits of the number, in days."),
+            offHint: String(localized: "Played downloads are kept until you delete them",
+                            comment: "VoiceOver hint of the checkbox that turns off deleting downloads after playing.")
+        )
+    }
 }

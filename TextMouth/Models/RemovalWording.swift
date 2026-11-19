@@ -170,17 +170,17 @@ enum RemovalMode: Equatable, CaseIterable {
     /// subject, agreeing with one thing or several (`plural`): "go to the
     /// Trash, where you can recover them until the Trash is emptied", "is
     /// deleted permanently and cannot be recovered", "stay in the TextMouth
-    /// library folder". English only: Delete Feed… says it of a feed's
-    /// downloads inside English sentences of `FeedCommands` until that area
-    /// converts (FR34).
+    /// library folder". English only: it is a piece of `ImportDecision`'s
+    /// English sentences until that area converts (FR34); Delete Feed… says
+    /// it of a feed's downloads in whole sentences of its own.
     func outcomePhrase(plural: Bool) -> String {
         switch self {
         case .keepFiles:
-            return "\(plural ? "stay" : "stays") in the TextMouth library folder" // l10n: no (inside FeedCommands' English sentences until that area converts)
+            return "\(plural ? "stay" : "stays") in the TextMouth library folder" // l10n: no (inside ImportDecision's English sentences until that area converts)
         case .moveToTrash:
-            return "\(plural ? "go" : "goes") to the Trash, where you can recover \(plural ? "them" : "it") until the Trash is emptied" // l10n: no (inside FeedCommands' English sentences until that area converts)
+            return "\(plural ? "go" : "goes") to the Trash, where you can recover \(plural ? "them" : "it") until the Trash is emptied" // l10n: no (inside ImportDecision's English sentences until that area converts)
         case .deletePermanently:
-            return "\(plural ? "are" : "is") deleted permanently and cannot be recovered" // l10n: no (inside FeedCommands' English sentences until that area converts)
+            return "\(plural ? "are" : "is") deleted permanently and cannot be recovered" // l10n: no (inside ImportDecision's English sentences until that area converts)
         }
     }
 
@@ -287,11 +287,7 @@ enum RemovalMode: Equatable, CaseIterable {
         ([failureHeading(count: failures.count, noun: noun)] + failures).joined(separator: "\n")
     }
 
-    /// The same for a caller that names the noun as text, as `FeedCommands`
-    /// still does: "item" means items of a folder, any other word books.
-    func failureMessage(_ failures: [String], noun: String) -> String {
-        failureMessage(failures, noun: noun == "item" ? .item : .book) // l10n: no (compares a noun id, not interface text)
-    }
+
 }
 
 // MARK: - Removing Books
@@ -617,11 +613,9 @@ struct FeedDownloadRemovalWording: Equatable {
         let holding = kept.filter { !$0.isEmpty }
         let parts = holding.reduce(into: FeedWording.KeptParts()) { $0.formUnion($1) }
         guard !holding.isEmpty else { return deleted }
-        // The parts are named by the feeds area's own words, still English
-        // fragments there until that area converts (FR34).
-        if !isPlural, let itsParts = parts.sentenceSubject {
-            return SentenceWording.joined([deleted, String(localized: "\(itsParts) kept.",
-                comment: "Sentence that says what is kept of one deleted download. %@ is the parts and the verb, such as \"Its place and bookmarks are\".")])
+        // One download: the feeds area's whole sentence names what is kept.
+        if !isPlural, let kept = parts.keptSentence {
+            return SentenceWording.joined([deleted, kept])
         }
         let nouns = CountWording.list(parts.nouns(several: true))
         if holding.count >= count {

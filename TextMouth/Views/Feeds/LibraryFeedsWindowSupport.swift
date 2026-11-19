@@ -162,7 +162,7 @@ struct LibraryFeedsWindowSupport: ViewModifier {
             }
             #endif
             .alert(arrivals.pendingAlert?.title ?? "", isPresented: isShowingArrivals, presenting: arrivals.pendingAlert) { _ in
-                Button("OK", role: .cancel) {
+                Button(FeedWording.okTitle, role: .cancel) {
                     arrivals.dismissAlert()
                 }
             } message: { alert in
@@ -259,7 +259,7 @@ struct LibraryFeedsWindowSupport: ViewModifier {
     private func withAlerts(_ view: some View) -> some View {
         view
             .alert(presenter.notice?.title ?? "", isPresented: isShowingNotice, presenting: presenter.notice) { _ in
-                Button("OK", role: .cancel) {}
+                Button(FeedWording.okTitle, role: .cancel) {}
             } message: { notice in
                 Text(notice.message)
             }
@@ -269,7 +269,7 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                 Button(confirmation.confirmTitle, role: .destructive) {
                     presenter.confirm(confirmation, in: context)
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(FeedWording.cancelTitle, role: .cancel) {}
             } message: { confirmation in
                 Text(confirmation.message)
             }

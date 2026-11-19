@@ -154,9 +154,11 @@ final class FeedUIDeleteFeedTests: XCTestCase {
             "the places, own settings, and transcripts kept for 3 removed downloads"
         )
         XCTAssertEqual(FeedWording.keptPhrase(count: 2, parts: []), "what was kept for 2 removed downloads")
-        XCTAssertEqual(FeedWording.downloadsPhrase(1, .episode), "downloaded episode")
-        XCTAssertEqual(FeedWording.downloadsPhrase(2, .item), "2 downloaded items")
-        XCTAssertEqual(FeedWording.KeptParts([.place, .bookmarks]).sentenceSubject, "Its place and bookmarks are", "Delete Download's words changed")
+        XCTAssertEqual(FeedWording.downloadsPhrase(1, .episode), "its downloaded episode")
+        XCTAssertEqual(FeedWording.downloadsPhrase(2, .item), "its 2 downloaded items")
+        XCTAssertEqual(FeedWording.KeptParts([.place, .bookmarks]).keptSentence, "Its place and bookmarks are kept.", "Delete Download's words changed")
+        XCTAssertEqual(FeedWording.KeptParts([.transcript]).keptSentence, "Its transcript is kept.")
+        XCTAssertNil(FeedWording.KeptParts([]).keptSentence)
     }
 
     // MARK: - Feed Info's Buttons
@@ -169,13 +171,13 @@ final class FeedUIDeleteFeedTests: XCTestCase {
         let subscribed = FeedSubscriptionToggle(isSubscribed: true)
         XCTAssertEqual(subscribed.title, "Unsubscribe…")
         XCTAssertTrue(subscribed.isDestructive)
-        XCTAssertEqual(subscribed.hint, "Asks first, then stops checking this feed; the feed and its downloads stay")
+        XCTAssertEqual(subscribed.hint, "Asks first, then stops checking; the feed and its downloads stay")
         // With nothing kept of removed downloads to delete, it asks nothing
         // (FR14).
         let atOnce = FeedSubscriptionToggle(isSubscribed: true, unsubscribeAsks: false)
         XCTAssertEqual(atOnce.title, "Unsubscribe")
         XCTAssertFalse(atOnce.isDestructive)
-        XCTAssertEqual(atOnce.hint, "Stops checking this feed; the feed and its downloads stay")
+        XCTAssertEqual(atOnce.hint, "Stops checking; the feed and its downloads stay")
         let unsubscribed = FeedSubscriptionToggle(isSubscribed: false)
         XCTAssertEqual(unsubscribed.title, "Resubscribe")
         XCTAssertFalse(unsubscribed.isDestructive)

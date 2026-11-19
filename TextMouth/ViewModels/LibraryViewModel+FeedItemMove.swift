@@ -21,11 +21,14 @@ enum FeedItemMoveError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .packageNotManaged:
-            return "its row names no package the library manages"
+            return String(localized: "its row names no package the library manages",
+                          comment: "Why a downloaded feed item could not be moved between its feed's folder and the library, after \"“Title” stays in its feed:\". Lower case, without a full stop.")
         case .packageMissing:
-            return "its package is in neither its library folder nor its feed's"
+            return String(localized: "its package is in neither its library folder nor its feed's",
+                          comment: "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in neither folder. Lower case, without a full stop.")
         case .packageInBothPlaces:
-            return "a package of its name is in both its library folder and its feed's"
+            return String(localized: "a package of its name is in both its library folder and its feed's",
+                          comment: "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in both folders. Lower case, without a full stop.")
         }
     }
 }
@@ -99,7 +102,7 @@ extension LibraryViewModel {
         if marked > 0 {
             DiagnosticLog.event(
                 .feeds,
-                "FEED_ITEMS_DOWNLOADED_AGAIN: marked \(CountWording.phrase(marked, singular: "item", plural: "items")) "
+                "FEED_ITEMS_DOWNLOADED_AGAIN: marked \(CountWording.phrase(marked, singular: "item", plural: "items")) " // l10n: no (debug log text, which stays English)
                     + "downloaded again, their files and index rows here while their records said otherwise"
             )
         }
@@ -113,7 +116,7 @@ extension LibraryViewModel {
             library = updated
             DiagnosticLog.event(
                 .feeds,
-                "FEED_ITEMS_KEPT: \(CountWording.phrase(shelved.count, singular: "item", plural: "items")) whose feed's "
+                "FEED_ITEMS_KEPT: \(CountWording.phrase(shelved.count, singular: "item", plural: "items")) whose feed's " // l10n: no (debug log text, which stays English)
                     + "record says not downloaded, and whose file is not on this Mac, went back to its feed's kept rows"
             )
         }
@@ -336,7 +339,7 @@ extension LibraryViewModel {
         LibraryPersistenceService.saveAndWait(library)
         DiagnosticLog.event(
             .storage,
-            "FEED_DOWNLOADS_MOVED: moved \(CountWording.phrase(moved.count, singular: "download", plural: "downloads")) "
+            "FEED_DOWNLOADS_MOVED: moved \(CountWording.phrase(moved.count, singular: "download", plural: "downloads")) " // l10n: no (debug log text, which stays English)
                 + "made before feeds kept their own indexes into their feeds' folders"
         )
         return moved.count

@@ -273,7 +273,7 @@ final class FeedUIAddFeedTests: XCTestCase {
         XCTAssertEqual(presenter.notice?.message, FeedWording.insecureMessage(title: "Open Wire"))
         XCTAssertEqual(
             FeedWording.insecureMessage(title: "Open Wire"),
-            "Subscribed to Open Wire. This feed uses plain http, so what it sends can be read or changed on the way; TextMouth still loads it."
+            "Subscribed to Open Wire. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it."
         )
         // Closing again says nothing more.
         presenter.notice = nil

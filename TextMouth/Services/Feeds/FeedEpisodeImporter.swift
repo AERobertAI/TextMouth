@@ -79,7 +79,7 @@ enum FeedEpisodeImporter {
             CharacterSet.alphanumerics.contains($0) || $0 == " " || $0 == "-" || $0 == "_"
         }
         let stem = String(String.UnicodeScalarView(kept)).trimmingCharacters(in: .whitespaces).prefix(80)
-        return (stem.isEmpty ? "Episode" : String(stem)) + "." + fileExtension
+        return (stem.isEmpty ? "Episode" : String(stem)) + "." + fileExtension // l10n: no (a file name made when a title has no letters)
     }
 
     // MARK: Importing
@@ -261,7 +261,7 @@ enum FeedEpisodeImporter {
                 dateAdded: dateAdded,
                 tmbDirectoryName: staging.name,
                 audioAlbum: format.isAudio ? feed.title : nil,
-                audioGenre: format.isAudio ? "Podcast" : nil,
+                audioGenre: format.isAudio ? "Podcast" : nil, // l10n: no (the stored genre tag of a podcast book, stored text stays as saved)
                 audioYear: format.isAudio ? item.published.map { String(Calendar(identifier: .gregorian).component(.year, from: $0)) } : nil,
                 feedLink: link
             )
@@ -362,8 +362,8 @@ enum FeedEpisodeImporter {
                 // An audiobook's copy is a save no session took; an article's is
                 // an earlier text unlike the one the new file gives.
                 let what = format.isAudio
-                    ? "its text, which holds a save its transcript's record does not account for,"
-                    : "its earlier text, unlike the new download's,"
+                    ? "its text, which holds a save its transcript's record does not account for," // l10n: no (debug log text, which stays English)
+                    : "its earlier text, unlike the new download's," // l10n: no (debug log text, which stays English)
                 DiagnosticLog.event(
                     .feeds,
                     "FEED_ARTICLE_TEXT_KEPT: \(restored.book.title): \(what) kept as \(keptCopy.lastPathComponent)"
@@ -388,12 +388,12 @@ enum FeedEpisodeImporter {
             byline.append(published.formatted(date: .long, time: .omitted))
         }
         var parts = [
-            "<!DOCTYPE html>",
+            "<!DOCTYPE html>", // l10n: no (HTML markup of the saved article, not interface text)
             "<html>",
             "<head>",
-            "<meta charset=\"utf-8\">",
+            "<meta charset=\"utf-8\">", // l10n: no (HTML markup of the saved article, not interface text)
             "<title>\(escaped(item.title))</title>",
-            "<meta name=\"author\" content=\"\(escaped(bookAuthor(for: item, of: feed)))\">",
+            "<meta name=\"author\" content=\"\(escaped(bookAuthor(for: item, of: feed)))\">", // l10n: no (HTML markup of the saved article, not interface text)
             "</head>",
             "<body>",
             "<h1>\(escaped(item.title))</h1>",
@@ -401,7 +401,9 @@ enum FeedEpisodeImporter {
             body,
         ]
         if let link = item.link {
-            parts.append("<p>Read on the web: <a href=\"\(escaped(link.absoluteString))\">\(escaped(FeedHost.of(link)))</a></p>")
+            let readOnTheWeb = String(localized: "Read on the web:",
+                                      comment: "The line that starts the link to an article's web page, at the end of the article's text as TextMouth saves it as a book. The article's address follows as a link.")
+            parts.append("<p>\(escaped(readOnTheWeb)) <a href=\"\(escaped(link.absoluteString))\">\(escaped(FeedHost.of(link)))</a></p>")
         }
         parts += ["</body>", "</html>", ""]
         return parts.joined(separator: "\n")

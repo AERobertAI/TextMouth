@@ -14,7 +14,7 @@ import Foundation
 ///   imported. None of these syncs.
 enum FeedPaths {
     /// The name of the data directory's folder of feed records.
-    static let recordsFolderName = "Feeds"
+    static let recordsFolderName = "Feeds" // l10n: no (a folder name on disk)
 
     /// The folder of feed records in the data directory at `root`.
     static func recordsFolder(in root: URL) -> URL {
@@ -298,7 +298,7 @@ final class FeedStore: ObservableObject {
                 because: unusable.reason,
                 logging: "FEED_RECORD_UNREADABLE",
                 in: .feeds,
-                standIn: "the feed is left out until its record can be read"
+                standIn: "the feed is left out until its record can be read" // l10n: no (debug log text, which stays English)
             )
         }
         return result
@@ -664,10 +664,16 @@ struct FeedRecordStillBeingSaved: LocalizedError, Equatable {
 enum FeedRecordQuitWording {
     /// What the quit is finishing, after "TextMouth is finishing up before
     /// it quits:" (`QuitHoldWording`).
-    static let finishing = "saving the changes to your feed subscriptions"
+    static var finishing: String {
+        String(localized: "saving the changes to your feed subscriptions",
+               comment: "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop.")
+    }
 
     /// Why a feed's change is still unsaved when the quit stopped waiting:
     /// the reason that ends "Changes to the feed “Planet Money” could not be
     /// saved:" in the quit's prompt and the banner.
-    static let stillSaving = "TextMouth is still saving them."
+    static var stillSaving: String {
+        String(localized: "TextMouth is still saving them.",
+               comment: "The reason that ends \"Changes to the feed “Planet Money” could not be saved:\" in the quit prompt and banner. Them are the feed's changes.")
+    }
 }

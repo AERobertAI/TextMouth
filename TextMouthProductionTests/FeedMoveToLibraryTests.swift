@@ -484,25 +484,25 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
     func testTheWords() {
         XCTAssertEqual(
             FeedWording.moveToLibraryHint(count: 1, noun: .episode),
-            "Moves this episode into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+            "Moves this episode into a library folder as a book you can edit; it leaves the feed"
         )
         XCTAssertEqual(
             FeedWording.moveToLibraryHint(count: 1, noun: .article),
-            "Moves this article into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+            "Moves this article into a library folder as a book you can edit; it leaves the feed"
         )
         XCTAssertEqual(
             FeedWording.moveToLibraryHint(count: 3, noun: .item),
-            "Moves these 3 items into a folder of your library, where they become books you can edit; they leave their feeds"
+            "Moves these 3 items into a library folder as books you can edit; they leave their feeds"
         )
         XCTAssertEqual(FeedWording.moveToLibraryHeading(titles: ["Ep. 368"], noun: .episode), "Move “Ep. 368” to Library")
         XCTAssertEqual(FeedWording.moveToLibraryHeading(titles: ["A", "B", "C"], noun: .episode), "Move 3 Episodes to Library")
         XCTAssertEqual(
             FeedWording.movedToLibrary(titles: ["Ep. 368"], noun: .episode, folderPath: "Podcasts/Keepers"),
-            "Moved “Ep. 368” into Podcasts/Keepers. It's a book of your library now, and its feed lists it In Library."
+            "Moved “Ep. 368” into Podcasts/Keepers. It's a library book now, and its feed lists it In Library."
         )
         XCTAssertEqual(
             FeedWording.movedToLibrary(titles: ["A", "B"], noun: .article, folderPath: ""),
-            "Moved 2 articles into the top of your library. They're books of your library now, and their feeds list them In Library."
+            "Moved 2 articles into the top of your library. They're library books now, and their feeds list them In Library."
         )
         XCTAssertEqual(
             FeedWording.nothingToMoveToLibrary,
@@ -517,7 +517,7 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
                 folderPath: "Podcasts/Keepers",
                 stayed: [(title: "Ep. 2", reason: "The file couldn't be moved.")]
             ),
-            "Moved “Ep. 1” into Podcasts/Keepers. It's a book of your library now, and its feed lists it In Library. "
+            "Moved “Ep. 1” into Podcasts/Keepers. It's a library book now, and its feed lists it In Library. "
                 + "“Ep. 2” stays in its feed: The file couldn't be moved."
         )
         XCTAssertEqual(
@@ -531,7 +531,7 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
                     (title: "Ep. 5", reason: "No room."),
                 ]
             ),
-            "Moved 2 episodes into the top of your library. They're books of your library now, and their feeds list them In Library. "
+            "Moved 2 episodes into the top of your library. They're library books now, and their feeds list them In Library. "
                 + "“Ep. 3” and “Ep. 5” stay in their feeds: No room. “Ep. 4” stays in its feed: No permission."
         )
         let episode = Book(title: "E", format: .audio, filePath: "/e.m4a", md5Hash: "e")
@@ -606,7 +606,7 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
         // returns it, the sheet's owner keeps it while the sheet closes, as
         // `MoveToLibrarySheetPresentation` does, and it is said a moment
         // after, once VoiceOver is back on the window.
-        let sentence = "Moved “Episode 1” into \(keepers). It's a book of your library now, and its feed lists it In Library."
+        let sentence = "Moved “Episode 1” into \(keepers). It's a library book now, and its feed lists it In Library."
         let outcome = await request.move(toFolder: keepers, in: world.library)
         XCTAssertEqual(outcome, .success(sentence))
         XCTAssertEqual(heard, [], "the move was said while its sheet closed")

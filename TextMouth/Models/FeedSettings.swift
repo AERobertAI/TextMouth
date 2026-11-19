@@ -165,9 +165,9 @@ struct FeedSettings: Equatable, Sendable {
         }
         store.set(policy.choice.rawValue, forKey: itemsPreference.key)
         let kept = keepEntries < 0
-            ? "every entry"
-            : CountWording.phrase(keepEntries, singular: "entry", plural: "entries")
-        let downloads = autoDownload ? "new episodes downloading by themselves" : "downloads by hand"
+            ? "every entry" // l10n: no (debug log text, which stays English)
+            : CountWording.phrase(keepEntries, singular: "entry", plural: "entries") // l10n: no (debug log text, which stays English)
+        let downloads = autoDownload ? "new episodes downloading by themselves" : "downloads by hand" // l10n: no (debug log text, which stays English)
         DiagnosticLog.event(
             .feeds,
             "FEED_ITEM_POLICY_MOVED: keeping \(kept), with \(downloads), became \(policy.choice.rawValue) counting \(policy.newestCount)"

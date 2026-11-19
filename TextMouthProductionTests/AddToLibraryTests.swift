@@ -91,7 +91,7 @@ final class AddToLibraryTests: XCTestCase {
         XCTAssertEqual(AddToLibraryWording.summary(.newRecording), "Records from a microphone into a new audiobook.")
         XCTAssertEqual(
             AddToLibraryWording.summary(.addFeed),
-            "Opens a sheet where you type a feed's address and choose where its folder goes"
+            "Opens a sheet to type a feed's address and choose its folder"
         )
         XCTAssertEqual(AddToLibraryWording.summary(.addFeed), FeedWording.addFeedButtonHint)
         for choice in AddToLibraryChoice.allCases {

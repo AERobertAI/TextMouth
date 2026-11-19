@@ -19,6 +19,18 @@ enum FeedDownloadError: Error, Equatable, Sendable {
     /// The import failed, for the reason given (`ImportFailure.reason`).
     case importFailed(String)
 
+    /// The failure in English, for the debug log, which stays English
+    /// whatever the interface language is.
+    var logName: String {
+        switch self {
+        case .transfer(let error): return error.logName
+        case .folderMissing: return "the feed's folder is no longer in the library" // l10n: no (debug log text)
+        case .notEnoughSpace(let bytes): return "no room for \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))" // l10n: no (debug log text)
+        case .unsupportedFile(let kind): return "unsupported kind of file (\(kind))" // l10n: no (debug log text)
+        case .importFailed(let reason): return reason
+        }
+    }
+
     /// The sentence the library shows and VoiceOver speaks about the item
     /// titled `title`.
     func message(about title: String) -> String {
@@ -26,12 +38,15 @@ enum FeedDownloadError: Error, Equatable, Sendable {
         case .transfer(let error):
             return error.downloadMessage(about: title)
         case .folderMissing:
-            return "The folder for this feed is no longer in the library. Choose another folder for it."
+            return String(localized: "The folder for this feed is no longer in the library. Choose another folder for it.",
+                          comment: "Why a feed's episode could not be downloaded: the feed's folder was removed from the library.")
         case .notEnoughSpace(let bytes):
             let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-            return "There isn't room on this Mac for this episode (\(size))."
+            return String(localized: "There isn't room on this Mac for this episode (\(size)).",
+                          comment: "Why a feed's episode could not be downloaded: the disk is too full. %@ is the file's size with its unit, such as 61 MB.")
         case .unsupportedFile(let kind):
-            return "TextMouth can't play this kind of file (\(kind))."
+            return String(localized: "TextMouth can't play this kind of file (\(kind)).",
+                          comment: "Why a feed's episode could not be downloaded: the file is of a kind TextMouth does not play. %@ is the file's type or extension, such as audio/x-flac.")
         case .importFailed(let reason):
             return reason
         }
@@ -68,6 +83,15 @@ enum FeedDownloadWait: Equatable, Sendable {
         }
     }
 
+    /// The reason in English, for the debug log, which stays English
+    /// whatever the interface language is.
+    var logName: String {
+        switch self {
+        case .network: return "it downloads once this Mac is on a network without data limits" // l10n: no (debug log text)
+        case .room(let bytes): return "it needs room for \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)) on this Mac" // l10n: no (debug log text)
+        }
+    }
+
     /// Why, as the item's row says it after "Waiting to Download": "it
     /// downloads once this Mac is on a network without data limits", which
     /// covers a Mac offline as well as one on a network with data limits
@@ -75,17 +99,13 @@ enum FeedDownloadWait: Equatable, Sendable {
     var reason: String {
         switch self {
         case .network:
-            return "it \(Self.networkWait)"
+            return String(localized: "it downloads once this Mac is on a network without data limits",
+                          comment: "Why a feed item's download waits, after the note \"Waiting to Download\" on its row. Lower case, without a full stop.")
         case .room(let bytes):
-            return "it needs room for \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)) on this Mac"
+            return String(localized: "it needs room for \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)) on this Mac",
+                          comment: "Why a feed item's download waits, after the note \"Waiting to Download\" on its row: the disk lacks room. %@ is the size needed with its unit, such as 61 MB. Lower case, without a full stop.")
         }
     }
-
-    /// The one wording of a wait for a network (FR14, REV13 item 4), after
-    /// its subject: "downloads once this Mac is on a network without data
-    /// limits", which the row's reason and a refused download's message
-    /// both say.
-    static let networkWait = "downloads once this Mac is on a network without data limits"
 }
 
 extension FeedFetchError {
@@ -94,30 +114,41 @@ extension FeedFetchError {
     func downloadMessage(about title: String) -> String {
         switch self {
         case .offline:
-            return "This Mac is offline, so “\(title)” can't be downloaded. Connect to the internet and try again."
+            return String(localized: "This Mac is offline, so “\(title)” can't be downloaded. Connect to the internet and try again.",
+                          comment: "Why a feed item's download failed: this Mac has no internet. %@ is the item's title.")
         case .hostNotFound(let host):
-            return "The server \(host) couldn't be found."
+            return String(localized: "The server \(host) couldn't be found.",
+                          comment: "Why a feed item's download failed: no server answers at its address. %@ is the server's host name.")
         case .timedOut(let host):
-            return "\(host) didn't answer for \(Int(FeedNetwork.requestTimeout)) seconds."
+            return String(localized: "\(host) didn't answer for \(Int(FeedNetwork.requestTimeout)) seconds.",
+                          comment: "Why a feed item's download failed: the server took too long. The first %@ is the server's host name; %lld is the number of seconds waited.")
         case .notFound:
-            return "The server says the file is gone."
+            return String(localized: "The server says the file is gone.",
+                          comment: "Why a feed item's download failed: the server says nothing is at the address (error 404).")
         case .needsPassword:
-            return "This file needs a password, which TextMouth can't send yet."
+            return String(localized: "This file needs a password, which TextMouth can't send yet.",
+                          comment: "Why a feed item's download failed: the server asks for a password.")
         case .gone:
-            return "The publisher has removed this file."
+            return String(localized: "The publisher has removed this file.",
+                          comment: "Why a feed item's download failed: the server says the publisher removed the file for good (error 410).")
         case .serverError(let status, let host):
-            return "\(host) couldn't send the file (error \(status)). Try again later."
+            return String(localized: "\(host) couldn't send the file (error \(String(status))). Try again later.",
+                          comment: "Why a feed item's download failed: the server answered with an error. The first %@ is the server's host name; the second is the error's number, an identifier written without digit grouping, such as 503.")
         case .tooLarge(let host):
-            return "The page at \(host) is larger than TextMouth reads."
+            return String(localized: "The page at \(host) is larger than TextMouth reads.",
+                          comment: "Why a feed article's download failed: the web page is too large. %@ is the server's host name.")
         case .connectionFailed(let host, let reason):
-            return "\(host) couldn't be reached: \(reason)"
+            return String(localized: "\(host) couldn't be reached: \(reason)",
+                          comment: "Why a feed item's download failed: the connection failed. The first %@ is the server's host name; the second is the reason, a phrase from the system or from TextMouth, such as \"the server sent no answer\".")
         case .notAWebAddress:
-            return "The file's address isn't a web address TextMouth can open."
+            return String(localized: "The file's address isn't a web address TextMouth can open.",
+                          comment: "Why a feed item's download failed: its address is not an http or https address.")
         case .constrainedNetwork:
-            // The wait's one wording (FR14), as the item's row says it.
-            return "“\(title)” \(FeedDownloadWait.networkWait)."
+            return String(localized: "“\(title)” downloads once this Mac is on a network without data limits.",
+                          comment: "Why a feed item's download did not run now: the network has data limits. Says the same as the row's wait reason. %@ is the item's title.")
         case .cancelled:
-            return "The download was stopped."
+            return String(localized: "The download was stopped.",
+                          comment: "Why a feed item's download ended: it was stopped.")
         }
     }
 }
@@ -728,7 +759,7 @@ final class FeedDownloadManager {
                     putOff.append(asked)
                 }
                 store.updateItem(request.itemID, of: request.feedID) { $0.state = .waiting(wait.reason) }
-                DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_WAITING: \(item.title) (\(feed.title)): \(wait.reason)")
+                DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_WAITING: \(item.title) (\(feed.title)): \(wait.logName)")
                 return .waiting
             }
             let message = failure.message(about: item.title)
@@ -740,7 +771,7 @@ final class FeedDownloadManager {
                 // item no longer counts (REV11 F4).
                 item.downloadOrigin = FeedDownloadOrigin.after(asked.origin, given: item.downloadOrigin)
             }
-            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FAILED: \(item.title) (\(feed.title)): \(message)")
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FAILED: \(item.title) (\(feed.title)): \(failure.logName)")
             announce(.downloadFailed(feedID: request.feedID, itemID: request.itemID, reason: message))
             return .failed
         }
@@ -864,7 +895,7 @@ final class FeedDownloadManager {
         switch attached {
         case .success(let attached):
             library()?.feedTranscriptAttached(bookID: book.id, text: attached.installation.text)
-            let words = CountWording.phrase(attached.wordCount, singular: "word", plural: "words")
+            let words = CountWording.phrase(attached.wordCount, singular: "word", plural: "words") // l10n: no (debug log text, which stays English)
             DiagnosticLog.event(.feeds, "FEED_TRANSCRIPT_ATTACHED: \(episode): \(document.format.name), \(words)")
         case .failure(let error):
             DiagnosticLog.event(.feeds, "FEED_TRANSCRIPT_NOT_ATTACHED: \(episode): \(FeedEpisodeExtras.logReason(of: error))")
@@ -978,7 +1009,7 @@ final class FeedDownloadManager {
             discardPackage(
                 of: book,
                 asTheListenersDeletion: restoredKeptPackage || feedIsClosed,
-                because: feedIsClosed ? "its feed is being deleted" : "its item was deleted while it imported"
+                because: feedIsClosed ? "its feed is being deleted" : "its item was deleted while it imported" // l10n: no (debug log text, which stays English)
             )
             return false
         }
@@ -1017,7 +1048,7 @@ final class FeedDownloadManager {
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_LEFT: \(book.title): \(reason), and its package could not be removed: \(error.localizedDescription)")
             return
         }
-        let how = asTheListenersDeletion ? "as Removal Behavior says" : "for good"
+        let how = asTheListenersDeletion ? "as Removal Behavior says" : "for good" // l10n: no (debug log text, which stays English)
         DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DISCARDED: \(book.title): \(reason); its package removed \(how)")
     }
 
@@ -1304,8 +1335,11 @@ enum FeedQuitHold {
             isRunning: { downloads.hasWork && !downloads.isStoppedForQuit },
             end: { await downloads.stopForQuit() },
             longestWait: longestWait,
-            kind: "feed downloads",
-            finishing: { "keeping the place of your feed downloads for next time" }
+            kind: "feed downloads", // l10n: no (an id that groups pieces of one kind of work, never shown)
+            finishing: {
+                String(localized: "keeping the place of your feed downloads for next time",
+                       comment: "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop.")
+            }
         )
     }
 }

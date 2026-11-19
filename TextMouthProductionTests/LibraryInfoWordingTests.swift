@@ -189,7 +189,7 @@ final class LibraryInfoWordingTests: XCTestCase {
         feed.counts.total = FeedEntryTotal(count: 2_000, listsMore: true)
         XCTAssertEqual(
             LibraryInfoWording.brief(.feed(feed)),
-            "Planet Money. Feed. 10 of more than 2000 episodes listed, 3 downloaded, 2 new, 5 unplayed. Checked today at 3:05 PM."
+            "Planet Money. Feed. 10 of more than 2,000 episodes listed, 3 downloaded, 2 new, 5 unplayed. Checked today at 3:05 PM."
         )
     }
 

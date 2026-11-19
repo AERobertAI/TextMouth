@@ -29,13 +29,17 @@ enum OPMLReadError: Error, Equatable, Sendable {
     var message: String {
         switch self {
         case .empty:
-            return "That file is empty."
+            return String(localized: "That file is empty.",
+                          comment: "Why an OPML file of subscriptions could not be imported: it is empty.")
         case .notOPML:
-            return "That file isn't an OPML list of subscriptions."
+            return String(localized: "That file isn't an OPML list of subscriptions.",
+                          comment: "Why an OPML file of subscriptions could not be imported: it is another kind of file.")
         case let .damaged(problem, line):
-            return "That OPML file is damaged at line \(line): \(problem)."
+            return String(localized: "That OPML file is damaged at line \(String(line)): \(problem).",
+                          comment: "Why an OPML file of subscriptions could not be imported: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.")
         case .noFeeds:
-            return "That OPML file lists no feeds."
+            return String(localized: "That OPML file lists no feeds.",
+                          comment: "Why an OPML file of subscriptions could not be imported: it lists no feed TextMouth can subscribe to.")
         }
     }
 }
@@ -177,7 +181,7 @@ enum FeedOPML {
           </body>
         </opml>
 
-        """
+        """ // l10n: no (the OPML file format, not interface text)
         return Data(text.utf8)
     }
 
@@ -187,7 +191,7 @@ enum FeedOPML {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'" // l10n: no (the OPML file format, not interface text)
         return formatter.string(from: date)
     }
 }

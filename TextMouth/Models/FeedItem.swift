@@ -225,12 +225,24 @@ enum FeedItemState: Equatable, Sendable {
     /// downloads section's (FR10).
     var visibleNote: String {
         switch self {
-        case .notDownloaded: return "Not Downloaded"
-        case .downloading: return "Downloading"
-        case .waiting: return "Waiting to Download"
-        case .failed: return "Download Failed"
-        case .downloaded: return "Downloaded"
-        case .inLibrary: return "In Library"
+        case .notDownloaded:
+            return String(localized: "Not Downloaded",
+                          comment: "The note on a feed's episode or article row, and in a book's row, when its file is not on this Mac. Title case.")
+        case .downloading:
+            return String(localized: "Downloading",
+                          comment: "The note on a feed's episode or article row while its file downloads. Title case.")
+        case .waiting:
+            return String(localized: "Waiting to Download",
+                          comment: "The note on a feed's episode or article row whose automatic download waits for a network without data limits or for room on this Mac. Title case.")
+        case .failed:
+            return String(localized: "Download Failed",
+                          comment: "The note on a feed's episode or article row whose last download failed. A reason may follow it. Title case.")
+        case .downloaded:
+            return String(localized: "Downloaded",
+                          comment: "The note on a feed's episode or article row whose file is on this Mac. Title case.")
+        case .inLibrary:
+            return String(localized: "In Library",
+                          comment: "The note on a feed's episode or article row that was moved into the library as a book of its own. Title case.")
         }
     }
 
