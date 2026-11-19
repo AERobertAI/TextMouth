@@ -29,9 +29,12 @@ import Foundation
 /// Multilingual Plane unchanged.
 struct WordDocExportWriter: TextExportWriter {
     let id = "doc"
-    let name = "Word 97-2003 (.doc)"
+    let name = "Word 97-2003 (.doc)" // l10n: no (a file format's name)
     let fileExtension = "doc"
-    let hint = "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them."
+    var hint: String {
+        String(localized: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them.",
+               comment: "The hint of the Convert to picker in the Export dialog while Word 97-2003 is chosen. Word is an app's name.")
+    }
 
     /// Writes the Word document of `document` as a new file at `url`; a file
     /// already there is an error, and is left as it was.
@@ -50,7 +53,10 @@ struct WordDocExportWriter: TextExportWriter {
 
     /// The sentence a Word export fails with when Apple's reader or writer
     /// refuses the book's text; the dialog names it after the file's name.
-    static let failureSentence = "The book's text could not be made into a Word 97-2003 document."
+    static var failureSentence: String {
+        String(localized: "The book's text could not be made into a Word 97-2003 document.",
+               comment: "Why a Word 97-2003 export failed, after the file's name in a failure sentence: Apple's reader or writer refused the book's text.")
+    }
 
     /// The bytes of the Word 97-2003 document of `document`, made from the
     /// RTF writer's text of it, the one source of both writers.

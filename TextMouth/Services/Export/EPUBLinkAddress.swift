@@ -16,11 +16,11 @@ import Foundation
 enum EPUBLinkAddress {
     /// The characters RFC 3986 lets stand anywhere in a path, query, or
     /// fragment: unreserved characters and sub-delimiters, ":", "@", "/", and "?".
-    private static let allowedInTail = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&'()*+,;=:@/?")
+    private static let allowedInTail = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&'()*+,;=:@/?") // l10n: no (the characters RFC 3986 allows)
     /// What may stand in the user information: the above without "@", "/", and "?".
     private static let allowedInUserInfo = allowedInTail.subtracting(["@", "/", "?"])
     /// What may stand in an address's host.
-    private static let allowedInHost = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+    private static let allowedInHost = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~") // l10n: no (the characters RFC 3986 allows)
 
     /// `address` as a URL with a web or mail scheme, or nil when it cannot be
     /// made one. White space at either end is ignored.

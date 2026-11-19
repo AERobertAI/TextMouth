@@ -18,7 +18,10 @@ struct HTMLExportWriter: TextExportWriter {
     let id = "html"
     let name = "HTML"
     let fileExtension = "html"
-    let hint = "A web page of the book's text, with a contents list linking each heading."
+    var hint: String {
+        String(localized: "A web page of the book's text, with a contents list linking each heading.",
+               comment: "The hint of the Convert to picker in the Export dialog while HTML is chosen.")
+    }
 
     /// Writes the page of `document` as UTF-8 to a new file at `url`; a file
     /// already there is an error, and is left as it was.
@@ -43,7 +46,7 @@ struct HTMLExportWriter: TextExportWriter {
         var lines: [String] = []
 
         // The frame: the language goes in both attributes that XHTML and HTML read.
-        lines.append("<!DOCTYPE html>")
+        lines.append("<!DOCTYPE html>") // l10n: no (HTML file syntax)
         if let language = document.book.language {
             let escaped = XMLEscaping.attribute(language)
             lines.append("<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"\(escaped)\" xml:lang=\"\(escaped)\">")
@@ -51,10 +54,10 @@ struct HTMLExportWriter: TextExportWriter {
             lines.append("<html xmlns=\"http://www.w3.org/1999/xhtml\">")
         }
         lines.append("<head>")
-        lines.append("<meta charset=\"utf-8\"/>")
+        lines.append("<meta charset=\"utf-8\"/>") // l10n: no (HTML file syntax)
         lines.append("<title>\(XMLEscaping.text(document.book.title))</title>")
         if let author = document.book.author {
-            lines.append("<meta name=\"author\" content=\"\(XMLEscaping.attribute(author))\"/>")
+            lines.append("<meta name=\"author\" content=\"\(XMLEscaping.attribute(author))\"/>") // l10n: no (HTML file syntax)
         }
         lines.append("</head>")
         lines.append("<body>")
@@ -66,7 +69,7 @@ struct HTMLExportWriter: TextExportWriter {
         }
         let headings = document.headings
         if !headings.isEmpty {
-            lines.append("<nav aria-label=\"Contents\">")
+            lines.append("<nav aria-label=\"\(XMLEscaping.attribute(BookExportWording.contentsHeading))\">") // l10n: no (HTML file syntax; the label is BookExportWording.contentsHeading)
             lines.append(contentsOf: ExportContentsList.lines(of: headings.map {
                 ExportContentsEntry(level: $0.level, title: $0.plainText, address: "#" + $0.id)
             }))

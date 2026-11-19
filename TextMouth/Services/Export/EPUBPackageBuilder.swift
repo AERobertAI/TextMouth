@@ -22,10 +22,17 @@ struct EPUBPackageBuilder {
     static let navigationDocumentName = "nav.xhtml"
     /// What an untitled heading, chapter, or page list entry is called where
     /// a name must have words.
-    static let untitled = "Untitled"
+    /// It is written in the interface language at the time of the export
+    /// (FR34, question 10), like every word this file writes itself.
+    static var untitled: String { BookExportWording.untitled }
     /// The language of the words this file writes itself (the contents'
-    /// headings), whatever the book's.
-    static let ownLanguage = "en"
+    /// headings, the accessibility summary), whatever the book's: the
+    /// interface language those words are written in at the time of the
+    /// export, the one `String(localized:)` resolves to, as a language code.
+    /// English when the app has no better match.
+    static var ownLanguage: String {
+        Bundle.main.preferredLocalizations.first ?? "en"
+    }
     /// The languages written from right to left when their tag names no
     /// script. Kurdish, Sindhi, Kashmiri, and Uyghur are not among them: each
     /// is written in more than one script, so only a script (or "ckb", Central
@@ -364,8 +371,8 @@ struct EPUBPackageBuilder {
     /// there; `epub` is what `epub:type` needs.
     private static func xhtmlDocument(title: String, language: String?, isRightToLeft: Bool, body: [String]) -> String {
         var lines = [
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-            "<!DOCTYPE html>",
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>", // l10n: no (EPUB file syntax)
+            "<!DOCTYPE html>", // l10n: no (EPUB file syntax)
         ]
         var root = "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\""
         if let language {
@@ -396,26 +403,27 @@ struct EPUBPackageBuilder {
         </rootfiles>
         </container>
 
-        """
+        """ // l10n: no (EPUB file syntax)
     }
 
     /// The navigation document: the contents nested by level, and the page
     /// list when the book has pages. The page list is `hidden`, as EPUB
     /// intends: it is for the reading system's page navigation, not for the
-    /// page. The headings of the two lists are English (this file's own
-    /// words, marked as such); their entries are the book's.
+    /// page. The headings of the two lists are in the interface language of the
+    /// export (this file's own words, marked with that language); their
+    /// entries are the book's.
     private func navigationDocument() -> String {
         let direction = language == nil ? Self.automaticDirection : ""
         let own = "lang=\"\(Self.ownLanguage)\" xml:lang=\"\(Self.ownLanguage)\""
         var body = [
-            "<nav epub:type=\"toc\" role=\"doc-toc\" id=\"toc\"\(direction)>",
-            "<h1 \(own)>Contents</h1>",
+            "<nav epub:type=\"toc\" role=\"doc-toc\" id=\"toc\"\(direction)>", // l10n: no (EPUB file syntax)
+            "<h1 \(own)>\(XMLEscaping.text(BookExportWording.contentsHeading))</h1>",
         ]
         body += ExportContentsList.lines(of: contents)
         body.append("</nav>")
         if !pages.isEmpty {
-            body.append("<nav epub:type=\"page-list\" role=\"doc-pagelist\" id=\"page-list\" hidden=\"hidden\"\(direction)>")
-            body.append("<h1 \(own)>Pages</h1>")
+            body.append("<nav epub:type=\"page-list\" role=\"doc-pagelist\" id=\"page-list\" hidden=\"hidden\"\(direction)>") // l10n: no (EPUB file syntax)
+            body.append("<h1 \(own)>\(XMLEscaping.text(BookExportWording.pagesHeading))</h1>")
             body += Self.pageListLines(of: pages)
             body.append("</nav>")
         }
@@ -457,7 +465,7 @@ struct EPUBPackageBuilder {
         )
 
         var lines = [
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>", // l10n: no (EPUB file syntax)
             "<package xmlns=\"http://www.idpf.org/2007/opf\" version=\"3.0\" unique-identifier=\"book-id\">",
             "<metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\">",
             "<dc:identifier id=\"book-id\">\(XMLEscaping.text(EPUBExportWriter.identifier(of: book)))</dc:identifier>",
@@ -467,12 +475,12 @@ struct EPUBPackageBuilder {
             lines.append("<dc:creator>\(XMLEscaping.text(creator))</dc:creator>")
         }
         lines.append("<dc:language>\(languageTag)</dc:language>")
-        lines.append("<meta property=\"dcterms:modified\">\(EPUBExportWriter.timestamp(date))</meta>")
-        lines.append("<meta property=\"schema:accessMode\">textual</meta>")
-        lines.append("<meta property=\"schema:accessModeSufficient\">textual</meta>")
-        lines += features.map { "<meta property=\"schema:accessibilityFeature\">\($0)</meta>" }
-        lines.append("<meta property=\"schema:accessibilityHazard\">none</meta>")
-        lines.append("<meta property=\"schema:accessibilitySummary\" xml:lang=\"\(Self.ownLanguage)\">\(XMLEscaping.text(summary))</meta>")
+        lines.append("<meta property=\"dcterms:modified\">\(EPUBExportWriter.timestamp(date))</meta>") // l10n: no (EPUB file syntax)
+        lines.append("<meta property=\"schema:accessMode\">textual</meta>") // l10n: no (EPUB file syntax)
+        lines.append("<meta property=\"schema:accessModeSufficient\">textual</meta>") // l10n: no (EPUB file syntax)
+        lines += features.map { "<meta property=\"schema:accessibilityFeature\">\($0)</meta>" } // l10n: no (EPUB file syntax)
+        lines.append("<meta property=\"schema:accessibilityHazard\">none</meta>") // l10n: no (EPUB file syntax)
+        lines.append("<meta property=\"schema:accessibilitySummary\" xml:lang=\"\(Self.ownLanguage)\">\(XMLEscaping.text(summary))</meta>") // l10n: no (EPUB file syntax)
         lines.append("</metadata>")
 
         lines.append("<manifest>")
@@ -481,9 +489,9 @@ struct EPUBPackageBuilder {
             lines.append("<item id=\"chapter-\(index + 1)\" href=\"\(XMLEscaping.attribute(file.name))\" media-type=\"application/xhtml+xml\"/>")
         }
         lines.append("</manifest>")
-        lines.append(isRightToLeft ? "<spine page-progression-direction=\"rtl\">" : "<spine>")
+        lines.append(isRightToLeft ? "<spine page-progression-direction=\"rtl\">" : "<spine>") // l10n: no (EPUB file syntax)
         for index in files.indices {
-            lines.append("<itemref idref=\"chapter-\(index + 1)\"/>")
+            lines.append("<itemref idref=\"chapter-\(index + 1)\"/>") // l10n: no (EPUB file syntax)
         }
         lines.append("</spine>")
         lines.append("</package>")
@@ -495,19 +503,27 @@ struct EPUBPackageBuilder {
     /// of the contents follows the entries really written: `entryCount` of
     /// them, and whether any is a heading of the book's own.
     static func accessibilitySummary(hasHeadings: Bool, entryCount: Int, hasPages: Bool) -> String {
-        var sentences = ["This book was exported from TextMouth as text only."]
+        // Written into the file for the people who read it, so it follows
+        // the interface language of the export (question 10).
+        var sentences = [String(localized: "This book was exported from TextMouth as text only.",
+                                comment: "The first sentence of the accessibility summary written into an exported EPUB.")]
         if hasHeadings {
-            sentences.append("Its headings are real headings, and the contents list links them.")
+            sentences.append(String(localized: "Its headings are real headings, and the contents list links them.",
+                                    comment: "A sentence of the accessibility summary written into an exported EPUB: the book has headings."))
         } else if entryCount == 1 {
-            sentences.append("It has no headings, so the contents list has one entry for the whole book.")
+            sentences.append(String(localized: "It has no headings, so the contents list has one entry for the whole book.",
+                                    comment: "A sentence of the accessibility summary written into an exported EPUB: the book has no headings and its contents list has one entry."))
         } else {
-            sentences.append("It has no headings, so the contents list has \(entryCount) entries for its chapters and the places it marks.")
+            sentences.append(String(localized: "It has no headings, so the contents list has \(entryCount) entries for its chapters and the places it marks.",
+                                    comment: "A sentence of the accessibility summary written into an exported EPUB: the book has no headings and its contents list has several entries. %lld is the number of entries."))
         }
         if hasPages {
-            sentences.append("It has a page list, and the start of each page is marked in the text.")
+            sentences.append(String(localized: "It has a page list, and the start of each page is marked in the text.",
+                                    comment: "A sentence of the accessibility summary written into an exported EPUB: the book has pages."))
         }
-        sentences.append("It has no pictures, sound, or video, and the text of a picture's description is kept as text.")
-        return sentences.joined(separator: " ")
+        sentences.append(String(localized: "It has no pictures, sound, or video, and the text of a picture's description is kept as text.",
+                                comment: "The last sentence of the accessibility summary written into an exported EPUB."))
+        return SentenceWording.joined(sentences)
     }
 
     // MARK: Text
