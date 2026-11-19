@@ -5,7 +5,8 @@ Part of [TextMouth's documentation](../../README.md).
 
 This page is for the developer or agent who converts a part of the app's code to localized text.
 A translator reads [Translating TextMouth](translation.md) instead; it covers the translation steps, the glossary, and the rules for every language, and this page does not repeat it.
-Spanish is the first language, as the test of the system, and about eleven are planned (FR34).
+Every Swift file of the app is converted, in three rounds of waves, and the interface text was cut by the user's rules with every fact kept (FR34).
+Spanish is the first language, as the test of the system, and about eleven are planned; the Spanish is not on main yet.
 The plan and its measurements are in `research/LOCALIZATION-RESEARCH-2026-11-18.md`.
 
 ## The String Catalog
@@ -81,8 +82,8 @@ Values, states, and plural forms that both sides changed still conflict.
 ## The sync paths file
 <!-- id: localization-sync-paths; keys: sync-paths.txt, union merge, unsorted, sorted, test_syncpaths, globs; src: Scripts/l10n/sync-paths.txt, Scripts/l10n/tests/test_syncpaths.py, .gitattributes -->
 
-Each wave adds the globs of its own files to `Scripts/l10n/sync-paths.txt`, and the last wave adds `TextMouth/**`.
-Git merges the file by union, so two waves never conflict, but a union keeps both sides' lines where each added them, so two waves that add at the same place leave the file out of order.
+Each wave added the globs of its own files to `Scripts/l10n/sync-paths.txt`, and now that every file is converted the file holds one line, `TextMouth/**` (0d0a0d544), so a new file is synced without an edit here.
+Git merges the file by union, which kept both sides' lines where each added them, so two waves that added at the same place left the file out of order.
 `test_syncpaths` keeps the file sorted, and fails until someone sorts it again (e057b6036 did, after the pilot's merge): after a merge that touches the file, sort it before the suite.
 
 ## The pilot's patterns
@@ -105,6 +106,29 @@ Each pattern keeps the English word for word, so the suite's assertions keep pas
 10. A sentence that names another control interpolates the control's shown name, so the two agree in every language, and a translation never types another control's English (d8d7f9405).
 11. Whole sentences join through `SentenceWording.joined(_:)`, never `joined(separator: " ")`.
     Each sentence ends with its own full stop first, and a list of non-sentences ("A, B and C") is `CountWording.list`.
+
+## The patterns of the conversion waves
+<!-- id: localization-wave-patterns; keys: LogDescribing, ItemNoun.choose, displayAuthor, IOSUnavailable, TextEncodingCatalog.Label, IOSBranchTests, FR34; src: TextMouth/Services/TranscriptionService.swift, TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Models/Book.swift, TextMouth/Services/AudioEditing/AudioFilterPresets.swift, TextMouth/Platform/iOS/IOSUnavailable.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouthProductionTests/IOSBranchTests.swift -->
+
+The waves added these to the pilot's patterns (the numbering above goes on); each names a commit on main to read.
+
+12. An error shown on screen and written to the log conforms to `LogDescribing` (`logDescription`, in `TranscriptionService.swift`), and the log writes `logDescription`, never `errorDescription` (feb1706d4, `TranscriptionError`).
+    Many error types gained it: the importers' and the readers' failures, `BookExportFailure.logReason`, `ShortcutRefusal.logReason`, `BookCloudError.logReason`, `LegacyMigrationError.logDescription`.
+    A type with a name the log also writes has an English `logName` beside the localized name (`BookFormat.logName`, `FeedFetchError.logName`).
+13. A sentence that names a feed's items is written whole for each noun, never a noun glued into it: `ItemNoun.choose(episode:article:item:)` takes one whole sentence for each case, and asks only for the one that matches (5917491b1, `FeedCommands.swift`).
+    So every language agrees its words with the noun.
+14. A stored value that the interface also shows keeps its stored form, and the interface shows a localized twin beside it (pattern 5 is the first case):
+    - `Book.displayAuthor(_:)` shows the stored "Unknown" placeholder in the interface language, and every other author as written (d9dde26f1);
+    - `PremadeFilterPreset.title` beside the stored English name, which an edited copy keeps (1e97f78f1);
+    - a shortcut action's raw value, a scope's `configName`, and a braille code's id stay as stored, and the interface shows a title.
+    Ask of every enum raw value or stored string whether anything shows it; the stored form is never localized, since a library or a `config.json` written in one language must read in another.
+15. A typed error case replaces a phrase glued into one English frame: `IOSUnavailable.convertingThisKindOfFile`, `.editingInAnotherApp`, and `.showingLogsInFinder` each hold a whole sentence (2d38de070).
+    `feature(_:)` stays English until its four callers convert, marked `// l10n: no (inside IOSUnavailable's English sentence ...)`; see [the stand-ins](../architecture/platforms.md#the-ios-stand-ins-and-iosunavailable).
+16. A choice that code makes about a name compares the name's identity, never its localized text: `TextEncodingCatalog.Label` has one case for each encoding name, and `TextEncodingChoices` compares labels (33cd7c8e4).
+    Foundation's names for an encoding differ from ours in English too, so comparing text was never right.
+17. Mac code names no `Phone*` type outside an iOS branch, which `IOSBranchTests.testOnlyTheIPhonesFoldersNameItsTypesOutsideAnIOSBranch` enforces by reading the source.
+    The phone's words forward to the Mac's statics; where Mac code needs a word the phone's type holds (Cancel), it gets its own static with the same key and comment, so the catalog is unchanged (33df32b4d).
+    A comparison against a menu's or a button's title follows pattern 10 and the menus bullet below.
 
 ## The rules that bite
 <!-- id: localization-rules-that-bite; keys: identifier, count grouping, debug log English, menu titles, fragment, app-wide keys, MenuVisibilityManager, Stepper; src: TextMouth/Platform/macOS/Services/MenuVisibilityManager.swift, TextMouth/Models/Book.swift, TextMouth/ViewModels/ReaderViewModel+GoingOn.swift, TextMouth/Models/EndOfBookWording.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
@@ -146,4 +170,5 @@ Each pattern keeps the English word for word, so the suite's assertions keep pas
 - Code and catalog committed together, area by area.
 - The train request: the classes `reach` finds, the iPhone bundle, and every test class whose file names a converted file; the `phone` area whenever an iPhone file or a shared file changed.
 - Cutting the text (a step of its own, whose cuts the user hears first) and translating it (the translators' work) are separate steps.
+- Translating the catalog's strings in batches is its own work: see [Translating at scale](translation.md#translating-at-scale).
 - An area of about 60 strings took the pilot's Opus agent about two hours to convert and test, most of it waiting for the sync, the type-checks, and a train: plan one area of up to 100 strings for each agent.

@@ -12,7 +12,7 @@ What is here is what the options and the decoder do with a choice.
 - The options: TextEncodingChoices (Models/TextEncodingChoice.swift) lists them as TextEncodingOption values:
   - .automatic (automaticName, "Automatic"),
   - then .encoding("utf-8") (TextFileDecoder.utf8Identifier; UTF-8 is not in the catalog, which holds what a guess can name),
-  - then each name of TextEncodingCatalog.entries once, in the catalog's order, by the identifier of the first entry that has the name and named exactly as the catalog names it, Windows-1252 first.
+  - then each name of TextEncodingCatalog.entries once, in the catalog's order, by the identifier of the first entry that has the name (compared by its TextEncodingCatalog.Label, never by the localized text it shows) and named as the catalog names it, Windows-1252 first.
   - The catalog gives Shift JIS, GBK, Big5, and EUC-KR two entries each, Windows' variant and the standard it extends, so one option stands for both:
     - identifiers(of:) lists every entry of an option's name in the catalog's order,
     - LibraryViewModel.validatedChoice(of:for:) tries them in turn until one reads every byte, and

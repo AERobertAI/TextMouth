@@ -23,9 +23,19 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - On a Mac or iPhone set to Spanish, the sleep timer, the bookmarks, and the Reading List now appear and speak in Spanish.
 - The rest of TextMouth stays in English for now, and the other parts follow.
 
+### The whole interface can be translated
+- Every word in TextMouth's windows can now be translated, on the Mac and the iPhone, not only the sleep timer, the bookmarks, and the Reading List.
+- Only English is complete so far.
+
 ### Shorter VoiceOver hints
 - The VoiceOver hints of the sleep timer, the bookmarks, and the Reading List are shorter: each says what the control does once, without repeating its label or naming the key.
 - Settings, Playback has a shorter hint for Open the next book in, and so do Feed Info and Folder Settings.
+- VoiceOver hints and explanations are shorter across the rest of the app too, each keeping every fact it gave.
+
+### Small wording fixes
+- A count of one says "1 item", not "1 items".
+- Numbers of 1,000 and more are grouped, as in "1,000 books".
+- A list of two books joins them with "and", as in "A and B".
 
 ## 0.5.3 (November 18, 2026)
 
