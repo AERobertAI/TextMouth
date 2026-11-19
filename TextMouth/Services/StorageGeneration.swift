@@ -59,6 +59,20 @@ enum StorageWork: Sendable, CaseIterable {
     /// after-playing sweep and the newest-N rule (`FeedCenter.removeDue`).
     case removingFeedDownloads
 
+    /// What the debug log says while a move waits for this work, in English
+    /// whatever language the interface speaks.
+    var logWaitingMessage: String {
+        switch self {
+        case .importing: return "Waiting for the current import to finish..." // l10n: no (debug log text)
+        case .audioEditing: return "Waiting for audio editing to finish..." // l10n: no (debug log text)
+        case .textExtraction: return "Waiting for text extraction to finish..." // l10n: no (debug log text)
+        case .contentAnalysis: return "Waiting for book analysis to finish..." // l10n: no (debug log text)
+        case .metadataRefresh: return "Waiting for book metadata to be read..." // l10n: no (debug log text)
+        case .savingFeeds: return "Waiting for feed records to be saved..." // l10n: no (debug log text)
+        case .removingFeedDownloads: return "Waiting for feed downloads to be deleted..." // l10n: no (debug log text)
+        }
+    }
+
     /// What a move's status line says while it waits for this work, as the
     /// screen shows it and VoiceOver reads it.
     var waitingMessage: String {

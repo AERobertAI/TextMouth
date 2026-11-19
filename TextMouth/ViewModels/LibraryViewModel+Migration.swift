@@ -1828,7 +1828,7 @@ extension LibraryViewModel {
         var waited = false
         await hold.waitForWorkUnderWay { work in
             waited = true
-            DiagnosticLog.event(.storage, "DATA_DIRECTORY_MOVE: \(work.waitingMessage)")
+            DiagnosticLog.event(.storage, "DATA_DIRECTORY_MOVE: \(work.logWaitingMessage)")
             progress?.wait(for: work)
             await waiting(work)
         }

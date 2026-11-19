@@ -282,13 +282,25 @@ enum DataDirectoryMoveRefusal: LocalizedError, Equatable {
         case .booksOpen(let titles):
             let quoted = titles.map { "“\($0)”" }
             guard quoted.count > 1 else {
-                return "The library can't move while a book is open. Close \(quoted.first ?? "it") first."
+                guard let title = quoted.first else {
+                    return String(localized: "The library can't move while a book is open. Close it first.",
+                                  comment: "Why a move of the library was refused: a book is open in a reader. \"It\" is that book.")
+                }
+                return String(localized: "The library can't move while a book is open. Close \(title) first.",
+                              comment: "Why a move of the library was refused: a book is open in a reader. %@ is the book's title, in quotation marks.")
             }
-            return "The library can't move while books are open. Close these first: "
-                + "\(DataDirectoryDestinationChange.listing(quoted))."
+            return SentenceWording.joined([
+                String(localized: "The library can't move while books are open.",
+                       comment: "First sentence of why a move of the library was refused: several books are open in readers."),
+                String(localized: "Close these first: \(DataDirectoryDestinationChange.listing(quoted)).",
+                       comment: "Last sentence of why a move of the library was refused: which books to close. %@ is their titles in quotation marks, as a short list."),
+            ])
         case .booksNotDownloaded(let count):
-            return "\(CountWording.phrase(count, singular: "book isn't", plural: "books aren't")) downloaded. "
-                + LibraryCloudWording.downloadFirst(count: count)
+            return SentenceWording.joined([
+                String(localized: "\(count) books aren't downloaded.",
+                       comment: "First sentence of why a move of the library was refused: some books' files are only in the cloud. %lld is how many books."),
+                LibraryCloudWording.downloadFirst(count: count),
+            ])
         }
     }
 }
@@ -299,67 +311,120 @@ enum DataDirectoryMoveRefusal: LocalizedError, Equatable {
 /// the sheet, Storage settings, VoiceOver, and the tests say the same thing.
 enum DataDirectoryMoveWording {
     /// The sheet's heading.
-    static let title = "Moving the Library"
+    static var title: String {
+        String(localized: "Moving the Library",
+               comment: "Heading of the sheet that shows the library being moved to another folder.")
+    }
     /// What VoiceOver calls the progress bar.
-    static let progressLabel = "Moving the library"
+    static var progressLabel: String {
+        String(localized: "Moving the library",
+               comment: "VoiceOver label of the progress bar of the library being moved.")
+    }
     /// What VoiceOver calls the Cancel button.
-    static let cancelLabel = "Cancel Move"
+    static var cancelLabel: String {
+        String(localized: "Cancel Move",
+               comment: "VoiceOver label of the button that cancels the move of the library.")
+    }
     /// What the Cancel button does.
-    static let cancelHint = "Stops moving the library. The library stays where it is, and nothing is changed."
+    static var cancelHint: String {
+        String(localized: "Stops moving the library. The library stays where it is, and nothing is changed.",
+               comment: "VoiceOver hint of the button that cancels the move of the library.")
+    }
     /// Announced when Cancel is pressed.
-    static let cancellingAnnouncement = "Cancelling the move."
+    static var cancellingAnnouncement: String {
+        String(localized: "Cancelling the move.",
+               comment: "Announcement when the listener cancels the move of the library.")
+    }
     /// Announced when TextMouth is asked to quit during a move.
-    static let quitAnnouncement = "Stopping the library move before quitting."
+    static var quitAnnouncement: String {
+        String(localized: "Stopping the library move before quitting.",
+               comment: "Announcement when TextMouth is asked to quit during a move of the library.")
+    }
     /// Added to the done message when Cancel came too late.
-    static let finishedDespiteCancelSentence =
-        "The copy was already complete when Cancel was pressed, so the move went ahead."
+    static var finishedDespiteCancelSentence: String {
+        String(localized: "The copy was already complete when Cancel was pressed, so the move went ahead.",
+               comment: "Sentence added to the done message of a move of the library when Cancel was pressed after the copy was complete.")
+    }
+
+    /// The last sentence of several reasons a move of the data directory was
+    /// refused: what to do about the new location.
+    static var chooseAnotherLocation: String {
+        String(localized: "Choose another location.",
+               comment: "Last sentence of why a move of the data directory was refused: what to do about the new location.")
+    }
 
     /// Announced when the copy starts: where the library goes.
     static func startAnnouncement(to destination: URL, isResetToDefault: Bool) -> String {
         isResetToDefault
-            ? "Moving the library to the default location, \(destination.path)."
-            : "Moving the library to \(destination.path)."
+            ? String(localized: "Moving the library to the default location, \(destination.path).",
+                     comment: "Announcement when the library's move back to the default location starts. %@ is the default location's path.")
+            : String(localized: "Moving the library to \(destination.path).",
+                     comment: "Announcement when the library's move starts. %@ is the new location's path.")
     }
 
     /// Announced as the copy reaches each quarter.
     static func quarterAnnouncement(percent: Int) -> String {
-        "Moving the library, \(percent) percent."
+        String(localized: "Moving the library, \(percent) percent.",
+               comment: "Announcement as the move of the library reaches each quarter. %lld is the percent done, from 0 to 100.")
     }
 
     /// Where the library is going, as the sheet says it.
     static func destination(_ destination: URL, isResetToDefault: Bool) -> String {
-        isResetToDefault ? "To the default location, \(destination.path)" : "To \(destination.path)"
+        isResetToDefault
+            ? String(localized: "To the default location, \(destination.path)",
+                     comment: "Line of the move sheet that says where the library is going: the default location. %@ is its path.")
+            : String(localized: "To \(destination.path)",
+                     comment: "Line of the move sheet that says where the library is going. %@ is the new location's path.")
     }
 
     /// What the move is doing, as shown.
     static func status(phase: DataDirectoryMoveProgress.Phase, percent: Int, isCancelling: Bool) -> String {
         if isCancelling {
-            return "Cancelling the move…"
+            return String(localized: "Cancelling the move…",
+                          comment: "Status line of the move sheet while the move is being cancelled.")
         }
         switch phase {
-        case .preparing: return "Getting ready to move the library…"
+        case .preparing:
+            return String(localized: "Getting ready to move the library…",
+                          comment: "Status line of the move sheet before the copy starts.")
         case .waiting(let work): return work.waitingMessage
-        case .copying: return "Moving the library… \(percent) percent"
-        case .finishing: return "Finishing the move…"
+        case .copying:
+            return String(localized: "Moving the library… \(percent) percent",
+                          comment: "Status line of the move sheet while the library is copied. %lld is the percent done, from 0 to 100.")
+        case .finishing:
+            return String(localized: "Finishing the move…",
+                          comment: "Status line of the move sheet while the move is being finished.")
         }
     }
 
     /// The progress bar's value as VoiceOver speaks it.
     static func spokenValue(phase: DataDirectoryMoveProgress.Phase, percent: Int, isCancelling: Bool) -> String {
         if isCancelling {
-            return "Cancelling"
+            return String(localized: "Cancelling",
+                          comment: "VoiceOver value of the move's progress bar while the move is being cancelled.")
         }
         switch phase {
-        case .preparing: return "Getting ready"
+        case .preparing:
+            return String(localized: "Getting ready",
+                          comment: "VoiceOver value of the move's progress bar before the copy starts.")
         case .waiting(let work): return work.waitingMessage
-        case .copying: return "\(percent) percent"
-        case .finishing: return "Finishing"
+        case .copying:
+            return String(localized: "\(percent) percent",
+                          comment: "VoiceOver value of the move's progress bar while the library is copied. %lld is the percent done, from 0 to 100.")
+        case .finishing:
+            return String(localized: "Finishing",
+                          comment: "VoiceOver value of the move's progress bar while the move is being finished.")
         }
     }
 
     /// The outcome of a cancelled move.
     static func cancelled(stillAt root: DataDirectoryLocation) -> String {
-        "Move cancelled. The library is still at \(root.namedDescription)."
+        SentenceWording.joined([
+            String(localized: "Move cancelled.",
+                   comment: "First sentence of the message after the move of the library was cancelled."),
+            String(localized: "The library is still at \(root.namedDescription).",
+                   comment: "Last sentence of the message after the move of the library was cancelled. %@ is the library's path, with where it leads when it is a link."),
+        ])
     }
 
     /// What a Library window says when an app-wide action reaches it while
@@ -368,9 +433,11 @@ enum DataDirectoryMoveWording {
     static func refusal(of action: GlobalAction) -> String? {
         switch action {
         case .openBookFile, .newFromText, .importDAISYFolder:
-            return "Books can't be added while the library is moving."
+            return String(localized: "Books can't be added while the library is moving.",
+                          comment: "What a Library window says when a command that adds a book is chosen while the library is being moved.")
         case .openBookWindow, .continueToNextBook:
-            return "Books can't be opened while the library is moving."
+            return String(localized: "Books can't be opened while the library is moving.",
+                          comment: "What a Library window says when a command that opens a book is chosen while the library is being moved.")
         case .openFiles, .goToLibrary:
             // Files opened from Finder are imported once the move is done
             // (the import waits for it, TODO S04), and open then.
@@ -384,6 +451,12 @@ enum DataDirectoryMoveWording {
     /// library and its files must not change while they are copied, so no
     /// answer is taken until the move ends, however it ends. The question
     /// stays, to be answered then.
-    static let importAnswerRefusal =
-        "Import questions can't be answered while the library is moving. Answer this one when the move ends."
+    static var importAnswerRefusal: String {
+        SentenceWording.joined([
+            String(localized: "Import questions can't be answered while the library is moving.",
+                   comment: "First sentence of what an import question says when it is answered while the library is being moved."),
+            String(localized: "Answer this one when the move ends.",
+                   comment: "Last sentence of what an import question says when it is answered while the library is being moved."),
+        ])
+    }
 }
