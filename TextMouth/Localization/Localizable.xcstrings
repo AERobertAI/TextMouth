@@ -166,7 +166,7 @@
         }
       }
     },
-    "%@ was disconnected, so recording stopped. What was recorded until then is kept." : {
+    "%@ was disconnected, so recording stopped. What was recorded is kept." : {
       "comment" : "Error in the Record window when the microphone was unplugged while recording. %@ is the microphone's name."
     },
     "%@ was disconnected, so recordings use %@." : {
@@ -1123,7 +1123,7 @@
     "Add gesture step" : {
       "comment" : "VoiceOver label of the button that adds a step to the restart gesture in the Miscellaneous settings."
     },
-    "Add rules to change how text is spoken. Rules are applied in order from top to bottom." : {
+    "Add rules to change how text is spoken. They apply top to bottom." : {
       "comment" : "Shown under \"No substitution rules.\" in the Substitutions settings."
     },
     "Add step" : {
@@ -1151,8 +1151,11 @@
         }
       }
     },
-    "Adds a button to add or remove a bookmark at the current position" : {
+    "Adds or removes a bookmark at the current position" : {
       "comment" : "VoiceOver hint of the Show bookmark button checkbox in the Playback settings."
+    },
+    "Adds speed buttons and the current speed" : {
+      "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings."
     },
     "Adds the selected books to the end of the reading list." : {
       "comment" : "VoiceOver hint of the Library's edit-mode bar button Add to Reading List.",
@@ -1214,6 +1217,9 @@
     "Appends a new step to the gesture sequence" : {
       "comment" : "VoiceOver hint of the Add gesture step button in the Miscellaneous settings."
     },
+    "Applies the rules to text before it is spoken" : {
+      "comment" : "VoiceOver hint of the Enable text substitutions switch in the Substitutions settings."
+    },
     "Articles (%lld)" : {
       "comment" : "The header of a list's news articles, with their count: \"Articles (3)\". %lld is the number of articles.",
       "localizations" : {
@@ -1240,7 +1246,7 @@
     "Ask Each Time" : {
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: TextMouth asks what to do with the original file after each import."
     },
-    "Asks first, then replaces every rule with TextMouth's default rules." : {
+    "Asks first, then replaces every rule with the defaults." : {
       "comment" : "VoiceOver hint of the Reset to Defaults button in the Substitutions settings."
     },
     "Asks for an optional note, then marks the reading position." : {
@@ -1309,6 +1315,9 @@
     },
     "Backward navigation unit: %@" : {
       "comment" : "VoiceOver label of the playback bar's menu that picks the unit the backward button moves by. %@ is the unit now chosen, such as \"Sentence\"."
+    },
+    "Blocks the spurious play command macOS sends when Bluetooth headphones are removed." : {
+      "comment" : "Explanation under the Enable Bluetooth monitoring switch in the Miscellaneous settings. macOS is the name of the operating system."
     },
     "Bluetooth" : {
       "comment" : "Heading of the Bluetooth group in the Miscellaneous settings. Bluetooth is a trademark and stays as written in most languages."
@@ -1505,7 +1514,7 @@
     "Choose a voice for reading. Change takes effect immediately." : {
       "comment" : "VoiceOver hint of the voice pop-up in the Voice settings."
     },
-    "Choose no per-book control, one picker for both directions, or one menu with separate forward and backward pickers" : {
+    "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers" : {
       "comment" : "VoiceOver hint of the Navigation unit controls pop-up in the Playback settings."
     },
     "Chooses what a book opened from the list does when it ends." : {
@@ -1515,17 +1524,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elige qué hace un libro abierto desde la lista al terminar."
-          }
-        }
-      }
-    },
-    "Chooses where TextMouth writes its diagnostic logs. %@ keeps them in its Logs folder, beside your books, where they move with the library and sync with it when it is in the cloud. %@ keeps them in %@, which never syncs. A change applies from the next line written; logs already written are not moved." : {
-      "comment" : "VoiceOver hint and tooltip of the Log location pop-up in the Storage settings. %1$@ and %2$@ are the names of its two choices, as the pop-up lists them, and %3$@ is the folder's path on this Mac, which stays as written.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Chooses where TextMouth writes its diagnostic logs. %1$@ keeps them in its Logs folder, beside your books, where they move with the library and sync with it when it is in the cloud. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line written; logs already written are not moved."
           }
         }
       }
@@ -1585,7 +1583,7 @@
         }
       }
     },
-    "Chooses whether The, A, and An at the start of a title count when the Library sorts titles and when you type a title's first letters to go to it." : {
+    "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters." : {
       "comment" : "Hint and tooltip of the Leading Articles pop-up in the Library settings. The, A, and An are the English articles the setting skips."
     },
     "Close" : {
@@ -1599,9 +1597,6 @@
         }
       }
     },
-    "Close Search Library; its results stay for the next time it opens" : {
-      "comment" : "VoiceOver hint of the Close button of the Search Library window. Search Library is the window's name."
-    },
     "Close search and return to the book" : {
       "comment" : "VoiceOver hint of the Back to Book button of Search in Book."
     },
@@ -1611,13 +1606,16 @@
     "Close sleep timer sheet after setting a timer" : {
       "comment" : "VoiceOver label of the Close sheet after setting timer checkbox in the Playback settings."
     },
-    "Closing this window ends the recording. %@ keeps what was recorded as an audiobook in your library, %@ deletes it, and %@ keeps recording." : {
+    "Closes Search Library; results stay for next time" : {
+      "comment" : "VoiceOver hint of the Close button of the Search Library window. Search Library is the window's name."
+    },
+    "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording." : {
       "comment" : "Explanation under the question asked when the Record window is closed while recording. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that stops and saves, the one that deletes the recording, and the one that keeps recording.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Closing this window ends the recording. %1$@ keeps what was recorded as an audiobook in your library, %2$@ deletes it, and %3$@ keeps recording."
+            "value" : "Closing ends the recording. %1$@ saves it as an audiobook, %2$@ deletes it, and %3$@ keeps recording."
           }
         }
       }
@@ -2027,7 +2025,7 @@
     "Exact file content match — the strongest indicator" : {
       "comment" : "Hint of the Identical File criterion of Find Duplicate Books."
     },
-    "Experimental. Press a configurable sequence of media keys or AirPods controls within a short time window to re-arm the most recently used sleep timer — handy for restarting a timer that just expired without going back to the keyboard." : {
+    "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires." : {
       "comment" : "Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written."
     },
     "Fade out duration" : {
@@ -2081,6 +2079,32 @@
     "Forward navigation unit: %@" : {
       "comment" : "VoiceOver label of the playback bar's menu that picks the unit the forward button moves by. %@ is the unit now chosen, such as \"Sentence\"."
     },
+    "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each." : {
+      "comment" : "Announcement of the Record window when it finds several recordings left behind. %1$lld is how many and %2$@ is the heading of the list of recovered recordings.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Found a recording from before TextMouth last quit, under %@. Save or discard it." : {
+      "comment" : "Announcement of the Record window when it finds one recording left behind. %@ is the heading of the list of recovered recordings."
+    },
     "Gesture pattern" : {
       "comment" : "Heading of the list of steps that make up the restart gesture, in the Miscellaneous settings."
     },
@@ -2132,7 +2156,7 @@
     "Hold Shift while skipping to use a secondary skip amount." : {
       "comment" : "Explanation under the Shift+Skip pop-ups in the Playback settings. Shift is the key's name."
     },
-    "How long to suppress spurious media commands after a Bluetooth device disconnects. Increase if playback sometimes auto-resumes after removing headphones." : {
+    "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones." : {
       "comment" : "Explanation under the Bluetooth disconnect delay slider in the Miscellaneous settings."
     },
     "ISBN: %@" : {
@@ -2214,9 +2238,6 @@
     },
     "Leading articles" : {
       "comment" : "Label of the pop-up in the Library settings that chooses whether a title's leading article (The, A, An) counts when sorting and typing."
-    },
-    "Lets you restart the most recent sleep timer with a sequence of media-control button presses" : {
-      "comment" : "VoiceOver hint of the Enable restart-timer gesture switch in the Miscellaneous settings."
     },
     "Level" : {
       "comment" : "Label of the microphone's loudness while recording, in the Record window."
@@ -2326,17 +2347,17 @@
     "Match criteria (checked filters are combined):" : {
       "comment" : "The line over the checkboxes of Find Duplicate Books that choose how books are matched. Checked criteria must all match together."
     },
-    "Match only when the pattern is not adjacent to letters, digits, or underscores" : {
-      "comment" : "VoiceOver hint of the Match whole word only switch in the substitution rule editor."
-    },
     "Match whole word only" : {
       "comment" : "Title and VoiceOver label of the switch in the substitution rule editor that makes the pattern match whole words only."
     },
     "Matches" : {
       "comment" : "Name of the VoiceOver rotor in the Search Library window that moves between the matches listed."
     },
-    "Maximum total elapsed time for the sequence to count as a match. Shorter windows reduce accidental matches but require quicker presses." : {
-      "comment" : "Explanation under the restart gesture's time window slider in the Miscellaneous settings."
+    "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio." : {
+      "comment" : "Explanation under the restart gesture's pattern heading in the Miscellaneous settings."
+    },
+    "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept." : {
+      "comment" : "Explanation under the playback controls group's choices in the Playback settings."
     },
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
@@ -2395,9 +2416,6 @@
     "Moderate" : {
       "comment" : "The name of punctuation pause level 2: periods and commas pause."
     },
-    "Monitors Bluetooth audio disconnections and blocks the spurious play command macOS sends when headphones are removed." : {
-      "comment" : "Explanation under the Enable Bluetooth monitoring switch in the Miscellaneous settings. macOS is the name of the operating system."
-    },
     "More than %lld matches in %@" : {
       "comment" : "Status line of a finished search where a book's count of matches stopped at its limit. %1$lld is the number of matches found, and %2$@ is the count of books with its noun, such as \"750 books\".",
       "localizations" : {
@@ -2452,9 +2470,6 @@
     },
     "Navigation" : {
       "comment" : "Heading of the navigation group in the Playback settings."
-    },
-    "Navigation menu changes are saved as defaults for the current book. Hiding the menus always uses the global skip choices while retaining book defaults for later." : {
-      "comment" : "Explanation under the playback controls group's choices in the Playback settings."
     },
     "Navigation unit controls" : {
       "comment" : "Title of the pop-up in the Playback settings that chooses which navigation unit menus the playback bar shows."
@@ -2588,7 +2603,7 @@
         }
       }
     },
-    "No sound is reaching TextMouth from %@. Check that the microphone is on and not muted." : {
+    "No sound from %@. Check that the microphone is on and not muted." : {
       "comment" : "Said by the Record window when a recording has held nothing but silence for a few seconds. %@ is the name of the microphone."
     },
     "No substitution rules." : {
@@ -2737,7 +2752,7 @@
     "Opens %@, the folder the logs are written to now, in Finder." : {
       "comment" : "VoiceOver hint and tooltip of the Show Logs in Finder button. %@ is the folder's full path, which stays as written."
     },
-    "Opens System Settings at Privacy & Security, Microphone, where TextMouth can be allowed to use the microphone." : {
+    "Opens the Microphone privacy settings in System Settings." : {
       "comment" : "VoiceOver hint of the Open Privacy Settings button of the Record window. Privacy & Security and Microphone are the names of places in macOS's System Settings, as macOS words them in the language."
     },
     "Opens the book at this match" : {
@@ -2984,10 +2999,10 @@
         }
       }
     },
-    "Reading the audio took longer than %@ seconds, so TextMouth stopped waiting for it." : {
+    "Reading the audio took longer than %@ seconds; TextMouth stopped waiting." : {
       "comment" : "Error shown when reading an audio file took too long and TextMouth gave up waiting. %@ is the limit in seconds with a fraction, already formatted, such as 0.2."
     },
-    "Reading the audio took longer than %lld minutes, so TextMouth stopped waiting for it." : {
+    "Reading the audio took longer than %lld minutes; TextMouth stopped waiting." : {
       "comment" : "Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole minutes.",
       "localizations" : {
         "en" : {
@@ -2996,13 +3011,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Reading the audio took longer than %lld minute, so TextMouth stopped waiting for it."
+                  "value" : "Reading the audio took longer than %lld minute; TextMouth stopped waiting."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Reading the audio took longer than %lld minutes, so TextMouth stopped waiting for it."
+                  "value" : "Reading the audio took longer than %lld minutes; TextMouth stopped waiting."
                 }
               }
             }
@@ -3010,7 +3025,7 @@
         }
       }
     },
-    "Reading the audio took longer than %lld seconds, so TextMouth stopped waiting for it." : {
+    "Reading the audio took longer than %lld seconds; TextMouth stopped waiting." : {
       "comment" : "Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole seconds.",
       "localizations" : {
         "en" : {
@@ -3019,13 +3034,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Reading the audio took longer than %lld second, so TextMouth stopped waiting for it."
+                  "value" : "Reading the audio took longer than %lld second; TextMouth stopped waiting."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Reading the audio took longer than %lld seconds, so TextMouth stopped waiting for it."
+                  "value" : "Reading the audio took longer than %lld seconds; TextMouth stopped waiting."
                 }
               }
             }
@@ -3059,7 +3074,7 @@
     "Recording of %@, which holds no sound" : {
       "comment" : "Describes a recording left behind that holds no sound. %@ is when it was recorded, a date and time."
     },
-    "Recording stopped because the microphone reported a problem. What was recorded until then is kept." : {
+    "Recording stopped because the microphone reported a problem. What was recorded is kept." : {
       "comment" : "Error in the Record window when recording stopped by itself because capture failed."
     },
     "Recovered recordings" : {
@@ -3269,6 +3284,9 @@
         }
       }
     },
+    "Restarts the most recent sleep timer with a sequence of media-control presses" : {
+      "comment" : "VoiceOver hint of the Enable restart-timer gesture switch in the Miscellaneous settings."
+    },
     "Restarts the timer at its full length and plays the book." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's Reset Timer button: the running timer starts again from the length it was set to, and the book plays.",
       "localizations" : {
@@ -3370,7 +3388,7 @@
     "Saved Recording as %@." : {
       "comment" : "Status line of the Record window once a recording is saved as an audiobook, ending with a full stop. %@ is the audiobook's title."
     },
-    "Saves this recording as an audiobook in the folder chosen in %@, titled for when it was recorded." : {
+    "Saves this recording as an audiobook in the %@ folder, titled by when it was recorded." : {
       "comment" : "VoiceOver hint of the button that saves a recording left behind. %@ is the label of the pop-up that chooses the folder."
     },
     "Saving the recording…" : {
@@ -3455,9 +3473,6 @@
     "Separate Forward and Backward Units" : {
       "comment" : "A choice of the playback bar's navigation unit menus setting: a menu for each skip button."
     },
-    "Sequence of media-control events that trigger the restart. The final event in the sequence is consumed (not passed to playback) so it can't accidentally start audio." : {
-      "comment" : "Explanation under the restart gesture's pattern heading in the Miscellaneous settings."
-    },
     "Set" : {
       "comment" : "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes.",
       "localizations" : {
@@ -3465,6 +3480,17 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Establecer"
+          }
+        }
+      }
+    },
+    "Set its shortcut with %@ in the %@ tab; the default is %@." : {
+      "comment" : "Note under the restart gesture in the Miscellaneous settings. %1$@ is the name of the shortcut's action, %2$@ is the name of the Settings tab where shortcuts are set, and %3$@ is the default key in words, such as \"Shift + Command + R\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Set its shortcut with %1$@ in the %2$@ tab; the default is %3$@."
           }
         }
       }
@@ -3649,9 +3675,6 @@
     "Shows the groups before these." : {
       "comment" : "VoiceOver hint of the Previous Groups button of Find Duplicate Books."
     },
-    "Shows the speed adjustment buttons and current speed display" : {
-      "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings."
-    },
     "Silent" : {
       "comment" : "The value of the microphone level in the Record window, spoken, when no sound reaches TextMouth."
     },
@@ -3680,6 +3703,9 @@
     },
     "Skip forward unit" : {
       "comment" : "VoiceOver label of the Skip Forward pop-up in the Playback settings."
+    },
+    "Skips matches next to letters, digits, or underscores" : {
+      "comment" : "VoiceOver hint of the Match whole word only switch in the substitution rule editor."
     },
     "Sleep Timer" : {
       "comment" : "Heading of the sleep timer group in the Playback settings.\nThe name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.",
@@ -3992,6 +4018,9 @@
         }
       }
     },
+    "Stops playback resuming when headphones disconnect" : {
+      "comment" : "VoiceOver hint of the Enable Bluetooth monitoring switch in the Miscellaneous settings."
+    },
     "Stops recording and saves it in your library as an audiobook." : {
       "comment" : "VoiceOver hint of the Stop button in the Record window."
     },
@@ -4104,34 +4133,8 @@
         }
       }
     },
-    "TextMouth isn't allowed to use the microphone. To record, turn on TextMouth in System Settings, Privacy & Security, Microphone." : {
+    "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone." : {
       "comment" : "Error in the Record window when macOS has denied TextMouth the microphone. Names the places in System Settings, as macOS words them, where the user can allow it."
-    },
-    "TextMouth kept %lld recordings from before it last quit, listed under %@. Save each as an audiobook, or discard it." : {
-      "comment" : "Announcement of the Record window when it finds several recordings left behind. %1$lld is how many and %2$@ is the heading of the list of recovered recordings.",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "TextMouth kept %lld recordings from before it last quit, listed under %@. Save each as an audiobook, or discard it."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "TextMouth kept %lld recordings from before it last quit, listed under %@. Save each as an audiobook, or discard it."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "TextMouth kept a recording from before it last quit, listed under %@. Save it as an audiobook, or discard it." : {
-      "comment" : "Announcement of the Record window when it finds one recording left behind. %@ is the heading of the list of recovered recordings."
     },
     "That match is no longer in the book's text. Search again to find it." : {
       "comment" : "Announcement when a search match is no longer in the book's text."
@@ -4164,6 +4167,9 @@
     "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's." : {
       "comment" : "Describes the Leading Articles choice Ignored When Typing and Sorting, under the pop-up. The Hobbit is the example title; the article moves to the end and the book sorts and types under H."
     },
+    "The audiobook's title in your library." : {
+      "comment" : "VoiceOver hint and tooltip of the Title field in the Record window."
+    },
     "The book is in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
       "localizations" : {
@@ -4186,51 +4192,40 @@
         }
       }
     },
-    "The data directory has no Logs folder, so logs are written to %@ until it has one again." : {
+    "The data directory has no Logs folder, so logs go to %@ until it has one." : {
       "comment" : "The line under the Log location pop-up in the Storage settings while the data directory has no Logs folder. %@ is the folder's full path, which stays as written."
     },
-    "The data directory is missing, so logs are written to %@ until it is back." : {
+    "The data directory is missing, so logs go to %@ until it is back." : {
       "comment" : "The line under the Log location pop-up in the Storage settings while the data directory is missing. %@ is the folder's full path, which stays as written."
     },
-    "The data directory's Logs folder can't be written (%@), so logs are written to %@ until it can." : {
+    "The data directory's Logs folder can't be written (%@), so logs go to %@ until it can." : {
       "comment" : "The line under the Log location pop-up in the Storage settings while the data directory's Logs folder cannot be written. %1$@ is the reason the system gives, which may be in English, and %2$@ is the folder's full path, which stays as written.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "The data directory's Logs folder can't be written (%1$@), so logs are written to %2$@ until it can."
+            "value" : "The data directory's Logs folder can't be written (%1$@), so logs go to %2$@ until it can."
           }
         }
       }
     },
-    "The disk is almost full, so recording stopped. What was recorded until then is kept." : {
+    "The disk is almost full, so recording stopped. What was recorded is kept." : {
       "comment" : "Error in the Record window when the disk filled up while recording."
-    },
-    "The keyboard shortcut for the same action is %@ in the %@ tab; its default is %@." : {
-      "comment" : "Note under the restart gesture in the Miscellaneous settings. %1$@ is the name of the shortcut's action, %2$@ is the name of the Settings tab where shortcuts are set, and %3$@ is the default key in words, such as \"Shift + Command + R\".",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "The keyboard shortcut for the same action is %1$@ in the %2$@ tab; its default is %3$@."
-          }
-        }
-      }
     },
     "The library folder the recording is saved in." : {
       "comment" : "VoiceOver hint of the Save in pop-up of the Record window."
     },
-    "The library isn't available, so logs are written to %@ until it is." : {
+    "The library isn't available, so logs go to %@ until it is." : {
       "comment" : "The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written."
     },
     "The microphone TextMouth used last isn't connected, so recordings use %@." : {
       "comment" : "Said by the Record window when the microphone used last is not connected as the window opens. %@ is the name of the microphone recordings use instead."
     },
-    "The microphone to record from. TextMouth remembers this choice for its own recordings; the input macOS uses for everything else stays as it is." : {
+    "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged." : {
       "comment" : "VoiceOver hint and tooltip of the Microphone pop-up in the Record window. TextMouth is the app's name."
     },
-    "The name the recording is saved under, as an audiobook in your library." : {
-      "comment" : "VoiceOver hint and tooltip of the Title field in the Record window."
+    "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses." : {
+      "comment" : "Explanation under the restart gesture's time window slider in the Miscellaneous settings."
     },
     "The next article could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next article failed. %@ is the download's own sentence saying why.",
@@ -4327,13 +4322,13 @@
         }
       }
     },
-    "This recording hasn't been saved. %@ tries again to save it as an audiobook in your library, %@ deletes it, and %@ keeps the window open." : {
+    "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open." : {
       "comment" : "Explanation under the question asked when the Record window is closed with a recording that could not be saved. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that saves, the one that deletes the recording, and the one that keeps the window open.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "This recording hasn't been saved. %1$@ tries again to save it as an audiobook in your library, %2$@ deletes it, and %3$@ keeps the window open."
+            "value" : "This recording isn't saved. %1$@ tries again, %2$@ deletes it, and %3$@ keeps the window open."
           }
         }
       }
@@ -4494,6 +4489,9 @@
     "Voice language" : {
       "comment" : "VoiceOver label of the Language pop-up in the Voice settings."
     },
+    "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded." : {
+      "comment" : "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level."
+    },
     "What happens when a book finishes playing" : {
       "comment" : "VoiceOver hint of the When book ends pop-up in the Playback settings."
     },
@@ -4526,7 +4524,7 @@
     "When book ends" : {
       "comment" : "Title of the pop-up in the Playback settings that chooses what happens when a book ends."
     },
-    "When checked, a match must have the same capital and small letters as the search text" : {
+    "When checked, matches must use the same upper and lower case" : {
       "comment" : "VoiceOver hint of the Match Case checkbox."
     },
     "When checked, the search text is an ICU regular expression" : {
@@ -4535,14 +4533,8 @@
     "When enabled, playback starts automatically after jumping to a heading, bookmark, or search result" : {
       "comment" : "VoiceOver hint of the Auto-play after navigation checkbox in the Playback settings."
     },
-    "When enabled, prevents spurious auto-resume when Bluetooth audio devices disconnect" : {
-      "comment" : "VoiceOver hint of the Enable Bluetooth monitoring switch in the Miscellaneous settings."
-    },
     "When enabled, search text is treated as a regular expression" : {
       "comment" : "VoiceOver hint of the Use Regex switch in Search in Book."
-    },
-    "When enabled, text is processed through substitution rules before being spoken" : {
-      "comment" : "VoiceOver hint of the Enable text substitutions switch in the Substitutions settings."
     },
     "When enabled, use \\b in the pattern for word boundaries" : {
       "comment" : "VoiceOver hint of the Regular expression switch in the substitution rule editor. \\b is regular expression syntax and stays as written."
@@ -4553,8 +4545,16 @@
     "When resuming playback, rewind to the start of this unit" : {
       "comment" : "VoiceOver hint of the Rewind to pop-up in the Playback settings."
     },
-    "While recording, VoiceOver speaks the level this often. Through speakers, VoiceOver's speech can be recorded." : {
-      "comment" : "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level."
+    "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay." : {
+      "comment" : "VoiceOver hint and tooltip of the Log location pop-up in the Storage settings. %1$@ and %2$@ are the names of its two choices, as the pop-up lists them, and %3$@ is the folder's path on this Mac, which stays as written.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay."
+          }
+        }
+      }
     },
     "Whole word only" : {
       "comment" : "A part of a substitution rule's spoken summary: the rule matches whole words only."
