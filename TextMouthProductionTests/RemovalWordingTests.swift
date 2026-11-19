@@ -115,11 +115,11 @@ final class RemovalWordingTests: XCTestCase {
                 + "Atlas: Permission denied.\nBestiary: Permission denied."
         )
         XCTAssertEqual(
-            RemovalMode.keepFiles.failureHeading(count: 1, noun: "book"),
+            RemovalMode.keepFiles.failureHeading(count: 1, noun: .book),
             "This book could not be removed from the library and remains in it:"
         )
         XCTAssertEqual(
-            RemovalMode.keepFiles.failureHeading(count: 2, noun: "book"),
+            RemovalMode.keepFiles.failureHeading(count: 2, noun: .book),
             "These books could not be removed from the library and remain in it:"
         )
     }
