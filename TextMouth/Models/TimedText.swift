@@ -37,7 +37,7 @@ enum TimedTextFormat: String, Codable, CaseIterable, Sendable {
         switch self {
         case .webVTT: return "WebVTT"
         case .subRip: return "SubRip"
-        case .podcastJSON: return "Podcasting 2.0 JSON"
+        case .podcastJSON: return "Podcasting 2.0 JSON"  // l10n: no (a format's proper name)
         }
     }
 
@@ -272,7 +272,7 @@ struct TimedTextDocument: Equatable, Sendable {
 /// Why a timed-text file could not be read as a transcript, in words a
 /// listener understands, the same on screen, in VoiceOver, and in braille.
 /// A reason never quotes the file's text, which is the book's.
-enum TimedTextError: LocalizedError, Equatable {
+enum TimedTextError: LocalizedError, LogDescribing, Equatable {
     /// The file is larger than TextMouth reads as a transcript: the limit,
     /// in bytes.
     case tooLarge(byteLimit: Int)
@@ -291,15 +291,38 @@ enum TimedTextError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .tooLarge(let byteLimit):
-            return "The file is larger than the \(byteLimit / 1_048_576) MB TextMouth reads as a transcript."
+            return String(localized: "The file is over the \(byteLimit / 1_048_576) MB limit for a transcript.",
+                          comment: "Error shown when a transcript file chosen to attach is too big. %lld is the size limit in megabytes (MB).")
         case .notTimedText(let format):
-            return "The file isn't a \(format.name) transcript TextMouth can read."
+            return String(localized: "The file isn't a \(format.name) transcript TextMouth can read.",
+                          comment: "Error shown when a chosen transcript file's content is not in the format its name says. %@ is the format's name, such as WebVTT, SubRip, or Podcasting 2.0 JSON.")
         case .unsupportedVersion(let format, let version):
-            return "The file is a \(format.name) transcript of version \(version), which TextMouth doesn't read."
+            // The version is the file's own text, shown as it is.
+            return String(localized: "The file is a \(format.name) transcript of version \(version), which TextMouth doesn't read.",
+                          comment: "Error shown when a chosen transcript file is of a version of its format that this app does not read. %1$@ is the format's name, such as Podcasting 2.0 JSON; %2$@ is the version the file gives, written as the file writes it.")
         case .noCues(let format):
-            return "The \(format.name) file holds no timed text TextMouth can use."
+            return String(localized: "The \(format.name) file holds no timed text TextMouth can use.",
+                          comment: "Error shown when a chosen transcript file holds no usable timed passage. %@ is the format's name, such as WebVTT or SubRip.")
         case .tooManyCues(let limit):
-            return "The file holds more than \(limit.formatted()) timed passages, more than TextMouth reads."
+            return String(localized: "Too many timed passages: the limit is \(limit).",
+                          comment: "Error shown when a chosen transcript file holds more timed passages than the app reads. %lld is the limit, written with the region's digit grouping.")
+        }
+    }
+
+    /// The error in English for the debug log. It never quotes the version a
+    /// file gives, which is the file's own text.
+    var logDescription: String {
+        switch self {
+        case .tooLarge(let byteLimit):
+            return "The file is larger than the \(byteLimit / 1_048_576) MB TextMouth reads as a transcript."  // l10n: no (debug log)
+        case .notTimedText(let format):
+            return "The file isn't a \(format.name) transcript TextMouth can read."  // l10n: no (debug log)
+        case .unsupportedVersion(let format, _):
+            return "The file is a \(format.name) transcript of a version TextMouth doesn't read."  // l10n: no (debug log)
+        case .noCues(let format):
+            return "The \(format.name) file holds no timed text TextMouth can use."  // l10n: no (debug log)
+        case .tooManyCues(let limit):
+            return "The file holds more than \(limit) timed passages, more than TextMouth reads."  // l10n: no (debug log)
         }
     }
 }

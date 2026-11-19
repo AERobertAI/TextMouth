@@ -107,7 +107,7 @@ enum TranscriptCleanupRuleFile {
                 let rules = try TranscriptCleanupRuleSet.decoded(bytes)
                 return Lookup(rules: rules, source: .user, userCopy: .used, builtInVersion: builtIn.version)
             } catch {
-                let reason = (error as? TranscriptCleanupRuleSet.Unusable)?.reason ?? "it could not be decoded"
+                let reason = (error as? TranscriptCleanupRuleSet.Unusable)?.reason ?? "it could not be decoded"  // l10n: no (a damage reason for the debug log, English by question 3)
                 preserveUnusable(url, bytes: bytes, because: reason)
                 return standIn(.unusable(reason))
             }
@@ -124,7 +124,7 @@ enum TranscriptCleanupRuleFile {
             because: reason,
             logging: logTag,
             in: .storage,
-            standIn: "TextMouth's own rules stand in"
+            standIn: "TextMouth's own rules stand in"  // l10n: no (written to the debug log)
         )
     }
 

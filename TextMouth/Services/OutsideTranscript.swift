@@ -310,7 +310,7 @@ enum OutsideTranscript {
 /// Why a transcript from outside was not given to its book, in words a
 /// listener understands, the same on screen, in VoiceOver, and in braille.
 /// A description never quotes the transcript's text, which is the book's.
-enum OutsideTranscriptError: LocalizedError, Equatable {
+enum OutsideTranscriptError: LocalizedError, LogDescribing, Equatable {
     /// The transcript runs on more than
     /// `TimedTextLimits.pastTheEndMarginMilliseconds` past the end of its
     /// audio, so it was made for other audio: where its last sentence ends,
@@ -330,14 +330,32 @@ enum OutsideTranscriptError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .runsPastTheEnd(let transcriptEnd, let audioEnd):
-            return "The transcript runs to \(Self.spoken(transcriptEnd)), past the end of the audio at "
-                + "\(Self.spoken(audioEnd)), so it was made for other audio."
+            return String(localized: "The transcript runs to \(Self.spoken(transcriptEnd)), past the audio's end at \(Self.spoken(audioEnd)), so it is for other audio.",
+                          comment: "Error shown when an attached transcript file's times run past the end of the book's audio. %1$@ is where the transcript ends and %2$@ where the audio ends, each a length of time in words such as \"1 hour, 2 minutes, 5 seconds\".")
         case .noText:
-            return "The transcript holds no text to attach."
+            return String(localized: "The transcript holds no text to attach.",
+                          comment: "Error shown when an attached transcript file holds no text.")
         case .alreadyTranscribed:
-            return "The book has a transcript already, so TextMouth kept it."
+            return String(localized: "The book has a transcript already, so TextMouth kept it.",
+                          comment: "Notice that a transcript file was not attached because the book already had its own transcript.")
         case .unusable:
-            return "The transcript's times don't fit together, so TextMouth can't use it."
+            return String(localized: "The transcript's times don't fit together, so TextMouth can't use it.",
+                          comment: "Error shown when an attached transcript file's times are out of order or inconsistent.")
+        }
+    }
+
+    /// The error in English for the debug log, with its times as raw
+    /// milliseconds, since spoken times are in the interface's language.
+    var logDescription: String {
+        switch self {
+        case .runsPastTheEnd(let transcriptEnd, let audioEnd):
+            return "The transcript runs past the end of the audio: it ends at \(transcriptEnd) ms and the audio at \(audioEnd) ms, so it was made for other audio."  // l10n: no (debug log)
+        case .noText:
+            return "The transcript holds no text to attach."  // l10n: no (debug log)
+        case .alreadyTranscribed:
+            return "The book has a transcript already, so TextMouth kept it."  // l10n: no (debug log)
+        case .unusable:
+            return "The transcript's times don't fit together, so TextMouth can't use it."  // l10n: no (debug log)
         }
     }
 

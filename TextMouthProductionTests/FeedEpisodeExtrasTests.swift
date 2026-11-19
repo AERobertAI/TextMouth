@@ -377,7 +377,7 @@ final class FeedEpisodeExtrasTests: XCTestCase {
 
         XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .missing)
         XCTAssertFalse(TranscribedBooks.shared.contains(book.id))
-        let refused = debugLogLines(containing: "FEED_TRANSCRIPT_NOT_ATTACHED: \(title) (The Tactile Atlas): The transcript runs to 30 seconds")
+        let refused = debugLogLines(containing: "FEED_TRANSCRIPT_NOT_ATTACHED: \(title) (The Tactile Atlas): The transcript runs past the end of the audio: it ends at 30000 ms")
         XCTAssertEqual(refused.count, 1)
         XCTAssertTrue(refused.first?.contains("so it was made for other audio.") ?? false, "\(refused)")
         XCTAssertEqual(debugLogLines(containing: "FEED_TRANSCRIPT_ATTACHED: \(title)").count, 0)

@@ -96,7 +96,7 @@ extension TranscriptStore {
     ) throws -> TranscriptInstallation {
         guard book.format.isAudio else { throw TranscriptionError.notAnAudiobook }
         if let reason = transcript.validationFailure() {
-            throw TranscriptionError.recognitionFailed("the transcript is not usable: \(reason)")
+            throw TranscriptionError.recognitionFailed("the transcript is not usable: \(reason)")  // l10n: no (a reason inside a translated sentence, English by question 3; also in the log)
         }
         let boundary = StorageBoundary.shared
         return try boundary.perform(.textExtraction) { _ in
@@ -337,7 +337,7 @@ struct PackageFileBeforeInstall {
     static func putBack(
         _ files: [(file: PackageFileBeforeInstall, written: FileStamp?)],
         of book: Book,
-        after work: String = "the install",
+        after work: String = "the install",  // l10n: no (written to the debug log)
         logTag: String = TranscriptStore.logTag
     ) {
         let replaced = files.filter { $0.file.stillHolds($0.written) }.map(\.file)

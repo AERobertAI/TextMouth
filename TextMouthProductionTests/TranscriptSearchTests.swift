@@ -432,11 +432,11 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(said(nil), lead + ".")
         XCTAssertEqual(
             said(.textInCloud),
-            lead + ". The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+            lead + ". The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again."
         )
         XCTAssertEqual(
             said(.transcriptInCloud),
-            lead + ". The book's transcript is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+            lead + ". The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again."
         )
         XCTAssertEqual(
             said(.audioChanged),

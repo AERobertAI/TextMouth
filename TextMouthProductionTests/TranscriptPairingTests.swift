@@ -113,10 +113,13 @@ final class TranscriptPairingTests: XCTestCase {
         XCTAssertEqual(imported.notice, TranscriptionWording.transcriptNotAttached(fileName: tone.transcriptName, reason: reason))
         XCTAssertEqual(
             imported.notice,
-            "“\(tone.transcriptName)” was beside the audio but wasn't attached as the book's transcript: "
-                + "The transcript runs to 20 seconds, past the end of the audio at 4 seconds, so it was made for other audio."
+            "“\(tone.transcriptName)” beside the audio wasn't attached: "
+                + "The transcript runs to 20 seconds, past the audio's end at 4 seconds, so it is for other audio."
         )
-        XCTAssertEqual(refusals(of: imported.book.title), ["\(tone.transcriptName): \(reason)"])
+        XCTAssertEqual(refusals(of: imported.book.title), [
+            "\(tone.transcriptName): "
+                + OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 20_000, audioEnd: 4_000).logDescription
+        ])
     }
 
     /// A .vtt file that is no WebVTT file is named with the reader's reason,
@@ -266,7 +269,7 @@ final class TranscriptPairingTests: XCTestCase {
         XCTAssertEqual(transcript.source, TranscriptSource(origin: .imported, format: .webVTT, fileName: "01.vtt"))
         XCTAssertEqual(
             imported.notice,
-            "“Disc 1/01.vtt” was beside the audio but wasn't attached as the book's transcript: "
+            "“Disc 1/01.vtt” beside the audio wasn't attached: "
                 + "The file isn't a WebVTT transcript TextMouth can read."
         )
     }
@@ -284,12 +287,12 @@ final class TranscriptPairingTests: XCTestCase {
 
         XCTAssertEqual(
             imported.notice,
-            "These transcript files were beside the audio but weren't attached: “01.vtt” and “02.srt”. The debug log says why."
+            "These transcript files beside the audio weren't attached: “01.vtt” and “02.srt”. The debug log says why."
         )
         XCTAssertEqual(TranscriptStore.read(from: imported.book.tmbDirectory), .missing)
         XCTAssertEqual(refusals(of: imported.book.title), [
-            "01.vtt: \(TimedTextError.notTimedText(.webVTT).localizedDescription)",
-            "02.srt: \(OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 30_000, audioEnd: 2_000).localizedDescription)",
+            "01.vtt: \(TimedTextError.notTimedText(.webVTT).logDescription)",
+            "02.srt: \(OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 30_000, audioEnd: 2_000).logDescription)",
         ])
         XCTAssertEqual(debugLogLines(containing: "Quayside Rowing Club"), [])
     }
@@ -319,7 +322,9 @@ final class TranscriptPairingTests: XCTestCase {
             TranscriptionWording.transcriptNotAttached(fileName: "01.vtt", reason: reason)
         )
         XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .missing)
-        XCTAssertEqual(refusals(of: book.title), ["01.vtt: \(reason)"])
+        XCTAssertEqual(refusals(of: book.title), [
+            "01.vtt: " + TranscriptionError.unreadableFile(file: "02.wav", reason: TranscriptionError.unreadableAudioReason).logDescription
+        ])
     }
 
     /// A transcript that cannot be written into its package sets aside the
@@ -340,7 +345,7 @@ final class TranscriptPairingTests: XCTestCase {
 
         let notice = TranscriptPairing.attach(.inFolder(tracks), to: book, index: index)
 
-        let start = "“01.vtt” was beside the audio but wasn't attached as the book's transcript: "
+        let start = "“01.vtt” beside the audio wasn't attached: "
         let reason = try XCTUnwrap(notice.flatMap { $0.hasPrefix(start) ? String($0.dropFirst(start.count)) : nil }, notice ?? "no notice")
         XCTAssertFalse(reason.isEmpty)
         XCTAssertEqual(TranscriptStore.read(from: package), .missing)
@@ -377,7 +382,7 @@ final class TranscriptPairingTests: XCTestCase {
 
         XCTAssertEqual(
             imported.notice,
-            "“02.vtt” was beside the audio but wasn't attached as the book's transcript: "
+            "“02.vtt” beside the audio wasn't attached: "
                 + "The file isn't a WebVTT transcript TextMouth can read. "
                 + "TextMouth skipped 1 entry of “talks.m3u”: “missing.wav” (not found)."
         )
@@ -514,7 +519,7 @@ final class TranscriptPairingTests: XCTestCase {
                 fileName: "lecture.vtt",
                 reason: "The file isn't a WebVTT transcript TextMouth can read."
             ),
-            "“lecture.vtt” was beside the audio but wasn't attached as the book's transcript: "
+            "“lecture.vtt” beside the audio wasn't attached: "
                 + "The file isn't a WebVTT transcript TextMouth can read."
         )
     }
@@ -523,7 +528,7 @@ final class TranscriptPairingTests: XCTestCase {
     /// order given: two joined by "and", three or more with a comma before
     /// "and", and at most five, the rest counted.
     func testTheWordsForSeveralFilesSetAside() {
-        let start = "These transcript files were beside the audio but weren't attached: "
+        let start = "These transcript files beside the audio weren't attached: "
         let end = ". The debug log says why."
         XCTAssertEqual(
             TranscriptionWording.transcriptsNotAttached(fileNames: ["a.vtt", "b.vtt"]),

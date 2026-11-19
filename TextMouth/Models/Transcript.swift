@@ -472,10 +472,10 @@ extension Transcript {
     /// log line holds book text (`DiagnosticLog`).
     func validationFailure() -> String? {
         if version != Self.currentVersion {
-            return "version \(version) is not the supported \(Self.currentVersion)"
+            return "version \(version) is not the supported \(Self.currentVersion)"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         if locale.trimmingCharacters(in: .whitespaces).isEmpty {
-            return "locale is empty"
+            return "locale is empty"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         var paths = Set<String>()
         for (number, file) in files.enumerated() {
@@ -484,10 +484,10 @@ extension Transcript {
                 return failure
             }
             if !paths.insert(file.path).inserted {
-                return "\(field).path names a file listed before it"
+                return "\(field).path names a file listed before it"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if file.durationMilliseconds < 0 {
-                return "\(field).durationMilliseconds is \(file.durationMilliseconds), below 0"
+                return "\(field).durationMilliseconds is \(file.durationMilliseconds), below 0"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if let failure = Self.sentencesFailure(file.sentences, field: field) {
                 return failure
@@ -501,13 +501,13 @@ extension Transcript {
     /// nil when it is a relative path inside the folder.
     private static func pathFailure(_ path: String, field: String) -> String? {
         if path.isEmpty {
-            return "\(field) is empty"
+            return "\(field) is empty"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         if path.hasPrefix("/") {
-            return "\(field) is absolute"
+            return "\(field) is absolute"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         if path.split(separator: "/").contains("..") {
-            return "\(field) contains a \"..\" component"
+            return "\(field) contains a \"..\" component"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         return nil
     }
@@ -519,25 +519,25 @@ extension Transcript {
         for (number, sentence) in sentences.enumerated() {
             let field = "\(field).sentences[\(number)]"
             if sentence.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return "\(field).text is blank"
+                return "\(field).text is blank"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if sentence.startMilliseconds < previousStart {
-                return "\(field).startMilliseconds is \(sentence.startMilliseconds), "
-                    + "before the previous sentence's \(previousStart)"
+                return "\(field).startMilliseconds is \(sentence.startMilliseconds), "  // l10n: no (a validation reason for the debug log, English by question 3)
+                    + "before the previous sentence's \(previousStart)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if sentence.endMilliseconds < sentence.startMilliseconds {
-                return "\(field).endMilliseconds is \(sentence.endMilliseconds), "
-                    + "before its startMilliseconds \(sentence.startMilliseconds)"
+                return "\(field).endMilliseconds is \(sentence.endMilliseconds), "  // l10n: no (a validation reason for the debug log, English by question 3)
+                    + "before its startMilliseconds \(sentence.startMilliseconds)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             // The order is checked, so no time is below 0; each also lies
             // no later than the maximum. The words, which lie inside their
             // sentence's time, are held to it by `wordsFailure`.
             let maximum = Self.maximumMilliseconds
             if !(0...maximum).contains(sentence.startMilliseconds) {
-                return "\(field).startMilliseconds is \(sentence.startMilliseconds), outside 0 through \(maximum)"
+                return "\(field).startMilliseconds is \(sentence.startMilliseconds), outside 0 through \(maximum)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if !(0...maximum).contains(sentence.endMilliseconds) {
-                return "\(field).endMilliseconds is \(sentence.endMilliseconds), outside 0 through \(maximum)"
+                return "\(field).endMilliseconds is \(sentence.endMilliseconds), outside 0 through \(maximum)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if let failure = wordsFailure(sentence.words, of: sentence, field: field) {
                 return failure
@@ -561,21 +561,21 @@ extension Transcript {
         for (number, word) in words.enumerated() {
             let field = "\(field).words[\(number)]"
             if word.characterCount <= 0 {
-                return "\(field) is \(word.characterCount) characters long"
+                return "\(field) is \(word.characterCount) characters long"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             // Ranges are formed only from offsets known to be in bounds.
             if word.characterOffset < previousEnd || word.characterOffset > textLength - word.characterCount {
                 // The two numbers came from a file: they are worded, never added.
-                return "\(field) starts at character \(word.characterOffset) and is \(word.characterCount) long, "
-                    + "outside \(previousEnd) through \(textLength)"
+                return "\(field) starts at character \(word.characterOffset) and is \(word.characterCount) long, "  // l10n: no (a validation reason for the debug log, English by question 3)
+                    + "outside \(previousEnd) through \(textLength)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if word.startMilliseconds < previousStart || word.endMilliseconds < word.startMilliseconds
                 || word.endMilliseconds > sentence.endMilliseconds {
-                return "\(field) runs from \(word.startMilliseconds) to \(word.endMilliseconds) ms, outside "
+                return "\(field) runs from \(word.startMilliseconds) to \(word.endMilliseconds) ms, outside "  // l10n: no (a validation reason for the debug log, English by question 3)
                     + "\(previousStart) through \(sentence.endMilliseconds)"
             }
             if let confidence = word.confidence, !(confidence.isFinite && (0...1).contains(confidence)) {
-                return "\(field) has a confidence of \(confidence), outside 0 through 1"
+                return "\(field) has a confidence of \(confidence), outside 0 through 1"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             previousEnd = word.characterOffset + word.characterCount
             previousStart = word.startMilliseconds

@@ -190,11 +190,11 @@ final class TimedTextModelTests: XCTestCase {
     func testEveryReasonAFileIsRefusedIsWordedForTheListener() {
         XCTAssertEqual(
             TimedTextError.tooLarge(byteLimit: 5 * 1_048_576).errorDescription,
-            "The file is larger than the 5 MB TextMouth reads as a transcript."
+            "The file is over the 5 MB limit for a transcript."
         )
         XCTAssertEqual(
             TimedTextError.tooLarge(byteLimit: 20 * 1_048_576).errorDescription,
-            "The file is larger than the 20 MB TextMouth reads as a transcript."
+            "The file is over the 20 MB limit for a transcript."
         )
         XCTAssertEqual(
             TimedTextError.notTimedText(.webVTT).errorDescription,
@@ -222,12 +222,12 @@ final class TimedTextModelTests: XCTestCase {
         )
         XCTAssertEqual(
             TimedTextError.tooManyCues(limit: 3).errorDescription,
-            "The file holds more than 3 timed passages, more than TextMouth reads."
+            "Too many timed passages: the limit is 3."
         )
         // The limit is written as the listener's Mac writes numbers.
         XCTAssertEqual(
             TimedTextError.tooManyCues(limit: TimedTextLimits.maximumCues).errorDescription,
-            "The file holds more than \(250_000.formatted()) timed passages, more than TextMouth reads."
+            "Too many timed passages: the limit is \(250_000.formatted())."
         )
     }
 

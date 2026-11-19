@@ -131,7 +131,7 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
 
         /// What VoiceOver reads for the row.
         var accessibilityLabel: String {
-            ([title] + examples).joined(separator: " ")
+            SentenceWording.joined([title] + examples)
         }
     }
 

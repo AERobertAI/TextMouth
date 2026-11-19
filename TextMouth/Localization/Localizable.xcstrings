@@ -293,6 +293,9 @@
     "%@ has no transcript text to search now." : {
       "comment" : "Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title."
     },
+    "%@ has no transcript to clean up. Transcribe its audio first." : {
+      "comment" : "Alert shown when Clean Up Transcript is chosen for an audiobook with no transcript. %@ is the audiobook's title."
+    },
     "%@ has no transcript to search." : {
       "comment" : "Said instead of opening Search in Book for an audiobook that has no transcript, where TextMouth cannot make one. %@ is the book's title."
     },
@@ -310,6 +313,17 @@
         }
       }
     },
+    "%@ in %@." : {
+      "comment" : "Summary line of the Clean Up Transcript sheet. %1$@ is the number of corrections, such as \"23 corrections\"; %2$@ is the number of sentences they are in, such as \"19 sentences\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ in %2$@."
+          }
+        }
+      }
+    },
     "%@ is already in the reading list." : {
       "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.",
       "localizations" : {
@@ -323,6 +337,15 @@
     },
     "%@ is an audiobook without a transcript, so it has no text to edit." : {
       "comment" : "First sentence of the message when Edit Text is chosen for an audiobook with no transcript. %@ is the book's title."
+    },
+    "%@ is being transcribed. Cancel it, or attach the transcript once it finishes." : {
+      "comment" : "Alert shown when Attach Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title."
+    },
+    "%@ is being transcribed. Cancel it, or delete the transcript once it finishes." : {
+      "comment" : "Alert shown when Delete Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title."
+    },
+    "%@ is being transcribed. Clean up its transcript once that finishes." : {
+      "comment" : "Alert shown when Clean Up Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title."
     },
     "%@ is filed %@ in %@ and %@ in %@." : {
       "comment" : "A difference found by Compare Libraries. %1$@ is a book's title, %2$@ says where this copy files it (at the top of the library, or in a folder), %3$@ is this copy, %4$@ says where the other copy files it, %5$@ is the other copy.",
@@ -376,6 +399,9 @@
     },
     "%@ isn't an audiobook of tracks, so it has no manifest to edit." : {
       "comment" : "Message when the user asks to edit the manifest of a book that is not an audiobook of tracks. %@ is the book's title."
+    },
+    "%@ isn't an audiobook; only audiobooks can be transcribed." : {
+      "comment" : "Alert shown when Transcribe Audio is chosen for a book that is text, not audio. %@ is the book's title."
     },
     "%@ isn't available, so TextMouth can't record from it. Choose another microphone." : {
       "comment" : "Error in the Record window when the chosen microphone is not available. %@ is the microphone's name."
@@ -451,6 +477,17 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "%@ of %@ transcribed" : {
+      "comment" : "Line of the Transcribe Audio sheet while transcribing. %1$@ is the length of audio transcribed so far, in words such as \"40 minutes\"; %2$@ is the audiobook's whole length in words, such as \"6 hours, 12 minutes\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$@ transcribed"
           }
         }
       }
@@ -626,7 +663,7 @@
       }
     },
     "%@, %@" : {
-      "comment" : "A heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
+      "comment" : "A heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nA language's menu item in the transcription language pop-up, with its speech model's status. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is the status: installed, needs download, or not supported.\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -890,7 +927,7 @@
       "comment" : "Caption beside the headings sheet's level filter. %@ is the filter's label; the colon follows it as the language writes a label before a control."
     },
     "%@: %@" : {
-      "comment" : "A label and its value on one line, such as \"Elapsed: 1:04\". %1$@ is the label and %2$@ its value. English puts a colon and a space between them.\nA label, a colon, and its value, as one line of the audio editor's sheets and the filter presets. %1$@ is the label and %2$@ the value.\nA name, a colon, and its value, such as a keyboard shortcut action's name and its keys, or a control's label and its value. %1$@ is the name and %2$@ is the value.\nThe name of a keyboard shortcut action with the name of its group before it, such as an audio editor action. %1$@ is the group's name and %2$@ the action's own name.\nTitle of a reader window for a book whose author is unknown. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title.\nTitle of the reader's sheet for a book's own settings. %1$@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\"; %2$@ is the book's title.",
+      "comment" : "A label and its value on one line, such as \"Elapsed: 1:04\". %1$@ is the label and %2$@ its value. English puts a colon and a space between them.\nA label, a colon, and its value, as one line of the audio editor's sheets and the filter presets. %1$@ is the label and %2$@ the value.\nA name, a colon, and its value, such as a keyboard shortcut action's name and its keys, or a control's label and its value. %1$@ is the name and %2$@ is the value.\nThe name of a keyboard shortcut action with the name of its group before it, such as an audio editor action. %1$@ is the group's name and %2$@ the action's own name.\nTitle of a reader window for a book whose author is unknown. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title.\nTitle of the reader's sheet for a book's own settings. %1$@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\"; %2$@ is the book's title.\nWhat VoiceOver says for a detail of Book Information. %1$@ is the detail's label; %2$@ is its value.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -949,6 +986,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%@: %lld matches"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@: %lld percent transcribed." : {
+      "comment" : "What VoiceOver hears as a transcription passes a quarter of the audio. %1$@ is the audiobook's title; %2$lld is the percent done: 25, 50, or 75.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: %lld percent transcribed."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@: %lld percent transcribed."
                 }
               }
             }
@@ -1342,6 +1402,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld chapters"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld corrections" : {
+      "comment" : "A count of corrections the cleanup rules make in a transcript. %lld is the number of corrections.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld correction"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld corrections"
                 }
               }
             }
@@ -1764,6 +1847,29 @@
         }
       }
     },
+    "%lld more" : {
+      "comment" : "The last item of a list of file names, standing for the files not named. %lld is how many more files there are.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld more"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld more"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld percent" : {
       "comment" : "Said at each quarter of a long save or export in the audio editor. %lld is how much is done, from 0 to 100.",
       "localizations" : {
@@ -1780,6 +1886,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld percent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld percent, %@" : {
+      "comment" : "VoiceOver value of the transcription progress bar. %1$lld is the percent done, from 0 to 100; %2$@ says which audio file is being transcribed, such as \"file 3 of 12\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld percent, %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld percent, %@"
                 }
               }
             }
@@ -1879,6 +2008,29 @@
         }
       }
     },
+    "%lld sentences" : {
+      "comment" : "A count of the transcript's sentences that the cleanup rules would change. %lld is the number of sentences.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld sentence"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld sentences"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld subfolders" : {
       "comment" : "Speak Info and Folder Settings: how many subfolders a folder has. %lld is the number of subfolders, a count.",
       "localizations" : {
@@ -1902,6 +2054,52 @@
         }
       }
     },
+    "%lld timed passages were too long and cut short." : {
+      "comment" : "Sentence added to the announcement of an attached transcript when some of the file's timed passages were longer than TextMouth keeps. %lld is how many.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld timed passage was too long and cut short."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld timed passages were too long and cut short."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld timed passages were unreadable and left out." : {
+      "comment" : "Sentence added to the announcement of an attached transcript when some of the file's timed passages could not be read. %lld is how many.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld timed passage was unreadable and left out."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld timed passages were unreadable and left out."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld views need a newer TextMouth. They are kept as they are, and not offered." : {
       "comment" : "Caption in the Library tab of Settings about views a later TextMouth wrote that this one cannot read. %lld is how many such views there are, a count.",
       "localizations" : {
@@ -1918,6 +2116,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld words" : {
+      "comment" : "A count of the words of a transcript, said in an announcement. %lld is the number of words, written with the region's digit grouping.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld word"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld words"
                 }
               }
             }
@@ -2065,6 +2286,9 @@
     },
     "A stretch of the edits runs past the end of “%@”." : {
       "comment" : "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name."
+    },
+    "A transcript is being attached to %@. Transcribe it once that finishes." : {
+      "comment" : "Alert shown when Transcribe Audio is chosen for an audiobook that a transcript is being attached to. %@ is the audiobook's title."
     },
     "A view holds at most %lld conditions." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint at the limit, when it is dimmed. Placeholders in order: LibraryViewFilter.conditionLimit.",
@@ -2375,6 +2599,29 @@
     "All" : {
       "comment" : "A choice of the Language pop-up in the Voice settings: voices of every language are offered.\nChoice of the voice sheet's language menu that lists the voices of every language."
     },
+    "All %lld files" : {
+      "comment" : "Line of the Transcribe Audio sheet once every audio file of the book is transcribed. %lld is the number of files.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "All %lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "All %lld files"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "All Conditions" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A match as its pop-up names it. This is the form for the first case of the condition."
     },
@@ -2508,7 +2755,7 @@
       "comment" : "VoiceOver hint of the Enable text substitutions switch in the Substitutions settings."
     },
     "Apply" : {
-      "comment" : "Button of the audio editor's Apply Filter sheet that applies the filter."
+      "comment" : "Button of the Clean Up Transcript sheet that makes the corrections in the transcript.\nButton of the audio editor's Apply Filter sheet that applies the filter."
     },
     "Apply Filter" : {
       "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\"; also the title of the audio editor's filter sheet."
@@ -2566,6 +2813,9 @@
     "Ask Each Time" : {
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: TextMouth asks what to do with the original file after each import."
     },
+    "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio." : {
+      "comment" : "VoiceOver hint of the checkbox that offers transcribing after an import. Transcribe Audio is the command's name."
+    },
     "Asks before deleting." : {
       "comment" : "First sentence of the VoiceOver hint of a delete command that asks before it deletes."
     },
@@ -2592,6 +2842,90 @@
     "At Sign" : {
       "comment" : "Name of the punctuation key \"@\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + At Sign\"."
     },
+    "Attach" : {
+      "comment" : "Button of the file panel opened by Attach Transcript, which attaches the chosen file."
+    },
+    "Attach Transcript" : {
+      "comment" : "Title of the alert saying why Attach Transcript did nothing or why the chosen file was not attached."
+    },
+    "Attach Transcript…" : {
+      "comment" : "Menu item that gives an audiobook a transcript from a WebVTT or SubRip file instead of transcribing it. The ellipsis means a file panel follows."
+    },
+    "Attached from %@ files at import, on %@." : {
+      "comment" : "Sentence saying a transcript came from files found beside the audio when the book was imported. %1$@ is the files' formats, such as \"WebVTT and SubRip\"; %2$@ is a date.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Attached from %1$@ files at import, on %2$@."
+          }
+        }
+      }
+    },
+    "Attached from a %@ file on %@." : {
+      "comment" : "Sentence saying a transcript came from a file the user attached, whose name is not known. %1$@ is the file format's name, such as WebVTT or SubRip; %2$@ is a date.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Attached from a %1$@ file on %2$@."
+          }
+        }
+      }
+    },
+    "Attached from a file on %@." : {
+      "comment" : "Sentence saying a transcript came from a file the user attached, whose name and format are not known. %@ is a date, such as \"October 30, 2026\"."
+    },
+    "Attached from files at import, on %@." : {
+      "comment" : "Sentence saying a transcript came from files found beside the audio when the book was imported, whose names and formats are not known. %@ is a date."
+    },
+    "Attached from “%@” at import, on %@." : {
+      "comment" : "Sentence saying a transcript came from a file found beside the audio when the book was imported. %1$@ is the file's name; %2$@ is a date.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Attached from “%1$@” at import, on %2$@."
+          }
+        }
+      }
+    },
+    "Attached from “%@” on %@." : {
+      "comment" : "Sentence saying a transcript came from one file the user attached. %1$@ is the file's name; %2$@ is a date, such as \"October 30, 2026\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Attached from “%1$@” on %2$@."
+          }
+        }
+      }
+    },
+    "Attached on %@." : {
+      "comment" : "Sentence saying when a transcript was attached, when its origin is not known. %@ is a date."
+    },
+    "Attached “%@” to %@: %@." : {
+      "comment" : "What VoiceOver hears once a transcript file is attached. %1$@ is the file's name; %2$@ is the audiobook's title; %3$@ is the number of words, such as \"7,077 words\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Attached “%1$@” to %2$@: %3$@."
+          }
+        }
+      }
+    },
+    "Attaching “%@” to %@." : {
+      "comment" : "What VoiceOver hears as a transcript file starts to be attached. %1$@ is the file's name; %2$@ is the audiobook's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Attaching “%1$@” to %2$@."
+          }
+        }
+      }
+    },
     "Audio Editing" : {
       "comment" : "Heading of the Audio Editing group in Storage settings: what happens to originals of edited audio, ffmpeg, and the audio editor's behaviour."
     },
@@ -2612,6 +2946,12 @@
     },
     "Audio speed" : {
       "comment" : "Label of an audiobook's speed slider; VoiceOver reads it before the speed."
+    },
+    "Audio: %@." : {
+      "comment" : "Line of the Transcribe Audio sheet giving the audiobook's length. %@ is the length in words, such as \"6 hours, 12 minutes, 4 seconds\"."
+    },
+    "Audio: length not known yet." : {
+      "comment" : "Line of the Transcribe Audio sheet before the audiobook's length is known."
     },
     "Audiobook Loudness" : {
       "comment" : "Title of a premade audio filter preset: sets the whole audio's loudness to a level for audiobooks."
@@ -2695,6 +3035,17 @@
     },
     "Before page %@" : {
       "comment" : "Where the reader is before the first page of a book that has pages. %@ is the first page's label, an identifier."
+    },
+    "Before: %@ After: %@" : {
+      "comment" : "An example of one change in the Clean Up Transcript sheet. %1$@ is the transcript's text before the change; %2$@ is the text after it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Before: %1$@ After: %2$@"
+          }
+        }
+      }
     },
     "Begin" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Begin\"."
@@ -2956,7 +3307,7 @@
       "comment" : "Speak Info: the part of a book's summary that names its author. %@ is the author's name."
     },
     "Cancel" : {
-      "comment" : "Button of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
+      "comment" : "Button of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without doing what it offered.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2965,6 +3316,9 @@
           }
         }
       }
+    },
+    "Cancel Download" : {
+      "comment" : "Button of the Transcribe Audio sheet that stops a speech model's download."
     },
     "Cancel Timer" : {
       "comment" : "Button of the sleep timer sheet that stops the running timer.",
@@ -3000,6 +3354,9 @@
     },
     "Change voice for this book" : {
       "comment" : "What VoiceOver calls the reader toolbar's button that opens a text book's own voice settings."
+    },
+    "Changes by rule" : {
+      "comment" : "Heading and VoiceOver label of the list of changes in the Clean Up Transcript sheet, one group for each rule."
     },
     "Changes the view's name, what it lists, its conditions, its sort, and its limit." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
@@ -3083,6 +3440,9 @@
     "Checking the file" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value while the book's file is read to learn what it says of its encoding."
     },
+    "Checking the speech model…" : {
+      "comment" : "Line of the Transcribe Audio sheet while it checks whether the language's speech model is on this Mac."
+    },
     "Choose Edit Text again to edit the new copy's text." : {
       "comment" : "Second sentence of that announcement: what to do to edit the new copy. Edit Text is a menu command."
     },
@@ -3094,6 +3454,9 @@
     },
     "Choose Retry to try again, or re-import the book if it keeps failing." : {
       "comment" : "Second sentence of the message when a chapter failed while playing: what to do. Retry is the name of a button."
+    },
+    "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio." : {
+      "comment" : "Message of the file panel opened by Attach Transcript. %@ is the audiobook's title. WebVTT and SubRip are subtitle file formats, and .vtt and .srt their file extensions."
     },
     "Choose a voice for reading. Change takes effect immediately." : {
       "comment" : "VoiceOver hint of the voice pop-up in the Voice settings."
@@ -3133,6 +3496,9 @@
     },
     "Choose the folder that holds another copy of this library. Nothing in it is changed." : {
       "comment" : "Message of the folder panel in which the listener chooses the other copy of the library to compare."
+    },
+    "Choose the language in Settings, Playback, Transcription." : {
+      "comment" : "Line under the Transcribe Audio sheet's language line saying where the language is chosen. Settings, Playback, and Transcription are the names of the settings window, its Playback pane, and its Transcription group."
     },
     "Chooses a folder holding another copy of this library and lists what differs. Nothing in either copy is changed." : {
       "comment" : "VoiceOver hint of the Compare Libraries button in Storage settings."
@@ -3212,6 +3578,37 @@
     "Chosen By" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The pop-up of which rows a limit keeps."
     },
+    "Clean Up Transcript (Experimental)…" : {
+      "comment" : "Menu item and VoiceOver action that opens the sheet for correcting an audiobook's transcript with rules. The ellipsis means a sheet follows."
+    },
+    "Clean Up the Transcript of %@" : {
+      "comment" : "Heading of the Clean Up Transcript sheet. %@ is the audiobook's title."
+    },
+    "Cleaned up on %@, with rules version %@: %@." : {
+      "comment" : "Line of the Clean Up Transcript sheet for a transcript that was cleaned up already. %1$@ is a date, such as \"October 4, 2026\"; %2$@ is the rules' version number, written without digit grouping; %3$@ is the number of corrections, such as \"23 corrections\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Cleaned up on %1$@, with rules version %2$@: %3$@."
+          }
+        }
+      }
+    },
+    "Cleaned up the transcript of %@: %@." : {
+      "comment" : "What VoiceOver hears once a transcript is cleaned up. %1$@ is the audiobook's title; %2$@ is the number of corrections, such as \"23 corrections\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Cleaned up the transcript of %1$@: %2$@."
+          }
+        }
+      }
+    },
+    "Cleaning up the transcript…" : {
+      "comment" : "Line of the Clean Up Transcript sheet while it saves the corrections."
+    },
     "Clear" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Clear\"."
     },
@@ -3228,7 +3625,7 @@
       "comment" : "Hint of the audio editor's Clear Selection button."
     },
     "Close" : {
-      "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the audio editor's list of markers.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nTitle of the button that closes the Search Library window.",
+      "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the audio editor's list of markers.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nButton that closes a sheet.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nTitle of the button that closes the Search Library window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -3258,6 +3655,12 @@
     },
     "Closes this book's window" : {
       "comment" : "Hint of the Close button of the reader's view for a book that is not ready to read."
+    },
+    "Closes this without changing the transcript." : {
+      "comment" : "VoiceOver hint of the Cancel button of the Clean Up Transcript sheet."
+    },
+    "Closes this without transcribing." : {
+      "comment" : "VoiceOver hint of the Cancel button of the Transcribe Audio sheet before transcribing."
     },
     "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording." : {
       "comment" : "Explanation under the question asked when the Record window is closed while recording. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that stops and saves, the one that deletes the recording, and the one that keeps recording.",
@@ -3426,6 +3829,28 @@
     "Could not save: the book's title is empty." : {
       "comment" : "First sentence of the message when Save is pressed after the book's title was emptied."
     },
+    "Couldn't clean up the transcript of %@: %@" : {
+      "comment" : "Alert, and what VoiceOver hears, when a cleanup failed. %1$@ is the audiobook's title; %2$@ is the reason, a sentence.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't clean up the transcript of %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Couldn't delete the transcript of %@: %@" : {
+      "comment" : "Alert, and what VoiceOver hears, when an audiobook's transcript could not be deleted. %1$@ is the audiobook's title; %2$@ is the reason, a sentence.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't delete the transcript of %1$@: %2$@"
+          }
+        }
+      }
+    },
     "Couldn't open the manifest of %@: %@" : {
       "comment" : "Message when the app that edits a manifest.json could not be opened. %1$@ is the book's title; %2$@ is the reason from the system.",
       "localizations" : {
@@ -3437,6 +3862,9 @@
         }
       }
     },
+    "Couldn't open the rules: %@" : {
+      "comment" : "Alert shown when the rules file could not be opened in the text editor. %@ is the reason, a sentence."
+    },
     "Couldn't open the text of %@: %@" : {
       "comment" : "Message when the app that edits a book's text could not be opened. %1$@ is the book's title; %2$@ is the reason from the system.",
       "localizations" : {
@@ -3444,6 +3872,17 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Couldn't open the text of %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Couldn't undo the cleanup of the transcript of %@: %@" : {
+      "comment" : "Alert, and what VoiceOver hears, when undoing a cleanup failed. %1$@ is the audiobook's title; %2$@ is the reason, a sentence.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't undo the cleanup of the transcript of %1$@: %2$@"
           }
         }
       }
@@ -3622,6 +4061,12 @@
     "Delete Permanently" : {
       "comment" : "Title of the button that removes books and deletes their files permanently, in title case."
     },
+    "Delete Transcript" : {
+      "comment" : "Button of the question asked before a transcript is deleted, which deletes it.\nTitle of the alert saying why Delete Transcript did nothing."
+    },
+    "Delete Transcript…" : {
+      "comment" : "Menu item and VoiceOver action that deletes an audiobook's transcript after asking. The ellipsis means a question follows."
+    },
     "Delete bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
@@ -3632,6 +4077,9 @@
           }
         }
       }
+    },
+    "Delete the Transcript of %@?" : {
+      "comment" : "Title of the question asked before an audiobook's transcript is deleted. %@ is the audiobook's title."
     },
     "Delete the view “%@”?" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question Delete… asks. Placeholders in order: name."
@@ -3655,6 +4103,9 @@
     },
     "Deleted on %@" : {
       "comment" : "The original audio's state in the audio editor's Audio Info sheet. %@ is the date it was deleted, in long form."
+    },
+    "Deleted the transcript of %@." : {
+      "comment" : "What VoiceOver hears once an audiobook's transcript is deleted. %@ is the audiobook's title."
     },
     "Deletes the recording without saving it." : {
       "comment" : "VoiceOver hint of the Discard Recording button of the Record window."
@@ -3779,8 +4230,45 @@
     "Download of the previous episode cancelled." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the previous podcast episode that Previous in Folder started."
     },
+    "Download the %@ model, %@" : {
+      "comment" : "Button of the Transcribe Audio sheet that downloads a language's speech model. %1$@ is the language's name, such as \"English\"; %2$@ is the model's approximate size, such as \"about 140 MB\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Download the %1$@ model, %2$@"
+          }
+        }
+      }
+    },
     "Download the book, then try again." : {
       "comment" : "Ends a message saying the book's audio is only in the cloud: what to do about it."
+    },
+    "Downloading the %@ model: %lld percent." : {
+      "comment" : "Line of the Transcribe Audio sheet, and what VoiceOver hears, while a speech model downloads. %1$@ is the language's name; %2$lld is the percent done, from 0 to 100.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Downloading the %@ model: %lld percent."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Downloading the %@ model: %lld percent."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Downloading the %@ model…" : {
+      "comment" : "Line of the Transcribe Audio sheet while a speech model downloads and its progress is not known yet. %@ is the language's name."
     },
     "Downloading the next article: %@" : {
       "comment" : "A sentence of the announcement as a feed's article ends: the next article is being downloaded. %@ is that article's title.\nVoiceOver announcement of Next in Folder when the next item is a feed's article that must be downloaded first. %@ is the article's title.",
@@ -3812,6 +4300,9 @@
     },
     "Downloads the book again" : {
       "comment" : "Hint of the Download button of the reader's view for a book that is only in the cloud."
+    },
+    "Downloads the speech model from Apple, kept and shared by macOS. Nothing else is downloaded, and the book's audio never leaves this Mac." : {
+      "comment" : "VoiceOver hint of the button that downloads a language's speech model."
     },
     "Drops a marker at the cursor, even while the audio plays." : {
       "comment" : "Hint of the audio editor's Add Marker button."
@@ -3900,6 +4391,9 @@
         }
       }
     },
+    "Edit Rules…" : {
+      "comment" : "Button of the Clean Up Transcript sheet that opens the rules file in the user's text editor."
+    },
     "Edit Substitution Rule" : {
       "comment" : "Heading and navigation title of the editor of an existing substitution rule."
     },
@@ -3958,6 +4452,9 @@
     },
     "Elapsed" : {
       "comment" : "Label of the time recorded so far in the Record window."
+    },
+    "Elapsed: %@" : {
+      "comment" : "Line of the Transcribe Audio sheet while transcribing, saying how long it has run. %@ is a length of time in words, such as \"12 seconds\"."
     },
     "Enable" : {
       "comment" : "Title of the context menu item that turns a substitution rule on."
@@ -4143,6 +4640,9 @@
     "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires." : {
       "comment" : "Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written."
     },
+    "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back." : {
+      "comment" : "Line at the top of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet."
+    },
     "Export Audio" : {
       "comment" : "Title of the audio editor's Export Audio sheet."
     },
@@ -4226,6 +4726,17 @@
     },
     "File" : {
       "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.\nLabel of the audio file's name in the audio editor's Audio Info sheet."
+    },
+    "File %lld of %lld" : {
+      "comment" : "Line of the Transcribe Audio sheet saying which audio file of the book is being transcribed. %1$lld is that file's place, from 1; %2$lld is the number of files.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "File %1$lld of %2$lld"
+          }
+        }
+      }
     },
     "File format: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's file format row. %@ is the format, such as MP3."
@@ -4790,6 +5301,9 @@
         }
       }
     },
+    "Its cleanup is replaced too." : {
+      "comment" : "Sentence of the question asked before a transcript from a file replaces the book's, when the user had cleaned it up."
+    },
     "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the question says Delete does, and what it keeps."
     },
@@ -4908,6 +5422,17 @@
     "Language: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's language row. %@ is the language code the book gives, such as en."
     },
+    "Language: %@, %@." : {
+      "comment" : "Line of the Transcribe Audio sheet naming the transcription language and whether its speech model is ready. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is its status: installed, needs download, downloading, or not supported.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Language: %1$@, %2$@."
+          }
+        }
+      }
+    },
     "Last message" : {
       "comment" : "Label of the audio editor's line that repeats the last announcement, so a braille display can read it again."
     },
@@ -4919,6 +5444,9 @@
     },
     "Leading articles" : {
       "comment" : "Label of the pop-up in the Library settings that chooses whether a title's leading article (The, A, An) counts when sorting and typing."
+    },
+    "Leaves the audiobook untranscribed; Transcribe Audio does it later." : {
+      "comment" : "VoiceOver hint of the Not Now button of the question offered after an import. Transcribe Audio is the command's name."
     },
     "Left Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Arrow\"."
@@ -5130,6 +5658,9 @@
     },
     "Makes a view of your own with this view's conditions and sort." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint."
+    },
+    "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back." : {
+      "comment" : "VoiceOver hint of the Apply button of the Clean Up Transcript sheet. Undo Cleanup is the name of a button of the sheet."
     },
     "Manifest not updated: %@ Fix it in your editor and save again; until then, %@ keeps its headings." : {
       "comment" : "Announcement after an edited manifest.json was refused. %1$@ is the reason, a whole sentence in English that names what is wrong inside the file and may stay in English; %2$@ is the book's title.",
@@ -5601,6 +6132,9 @@
     "No chapter markers or markers, so no label file would be written." : {
       "comment" : "Hint of the Also write the markers as Audacity labels checkbox while the audio has no markers of either kind."
     },
+    "No cleanup to undo: the earlier transcript is gone." : {
+      "comment" : "Error shown when Undo Cleanup is pressed but the transcript from before the cleanup is gone."
+    },
     "No conditions: the view lists every item of the kinds chosen." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What the editor says while the view has no condition."
     },
@@ -5736,6 +6270,9 @@
         }
       }
     },
+    "No rule changes this transcript." : {
+      "comment" : "Error shown when Apply is pressed in the Clean Up Transcript sheet but no rule changes the transcript.\nSummary line of the Clean Up Transcript sheet when the rules would change nothing."
+    },
     "No shortcut" : {
       "comment" : "Said of an action that has no keyboard shortcut, in place of its keys, such as \"Release Media Controls: No shortcut\"."
     },
@@ -5764,6 +6301,9 @@
           }
         }
       }
+    },
+    "Not Now" : {
+      "comment" : "Button of the question offered after an import that leaves the audiobook untranscribed for now."
     },
     "Not Within the Last" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
@@ -5862,7 +6402,7 @@
       "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\"."
     },
     "OK" : {
-      "comment" : "Button that closes a notice.\nButton that dismisses an alert about a problem.\nButton that dismisses the reader's error alert.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
+      "comment" : "Button that closes a notice.\nButton that dismisses an alert about a problem.\nButton that dismisses an alert after reading it.\nButton that dismisses the reader's error alert.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
     },
     "Of each feed's episodes and articles, lists only the one you opened last." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
@@ -5878,11 +6418,17 @@
         }
       }
     },
+    "Offer to transcribe after importing an audiobook" : {
+      "comment" : "Label of the checkbox in Playback settings that makes TextMouth ask about transcribing after each audiobook is imported."
+    },
     "One Unit for Both Directions" : {
       "comment" : "A choice of the playback bar's navigation unit menus setting: one shared menu sets the unit of both skip buttons."
     },
     "Only an audiobook's audio can be edited." : {
       "comment" : "Said when Edit Audio… is chosen for something that is not an audiobook kept in a package of its own."
+    },
+    "Only audiobooks can be transcribed." : {
+      "comment" : "Error shown when transcription is tried for a book that is not an audiobook."
     },
     "Only rewind if the pause was longer than the threshold" : {
       "comment" : "VoiceOver hint of the Smart mode checkbox in the Playback settings."
@@ -5972,6 +6518,9 @@
     "Opens %@, the folder the logs are written to now, in Finder." : {
       "comment" : "VoiceOver hint and tooltip of the Show Logs in Finder button. %@ is the folder's full path, which stays as written."
     },
+    "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe." : {
+      "comment" : "VoiceOver hint of the Transcribe button of the question offered after an import. Transcribe Audio is the command's name; Transcribe is the sheet's button."
+    },
     "Opens jump to page controls" : {
       "comment" : "Hint of the status row's page button while no jump panel is open."
     },
@@ -5989,6 +6538,9 @@
     },
     "Opens the filter presets, to edit, add, reorder, delete, or reset." : {
       "comment" : "Hint of the Filter Presets button in Storage settings."
+    },
+    "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth." : {
+      "comment" : "VoiceOver hint of the Edit Rules button of the Clean Up Transcript sheet. transcript-cleanup.json is a file name and stays as it is."
     },
     "Option" : {
       "comment" : "Name of the Option modifier key, spoken or brailled in a keyboard shortcut such as \"Option + Command + G\"."
@@ -6452,6 +7004,12 @@
     "Puts back TextMouth's premade presets, removing the ones you added." : {
       "comment" : "Hint of the Reset All to Defaults button in the filter presets sheet."
     },
+    "Puts back the transcript as it was before the last cleanup." : {
+      "comment" : "VoiceOver hint of the Undo Cleanup button of the Clean Up Transcript sheet."
+    },
+    "Putting back the transcript from before…" : {
+      "comment" : "Line of the Clean Up Transcript sheet while it puts back the transcript from before the cleanup."
+    },
     "Quality" : {
       "comment" : "Label of the selected voice's quality in the Voice settings, such as Enhanced."
     },
@@ -6626,6 +7184,9 @@
     },
     "Reading the book again..." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information shows, beside a spinner, while the book is read again (SheetWorkIndicator)."
+    },
+    "Reading the transcript and the rules…" : {
+      "comment" : "Line of the Clean Up Transcript sheet while it reads the transcript and the correction rules."
     },
     "Ready to record from %@." : {
       "comment" : "Status line of the Record window while nothing is recording. %@ is the name of the microphone."
@@ -6997,6 +7558,12 @@
     "Replace %@" : {
       "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": replacing a stretch of audio with a new recording. %@ is the replaced length in title-cased words, such as \"2.5 Seconds\"."
     },
+    "Replace Transcript" : {
+      "comment" : "Button of the question asked before a transcript from a file replaces an audiobook's transcript, which replaces it."
+    },
+    "Replace the Transcript of %@?" : {
+      "comment" : "Title of the question asked before a transcript from a file replaces an audiobook's transcript. %@ is the audiobook's title."
+    },
     "Replace with: %@" : {
       "comment" : "A part of a substitution rule's spoken summary. %@ is the replacement text."
     },
@@ -7016,6 +7583,9 @@
     },
     "Replacement text. Leave empty to skip matched text." : {
       "comment" : "VoiceOver label of the replacement field in the substitution rule editor."
+    },
+    "Replacing kept the existing copy's transcript." : {
+      "comment" : "The reason, in a notice after an import, that a transcript file beside the audio was not attached: Replace Existing kept the existing copy's own transcript."
     },
     "Reset" : {
       "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".\nName of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults."
@@ -7134,6 +7704,15 @@
     "Resuming." : {
       "comment" : "Announcement of the Record window before a paused recording continues."
     },
+    "Retranscribe" : {
+      "comment" : "Button of the Transcribe Audio sheet, in place of Transcribe, for an audiobook that already has a transcript."
+    },
+    "Retranscribe %@" : {
+      "comment" : "Heading of the Transcribe Audio sheet for an audiobook that already has a transcript, which transcribing again replaces. %@ is the audiobook's title."
+    },
+    "Retranscribe Audio…" : {
+      "comment" : "Menu item and VoiceOver action, in place of Transcribe Audio, for an audiobook that already has a transcript: it transcribes the audio again and replaces the transcript. The ellipsis means a sheet follows."
+    },
     "Retry" : {
       "comment" : "Button of the reader's error alert that tries to play the audio again.\nButton of the unsaved-changes alert that tries to save the changes again."
     },
@@ -7226,6 +7805,52 @@
     },
     "Rules you added or changed will be lost." : {
       "comment" : "Last sentence of the message of the question asked before the Substitutions settings replace every rule with the defaults."
+    },
+    "Rules: TextMouth's own, version %@ of %@, %lld rules." : {
+      "comment" : "Line of the Clean Up Transcript sheet naming the correction rules in use, when they are the ones that come with the app. %1$@ is the rules' version number, written without digit grouping; %2$@ is the date of that version, such as \"October 4, 2026\"; %3$lld is the number of rules.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Rules: TextMouth's own, version %@ of %@, %lld rule."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Rules: TextMouth's own, version %@ of %@, %lld rules."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Rules: your copy, version %@ of %@, %lld rules." : {
+      "comment" : "Line of the Clean Up Transcript sheet naming the correction rules in use, when they are the user's own copy. %1$@ is the rules' version number, written without digit grouping; %2$@ is the date of that version, such as \"October 4, 2026\"; %3$lld is the number of rules.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Rules: your copy, version %@ of %@, %lld rule."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Rules: your copy, version %@ of %@, %lld rules."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Runs a filter preset over the selection or the whole file." : {
       "comment" : "Hint of the audio editor's Apply Filter button."
@@ -7439,6 +8064,9 @@
     "Select and Mark" : {
       "comment" : "Heading of the audio editor's buttons for the selection and the markers."
     },
+    "Select one audiobook, then choose Transcribe Audio again." : {
+      "comment" : "Second sentence of the alert shown when Transcribe Audio is chosen with several books selected. Transcribe Audio is the command's name."
+    },
     "Select to Next Pause" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection forward to the next silent pause."
     },
@@ -7583,6 +8211,9 @@
     },
     "Sets a chapter marker at the cursor, with a title you type." : {
       "comment" : "Hint of the audio editor's Insert Chapter Marker button."
+    },
+    "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet." : {
+      "comment" : "VoiceOver hint of the transcription language pop-up. \"needs download\" is the status word a language's menu item shows when its speech model is not on this Mac, and Transcribe Audio is the command's name."
     },
     "Sets when the View pop-up offers this view" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's hint."
@@ -8119,6 +8750,9 @@
         }
       }
     },
+    "Starting" : {
+      "comment" : "VoiceOver value of the transcription progress bar before the first audio file has begun."
+    },
     "Starting again: %@" : {
       "comment" : "VoiceOver announcement as Play starts a finished book over from its beginning. %@ is the book's title.",
       "localizations" : {
@@ -8140,6 +8774,9 @@
           }
         }
       }
+    },
+    "Starting…" : {
+      "comment" : "Line of the Transcribe Audio sheet before the first audio file has begun, while the speech model loads."
     },
     "Starts recording from %@." : {
       "comment" : "VoiceOver hint of the Record button in the Record window. %@ is the name of the microphone it records from."
@@ -8296,8 +8933,14 @@
     "Stops saying the code was guessed. The book is not read again." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts."
     },
+    "Stops the download. Nothing is installed." : {
+      "comment" : "VoiceOver hint of the Cancel Download button."
+    },
     "Stops the search, keeping the matches found so far" : {
       "comment" : "VoiceOver hint of the Stop button of the Search Library window."
+    },
+    "Stops transcribing. The book stays as it was." : {
+      "comment" : "VoiceOver hint of the Cancel button of the Transcribe Audio sheet while transcribing."
     },
     "Stops waiting for the download" : {
       "comment" : "Hint of the Cancel button of the reader's view while a book downloads."
@@ -8487,6 +9130,9 @@
     "Text updated." : {
       "comment" : "Announcement after the user saved an edited text of a feed episode's transcript, followed by a note about where the transcript stays."
     },
+    "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files." : {
+      "comment" : "Alert explaining why a chosen file was not attached as a transcript. WebVTT and SubRip are subtitle file formats, and .vtt and .srt their file extensions."
+    },
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
     },
@@ -8565,8 +9211,14 @@
         }
       }
     },
+    "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way." : {
+      "comment" : "Line of the Clean Up Transcript sheet when the rules that come with the app are empty. Edit Rules… is the name of a button of the sheet."
+    },
     "TextMouth hasn't read the latest save yet." : {
       "comment" : "Reason after a colon: a rebuild left the book's text alone because the latest save of the edited text is not read yet."
+    },
+    "TextMouth is already transcribing %@. Try again when that finishes." : {
+      "comment" : "Error shown when a transcription is started while another runs. %@ is the title of the audiobook being transcribed."
     },
     "TextMouth is finishing up before it quits: %@. It quits when that is done." : {
       "comment" : "Panel text and announcement while TextMouth finishes work before quitting. %@ is the list of what is under way, such as \"saving the library and keeping downloads\", already joined in the language's own list style."
@@ -8629,11 +9281,20 @@
     "TextMouth's own loudnorm normalizes with one gain, so it takes only true" : {
       "comment" : "What the loudnorm filter's linear option accepts, said at the end of a refusal such as \"The loudnorm filter's linear can't be “false”: <this>.\" Written without its full stop."
     },
+    "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it." : {
+      "comment" : "Line of the Clean Up Transcript sheet when the rules that come with the app are newer than the user's copy. %@ is the new version number, written without digit grouping."
+    },
+    "That item isn't a plain file TextMouth can read." : {
+      "comment" : "Alert explaining why a chosen item was not attached as a transcript: it is not an ordinary file, such as a folder or a pipe."
+    },
     "That match is no longer in the book's text. Search again to find it." : {
       "comment" : "Announcement when a search match is no longer in the book's text."
     },
     "That's after the end of the audio, at %@." : {
       "comment" : "Said when a time typed into the audio editor's Go to Time lies past the end. %@ is the audio's length in words."
+    },
+    "The %@ file holds no timed text TextMouth can use." : {
+      "comment" : "Error shown when a chosen transcript file holds no usable timed passage. %@ is the format's name, such as WebVTT or SubRip."
     },
     "The %@ filter has no option “%@” here. Its options are %@." : {
       "comment" : "Problem said of an option a filter doesn't take. %1$@ is the filter's name, %2$@ the option as typed, and %3$@ the list of the options it takes.",
@@ -8681,6 +9342,23 @@
           }
         }
       }
+    },
+    "The %@ model couldn't be downloaded: %@" : {
+      "comment" : "What VoiceOver hears, and the Transcribe Audio sheet shows, when a speech model's download failed. %1$@ is the language's name; %2$@ is the system's reason, a sentence.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The %1$@ model couldn't be downloaded: %2$@"
+          }
+        }
+      }
+    },
+    "The %@ model is downloaded. The book can be transcribed now." : {
+      "comment" : "What VoiceOver hears, and the Transcribe Audio sheet shows, when a speech model has finished downloading. %@ is the language's name."
+    },
+    "The %@ model's download was cancelled." : {
+      "comment" : "What VoiceOver hears, and the Transcribe Audio sheet shows, when a speech model's download was stopped. %@ is the language's name."
     },
     "The %@ of %lld of them are kept." : {
       "comment" : "Sentence that says what is kept of some of several deleted downloads. %1$@ is a list of parts, such as \"places and bookmarks\", and %2$lld is how many of the downloads keep them, a count.",
@@ -8832,8 +9510,20 @@
     "The audio of %@ couldn't be opened for editing." : {
       "comment" : "Said when the audio editor couldn't open a book. %@ is the book's title. A sentence giving the reason follows."
     },
+    "The audiobook's audio, your place, and your bookmarks stay as they are." : {
+      "comment" : "Sentence of the question asked before an audiobook's transcript is deleted or replaced by a file's: what stays."
+    },
     "The audiobook's title in your library." : {
       "comment" : "VoiceOver hint and tooltip of the Title field in the Record window."
+    },
+    "The book can be transcribed again." : {
+      "comment" : "Last sentence of the question asked before an audiobook's transcript is deleted, after what stays."
+    },
+    "The book has a transcript already, so TextMouth kept it." : {
+      "comment" : "Notice that a transcript file was not attached because the book already had its own transcript."
+    },
+    "The book is being transcribed again. Clean up its transcript once that finishes." : {
+      "comment" : "Error shown when a cleanup is tried while the book is being transcribed."
     },
     "The book is in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
@@ -8855,8 +9545,26 @@
     "The book is open in a reader. Close it, then save again." : {
       "comment" : "Said when saving the edited audio is refused because a reader has the book open and plays the file the save would replace."
     },
+    "The book left the library during transcription, so its transcript wasn't saved." : {
+      "comment" : "Error shown when the book was removed from the library during a transcription."
+    },
+    "The book's audio changed since it was transcribed (%@), so the transcript no longer fits. Transcribe again." : {
+      "comment" : "Error shown when the book's audio files changed since the transcription. %@ is the reason, a short phrase in English."
+    },
+    "The book's audio changed while it was being transcribed: %@. Transcribe it again." : {
+      "comment" : "Error shown when the book's audio files changed during a transcription, so the transcript was not saved. %@ is the reason, a short phrase in English."
+    },
     "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book." : {
       "comment" : "Said when the audio editor's Discard can't reach the audio as it was saved: the edits stay."
+    },
+    "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is." : {
+      "comment" : "Error shown when a transcript could not replace a book's text because the text's unsaved changes could not be copied first."
+    },
+    "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again." : {
+      "comment" : "Line of the Transcribe Audio sheet, and an error, when the book's text file has not been downloaded from iCloud to this Mac."
+    },
+    "The book's transcript couldn't be read, so it wasn't exported." : {
+      "comment" : "Error in an export's summary: the audiobook's transcript could not be read, so no captions file was written."
     },
     "The books are in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
@@ -8925,6 +9633,23 @@
     "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another." : {
       "comment" : "Sentence of the second confirmation that deletes a folder: several feeds stay. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" names a sheet."
     },
+    "The file is a %@ transcript of version %@, which TextMouth doesn't read." : {
+      "comment" : "Error shown when a chosen transcript file is of a version of its format that this app does not read. %1$@ is the format's name, such as Podcasting 2.0 JSON; %2$@ is the version the file gives, written as the file writes it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The file is a %1$@ transcript of version %2$@, which TextMouth doesn't read."
+          }
+        }
+      }
+    },
+    "The file is over the %lld MB limit for a transcript." : {
+      "comment" : "Error shown when a transcript file chosen to attach is too big. %lld is the size limit in megabytes (MB)."
+    },
+    "The file isn't a %@ transcript TextMouth can read." : {
+      "comment" : "Error shown when a chosen transcript file's content is not in the format its name says. %@ is the format's name, such as WebVTT, SubRip, or Podcasting 2.0 JSON."
+    },
     "The files that couldn't be read are listed." : {
       "comment" : "Sentence of the results of Compare Libraries saying the unread files are listed below."
     },
@@ -8945,6 +9670,9 @@
     },
     "The library isn't available, so the filter presets can't be saved." : {
       "comment" : "Said when the filter presets can't be saved because the library's data folder can't be used."
+    },
+    "The library isn't available, so the rules can't be opened now." : {
+      "comment" : "Error shown when Edit Rules is pressed while the library's data folder cannot be used."
     },
     "The manifest of %@ can't be edited: %@" : {
       "comment" : "Message when a book's manifest could not be readied for editing. %1$@ is the book's title; %2$@ is the reason, a sentence from the system or TextMouth.",
@@ -9018,6 +9746,12 @@
     "The pauses couldn't be found." : {
       "comment" : "Said when the audio editor couldn't find the audio's pauses. A sentence giving the reason follows."
     },
+    "The podcast's own transcript, downloaded with the episode on %@." : {
+      "comment" : "Sentence saying a podcast episode's transcript is the one the podcast published. %@ is a date."
+    },
+    "The pre-cleanup transcript is only in the cloud. Download the book and try again." : {
+      "comment" : "Error shown when Undo Cleanup is pressed and the transcript from before the cleanup has not been downloaded from the cloud drive."
+    },
     "The previous article could not be downloaded, so playback stopped." : {
       "comment" : "First sentence of the VoiceOver announcement when Previous in Folder could not download the previous feed article while a book was playing, so playback was paused. A sentence with the reason follows it."
     },
@@ -9084,6 +9818,9 @@
     "The selection is all the audio; nothing to trim." : {
       "comment" : "Said by the audio editor's Trim to Selection when the selection is all of the audio."
     },
+    "The speech model for %@ isn't on this Mac yet. Download it first." : {
+      "comment" : "Error shown when transcription is tried before the language's speech model is downloaded. %@ is the language's name."
+    },
     "The stretch of the take to use isn't inside the take." : {
       "comment" : "Said when a punch-in's recording is asked to use a stretch that is not inside the recording."
     },
@@ -9101,6 +9838,59 @@
     },
     "The text of %@ was read again from its own file." : {
       "comment" : "First sentence of the message after a book's text was read again from its own file. %@ is the book's title."
+    },
+    "The transcript and the text made from it are deleted." : {
+      "comment" : "First sentence of the question asked before an audiobook's transcript is deleted."
+    },
+    "The transcript can't be read. If the book is only in the cloud, download it and try again." : {
+      "comment" : "Error shown when Clean Up Transcript cannot read the transcript."
+    },
+    "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes." : {
+      "comment" : "Error shown when the transcript changed after the Clean Up Transcript sheet showed its changes. Clean Up Transcript is the command's name."
+    },
+    "The transcript files beside the audio weren't attached: %@" : {
+      "comment" : "Notice after an import: the transcript files beside each track's audio were not attached. %@ is the reason, a sentence."
+    },
+    "The transcript from before the cleanup can't be used: %@." : {
+      "comment" : "Error shown when Undo Cleanup is pressed and the transcript from before the cleanup is damaged. %@ is the reason, a technical phrase in English."
+    },
+    "The transcript from “%@” replaces the book's transcript and the text made from it." : {
+      "comment" : "First sentence of the question asked before a transcript from a file replaces an audiobook's transcript. %@ is the file's name."
+    },
+    "The transcript holds no text to attach." : {
+      "comment" : "Error shown when an attached transcript file holds no text."
+    },
+    "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again." : {
+      "comment" : "Line of the Transcribe Audio sheet when the book's transcript file has not been downloaded from iCloud to this Mac."
+    },
+    "The transcript is only in the cloud. Its details appear once the book is downloaded." : {
+      "comment" : "Book Information's Transcript detail when the transcript file has not been downloaded from the cloud drive."
+    },
+    "The transcript of %@ can't be read. If the book is only in the cloud, download it and try again." : {
+      "comment" : "Alert shown when Clean Up Transcript is chosen for an audiobook whose transcript cannot be read. %@ is the audiobook's title."
+    },
+    "The transcript runs to %@, past the audio's end at %@, so it is for other audio." : {
+      "comment" : "Error shown when an attached transcript file's times run past the end of the book's audio. %1$@ is where the transcript ends and %2$@ where the audio ends, each a length of time in words such as \"1 hour, 2 minutes, 5 seconds\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The transcript runs to %1$@, past the audio's end at %2$@, so it is for other audio."
+          }
+        }
+      }
+    },
+    "The transcript's files could not be examined once they were written." : {
+      "comment" : "Error shown when TextMouth could not check the audio files after writing a transcript for them."
+    },
+    "The transcript's text didn't read back as one chapter per chapter of the book." : {
+      "comment" : "Error shown when the text written from a transcript did not have one chapter for each chapter of the audiobook."
+    },
+    "The transcript's times don't fit together, so TextMouth can't use it." : {
+      "comment" : "Error shown when an attached transcript file's times are out of order or inconsistent."
+    },
+    "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book." : {
+      "comment" : "Note under a podcast episode's transcript editor and cleanup sheet. Move to Library is the name of a command in the feed's episode menu."
     },
     "The view is first in the list." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Move Up's hint while the view is first, when it is dimmed."
@@ -9176,8 +9966,14 @@
     "These items could not be removed from the library and remain in it:" : {
       "comment" : "Heading over the items of a folder that could not be removed from the library, several of them. One line for each follows."
     },
+    "These transcript files beside the audio weren't attached: %@. The debug log says why." : {
+      "comment" : "Notice after an import: several transcript files found beside the audio were not attached. %@ is their names as a list, such as \"“03.vtt”, “07.vtt”, and “09.srt”\"."
+    },
     "They are listed after the differences." : {
       "comment" : "Sentence of the results of Compare Libraries that follows the count of unread files: the files are listed after the differences."
+    },
+    "This Mac can't run the speech model that transcription uses." : {
+      "comment" : "Error shown when transcription is tried on a Mac whose hardware cannot run the speech model."
     },
     "This Mac doesn't allow TextMouth to use the microphone: a device management profile or Screen Time restricts it." : {
       "comment" : "Error in the Record window when something other than the user, a device management profile or Screen Time, keeps TextMouth from using the microphone."
@@ -9195,6 +9991,9 @@
     },
     "This audio has no chapter markers." : {
       "comment" : "Said by the audio editor's chapter commands when the audio has no chapter markers."
+    },
+    "This audiobook has no audio to transcribe." : {
+      "comment" : "Error shown when transcription is tried for an audiobook with no audio file."
     },
     "This book could not be deleted and remains in the library:" : {
       "comment" : "Heading over the one book that could not be deleted permanently. A line about it follows."
@@ -9230,6 +10029,9 @@
           }
         }
       }
+    },
+    "This book has a transcript made by a later version of TextMouth." : {
+      "comment" : "Sentence in the Transcribe Audio sheet and Book Information saying the book's transcript was written by a newer version of this app, which this version cannot read."
     },
     "This book has no pages." : {
       "comment" : "Announcement when a page command is used in a book that has no pages."
@@ -9339,6 +10141,12 @@
     "Time remaining" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the time left in all the folder's books, shown only when it is known."
     },
+    "Time to transcribe: %@." : {
+      "comment" : "Line of the Transcribe Audio sheet estimating how long transcribing will take. %@ is the estimate in words, such as \"about 6 minutes\" or \"less than a minute\"."
+    },
+    "Time to transcribe: not known yet." : {
+      "comment" : "Line of the Transcribe Audio sheet before the audiobook's length is known, so no time estimate can be made."
+    },
     "Time window" : {
       "comment" : "Title of the slider in the Miscellaneous settings that sets how long the restart gesture's sequence may take."
     },
@@ -9443,11 +10251,37 @@
     "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's." : {
       "comment" : "Describes the Leading Articles choice Part of the Title, under the pop-up. The Hobbit is the example title; the T's are the books sorted under the letter T."
     },
+    "To use it, open the book and choose %@ from the Book menu." : {
+      "comment" : "Last sentence of a notice after an import, saying how to attach the transcript file by hand. %@ is the name of the Attach Transcript command in the Book menu."
+    },
     "Toggle Bookmark" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Adds a bookmark at the reading position, or removes the one there. Also the title of the menu command of the same name."
     },
     "Too long to keep for pasting. To move it, paste right after cutting." : {
       "comment" : "Said by the audio editor's Paste when the audio cut was too long to keep for pasting."
+    },
+    "Too many timed passages: the limit is %lld." : {
+      "comment" : "Error shown when a chosen transcript file holds more timed passages than the app reads. %lld is the limit, written with the region's digit grouping.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Too many timed passages: the limit is %lld."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Too many timed passages: the limit is %lld."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Total book time: %@" : {
       "comment" : "Part of the full Where Am I? summary: the book's whole length. %@ is the time in words, such as \"4 hours, 50 minutes\"."
@@ -9461,6 +10295,18 @@
     "Track" : {
       "comment" : "Label of the pop-up that chooses which audio track of a book to edit."
     },
+    "Transcribe" : {
+      "comment" : "Button of the Transcribe Audio sheet that starts transcribing the audiobook.\nButton of the question offered after an import that opens Transcribe Audio for the new audiobook."
+    },
+    "Transcribe %@" : {
+      "comment" : "Heading of the Transcribe Audio sheet before transcribing. %@ is the audiobook's title."
+    },
+    "Transcribe Audio" : {
+      "comment" : "Heading of the Transcribe Audio sheet when it can only explain why transcription is not possible.\nTitle of the alert saying why Transcribe Audio did nothing."
+    },
+    "Transcribe Audio…" : {
+      "comment" : "Menu item and VoiceOver action that opens the sheet for turning an audiobook's speech into text. The ellipsis means a sheet follows."
+    },
     "Transcribe it again, then edit the new transcript." : {
       "comment" : "Sentence after the reason that an audiobook's transcript no longer fits its audio: what to do."
     },
@@ -9469,6 +10315,105 @@
     },
     "Transcribe it first, with Transcribe Audio." : {
       "comment" : "Second sentence of that message. Transcribe Audio is the name of a menu command."
+    },
+    "Transcribe it now?" : {
+      "comment" : "Last sentence of the question offering to transcribe a new audiobook."
+    },
+    "Transcribe the Audiobook?" : {
+      "comment" : "Title of the question asked after an audiobook is imported, offering to transcribe it."
+    },
+    "Transcribed" : {
+      "comment" : "Note after a book's title in the library, saying the audiobook has a transcript."
+    },
+    "Transcribed %@: %@ in %@." : {
+      "comment" : "What VoiceOver hears when a transcription finishes and the transcript is saved. %1$@ is the audiobook's title; %2$@ is the number of words, such as \"7,077 words\"; %3$@ is how long it took, such as \"51 seconds\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Transcribed %1$@: %2$@ in %3$@."
+          }
+        }
+      }
+    },
+    "Transcribed on %@, in %@." : {
+      "comment" : "Sentence in the Transcribe Audio sheet and Book Information saying when and in which language TextMouth made an audiobook's transcript. %1$@ is a date, such as \"October 4, 2026\"; %2$@ is the language's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Transcribed on %1$@, in %2$@."
+          }
+        }
+      }
+    },
+    "Transcribes the book's audio again, replacing its transcript." : {
+      "comment" : "VoiceOver hint of the Retranscribe button."
+    },
+    "Transcribes the book's audio on this Mac, so VoiceOver and braille can read the narration as text." : {
+      "comment" : "VoiceOver hint of the Transcribe button."
+    },
+    "Transcribing" : {
+      "comment" : "Note after a book's title in the library, saying the audiobook is being transcribed now."
+    },
+    "Transcribing %@" : {
+      "comment" : "Heading of the Transcribe Audio sheet while the audiobook is being transcribed. %@ is the audiobook's title."
+    },
+    "Transcribing %@, %@." : {
+      "comment" : "What VoiceOver hears as a transcription begins. %1$@ is the audiobook's title; %2$@ is the time it should take, such as \"about 1 minute\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Transcribing %1$@, %2$@."
+          }
+        }
+      }
+    },
+    "Transcribing %@." : {
+      "comment" : "What VoiceOver hears as a transcription begins, when the audio's length is not known. %@ is the audiobook's title."
+    },
+    "Transcribing again replaces it." : {
+      "comment" : "Last sentence of the Transcribe Audio sheet's line about a transcript made by a later version of TextMouth."
+    },
+    "Transcribing again replaces this transcript." : {
+      "comment" : "Last sentence of the Transcribe Audio sheet's line about the transcript a book already has."
+    },
+    "Transcribing it takes %@." : {
+      "comment" : "Second sentence of the question offering to transcribe a new audiobook. %@ is the time it should take, such as \"about 6 minutes\" or \"less than a minute\"."
+    },
+    "Transcript" : {
+      "comment" : "Label of the detail in Book Information that says where the book's transcript came from."
+    },
+    "Transcription" : {
+      "comment" : "Heading of the group of transcription settings in Playback settings."
+    },
+    "Transcription doesn't support %@." : {
+      "comment" : "Error shown when the chosen transcription language cannot be transcribed. %@ is the language's name."
+    },
+    "Transcription language" : {
+      "comment" : "Label of the pop-up in Playback settings that chooses the language audiobooks are transcribed in."
+    },
+    "Transcription needs macOS 26 or later." : {
+      "comment" : "Error shown when transcription is tried on a Mac whose system is too old."
+    },
+    "Transcription progress" : {
+      "comment" : "VoiceOver label of the progress bar in the Transcribe Audio sheet."
+    },
+    "Transcription stopped." : {
+      "comment" : "What VoiceOver hears when a transcription stopped for a reason that has no words of its own."
+    },
+    "Transcription stopped: %@" : {
+      "comment" : "What VoiceOver hears when a transcription stopped because of an error from the system. %@ is the system's own sentence."
+    },
+    "Transcription stopped: %@." : {
+      "comment" : "Error shown when the speech recognizer failed. %@ is the reason, a short phrase in English."
+    },
+    "Transcription was cancelled." : {
+      "comment" : "What VoiceOver hears, and the Transcribe Audio sheet shows, when the user cancels a transcription."
+    },
+    "Transcription works on one audiobook at a time." : {
+      "comment" : "First sentence of the alert shown when Transcribe Audio is chosen with several books selected."
     },
     "Tries again to save the recording as an audiobook." : {
       "comment" : "VoiceOver hint of the Save Again button of the Record window."
@@ -9582,11 +10527,20 @@
     "Undid %@." : {
       "comment" : "Said as the audio editor's Undo undoes an edit. %@ is the edit's name, such as \"Cut 2.5 Seconds\"."
     },
+    "Undid the cleanup of the transcript of %@." : {
+      "comment" : "What VoiceOver hears once a transcript's cleanup is undone. %@ is the audiobook's title."
+    },
     "Undo" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Undo\".\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Undoes the last edit.\nName of the Edit menu's Undo command, in a sentence saying why a keyboard shortcut cannot take its key."
     },
     "Undo %@" : {
       "comment" : "Title of the audio editor's Undo button. %@ is the name of the edit it would undo, such as \"Cut 2.5 Seconds\"."
+    },
+    "Undo Cleanup" : {
+      "comment" : "Button of the Clean Up Transcript sheet that puts back the transcript from before the last cleanup."
+    },
+    "Undo Cleanup puts back the transcript from before." : {
+      "comment" : "Last sentence of the Clean Up Transcript sheet's line about a transcript cleaned up already. Undo Cleanup is the name of a button of the sheet."
     },
     "Undo or redo back to the audio as last saved." : {
       "comment" : "Ends a message saying the edits need an original audio that is gone: only undoing or redoing back to the audio as last saved helps."
@@ -9949,14 +10903,44 @@
     "Year" : {
       "comment" : "Name of the book information sheet's field for an audiobook's year; VoiceOver reads it as the field's label."
     },
+    "You cleaned it up on %@." : {
+      "comment" : "Sentence of Book Information's Transcript detail saying when the user cleaned up the transcript. %@ is a date, such as \"October 5, 2026\"."
+    },
+    "You cleaned up this transcript on %@. Transcribing again replaces the cleanup." : {
+      "comment" : "Line of the Transcribe Audio sheet warning that transcribing again replaces the cleanup the user applied. %@ is a date, such as \"October 5, 2026\"."
+    },
+    "You edited it on %@." : {
+      "comment" : "Sentence of Book Information's Transcript detail saying when the user edited the transcript. %@ is a date, such as \"October 5, 2026\"."
+    },
+    "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too." : {
+      "comment" : "Line of the Clean Up Transcript sheet warning that undoing the cleanup also undoes the user's later edits. %@ is a date, such as \"October 5, 2026\". Undo Cleanup is the name of a button of the sheet."
+    },
+    "You edited this transcript on %@. Transcribing again replaces your edits." : {
+      "comment" : "Line of the Transcribe Audio sheet warning that transcribing again replaces the user's own edits. %@ is a date, such as \"October 5, 2026\"."
+    },
+    "Your copy of the rules is empty. Edit Rules… opens it to add some." : {
+      "comment" : "Line of the Clean Up Transcript sheet when the user's own rules file holds no rule. Edit Rules… is the name of a button of the sheet."
+    },
+    "Your copy of the rules is only in the cloud, so TextMouth asked for it and uses its own meanwhile." : {
+      "comment" : "Line of the Clean Up Transcript sheet when the user's own rules file has not been downloaded from the cloud drive yet."
+    },
     "Your edited text was also kept as %@, in the book's package." : {
       "comment" : "Sentence saying where a backup of the user's edited text was kept. %@ is a file name such as content.md.edited-20261004T123012Z, which stays as written."
+    },
+    "Your edits to the transcript are deleted too." : {
+      "comment" : "Last sentence of the question asked before a transcript is deleted, when the user had edited it."
+    },
+    "Your edits to the transcript are replaced too." : {
+      "comment" : "Sentence of the question asked before a transcript from a file replaces the book's, when the user had edited it."
     },
     "Your library is empty. Add to Library adds a book." : {
       "comment" : "The only row of an empty library. \"Add to Library\" is the name of the button that adds a book, so keep it the same as that button's label."
     },
     "Your place and bookmarks move with their words." : {
       "comment" : "First sentence of what a re-read does to the listener's place and bookmarks."
+    },
+    "Your rules file can't be used: %@. TextMouth keeps it and a copy, and uses its own rules until you correct it." : {
+      "comment" : "Line of the Clean Up Transcript sheet when the user's own rules file is damaged. %@ is the reason, a short technical phrase in English."
     },
     "a book that is not in the library" : {
       "comment" : "What Compare Libraries calls a Reading List book that neither copy's library holds, in lower case, inside a sentence."
@@ -9969,6 +10953,12 @@
     },
     "a menu command's shortcut is one press of a key with Command or Control" : {
       "comment" : "The reason, said after \"not recorded\", why a keyboard shortcut cannot be a menu command's or a button's: it must be one press of a key held with Command or Control. Lower case, since it follows a colon."
+    },
+    "about %@" : {
+      "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence. %@ is a length of time in words, such as \"6 minutes\" or \"1 hour, 5 minutes\"."
+    },
+    "about 140 MB" : {
+      "comment" : "The approximate size of one language's speech model, said in the Download button's label. MB means megabytes."
     },
     "added last" : {
       "comment" : "Library view editor: how a view's limit chooses rows, in lower case inside a filter's description: the items added most recently."
@@ -9992,6 +10982,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "added within the last %lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "all %lld files" : {
+      "comment" : "End of the transcription progress bar's spoken value once every audio file is transcribed, after \"100 percent, \". %lld is the number of files.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "all %lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "all %lld files"
                 }
               }
             }
@@ -10111,6 +11124,9 @@
     "delete the files permanently" : {
       "comment" : "What deleting a book's files does when they are deleted permanently, as a verb phrase in lower case inside a sentence: \"asks whether to delete the files permanently or keep them\"."
     },
+    "downloading" : {
+      "comment" : "Status of a language's speech model that is downloading now, said after the language's name in the Transcribe Audio sheet."
+    },
     "edited by hand" : {
       "comment" : "Words that follow a field's name in what VoiceOver says, when the user typed that field's value themselves. Begins in lower case, as it follows a comma."
     },
@@ -10148,6 +11164,17 @@
     },
     "fifth" : {
       "comment" : "Ordinal word 5th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
+    "file %lld of %lld" : {
+      "comment" : "End of the transcription progress bar's spoken value, after \"40 percent, \", saying which audio file is being transcribed. %1$lld is that file's place, from 1; %2$lld is the number of files.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "file %1$lld of %2$lld"
+          }
+        }
+      }
     },
     "first" : {
       "comment" : "Ordinal word 1st, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
@@ -10251,6 +11278,9 @@
     "in the reading list" : {
       "comment" : "Library view editor: a condition inside a filter's description: the item is in the Reading List."
     },
+    "installed" : {
+      "comment" : "Status of a language's speech model that is on this Mac, said after the language's name in the Transcribe Audio sheet and Settings."
+    },
     "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens." : {
       "comment" : "Reason after a colon, for a book whose edited text nests too deeply; begins in lower case. %@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app."
     },
@@ -10316,6 +11346,9 @@
     },
     "its files stay in the TextMouth library folder" : {
       "comment" : "A clause about one book's files when it is removed from the library only, inside a sentence of a removal confirmation."
+    },
+    "less than a minute" : {
+      "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence, for a transcription that takes under 45 seconds."
     },
     "loud" : {
       "comment" : "A word describing the microphone's loudness in the Record window: close to the most a recording can hold. Lower case, since it follows figures."
@@ -10385,6 +11418,9 @@
     },
     "move the files to the Trash" : {
       "comment" : "What deleting a book's files does when they go to the Trash, as a verb phrase in lower case inside a sentence: \"asks whether to move the files to the Trash or keep them\"."
+    },
+    "needs download" : {
+      "comment" : "Status of a language's speech model that is not on this Mac yet, said after the language's name in the Transcribe Audio sheet and Settings."
     },
     "newer places in %lld books" : {
       "comment" : "Part of a list in Use This Library's account of which copy is newer. %lld is how many books have a newer place in this copy, a count.",
@@ -10472,6 +11508,9 @@
           }
         }
       }
+    },
+    "not supported" : {
+      "comment" : "Status of a language that the speech recognizer cannot transcribe, said after the language's name in the Transcribe Audio sheet and Settings."
     },
     "off" : {
       "comment" : "The value of a Reading List option that is switched off, in lower case, inside a sentence of Compare Libraries: \"Reading list: “Skip finished books” is on in this copy and off in the other copy.\""
@@ -10753,6 +11792,39 @@
     "“%@”" : {
       "comment" : "Puts a book's, folder's, or feed's title in quotation marks inside a sentence. %@ is the title."
     },
+    "“%@” becomes “%@”, inside words too: %@." : {
+      "comment" : "Heading of one rule's changes in the Clean Up Transcript sheet, for a rule that also changes the text inside longer words. %1$@ is the text the rule looks for; %2$@ is the text it puts in its place; %3$@ is the number of corrections, such as \"4 corrections\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” becomes “%2$@”, inside words too: %3$@."
+          }
+        }
+      }
+    },
+    "“%@” becomes “%@”: %@." : {
+      "comment" : "Heading of one rule's changes in the Clean Up Transcript sheet. %1$@ is the text the rule looks for; %2$@ is the text it puts in its place; %3$@ is the number of corrections, such as \"4 corrections\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” becomes “%2$@”: %3$@."
+          }
+        }
+      }
+    },
+    "“%@” beside the audio wasn't attached: %@" : {
+      "comment" : "Notice after an import: a transcript file found beside the audio was not attached. %1$@ is the file's name; %2$@ is the reason, a sentence.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” beside the audio wasn't attached: %2$@"
+          }
+        }
+      }
+    },
     "“%@” can't be read as %@: %@ Nothing was changed." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle was not read again with the braille file characters named codeName: its file is not braille in them, as reason, the reader's own sentence (BrailleFileError), says, and nothing changed. It has the shape of an encoding's refusal (TextEncodingWording.notValidRefusal(bookTitle:encoding:)): \"“Ledger” can't be read as Eurobraille, six-dot (German-speaking countries): Line 3 holds the control character U+0007, which is not Eurobraille. Nothing was changed.\". Placeholders in order: bookTitle, codeName, reason.",
       "localizations" : {
@@ -10760,6 +11832,17 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "“%1$@” can't be read as %2$@: %3$@ Nothing was changed."
+          }
+        }
+      }
+    },
+    "“%@” couldn't be read: %@." : {
+      "comment" : "Error shown when an audio file cannot be read. %1$@ is the audio file's name; %2$@ is the reason, a short phrase in English.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” couldn't be read: %2$@."
           }
         }
       }
@@ -10785,6 +11868,9 @@
           }
         }
       }
+    },
+    "“%@” is only in the cloud. Download the book, then transcribe it." : {
+      "comment" : "Error shown when an audio file has not been downloaded from the cloud drive. %@ is the audio file's name."
     },
     "“%@” is recording. Stop or discard it with Clear Selection, then quit." : {
       "comment" : "Said in an audio editor when TextMouth can't quit because a punch-in records there. %@ is the book's title. \"Clear Selection\" is the name of a command."
@@ -10817,8 +11903,33 @@
         }
       }
     },
+    "“%@” was imported, with %@ of audio." : {
+      "comment" : "First sentence of the question offering to transcribe a new audiobook. %1$@ is the audiobook's title; %2$@ is its length in words, such as \"6 hours, 12 minutes\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” was imported, with %2$@ of audio."
+          }
+        }
+      }
+    },
+    "“%@” was imported." : {
+      "comment" : "First sentence of the question offering to transcribe a new audiobook whose length is not known. %@ is the audiobook's title."
+    },
     "“%@” was read again." : {
       "comment" : "VoiceOver announcement once a book was read again. %@ is the book's title."
+    },
+    "“%@” wasn't attached to %@: %@" : {
+      "comment" : "Alert, and what VoiceOver hears, when a chosen file was not attached as a transcript. %1$@ is the file's name; %2$@ is the audiobook's title; %3$@ is the reason, a sentence.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” wasn't attached to %2$@: %3$@"
+          }
+        }
+      }
     },
     "“%@”, which this version of TextMouth can't read" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value, and Speak Info's words, for a book whose stored code is id, which this TextMouth does not know, as a later TextMouth's may be: \"“ascii-braillo-no-047-01”, which this version of TextMouth can't read\". Placeholders in order: id."

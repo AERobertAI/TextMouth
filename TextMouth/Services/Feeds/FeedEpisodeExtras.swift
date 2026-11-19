@@ -393,11 +393,11 @@ enum FeedEpisodeExtras {
             if case .unsupportedVersion(let format, _) = error {
                 return "it is a \(format.name) transcript of a version TextMouth doesn't read"
             }
-            return error.localizedDescription
+            return error.logDescription
         case let error as OutsideTranscriptError:
-            return error.localizedDescription
+            return error.logDescription
         case let error as TranscriptionError:
-            return error.localizedDescription
+            return error.logDescription
         default:
             let failure = error as NSError
             return "error \(failure.code) in \(failure.domain)"
