@@ -92,6 +92,9 @@ TextMouth/Parsers/AudioBookParser.swift
 TextMouth/Parsers/AudioManifest.swift
 TextMouth/Parsers/AudioManifestCheck.swift
 TextMouth/Parsers/AudioMediaProbe.swift
+TextMouth/Parsers/BrailleCells.swift
+TextMouth/Parsers/BrailleFileCode.swift
+TextMouth/Parsers/BrailleFileReader.swift
 TextMouth/Parsers/CompoundFile.swift
 TextMouth/Parsers/DAISYParser+NCCParser.swift
 TextMouth/Parsers/DAISYParser+PackageInventory.swift
@@ -149,10 +152,6 @@ TextMouth/Parsers/WordMLDocumentReader.swift
 TextMouth/Parsers/WordMLReader.swift
 TextMouth/Parsers/WordSymbolFontEncodings.swift
 TextMouth/Parsers/XMLInputGuard.swift
-TextMouth/Parsers/BrailleCells.swift
-TextMouth/Parsers/BrailleFileCode.swift
-TextMouth/Parsers/BrailleFileReader.swift
-TextMouth/Parsers/ParserUtilities.swift
 TextMouth/Phone/PhoneAppWording.swift
 TextMouth/Phone/PhoneBookmarksModel.swift
 TextMouth/Phone/PhoneSleepDeadline.swift
@@ -250,13 +249,13 @@ TextMouth/Services/RepeatedSymbolNames.swift
 TextMouth/Services/SavedFile.swift
 TextMouth/Services/SleepTimerRegistry.swift
 TextMouth/Services/SleepTimerService.swift
+TextMouth/Services/SoundEffectService.swift
 TextMouth/Services/SpeechExport/SpeechChapterRenderer.swift
 TextMouth/Services/SpeechExport/SpeechExportEncoder.swift
 TextMouth/Services/SpeechExport/SpeechExportError.swift
 TextMouth/Services/SpeechExport/SpeechExportJob.swift
 TextMouth/Services/SpeechExport/SpeechExportStore.swift
 TextMouth/Services/SpeechExport/SpeechExportsUnderWay.swift
-TextMouth/Services/SoundEffectService.swift
 TextMouth/Services/SpeechService.swift
 TextMouth/Services/StorageDestinationAssessment.swift
 TextMouth/Services/StorageGeneration.swift
