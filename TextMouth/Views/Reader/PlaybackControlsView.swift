@@ -21,7 +21,7 @@ struct PlaybackControlsView: View {
                 Image(systemName: skipBackwardIcon)
                     .font(.title2)
             }
-            .accessibilityLabel("Skip backward: \(viewModel.playbackSkipBackwardUnit.rawValue)")
+            .accessibilityLabel(PlaybackControlsWording.skipBackward(unit: viewModel.playbackSkipBackwardUnit.rawValue))
             .buttonStyle(.plain)
 
             // Play/Pause
@@ -43,7 +43,7 @@ struct PlaybackControlsView: View {
                 Image(systemName: skipForwardIcon)
                     .font(.title2)
             }
-            .accessibilityLabel("Skip forward: \(viewModel.playbackSkipForwardUnit.rawValue)")
+            .accessibilityLabel(PlaybackControlsWording.skipForward(unit: viewModel.playbackSkipForwardUnit.rawValue))
             .buttonStyle(.plain)
 
             if settingsViewModel.playbackNavigationUnitControlMode == .separate {
@@ -60,7 +60,7 @@ struct PlaybackControlsView: View {
                     Image(systemName: viewModel.hasNearbyBookmark ? "bookmark.fill" : "bookmark")
                         .font(.title2)
                 }
-                .accessibilityLabel(viewModel.hasNearbyBookmark ? "Remove bookmark" : "Add bookmark")
+                .accessibilityLabel(viewModel.hasNearbyBookmark ? PlaybackControlsWording.removeBookmark : PlaybackControlsWording.addBookmark)
                 .buttonStyle(.plain)
             }
 
@@ -85,10 +85,10 @@ struct PlaybackControlsView: View {
                         .frame(minWidth: 50)
                         .accessibilityLabel(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
                 } else {
-                    Text("\(Int(viewModel.currentWPM))")
+                    Text(verbatim: "\(Int(viewModel.currentWPM))")
                         .font(.system(.body, design: .monospaced))
                         .frame(width: 40)
-                        .accessibilityLabel("\(Int(viewModel.currentWPM)) words per minute")
+                        .accessibilityLabel(PlaybackControlsWording.wordsPerMinute(Int(viewModel.currentWPM)))
                 }
 
                 Button {
@@ -139,7 +139,7 @@ struct PlaybackControlsView: View {
         .padding()
         .background(.bar)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Playback controls")
+        .accessibilityLabel(PlaybackControlsWording.groupLabel)
     }
 
     /// Uses the forwarded state from ReaderViewModel for reliable SwiftUI updates
@@ -152,9 +152,9 @@ struct PlaybackControlsView: View {
 
     private var playPauseLabel: String {
         if viewModel.isCurrentlyPlaying && !viewModel.isCurrentlyPaused {
-            return "Pause"
+            return PlaybackControlsWording.pause
         }
-        return "Play"
+        return PlaybackControlsWording.play
     }
 
     private var skipBackwardIcon: String {
@@ -168,7 +168,7 @@ struct PlaybackControlsView: View {
     /// Match the settings-panel style in shared mode: one directly operable
     /// popup picker, without an otherwise redundant one-item parent menu.
     private var sharedNavigationUnitPicker: some View {
-        Picker("Navigation unit", selection: Binding(
+        Picker(PlaybackControlsWording.unitLabel, selection: Binding(
             get: { viewModel.playbackSkipForwardUnit },
             set: { viewModel.setSharedPlaybackSkipUnit($0) }
         )) {
@@ -182,9 +182,9 @@ struct PlaybackControlsView: View {
         // Supplying label and value separately preserves the popup role while
         // producing “Navigation unit, 15 seconds” without an abbreviated or
         // duplicated native value.
-        .accessibilityLabel("Navigation unit")
+        .accessibilityLabel(PlaybackControlsWording.unitLabel)
         .accessibilityValue(viewModel.playbackSkipForwardUnit.rawValue)
-        .help("Change this book's forward and backward navigation unit")
+        .help(PlaybackControlsWording.unitHelp)
     }
 
     /// Separate mode uses one top-level control. Its two labeled picker
@@ -192,7 +192,7 @@ struct PlaybackControlsView: View {
     /// the rewind and fast-forward buttons.
     private var separateNavigationUnitsMenu: some View {
         Menu {
-            Picker("Forward navigation unit", selection: Binding(
+            Picker(PlaybackControlsWording.forwardUnitLabel, selection: Binding(
                 get: { viewModel.playbackSkipForwardUnit },
                 set: { viewModel.setPlaybackSkipUnit($0, direction: .forward) }
             )) {
@@ -201,7 +201,7 @@ struct PlaybackControlsView: View {
                 }
             }
 
-            Picker("Backward navigation unit", selection: Binding(
+            Picker(PlaybackControlsWording.backwardUnitLabel, selection: Binding(
                 get: { viewModel.playbackSkipBackwardUnit },
                 set: { viewModel.setPlaybackSkipUnit($0, direction: .backward) }
             )) {
@@ -210,16 +210,104 @@ struct PlaybackControlsView: View {
                 }
             }
         } label: {
-            Label("Navigation units", systemImage: "arrow.left.arrow.right.circle")
+            Label(PlaybackControlsWording.unitsLabel, systemImage: "arrow.left.arrow.right.circle")
                 .font(.caption)
         }
         .menuStyle(.borderlessButton)
-        .accessibilityLabel("Navigation units")
-        .accessibilityValue(
-            "Forward navigation unit: \(viewModel.playbackSkipForwardUnit.rawValue); "
-                + "backward navigation unit: \(viewModel.playbackSkipBackwardUnit.rawValue)"
-        )
-        .accessibilityHint("Choose separate forward and backward navigation units for this book")
-        .help("Change this book's forward and backward navigation units")
+        .accessibilityLabel(PlaybackControlsWording.unitsLabel)
+        .accessibilityValue(PlaybackControlsWording.unitsValue(
+            forward: viewModel.playbackSkipForwardUnit.rawValue,
+            backward: viewModel.playbackSkipBackwardUnit.rawValue
+        ))
+        .accessibilityHint(PlaybackControlsWording.unitsHint)
+        .help(PlaybackControlsWording.unitsHelp)
+    }
+}
+
+// MARK: - Wording
+
+/// The words of the playback controls: the buttons' labels, and the
+/// navigation unit menus' labels, values, and hints. The unit names come from
+/// `SkipUnit`, whose raw values are stored in the settings.
+enum PlaybackControlsWording {
+    /// The skip backward button's label. `unit` is the unit's name, such as "15 seconds".
+    static func skipBackward(unit: String) -> String {
+        String(localized: "Skip backward: \(unit)",
+               comment: "What VoiceOver says for the playback bar's skip backward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\".")
+    }
+    /// The skip forward button's label. `unit` is the unit's name, such as "15 seconds".
+    static func skipForward(unit: String) -> String {
+        String(localized: "Skip forward: \(unit)",
+               comment: "What VoiceOver says for the playback bar's skip forward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\".")
+    }
+    /// The bookmark button's label while a bookmark is near the place.
+    static var removeBookmark: String {
+        String(localized: "Remove bookmark",
+               comment: "What VoiceOver says for the playback bar's bookmark button while a bookmark is at the place being read; it removes that bookmark.")
+    }
+    /// The bookmark button's label while no bookmark is near the place.
+    static var addBookmark: String {
+        String(localized: "Add bookmark",
+               comment: "What VoiceOver says for the playback bar's bookmark button while no bookmark is at the place being read; it adds one.")
+    }
+    /// The speed of a text book, spoken: "500 words per minute".
+    static func wordsPerMinute(_ words: Int) -> String {
+        String(localized: "\(words) words per minute",
+               comment: "What VoiceOver says for the playback bar's speed of a text book. %lld is the number of words read in a minute.")
+    }
+    /// The label of the whole bar.
+    static var groupLabel: String {
+        String(localized: "Playback controls",
+               comment: "What VoiceOver calls the group of playback buttons at the bottom of the reader.")
+    }
+    /// The play/pause button's label while playing.
+    static var pause: String {
+        String(localized: "Pause",
+               comment: "Label of the reader's play and pause button while the book plays; it pauses.")
+    }
+    /// The play/pause button's label while not playing.
+    static var play: String {
+        String(localized: "Play",
+               comment: "Label of the reader's play and pause button while the book is not playing; it plays.")
+    }
+    /// The one shared navigation unit menu's label.
+    static var unitLabel: String {
+        String(localized: "Navigation unit",
+               comment: "Label of the playback bar's menu that sets the unit by which this book moves forward and backward.")
+    }
+    /// The help of the shared navigation unit menu.
+    static var unitHelp: String {
+        String(localized: "Change this book's forward and backward navigation unit",
+               comment: "Help text of the playback bar's menu that sets the one unit by which this book moves forward and backward.")
+    }
+    /// The forward unit picker's label.
+    static var forwardUnitLabel: String {
+        String(localized: "Forward navigation unit",
+               comment: "Label of the menu that sets the unit by which this book moves forward.")
+    }
+    /// The backward unit picker's label.
+    static var backwardUnitLabel: String {
+        String(localized: "Backward navigation unit",
+               comment: "Label of the menu that sets the unit by which this book moves backward.")
+    }
+    /// The menu of both units' label.
+    static var unitsLabel: String {
+        String(localized: "Navigation units",
+               comment: "Label of the playback bar's menu that holds separate forward and backward navigation units.")
+    }
+    /// The menu of both units' value: each direction's unit.
+    static func unitsValue(forward: String, backward: String) -> String {
+        String(localized: "Forward navigation unit: \(forward); backward navigation unit: \(backward)",
+               comment: "What VoiceOver says for the value of the menu that holds separate navigation units. %1$@ is the forward unit and %2$@ the backward unit, each such as \"15 seconds\" or \"Sentence\".")
+    }
+    /// The menu of both units' hint.
+    static var unitsHint: String {
+        String(localized: "Choose separate forward and backward navigation units for this book",
+               comment: "Hint of the playback bar's menu that holds separate forward and backward navigation units.")
+    }
+    /// The menu of both units' help.
+    static var unitsHelp: String {
+        String(localized: "Change this book's forward and backward navigation units",
+               comment: "Help text of the playback bar's menu that holds separate forward and backward navigation units.")
     }
 }

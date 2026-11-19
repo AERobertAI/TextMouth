@@ -69,12 +69,50 @@ enum JumpInputValidator {
     /// ignored.
     static func percent(_ raw: String) -> PercentResult {
         let trimmed = raw.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return .error("Enter a percent.") }
-        guard let value = Double(trimmed) else { return .error("\"\(trimmed)\" is not a number.") }
+        guard !trimmed.isEmpty else { return .error(emptyPercent) }
+        guard let value = Double(trimmed) else { return .error(notANumber(trimmed)) }
         guard (0...100).contains(value) else {
-            return .error("Percent must be between 0 and 100.")
+            return .error(percentOutOfRange)
         }
         return .value(value)
+    }
+
+    // MARK: Words of the refusals
+
+    /// What Go to Percent says to an empty field.
+    static var emptyPercent: String {
+        String(localized: "Enter a percent.",
+               comment: "Message when Go to Percent is chosen with nothing typed in its field.")
+    }
+
+    /// What Go to Percent says to text that is no number. `typed` is what was typed.
+    static func notANumber(_ typed: String) -> String {
+        String(localized: "\"\(typed)\" is not a number.",
+               comment: "Message when the text typed in Go to Percent is no number. %@ is what the user typed, shown in quotation marks.")
+    }
+
+    /// What Go to Percent says to a number outside 0 to 100.
+    static var percentOutOfRange: String {
+        String(localized: "Percent must be between 0 and 100.",
+               comment: "Message when the number typed in Go to Percent is below 0 or above 100.")
+    }
+
+    /// The jump button's title.
+    static var jumpTitle: String {
+        String(localized: "Jump",
+               comment: "Button of a jump panel (Go to Percent, Time or Page) that jumps to what was typed.")
+    }
+
+    /// The cancel button's title.
+    static var cancelTitle: String {
+        String(localized: "Cancel",
+               comment: "Button of a jump panel (Go to Percent, Time or Page) that closes it without jumping.")
+    }
+
+    /// What VoiceOver says for a refusal shown under a jump field.
+    static func errorSpoken(_ message: String) -> String {
+        String(localized: "Error: \(message)",
+               comment: "What VoiceOver says for the refusal shown under a jump panel's field. %@ is the refusal's sentence.")
     }
 
     /// How far past the end of a book's clock a typed time still names its
@@ -333,9 +371,9 @@ struct JumpFieldPanel: View {
                     }
                     .accessibilityLabel(label)
                     .accessibilityHint(hint)
-                Button("Jump", action: take)
+                Button(JumpInputValidator.jumpTitle, action: take)
                     .keyboardShortcut(.defaultAction)
-                Button("Cancel", action: onCancel)
+                Button(JumpInputValidator.cancelTitle, action: onCancel)
                     .keyboardShortcut(.cancelAction)
                 Spacer()
             }
@@ -343,7 +381,7 @@ struct JumpFieldPanel: View {
                 Text(errorMessage)
                     .font(.caption)
                     .foregroundColor(.red)
-                    .accessibilityLabel("Error: \(errorMessage)")
+                    .accessibilityLabel(JumpInputValidator.errorSpoken(errorMessage))
             }
         }
         .padding(.horizontal)

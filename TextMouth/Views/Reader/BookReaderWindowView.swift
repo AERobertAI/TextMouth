@@ -88,7 +88,7 @@ struct BookReaderWindowView: View {
         self.bookID = bookID
         // Create the ReaderViewModel as a StateObject
         let book = libraryViewModel.bookByID(bookID) ?? Book(
-            title: "Unknown",
+            title: "Unknown", // l10n: no (stand-in for a book the library no longer holds; never shown or stored)
             format: .txt,
             filePath: "",
             md5Hash: ""
@@ -217,7 +217,10 @@ struct BookReaderWindowView: View {
 
     /// What a reader window's title begins with for a book read from
     /// anywhere but the reading list.
-    nonisolated static let windowTitlePrefix = "Book"
+    nonisolated static var windowTitlePrefix: String {
+        String(localized: "Book",
+               comment: "The word that begins the title of a reader window for a book, before its title and author: \"Book: <title> by <author>\".")
+    }
 
     /// The title of the reader window of `book`: "Book: <title> by
     /// <author>", or "Book: <title>" when the author is unknown. A book read
@@ -228,8 +231,10 @@ struct BookReaderWindowView: View {
     nonisolated static func windowTitle(for book: Book, readFromReadingList: Bool) -> String {
         let prefix = readFromReadingList ? ReadingListReaderWording.windowTitlePrefix : windowTitlePrefix
         if Book.isUnknownAuthor(book.author) {
-            return "\(prefix): \(book.title)"
+            return String(localized: "\(prefix): \(book.title)",
+                          comment: "Title of a reader window for a book whose author is unknown. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title.")
         }
-        return "\(prefix): \(book.title) by \(book.author)"
+        return String(localized: "\(prefix): \(book.title) by \(book.author)",
+                      comment: "Title of a reader window. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title; %3$@ is the book's author.")
     }
 }

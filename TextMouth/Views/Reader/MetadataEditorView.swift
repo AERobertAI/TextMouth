@@ -110,7 +110,7 @@ struct MetadataEditorView: View {
             // one way to close without saving. A Close button here did the
             // same, so VoiceOver met two controls for it.
             HStack {
-                Text("Book Information")
+                Text(MetadataEditorWording.sheetTitle)
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
@@ -139,17 +139,17 @@ struct MetadataEditorView: View {
             }
 
             HStack {
-                Button("Cancel") { dismiss() }
+                Button(MetadataEditorWording.cancelTitle) { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
-                Button("Save", action: save)
+                Button(MetadataEditorWording.saveTitle, action: save)
                     .keyboardShortcut(.return, modifiers: .command)
                     .accessibilityLabel(saveButtonAccessibilityLabel)
             }
             .padding()
         }
         .frame(width: 450, height: 550)
-        .navigationTitle("Info: \(isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title)")
+        .navigationTitle(MetadataEditorWording.navigationTitle(bookTitle: isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title))
         // The transcript is read off the main thread, without downloading
         // it; the Transcript row shows once it has answered.
         .task(id: transcriptBook?.id) {
@@ -221,7 +221,7 @@ struct MetadataEditorView: View {
     /// goes, following the choice to write the file; audio metadata only
     /// ever goes to the library.
     private var saveButtonAccessibilityLabel: String {
-        isAudio ? "Save metadata changes" : EPUBMetadataSaveWording.saveButtonLabel(writesToFile: writesToFile)
+        isAudio ? MetadataEditorWording.saveAudioLabel : EPUBMetadataSaveWording.saveButtonLabel(writesToFile: writesToFile)
     }
 
     /// The EPUB edits a failure is about, so its message clears as soon as
@@ -241,22 +241,22 @@ struct MetadataEditorView: View {
     /// each labeled "edited by hand" when the user typed it.
     private var audioEditableSection: some View {
         Section {
-            TextField("Title", text: $editedAudioMetadata.title)
-                .accessibilityLabel(fieldLabel("Book title", for: .title))
+            TextField(MetadataEditorWording.titleField, text: $editedAudioMetadata.title)
+                .accessibilityLabel(fieldLabel(MetadataEditorWording.bookTitleLabel, for: .title))
 
-            TextField("Artist", text: $editedAudioMetadata.artist)
-                .accessibilityLabel(fieldLabel("Artist or narrator", for: .author))
+            TextField(MetadataEditorWording.artistField, text: $editedAudioMetadata.artist)
+                .accessibilityLabel(fieldLabel(MetadataEditorWording.artistLabel, for: .author))
 
-            TextField("Album", text: $editedAudioMetadata.album)
-                .accessibilityLabel(fieldLabel("Album name", for: .audioAlbum))
+            TextField(MetadataEditorWording.albumField, text: $editedAudioMetadata.album)
+                .accessibilityLabel(fieldLabel(MetadataEditorWording.albumLabel, for: .audioAlbum))
 
-            TextField("Genre", text: $editedAudioMetadata.genre)
-                .accessibilityLabel(fieldLabel("Genre", for: .audioGenre))
+            TextField(MetadataEditorWording.genreField, text: $editedAudioMetadata.genre)
+                .accessibilityLabel(fieldLabel(MetadataEditorWording.genreField, for: .audioGenre))
 
-            TextField("Year", text: $editedAudioMetadata.year)
-                .accessibilityLabel(fieldLabel("Year", for: .audioYear))
+            TextField(MetadataEditorWording.yearField, text: $editedAudioMetadata.year)
+                .accessibilityLabel(fieldLabel(MetadataEditorWording.yearField, for: .audioYear))
         } header: {
-            Text("Editable")
+            Text(MetadataEditorWording.editableHeading)
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -265,17 +265,17 @@ struct MetadataEditorView: View {
     private var audioReadOnlySection: some View {
         Section {
             if !editedAudioMetadata.duration.isEmpty {
-                LabeledContent("Duration") {
+                LabeledContent(MetadataEditorWording.durationRow) {
                     Text(editedAudioMetadata.duration)
                 }
-                .accessibilityLabel("Duration: \(editedAudioMetadata.duration)")
+                .accessibilityLabel(MetadataEditorWording.durationSpoken(editedAudioMetadata.duration))
             }
 
             if !editedAudioMetadata.fileFormat.isEmpty {
-                LabeledContent("Format") {
+                LabeledContent(MetadataEditorWording.formatRow) {
                     Text(editedAudioMetadata.fileFormat)
                 }
-                .accessibilityLabel("File format: \(editedAudioMetadata.fileFormat)")
+                .accessibilityLabel(MetadataEditorWording.formatSpoken(editedAudioMetadata.fileFormat))
             }
 
             // Where the transcript came from; the row appears once the
@@ -287,7 +287,7 @@ struct MetadataEditorView: View {
                 .accessibilityLabel(TranscriptionWording.bookInfoSpokenDetail(line))
             }
         } header: {
-            Text("Read Only")
+            Text(MetadataEditorWording.readOnlyHeading)
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -298,19 +298,19 @@ struct MetadataEditorView: View {
     /// date, each labeled "edited by hand" when the user typed it.
     private var epubEditableSection: some View {
         Section {
-            TextField("Title", text: $editedEPUBMetadata.title)
-                .accessibilityLabel(fieldLabel("Book title", for: .title))
+            TextField(MetadataEditorWording.titleField, text: $editedEPUBMetadata.title)
+                .accessibilityLabel(fieldLabel(MetadataEditorWording.bookTitleLabel, for: .title))
 
-            TextField("Author", text: $editedEPUBMetadata.author)
-                .accessibilityLabel(fieldLabel("Author", for: .author))
+            TextField(MetadataEditorWording.authorField, text: $editedEPUBMetadata.author)
+                .accessibilityLabel(fieldLabel(MetadataEditorWording.authorField, for: .author))
 
-            TextField("Publisher", text: $editedEPUBMetadata.publisher)
-                .accessibilityLabel(fieldLabel("Publisher", for: .publisher))
+            TextField(MetadataEditorWording.publisherField, text: $editedEPUBMetadata.publisher)
+                .accessibilityLabel(fieldLabel(MetadataEditorWording.publisherField, for: .publisher))
 
-            TextField("Publication Date", text: $editedEPUBMetadata.publicationDate)
-                .accessibilityLabel(fieldLabel("Publication date", for: .publicationDate))
+            TextField(MetadataEditorWording.publicationDateField, text: $editedEPUBMetadata.publicationDate)
+                .accessibilityLabel(fieldLabel(MetadataEditorWording.publicationDateLabel, for: .publicationDate))
         } header: {
-            Text("Editable")
+            Text(MetadataEditorWording.editableHeading)
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -319,36 +319,36 @@ struct MetadataEditorView: View {
     private var epubReadOnlySection: some View {
         Section {
             if !editedEPUBMetadata.isbn.isEmpty {
-                LabeledContent("ISBN") {
+                LabeledContent(MetadataEditorWording.isbnRow) {
                     Text(editedEPUBMetadata.isbn)
                         .textSelection(.enabled)
                 }
-                .accessibilityLabel("ISBN: \(editedEPUBMetadata.isbn)")
+                .accessibilityLabel(MetadataEditorWording.isbnSpoken(editedEPUBMetadata.isbn))
             }
 
             if !editedEPUBMetadata.language.isEmpty {
-                LabeledContent("Language") {
+                LabeledContent(MetadataEditorWording.languageRow) {
                     Text(editedEPUBMetadata.language)
                 }
-                .accessibilityLabel("Language: \(editedEPUBMetadata.language)")
+                .accessibilityLabel(MetadataEditorWording.languageSpoken(editedEPUBMetadata.language))
             }
 
             if !editedEPUBMetadata.identifier.isEmpty {
-                LabeledContent("Identifier") {
+                LabeledContent(MetadataEditorWording.identifierRow) {
                     Text(editedEPUBMetadata.identifier)
                         .textSelection(.enabled)
                 }
-                .accessibilityLabel("Identifier: \(editedEPUBMetadata.identifier)")
+                .accessibilityLabel(MetadataEditorWording.identifierSpoken(editedEPUBMetadata.identifier))
             }
 
             if !editedEPUBMetadata.epubVersion.isEmpty {
-                LabeledContent("EPUB Version") {
+                LabeledContent(MetadataEditorWording.epubVersionRow) {
                     Text(editedEPUBMetadata.epubVersion)
                 }
-                .accessibilityLabel("EPUB version: \(editedEPUBMetadata.epubVersion)")
+                .accessibilityLabel(MetadataEditorWording.epubVersionSpoken(editedEPUBMetadata.epubVersion))
             }
         } header: {
-            Text("Read Only")
+            Text(MetadataEditorWording.readOnlyHeading)
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -379,26 +379,194 @@ struct MetadataEditorView: View {
 
 /// The words the metadata editors and the library's Book Info sheet share.
 enum MetadataEditorWording {
+    // MARK: The sheet
+
+    /// The sheet's heading.
+    static var sheetTitle: String {
+        String(localized: "Book Information",
+               comment: "Heading of the sheet in which the user edits a book's information (title, author and so on).")
+    }
+    /// The sheet's navigation title.
+    static func navigationTitle(bookTitle: String) -> String {
+        String(localized: "Info: \(bookTitle)",
+               comment: "Navigation title of the book information sheet. %@ is the book's title.")
+    }
+    /// The button that closes the sheet without saving.
+    static var cancelTitle: String {
+        String(localized: "Cancel",
+               comment: "Button of the book information sheet that closes it without saving.")
+    }
+    /// The button that saves the edits.
+    static var saveTitle: String {
+        String(localized: "Save",
+               comment: "Button of the book information sheet that saves the edits.")
+    }
+    /// What VoiceOver says for Save in an audiobook's sheet.
+    static var saveAudioLabel: String {
+        String(localized: "Save metadata changes",
+               comment: "What VoiceOver says for the Save button of an audiobook's book information sheet.")
+    }
+    /// The heading of the group of fields the user can change.
+    static var editableHeading: String {
+        String(localized: "Editable",
+               comment: "Heading of the group of fields of the book information sheet that the user can change.")
+    }
+    /// The heading of the group of fields the user cannot change.
+    static var readOnlyHeading: String {
+        String(localized: "Read Only",
+               comment: "Heading of the group of fields of the book information sheet that the user cannot change.")
+    }
+
+    // MARK: Editable fields: what the screen shows
+
+    /// The title field's name.
+    static var titleField: String {
+        String(localized: "Title", comment: "Name of the book information sheet's field for the book's title.")
+    }
+    /// The audiobook artist field's name.
+    static var artistField: String {
+        String(localized: "Artist", comment: "Name of the book information sheet's field for an audiobook's artist.")
+    }
+    /// The audiobook album field's name.
+    static var albumField: String {
+        String(localized: "Album", comment: "Name of the book information sheet's field for an audiobook's album.")
+    }
+    /// The audiobook genre field's name, which VoiceOver also reads.
+    static var genreField: String {
+        String(localized: "Genre", comment: "Name of the book information sheet's field for an audiobook's genre; VoiceOver reads it as the field's label.")
+    }
+    /// The audiobook year field's name, which VoiceOver also reads.
+    static var yearField: String {
+        String(localized: "Year", comment: "Name of the book information sheet's field for an audiobook's year; VoiceOver reads it as the field's label.")
+    }
+    /// The EPUB author field's name, which VoiceOver also reads.
+    static var authorField: String {
+        String(localized: "Author", comment: "Name of the book information sheet's field for a book's author; VoiceOver reads it as the field's label.")
+    }
+    /// The EPUB publisher field's name, which VoiceOver also reads.
+    static var publisherField: String {
+        String(localized: "Publisher", comment: "Name of the book information sheet's field for a book's publisher; VoiceOver reads it as the field's label.")
+    }
+    /// The EPUB publication date field's name.
+    static var publicationDateField: String {
+        String(localized: "Publication Date", comment: "Name of the book information sheet's field for a book's publication date.")
+    }
+
+    // MARK: Editable fields: what VoiceOver says
+
+    /// What VoiceOver says for the title field.
+    static var bookTitleLabel: String {
+        String(localized: "Book title", comment: "What VoiceOver says for the book information sheet's field for the book's title.")
+    }
+    /// What VoiceOver says for an audiobook's artist field.
+    static var artistLabel: String {
+        String(localized: "Artist or narrator", comment: "What VoiceOver says for the book information sheet's field for an audiobook's artist, who may be its narrator.")
+    }
+    /// What VoiceOver says for an audiobook's album field.
+    static var albumLabel: String {
+        String(localized: "Album name", comment: "What VoiceOver says for the book information sheet's field for an audiobook's album.")
+    }
+    /// What VoiceOver says for an EPUB's publication date field.
+    static var publicationDateLabel: String {
+        String(localized: "Publication date", comment: "What VoiceOver says for the book information sheet's field for a book's publication date.")
+    }
+
+    // MARK: Read-only rows
+
+    /// The audiobook's duration row.
+    static var durationRow: String {
+        String(localized: "Duration", comment: "Name of the book information sheet's row that shows an audiobook's length.")
+    }
+    /// The audiobook's file format row.
+    static var formatRow: String {
+        String(localized: "Format", comment: "Name of the book information sheet's row that shows an audiobook's file format.")
+    }
+    /// The ISBN row.
+    static var isbnRow: String {
+        String(localized: "ISBN", comment: "Name of the book information sheet's row that shows a book's ISBN, its international book number.")
+    }
+    /// The language row.
+    static var languageRow: String {
+        String(localized: "Language", comment: "Name of the book information sheet's row that shows the language a book is written in.")
+    }
+    /// The identifier row.
+    static var identifierRow: String {
+        String(localized: "Identifier", comment: "Name of the book information sheet's row that shows a book's identifier, a code that names it.")
+    }
+    /// The EPUB version row.
+    static var epubVersionRow: String {
+        String(localized: "EPUB Version", comment: "Name of the book information sheet's row that shows which version of the EPUB format the file uses.")
+    }
+
+    /// What VoiceOver says for the duration row.
+    static func durationSpoken(_ duration: String) -> String {
+        String(localized: "Duration: \(duration)",
+               comment: "What VoiceOver says for the book information sheet's duration row. %@ is the length, such as 9:41:07.")
+    }
+    /// What VoiceOver says for the file format row.
+    static func formatSpoken(_ format: String) -> String {
+        String(localized: "File format: \(format)",
+               comment: "What VoiceOver says for the book information sheet's file format row. %@ is the format, such as MP3.")
+    }
+    /// What VoiceOver says for the ISBN row.
+    static func isbnSpoken(_ isbn: String) -> String {
+        String(localized: "ISBN: \(isbn)",
+               comment: "What VoiceOver says for the book information sheet's ISBN row. %@ is the book's ISBN.")
+    }
+    /// What VoiceOver says for the language row.
+    static func languageSpoken(_ language: String) -> String {
+        String(localized: "Language: \(language)",
+               comment: "What VoiceOver says for the book information sheet's language row. %@ is the language code the book gives, such as en.")
+    }
+    /// What VoiceOver says for the identifier row.
+    static func identifierSpoken(_ identifier: String) -> String {
+        String(localized: "Identifier: \(identifier)",
+               comment: "What VoiceOver says for the book information sheet's identifier row. %@ is the book's identifier code.")
+    }
+    /// What VoiceOver says for the EPUB version row.
+    static func epubVersionSpoken(_ version: String) -> String {
+        String(localized: "EPUB version: \(version)",
+               comment: "What VoiceOver says for the book information sheet's EPUB version row. %@ is the version, such as 3.0.")
+    }
+
+    // MARK: Hand edits and refusals
+
     /// What VoiceOver reads after the label of a field the user edited by
     /// hand (`Book.handEdits`), so the user knows which values are their
     /// own: "Book title, edited by hand".
-    static let editedByHand = "edited by hand"
+    static var editedByHand: String {
+        String(localized: "edited by hand",
+               comment: "Words that follow a field's name in what VoiceOver says, when the user typed that field's value themselves. Begins in lower case, as it follows a comma.")
+    }
 
     /// The accessibility label of the control for `field`: `label`, with
     /// `editedByHand` after it when `handEdits` records the field.
     static func fieldLabel(_ label: String, for field: Book.MetadataField, in handEdits: Book.HandEdits?) -> String {
         guard handEdits?.contains(field) == true else { return label }
-        return "\(label), \(editedByHand)"
+        return String(localized: "\(label), edited by hand",
+                      comment: "What VoiceOver says for a field of the book information sheet that the user edited by hand. %@ is the field's name, such as \"Book title\".")
     }
 
     /// What the editor says when Save is pressed after the title was
     /// emptied.
-    static let titleCleared = "Could not save: the book's title is empty. Type a title, then save again."
+    static var titleCleared: String {
+        SentenceWording.joined([
+            String(localized: "Could not save: the book's title is empty.",
+                   comment: "First sentence of the message when Save is pressed after the book's title was emptied."),
+            String(localized: "Type a title, then save again.",
+                   comment: "Second sentence of that message: what to do."),
+        ])
+    }
 
     /// When the book titled `title` has left the library, so its edit has
     /// nowhere to go: "Could not save metadata: “Notes” is no longer in the
     /// library. Nothing was changed."
     static func notInLibrary(title: String) -> String {
-        "Could not save metadata: “\(title)” is no longer in the library. Nothing was changed."
+        SentenceWording.joined([
+            String(localized: "Could not save metadata: “\(title)” is no longer in the library.",
+                   comment: "First sentence of the message when the book being edited left the library. %@ is the book's title."),
+            String(localized: "Nothing was changed.",
+                   comment: "Last sentence of a message that says saving failed: nothing the user edited was saved anywhere."),
+        ])
     }
 }
