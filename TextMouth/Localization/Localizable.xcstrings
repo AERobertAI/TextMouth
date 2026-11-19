@@ -12577,13 +12577,37 @@
       }
     },
     "Jumped to page %@." : {
-      "comment" : "Announcement after Go to Page jumped. %@ is the page's label, an identifier written without digit grouping."
+      "comment" : "Announcement after Go to Page jumped. %@ is the page's label, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Salto a la página %@."
+          }
+        }
+      }
     },
     "KOI8-R (Russian)" : {
-      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "KOI8-R (ruso)"
+          }
+        }
+      }
     },
     "KOI8-U (Ukrainian)" : {
-      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "KOI8-U (ucraniano)"
+          }
+        }
+      }
     },
     "Keep" : {
       "comment" : "Choice of the Original audio picker: keep the original audio of a recording or edited audiobook until its book is removed.\nTitle and VoiceOver label of the button that keeps the original file of a book just imported. Title case."
@@ -12742,10 +12766,26 @@
       "comment" : "Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas."
     },
     "Language" : {
-      "comment" : "Name of the book information sheet's row that shows the language a book is written in.\nThe label of the pop-up that chooses the language of a braille code, in the Braille tab of Settings and in the Export dialog's braille options.\nTitle of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.\nTitle of the voice sheet's menu that limits the voices listed to one language."
+      "comment" : "Name of the book information sheet's row that shows the language a book is written in.\nThe label of the pop-up that chooses the language of a braille code, in the Braille tab of Settings and in the Export dialog's braille options.\nTitle of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.\nTitle of the voice sheet's menu that limits the voices listed to one language.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Idioma"
+          }
+        }
+      }
     },
     "Language: %@" : {
-      "comment" : "What VoiceOver says for the book information sheet's language row. %@ is the language code the book gives, such as en."
+      "comment" : "What VoiceOver says for the book information sheet's language row. %@ is the language code the book gives, such as en.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Idioma: %@"
+          }
+        }
+      }
     },
     "Language: %@, %@." : {
       "comment" : "Line of the Transcribe Audio sheet naming the transcription language and whether its speech model is ready. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is its status: installed, needs download, downloading, or not supported.",
@@ -12780,7 +12820,15 @@
       "comment" : "Speak Info: the part of a book's full summary that says when it was last opened. %@ is a date or time, such as \"yesterday\"."
     },
     "Last try: %@" : {
-      "comment" : "Text below the Try a Double Press button after a trial ended. %@ is what the trial found, a whole sentence such as \"Double press.\"."
+      "comment" : "Text below the Try a Double Press button after a trial ended. %@ is what the trial found, a whole sentence such as \"Double press.\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Último intento: %@"
+          }
+        }
+      }
     },
     "Leading articles" : {
       "comment" : "Label of the pop-up in the Library settings that chooses whether a title's leading article (The, A, An) counts when sorting and typing."
@@ -12820,16 +12868,48 @@
       }
     },
     "Left Arrow" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Arrow\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Arrow\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flecha izquierda"
+          }
+        }
+      }
     },
     "Left Brace" : {
-      "comment" : "Name of the punctuation key \"{\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Brace\"."
+      "comment" : "Name of the punctuation key \"{\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Brace\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Llave izquierda"
+          }
+        }
+      }
     },
     "Left Bracket" : {
-      "comment" : "Name of the punctuation key \"[\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Bracket\"."
+      "comment" : "Name of the punctuation key \"[\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Bracket\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Corchete izquierdo"
+          }
+        }
+      }
     },
     "Left Parenthesis" : {
-      "comment" : "Name of the punctuation key \"(\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Parenthesis\"."
+      "comment" : "Name of the punctuation key \"(\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Parenthesis\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Paréntesis izquierdo"
+          }
+        }
+      }
     },
     "Length" : {
       "comment" : "Label of the audio editor's field for the length of a silence, and of the audio's length in Audio Info."
@@ -12838,7 +12918,15 @@
       "comment" : "Explains the silence length field of the audio editor's Insert Silence sheet. The examples are typed times."
     },
     "Less Than" : {
-      "comment" : "Name of the punctuation key \"<\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Less Than\"."
+      "comment" : "Name of the punctuation key \"<\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Less Than\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menor que"
+          }
+        }
+      }
     },
     "Less than a minute left" : {
       "comment" : "Line of the import overlay and the feed downloads: the time left is under a minute."
@@ -12847,10 +12935,26 @@
       "comment" : "Label of the microphone's loudness while recording, in the Record window."
     },
     "Level 1" : {
-      "comment" : "Choice of the headings sheet's level filter that shows only the biggest headings, level 1."
+      "comment" : "Choice of the headings sheet's level filter that shows only the biggest headings, level 1.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nivel 1"
+          }
+        }
+      }
     },
     "Levels 1 to %lld" : {
-      "comment" : "Choice of the headings sheet's level filter that shows levels from 1 to a deeper one. %lld is the deepest level shown."
+      "comment" : "Choice of the headings sheet's level filter that shows levels from 1 to a deeper one. %lld is the deepest level shown.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niveles del 1 al %lld"
+          }
+        }
+      }
     },
     "Library" : {
       "comment" : "Heading of the group of Library window keyboard shortcuts in Settings, and the title of the Library menu.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The tab's name in the Settings window's toolbar.\nThe name spoken for the library's top level, the place that holds the folders and the books outside any folder, as in \"Library, 743 books\" after going to it.\nThe top of the library, as the Save in pop-up of the Record window names it.\nTitle of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.\nTitle of the first screen, the list of the user's books and folders."
@@ -12889,7 +12993,15 @@
       "comment" : "Spoken label of the View pop-up of a Library window, which chooses the view of the library shown, such as Unopened."
     },
     "Library windows" : {
-      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.\nNames where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed."
+      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.\nNames where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ventanas de la biblioteca"
+          }
+        }
+      }
     },
     "Library: %@" : {
       "comment" : "Title of a Library window that shows a view with one fixed order, such as the Reading List. %@ is the view's name."
@@ -13161,13 +13273,29 @@
       "comment" : "Value of the Play button while the book is loading, spoken by VoiceOver."
     },
     "Loading %@" : {
-      "comment" : "What VoiceOver says for the spinner in the reader while a book loads. %@ is the book's title."
+      "comment" : "What VoiceOver says for the spinner in the reader while a book loads. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cargando %@"
+          }
+        }
+      }
     },
     "Loading ISBNs..." : {
       "comment" : "Title of the scan button in Find Duplicate Books while the books' ISBNs are being read first. ISBN stays as written."
     },
     "Loading book..." : {
-      "comment" : "Words beside the spinner in the reader while a book loads."
+      "comment" : "Words beside the spinner in the reader while a book loads.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cargando libro..."
+          }
+        }
+      }
     },
     "Location" : {
       "comment" : "Label of the library's full folder path on the Library Not Available screen.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's place: the folder that holds it."
@@ -13182,7 +13310,15 @@
       "comment" : "The line under the Log location pop-up in the Storage settings. %@ is the folder's full path, which stays as written."
     },
     "Looks for the book again" : {
-      "comment" : "Hint of the Try Again button of the reader's view for a book that the cloud has not yet synced."
+      "comment" : "Hint of the Try Again button of the reader's view for a book that the cloud has not yet synced.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vuelve a buscar el libro"
+          }
+        }
+      }
     },
     "Loop to Start" : {
       "comment" : "A choice of the When a Book Ends picker: the book plays again from its beginning and is never finished."
@@ -13200,13 +13336,37 @@
       "comment" : "Said when MP3 is asked for and neither TextMouth's built-in encoder nor an installed ffmpeg program can write it. \"Storage settings\" is the name of a settings tab."
     },
     "Mac Central European" : {
-      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is."
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac europeo central"
+          }
+        }
+      }
     },
     "Mac Cyrillic" : {
-      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is."
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac cirílico"
+          }
+        }
+      }
     },
     "Mac Roman (Western European)" : {
-      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac Roman (europeo occidental)"
+          }
+        }
+      }
     },
     "Made %@, %lld of %lld." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after Duplicate: the copy and its place. Placeholders in order: name, number, count.",
@@ -13220,10 +13380,26 @@
       }
     },
     "Make Double Press" : {
-      "comment" : "VoiceOver action and context menu item of a keyboard shortcut's key button: changes a single press of the key into the key pressed twice quickly."
+      "comment" : "VoiceOver action and context menu item of a keyboard shortcut's key button: changes a single press of the key into the key pressed twice quickly.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hacer pulsación doble"
+          }
+        }
+      }
     },
     "Make Single Press" : {
-      "comment" : "VoiceOver action and context menu item of a keyboard shortcut's key button: changes a key pressed twice quickly into a single press of the key."
+      "comment" : "VoiceOver action and context menu item of a keyboard shortcut's key button: changes a key pressed twice quickly into a single press of the key.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hacer pulsación simple"
+          }
+        }
+      }
     },
     "Make a New Index" : {
       "comment" : "Button of the question that opens the library without its index file: makes a new index and opens the library."
@@ -13251,11 +13427,25 @@
             "state" : "new",
             "value" : "Manifest not updated: %1$@ Fix it in your editor and save again; until then, %2$@ keeps its headings."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifiesto no actualizado: %1$@ Corrígelo en tu editor y guarda de nuevo; hasta entonces, %2$@ conserva sus encabezados."
+          }
         }
       }
     },
     "Manifest updated" : {
-      "comment" : "Announcement after the user saved an edited manifest.json and TextMouth took it as the book's arrangement of tracks."
+      "comment" : "Announcement after the user saved an edited manifest.json and TextMouth took it as the book's arrangement of tracks.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifiesto actualizado"
+          }
+        }
+      }
     },
     "Manual Order" : {
       "comment" : "Name of a way to sort the books: by the order the user arranges by hand, with no direction. Shown in the Sort menu, the library view editor, the window title, and in sort announcements."
@@ -13270,10 +13460,26 @@
       "comment" : "Title of the command that marks every article of a feed read. Title case."
     },
     "Mark In" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts a selection at the current position."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts a selection at the current position.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcar entrada"
+          }
+        }
+      }
     },
     "Mark Out" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Ends the selection at the current position."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Ends the selection at the current position.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcar salida"
+          }
+        }
+      }
     },
     "Mark Played" : {
       "comment" : "Title of the command that marks a feed's episode played. Title case."
@@ -13417,7 +13623,15 @@
       "comment" : "Title of the audio editor's list of markers, chapter markers, and pauses."
     },
     "Markers and Pauses…" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the list of markers and silent pauses."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the list of markers and silent pauses.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcas y pausas…"
+          }
+        }
+      }
     },
     "Marks the selection's end at the cursor." : {
       "comment" : "Hint of the audio editor's Mark Out button."
@@ -13458,7 +13672,15 @@
       "comment" : "The name of the Matroska container format, as people say it. Inside sentences about importing a file of that format."
     },
     "Maximum is %@." : {
-      "comment" : "Second sentence of that refusal. %@ is the longest time allowed, spoken in words, such as \"1 hour\"."
+      "comment" : "Second sentence of that refusal. %@ is the longest time allowed, spoken in words, such as \"1 hour\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El máximo es %@."
+          }
+        }
+      }
     },
     "Media controls not released: this book does not hold them." : {
       "comment" : "Announcement when Release Media Controls is chosen in a window whose book does not hold the media controls, so nothing changed. It begins like the announcement Media controls released, so the two are told apart from their first words."
@@ -13470,16 +13692,40 @@
       "comment" : "Explanation under the restart gesture's pattern heading in the Miscellaneous settings."
     },
     "Menu" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Menu\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Menu\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menú"
+          }
+        }
+      }
     },
     "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept." : {
       "comment" : "Explanation under the playback controls group's choices in the Playback settings."
     },
     "Metadata saved to the library only; the EPUB file is unchanged." : {
-      "comment" : "Announcement after the metadata was saved to the library only, as the user chose; the book's EPUB file was not rewritten."
+      "comment" : "Announcement after the metadata was saved to the library only, as the user chose; the book's EPUB file was not rewritten.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Metadatos guardados solo en la biblioteca; el archivo EPUB no cambió."
+          }
+        }
+      }
     },
     "Metadata saved to the library's copy of “%@”." : {
-      "comment" : "Announcement after the metadata was saved to the library and to the library's copy of the book's EPUB file. %@ is the EPUB file's name."
+      "comment" : "Announcement after the metadata was saved to the library and to the library's copy of the book's EPUB file. %@ is the EPUB file's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Metadatos guardados en la biblioteca y en la copia de la biblioteca de “%@”."
+          }
+        }
+      }
     },
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
@@ -13499,10 +13745,26 @@
       "comment" : "Label of the pop-up in the audio editor that chooses the microphone Punch In records from."
     },
     "Minimize" : {
-      "comment" : "Name of the Window menu's Minimize command, in a sentence saying why a keyboard shortcut cannot take its key."
+      "comment" : "Name of the Window menu's Minimize command, in a sentence saying why a keyboard shortcut cannot take its key.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Minimizar"
+          }
+        }
+      }
     },
     "Minimize All" : {
-      "comment" : "Name of the Window menu's Minimize All command, in a sentence saying why a keyboard shortcut cannot take its key."
+      "comment" : "Name of the Window menu's Minimize All command, in a sentence saying why a keyboard shortcut cannot take its key.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Minimizar todo"
+          }
+        }
+      }
     },
     "Minimum pause threshold" : {
       "comment" : "VoiceOver label of the minimum pause stepper in the Playback settings."
@@ -13531,7 +13793,15 @@
       }
     },
     "Minus" : {
-      "comment" : "Name of the punctuation key \"-\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Minus\"."
+      "comment" : "Name of the punctuation key \"-\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Minus\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menos"
+          }
+        }
+      }
     },
     "Minutes" : {
       "comment" : "Placeholder of the sleep timer sheet's field of a custom number of minutes.",
@@ -13551,16 +13821,40 @@
       "comment" : "Name of the Settings tab for the options that fit no other tab, such as Bluetooth monitoring."
     },
     "Missing DAISY content: %@" : {
-      "comment" : "Why a DAISY book could not be imported: a part it needs is missing. %@ is what is missing, a phrase in English."
+      "comment" : "Why a DAISY book could not be imported: a part it needs is missing. %@ is what is missing, a phrase in English.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Falta contenido DAISY: %@"
+          }
+        }
+      }
     },
     "Mode Switch" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Mode Switch\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Mode Switch\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cambio de modo"
+          }
+        }
+      }
     },
     "Moderate" : {
       "comment" : "The name of punctuation pause level 2: periods and commas pause."
     },
     "Monkey's Audio" : {
-      "comment" : "The name of an audio format, in a failure to read a file and in Book Information: Monkey's Audio, in .ape files. A format's own name, usually kept as it is."
+      "comment" : "The name of an audio format, in a failure to read a file and in Book Information: Monkey's Audio, in .ape files. A format's own name, usually kept as it is.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Monkey's Audio"
+          }
+        }
+      }
     },
     "More than %lld matches in %@" : {
       "comment" : "Status line of a finished search where a book's count of matches stopped at its limit. %1$lld is the number of matches found, and %2$@ is the count of books with its noun, such as \"750 books\".",
@@ -13748,10 +14042,26 @@
       }
     },
     "Move Book Down" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place down in its folder. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place down in its folder. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mover libro hacia abajo"
+          }
+        }
+      }
     },
     "Move Book Up" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place up in its folder. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place up in its folder. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mover libro hacia arriba"
+          }
+        }
+      }
     },
     "Move Contents & Delete Folder" : {
       "comment" : "Button that moves a folder's books and subfolders to the chosen place and then deletes the folder."
@@ -13799,13 +14109,29 @@
       "comment" : "Question of the confirmation about the original file of a book just imported. %@ is the file's name."
     },
     "Move to Folder" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected books into a folder."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected books into a folder.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mover a carpeta"
+          }
+        }
+      }
     },
     "Move to Folder..." : {
       "comment" : "Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows.\nTitle of the command that moves the selected book to a folder, in a row's menu. The three dots mean a sheet opens to choose the folder."
     },
     "Move to Library…" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves feed episodes or articles into a library folder as books of their own. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves feed episodes or articles into a library folder as books of their own. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mover a la biblioteca…"
+          }
+        }
+      }
     },
     "Move to Trash" : {
       "comment" : "Title of the button that removes books and moves their files to the Trash, in title case."
@@ -14194,7 +14520,15 @@
       "comment" : "Second sentence of the error about a folder name that is taken, added when the two names are spelled differently, in capital letters or in how an accent is stored."
     },
     "Navigate" : {
-      "comment" : "Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it."
+      "comment" : "Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navegar"
+          }
+        }
+      }
     },
     "Navigate to %@" : {
       "comment" : "Spoken label of a breadcrumb button that goes to a folder. %@ is the folder's name."
@@ -14206,7 +14540,15 @@
       "comment" : "Heading of the group of navigation keyboard shortcuts in Settings.\nHeading of the navigation group in the Playback settings."
     },
     "Navigation unit" : {
-      "comment" : "Label of the playback bar's menu that sets the unit by which this book moves forward and backward."
+      "comment" : "Label of the playback bar's menu that sets the unit by which this book moves forward and backward.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unidad de navegación"
+          }
+        }
+      }
     },
     "Navigation unit controls" : {
       "comment" : "Title of the pop-up in the Playback settings that chooses which navigation unit menus the playback bar shows."
@@ -14224,7 +14566,15 @@
       "comment" : "VoiceOver label of the playback bar's shared menu that picks the unit both skip buttons move by. %@ is the unit now chosen, such as \"Sentence\"."
     },
     "Navigation units" : {
-      "comment" : "Label of the playback bar's menu that holds separate forward and backward navigation units."
+      "comment" : "Label of the playback bar's menu that holds separate forward and backward navigation units.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unidades de navegación"
+          }
+        }
+      }
     },
     "Neither has newer places or books the other lacks, but they differ in other ways." : {
       "comment" : "Sentence of Use This Library's account: the copies differ, but neither has newer places or books the other lacks."
@@ -14280,7 +14630,15 @@
       "comment" : "Heading of the group of the Record window's keyboard shortcuts in Settings, and the title of the Record window.\nTitle of the Record window, which VoiceOver reads as the window's name, and the name of its group of buttons in the Shortcuts settings."
     },
     "New Recording…" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens the window that records a new book from the microphone. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens the window that records a new book from the microphone. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nueva grabación…"
+          }
+        }
+      }
     },
     "New Timer" : {
       "comment" : "Heading of the sleep timer sheet's section of timers to set: the minute presets and a custom number of minutes.",
@@ -14309,7 +14667,15 @@
       "comment" : "What VoiceOver says for the text field that holds the name a folder is made or renamed with."
     },
     "New from Text…" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Makes a new book from text the listener types or pastes. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Makes a new book from text the listener types or pastes. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nuevo desde texto…"
+          }
+        }
+      }
     },
     "New item: “%@”" : {
       "comment" : "The body of the notification of one new item, an episode or an article. %@ is its title."
@@ -14330,22 +14696,62 @@
       "comment" : "VoiceOver hint of the number of the newest items, for a feed of both episodes and articles. The range is the limits of the number."
     },
     "Next" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Next\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Next\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Siguiente"
+          }
+        }
+      }
     },
     "Next Bookmark" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the next bookmark. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the next bookmark. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcador siguiente"
+          }
+        }
+      }
     },
     "Next Chapter Marker" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next chapter marker."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next chapter marker.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca de capítulo siguiente"
+          }
+        }
+      }
     },
     "Next Groups" : {
       "comment" : "Title of the button in Find Duplicate Books that shows the page of groups after the current one."
     },
     "Next Heading" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the next heading in the book. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the next heading in the book. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Encabezado siguiente"
+          }
+        }
+      }
     },
     "Next Pause" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next silent pause found in the audio."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next silent pause found in the audio.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausa siguiente"
+          }
+        }
+      }
     },
     "Next book not started because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the next book was not started, because the sleep timer would not stop it. Written without its full stop.",
@@ -14359,19 +14765,59 @@
       }
     },
     "Next in Folder" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the next book in the same folder or feed. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the next book in the same folder or feed. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Siguiente en la carpeta"
+          }
+        }
+      }
     },
     "Next in Reading List" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the next book in the reading list. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the next book in the reading list. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Siguiente en la lista de lectura"
+          }
+        }
+      }
     },
     "Next paragraph" : {
-      "comment" : "Announcement after the reader moved to the next paragraph."
+      "comment" : "Announcement after the reader moved to the next paragraph.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Párrafo siguiente"
+          }
+        }
+      }
     },
     "Next section" : {
-      "comment" : "Announcement after a sentence or paragraph move crossed into the next section of the book, when no heading names it."
+      "comment" : "Announcement after a sentence or paragraph move crossed into the next section of the book, when no heading names it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sección siguiente"
+          }
+        }
+      }
     },
     "Next sentence" : {
-      "comment" : "Announcement after the reader moved to the next sentence."
+      "comment" : "Announcement after the reader moved to the next sentence.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Frase siguiente"
+          }
+        }
+      }
     },
     "Next track" : {
       "comment" : "Name of the Next Track media event, a choice for one step of the media-key pattern in Settings."
@@ -14392,7 +14838,15 @@
       "comment" : "Status line of the Search Library window when no book in the library has text that can be searched."
     },
     "No book is loaded." : {
-      "comment" : "What Where Am I? says when no book is open."
+      "comment" : "What Where Am I? says when no book is open.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay ningún libro cargado."
+          }
+        }
+      }
     },
     "No book is selected. Select the book to move, then try again." : {
       "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used with no book selected."
@@ -14433,7 +14887,15 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What the editor says while the view has no condition."
     },
     "No copy of your edited text could be kept, so TextMouth leaves content.md as it is." : {
-      "comment" : "Sentence saying that no backup of the user's edited text could be made. content.md is the file name of the book's text and stays as written."
+      "comment" : "Sentence saying that no backup of the user's edited text could be made. content.md is the file name of the book's text and stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo conservar ninguna copia de tu texto editado, así que TextMouth deja content.md como está."
+          }
+        }
+      }
     },
     "No differences between this library and the copy in %@." : {
       "comment" : "First sentence of the results of Compare Libraries when the two copies do not differ. %@ is the other copy's folder path."
@@ -14463,13 +14925,29 @@
       "comment" : "Shown in the audio editor's Apply Filter sheet when there are no filter presets. \"Storage settings\" and \"Audio Editing\" are the names of a settings tab and its group."
     },
     "No headings found in this document." : {
-      "comment" : "Message in the headings sheet when the book has no headings."
+      "comment" : "Message in the headings sheet when the book has no headings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se encontraron encabezados en este documento."
+          }
+        }
+      }
     },
     "No import is under way." : {
       "comment" : "What the Speak Import Progress command says when no import is under way."
     },
     "No key was pressed twice." : {
-      "comment" : "Announced by VoiceOver at the end of a trial of the double press time when no second press came in time."
+      "comment" : "Announced by VoiceOver at the end of a trial of the double press time when no second press came in time.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pulsó ninguna tecla dos veces."
+          }
+        }
+      }
     },
     "No markers yet. Add Marker drops one at the cursor." : {
       "comment" : "Shown in the audio editor's list when no marker has been dropped. \"Add Marker\" is the name of the command."
@@ -14654,7 +15132,15 @@
       "comment" : "A sentence of the alert after a pronunciation lexicon import: nothing was added. %@ is the file's name."
     },
     "No shortcut" : {
-      "comment" : "Said of an action that has no keyboard shortcut, in place of its keys, such as \"Release Media Controls: No shortcut\"."
+      "comment" : "Said of an action that has no keyboard shortcut, in place of its keys, such as \"Release Media Controls: No shortcut\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sin atajo"
+          }
+        }
+      }
     },
     "No shortcut." : {
       "comment" : "Ends a button's hint in the audio editor when its command has no keyboard shortcut."
@@ -14666,13 +15152,37 @@
       "comment" : "Shown in the Substitutions settings while the list holds no rule."
     },
     "No supported audio files found." : {
-      "comment" : "Why an audio book could not be imported: none of the files in it is an audio file TextMouth reads."
+      "comment" : "Why an audio book could not be imported: none of the files in it is an audio file TextMouth reads.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se encontraron archivos de audio compatibles."
+          }
+        }
+      }
     },
     "No text content could be extracted from the PDF." : {
-      "comment" : "Why a PDF could not be imported: none of its pages holds text."
+      "comment" : "Why a PDF could not be imported: none of its pages holds text.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo extraer texto del PDF."
+          }
+        }
+      }
     },
     "No text could be read from the PDF: it has no embedded text, and OCR could not run (%@)." : {
-      "comment" : "Why a PDF could not be imported: its pages are pictures, and text recognition (OCR) could not run. %@ is the reason, a phrase in English with no full stop."
+      "comment" : "Why a PDF could not be imported: its pages are pictures, and text recognition (OCR) could not run. %@ is the reason, a phrase in English with no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer texto del PDF: no tiene texto incrustado y el OCR no pudo ejecutarse (%@)."
+          }
+        }
+      }
     },
     "No text could be read from this comic book archive: OCR could not run (%@)." : {
       "comment" : "Why a comic book archive was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English."
@@ -14787,6 +15297,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo leer ninguno de los %lld de capítulos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo leer el único capítulo (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo leer ninguno de los %lld capítulos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -14843,7 +15377,15 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
     },
     "Not a valid DAISY book (no OPF or ncc.html found)." : {
-      "comment" : "Why a file could not be imported as a DAISY book: it holds neither a package file (.opf) nor a navigation file (ncc.html). OPF and ncc.html are file names and stay as they are."
+      "comment" : "Why a file could not be imported as a DAISY book: it holds neither a package file (.opf) nor a navigation file (ncc.html). OPF and ncc.html are file names and stay as they are.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No es un libro DAISY válido (no se encontró OPF ni ncc.html)."
+          }
+        }
+      }
     },
     "Not available in this window." : {
       "comment" : "Second sentence of the hint of a dimmed choice of the Add to Library sheet: its menu command does not work in the window the sheet is in. The choice's own summary comes first."
@@ -14977,7 +15519,15 @@
       "comment" : "Said by the audio editor's Save when there is nothing to save."
     },
     "Nothing was changed." : {
-      "comment" : "Last sentence of a message that says saving failed: nothing the user edited was saved anywhere.\nLast sentence of a refusal to read a book again: the book and its text are as they were."
+      "comment" : "Last sentence of a message that says saving failed: nothing the user edited was saved anywhere.\nLast sentence of a refusal to read a book again: the book and its text are as they were.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se cambió nada."
+          }
+        }
+      }
     },
     "Nothing was exported." : {
       "comment" : "What an export says once it ends when it wrote nothing."
@@ -14995,7 +15545,15 @@
       "comment" : "Badge on a book's row in the Library list: the book is open in a reader window now."
     },
     "Number Sign" : {
-      "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\"."
+      "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Signo de número"
+          }
+        }
+      }
     },
     "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@." : {
       "comment" : "Warning after an import of a PDF where some pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, one or more, written with digit grouping; %2$lld is how many pages the PDF has, two or more; %3$@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.",
@@ -15013,6 +15571,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo ejecutar el OCR en %@ de %lld de páginas, así que falta el texto que solo aparece en sus imágenes: %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo ejecutar el OCR en %@ de %lld página, así que falta el texto que solo aparece en sus imágenes: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo ejecutar el OCR en %@ de %lld páginas, así que falta el texto que solo aparece en sus imágenes: %@."
                 }
               }
             }
@@ -15040,11 +15622,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo ejecutar el OCR en todas las %lld de páginas, así que falta el texto que solo aparece en sus imágenes: %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo ejecutar el OCR en la única página (%lld), así que falta el texto que solo aparece en sus imágenes: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No se pudo ejecutar el OCR en todas las %lld páginas, así que falta el texto que solo aparece en sus imágenes: %@."
+                }
+              }
+            }
+          }
         }
       }
     },
     "OCR could not run on the PDF's only page, so text found only in its images is missing: %@." : {
-      "comment" : "Warning after an import of a PDF whose only page needed text recognition (OCR) where it could not run. %@ is the page and why, such as \"page 1 (text recognition is not available)\", the reason in English."
+      "comment" : "Warning after an import of a PDF whose only page needed text recognition (OCR) where it could not run. %@ is the page and why, such as \"page 1 (text recognition is not available)\", the reason in English.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo ejecutar el OCR en la única página del PDF, así que falta el texto que solo aparece en sus imágenes: %@."
+          }
+        }
+      }
     },
     "OK" : {
       "comment" : "Button that closes a notice.\nButton that closes an alert and changes nothing.\nButton that closes an alert that only informs. Title case.\nButton that dismisses an alert about a problem.\nButton that dismisses an alert after reading it.\nButton that dismisses an alert, here the one that tells TextMouth quit to protect the Mac.\nButton that dismisses the reader's error alert.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
@@ -15076,10 +15690,26 @@
       "comment" : "Part of the question asked about a duplicate where one copy is an audiobook played from a recording and the other is read aloud from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy."
     },
     "One document in this file has too much markup for TextMouth to read in memory." : {
-      "comment" : "First sentence of why a file was refused: one of its documents has so much markup that reading it would take too much memory."
+      "comment" : "First sentence of why a file was refused: one of its documents has so much markup that reading it would take too much memory.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un documento de este archivo tiene demasiado marcado para que TextMouth lo lea en memoria."
+          }
+        }
+      }
     },
     "One tag in this file has more than %@ attributes, which TextMouth can't read safely." : {
-      "comment" : "First sentence of why a file was refused: one of its markup tags has more attributes than TextMouth reads. %@ is the most attributes, a number."
+      "comment" : "First sentence of why a file was refused: one of its markup tags has more attributes than TextMouth reads. %@ is the most attributes, a number.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Una etiqueta de este archivo tiene más de %@ atributos, y TextMouth no puede leerla de forma segura."
+          }
+        }
+      }
     },
     "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another." : {
       "comment" : "The caption under the guess switch in the Braille tab of Settings. English Braille, American Edition is the name of a braille code, and Book Information is a window."
@@ -15097,7 +15727,15 @@
       "comment" : "Error shown when transcription is tried for a book that is not an audiobook."
     },
     "Only files inside the folder can be imported." : {
-      "comment" : "Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder."
+      "comment" : "Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Solo se pueden importar los archivos que están dentro de la carpeta."
+          }
+        }
+      }
     },
     "Only rewind if the pause was longer than the threshold" : {
       "comment" : "VoiceOver hint of the Smart mode checkbox in the Playback settings."
@@ -15132,13 +15770,29 @@
       "comment" : "Menu item of a book's row that opens the book in a reader window.\nTitle of the command that opens a feed item's book, downloading it first when needed. Title case."
     },
     "Open Book…" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens a book file to import it. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens a book file to import it. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abrir libro…"
+          }
+        }
+      }
     },
     "Open Privacy Settings" : {
       "comment" : "Title of the button in the Record window that opens the macOS Microphone privacy settings after macOS refused TextMouth the microphone."
     },
     "Open Selected Book" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book in a reader."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book in a reader.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abrir libro seleccionado"
+          }
+        }
+      }
     },
     "Open Without the Index…" : {
       "comment" : "Button that opens the library without its index file, after asking. The ellipsis shows that a question follows."
@@ -15159,16 +15813,48 @@
       "comment" : "Last sentence of why the chosen folder can't be used because it is only in the cloud: what to do. \"It\" is the folder."
     },
     "Open it in a text editor, take the entity definitions out, save it, then import it again." : {
-      "comment" : "Last sentence of why an SSML file was refused because it defines entities of its own: what to do."
+      "comment" : "Last sentence of why an SSML file was refused because it defines entities of its own: what to do.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ábrelo en un editor de texto, quita las definiciones de entidades, guárdalo y vuelve a importarlo."
+          }
+        }
+      }
     },
     "Open the book in the program that made it, save it again, then import it again." : {
-      "comment" : "Last sentence of why a file inside an EPUB or DAISY book was refused because it defines entities of its own: what to do."
+      "comment" : "Last sentence of why a file inside an EPUB or DAISY book was refused because it defines entities of its own: what to do.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abre el libro en el programa que lo creó, guárdalo de nuevo y vuelve a importarlo."
+          }
+        }
+      }
     },
     "Open the book once, then try again." : {
-      "comment" : "Second sentence of that message: opening the book makes its text ready."
+      "comment" : "Second sentence of that message: opening the book makes its text ready.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abre el libro una vez y vuelve a intentarlo."
+          }
+        }
+      }
     },
     "Open the document in the program that made it, save it again, then import it again." : {
-      "comment" : "Last sentence of why a file inside a Word or OpenDocument document was refused because it defines entities of its own: what to do."
+      "comment" : "Last sentence of why a file inside a Word or OpenDocument document was refused because it defines entities of its own: what to do.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abre el documento en el programa que lo creó, guárdalo de nuevo y vuelve a importarlo."
+          }
+        }
+      }
     },
     "Open the library without its index?" : {
       "comment" : "Title of the question asked before opening the library without its index file."
@@ -15274,13 +15960,37 @@
       "comment" : "VoiceOver hint of the row of a feed item that was moved into the library: its default action opens its book."
     },
     "Opens jump to page controls" : {
-      "comment" : "Hint of the status row's page button while no jump panel is open."
+      "comment" : "Hint of the status row's page button while no jump panel is open.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abre los controles para saltar a una página"
+          }
+        }
+      }
     },
     "Opens jump to percent controls" : {
-      "comment" : "Hint of the reader's percent button while no jump panel is open."
+      "comment" : "Hint of the reader's percent button while no jump panel is open.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abre los controles para saltar a un porcentaje"
+          }
+        }
+      }
     },
     "Opens jump to time controls" : {
-      "comment" : "Hint of the reader's time button while no jump panel is open."
+      "comment" : "Hint of the reader's time button while no jump panel is open.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abre los controles para saltar a un tiempo"
+          }
+        }
+      }
     },
     "Opens options to open a book or import a folder." : {
       "comment" : "Hint of the iPhone Library's Add to Library button."
@@ -15334,7 +16044,15 @@
       "comment" : "VoiceOver hint of the Edit Rules button of the Clean Up Transcript sheet. transcript-cleanup.json is a file name and stays as it is."
     },
     "Option" : {
-      "comment" : "Name of the Option modifier key, spoken or brailled in a keyboard shortcut such as \"Option + Command + G\"."
+      "comment" : "Name of the Option modifier key, spoken or brailled in a keyboard shortcut such as \"Option + Command + G\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opción"
+          }
+        }
+      }
     },
     "Order" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The direction pop-up's label."
@@ -15393,10 +16111,26 @@
       "comment" : "VoiceOver hint of the Never collapse checkbox in Settings, Text, Repeated Symbols."
     },
     "PDF file not found at: %@" : {
-      "comment" : "Why a PDF could not be imported: there is no file at its path. %@ is the path."
+      "comment" : "Why a PDF could not be imported: there is no file at its path. %@ is the path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se encontró el archivo PDF en: %@"
+          }
+        }
+      }
     },
     "Page" : {
-      "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.\nLabel of the Go to Page field, where the user types a page of the book."
+      "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.\nLabel of the Go to Page field, where the user types a page of the book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Página"
+          }
+        }
+      }
     },
     "Page %@" : {
       "comment" : "Announcement on reaching a page of a book that has pages, and the start of a sentence naming a page. %@ is the page's label as the book names it, such as 13 or xii, an identifier written without digit grouping.\nTitle of the chapter of one page of a book of pictures, made at import. %@ is the page's number, an identifier written without digit grouping."
@@ -15409,20 +16143,50 @@
             "state" : "new",
             "value" : "Page %1$@ of %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Página %1$@ de %2$@"
+          }
         }
       }
     },
     "Page Down" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Down\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Down\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Página abajo"
+          }
+        }
+      }
     },
     "Page Up" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Up\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Up\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Página arriba"
+          }
+        }
+      }
     },
     "Pages" : {
       "comment" : "Heading of the group in Playback settings that holds the settings about pages.\nName of the VoiceOver rotor on the iPhone reader's Play button that moves between pages.\nThe heading of the page list written into an exported EPUB's navigation document."
     },
     "Panels" : {
-      "comment" : "Heading of the group of keyboard shortcuts that open a reader's panels, such as the headings list and the sleep timer, in Settings."
+      "comment" : "Heading of the group of keyboard shortcuts that open a reader's panels, such as the headings list and the sleep timer, in Settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Paneles"
+          }
+        }
+      }
     },
     "Paragraph" : {
       "comment" : "A unit of text a picker moves or rewinds by: one paragraph. Used by the rewind, skip, and navigation unit pickers."
@@ -15480,10 +16244,26 @@
       }
     },
     "Paste" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Inserts the copied audio at the current position.\nName of the Edit menu's Paste command, in a sentence saying why a keyboard shortcut cannot take its key.\nThe first word of the title a book made from pasted text is given until the user types another, followed by the date and time, as in \"Paste 2026-10-04 06:30\"."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Inserts the copied audio at the current position.\nName of the Edit menu's Paste command, in a sentence saying why a keyboard shortcut cannot take its key.\nThe first word of the title a book made from pasted text is given until the user types another, followed by the date and time, as in \"Paste 2026-10-04 06:30\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pegar"
+          }
+        }
+      }
     },
     "Paste and Match Style" : {
-      "comment" : "Name of the Edit menu's Paste and Match Style command, in a sentence saying why a keyboard shortcut cannot take its key."
+      "comment" : "Name of the Edit menu's Paste and Match Style command, in a sentence saying why a keyboard shortcut cannot take its key.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pegar y adaptar estilo"
+          }
+        }
+      }
     },
     "Paste from Clipboard" : {
       "comment" : "Button of the New Book from Text sheet that replaces the text with the text on the system clipboard."
@@ -15530,7 +16310,15 @@
       "comment" : "Title of the punctuation pause level slider in the Playback settings."
     },
     "Pause or Resume" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Pauses the recording, or resumes a paused one."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Pauses the recording, or resumes a paused one.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausar o reanudar"
+          }
+        }
+      }
     },
     "Pause playback after:" : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes.",
@@ -15579,19 +16367,59 @@
       "comment" : "VoiceOver hint of the Pause button in the Record window. %@ is the title of the button that continues a paused recording."
     },
     "Percent Sign" : {
-      "comment" : "Name of the punctuation key \"%\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Percent Sign\"."
+      "comment" : "Name of the punctuation key \"%\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Percent Sign\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Signo de porcentaje"
+          }
+        }
+      }
     },
     "Percent must be between 0 and 100." : {
-      "comment" : "Message when the number typed in Go to Percent is below 0 or above 100."
+      "comment" : "Message when the number typed in Go to Percent is below 0 or above 100.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El porcentaje debe estar entre 0 y 100."
+          }
+        }
+      }
     },
     "Percent through the book" : {
-      "comment" : "Label of the Go to Percent field, where the user types how far through the book to jump."
+      "comment" : "Label of the Go to Percent field, where the user types how far through the book to jump.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Porcentaje del libro"
+          }
+        }
+      }
     },
     "Percentage" : {
-      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as a percentage of the book.\nChoice of the headings sheet's display picker: each heading shows how far through the book it begins, as a percent."
+      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as a percentage of the book.\nChoice of the headings sheet's display picker: each heading shows how far through the book it begins, as a percent.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Porcentaje"
+          }
+        }
+      }
     },
     "Period" : {
-      "comment" : "Name of the punctuation key \".\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Period\"."
+      "comment" : "Name of the punctuation key \".\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Period\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Punto"
+          }
+        }
+      }
     },
     "Permanently deletes the book and its files from this iPhone." : {
       "comment" : "First sentence of the message of the iPhone's question before a book is removed: nothing is kept on this iPhone."
@@ -15606,7 +16434,15 @@
       "comment" : "Announcement of the voice's new pitch after it changed. %@ is the pitch multiplier with one decimal, such as 1.2."
     },
     "Pitch: %@" : {
-      "comment" : "Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x."
+      "comment" : "Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tono: %@"
+          }
+        }
+      }
     },
     "Plain Text" : {
       "comment" : "Name of the book format of a plain text file (.txt), shown in a book's information, the format column, and the duplicate finder."
@@ -15618,10 +16454,26 @@
       "comment" : "Label of the button that starts playing the book.\nLabel of the reader's play and pause button while the book is not playing; it plays.\nName of the Play media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.\nName of the playback event whose sound is chosen in Settings, Sound Effects: playing starts."
     },
     "Play / Pause" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Starts or pauses reading aloud or playing the book. Also the title of the menu command of the same name.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts or pauses playback in the audio editor."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Starts or pauses reading aloud or playing the book. Also the title of the menu command of the same name.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts or pauses playback in the audio editor.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproducir / Pausar"
+          }
+        }
+      }
     },
     "Play Selection" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Plays only the selection."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Plays only the selection.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproducir selección"
+          }
+        }
+      }
     },
     "Play half a second after each move" : {
       "comment" : "Label of the switch in Storage settings (Audio Editing) that makes the audio editor play half a second at the cursor after each move."
@@ -15670,25 +16522,73 @@
       "comment" : "Name of the media event of the combined Play and Pause key, a choice for one step of the media-key pattern in Settings."
     },
     "Playback" : {
-      "comment" : "Heading of the group of playback keyboard shortcuts in Settings, and the title of the Playback menu.\nName of the Settings tab for skipping, rewinding, the end of a book, the sleep timer, and the playback controls.\nTitle of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it."
+      "comment" : "Heading of the group of playback keyboard shortcuts in Settings, and the title of the Playback menu.\nName of the Settings tab for skipping, rewinding, the end of a book, the sleep timer, and the playback controls.\nTitle of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproducción"
+          }
+        }
+      }
     },
     "Playback Controls" : {
       "comment" : "Heading of the playback controls group in the Playback settings."
     },
     "Playback Problem" : {
-      "comment" : "Title of the reader's alert shown when the audio could not be played."
+      "comment" : "Title of the reader's alert shown when the audio could not be played.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Problema de reproducción"
+          }
+        }
+      }
     },
     "Playback controls" : {
-      "comment" : "What VoiceOver calls the group of playback buttons at the bottom of the reader."
+      "comment" : "What VoiceOver calls the group of playback buttons at the bottom of the reader.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Controles de reproducción"
+          }
+        }
+      }
     },
     "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in macOS's audio." : {
-      "comment" : "Message on the Mac when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes); macOS is the name of the Mac's system."
+      "comment" : "Message on the Mac when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes); macOS is the name of the Mac's system.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La reproducción se detuvo porque la memoria de TextMouth creció hasta %@ GB mientras sonaba el audio, un fallo del audio de macOS."
+          }
+        }
+      }
     },
     "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio." : {
-      "comment" : "Message on the iPhone when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes)."
+      "comment" : "Message on the iPhone when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La reproducción se detuvo porque la memoria de TextMouth creció hasta %@ GB mientras sonaba el audio, un fallo del audio del sistema."
+          }
+        }
+      }
     },
     "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth." : {
-      "comment" : "Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name."
+      "comment" : "Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La reproducción se detuvo: el audio dejó de responder. Pulsa Reproducir para volver a intentarlo; si se detiene otra vez, cierra TextMouth y ábrelo de nuevo."
+          }
+        }
+      }
     },
     "Played" : {
       "comment" : "The note on a feed's episode that played to its end or was marked played. Title case."
@@ -15794,7 +16694,15 @@
       "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the Play event: when the sound plays."
     },
     "Plus" : {
-      "comment" : "Name of the punctuation key \"+\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Plus\"."
+      "comment" : "Name of the punctuation key \"+\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Plus\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Más"
+          }
+        }
+      }
     },
     "Plus %lld more books, all named in the debug log at %@." : {
       "comment" : "Last line of the alert about books that could not move into the current library format: how many more books there are than the alert names, and where the log names them. %1$lld is how many more; %2$@ is the path of the debug log file.",
@@ -15846,7 +16754,15 @@
       "comment" : "Label of the switch that posts a notification for each feed with new items after a refresh."
     },
     "Premium" : {
-      "comment" : "A voice's quality tier, the best, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Premium quality\"."
+      "comment" : "A voice's quality tier, the best, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Premium quality\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "premium"
+          }
+        }
+      }
     },
     "Preparing %@ of %@…" : {
       "comment" : "Status line of the Search Library window while a search must prepare books' text, which takes longer. %1$@ is the number of books prepared so far, and %2$@ is the count of all the books with its noun, such as \"737 books\".",
@@ -15863,13 +16779,37 @@
       "comment" : "Said when a filter preset change is not made because the presets file synced in from another Mac while the premade presets stood in for it."
     },
     "Press a key twice." : {
-      "comment" : "Announced by VoiceOver when a trial of the double press time starts: asks the listener to press one key twice."
+      "comment" : "Announced by VoiceOver when a trial of the double press time starts: asks the listener to press one key twice.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pulsa una tecla dos veces."
+          }
+        }
+      }
     },
     "Press a key..." : {
-      "comment" : "Shown on a keyboard shortcut's key button while it waits for the new key. The three periods say that a key press is awaited."
+      "comment" : "Shown on a keyboard shortcut's key button while it waits for the new key. The three periods say that a key press is awaited.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pulsa una tecla..."
+          }
+        }
+      }
     },
     "Press the new key, or Escape to cancel." : {
-      "comment" : "VoiceOver hint of a keyboard shortcut's key button while it waits for the new key: Escape stops recording."
+      "comment" : "VoiceOver hint of a keyboard shortcut's key button while it waits for the new key: Escape stops recording.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pulsa la nueva tecla, o Escape para cancelar."
+          }
+        }
+      }
     },
     "Preview" : {
       "comment" : "Button of the audio editor's Apply Filter sheet that plays the filtered sound."
@@ -15878,13 +16818,29 @@
       "comment" : "VoiceOver label of the button that plays the sound chosen for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause."
     },
     "Preview Voice" : {
-      "comment" : "Button of the voice sheet that speaks a sample in the chosen voice.\nTitle of the button in the Voice settings that speaks a sample sentence in the selected voice."
+      "comment" : "Button of the voice sheet that speaks a sample in the chosen voice.\nTitle of the button in the Voice settings that speaks a sample sentence in the selected voice.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Probar voz"
+          }
+        }
+      }
     },
     "Preview filters before applying" : {
       "comment" : "Label of the switch in Storage settings (Audio Editing) that makes the audio editor's Apply Filter play the filtered audio first."
     },
     "Preview selected voice" : {
-      "comment" : "VoiceOver label of the Preview Voice button in the Voice settings.\nWhat VoiceOver calls the voice sheet's button that speaks a sample in the chosen voice."
+      "comment" : "VoiceOver label of the Preview Voice button in the Voice settings.\nWhat VoiceOver calls the voice sheet's button that speaks a sample in the chosen voice.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Probar la voz seleccionada"
+          }
+        }
+      }
     },
     "Previewing %@ first. Choose Apply again to apply it." : {
       "comment" : "Said as the audio editor's Apply plays a preview first, because the Preview filters before applying setting is on. %@ is the filter preset's name. \"Apply\" is the name of the button."
@@ -15893,46 +16849,142 @@
       "comment" : "Said as a filter preview begins in the audio editor. %@ is the filter preset's name."
     },
     "Previous" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Previous\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Previous\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anterior"
+          }
+        }
+      }
     },
     "Previous Bookmark" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the previous bookmark. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the previous bookmark. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcador anterior"
+          }
+        }
+      }
     },
     "Previous Chapter Marker" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous chapter marker."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous chapter marker.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marca de capítulo anterior"
+          }
+        }
+      }
     },
     "Previous Groups" : {
       "comment" : "Title of the button in Find Duplicate Books that shows the page of groups before the current one."
     },
     "Previous Heading" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the previous heading in the book. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the previous heading in the book. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Encabezado anterior"
+          }
+        }
+      }
     },
     "Previous Pause" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous silent pause found in the audio."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous silent pause found in the audio.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausa anterior"
+          }
+        }
+      }
     },
     "Previous in Folder" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the previous book in the same folder or feed. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the previous book in the same folder or feed. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anterior en la carpeta"
+          }
+        }
+      }
     },
     "Previous in Reading List" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the previous book in the reading list. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the previous book in the reading list. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anterior en la lista de lectura"
+          }
+        }
+      }
     },
     "Previous paragraph" : {
-      "comment" : "Announcement after the reader moved to the previous paragraph."
+      "comment" : "Announcement after the reader moved to the previous paragraph.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Párrafo anterior"
+          }
+        }
+      }
     },
     "Previous section" : {
-      "comment" : "Announcement after a sentence or paragraph move crossed into the previous section of the book, when no heading names it."
+      "comment" : "Announcement after a sentence or paragraph move crossed into the previous section of the book, when no heading names it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sección anterior"
+          }
+        }
+      }
     },
     "Previous sentence" : {
-      "comment" : "Announcement after the reader moved to the previous sentence."
+      "comment" : "Announcement after the reader moved to the previous sentence.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Frase anterior"
+          }
+        }
+      }
     },
     "Previous track" : {
       "comment" : "Name of the Previous Track media event, a choice for one step of the media-key pattern in Settings."
     },
     "Print" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Imprimir"
+          }
+        }
+      }
     },
     "Print Screen" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print Screen\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print Screen\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Imprimir pantalla"
+          }
+        }
+      }
     },
     "Problem: %@" : {
       "comment" : "How VoiceOver reads the problem shown under a field. %@ is the problem's sentence."
@@ -15941,19 +16993,51 @@
       "comment" : "Heading of the section of Settings, Stats that shows the listening streak and the number of books finished.\nLabel of the progress bar of a save or an export in the audio editor."
     },
     "Publication Date" : {
-      "comment" : "Name of the book information sheet's field for a book's publication date."
+      "comment" : "Name of the book information sheet's field for a book's publication date.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fecha de publicación"
+          }
+        }
+      }
     },
     "Publication date" : {
-      "comment" : "What VoiceOver says for the book information sheet's field for a book's publication date."
+      "comment" : "What VoiceOver says for the book information sheet's field for a book's publication date.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fecha de publicación"
+          }
+        }
+      }
     },
     "Published by" : {
       "comment" : "Label of the feed's publisher in Feed Info."
     },
     "Publisher" : {
-      "comment" : "Name of the book information sheet's field for a book's publisher; VoiceOver reads it as the field's label."
+      "comment" : "Name of the book information sheet's field for a book's publisher; VoiceOver reads it as the field's label.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editorial"
+          }
+        }
+      }
     },
     "Punch In" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Records new audio over the selection."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Records new audio over the selection.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Grabar encima"
+          }
+        }
+      }
     },
     "Punctuation Pauses" : {
       "comment" : "Heading of the punctuation pause group in the Playback settings."
@@ -15989,13 +17073,29 @@
       "comment" : "Label of the selected voice's quality in the Voice settings, such as Enhanced."
     },
     "Question Mark" : {
-      "comment" : "Name of the punctuation key \"?\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Question Mark\"."
+      "comment" : "Name of the punctuation key \"?\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Question Mark\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Signo de interrogación"
+          }
+        }
+      }
     },
     "Quieter" : {
       "comment" : "Title of a premade audio filter preset: lowers the volume by 6 decibels."
     },
     "Quit Anyway" : {
-      "comment" : "Button of the unsaved-changes alert that quits TextMouth and leaves the changes unsaved."
+      "comment" : "Button of the unsaved-changes alert that quits TextMouth and leaves the changes unsaved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Salir de todos modos"
+          }
+        }
+      }
     },
     "Quit TextMouth" : {
       "comment" : "Button of the library index recovery sheet that quits TextMouth.\nButton of the warning that TextMouth is open on another Mac: quits TextMouth.\nButton on the Library Not Available screen that quits TextMouth.\nName of the application menu's Quit command, in a sentence saying why a keyboard shortcut cannot take its key."
@@ -16010,13 +17110,37 @@
       "comment" : "What Quit TextMouth does on the library index recovery sheet."
     },
     "Quitting TextMouth" : {
-      "comment" : "Title of the panel TextMouth shows, and the start of what it says aloud, while it finishes work before quitting."
+      "comment" : "Title of the panel TextMouth shows, and the start of what it says aloud, while it finishes work before quitting.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Saliendo de TextMouth"
+          }
+        }
+      }
     },
     "Quitting now leaves these changes unsaved:" : {
-      "comment" : "First line of the alert's message when quitting would leave changes unsaved; a list of what is unsaved follows it."
+      "comment" : "First line of the alert's message when quitting would leave changes unsaved; a list of what is unsaved follows it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si sales ahora, estos cambios quedarán sin guardar:"
+          }
+        }
+      }
     },
     "Quotation Mark" : {
-      "comment" : "Name of the punctuation key \"\"\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Quotation Mark\"."
+      "comment" : "Name of the punctuation key \"\"\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Quotation Mark\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Comillas"
+          }
+        }
+      }
     },
     "Re-extract All" : {
       "comment" : "Button of the Redo Text Extraction question that starts the extraction."
@@ -16031,10 +17155,26 @@
       "comment" : "First sentence of the caption under the Redo Text Extraction button in Storage settings."
     },
     "Re-import the book to replace it." : {
-      "comment" : "Second sentence of the message when a chapter's audio file is unreadable: what to do."
+      "comment" : "Second sentence of the message when a chapter's audio file is unreadable: what to do.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vuelve a importar el libro para reemplazarlo."
+          }
+        }
+      }
     },
     "Re-import the book to restore it." : {
-      "comment" : "Second sentence of the message when a chapter's audio file is missing: what to do."
+      "comment" : "Second sentence of the message when a chapter's audio file is missing: what to do.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vuelve a importar el libro para restaurarlo."
+          }
+        }
+      }
     },
     "Read" : {
       "comment" : "The note on a feed's article that was read to its end or marked read. Title case."
@@ -16043,7 +17183,15 @@
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The alert's button that reads the book again; Cancel leaves it."
     },
     "Read Only" : {
-      "comment" : "Heading of the group of fields of the book information sheet that the user cannot change."
+      "comment" : "Heading of the group of fields of the book information sheet that the user cannot change.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Solo lectura"
+          }
+        }
+      }
     },
     "Read on the web:" : {
       "comment" : "The line that starts the link to an article's web page, at the end of the article's text as TextMouth saves it as a book. The article's address follows as a link."
@@ -16066,7 +17214,15 @@
       "comment" : "The heading of the Playback settings section that holds the options of the reader's toolbar."
     },
     "Reader windows" : {
-      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the reader windows, where a book is read."
+      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the reader windows, where a book is read.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ventanas del lector"
+          }
+        }
+      }
     },
     "Reading" : {
       "comment" : "Heading of the iPhone Settings section that holds Follow in Braille."
@@ -16142,7 +17298,15 @@
       }
     },
     "Reading position copied to clipboard" : {
-      "comment" : "Announcement after Copy Reading Position put the reading position on the clipboard."
+      "comment" : "Announcement after Copy Reading Position put the reading position on the clipboard.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Posición de lectura copiada al portapapeles"
+          }
+        }
+      }
     },
     "Reading positions are kept, but character offsets may shift slightly if the text changes." : {
       "comment" : "Last sentence of the Redo Text Extraction question."
@@ -16273,10 +17437,26 @@
       }
     },
     "Recording shortcut. Press a key with Command or Control." : {
-      "comment" : "VoiceOver label of a menu command's key button while it waits for the new key: the shortcut of a menu command must be a key held with the Command or Control key."
+      "comment" : "VoiceOver label of a menu command's key button while it waits for the new key: the shortcut of a menu command must be a key held with the Command or Control key.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Registrando atajo. Pulsa una tecla con Comando o Control."
+          }
+        }
+      }
     },
     "Recording shortcut. Press a key, or press it twice for a double press." : {
-      "comment" : "VoiceOver label of a keyboard shortcut's key button while it waits for the new key: pressing a key records it, and pressing the same key twice quickly records a double press."
+      "comment" : "VoiceOver label of a keyboard shortcut's key button while it waits for the new key: pressing a key records it, and pressing the same key twice quickly records a double press.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Registrando atajo. Pulsa una tecla, o púlsala dos veces para una doble pulsación."
+          }
+        }
+      }
     },
     "Recording stopped because the microphone reported a problem. What was recorded is kept." : {
       "comment" : "Error in the Record window when recording stopped by itself because capture failed."
@@ -16310,7 +17490,15 @@
       "comment" : "Said when an audio editor command other than the punch-in's own is chosen while a punch-in records."
     },
     "Records a new shortcut." : {
-      "comment" : "VoiceOver hint of a keyboard shortcut's key button, and of the add shortcut button, in Settings: the next key pressed becomes the shortcut."
+      "comment" : "VoiceOver hint of a keyboard shortcut's key button, and of the add shortcut button, in Settings: the next key pressed becomes the shortcut.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Registra un atajo nuevo."
+          }
+        }
+      }
     },
     "Records from a microphone into a new audiobook." : {
       "comment" : "One-line summary and VoiceOver hint of the Record choice of the Add to Library sheet."
@@ -16334,7 +17522,15 @@
       "comment" : "Said as the audio editor's Redo redoes an edit. %@ is the edit's name, such as \"Cut 2.5 Seconds\"."
     },
     "Redo" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Redo\".\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Does the last undone edit again.\nName of the Edit menu's Redo command, in a sentence saying why a keyboard shortcut cannot take its key."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Redo\".\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Does the last undone edit again.\nName of the Edit menu's Redo command, in a sentence saying why a keyboard shortcut cannot take its key.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rehacer"
+          }
+        }
+      }
     },
     "Redo %@" : {
       "comment" : "Title of the audio editor's Redo button. %@ is the name of the edit it would redo, such as \"Cut 2.5 Seconds\"."
@@ -16410,7 +17606,15 @@
       "comment" : "A part of a substitution rule's spoken summary: the pattern is a regular expression.\nTitle of the switch in the substitution rule editor that makes the pattern a regular expression."
     },
     "Release Media Controls" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Gives the Mac's media keys back to other apps. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Gives the Mac's media keys back to other apps. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Liberar controles multimedia"
+          }
+        }
+      }
     },
     "Reload from Editor" : {
       "comment" : "Button of the New Book from Text sheet that reads the text again from the file the other app's editor saved. Shown after Open in Editor."
@@ -16628,7 +17832,15 @@
       "comment" : "Title of a premade audio filter preset: cuts the lowest rumble from a recording."
     },
     "Remove bookmark" : {
-      "comment" : "What VoiceOver says for the playback bar's bookmark button while a bookmark is at the place being read; it removes that bookmark."
+      "comment" : "What VoiceOver says for the playback bar's bookmark button while a bookmark is at the place being read; it removes that bookmark.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quitar marcador"
+          }
+        }
+      }
     },
     "Remove books when finished" : {
       "comment" : "Checkbox of the Reading List's options bar: take each book off the list once it is finished.",
@@ -16645,7 +17857,15 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's spoken label. %@ is the condition's number, an identifier written without digit grouping."
     },
     "Remove from Library" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Removes the selected books from the library."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Removes the selected books from the library.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quitar de la biblioteca"
+          }
+        }
+      }
     },
     "Remove from Library Only" : {
       "comment" : "Title of the button that removes books from the library and keeps their files, in title case."
@@ -16654,7 +17874,15 @@
       "comment" : "Title of the Remove command when it asks how to remove before it removes anything. The three dots say a choice follows."
     },
     "Remove from Reading List" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Takes the selected books off the reading list. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Takes the selected books off the reading list. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quitar de la lista de lectura"
+          }
+        }
+      }
     },
     "Remove shortcut %@ from %@" : {
       "comment" : "VoiceOver label of the button that removes one key from a keyboard shortcut action. %1$@ is the key in words, such as \"Command + I\", and %2$@ is the action's name.",
@@ -16664,6 +17892,12 @@
             "state" : "new",
             "value" : "Remove shortcut %1$@ from %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quitar el atajo %1$@ de %2$@"
+          }
         }
       }
     },
@@ -16671,7 +17905,15 @@
       "comment" : "VoiceOver label of the button that removes one step of the restart gesture in the Miscellaneous settings. %@ is the step's number, an identifier written without digit grouping."
     },
     "Remove them: an audiobook of tracks is arranged with tracks." : {
-      "comment" : "Second sentence of the reason an edited manifest.json was refused for having segments: the user should remove the segments."
+      "comment" : "Second sentence of the reason an edited manifest.json was refused for having segments: the user should remove the segments.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quítalos: un audiolibro de pistas se organiza con pistas."
+          }
+        }
+      }
     },
     "Remove..." : {
       "comment" : "Short title of the edit bar's Remove button when it asks how to remove before it removes anything. The three dots say a choice follows."
@@ -16708,7 +17950,15 @@
       "comment" : "Announcement that Remove Download removed several books' downloaded files. %@ is a count of books, such as \"3 books\"."
     },
     "Removes this book's own voice, speed, and pitch, so it uses the global defaults." : {
-      "comment" : "Hint of the button that removes a text book's own voice, speed and pitch."
+      "comment" : "Hint of the button that removes a text book's own voice, speed and pitch.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quita la voz, la velocidad y el tono propios de este libro, para que use los valores globales."
+          }
+        }
+      }
     },
     "Rename" : {
       "comment" : "Button of a marker's row in the audio editor's list that gives the marker a name.\nButton that gives the folder the new name."
@@ -16791,10 +18041,26 @@
       "comment" : "VoiceOver announcement as Replace Existing begins for a duplicate book; the sheet's buttons are dimmed until it is done. %@ is the book's title."
     },
     "Reset" : {
-      "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".\nName of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults."
+      "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".\nName of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablecer"
+          }
+        }
+      }
     },
     "Reset %@ to Default" : {
-      "comment" : "VoiceOver label of the Reset to Default button in the row of a keyboard shortcut action. %@ is the action's name."
+      "comment" : "VoiceOver label of the Reset to Default button in the row of a keyboard shortcut action. %@ is the action's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablecer valores predeterminados de %@"
+          }
+        }
+      }
     },
     "Reset & Move" : {
       "comment" : "Button of the Reset to Default Location question that moves the library."
@@ -16803,7 +18069,15 @@
       "comment" : "Button in the filter presets sheet that puts back TextMouth's premade presets."
     },
     "Reset Keyboard Shortcuts?" : {
-      "comment" : "Title of the alert that asks the listener to confirm resetting every keyboard shortcut to its default."
+      "comment" : "Title of the alert that asks the listener to confirm resetting every keyboard shortcut to its default.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Restablecer atajos de teclado?"
+          }
+        }
+      }
     },
     "Reset Text Rules to Defaults?" : {
       "comment" : "Title of the question asked before the Substitutions settings replace every rule with the defaults."
@@ -16823,7 +18097,15 @@
       "comment" : "VoiceOver label of the Reset to Defaults button in the Substitutions settings."
     },
     "Reset all shortcuts to defaults" : {
-      "comment" : "VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again."
+      "comment" : "VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablecer todos los atajos a los valores predeterminados"
+          }
+        }
+      }
     },
     "Reset all sound effects to defaults" : {
       "comment" : "VoiceOver label of the Reset to Defaults button in Settings, Sound Effects."
@@ -16832,10 +18114,26 @@
       "comment" : "VoiceOver label of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols."
     },
     "Reset this book's voice, speed, and pitch to the global defaults" : {
-      "comment" : "What VoiceOver calls the button that removes a text book's own voice, speed and pitch."
+      "comment" : "What VoiceOver calls the button that removes a text book's own voice, speed and pitch.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablecer la voz, la velocidad y el tono de este libro a los valores globales"
+          }
+        }
+      }
     },
     "Reset to Default" : {
-      "comment" : "Button in Storage settings that moves the library back to the default location.\nButton in the row of a keyboard shortcut action the listener changed, and the row's VoiceOver action: gives that one action its default keys again.\nTitle of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols."
+      "comment" : "Button in Storage settings that moves the library back to the default location.\nButton in the row of a keyboard shortcut action the listener changed, and the row's VoiceOver action: gives that one action its default keys again.\nTitle of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablecer valores predeterminados"
+          }
+        }
+      }
     },
     "Reset to Default Location?" : {
       "comment" : "Title of the question asked before moving the library back to the default location."
@@ -16844,25 +18142,73 @@
       "comment" : "Button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again. It asks to confirm first.\nTitle of the button in Settings, Sound Effects that restores every sound effect setting.\nTitle of the button in the Substitutions settings that replaces every rule with TextMouth's default rules, after asking."
     },
     "Reset to Global Settings" : {
-      "comment" : "Button of a text book's own settings sheet that removes its own voice, speed and pitch."
+      "comment" : "Button of a text book's own settings sheet that removes its own voice, speed and pitch.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablecer a ajustes globales"
+          }
+        }
+      }
     },
     "Reset to Normal Speed" : {
-      "comment" : "Button of an audiobook's own settings sheet that sets its speed back to normal."
+      "comment" : "Button of an audiobook's own settings sheet that sets its speed back to normal.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablecer a velocidad normal"
+          }
+        }
+      }
     },
     "Reset to default location" : {
       "comment" : "VoiceOver label of the Reset to Default button in Storage settings."
     },
     "Reset to global end-of-book setting" : {
-      "comment" : "What VoiceOver calls the button that removes the book's own end of book choice."
+      "comment" : "What VoiceOver calls the button that removes the book's own end of book choice.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablecer al ajuste global de fin de libro"
+          }
+        }
+      }
     },
     "Reset to normal audio speed" : {
-      "comment" : "What VoiceOver calls the button that sets an audiobook's speed back to normal."
+      "comment" : "What VoiceOver calls the button that sets an audiobook's speed back to normal.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablecer a velocidad de audio normal"
+          }
+        }
+      }
     },
     "Resets this book to %@" : {
-      "comment" : "Hint of the button that sets an audiobook's speed back to normal. %@ names the normal speed, such as \"1.0 times speed\"."
+      "comment" : "Hint of the button that sets an audiobook's speed back to normal. %@ names the normal speed, such as \"1.0 times speed\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restablece este libro a %@"
+          }
+        }
+      }
     },
     "Restart Sleep Timer" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Starts the sleep timer again with its last length."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Starts the sleep timer again with its last length.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reiniciar temporizador de apagado"
+          }
+        }
+      }
     },
     "Restart Sleep Timer Gesture" : {
       "comment" : "Heading of the experimental restart gesture group in the Miscellaneous settings."
@@ -16917,7 +18263,15 @@
       "comment" : "VoiceOver hint of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols."
     },
     "Restores this action's default shortcuts, which follow later releases' changes" : {
-      "comment" : "VoiceOver hint of the Reset to Default button of one keyboard shortcut action: the action goes back to the default keys, and later versions of TextMouth may change them."
+      "comment" : "VoiceOver hint of the Reset to Default button of one keyboard shortcut action: the action goes back to the default keys, and later versions of TextMouth may change them.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Restaura los atajos predeterminados de esta acción, que siguen los cambios de versiones futuras"
+          }
+        }
+      }
     },
     "Resubscribe" : {
       "comment" : "Title of the command that checks an unsubscribed feed again, in a feed's menu and among its VoiceOver actions. Title case."
@@ -16950,7 +18304,15 @@
       "comment" : "Menu item and VoiceOver action, in place of Transcribe Audio, for an audiobook that already has a transcript: it transcribes the audio again and replaces the transcript. The ellipsis means a sheet follows."
     },
     "Retry" : {
-      "comment" : "Button of the reader's error alert that tries to play the audio again.\nButton of the unsaved-changes alert that tries to save the changes again.\nButton on a failure notice that tries to save again."
+      "comment" : "Button of the reader's error alert that tries to play the audio again.\nButton of the unsaved-changes alert that tries to save the changes again.\nButton on a failure notice that tries to save again.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reintentar"
+          }
+        }
+      }
     },
     "Retry Saving" : {
       "comment" : "Button in Storage settings that tries again to save changes that could not be saved."
@@ -16968,10 +18330,26 @@
       "comment" : "VoiceOver label of the failure banner's Retry button. %@ is what failed to save, as a noun phrase, such as \"settings\"."
     },
     "Return" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Return\".\nTitle of the reader toolbar's button that goes back to the reading position left before browsing."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Return\".\nTitle of the reader toolbar's button that goes back to the reading position left before browsing.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Retorno"
+          }
+        }
+      }
     },
     "Return to previous reading position" : {
-      "comment" : "What VoiceOver calls the reader toolbar's Return button."
+      "comment" : "What VoiceOver calls the reader toolbar's Return button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Volver a la posición de lectura anterior"
+          }
+        }
+      }
     },
     "Returned to previous position" : {
       "comment" : "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result.",
@@ -17005,7 +18383,15 @@
       "comment" : "Button of the audio editor's Revert to Original confirmation that reverts."
     },
     "Revert to Original…" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Throws away all edits and goes back to the original audio."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Throws away all edits and goes back to the original audio.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Volver al original…"
+          }
+        }
+      }
     },
     "Revert to the original audio?" : {
       "comment" : "Question of the confirmation shown before the audio editor's Revert to Original."
@@ -17052,16 +18438,48 @@
       "comment" : "The hint of the Convert to picker in the Export dialog while RTF is chosen. Word, Pages, and TextEdit are apps' names."
     },
     "Right Arrow" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Arrow\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Arrow\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flecha derecha"
+          }
+        }
+      }
     },
     "Right Brace" : {
-      "comment" : "Name of the punctuation key \"}\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Brace\"."
+      "comment" : "Name of the punctuation key \"}\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Brace\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Llave derecha"
+          }
+        }
+      }
     },
     "Right Bracket" : {
-      "comment" : "Name of the punctuation key \"]\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Bracket\"."
+      "comment" : "Name of the punctuation key \"]\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Bracket\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Corchete derecho"
+          }
+        }
+      }
     },
     "Right Parenthesis" : {
-      "comment" : "Name of the punctuation key \")\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Parenthesis\"."
+      "comment" : "Name of the punctuation key \")\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Parenthesis\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Paréntesis derecho"
+          }
+        }
+      }
     },
     "Rule name" : {
       "comment" : "VoiceOver label of the field that names a substitution rule in the rule editor."
@@ -17154,7 +18572,15 @@
       "comment" : "Advice after the refusal of a WordPerfect document, which no part of macOS reads. LibreOffice is a program's name."
     },
     "Save a copy without the password, then import that copy." : {
-      "comment" : "Last sentence of why a password-protected document could not be imported: what to do."
+      "comment" : "Last sentence of why a password-protected document could not be imported: what to do.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Guarda una copia sin la contraseña y luego importa esa copia."
+          }
+        }
+      }
     },
     "Save and Export" : {
       "comment" : "Heading of the audio editor's buttons for saving and exporting."
@@ -17169,19 +18595,59 @@
       "comment" : "Label of the pop-up in the Record window that chooses the library folder the recording is saved in."
     },
     "Save it as UTF-8 text, then import it again." : {
-      "comment" : "Last sentence of why an HTML file could not be imported because of its declared text encoding: what to do. UTF-8 is an encoding's name and stays as it is."
+      "comment" : "Last sentence of why an HTML file could not be imported because of its declared text encoding: what to do. UTF-8 is an encoding's name and stays as it is.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Guárdalo como texto UTF-8 y vuelve a importarlo."
+          }
+        }
+      }
     },
     "Save it as UTF-8, then import it again." : {
-      "comment" : "Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is."
+      "comment" : "Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Guárdalo como UTF-8 y vuelve a importarlo."
+          }
+        }
+      }
     },
     "Save metadata changes" : {
-      "comment" : "What VoiceOver says for the Save button of an audiobook's book information sheet."
+      "comment" : "What VoiceOver says for the Save button of an audiobook's book information sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Guardar cambios de metadatos"
+          }
+        }
+      }
     },
     "Save metadata to the library and to the library's copy of the EPUB file" : {
-      "comment" : "Label of the metadata editor's Save button while the switch that also writes the EPUB file is on."
+      "comment" : "Label of the metadata editor's Save button while the switch that also writes the EPUB file is on.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Guardar metadatos en la biblioteca y en la copia de la biblioteca del archivo EPUB"
+          }
+        }
+      }
     },
     "Save metadata to the library only" : {
-      "comment" : "Label of the metadata editor's Save button while the switch that also writes the EPUB file is off."
+      "comment" : "Label of the metadata editor's Save button while the switch that also writes the EPUB file is off.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Guardar metadatos solo en la biblioteca"
+          }
+        }
+      }
     },
     "Save the edits to “%@”?" : {
       "comment" : "Question asked as the audio editor's window with unsaved edits closes. %@ is the book's title."
@@ -17201,10 +18667,26 @@
       "comment" : "The question asked when the Record window is closed while it holds a recording that could not be saved yet."
     },
     "Save this book's voice, speed, and pitch as the global defaults" : {
-      "comment" : "What VoiceOver calls the buttons that save a text book's voice, speed and pitch as the settings for every book."
+      "comment" : "What VoiceOver calls the buttons that save a text book's voice, speed and pitch as the settings for every book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Guardar la voz, la velocidad y el tono de este libro como valores globales predeterminados"
+          }
+        }
+      }
     },
     "Save to Global Settings" : {
-      "comment" : "Button of a text book's own settings sheet that saves its voice, speed and pitch as the settings for every book."
+      "comment" : "Button of a text book's own settings sheet that saves its voice, speed and pitch as the settings for every book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Guardar en ajustes globales"
+          }
+        }
+      }
     },
     "Save your rules as a pronunciation lexicon file." : {
       "comment" : "Message of the Save panel that Export Rules shows."
@@ -17269,7 +18751,15 @@
       "comment" : "A style of reading a run of one symbol: the voice says how many symbols the run holds, such as 7 asterisks."
     },
     "Say the page in Where Am I?" : {
-      "comment" : "Label of the Playback setting's checkbox that adds the page to Where Am I?, a command that says where the reader is."
+      "comment" : "Label of the Playback setting's checkbox that adds the page to Where Am I?, a command that says where the reader is.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Decir la página en ¿Dónde estoy?"
+          }
+        }
+      }
     },
     "Says where the cursor is, in which chapter, and what is selected." : {
       "comment" : "Hint of the audio editor's Where Am I button."
@@ -17284,7 +18774,15 @@
       "comment" : "VoiceOver hint of the Find Duplicate Books button in Storage settings."
     },
     "Scroll Lock" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Scroll Lock\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Scroll Lock\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bloqueo de desplazamiento"
+          }
+        }
+      }
     },
     "Search" : {
       "comment" : "Title of the button that searches Apple's podcast directory.\nTitle of the reader toolbar's button that opens the search in the book."
@@ -17293,7 +18791,15 @@
       "comment" : "Title of the Search Library window, which VoiceOver names it by, and the name of its command in the Edit menu's Find submenu."
     },
     "Search Library…" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the window that searches the text of every book. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the window that searches the text of every book. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buscar en la biblioteca…"
+          }
+        }
+      }
     },
     "Search Results" : {
       "comment" : "Name of the VoiceOver rotor in Search in Book that moves between the search results."
@@ -17308,7 +18814,15 @@
       "comment" : "Heading and navigation title of the Search in Book sheet, and the name of its command.\nName of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Searches the text of the open book. Also the title of the menu command of the same name."
     },
     "Search in book" : {
-      "comment" : "What VoiceOver calls the reader toolbar's button that opens the search in the book."
+      "comment" : "What VoiceOver calls the reader toolbar's button that opens the search in the book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buscar en el libro"
+          }
+        }
+      }
     },
     "Search pattern" : {
       "comment" : "VoiceOver label of the field that holds a substitution rule's search pattern in the rule editor."
@@ -17410,10 +18924,26 @@
       "comment" : "Button of a pause's row in the audio editor's list that selects the pause.\nMenu item of a book's row that starts edit mode with the book selected.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Select\"."
     },
     "Select All" : {
-      "comment" : "Button of the edit bar that selects every listed book.\nName of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Selects every row of the library list.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects all of the audio.\nName of the Edit menu's Select All command, in a sentence saying why a keyboard shortcut cannot take its key."
+      "comment" : "Button of the edit bar that selects every listed book.\nName of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Selects every row of the library list.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects all of the audio.\nName of the Edit menu's Select All command, in a sentence saying why a keyboard shortcut cannot take its key.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seleccionar todo"
+          }
+        }
+      }
     },
     "Select Chapter" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects the chapter at the current position."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects the chapter at the current position.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seleccionar capítulo"
+          }
+        }
+      }
     },
     "Select all %lld books" : {
       "comment" : "Spoken label of the edit bar's button that selects every listed book. %lld is how many books are listed.",
@@ -17448,16 +18978,40 @@
       "comment" : "Second sentence of the alert shown when Transcribe Audio is chosen with several books selected. Transcribe Audio is the command's name."
     },
     "Select to Next Pause" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection forward to the next silent pause."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection forward to the next silent pause.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seleccionar hasta la pausa siguiente"
+          }
+        }
+      }
     },
     "Select to Previous Pause" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection back to the previous silent pause."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection back to the previous silent pause.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seleccionar hasta la pausa anterior"
+          }
+        }
+      }
     },
     "Select voice" : {
       "comment" : "VoiceOver label of the voice pop-up in the Voice settings."
     },
     "Select voice for this book" : {
-      "comment" : "What VoiceOver calls the voice sheet's menu of voices."
+      "comment" : "What VoiceOver calls the voice sheet's menu of voices.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seleccionar voz para este libro"
+          }
+        }
+      }
     },
     "Selected" : {
       "comment" : "First part of a book's spoken row label in edit mode, when the book is selected."
@@ -17515,7 +19069,15 @@
       "comment" : "Hint of a book's row in the Library list in edit mode, while the book is not selected."
     },
     "Semicolon" : {
-      "comment" : "Name of the punctuation key \";\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Semicolon\"."
+      "comment" : "Name of the punctuation key \";\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Semicolon\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Punto y coma"
+          }
+        }
+      }
     },
     "Sentence" : {
       "comment" : "A unit of text a picker moves or rewinds by: one sentence. Used by the rewind, skip, and navigation unit pickers."
@@ -17629,10 +19191,26 @@
       "comment" : "Hint of the Share Logs button in iPhone Settings."
     },
     "Shift" : {
-      "comment" : "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\"."
+      "comment" : "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mayúsculas"
+          }
+        }
+      }
     },
     "Shift JIS (Japanese)" : {
-      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
+      "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Shift JIS (japonés)"
+          }
+        }
+      }
     },
     "Shift skip backward unit" : {
       "comment" : "VoiceOver label of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name."
@@ -17656,7 +19234,15 @@
       "comment" : "Name of the Settings tab for keyboard shortcuts."
     },
     "Shortcuts reset to defaults." : {
-      "comment" : "Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default."
+      "comment" : "Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Atajos restablecidos a los valores predeterminados."
+          }
+        }
+      }
     },
     "Shortcuts: %@." : {
       "comment" : "Ends a button's hint in the audio editor: the command's keyboard shortcuts. %@ is their names as a list, such as \"J or Comma\"."
@@ -17691,7 +19277,15 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a view visibility: \"Show Always\", \"Show When Applicable\", or \"Hide\". This is the case .always."
     },
     "Show Bookmarks" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Opens the list of the book's bookmarks. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Opens the list of the book's bookmarks. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mostrar marcadores"
+          }
+        }
+      }
     },
     "Show Description…" : {
       "comment" : "Title of the command that shows a feed item's text in a sheet. The ellipsis says a sheet follows. Title case."
@@ -17700,7 +19294,15 @@
       "comment" : "The title of the Playback settings checkbox that shows the Export button in the reader's toolbar."
     },
     "Show Headings" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the list of the book's headings. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the list of the book's headings. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mostrar encabezados"
+          }
+        }
+      }
     },
     "Show Logs in Finder" : {
       "comment" : "Title of the button in the Storage settings that shows the folder the diagnostic logs are written to, in Finder."
@@ -17709,7 +19311,15 @@
       "comment" : "Button of the library index recovery sheet that shows the saved copy of the unreadable file in the Finder."
     },
     "Show Sleep Timer" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the sleep timer, which stops playback after a time. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the sleep timer, which stops playback after a time. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mostrar temporizador de apagado"
+          }
+        }
+      }
     },
     "Show When Applicable" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a view visibility: \"Show Always\", \"Show When Applicable\", or \"Hide\". This is the case .whenApplicable."
@@ -17753,16 +19363,40 @@
       "comment" : "VoiceOver label of the Show bookmark button checkbox in the Playback settings."
     },
     "Show bookmarks" : {
-      "comment" : "What VoiceOver calls the reader toolbar's button that opens the bookmarks sheet."
+      "comment" : "What VoiceOver calls the reader toolbar's button that opens the bookmarks sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mostrar marcadores"
+          }
+        }
+      }
     },
     "Show heading navigator" : {
-      "comment" : "What VoiceOver calls the reader toolbar's button that opens the headings sheet."
+      "comment" : "What VoiceOver calls the reader toolbar's button that opens the headings sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mostrar navegador de encabezados"
+          }
+        }
+      }
     },
     "Show in Finder" : {
       "comment" : "Button that shows a file or folder in the Finder.\nLibrary menu command that shows the one book's files in the Finder.\nTitle of the command that shows a feed item's book in Finder. Title case."
     },
     "Show levels" : {
-      "comment" : "Label of the headings sheet's level filter, which limits the headings shown to those up to a level."
+      "comment" : "Label of the headings sheet's level filter, which limits the headings shown to those up to a level.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mostrar niveles"
+          }
+        }
+      }
     },
     "Show speed controls" : {
       "comment" : "Title of the checkbox in the Playback settings that adds speed buttons to the playback controls."
@@ -17797,7 +19431,15 @@
       }
     },
     "Show the page on the reader screen" : {
-      "comment" : "Label of the Playback setting's checkbox that shows the page being read on the reader screen."
+      "comment" : "Label of the Playback setting's checkbox that shows the page being read on the reader screen.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mostrar la página en la pantalla del lector"
+          }
+        }
+      }
     },
     "Showing group %@ of %@" : {
       "comment" : "The line over a page of one group of duplicate books. %1$@ is the group's place and %2$@ is how many groups were found.",
@@ -17854,7 +19496,15 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Folders' row hint: what it shows."
     },
     "Shows only the headings up to the level chosen." : {
-      "comment" : "Hint of the headings sheet's level filter: what choosing a level does."
+      "comment" : "Hint of the headings sheet's level filter: what choosing a level does.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Muestra solo los encabezados hasta el nivel elegido."
+          }
+        }
+      }
     },
     "Shows the books in the order you arrange" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Reading List's row hint: what it shows."
@@ -17869,7 +19519,15 @@
       "comment" : "VoiceOver hint of the Previous Groups button of Find Duplicate Books."
     },
     "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page." : {
-      "comment" : "Hint and caption of the Playback setting that shows the page on the reader screen. \"Page 12 of 300\" is an example of how the page is shown."
+      "comment" : "Hint and caption of the Playback setting that shows the page on the reader screen. \"Page 12 of 300\" is an example of how the page is shown.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Muestra la página que se lee, como Página 12 de 300, junto al porcentaje, en libros de más de una página."
+          }
+        }
+      }
     },
     "Silence can last at most a day." : {
       "comment" : "Problem shown when the silence to insert in the audio editor is longer than a day."
@@ -17890,7 +19548,15 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves forward by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name.\nName of the playback event whose sound is chosen in Settings, Sound Effects: skipping forward.\nTitle of the pop-up in the Playback settings that chooses what the skip forward button moves by."
     },
     "Skip Section" : {
-      "comment" : "Name of a heading row's command that makes speech skip the section, as a VoiceOver action and a context menu item."
+      "comment" : "Name of a heading row's command that makes speech skip the section, as a VoiceOver action and a context menu item.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Omitir sección"
+          }
+        }
+      }
     },
     "Skip backward" : {
       "comment" : "Name of the Skip Backward media event, a choice for one step of the media-key pattern in Settings."
@@ -17899,7 +19565,15 @@
       "comment" : "VoiceOver label of the Skip Backward pop-up in the Playback settings."
     },
     "Skip backward: %@" : {
-      "comment" : "What VoiceOver says for the playback bar's skip backward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\"."
+      "comment" : "What VoiceOver says for the playback bar's skip backward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Retroceder: %@"
+          }
+        }
+      }
     },
     "Skip finished articles" : {
       "comment" : "Label of the switch in a news feed's Feed Info that passes over articles already finished."
@@ -17928,10 +19602,26 @@
       "comment" : "VoiceOver label of the Skip Forward pop-up in the Playback settings."
     },
     "Skip forward: %@" : {
-      "comment" : "What VoiceOver says for the playback bar's skip forward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\"."
+      "comment" : "What VoiceOver says for the playback bar's skip forward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Avanzar: %@"
+          }
+        }
+      }
     },
     "Skipped" : {
-      "comment" : "What VoiceOver says for the mark on a heading the user skipped."
+      "comment" : "What VoiceOver says for the mark on a heading the user skipped.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Omitido"
+          }
+        }
+      }
     },
     "Skipped, %@ (current heading) - level %lld" : {
       "comment" : "What VoiceOver says for the heading being read when the user skipped it, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.",
@@ -17940,6 +19630,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Skipped, %1$@ (current heading) - level %2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Omitido, %1$@ (encabezado actual) - nivel %2$lld"
           }
         }
       }
@@ -17952,6 +19648,12 @@
             "state" : "new",
             "value" : "Skipped, %1$@ - level %2$lld"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Omitido, %1$@ - nivel %2$lld"
+          }
         }
       }
     },
@@ -17959,7 +19661,15 @@
       "comment" : "VoiceOver hint of the Match whole word only switch in the substitution rule editor."
     },
     "Slash" : {
-      "comment" : "Name of the punctuation key \"/\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Slash\"."
+      "comment" : "Name of the punctuation key \"/\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Slash\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Barra diagonal"
+          }
+        }
+      }
     },
     "Sleep Timer" : {
       "comment" : "Heading of the sleep timer group in the Playback settings.\nThe name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.\nTitle of the reader toolbar's button that opens the sleep timer sheet.",
@@ -17973,7 +19683,15 @@
       }
     },
     "Sleep timer" : {
-      "comment" : "What VoiceOver calls the reader toolbar's button that opens the sleep timer sheet."
+      "comment" : "What VoiceOver calls the reader toolbar's button that opens the sleep timer sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador de apagado"
+          }
+        }
+      }
     },
     "Sleep timer cancelled, because the next book could not be opened." : {
       "comment" : "VoiceOver announcement, after the reason a book failed to open: the sleep timer that was to go on with that book has stopped.",
@@ -18128,7 +19846,15 @@
       "comment" : "VoiceOver label of the Smart mode checkbox in the Playback settings."
     },
     "Some Changes Could Not Be Saved" : {
-      "comment" : "Title of the alert shown when TextMouth is asked to quit while some changes could not be written to disk."
+      "comment" : "Title of the alert shown when TextMouth is asked to quit while some changes could not be written to disk.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudieron guardar algunos cambios"
+          }
+        }
+      }
     },
     "Some Files Not Imported" : {
       "comment" : "Title of the library's alert as a ZIP batch that added at least one book ends having left some files out: a file failed or the batch was cancelled. Title case."
@@ -18206,22 +19932,70 @@
       "comment" : "Name of the Settings tab for the sounds played for playback events."
     },
     "Space" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Space\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Space\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Espacio"
+          }
+        }
+      }
     },
     "Speak Download Progress" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the feed downloads under way have got. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the feed downloads under way have got. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Decir progreso de descarga"
+          }
+        }
+      }
     },
     "Speak Full Info" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the selected book, folder or feed. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the selected book, folder or feed. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Decir información completa"
+          }
+        }
+      }
     },
     "Speak Import Progress" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the imports under way have got. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the imports under way have got. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Decir progreso de importación"
+          }
+        }
+      }
     },
     "Speak Info" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the selected book, folder or feed. Also the title of the menu command of the same name."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the selected book, folder or feed. Also the title of the menu command of the same name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Decir información"
+          }
+        }
+      }
     },
     "Speak Selection" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks what is selected, with its length."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks what is selected, with its length.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Decir selección"
+          }
+        }
+      }
     },
     "Speaking chapter %@ of %@…" : {
       "comment" : "The progress of a spoken audio export while it speaks the chapters. %1$@ is the number of the chapter being spoken and %2$@ the number of chapters, both written without digit grouping.",
@@ -18290,7 +20064,15 @@
       "comment" : "Heading of the voice sheet's speed group, and what VoiceOver calls its speed slider.\nThe label of the slider in the Export dialog's spoken audio options that sets how fast the voice speaks."
     },
     "Speed: %@" : {
-      "comment" : "Caption above an audiobook's speed slider in its own settings sheet. %@ is the speed, such as 1.25x."
+      "comment" : "Caption above an audiobook's speed slider in its own settings sheet. %@ is the speed, such as 1.25x.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Velocidad: %@"
+          }
+        }
+      }
     },
     "Speed: %lld WPM" : {
       "comment" : "Caption above the voice sheet's speed slider for a text book. WPM is the abbreviation of words per minute; %lld is the number of words.",
@@ -18308,6 +20090,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Speed: %lld WPM"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Velocidad: %lld ppm"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Velocidad: %lld ppm"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Velocidad: %lld ppm"
                 }
               }
             }
@@ -18342,7 +20148,15 @@
       "comment" : "The name of the Speex speech format. Inside sentences about importing a file of that format."
     },
     "Standard" : {
-      "comment" : "A voice's quality tier, the plainest, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Standard quality\"."
+      "comment" : "A voice's quality tier, the plainest, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Standard quality\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "estándar"
+          }
+        }
+      }
     },
     "Start New Library" : {
       "comment" : "Button of the question that confirms starting a new, empty library."
@@ -18523,7 +20337,15 @@
       "comment" : "Title of the audio editor's Punch In button while it records."
     },
     "Stop Where Am I announcement" : {
-      "comment" : "What VoiceOver calls the reader toolbar's Where Am I? button while an announcement speaks; pressing it stops the announcement."
+      "comment" : "What VoiceOver calls the reader toolbar's Where Am I? button while an announcement speaks; pressing it stops the announcement.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Detener el anuncio de ¿Dónde estoy?"
+          }
+        }
+      }
     },
     "Stop and Save" : {
       "comment" : "Title of the question's default button when the Record window is closed while recording: it stops the recording and saves it."
@@ -18648,7 +20470,15 @@
       "comment" : "VoiceOver hint of the Cancel button of the Transcribe Audio sheet while transcribing."
     },
     "Stops waiting for the download" : {
-      "comment" : "Hint of the Cancel button of the reader's view while a book downloads."
+      "comment" : "Hint of the Cancel button of the reader's view while a book downloads.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Deja de esperar la descarga"
+          }
+        }
+      }
     },
     "Storage" : {
       "comment" : "Name of the Settings tab for where the library is stored, importing books, and the logs."
@@ -18738,13 +20568,37 @@
       "comment" : "What choosing File, Export says when another window, such as Settings, is in front of the Library and book windows."
     },
     "Switches to jump to page controls" : {
-      "comment" : "Hint of the status row's page button while the jump to percent or time panel is open."
+      "comment" : "Hint of the status row's page button while the jump to percent or time panel is open.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cambia a los controles para saltar a una página"
+          }
+        }
+      }
     },
     "Switches to jump to percent controls" : {
-      "comment" : "Hint of the reader's percent button while the jump to time or page panel is open."
+      "comment" : "Hint of the reader's percent button while the jump to time or page panel is open.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cambia a los controles para saltar a un porcentaje"
+          }
+        }
+      }
     },
     "Switches to jump to time controls" : {
-      "comment" : "Hint of the reader's time button while the jump to percent or page panel is open."
+      "comment" : "Hint of the reader's time button while the jump to percent or page panel is open.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cambia a los controles para saltar a un tiempo"
+          }
+        }
+      }
     },
     "Switching loses the changes TextMouth couldn't save while the library isn't available." : {
       "comment" : "Sentence in the question asked before switching libraries: changes that could not be saved are lost. The failure notices follow."
@@ -18762,19 +20616,51 @@
       "comment" : "Caption beside the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols."
     },
     "System" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sistema"
+          }
+        }
+      }
     },
     "System Request" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System Request\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System Request\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Petición del sistema"
+          }
+        }
+      }
     },
     "Tab" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tab\"."
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tab\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabulador"
+          }
+        }
+      }
     },
     "Take it off the reading list, or clear %@ in the Reading List's options first." : {
       "comment" : "Last sentence of why Remove Download was refused for a book the reading list keeps downloaded: what to do first. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it."
     },
     "Taken from %@" : {
-      "comment" : "Announced by VoiceOver after a key was given to a keyboard shortcut action that another action had. %@ names the action or actions that lost the key, such as \"Play / Pause and Where Am I?\"."
+      "comment" : "Announced by VoiceOver after a key was given to a keyboard shortcut action that another action had. %@ names the action or actions that lost the key, such as \"Play / Pause and Where Am I?\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tomado de %@"
+          }
+        }
+      }
     },
     "Takes %lld to %lld minutes." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
@@ -18883,10 +20769,26 @@
       }
     },
     "Text not updated: %@" : {
-      "comment" : "Announcement when an edited text could not be taken for a reason the system or another part of the app gives. %@ is the reason."
+      "comment" : "Announcement when an edited text could not be taken for a reason the system or another part of the app gives. %@ is the reason.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: %@"
+          }
+        }
+      }
     },
     "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it." : {
-      "comment" : "Announcement when an Edit Text session ends because the book left the library. %@ is the book's title. Edit Text is a menu command."
+      "comment" : "Announcement when an Edit Text session ends because the book left the library. %@ is the book's title. Edit Text is a menu command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: %@ se quitó, o se eliminó su descarga, así que Editar texto se detuvo para él."
+          }
+        }
+      }
     },
     "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then." : {
       "comment" : "Announcement when an edited text was refused because one chapter nests lists or quotes too deeply. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the book's title; %3$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
@@ -18895,6 +20797,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: el capítulo %1$@ del texto editado de %2$@ %3$@, algo que TextMouth no puede leer de forma segura. Simplifícalo y guarda de nuevo, o deshaz el cambio; hasta entonces el libro conserva su texto anterior."
           }
         }
       }
@@ -18907,20 +20815,58 @@
             "state" : "new",
             "value" : "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: el texto editado de %1$@ %2$@, algo que TextMouth no puede leer de forma segura. Simplifícalo y guarda de nuevo, o deshaz el cambio; hasta entonces el libro conserva su texto anterior."
+          }
         }
       }
     },
     "Text not updated: the edited text of %@ has no chapter with any text. Undo the change and save again; the book keeps its old text until then." : {
-      "comment" : "Announcement when an edited text was refused because no chapter has any text left. %@ is the book's title."
+      "comment" : "Announcement when an edited text was refused because no chapter has any text left. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: el texto editado de %@ no tiene ningún capítulo con texto. Deshaz el cambio y guarda de nuevo; hasta entonces el libro conserva su texto anterior."
+          }
+        }
+      }
     },
     "Text not updated: the edited text of %@ isn't UTF-8 text. Save it as UTF-8; the book keeps its old text until then." : {
-      "comment" : "Announcement when an edited text was refused because it is not UTF-8 text. %@ is the book's title. UTF-8 is a text encoding."
+      "comment" : "Announcement when an edited text was refused because it is not UTF-8 text. %@ is the book's title. UTF-8 is a text encoding.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: el texto editado de %@ no es texto UTF-8. Guárdalo como UTF-8; hasta entonces el libro conserva su texto anterior."
+          }
+        }
+      }
     },
     "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then." : {
-      "comment" : "Announcement when an edited transcript was refused because the user added words to a chapter with no speech. %@ is the book's title."
+      "comment" : "Announcement when an edited transcript was refused because the user added words to a chapter with no speech. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: la transcripción editada de %@ agrega palabras a un capítulo sin voz, donde no se pueden conservar. Quítalas y guarda de nuevo; hasta entonces el libro conserva su texto anterior."
+          }
+        }
+      }
     },
     "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then." : {
-      "comment" : "Announcement when an edited transcript was refused because the user changed a chapter's heading. %@ is the book's title."
+      "comment" : "Announcement when an edited transcript was refused because the user changed a chapter's heading. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: la transcripción editada de %@ cambia el encabezado de un capítulo, que viene de su audio. Vuelve a ponerlo y guarda de nuevo; hasta entonces el libro conserva su texto anterior."
+          }
+        }
+      }
     },
     "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then." : {
       "comment" : "Announcement when an edited transcript was refused because its number of chapters no longer matches the audiobook's. %1$@ is the book's title; %2$@ and %3$@ are counts of chapters such as \"3 chapters\". \"<!-- chapter:\" is literal text in the file and stays exactly as written.",
@@ -18930,14 +20876,36 @@
             "state" : "new",
             "value" : "Text not updated: the edited transcript of %1$@ has %2$@, but the audiobook has %3$@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: la transcripción editada de %1$@ tiene %2$@, pero el audiolibro tiene %3$@. Conserva cada línea que empieza con <!-- chapter: y guarda de nuevo; hasta entonces el libro conserva su texto anterior."
+          }
         }
       }
     },
     "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens." : {
-      "comment" : "Announcement when an edited text was not taken because the book's own file changed too. %@ is the book's title."
+      "comment" : "Announcement when an edited text was not taken because the book's own file changed too. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: el archivo original de %@ también cambió. El texto del libro se vuelve a leer de él la próxima vez que se abra el libro."
+          }
+        }
+      }
     },
     "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens." : {
-      "comment" : "Announcement when an edited text was not taken because the book's transcript changed too. %@ is the book's title."
+      "comment" : "Announcement when an edited text was not taken because the book's transcript changed too. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto no actualizado: la transcripción de %@ también cambió. El texto del libro se vuelve a escribir a partir de ella la próxima vez que se abra el libro."
+          }
+        }
+      }
     },
     "Text recognition could not read %@: %@." : {
       "comment" : "Warning after a book of pictures was imported: text recognition could not read some pages. %1$@ is how many of how many, such as \"1 of 12 pages\", and %2$@ names the pages and why, such as \"page 3 (its picture could not be decoded)\".",
@@ -18986,10 +20954,26 @@
       "comment" : "Placeholder of the empty search field in the Search Library window."
     },
     "Text updated" : {
-      "comment" : "Announcement after the user saved an edited text and TextMouth took it as the book's text. Written without its full stop."
+      "comment" : "Announcement after the user saved an edited text and TextMouth took it as the book's text. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto actualizado"
+          }
+        }
+      }
     },
     "Text updated." : {
-      "comment" : "Announcement after the user saved an edited text of a feed episode's transcript, followed by a note about where the transcript stays."
+      "comment" : "Announcement after the user saved an edited text of a feed episode's transcript, followed by a note about where the transcript stays.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto actualizado."
+          }
+        }
+      }
     },
     "TextMouth Is Open on Another Mac" : {
       "comment" : "Title of the warning shown when another Mac has this library open too."
@@ -19026,6 +21010,12 @@
             "state" : "new",
             "value" : "TextMouth can't read the audio file %1$@ because %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no puede leer el archivo de audio %1$@ porque %2$@."
+          }
         }
       }
     },
@@ -19055,7 +21045,15 @@
       }
     },
     "TextMouth can't safely read the file “%@” in this book, because it defines entities of its own." : {
-      "comment" : "First sentence of why a file inside an EPUB or DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book."
+      "comment" : "First sentence of why a file inside an EPUB or DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no puede leer de forma segura el archivo “%@” de este libro, porque define entidades propias."
+          }
+        }
+      }
     },
     "TextMouth can't safely read the file “%@” in this book, because it is written in the %@ encoding." : {
       "comment" : "First sentence of why a file inside an EPUB or DAISY book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.",
@@ -19065,11 +21063,25 @@
             "state" : "new",
             "value" : "TextMouth can't safely read the file “%1$@” in this book, because it is written in the %2$@ encoding."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no puede leer de forma segura el archivo “%1$@” de este libro, porque está escrito en la codificación %2$@."
+          }
         }
       }
     },
     "TextMouth can't safely read the file “%@” in this document, because it defines entities of its own." : {
-      "comment" : "First sentence of why a file inside a Word or OpenDocument document was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the document."
+      "comment" : "First sentence of why a file inside a Word or OpenDocument document was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the document.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no puede leer de forma segura el archivo “%@” de este documento, porque define entidades propias."
+          }
+        }
+      }
     },
     "TextMouth can't safely read the file “%@” in this document, because it is written in the %@ encoding." : {
       "comment" : "First sentence of why a file inside a Word or OpenDocument document was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the document and %2$@ the encoding's name as the file declares it.",
@@ -19079,14 +21091,36 @@
             "state" : "new",
             "value" : "TextMouth can't safely read the file “%1$@” in this document, because it is written in the %2$@ encoding."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no puede leer de forma segura el archivo “%1$@” de este documento, porque está escrito en la codificación %2$@."
+          }
         }
       }
     },
     "TextMouth can't safely read this SSML file, because it defines entities of its own." : {
-      "comment" : "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it defines XML entities of its own, which could make it far larger when read."
+      "comment" : "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it defines XML entities of its own, which could make it far larger when read.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no puede leer de forma segura este archivo SSML, porque define entidades propias."
+          }
+        }
+      }
     },
     "TextMouth can't safely read this SSML file, because it is written in the %@ encoding." : {
-      "comment" : "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it is in a text encoding TextMouth cannot see through. %@ is the encoding's name as the file declares it."
+      "comment" : "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it is in a text encoding TextMouth cannot see through. %@ is the encoding's name as the file declares it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no puede leer de forma segura este archivo SSML, porque está escrito en la codificación %@."
+          }
+        }
+      }
     },
     "TextMouth can't use the braille table chosen in Settings, “%@”, so this export starts from %@." : {
       "comment" : "Shown in the Export dialog's braille options when the table chosen in Settings can't be used. %1$@ is that table's name as macOS gives it and %2$@ the table the export starts from, in words such as \"Unified English Braille, uncontracted\".",
@@ -19348,7 +21382,15 @@
       "comment" : "Last sentence of the report of a conflicting copy: nothing was done with it. \"It\" is the copy."
     },
     "TextMouth hasn't read the latest save yet." : {
-      "comment" : "Reason after a colon: a rebuild left the book's text alone because the latest save of the edited text is not read yet."
+      "comment" : "Reason after a colon: a rebuild left the book's text alone because the latest save of the edited text is not read yet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth aún no ha leído el último guardado."
+          }
+        }
+      }
     },
     "TextMouth hasn't read this book's headings yet. Open the book once, then export again." : {
       "comment" : "Why a book's headings could not be exported, after the file's name in a failure sentence such as \"Couldn't export Headings: ...\"."
