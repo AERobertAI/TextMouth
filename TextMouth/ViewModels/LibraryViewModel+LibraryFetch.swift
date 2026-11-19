@@ -67,7 +67,7 @@ extension LibraryViewModel {
             // Every file is held by a read that never returned: reading them
             // again would only pile up threads, and the check just ran.
             noteDataDirectoryUnavailable(.cloudFetchFailed(
-                provider, folder: folder, files: named, ending: "a read of these files has not returned"
+                provider, folder: folder, files: named, ending: "a read of these files has not returned" // l10n: no (debug log text)
             ))
             return true
         }
@@ -144,7 +144,7 @@ extension LibraryViewModel {
             previousNames = names(of: pendingLibraryFiles, in: root)
             let files = pendingLibraryFiles.filter { !isBeingRead($0) }
             guard !files.isEmpty else {
-                failLibraryFetch(token, provider, folder, root, ending: "a read of these files has not returned")
+                failLibraryFetch(token, provider, folder, root, ending: "a read of these files has not returned") // l10n: no (debug log text)
                 return
             }
             let result = await readPass(files, in: root, with: fetch)
@@ -159,11 +159,11 @@ extension LibraryViewModel {
             )
             if !result.stalled.isEmpty {
                 let seconds = Int(libraryFetchStallLimit.components.seconds)
-                let offline = libraryFetchReachability.isOnline() ? "" : ", and this Mac is offline"
+                let offline = libraryFetchReachability.isOnline() ? "" : ", and this Mac is offline" // l10n: no (debug log text)
                 failLibraryFetch(
                     token, provider, folder, root,
                     files: names(of: result.stalled, in: root),
-                    ending: "no answer within \(seconds) seconds\(offline)"
+                    ending: "no answer within \(seconds) seconds\(offline)" // l10n: no (debug log text)
                 )
                 return
             }
@@ -179,7 +179,7 @@ extension LibraryViewModel {
             }
         }
         guard isCurrentLibraryFetch(token, root: root) else { return }
-        let ending = lastFailure.map { "a read failed (\($0))" } ?? "the same files were still only in the cloud"
+        let ending = lastFailure.map { "a read failed (\($0))" } ?? "the same files were still only in the cloud" // l10n: no (debug log text)
         failLibraryFetch(token, provider, folder, root, ending: ending)
     }
 

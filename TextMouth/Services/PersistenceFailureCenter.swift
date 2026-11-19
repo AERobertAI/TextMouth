@@ -38,38 +38,79 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
     /// name it: "library changes", "listening statistics".
     var topic: String {
         switch self {
-        case .libraryIndex: return "library changes"
-        case .bookRecord: return "changes to books"
-        case .statistics: return "listening statistics"
-        case .configuration: return "settings"
-        case .substitutions: return "text substitution rules"
-        case .feedRecords: return "feed subscriptions"
-        case .originalFileCleanup: return "original files"
+        case .libraryIndex:
+            return String(localized: "library changes",
+                          comment: "What the library's saving failure is about, as a noun phrase inside a sentence, with no capital letter, such as \"Dismiss the notice about library changes\".")
+        case .bookRecord:
+            return String(localized: "changes to books",
+                          comment: "What the saving failure of books' records is about, as a noun phrase inside a sentence, with no capital letter.")
+        case .statistics:
+            return String(localized: "listening statistics",
+                          comment: "What the saving failure of the listening statistics is about, as a noun phrase inside a sentence, with no capital letter.")
+        case .configuration:
+            return String(localized: "settings",
+                          comment: "What the saving failure of the settings is about, as a noun phrase inside a sentence, with no capital letter.")
+        case .substitutions:
+            return String(localized: "text substitution rules",
+                          comment: "What the saving failure of the text substitution rules is about, as a noun phrase inside a sentence, with no capital letter.")
+        case .feedRecords:
+            return String(localized: "feed subscriptions",
+                          comment: "What the saving failure of the feed subscriptions is about, as a noun phrase inside a sentence, with no capital letter.")
+        case .originalFileCleanup:
+            return String(localized: "original files",
+                          comment: "What the failure to remove the original files of imported books is about, as a noun phrase inside a sentence, with no capital letter.")
         }
     }
 
     /// What a successful operation here does to its files: "saved", or
     /// "removed" for original-file cleanup.
     var outcomeWord: String {
-        self == .originalFileCleanup ? "removed" : "saved"
+        self == .originalFileCleanup ? "removed" : "saved" // l10n: no (debug log text)
     }
 
     /// What VoiceOver says for the banner's Retry button, which a sighted
     /// user sees beside the sentence it retries: "Retry saving settings".
     var retryLabel: String {
-        self == .originalFileCleanup ? "Retry removing \(topic)" : "Retry saving \(topic)"
+        self == .originalFileCleanup
+            ? String(localized: "Retry removing \(topic)",
+                     comment: "VoiceOver label of the failure banner's Retry button for the original files. %@ is what failed, as a noun phrase, such as \"original files\".")
+            : String(localized: "Retry saving \(topic)",
+                     comment: "VoiceOver label of the failure banner's Retry button. %@ is what failed to save, as a noun phrase, such as \"settings\".")
     }
 
     /// What VoiceOver says for the banner's Dismiss button: "Dismiss the
     /// notice about settings".
     var dismissLabel: String {
-        "Dismiss the notice about \(topic)"
+        String(localized: "Dismiss the notice about \(topic)",
+               comment: "VoiceOver label of the failure banner's Dismiss button. %@ is what the notice is about, as a noun phrase, such as \"settings\".")
     }
 
     /// What VoiceOver says once a retry has settled every failure here:
     /// "Settings saved.", "Original files removed."
     var retriedAnnouncement: String {
-        topic.prefix(1).uppercased() + topic.dropFirst() + " \(outcomeWord)."
+        switch self {
+        case .libraryIndex:
+            return String(localized: "Library changes saved.",
+                          comment: "Announcement after a retry saved the library changes that had failed to save.")
+        case .bookRecord:
+            return String(localized: "Changes to books saved.",
+                          comment: "Announcement after a retry saved the changes to books' records that had failed to save.")
+        case .statistics:
+            return String(localized: "Listening statistics saved.",
+                          comment: "Announcement after a retry saved the listening statistics that had failed to save.")
+        case .configuration:
+            return String(localized: "Settings saved.",
+                          comment: "Announcement after a retry saved the settings that had failed to save.")
+        case .substitutions:
+            return String(localized: "Text substitution rules saved.",
+                          comment: "Announcement after a retry saved the text substitution rules that had failed to save.")
+        case .feedRecords:
+            return String(localized: "Feed subscriptions saved.",
+                          comment: "Announcement after a retry saved the feed subscriptions that had failed to save.")
+        case .originalFileCleanup:
+            return String(localized: "Original files removed.",
+                          comment: "Announcement after a retry removed the original files of imported books that had failed to be removed.")
+        }
     }
 
     /// The sentence that follows a banner row's failure when `count` more
@@ -80,17 +121,14 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
         guard count > 0 else { return nil }
         switch self {
         case .bookRecord:
-            return count == 1
-                ? "Changes to 1 other book could not be saved either."
-                : "Changes to \(count) other books could not be saved either."
+            return String(localized: "Changes to \(count) other books could not be saved either.",
+                          comment: "Sentence after a failure notice: more books' records failed to save too. %lld is how many more.")
         case .feedRecords:
-            return count == 1
-                ? "Changes to 1 other feed could not be saved either."
-                : "Changes to \(count) other feeds could not be saved either."
+            return String(localized: "Changes to \(count) other feeds could not be saved either.",
+                          comment: "Sentence after a failure notice: more feeds' records failed to save too. %lld is how many more.")
         case .originalFileCleanup:
-            return count == 1
-                ? "1 other original file could not be removed either."
-                : "\(count) other original files could not be removed either."
+            return String(localized: "\(count) other original files could not be removed either.",
+                          comment: "Sentence after a failure notice: more original files could not be removed too. %lld is how many more.")
         case .libraryIndex, .statistics, .configuration, .substitutions:
             return nil
         }
@@ -192,7 +230,10 @@ struct PersistenceFailure: Identifiable, Sendable {
     /// mark, or an exclamation mark.
     static func sentence(_ text: String) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let last = trimmed.last else { return "No reason was given." }
+        guard let last = trimmed.last else {
+            return String(localized: "No reason was given.",
+                          comment: "Said in place of a reason when the system gave no reason a file could not be saved.")
+        }
         return ".!?".contains(last) ? trimmed : trimmed + "."
     }
 }
@@ -245,20 +286,26 @@ extension PersistenceFailure.Subject {
     func sentence(reason: String) -> String {
         switch self {
         case .libraryIndex:
-            return "Library changes could not be saved: \(reason)"
+            return String(localized: "Library changes could not be saved: \(reason)",
+                          comment: "Failure notice: the library's changes could not be saved. %@ is the reason, a sentence from the system.")
         case .bookRecord(_, let title):
-            return "Changes to “\(title)” could not be saved: \(reason)"
+            return String(localized: "Changes to “\(title)” could not be saved: \(reason)",
+                          comment: "Failure notice: a book's changes could not be saved. %1$@ is the book's title; %2$@ is the reason, a sentence from the system.")
         case .strandedPackage(_, let title, let location, let home):
-            return "“\(title)” could not be moved back after a failed move, "
-                + "so its files are at \(location) instead of \(home): \(reason)"
+            return String(localized: "“\(title)” could not be moved back after a failed move, so its files are at \(location) instead of \(home): \(reason)",
+                          comment: "Failure notice: a book's files could not be put back after a move failed. %1$@ is the book's title; %2$@ is where its files are now; %3$@ is where they belong; %4$@ is the reason, a sentence from the system.")
         case .statistics:
-            return "Listening statistics could not be saved: \(reason)"
+            return String(localized: "Listening statistics could not be saved: \(reason)",
+                          comment: "Failure notice: the listening statistics could not be saved. %@ is the reason, a sentence from the system.")
         case .configuration:
-            return "Settings could not be saved: \(reason)"
+            return String(localized: "Settings could not be saved: \(reason)",
+                          comment: "Failure notice: the settings could not be saved. %@ is the reason, a sentence from the system.")
         case .substitutions:
-            return "Text substitution rules could not be saved: \(reason)"
+            return String(localized: "Text substitution rules could not be saved: \(reason)",
+                          comment: "Failure notice: the text substitution rules could not be saved. %@ is the reason, a sentence from the system.")
         case .feedRecord(_, let title):
-            return "Changes to the feed “\(title)” could not be saved: \(reason)"
+            return String(localized: "Changes to the feed “\(title)” could not be saved: \(reason)",
+                          comment: "Failure notice: a feed's changes could not be saved. %1$@ is the feed's title; %2$@ is the reason, a sentence from the system.")
         case .originalFile(let path, let movesToTrash):
             return OriginalFileDeletionWording(
                 movesToTrash: movesToTrash,
@@ -313,23 +360,35 @@ enum StorageWorkWaitWording {
     /// "TextMouth saves them once it has finished moving books between
     /// folders."
     static func sentence(_ action: Action, waitingFor operation: StorageHoldReason) -> String {
-        let once: String
-        switch operation {
-        case .movingDataDirectory:
-            once = "once the move of its data directory ends"
-        case .rebuildingDirectory:
-            once = "once it has finished rebuilding its data directory"
-        case .movingBooksBetweenFolders:
-            once = "once it has finished moving books between folders"
-        case .switchingLibraries:
-            // A switch ends with TextMouth opening again on the other
-            // library, not with the retry: the words say what stays here.
-            return action == .save
-                ? "TextMouth is opening again on another library, so they stay unsaved in this one."
-                : "TextMouth is opening again on another library, so they stay where they are in this one."
+        // One whole sentence for each action and each operation that holds the work.
+        switch (operation, action) {
+        case (.movingDataDirectory, .save):
+            return String(localized: "TextMouth saves them once the move of its data directory ends.",
+                          comment: "Why a failed save waits: it runs when the move of the data directory ends. \"Them\" is the changes that could not be saved.")
+        case (.movingDataDirectory, .moveBack):
+            return String(localized: "TextMouth moves them back once the move of its data directory ends.",
+                          comment: "Why a failed move of files waits: it runs when the move of the data directory ends. \"Them\" is the files.")
+        case (.rebuildingDirectory, .save):
+            return String(localized: "TextMouth saves them once it has finished rebuilding its data directory.",
+                          comment: "Why a failed save waits: it runs when the data directory has been rebuilt. \"Them\" is the changes that could not be saved.")
+        case (.rebuildingDirectory, .moveBack):
+            return String(localized: "TextMouth moves them back once it has finished rebuilding its data directory.",
+                          comment: "Why a failed move of files waits: it runs when the data directory has been rebuilt. \"Them\" is the files.")
+        case (.movingBooksBetweenFolders, .save):
+            return String(localized: "TextMouth saves them once it has finished moving books between folders.",
+                          comment: "Why a failed save waits: it runs when books have been moved between folders. \"Them\" is the changes that could not be saved.")
+        case (.movingBooksBetweenFolders, .moveBack):
+            return String(localized: "TextMouth moves them back once it has finished moving books between folders.",
+                          comment: "Why a failed move of files waits: it runs when books have been moved between folders. \"Them\" is the files.")
+        // A switch ends with TextMouth opening again on the other library,
+        // not with the retry: the words say what stays here.
+        case (.switchingLibraries, .save):
+            return String(localized: "TextMouth is opening again on another library, so they stay unsaved in this one.",
+                          comment: "Why a failed save stays unsaved: TextMouth is switching to another library. \"They\" is the changes that could not be saved.")
+        case (.switchingLibraries, .moveBack):
+            return String(localized: "TextMouth is opening again on another library, so they stay where they are in this one.",
+                          comment: "Why a failed move of files stays undone: TextMouth is switching to another library. \"They\" is the files.")
         }
-        let doing = action == .save ? "saves them" : "moves them back"
-        return "TextMouth \(doing) \(once)."
     }
 }
 
@@ -362,9 +421,11 @@ struct PersistenceBannerRow: Identifiable, Equatable {
     static func announcement(for rows: [PersistenceBannerRow]) -> String? {
         guard !rows.isEmpty else { return nil }
         let action = rows.contains(where: \.canRetry)
-            ? "Retry is at the top of the Library window."
-            : "Details are at the top of the Library window."
-        return (rows.map(\.text) + [action]).joined(separator: " ")
+            ? String(localized: "Retry is at the top of the Library window.",
+                     comment: "Said after a failure notice: where to find the Retry button.")
+            : String(localized: "Details are at the top of the Library window.",
+                     comment: "Said after a failure notice: where to find its details.")
+        return SentenceWording.joined(rows.map(\.text) + [action])
     }
 
     /// The rows for `failures`, one for each subsystem among them, in
@@ -852,8 +913,9 @@ final class PersistenceFailureCenter: ObservableObject {
         let stillFailing = PersistenceBannerRow.rows(for: failures).filter { subsystems.contains($0.subsystem) }
         let message = stillFailing.isEmpty
             ? subsystems.sortedStably().map(\.retriedAnnouncement)
-            : ["Retry did not succeed."] + stillFailing.map(\.text)
-        VoiceOverAnnouncer.announce(message.joined(separator: " "))
+            : [String(localized: "Retry did not succeed.",
+                      comment: "Announcement when retrying a failed save failed again. The failure notices follow.")] + stillFailing.map(\.text)
+        VoiceOverAnnouncer.announce(SentenceWording.joined(message))
     }
 
     /// Runs the retry of each of `failures` that has one, oldest first. A
@@ -900,8 +962,10 @@ extension OperationOutcome {
     func confirmingSaves(_ unsaved: [PersistenceFailure]) -> OperationOutcome {
         guard succeeded, !unsaved.isEmpty else { return self }
         let done = message.map(Self.withoutDoneClaim) ?? ""
-        let report = [done, "Some changes are not saved."] + PersistenceBannerRow.rows(for: unsaved).map(\.text)
-        return .failure(report.filter { !$0.isEmpty }.joined(separator: " "))
+        let report = [done, String(localized: "Some changes are not saved.",
+                                   comment: "Sentence that replaces a claim of success when some changes could not be saved. The failure notices follow.")]
+            + PersistenceBannerRow.rows(for: unsaved).map(\.text)
+        return .failure(SentenceWording.joined(report.filter { !$0.isEmpty }))
     }
 
     /// `message` without the "Done." that Storage settings' successes begin
